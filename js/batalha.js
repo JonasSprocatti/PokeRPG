@@ -1,21 +1,24 @@
 /* ============ batalha ============ */
-// 1×1 contra selvagem. `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
+// 1×1 contra selvagem ou contra a equipe de um treinador caçador (um Pokémon por vez; o treinador
+// pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save } from './estado.js';
+import { G, nm, save, dificuldadeDe, SAVE_KEY } from './estado.js';
 import { log, say, shake } from './ui.js';
-import { render } from './render.js';
+import { render, spriteFrente } from './render.js';
 import { changeStats, inflict, healFull } from './efeitos.js';
 import { gainExp } from './progressao.js';
 import { useItem } from './itens.js';
 import { makeMon } from './pokemon.js';
-import { STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE } from './dados.js';
+import { telaFim } from './criacao.js';
+import { STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR } from './dados.js';
 import {
   freshVol, effStat, calcDamage, confDamage, heal, typeEff,
-  chanceAcerto, danoResidual, consegueFugir, jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs
+  chanceAcerto, danoResidual, consegueFugir, jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs,
+  premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura
 } from './regras.js';
-import { loadPokemon } from './api.js';
-import { rand, pick, clamp, esc, fmt } from './util.js';
+import { loadPokemon, loadSpecies } from './api.js';
+import { rand, pick, clamp, esc, fmt, store } from './util.js';
 
 async function statusMove(user, target, move, selfT) {
   const meta = move.meta || {}; let did = false;
@@ -103,30 +106,78 @@ function chooseEnemyMove(E) {
 async function residual(m) {
   const d = danoResidual(m);
   if (!d) return;
-  m.hp = Math.max(0, m.hp - Math.max(1, d)); render();
-  await say(`${nm(m)} sofreu com ${m.status === 'burn' ? 'a queimadura' : 'o veneno'}. (−${Math.max(1, d)})`, 'hit');
+  m.hp = Math.max(0, m.hp - d); render();
+  await say(`${nm(m)} sofreu com ${m.status === 'burn' ? 'a queimadura' : 'o veneno'}. (−${d})`, 'hit');
 }
-export async function startBattle(z) {
-  let id, level;
-  if (z.pool) { id = pick(z.pool); level = rand(z.min, z.max); }
-  else { id = rand(1, 1025); level = clamp(G.S.player.level + rand(-2, 2), 2, 100); }
-  const data = await loadPokemon(id);
-  const E = await makeMon(data, level);
-  G.S.player.vol = freshVol();
-  G.B = { enemy: E, turn: 1, runs: 0 }; G.mode = 'battle'; G.panel = 'moves';
-  render();
-  await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${level}) apareceu!`, 'enc');
-  for (const [a, b] of [[G.S.player, E], [E, G.S.player]]) if (a.ability === 'intimidate') {
+
+/* ---- início de batalha ---- */
+// selvagem: da lista da zona; Fenda Dimensional (sem lista): qualquer um perto do seu nível
+function sortearOponente(z) {
+  if (z.pool) return { id: pick(z.pool), level: rand(z.min, z.max) };
+  return { id: rand(1, 1025), level: clamp(G.S.player.level + rand(-2, 2), 2, 100) };
+}
+async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
+function iniciar(B) { G.S.player.vol = freshVol(); G.B = B; G.mode = 'battle'; G.panel = 'moves'; render(); }
+// Intimidação ao entrar em campo. Na troca de Pokémon do treinador só o que acabou de entrar dispara
+async function intimidar(E, soInimigo = false) {
+  const P = G.S.player;
+  for (const [a, b] of soInimigo ? [[E, P]] : [[P, E], [E, P]]) if (a.ability === 'intimidate') {
     await say(`A Intimidação de ${nm(a)} assusta o oponente!`);
     await changeStats(b, [{ stat: 'attack', change: -1 }]);
   }
+}
+export async function startBattle(z) {
+  const E = await novoOponente(z);
+  iniciar({ enemy: E, turn: 1, runs: 0 });
+  await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${E.level}) apareceu!`, 'enc');
+  if (E.shiny) await say('✨ Ele brilha! Um Pokémon shiny.', 'level');
+  await intimidar(E);
+}
+// Treinador caçador: 1–3 Pokémon da zona (mais na zona alta), algumas bolas, e quer te capturar
+export async function startTrainerBattle(z) {
+  const P = G.S.player;
+  const nivelRef = z.pool ? z.max : P.level;
+  const n = rand(1, Math.min(3, 1 + Math.floor(nivelRef / 15)));
+  const [equipe, especie] = await Promise.all([
+    Promise.all(Array.from({ length: n }, () => novoOponente(z))),
+    loadSpecies(P.data.speciesUrl)
+  ]);
+  const trainer = { nome: `${pick(CLASSES_TREINADOR)} ${pick(NOMES_TREINADOR)}`, equipe, atual: 0, bolas: rand(2, 4), bola: bolaPorNivel(Math.max(...equipe.map(m => m.level))) };
+  iniciar({ enemy: equipe[0], turn: 1, runs: 0, trainer, taxaCaptura: especie.captureRate ?? 45 });
+  await say(`⚠ <b>${esc(trainer.nome)}</b> avistou você e quer te capturar! (${n} Pokémon, ${trainer.bolas}× ${BOLAS[trainer.bola].nome})`, 'enc');
+  await say(`${esc(trainer.nome)} envia <b>${esc(fmt(equipe[0].name))}</b> (Nv. ${equipe[0].level})!${equipe[0].shiny ? ' ✨ Um shiny!' : ''}`);
+  await intimidar(equipe[0]);
+}
+
+/* ---- turno ---- */
+// B.vez = quem está agindo agora — só pra barra de turno e o destaque da placa
+async function vez(v) { G.B.vez = v; render(); }
+// o lado inimigo: em batalha de treinador, ele pode gastar a vez lançando bola em vez do Pokémon dele atacar
+function acaoDoInimigo(E, P) {
+  const T = G.B.trainer;
+  if (T && treinadorLancaBola(P.hp, P.stats.hp, T.bolas)) return { bola: true };
+  return { move: chooseEnemyMove(E) };
+}
+async function agirInimigo(ea, E, P, movedFirst) {
+  if (ea.bola) { await vez('t'); return lancarBola(P); }
+  await vez('e'); await useMove(E, P, ea.move, movedFirst);
+}
+async function lancarBola(P) {
+  const B = G.B, T = B.trainer, bola = BOLAS[T.bola];
+  T.bolas--;
+  await say(`${esc(T.nome)} lançou uma <b>${bola.nome}</b> em você!`, 'status');
+  const real = balancosDaCaptura(valorCaptura(P.hp, P.stats.hp, B.taxaCaptura, bola.mult, P.status));
+  const facil = dificuldadeDe(G.S) === 'easy';
+  const balancos = facil ? Math.min(real, 3) : real; // Fácil: nunca fecha
+  for (let i = 0; i < Math.min(balancos, 3); i++) await say('A bola balança...', 'muted');
+  if (balancos >= 4) { B.capturado = true; await say('Clique! A bola se fechou. Você foi capturado...', 'hit'); return; }
+  if (facil && real >= 4) await say('Por pouco! Você arrebenta a bola no último segundo. (modo Fácil: você sempre escapa)', 'good');
+  else await say('Você se debate e escapa da bola!', 'good');
 }
 export async function turn(action) {
   if (G.busy || !G.B) return;
   G.busy = true;
   const B = G.B, P = G.S.player, E = B.enemy;
-  // B.vez = quem está agindo agora ('p' jogador, 'e' inimigo, 'fim' efeitos de fim de turno) — só pra barra de turno e o destaque da placa
-  const vez = async v => { B.vez = v; render(); };
   // item sem efeito cancela o turno sem avançar B.turn — não repetir o divisor na próxima tentativa
   if (B.turnoNoLog !== B.turn) { log(`Turno ${B.turn}`, 'turno'); B.turnoNoLog = B.turn; }
   try {
@@ -137,26 +188,25 @@ export async function turn(action) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
       await say('Não conseguiu fugir!');
-      await vez('e');
-      await useMove(E, P, chooseEnemyMove(E), true);
+      await agirInimigo(acaoDoInimigo(E, P), E, P, true);
     } else if (action.type === 'item') {
       await vez('p');
       if (!(await useItem(action.id, true))) return;
       G.panel = 'moves';
-      await vez('e');
-      await useMove(E, P, chooseEnemyMove(E), true);
+      await agirInimigo(acaoDoInimigo(E, P), E, P, true);
     } else {
       const pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
-      const em = chooseEnemyMove(E);
-      const pFirst = jogadorAgePrimeiro(pm, em, effStat(P, 'speed'), effStat(E, 'speed'));
-      const order = pFirst ? [[P, E, pm], [E, P, em]] : [[E, P, em], [P, E, pm]];
+      const ea = acaoDoInimigo(E, P);
+      // bola é item: sai antes de qualquer golpe, como item de treinador nos jogos
+      const pFirst = !ea.bola && jogadorAgePrimeiro(pm, ea.move, effStat(P, 'speed'), effStat(E, 'speed'));
+      const ordem = pFirst ? ['p', 'e'] : ['e', 'p'];
       for (let i = 0; i < 2; i++) {
-        const [u, t, m] = order[i];
-        if (u.hp <= 0 || t.hp <= 0) continue;
-        await vez(u === P ? 'p' : 'e');
-        await useMove(u, t, m, i === 0);
+        if (P.hp <= 0 || E.hp <= 0 || B.capturado) continue;
+        if (ordem[i] === 'p') { await vez('p'); await useMove(P, E, pm, i === 0); }
+        else await agirInimigo(ea, E, P, i === 0);
       }
     }
+    if (B.capturado) { await serCapturado(); return; }
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [P, E]) await residual(m); }
     P.vol.flinch = E.vol.flinch = false;
     B.turn++;
@@ -166,16 +216,29 @@ export async function turn(action) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
   } finally { B.vez = null; G.busy = false; render(); save(); }
 }
+
+/* ---- fim de batalha ---- */
 async function win() {
-  const S = G.S, P = S.player, E = G.B.enemy;
+  const S = G.S, B = G.B, T = B.trainer, P = S.player, E = B.enemy;
   await say(`${nm(E)} desmaiou!`, 'good');
-  const xp = xpPorVitoria(E);
+  const xp = xpPorVitoria(E, !!T);
   const gained = [];
   for (const [s, add] of ganhoDeEVs(P.evs, E.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
-  const money = E.level * rand(8, 14);
+  const money = T ? 0 : E.level * rand(8, 14); // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
-  await say(`${nm(P)} ganhou ${xp} de XP e ₽${money}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
+  await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
   await gainExp(xp);
+  if (T && T.atual < T.equipe.length - 1) {
+    T.atual++; B.enemy = T.equipe[T.atual]; render();
+    await say(`${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
+    await intimidar(B.enemy, true);
+    return;
+  }
+  if (T) {
+    const premio = premioTreinador(T.equipe);
+    S.money += premio; S.treinadoresVencidos = (S.treinadoresVencidos || 0) + 1;
+    await say(`Você derrotou ${esc(T.nome)}! Na fuga, deixou cair ₽${premio}.`, 'good');
+  }
   endBattle();
 }
 async function lose() {
@@ -184,5 +247,25 @@ async function lose() {
   const lost = Math.floor(S.money / 2); S.money -= lost;
   await say(`Você perdeu ₽${lost} e acordou no Centro Pokémon.`);
   healFull(); endBattle();
+}
+// capturado por treinador: Difícil = foge depois com perdas; Hardcore = fim de jogo (Fácil nunca chega aqui)
+async function serCapturado() {
+  const S = G.S, T = G.B.trainer, P = S.player;
+  if (dificuldadeDe(S) === 'hardcore') {
+    await say(`${esc(T.nome)} guarda a bola no cinto. Sua jornada selvagem termina aqui.`, 'hit');
+    const resumo = { nome: P.nick || fmt(P.name), especie: fmt(P.name), nivel: P.level, sprite: spriteFrente(P), vitorias: S.wins || 0, treinadores: S.treinadoresVencidos || 0, cacador: T.nome };
+    store.del(SAVE_KEY);
+    G.S = null; G.B = null;
+    telaFim(resumo);
+    return;
+  }
+  const perdeu = Math.floor(S.money / 2), itens = Object.values(S.bag).reduce((a, n) => a + n, 0);
+  S.money -= perdeu; S.bag = {};
+  const destinos = ZONES.filter(z => z.pool && z.min <= P.level && z.id !== S.zone);
+  const z = destinos.length ? pick(destinos) : ZONES[0];
+  S.zone = z.id; S.capturas = (S.capturas || 0) + 1;
+  healFull(); endBattle();
+  await say(`${esc(T.nome)} levou você embora... Dias depois, você força a bola a abrir e foge.`, 'status');
+  await say(`Você perdeu ₽${perdeu}${itens ? ` e os ${itens} itens da mochila` : ''}, e acordou em ${z.name}.`, 'hit');
 }
 export function endBattle() { G.B = null; G.mode = 'explore'; G.panel = 'main'; G.S.player.vol = freshVol(); G.S.player.vol.flashFire = false; }

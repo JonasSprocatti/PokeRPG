@@ -79,9 +79,11 @@ export function imuneAoStatus(tipos, ail) {
   return (ail === 'paralysis' && tipos.includes('electric')) || (ail === 'burn' && tipos.includes('fire')) || (ail === 'freeze' && tipos.includes('ice')) || (ail === 'poison' && (tipos.includes('poison') || tipos.includes('steel')));
 }
 
-// dano de queimadura (1/16) e veneno (1/8) no fim do turno; 0 = nada acontece
+// dano de queimadura (1/16) e veneno (1/8) no fim do turno, mínimo 1 (como nos jogos); 0 = sem status que cause dano.
+// Sem o mínimo, HP máximo < 16 (queimadura) ou < 8 (veneno) dava floor = 0 e o status nunca machucava.
 export function danoResidual(m) {
-  return m.status === 'burn' ? Math.floor(m.stats.hp / 16) : m.status === 'poison' ? Math.floor(m.stats.hp / 8) : 0;
+  const frac = m.status === 'burn' ? 16 : m.status === 'poison' ? 8 : 0;
+  return frac ? Math.max(1, Math.floor(m.stats.hp / frac)) : 0;
 }
 
 // fuga: Run Away ou ser mais rápido garante; senão a chance sobe 30/256 a cada tentativa
@@ -95,7 +97,47 @@ export function jogadorAgePrimeiro(pm, em, velP, velE, sorte = Math.random()) {
   return velP === velE ? sorte < 0.5 : velP > velE;
 }
 
-export const xpPorVitoria = E => Math.max(1, Math.floor(E.data.baseExp * E.level / 7));
+// Centro Pokémon: preço sobe com o nível pra cura não virar reflexo depois de toda luta.
+// ₽50 + ₽15/nível ≈ 1–2 vitórias da faixa em que você está (vitória ≈ ₽11 × nível do inimigo).
+export const custoCentro = nivel => 50 + 15 * nivel;
+// algo pra curar? (HP, status ou PP) — com tudo cheio o Centro não cobra nem cura
+export const precisaCurar = m => m.hp < m.stats.hp || !!m.status || m.moves.some(mv => mv.ppLeft < mv.pp);
+
+// Pokémon de treinador dá 1,5× XP (como nos jogos)
+export const xpPorVitoria = (E, deTreinador = false) => Math.max(1, Math.floor(E.data.baseExp * E.level / 7 * (deTreinador ? 1.5 : 1)));
+
+// shiny: 1 em 4096 (Gen 6+), sorteado pra todo Pokémon criado — você, selvagem ou de treinador, em qualquer modo
+export const CHANCE_SHINY = 1 / 4096;
+export const ehShiny = (sorte = Math.random()) => sorte < CHANCE_SHINY;
+
+/* ---- treinadores caçadores (Etapa 3) ---- */
+
+// prêmio ao derrotar a equipe inteira de um treinador (no lugar do dinheiro por Pokémon selvagem)
+export const premioTreinador = equipe => equipe.reduce((a, m) => a + m.level, 0) * 20;
+
+// bola que o treinador carrega, pela faixa de nível da equipe dele
+export const bolaPorNivel = nivel => nivel < 20 ? 'poke-ball' : nivel < 40 ? 'great-ball' : 'ultra-ball';
+
+// o treinador gasta a vez lançando bola só quando você está com metade do HP ou menos (60% de chance a cada turno)
+export const treinadorLancaBola = (hp, hpMax, bolas, sorte = Math.random()) => bolas > 0 && hp <= hpMax / 2 && sorte < 0.6;
+
+// Fórmula de captura da Gen 3/4. `a` ≥ 255 = captura garantida; senão cada um dos 4 balanços passa com chance b/65536.
+export const BONUS_STATUS_CAPTURA = { sleep: 2, freeze: 2, paralysis: 1.5, burn: 1.5, poison: 1.5 };
+export function valorCaptura(hp, hpMax, taxa, multBola, status) {
+  return Math.floor(Math.floor((3 * hpMax - 2 * hp) * taxa * multBola / (3 * hpMax)) * (BONUS_STATUS_CAPTURA[status] || 1));
+}
+export function chancePorBalanco(a) {
+  if (a >= 255) return 1;
+  a = Math.max(1, a);
+  return Math.floor(1048560 / Math.floor(Math.sqrt(Math.floor(Math.sqrt(Math.floor(16711680 / a)))))) / 65536;
+}
+// quantos balanços a bola dá (0–4); 4 = capturado
+export function balancosDaCaptura(a, sorte = Math.random) {
+  const p = chancePorBalanco(a);
+  let n = 0;
+  while (n < 4 && sorte() < p) n++;
+  return n;
+}
 
 // EVs ganhos ao derrotar um Pokémon: teto de 252 por atributo e 510 no total. Devolve [[stat, qtd]], não muta `evs`
 export function ganhoDeEVs(evs, effort) {

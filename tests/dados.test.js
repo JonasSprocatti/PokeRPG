@@ -2,7 +2,8 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR } from '../js/dados.js';
+import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
 
@@ -47,6 +48,21 @@ test('ITEMS: itens encontráveis existem e estágios apontam pra atributo real',
     if (it.stage) assert.ok(STATS.includes(it.stage), `${k}: estágio "${it.stage}" inválido`);
     if (Array.isArray(it.cure)) for (const s of it.cure) assert.ok(AIL_MSG[s], `${k}: cura status desconhecido "${s}"`);
   }
+});
+
+test('treinadores: toda bola sorteável existe em BOLAS; listas de nome não vazias', () => {
+  for (const n of [1, 19, 20, 39, 40, 100]) assert.ok(BOLAS[bolaPorNivel(n)], `nível ${n} → bola desconhecida`);
+  for (const b of Object.values(BOLAS)) assert.ok(b.mult >= 1);
+  assert.ok(CLASSES_TREINADOR.length && NOMES_TREINADOR.length);
+});
+
+test('DIFICULDADES: as quatro existem e as restrições crescem com a dificuldade', () => {
+  assert.deepEqual(Object.keys(DIFICULDADES), ['easy', 'hard', 'hardcore', 'randomizer']);
+  assert.equal(DIFICULDADES.easy.nivelLivre && DIFICULDADES.easy.escolhaLivre, true);
+  assert.equal(DIFICULDADES.hard.nivelLivre, false);
+  assert.equal(DIFICULDADES.hard.escolhaLivre, true);
+  assert.equal(DIFICULDADES.hardcore.nivelLivre || DIFICULDADES.hardcore.escolhaLivre, false);
+  assert.equal(DIFICULDADES.randomizer.soBotao, true); // não aparece no seletor da prévia
 });
 
 test('ZONES: ids únicos, faixa de nível coerente, ambientação só de zona que existe', () => {

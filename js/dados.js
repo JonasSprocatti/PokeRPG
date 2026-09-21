@@ -2,6 +2,9 @@
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 export const API = 'https://pokeapi.co/api/v2';
 export const SPR = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+// shiny: montado pelo id (não fica no cache da API — save antigo funciona sem migrar). Gen 8+ não tem sprite de costas.
+export const SPR_SHINY = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
+export const SPR_SHINY_COSTAS = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/${id}.png`;
 export const ITEM_SPR = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
 
 export const STATS = ['hp', 'attack', 'defense', 'special-attack', 'special-defense', 'speed'];
@@ -90,3 +93,24 @@ export const FLAVOR = {
   fenda: ['O ar tremula como se o espaço estivesse dobrando.']
 };
 export const QUICK = [1, 4, 7, 25, 133, 39, 92, 147, 152, 155, 158, 246, 252, 255, 258, 280, 387, 390, 393, 448];
+
+/* ---- treinadores caçadores e dificuldade (Etapa 3) ---- */
+// chave = nome do sprite em ITEM_SPR; mult = multiplicador da fórmula de captura
+export const BOLAS = {
+  'poke-ball': { nome: 'Poké Ball', mult: 1 },
+  'great-ball': { nome: 'Great Ball', mult: 1.5 },
+  'ultra-ball': { nome: 'Ultra Ball', mult: 2 }
+};
+export const CLASSES_TREINADOR = ['Caçador', 'Caçadora', 'Colecionador', 'Pesquisadora', 'Ranger', 'Jovem Treinador', 'Veterana'];
+export const NOMES_TREINADOR = ['Rui', 'Bia', 'Otávio', 'Lúcia', 'Caio', 'Marta', 'Téo', 'Iara', 'Nando', 'Sol', 'Davi', 'Nina'];
+// o que acontece se um treinador te capturar + o que dá pra escolher na criação.
+//   nivelLivre   = escolher o nível inicial (senão começa no 5)
+//   escolhaLivre = escolher natureza e habilidade (senão são sorteadas ao começar)
+// Save antigo (sem `dificuldade`) conta como easy — ver dificuldadeDe()
+export const DIFICULDADES = {
+  easy: { nome: 'Fácil', nivelLivre: true, escolhaLivre: true, desc: 'Treinadores tentam, mas você sempre escapa da bola. Nível inicial, natureza e habilidade à sua escolha.' },
+  hard: { nome: 'Difícil', nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Começa no nível 5.' },
+  hardcore: { nome: 'Hardcore', nivelLivre: false, escolhaLivre: false, desc: 'Ser capturado é o fim da jornada: o save é apagado. Começa no nível 5, com natureza e habilidade sorteadas.' },
+  // não aparece no seletor da prévia: tem botão próprio na tela inicial (sorteia até a espécie). Captura = regra do Difícil
+  randomizer: { nome: 'Full Randomizer', nivelLivre: false, escolhaLivre: false, soBotao: true, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Se for capturado, mesma regra do Difícil.' }
+};

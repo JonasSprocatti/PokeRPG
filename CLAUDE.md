@@ -28,13 +28,24 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `js/render.js` | `render()` (re-render total da ficha, cena e ações), `buildGame()`, `badge`. |
 | `js/pokemon.js` | `makeMon(data, level, opt)` — instância jogável (jogador e selvagem). |
 | `js/efeitos.js` | `changeStats`, `inflict`, `healFull` — efeitos com narração, usados pela batalha e pelos itens. |
-| `js/batalha.js` | `turn(action)` (único ponto de entrada da UI), `useMove`, `startBattle`, `endBattle`, vitória/derrota. |
+| `js/batalha.js` | `turn(action)` (único ponto de entrada da UI), `useMove`, `startBattle`/`startTrainerBattle`, bola do treinador, vitória/derrota/captura, `endBattle`. |
 | `js/progressao.js` | `gainExp`, aprender golpe, evolução por nível. |
 | `js/itens.js` | `addItem`, `useItem`. |
 | `js/mundo.js` | `explore()`. |
-| `js/criacao.js` | Tela de criação (busca, prévia, `startGame`). |
+| `js/criacao.js` | Tela de criação (busca, prévia com dificuldade, `startGame`, `fullRandomizer`) e `telaFim` (fim de jogo do Hardcore). |
 
-Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → `ui` → `render` → `efeitos`/`progressao`/`pokemon` → `itens` → `batalha` → `mundo`/`criacao` → `main`. Manter assim.
+Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → `ui` → `render` → `efeitos`/`progressao`/`pokemon` → `itens`/`criacao` → `batalha` → `mundo` → `main` (`batalha` importa `telaFim` de `criacao`, então `criacao` nunca pode importar `batalha`). Manter sem ciclos.
+
+## Mecânicas (Etapa 3)
+
+- **Dificuldade** (`S.dificuldade`, tabela `DIFICULDADES` em `dados.js`, lida via `dificuldadeDe(S)` — save antigo sem o campo conta como `easy`): `easy` (nunca é capturado; escolhe tudo), `hard` (capturado → foge depois sem a mochila, metade do dinheiro, zona aleatória; nível inicial travado em 5), `hardcore` (capturado → fim de jogo, save apagado, `telaFim`; nível 5 + natureza/habilidade sorteadas), `randomizer` (botão próprio na tela inicial, `soBotao`: sorteia até a espécie; captura = regra do `hard`). O que dá pra escolher na criação vem de `nivelLivre`/`escolhaLivre` da própria tabela.
+- **Treinadores caçadores** (`startTrainerBattle` em `batalha.js`, 10% das explorações): equipe de 1–3 Pokémon da zona, 2–4 bolas (`bolaPorNivel`). Com seu HP ≤ metade, 60% de chance por turno de gastar a vez lançando bola (sai antes de qualquer golpe). Captura = fórmula real da Gen 3/4 (`valorCaptura`/`balancosDaCaptura`) com a `captureRate` da SUA espécie (`loadSpecies`, cache `sp2:`). XP ×1,5; dinheiro só no prêmio final (`premioTreinador`). Dá pra fugir (você é selvagem). Desmaiar contra treinador = derrota comum (Centro), não captura.
+- **Shiny**: 1/4096 (`ehShiny`) em todo `makeMon` — você, selvagem, treinador, qualquer modo. Sprite montado pelo id (`SPR_SHINY`/`SPR_SHINY_COSTAS`, não fica no cache da API), com `onerror` caindo no normal. Sobrevive à evolução.
+- **Centro Pokémon** custa `custoCentro(nível)` = ₽50 + ₽15/nível; desativado com tudo cheio (`precisaCurar`). Desmaiar continua curando de graça (com a perda de metade do dinheiro).
+
+### Próximos passos combinados
+- **3.2 Amizade (aliados)**: oferecer a um Pokémon um item que o tipo dele gosta → chance de aumentar a amizade → ele passa a acompanhar a jornada. Exige: equipe no save, troca na batalha, itens de afinidade por tipo.
+- **3.3 Roguelike**: começa só com os iniciais de cada região; derrotar/fazer amizade com N do mesmo grupo desbloqueia novas escolhas pra próxima run. Exige progresso persistente entre runs (save separado do da jornada) e a 3.2 pronta.
 
 ## Convenções
 

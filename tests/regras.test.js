@@ -4,7 +4,9 @@ import assert from 'node:assert/strict';
 import {
   typeEff, natureMod, natureLabel, calcStats, recalc, freshVol, stageMul, effStat, defaultMoves,
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
-  jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs
+  jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
+  premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, chancePorBalanco, balancosDaCaptura,
+  CHANCE_SHINY, ehShiny
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -158,6 +160,14 @@ test('danoResidual: queimadura 1/16, veneno 1/8', () => {
   assert.equal(danoResidual(mon({ stats: s })), 0);
 });
 
+test('danoResidual: mínimo 1 com HP máximo baixo (antes dava 0 e o status nunca machucava)', () => {
+  const s = hp => ({ ...mon().stats, hp });
+  assert.equal(danoResidual(mon({ stats: s(15), status: 'burn' })), 1);   // floor(15/16) = 0 → 1
+  assert.equal(danoResidual(mon({ stats: s(7), status: 'poison' })), 1);  // floor(7/8) = 0 → 1
+  assert.equal(danoResidual(mon({ stats: s(1), status: 'burn' })), 1);    // Shedinja queimado
+  assert.equal(danoResidual(mon({ stats: s(15), status: 'sleep' })), 0);  // sono não machuca
+});
+
 test('consegueFugir: Run Away, mais rápido, e a chance que cresce a cada tentativa', () => {
   assert.equal(consegueFugir(10, 100, 1, 'run-away', 0.999), true);
   assert.equal(consegueFugir(100, 100, 1, 'none', 0.999), true);
@@ -176,9 +186,65 @@ test('jogadorAgePrimeiro: prioridade > velocidade > moeda', () => {
   assert.equal(jogadorAgePrimeiro({}, {}, 50, 50, 0.6), false);
 });
 
-test('xpPorVitoria: base × nível / 7, mínimo 1', () => {
+test('custoCentro: ₽50 + ₽15 por nível', () => {
+  assert.equal(custoCentro(5), 125);
+  assert.equal(custoCentro(30), 500);
+  assert.equal(custoCentro(100), 1550);
+});
+
+test('precisaCurar: HP, status ou PP abaixo do máximo', () => {
+  const golpes = () => [{ pp: 10, ppLeft: 10 }];
+  assert.equal(precisaCurar(mon({ moves: golpes() })), false);
+  assert.equal(precisaCurar(mon({ moves: golpes(), hp: 99 })), true);
+  assert.equal(precisaCurar(mon({ moves: golpes(), status: 'poison' })), true);
+  assert.equal(precisaCurar(mon({ moves: [{ pp: 10, ppLeft: 9 }] })), true);
+});
+
+test('xpPorVitoria: base × nível / 7, mínimo 1; de treinador ×1,5', () => {
   assert.equal(xpPorVitoria({ level: 7, data: { baseExp: 64 } }), 64);
   assert.equal(xpPorVitoria({ level: 2, data: { baseExp: 1 } }), 1);
+  assert.equal(xpPorVitoria({ level: 7, data: { baseExp: 64 } }, true), 96);
+});
+
+test('treinador: prêmio pela soma dos níveis, bola pela faixa de nível', () => {
+  assert.equal(premioTreinador([{ level: 5 }, { level: 7 }]), 240);
+  assert.equal(bolaPorNivel(10), 'poke-ball');
+  assert.equal(bolaPorNivel(20), 'great-ball');
+  assert.equal(bolaPorNivel(45), 'ultra-ball');
+});
+
+test('treinadorLancaBola: só com HP ≤ metade, com bola sobrando, 60% das vezes', () => {
+  assert.equal(treinadorLancaBola(50, 100, 3, 0.5), true);
+  assert.equal(treinadorLancaBola(51, 100, 3, 0.5), false); // acima da metade nunca
+  assert.equal(treinadorLancaBola(10, 100, 0, 0.1), false); // sem bola
+  assert.equal(treinadorLancaBola(10, 100, 3, 0.6), false); // passou dos 60%
+});
+
+test('valorCaptura: fórmula da Gen 3/4 (HP baixo, bola e status aumentam)', () => {
+  assert.equal(valorCaptura(100, 100, 45, 1, null), 15);        // HP cheio: taxa/3
+  assert.equal(valorCaptura(1, 100, 45, 1, null), 44);          // quase desmaiado
+  assert.equal(valorCaptura(1, 100, 45, 1, 'sleep'), 88);       // sono ×2
+  assert.equal(valorCaptura(1, 100, 45, 1.5, 'paralysis'), 100); // Great Ball + paralisia: floor(67,05)=67 × 1,5
+  assert.ok(valorCaptura(1, 100, 255, 1.5, null) >= 255);       // espécie comum com Great Ball: garantida
+});
+
+test('chancePorBalanco / balancosDaCaptura', () => {
+  assert.equal(chancePorBalanco(255), 1);
+  assert.ok(Math.abs(chancePorBalanco(44) - 43690 / 65536) < 1e-9);
+  assert.ok(chancePorBalanco(10) < chancePorBalanco(100));
+  assert.ok(chancePorBalanco(0) > 0); // a = 0 não divide por zero
+  assert.equal(balancosDaCaptura(255, () => 0.999), 4); // garantida ignora o dado
+  assert.equal(balancosDaCaptura(44, () => 0), 4);
+  assert.equal(balancosDaCaptura(44, () => 0.99), 0);
+  const seq = [0, 0, 0.99]; let i = 0;
+  assert.equal(balancosDaCaptura(44, () => seq[i++]), 2); // para no primeiro balanço que falha
+});
+
+test('ehShiny: 1 em 4096', () => {
+  assert.equal(CHANCE_SHINY, 1 / 4096);
+  assert.equal(ehShiny(0), true);
+  assert.equal(ehShiny(1 / 4096), false);
+  assert.equal(ehShiny(0.5), false);
 });
 
 test('ganhoDeEVs: teto de 252 por atributo e 510 no total, sem mutar', () => {

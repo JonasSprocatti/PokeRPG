@@ -138,6 +138,11 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .turno-n b{font-size:20px;color:var(--text);margin-left:4px;vertical-align:-1px}
 .turno-fase{background:var(--panel2);border-radius:999px;padding:3px 12px;font-size:14px;color:var(--muted)}
 .turno-fase.sua-vez{background:var(--yellow);color:#1b1b2f}
+.treinador{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--text)}
+.treinador .equipe{letter-spacing:2px;color:var(--yellow)}
+.treinador img{width:24px;height:24px;image-rendering:pixelated;margin-left:4px}
+.shiny{margin-right:4px}
+.fim .pv{align-items:center}
 .plate.agindo{outline:3px solid var(--yellow);outline-offset:2px;animation:agindo 1s ease-in-out infinite}
 @keyframes agindo{50%{outline-color:transparent}}
 @media(max-width:520px){.mon{width:110px;height:100px}.spr{width:96px;height:96px}.spr.back{width:110px;height:110px}.pl-top{font-size:14px}}

@@ -66,9 +66,11 @@ export const loadAbility = a => cached('ab:' + a.name, async () => {
   const ft = (d.flavor_text_entries || []).filter(f => f.language.name === 'en').pop();
   return { effect: en?.short_effect || ft?.flavor_text || 'Sem descrição.' };
 });
-export const loadSpecies = url => cached('sp:' + lastSeg(url), async () => {
+// chave 'sp2:' (era 'sp:'): o cache antigo no localStorage não tinha captureRate — trocar a chave força buscar de novo.
+// Ao acrescentar campo a qualquer loader, trocar a chave do mesmo jeito.
+export const loadSpecies = url => cached('sp2:' + lastSeg(url), async () => {
   const s = await getJSON(url);
-  return { growthUrl: s.growth_rate.url, evoUrl: s.evolution_chain?.url || null, defaultPokemon: (s.varieties.find(v => v.is_default) || s.varieties[0]).pokemon.name };
+  return { growthUrl: s.growth_rate.url, evoUrl: s.evolution_chain?.url || null, defaultPokemon: (s.varieties.find(v => v.is_default) || s.varieties[0]).pokemon.name, captureRate: s.capture_rate ?? 45 };
 });
 export const loadGrowth = url => cached('gr:' + lastSeg(url), async () => {
   const g = await getJSON(url); const arr = Array(101).fill(0);

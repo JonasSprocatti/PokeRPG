@@ -1,11 +1,18 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
-import { G, zone } from './estado.js';
+import { G, zone, rotulo, dificuldadeDe } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, ITEM_SPR, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES } from './dados.js';
-import { natureLabel } from './regras.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES } from './dados.js';
+import { natureLabel, custoCentro, precisaCurar } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { clamp, esc, fmt } from './util.js';
+
+// sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
+// Costas: Gen 8+ não tem sprite de costas — aí usa a frente espelhada (classe .flip).
+export const spriteFrente = m => m.shiny ? SPR_SHINY(m.id) : m.data.sprite;
+const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.id) : m.data.back) : null;
+const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="this.onerror=null;this.src='${m.data.sprite}'">`;
+const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
 
 export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;
 function hpbar(m) {
@@ -20,15 +27,19 @@ function chipsFor(m) {
 }
 function plate(m) {
   const label = m === G.S.player ? (m.nick || fmt(m.name)) : fmt(m.name);
-  return `<div class="pl-top"><span>${esc(label)}</span><span>Nv. ${m.level}</span></div>${hpbar(m)}${chipsFor(m)}`;
+  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>${hpbar(m)}${chipsFor(m)}`;
 }
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
 function turnoBar(B, P, E) {
+  const T = B.trainer;
   const fase = !G.busy ? 'Escolha sua ação'
-    : B.vez === 'p' ? `${esc(P.nick || fmt(P.name))} está agindo`
-    : B.vez === 'e' ? `${esc(fmt(E.name))} selvagem está agindo`
+    : B.vez === 'p' ? `${esc(rotulo(P))} está agindo`
+    : B.vez === 'e' ? `${esc(rotulo(E))} está agindo`
+    : B.vez === 't' ? `${esc(T.nome)} está mirando uma bola`
     : B.vez === 'fim' ? 'Fim do turno' : '…';
-  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span><span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
+  // treinador: equipe (● em pé / ○ derrotado) e bolas que ainda restam
+  const info = T ? `<span class="treinador" title="Pokémon e bolas do treinador">🎯 ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span> <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}</span>` : '';
+  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${info}<span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
 }
 function renderSheet() {
   const S = G.S, P = S.player, GR = S.meta.growth, [up, down] = NATURES[P.nature] || [];
@@ -39,9 +50,9 @@ function renderSheet() {
   const bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]);
   $('#sheet').innerHTML = `
     <div class="me">
-      <img src="${P.data.sprite}" alt="${esc(fmt(P.name))}">
+      ${imgMon(P, '', spriteFrente(P))}
       <div>
-        <h2>${esc(P.nick || fmt(P.name))}</h2>
+        <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}</h2>
         <p class="sub">${P.nick ? esc(fmt(P.name)) + ', ' : ''}nível ${P.level}</p>
         <div class="types">${P.data.types.map(badge).join('')}</div>
       </div>
@@ -55,7 +66,7 @@ function renderSheet() {
       <thead><tr><th>Atributo</th><th>Valor</th><th>Base</th><th>IV</th><th>EV</th></tr></thead>
       <tbody>${STATS.map(s => `<tr><td>${STAT_PT[s]} ${s === up ? '<span class="up" title="Natureza">▲</span>' : s === down ? '<span class="down" title="Natureza">▼</span>' : ''}</td><td class="v">${P.stats[s]}</td><td>${P.data.base[s]}</td><td>${P.ivs[s]}</td><td>${P.evs[s]}</td></tr>`).join('')}</tbody>
     </table>
-    <p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(P.nature))}. Vitórias: ${S.wins || 0}.</p>
+    <p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(P.nature))}. Vitórias: ${S.wins || 0}${S.treinadoresVencidos ? `, ${S.treinadoresVencidos} treinador${S.treinadoresVencidos > 1 ? 'es' : ''}` : ''}.<br>Modo <b title="${esc(DIFICULDADES[dificuldadeDe(S)].desc)}">${DIFICULDADES[dificuldadeDe(S)].nome}</b>${S.capturas ? ` · capturado ${S.capturas}×` : ''}.</p>
     <div class="sec"><h3>Habilidade: ${esc(fmt(P.ability))}</h3>
       <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(P.ability) ? '<span class="impl">✓ ativa no protótipo</span>' : '<em class="small">(ainda só descritiva)</em>'}</p></div>
     <div class="sec mlist"><h3>Golpes</h3>
@@ -73,8 +84,8 @@ function renderScene() {
     const B = G.B;
     sc.innerHTML = `${turnoBar(B, P, E)}
       <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E)}</div>
-        <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div><img class="spr" src="${E.data.sprite}" alt="${esc(fmt(E.name))}"></div></div>
-      <div class="side me"><div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div><img class="spr back ${P.data.back ? '' : 'flip'}" src="${P.data.back || P.data.sprite}" alt="${esc(fmt(P.name))}"></div>
+        <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
+      <div class="side me"><div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
         <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P)}</div></div>`;
   } else {
     const z = zone();
@@ -104,8 +115,9 @@ function renderActions() {
     a.innerHTML = `<div class="bag-grid">${forSale.map(([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${it.name}</span><small>₽${it.price}</small></button>`).join('')}</div>
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
+    const custo = custoCentro(S.player.level), saudavel = !precisaCurar(S.player), semGrana = S.money < custo;
     a.innerHTML = `<button class="btn big" data-act="explore" ${dis}>Explorar ${zone().name}</button>
-      <button class="btn ghost" data-act="heal" ${dis}>Descansar no Centro Pokémon</button>
+      <button class="btn ghost" data-act="heal" ${dis || saudavel || semGrana ? 'disabled' : ''} title="${saudavel ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status'}">Centro Pokémon · ₽${custo}${saudavel ? ' (já está saudável)' : semGrana ? ' (sem dinheiro)' : ''}</button>
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>`;
   }
 }

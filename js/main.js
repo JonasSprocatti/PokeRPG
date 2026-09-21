@@ -4,13 +4,13 @@
 import { G, SAVE_KEY, save } from './estado.js';
 import { $, log, logRaw, ask } from './ui.js';
 import { render, buildGame } from './render.js';
-import { showCreate, previewSearch, renderPreview, startGame } from './criacao.js';
+import { showCreate, previewSearch, renderPreview, startGame, fullRandomizer } from './criacao.js';
 import { explore } from './mundo.js';
 import { turn } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem } from './itens.js';
 import { ITEMS } from './dados.js';
-import { freshVol } from './regras.js';
+import { freshVol, custoCentro, precisaCurar } from './regras.js';
 import { rand, store } from './util.js';
 
 /* ============ eventos ============ */
@@ -22,11 +22,20 @@ document.addEventListener('click', async e => {
     case 'random': return previewSearch(rand(1, 1025));
     case 'pick': return previewSearch(v);
     case 'ability': G.PV.ability = v; return renderPreview();
+    case 'dificuldade': G.PV.dificuldade = v; return renderPreview();
+    case 'randomizer': return fullRandomizer(b);
+    case 'recomecar': G.S = null; G.B = null; G.PV = null; return showCreate();
     case 'start': return startGame(b);
     case 'explore': return explore();
     case 'zone': G.S.zone = v; save(); return render();
     case 'panel': G.panel = v; return render();
-    case 'heal': healFull(); log('Você descansou no Centro Pokémon. HP, PP e status restaurados.', 'good'); save(); return render();
+    case 'heal': {
+      // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
+      const custo = custoCentro(G.S.player.level);
+      if (G.busy || !precisaCurar(G.S.player) || G.S.money < custo) return;
+      G.S.money -= custo; healFull();
+      log(`Você pagou ₽${custo} e descansou no Centro Pokémon. HP, PP e status restaurados.`, 'good'); save(); return render();
+    }
     case 'buy': {
       const it = ITEMS[v]; if (!it || G.S.money < it.price) return;
       G.S.money -= it.price; addItem(v, 1); log(`Você comprou ${it.name} por ₽${it.price}.`); save(); return render();
