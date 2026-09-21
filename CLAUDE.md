@@ -42,6 +42,7 @@ Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → 
 - Tudo que só `regras.js`/`dados.js`/`util.js`/`api.js` importa precisa continuar sem DOM (importável no Node).
 - `esc()` em todo texto vindo de fora (apelido, dados da API) dentro de template string.
 - Estado compartilhado sempre via `G.*` (nunca `let` exportado).
+- Fontes: `--display` (Fredoka) para títulos e números, `--body` (Atkinson Hyperlegible) para texto, `--logo` (Pixelify Sans) **só no logo** — a pixelada confundia 2/5/8 em HP, stats e PP; não voltar a usá-la em número.
 
 ## Testes
 

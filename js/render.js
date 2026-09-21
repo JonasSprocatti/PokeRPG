@@ -22,6 +22,14 @@ function plate(m) {
   const label = m === G.S.player ? (m.nick || fmt(m.name)) : fmt(m.name);
   return `<div class="pl-top"><span>${esc(label)}</span><span>Nv. ${m.level}</span></div>${hpbar(m)}${chipsFor(m)}`;
 }
+// barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
+function turnoBar(B, P, E) {
+  const fase = !G.busy ? 'Escolha sua ação'
+    : B.vez === 'p' ? `${esc(P.nick || fmt(P.name))} está agindo`
+    : B.vez === 'e' ? `${esc(fmt(E.name))} selvagem está agindo`
+    : B.vez === 'fim' ? 'Fim do turno' : '…';
+  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span><span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
+}
 function renderSheet() {
   const S = G.S, P = S.player, GR = S.meta.growth, [up, down] = NATURES[P.nature] || [];
   const cur = P.exp - GR[P.level], need = P.level < 100 ? GR[P.level + 1] - GR[P.level] : 1;
@@ -62,11 +70,12 @@ function renderScene() {
   if (G.mode === 'battle' && G.B) {
     const E = G.B.enemy, P = G.S.player;
     sc.className = 'scene battle';
-    sc.innerHTML = `
-      <div class="side foe"><div class="plate">${plate(E)}</div>
+    const B = G.B;
+    sc.innerHTML = `${turnoBar(B, P, E)}
+      <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E)}</div>
         <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div><img class="spr" src="${E.data.sprite}" alt="${esc(fmt(E.name))}"></div></div>
       <div class="side me"><div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div><img class="spr back ${P.data.back ? '' : 'flip'}" src="${P.data.back || P.data.sprite}" alt="${esc(fmt(P.name))}"></div>
-        <div class="plate">${plate(P)}</div></div>`;
+        <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P)}</div></div>`;
   } else {
     const z = zone();
     sc.className = 'scene';

@@ -123,19 +123,27 @@ export async function startBattle(z) {
 }
 export async function turn(action) {
   if (G.busy || !G.B) return;
-  G.busy = true; render();
+  G.busy = true;
   const B = G.B, P = G.S.player, E = B.enemy;
+  // B.vez = quem está agindo agora ('p' jogador, 'e' inimigo, 'fim' efeitos de fim de turno) — só pra barra de turno e o destaque da placa
+  const vez = async v => { B.vez = v; render(); };
+  // item sem efeito cancela o turno sem avançar B.turn — não repetir o divisor na próxima tentativa
+  if (B.turnoNoLog !== B.turn) { log(`Turno ${B.turn}`, 'turno'); B.turnoNoLog = B.turn; }
   try {
     if (action.type === 'run') {
       B.runs++;
+      await vez('p');
       if (consegueFugir(effStat(P, 'speed'), effStat(E, 'speed'), B.runs, P.ability)) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
       await say('Não conseguiu fugir!');
+      await vez('e');
       await useMove(E, P, chooseEnemyMove(E), true);
     } else if (action.type === 'item') {
+      await vez('p');
       if (!(await useItem(action.id, true))) return;
       G.panel = 'moves';
+      await vez('e');
       await useMove(E, P, chooseEnemyMove(E), true);
     } else {
       const pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
@@ -145,17 +153,18 @@ export async function turn(action) {
       for (let i = 0; i < 2; i++) {
         const [u, t, m] = order[i];
         if (u.hp <= 0 || t.hp <= 0) continue;
+        await vez(u === P ? 'p' : 'e');
         await useMove(u, t, m, i === 0);
       }
     }
-    if (P.hp > 0 && E.hp > 0) for (const m of [P, E]) await residual(m);
+    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [P, E]) await residual(m); }
     P.vol.flinch = E.vol.flinch = false;
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (E.hp <= 0) await win();
   } catch (e) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
-  } finally { G.busy = false; render(); save(); }
+  } finally { B.vez = null; G.busy = false; render(); save(); }
 }
 async function win() {
   const S = G.S, P = S.player, E = G.B.enemy;

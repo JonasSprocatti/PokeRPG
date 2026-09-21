@@ -3,7 +3,8 @@
 // `let` exportado não pode ser reatribuído por quem importa, então tudo mora num objeto só (mesma
 // referência sempre, só os campos mudam).
 //   S     = save do jogo (player, bag, money, zone, meta.growth/evo, wins, log) — o que vai pro localStorage
-//   B     = batalha em andamento ({ enemy, turn, runs }) ou null
+//   B     = batalha em andamento ou null: { enemy, turn, runs, vez, turnoNoLog }
+//           vez = quem está agindo agora ('p' | 'e' | 'fim' | null) — só apresentação (barra de turno, placa destacada)
 //   PV    = prévia da tela de criação ({ data, ability, nature, level, nick }) ou null
 //   mode  = 'create' | 'explore' | 'battle'
 //   busy  = true enquanto um turno/exploração está resolvendo (trava os botões)
