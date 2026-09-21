@@ -71,9 +71,17 @@ export const ITEMS = {
   'x-defense': { name: 'X Defense', desc: 'Defesa +2 nesta batalha.', stage: 'defense', battle: true, price: 500 },
   'x-sp-atk': { name: 'X Sp. Atk', desc: 'At. Esp. +2 nesta batalha.', stage: 'special-attack', battle: true, price: 500 },
   'x-speed': { name: 'X Speed', desc: 'Velocidade +2 nesta batalha.', stage: 'speed', battle: true, price: 500 },
-  'rare-candy': { name: 'Rare Candy', desc: 'Sobe um nível na hora.', candy: true }
+  'rare-candy': { name: 'Rare Candy', desc: 'Sobe um nível na hora.', candy: true },
+  // petiscos de afinidade (Etapa 3.2): oferecidos a um selvagem pra ganhar amizade. Chave = nome do sprite na PokéAPI.
+  // Os 6 grupos cobrem os 18 tipos exatamente uma vez (teste em dados.test.js).
+  charcoal: { name: 'Carvão Doce', desc: 'Petisco que Fogo, Dragão e Lutador adoram.', afinidade: ['fire', 'dragon', 'fighting'], price: 300 },
+  'mystic-water': { name: 'Peixe Seco', desc: 'Petisco que Água, Gelo e Voador adoram.', afinidade: ['water', 'ice', 'flying'], price: 300 },
+  honey: { name: 'Mel Silvestre', desc: 'Petisco que Planta, Inseto, Fada e Normal adoram.', afinidade: ['grass', 'bug', 'fairy', 'normal'], price: 300 },
+  'hard-stone': { name: 'Pedra Mineral', desc: 'Petisco que Pedra, Terrestre e Aço adoram.', afinidade: ['rock', 'ground', 'steel'], price: 300 },
+  magnet: { name: 'Bateria Velha', desc: 'Petisco que Elétrico e Psíquico adoram.', afinidade: ['electric', 'psychic'], price: 300 },
+  'tiny-mushroom': { name: 'Cogumelo Sombrio', desc: 'Petisco que Fantasma, Sombrio e Venenoso adoram.', afinidade: ['ghost', 'dark', 'poison'], price: 300 }
 };
-export const FIND_ITEMS = ['potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy'];
+export const FIND_ITEMS = ['potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
 
 export const ZONES = [
   { id: 'rota1', name: 'Rota 1', min: 2, max: 5, pool: [16, 19, 10, 13, 21], desc: 'Grama baixa e trilhas de terra.' },
@@ -92,6 +100,8 @@ export const FLAVOR = {
   torre: ['Uma vela se apaga sozinha.', 'Você sente um arrepio na nuca.'],
   fenda: ['O ar tremula como se o espaço estivesse dobrando.']
 };
+// Iniciais das 9 regiões (planta, fogo, água) + Pikachu e Eevee: a única escolha inicial do Roguelike (3.3).
+export const INICIAIS = [1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393, 495, 498, 501, 650, 653, 656, 722, 725, 728, 810, 813, 816, 906, 909, 912, 25, 133];
 export const QUICK = [1, 4, 7, 25, 133, 39, 92, 147, 152, 155, 158, 246, 252, 255, 258, 280, 387, 390, 393, 448];
 
 /* ---- treinadores caçadores e dificuldade (Etapa 3) ---- */
@@ -103,14 +113,19 @@ export const BOLAS = {
 };
 export const CLASSES_TREINADOR = ['Caçador', 'Caçadora', 'Colecionador', 'Pesquisadora', 'Ranger', 'Jovem Treinador', 'Veterana'];
 export const NOMES_TREINADOR = ['Rui', 'Bia', 'Otávio', 'Lúcia', 'Caio', 'Marta', 'Téo', 'Iara', 'Nando', 'Sol', 'Davi', 'Nina'];
-// o que acontece se um treinador te capturar + o que dá pra escolher na criação.
+// Regras de cada modo — o código lê estas flags, nunca compara o nome do modo:
+//   semCaptura   = a bola do treinador nunca fecha
+//   fimDeJogo    = ser capturado encerra a jornada e apaga o save (senão: foge depois com perdas)
+//   centroGratis = Centro Pokémon não cobra
+//   descontoPorVitoria = fração do preço do Centro que cada vitória desde a última visita tira (S.vitoriasDesdeCentro)
 //   nivelLivre   = escolher o nível inicial (senão começa no 5)
 //   escolhaLivre = escolher natureza e habilidade (senão são sorteadas ao começar)
-// Save antigo (sem `dificuldade`) conta como easy — ver dificuldadeDe()
+// Save antigo sem o campo dificuldade = easy (dificuldadeDe).
 export const DIFICULDADES = {
-  easy: { nome: 'Fácil', nivelLivre: true, escolhaLivre: true, desc: 'Treinadores tentam, mas você sempre escapa da bola. Nível inicial, natureza e habilidade à sua escolha.' },
-  hard: { nome: 'Difícil', nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Começa no nível 5.' },
-  hardcore: { nome: 'Hardcore', nivelLivre: false, escolhaLivre: false, desc: 'Ser capturado é o fim da jornada: o save é apagado. Começa no nível 5, com natureza e habilidade sorteadas.' },
-  // não aparece no seletor da prévia: tem botão próprio na tela inicial (sorteia até a espécie). Captura = regra do Difícil
-  randomizer: { nome: 'Full Randomizer', nivelLivre: false, escolhaLivre: false, soBotao: true, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Se for capturado, mesma regra do Difícil.' }
+  easy: { nome: 'Fácil', semCaptura: true, centroGratis: true, nivelLivre: true, escolhaLivre: true, desc: 'Treinadores nunca te capturam e o Centro Pokémon é de graça. Nível inicial, natureza e habilidade à sua escolha.' },
+  medium: { nome: 'Médio', semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: true, escolhaLivre: true, desc: 'Igual ao Fácil, mas o Centro Pokémon cobra: cada vitória desde a última visita tira 10% do preço.' },
+  hard: { nome: 'Difícil', semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Centro pago. Começa no nível 5.' },
+  hardcore: { nome: 'Hardcore', semCaptura: false, fimDeJogo: true, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Ser capturado é o fim da jornada: o save é apagado. Centro pago. Começa no nível 5, com natureza e habilidade sorteadas.' },
+  // sorteia até a espécie (a tela inicial troca a busca por um botão só). Captura e Centro = regras do Difícil
+  randomizer: { nome: 'Full Randomizer', semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Captura e Centro seguem o Difícil.' }
 };

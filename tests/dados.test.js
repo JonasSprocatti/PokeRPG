@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -50,19 +50,42 @@ test('ITEMS: itens encontráveis existem e estágios apontam pra atributo real',
   }
 });
 
+test('INICIAIS: 3 por região × 9 regiões + Pikachu e Eevee, sem repetir', () => {
+  assert.equal(INICIAIS.length, 29);
+  assert.equal(new Set(INICIAIS).size, 29);
+  assert.ok(INICIAIS.includes(25) && INICIAIS.includes(133));
+  for (const id of INICIAIS) assert.ok(Number.isInteger(id) && id >= 1 && id <= 1025);
+});
+
+test('petiscos de afinidade: cobrem os 18 tipos exatamente uma vez, e todos têm preço', () => {
+  const petiscos = Object.values(ITEMS).filter(it => it.afinidade);
+  assert.equal(petiscos.length, 6);
+  const tipos = petiscos.flatMap(it => it.afinidade);
+  assert.deepEqual([...tipos].sort(), [...TIPOS].sort());
+  for (const it of petiscos) assert.ok(it.price > 0, `${it.name} sem preço`);
+});
+
 test('treinadores: toda bola sorteável existe em BOLAS; listas de nome não vazias', () => {
   for (const n of [1, 19, 20, 39, 40, 100]) assert.ok(BOLAS[bolaPorNivel(n)], `nível ${n} → bola desconhecida`);
   for (const b of Object.values(BOLAS)) assert.ok(b.mult >= 1);
   assert.ok(CLASSES_TREINADOR.length && NOMES_TREINADOR.length);
 });
 
-test('DIFICULDADES: as quatro existem e as restrições crescem com a dificuldade', () => {
-  assert.deepEqual(Object.keys(DIFICULDADES), ['easy', 'hard', 'hardcore', 'randomizer']);
+test('DIFICULDADES: os cinco modos e as restrições crescem com a dificuldade', () => {
+  assert.deepEqual(Object.keys(DIFICULDADES), ['easy', 'medium', 'hard', 'hardcore', 'randomizer']);
   assert.equal(DIFICULDADES.easy.nivelLivre && DIFICULDADES.easy.escolhaLivre, true);
+  // Médio = Fácil com Centro pago
+  const { centroGratis: gE, ...facil } = DIFICULDADES.easy, { centroGratis: gM, ...medio } = DIFICULDADES.medium;
+  assert.equal(gE, true); assert.equal(gM, false);
+  assert.equal(facil.semCaptura && medio.semCaptura, true);
+  assert.equal(facil.nivelLivre === medio.nivelLivre && facil.escolhaLivre === medio.escolhaLivre, true);
+  // só o Fácil tem Centro grátis; só o Hardcore acaba o jogo na captura
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].centroGratis), ['easy']);
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].fimDeJogo), ['hardcore']);
   assert.equal(DIFICULDADES.hard.nivelLivre, false);
   assert.equal(DIFICULDADES.hard.escolhaLivre, true);
   assert.equal(DIFICULDADES.hardcore.nivelLivre || DIFICULDADES.hardcore.escolhaLivre, false);
-  assert.equal(DIFICULDADES.randomizer.soBotao, true); // não aparece no seletor da prévia
+  assert.equal(DIFICULDADES.randomizer.nivelLivre || DIFICULDADES.randomizer.escolhaLivre, false);
 });
 
 test('ZONES: ids únicos, faixa de nível coerente, ambientação só de zona que existe', () => {

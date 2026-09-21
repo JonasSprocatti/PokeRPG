@@ -9,31 +9,47 @@ import { natureLabel, defaultMoves } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
 import { rand, pick, esc, fmt } from './util.js';
 
+// Passo 1 = dificuldade (sempre visível no topo), passo 2 = escolher o Pokémon — ou, no Randomizer, um botão só.
 export function showCreate() {
   G.mode = 'create'; $('#topr').innerHTML = '';
   $('#app').innerHTML = `<main class="create">
     <h1>Escolha quem você vai ser.</h1>
     <p class="lead">Qualquer Pokémon da PokéAPI. Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta.</p>
-    <div class="search">
-      <input id="q" list="dex" placeholder="Nome em inglês ou número (ex.: eevee, 448)" autocomplete="off" aria-label="Buscar Pokémon">
-      <button class="btn" data-act="search">Buscar</button>
-      <button class="btn ghost" data-act="random">Sortear</button>
-      <button class="btn ghost" data-act="randomizer" title="${esc(DIFICULDADES.randomizer.desc)}">🎲 Full Randomizer</button>
+    <h3 class="passo"><span>1</span> Dificuldade</h3>
+    <div id="difs" class="difs"></div>
+    <h3 class="passo"><span>2</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
+    <div id="escolha">
+      <div class="search">
+        <input id="q" list="dex" placeholder="Nome em inglês ou número (ex.: eevee, 448)" autocomplete="off" aria-label="Buscar Pokémon">
+        <button class="btn" data-act="search">Buscar</button>
+        <button class="btn ghost" data-act="random">Sortear</button>
+      </div>
+      <datalist id="dex"></datalist>
+      <div class="picks">${QUICK.map(id => `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">#${id}</button>`).join('')}</div>
     </div>
-    <datalist id="dex"></datalist>
-    <div class="picks">${QUICK.map(id => `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">#${id}</button>`).join('')}</div>
+    <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
     <div id="netwarn"></div>
     <div id="preview"></div></main>`;
+  renderDificuldade();
   loadList().then(list => { $('#dex').innerHTML = list.map(n => `<option value="${n}">`).join(''); })
     .catch(e => { $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`; });
+}
+// cartões de dificuldade + mostra/esconde o passo 2 conforme o modo (Randomizer não escolhe Pokémon)
+export function renderDificuldade() {
+  $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
+  const rnd = G.dif === 'randomizer';
+  $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
+  $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';
+  if (rnd) $('#preview').innerHTML = '';
+  else if (G.PV) renderPreview();
 }
 export async function previewSearch(q) {
   q = String(q).trim().toLowerCase().replace(/\s+/g, '-'); if (!q) return;
   const box = $('#preview'); box.innerHTML = '<p class="loading">Consultando a PokéAPI…</p>';
   try {
     const data = await resolvePokemon(q);
-    // dificuldade e nível sobrevivem a trocar de espécie na prévia; padrão = Difícil (a experiência pensada)
-    G.PV = { data, ability: (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name, nature: pick(Object.keys(NATURES)), level: G.PV?.level || 5, nick: '', dificuldade: G.PV?.dificuldade || 'hard' };
+    // nível sobrevive a trocar de espécie na prévia; a dificuldade mora em G.dif (passo 1)
+    G.PV = { data, ability: (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name, nature: pick(Object.keys(NATURES)), level: G.PV?.level || 5, nick: '' };
     renderPreview();
     data.abilities.forEach(a => loadAbility(a).then(() => { if (G.PV?.data === data) renderPreview(); }).catch(() => {}));
     box.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
@@ -42,11 +58,11 @@ export async function previewSearch(q) {
   }
 }
 // nível que vale de fato: a escolha do jogador só conta se a dificuldade deixar (senão 5)
-const nivelInicial = PV => DIFICULDADES[PV.dificuldade].nivelLivre ? PV.level : 5;
+const nivelInicial = PV => DIFICULDADES[G.dif].nivelLivre ? PV.level : 5;
 export function renderPreview() {
   const PV = G.PV, d = PV.data, total = STATS.reduce((a, s) => a + d.base[s], 0);
   const nickVal = $('#pv-nick')?.value ?? PV.nick; PV.nick = nickVal;
-  const dif = DIFICULDADES[PV.dificuldade], livre = dif.escolhaLivre, nivel = nivelInicial(PV);
+  const dif = DIFICULDADES[G.dif], livre = dif.escolhaLivre, nivel = nivelInicial(PV);
   const sorteada = '<small class="muted"> · sorteada ao começar</small>';
   $('#preview').innerHTML = `<section class="pv">
     <div class="pv-art"><img src="${d.art || d.sprite}" alt="${esc(fmt(d.name))}"></div>
@@ -56,8 +72,7 @@ export function renderPreview() {
       <div class="types">${d.types.map(badge).join('')}</div>
       <div class="basestats">${STATS.map(s => `<div class="bs"><span>${STAT_PT[s]}</span><b>${d.base[s]}</b><i style="width:${Math.min(100, d.base[s] / 255 * 100)}%"></i></div>`).join('')}
         <div class="bs total"><span>Total</span><b>${total}</b><i></i></div></div>
-      <h3>Dificuldade</h3>
-      <div class="abils">${Object.entries(DIFICULDADES).filter(([, x]) => !x.soBotao).map(([k, x]) => `<button class="abil ${PV.dificuldade === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${PV.dificuldade === k}"><b>${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('')}</div>
+      <p class="small muted" style="margin-top:14px">Modo <b>${dif.nome}</b> (troque no passo 1, lá em cima).</p>
       <h3>Habilidade${livre ? '' : sorteada}</h3>
       <div class="abils">${d.abilities.map(a => `<button class="abil ${livre && PV.ability === a.name ? 'on' : ''}" data-act="ability" data-v="${a.name}" aria-pressed="${livre && PV.ability === a.name}" ${livre ? '' : 'disabled'}><b>${esc(fmt(a.name))}</b>${a.hidden ? '<em>oculta</em>' : ''}${IMPL.has(a.name) ? '<span class="impl">✓ ativa no protótipo</span>' : ''}<small>${esc(syncGet('ab:' + a.name)?.effect || 'Carregando…')}</small></button>`).join('')}</div>
       <div class="row3">
@@ -89,10 +104,10 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
 }
 export async function startGame(btn) {
   btn.disabled = true; btn.textContent = 'Preparando sua jornada…';
-  const PV = G.PV, livre = DIFICULDADES[PV.dificuldade].escolhaLivre;
+  const PV = G.PV, livre = DIFICULDADES[G.dif].escolhaLivre;
   try {
     PV.nick = ($('#pv-nick')?.value || '').trim();
-    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: PV.dificuldade });
+    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif });
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Tentar de novo';
     $('#preview').insertAdjacentHTML('beforeend', `<p class="err">${apiErr(e)}</p>`);
@@ -105,7 +120,7 @@ export async function fullRandomizer(btn) {
     const data = await resolvePokemon(rand(1, 1025));
     await iniciarJornada({ data, level: 5, dificuldade: 'randomizer' });
   } catch (e) {
-    btn.disabled = false; btn.textContent = '🎲 Full Randomizer';
+    btn.disabled = false; btn.textContent = '🎲 Sortear tudo e começar';
     $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`;
   }
 }

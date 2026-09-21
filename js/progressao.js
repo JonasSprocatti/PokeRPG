@@ -1,6 +1,6 @@
 /* ============ progressão ============ */
 // XP → nível, golpes aprendidos por nível e evolução (por nível; outros gatilhos ainda não).
-import { G, nm } from './estado.js';
+import { G, nm, registrar } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { API, STATS, STAT_PT, TYPE_PT, CLS_PT } from './dados.js';
@@ -33,6 +33,26 @@ async function learnMove(ref) {
   if (c >= 0) { const old = P.moves[c]; P.moves[c] = { ...mv, ppLeft: mv.pp }; render(); await say(`${nm(P)} esqueceu ${esc(fmt(old.name))} e aprendeu ${esc(fmt(mv.name))}!`, 'good'); }
   else await say(`${nm(P)} não aprendeu ${esc(fmt(mv.name))}.`);
 }
+// XP de aliado: sobe de nível pela curva da espécie dele (A.growth) e aprende golpes sem perguntar
+// (com 4 golpes, esquece o de menor poder). Aliado ainda não evolui — fica pra depois.
+export async function gainExpAliado(A, xp) {
+  if (!A.growth) return;
+  A.exp += xp;
+  while (A.level < 100 && A.exp >= A.growth[A.level + 1]) {
+    A.level++; recalc(A); render();
+    await say(`${nm(A)} subiu para o nível ${A.level}!`, 'level');
+    for (const ref of A.data.learnset.list.filter(m => m.level === A.level)) {
+      if (A.moves.some(m => m.name === ref.name)) continue;
+      const mv = await loadMove(ref.url);
+      if (A.moves.length < 4) { A.moves.push({ ...mv, ppLeft: mv.pp }); await say(`${nm(A)} aprendeu ${esc(fmt(mv.name))}!`, 'good'); continue; }
+      const i = A.moves.reduce((mi, m, j, arr) => (m.power || 0) < (arr[mi].power || 0) ? j : mi, 0);
+      if ((mv.power || 0) <= (A.moves[i].power || 0)) continue; // não troca por golpe pior
+      const velho = A.moves[i]; A.moves[i] = { ...mv, ppLeft: mv.pp };
+      await say(`${nm(A)} esqueceu ${esc(fmt(velho.name))} e aprendeu ${esc(fmt(mv.name))}!`, 'good');
+    }
+  }
+  render();
+}
 export function findNode(n, name) { if (n.name === name) return n; for (const c of n.to) { const f = findNode(c, name); if (f) return f; } return null; }
 async function checkEvolution() {
   const S = G.S, P = S.player; if (!S.meta.evo) return;
@@ -52,6 +72,7 @@ async function evolve(speciesName) {
   P.id = data.id; P.name = data.name; P.data = data;
   P.ability = (data.abilities[idx] || data.abilities[0]).name;
   recalc(P); render();
+  registrar(G.S, 'evolucoes', data.speciesName);
   await say(`Parabéns! ${esc(oldName)} evoluiu para <b>${esc(fmt(data.name))}</b>!`, 'level');
   for (const mv of data.learnset.list.filter(m => m.level === 0 || m.level === P.level)) await learnMove(mv);
 }

@@ -106,6 +106,42 @@ export const precisaCurar = m => m.hp < m.stats.hp || !!m.status || m.moves.some
 // Pokémon de treinador dá 1,5× XP (como nos jogos)
 export const xpPorVitoria = (E, deTreinador = false) => Math.max(1, Math.floor(E.data.baseExp * E.level / 7 * (deTreinador ? 1.5 : 1)));
 
+/* ---- batalha com vários Pokémon do mesmo lado (aliados agora, multiplayer depois) ---- */
+
+// Ordena as ações do turno: prioridade maior primeiro, depois velocidade maior; empate = moeda.
+// Cada ação: { prio, vel, ... } (o resto passa intacto). Não muta a lista recebida.
+export function ordenarAcoes(acoes, sorte = Math.random) {
+  return acoes.map(a => ({ a, k: sorte() })).sort((x, y) => (y.a.prio - x.a.prio) || (y.a.vel - x.a.vel) || (x.k - y.k)).map(x => x.a);
+}
+
+// IA simples de aliado: o golpe com mais dano esperado (poder × eficácia × STAB) entre os que têm PP.
+// Golpe de status vale pouco (poder 0) — só sai se não houver nada melhor. Sem PP nenhum → null (Struggle).
+export function melhorGolpe(moves, tiposAtacante, tiposAlvo) {
+  let melhor = null, nota = -1;
+  for (const m of moves) {
+    if (m.ppLeft <= 0) continue;
+    const n = (m.cls === 'status' ? 0.1 : (m.power || 60)) * typeEff(m.type, tiposAlvo) * (tiposAtacante.includes(m.type) ? 1.5 : 1);
+    if (n > nota) { nota = n; melhor = m; }
+  }
+  return melhor;
+}
+
+/* ---- amizade (Etapa 3.2) ---- */
+export const MAX_ALIADOS = 2;
+export const AMIZADE_MAX = 100;
+// Item que o tipo gosta: +20–35 por oferta (3–5 ofertas pra encher). Item errado: 0–5 (quase nada).
+export function ganhoAmizade(tiposDoItem, tiposDoAlvo, sorte = Math.random()) {
+  const gosta = tiposDoAlvo.some(t => tiposDoItem.includes(t));
+  return gosta ? 20 + Math.floor(sorte * 16) : Math.floor(sorte * 6);
+}
+// só confia em quem não é muito mais fraco que ele — impede levar um Nv. 55 da Caverna Cerúlea sendo Nv. 5
+export const podeFazerAmizade = (nivelAlvo, nivelJogador) => nivelAlvo <= nivelJogador + 5;
+
+// Centro com equipe: cada Pokémon que precisa de cura paga o preço do próprio nível
+export const custoCentroEquipe = mons => mons.filter(precisaCurar).reduce((a, m) => a + custoCentro(m.level), 0);
+// Desconto por vitória (modo Médio): cada vitória desde a última ida ao Centro tira `pct` do preço (10 × 10% = grátis)
+export const custoComDesconto = (custo, vitorias, pct) => Math.round(custo * Math.max(0, 1 - vitorias * pct));
+
 // shiny: 1 em 4096 (Gen 6+), sorteado pra todo Pokémon criado — você, selvagem ou de treinador, em qualquer modo
 export const CHANCE_SHINY = 1 / 4096;
 export const ehShiny = (sorte = Math.random()) => sorte < CHANCE_SHINY;

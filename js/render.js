@@ -1,9 +1,9 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
-import { G, zone, rotulo, dificuldadeDe } from './estado.js';
+import { G, zone, rotulo, dificuldadeDe, centroPokemon } from './estado.js';
 import { $ } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES } from './dados.js';
-import { natureLabel, custoCentro, precisaCurar } from './regras.js';
+import { natureLabel, MAX_ALIADOS } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { clamp, esc, fmt } from './util.js';
 
@@ -25,9 +25,11 @@ function chipsFor(m) {
   for (const [s, v] of Object.entries(m.vol?.stages || {})) if (v) h += `<span class="stg ${v > 0 ? 'up' : 'down'}">${STAGE_SHORT[s]} ${v > 0 ? '+' : ''}${v}</span>`;
   return `<div class="chips">${h}</div>`;
 }
+// barra de amizade (só aparece no selvagem depois do primeiro petisco)
+const amizadeBar = m => m.amizade ? `<div class="hp amz" title="Amizade"><span>♥</span><div class="bar"><div class="fill" style="width:${clamp(m.amizade, 0, 100)}%"></div></div><span>${m.amizade}/100</span></div>` : '';
 function plate(m) {
-  const label = m === G.S.player ? (m.nick || fmt(m.name)) : fmt(m.name);
-  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>${hpbar(m)}${chipsFor(m)}`;
+  const label = m === G.S.player || G.S.aliados?.includes(m) ? (m.nick || fmt(m.name)) : fmt(m.name);
+  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>${hpbar(m)}${amizadeBar(m)}${chipsFor(m)}`;
 }
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
 function turnoBar(B, P, E) {
@@ -36,6 +38,7 @@ function turnoBar(B, P, E) {
     : B.vez === 'p' ? `${esc(rotulo(P))} está agindo`
     : B.vez === 'e' ? `${esc(rotulo(E))} está agindo`
     : B.vez === 't' ? `${esc(T.nome)} está mirando uma bola`
+    : B.vez?.[0] === 'a' ? `${esc(rotulo(G.S.aliados[+B.vez.slice(1)]))} está agindo`
     : B.vez === 'fim' ? 'Fim do turno' : '…';
   // treinador: equipe (● em pé / ○ derrotado) e bolas que ainda restam
   const info = T ? `<span class="treinador" title="Pokémon e bolas do treinador">🎯 ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span> <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}</span>` : '';
@@ -47,7 +50,7 @@ function renderSheet() {
   const abInfo = P.data.abilities.find(a => a.name === P.ability);
   const abDesc = syncGet('ab:' + P.ability)?.effect;
   if (!abDesc && abInfo) loadAbility(abInfo).then(renderSheet).catch(() => {});
-  const bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]);
+  const bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]), AL = S.aliados || [];
   $('#sheet').innerHTML = `
     <div class="me">
       ${imgMon(P, '', spriteFrente(P))}
@@ -72,8 +75,12 @@ function renderSheet() {
     <div class="sec mlist"><h3>Golpes</h3>
       ${P.moves.map(m => `<details><summary><b>${esc(fmt(m.name))}</b><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`).join('')}
     </div>
+    <div class="sec"><h3>Aliados (${AL.length}/${MAX_ALIADOS})</h3>
+      ${AL.length ? `<ul class="aliados">${AL.map((A, i) => `<li>${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}</span><div class="types">${A.data.types.map(badge).join('')}</div>${hpbar(A)}</div>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}</li>`).join('')}</ul>`
+        : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>'}
+    </div>
     <div class="sec"><h3>Mochila</h3>
-      ${bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>Usar</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>'}
+      ${bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle && !ITEMS[k].afinidade ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>Usar</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>'}
     </div>`;
 }
 function renderScene() {
@@ -81,12 +88,19 @@ function renderScene() {
   if (G.mode === 'battle' && G.B) {
     const E = G.B.enemy, P = G.S.player;
     sc.className = 'scene battle';
-    const B = G.B;
+    const B = G.B, AL = G.S.aliados || [];
     sc.innerHTML = `${turnoBar(B, P, E)}
       <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E)}</div>
         <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
-      <div class="side me"><div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
-        <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P)}</div></div>`;
+      <div class="side me">
+        <div class="mons-lado">
+          <div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
+          ${AL.map((A, i) => `<div class="mon mini ${A.hp <= 0 ? 'fainted' : ''}" id="mon-a${i}"><div class="pad"></div>${imgMon(A, `spr ${sprCostas(A) ? '' : 'flip'}`, sprCostas(A) || spriteFrente(A))}</div>`).join('')}
+        </div>
+        <div class="plates">
+          <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P)}</div>
+          ${AL.map((A, i) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A)}</div>`).join('')}
+        </div></div>`;
   } else {
     const z = zone();
     sc.className = 'scene';
@@ -101,8 +115,16 @@ function renderActions() {
   if (G.mode === 'battle' && G.B) {
     const P = S.player;
     if (G.panel === 'bag') {
-      const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy);
+      const E = G.B.enemy, T = G.B.trainer;
+      const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy && !ITEMS[k].afinidade);
+      const petiscos = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]?.afinidade);
+      // petisco: destaca os que o tipo do alvo gosta
+      const gosta = k => E.data.types.some(t => ITEMS[k].afinidade.includes(t));
+      const secPetisco = T ? '<p class="small muted">Pokémon de treinador tem dono: petiscos não funcionam aqui.</p>'
+        : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
+        : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';
       a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
+        <h4 class="bag-sec">Fazer amizade com ${esc(fmt(E.name))} <span class="muted">(${E.data.types.map(t => TYPE_PT[t]).join('/')})</span></h4>${secPetisco}
         <div class="subrow"><button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button></div>`;
       return;
     }
@@ -115,9 +137,12 @@ function renderActions() {
     a.innerHTML = `<div class="bag-grid">${forSale.map(([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${it.name}</span><small>₽${it.price}</small></button>`).join('')}</div>
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
-    const custo = custoCentro(S.player.level), saudavel = !precisaCurar(S.player), semGrana = S.money < custo;
+    // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
+    const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = S.money < custo;
+    // Médio: preço cheio riscado + quantas vitórias deram desconto
+    const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s> <small>(${vitorias} vitória${vitorias > 1 ? 's' : ''})</small>` : '';
     a.innerHTML = `<button class="btn big" data-act="explore" ${dis}>Explorar ${zone().name}</button>
-      <button class="btn ghost" data-act="heal" ${dis || saudavel || semGrana ? 'disabled' : ''} title="${saudavel ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status'}">Centro Pokémon · ₽${custo}${saudavel ? ' (já está saudável)' : semGrana ? ' (sem dinheiro)' : ''}</button>
+      <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">Centro Pokémon${!precisa ? ' (todos saudáveis)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}${semGrana ? ' (sem dinheiro)' : ''}`}</button>
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>`;
   }
 }

@@ -6,7 +6,8 @@ import {
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
   jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, chancePorBalanco, balancosDaCaptura,
-  CHANCE_SHINY, ehShiny
+  CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
+  MAX_ALIADOS, AMIZADE_MAX, custoComDesconto
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -238,6 +239,53 @@ test('chancePorBalanco / balancosDaCaptura', () => {
   assert.equal(balancosDaCaptura(44, () => 0.99), 0);
   const seq = [0, 0, 0.99]; let i = 0;
   assert.equal(balancosDaCaptura(44, () => seq[i++]), 2); // para no primeiro balanço que falha
+});
+
+test('ordenarAcoes: prioridade > velocidade > sorteio, sem mutar a lista', () => {
+  const acoes = [{ id: 'lento', prio: 0, vel: 10 }, { id: 'rapido', prio: 0, vel: 90 }, { id: 'bola', prio: 99, vel: 0 }, { id: 'quick', prio: 1, vel: 5 }];
+  assert.deepEqual(ordenarAcoes(acoes).map(a => a.id), ['bola', 'quick', 'rapido', 'lento']);
+  assert.equal(acoes[0].id, 'lento');
+  const seq = [0.9, 0.1]; let i = 0; // empate: menor sorteio vai primeiro
+  assert.deepEqual(ordenarAcoes([{ id: 'a', prio: 0, vel: 50 }, { id: 'b', prio: 0, vel: 50 }], () => seq[i++]).map(a => a.id), ['b', 'a']);
+});
+
+test('melhorGolpe: dano esperado (poder × eficácia × STAB), ignora sem PP', () => {
+  const g = (name, type, power, o = {}) => ({ name, type, power, cls: 'physical', ppLeft: 5, ...o });
+  const moves = [g('tackle', 'normal', 40), g('ember', 'fire', 40), g('water-gun', 'water', 40)];
+  assert.equal(melhorGolpe(moves, ['fire'], ['grass']).name, 'ember');      // super efetivo + STAB
+  assert.equal(melhorGolpe(moves, ['normal'], ['rock']).name, 'water-gun'); // Normal é pouco efetivo em Pedra
+  assert.equal(melhorGolpe([g('growl', 'normal', null, { cls: 'status' }), g('tackle', 'normal', 40)], [], ['normal']).name, 'tackle');
+  assert.equal(melhorGolpe([g('ember', 'fire', 40, { ppLeft: 0 })], ['fire'], ['grass']), null);
+});
+
+test('amizade: petisco certo enche rápido, errado quase nada; limite de nível', () => {
+  assert.equal(ganhoAmizade(['fire', 'dragon'], ['fire'], 0), 20);
+  assert.equal(ganhoAmizade(['fire', 'dragon'], ['water', 'dragon'], 0.999), 35); // basta um dos tipos
+  assert.equal(ganhoAmizade(['fire'], ['water'], 0.999), 5);
+  assert.equal(ganhoAmizade(['fire'], ['water'], 0), 0);
+  assert.equal(Math.ceil(AMIZADE_MAX / 35), 3); // no melhor caso, 3 petiscos; no pior, 5
+  assert.equal(Math.ceil(AMIZADE_MAX / 20), 5);
+  assert.equal(podeFazerAmizade(15, 10), true);
+  assert.equal(podeFazerAmizade(16, 10), false);
+  assert.equal(MAX_ALIADOS, 2);
+});
+
+test('custoCentroEquipe: só paga quem precisa de cura', () => {
+  const golpes = () => [{ pp: 10, ppLeft: 10 }];
+  const sao = mon({ moves: golpes(), level: 10 }), ferido = mon({ moves: golpes(), level: 20, hp: 1 });
+  assert.equal(custoCentroEquipe([sao]), 0);
+  assert.equal(custoCentroEquipe([sao, ferido]), custoCentro(20));
+  assert.equal(custoCentroEquipe([ferido, { ...ferido }]), 2 * custoCentro(20));
+});
+
+test('custoComDesconto: 10% por vitória, grátis a partir de 10, nunca negativo', () => {
+  assert.equal(custoComDesconto(500, 0, 0.1), 500);
+  assert.equal(custoComDesconto(500, 3, 0.1), 350);
+  assert.equal(custoComDesconto(500, 10, 0.1), 0);
+  assert.equal(custoComDesconto(500, 15, 0.1), 0);
+  assert.equal(custoComDesconto(150, 1, 0.1), 135);
+  assert.equal(custoComDesconto(133, 1, 0.1), 120); // arredonda (119,7 → 120)
+  assert.equal(custoComDesconto(125, 2, 0.1), 100);
 });
 
 test('ehShiny: 1 em 4096', () => {

@@ -31,4 +31,7 @@ export async function inflict(t, ail, announce = false) {
   t.status = ail; if (ail === 'sleep') t.sleep = rand(2, 4);
   render(); await say(`${nm(t)} ${AIL_MSG[ail]}!`, 'status');
 }
-export function healFull() { const P = G.S.player; P.hp = P.stats.hp; P.status = null; P.sleep = 0; P.moves.forEach(m => m.ppLeft = m.pp); }
+// cura você e os aliados (Centro Pokémon, derrota, fuga depois de capturado)
+export function healFull() {
+  for (const P of [G.S.player, ...(G.S.aliados || [])]) { P.hp = P.stats.hp; P.status = null; P.sleep = 0; P.moves.forEach(m => m.ppLeft = m.pp); }
+}

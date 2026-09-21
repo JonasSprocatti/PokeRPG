@@ -22,6 +22,7 @@ export function ask(html, options, extra = '') {
   });
 }
 export function shake(m) {
-  const el = document.getElementById(m === G.S.player ? 'mon-p' : 'mon-e'); if (!el) return;
+  const ia = (G.S.aliados || []).indexOf(m);
+  const el = document.getElementById(m === G.S.player ? 'mon-p' : ia >= 0 ? 'mon-a' + ia : 'mon-e'); if (!el) return;
   el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
 }

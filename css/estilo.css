@@ -37,6 +37,10 @@ img{max-width:100%}
 .create{max-width:1100px;margin:0 auto;padding:32px 20px 60px}
 .create h1{font:700 clamp(34px,5.5vw,60px)/1.02 var(--display);margin:0 0 12px;color:var(--yellow);max-width:14ch}
 .create .lead{max-width:62ch;color:var(--muted);margin:0}
+.passo{display:flex;align-items:center;gap:10px;font:700 20px var(--display);color:var(--text);margin:30px 0 12px}
+.passo > span:first-child{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--yellow);color:#1b1b2f;font-size:16px}
+.difs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+#rnd{margin-top:4px}
 .search{display:flex;gap:10px;margin:26px 0 16px;flex-wrap:wrap}
 .search input{flex:1;min-width:220px;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:12px 14px;font-size:17px}
 .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}
@@ -143,6 +147,22 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .treinador img{width:24px;height:24px;image-rendering:pixelated;margin-left:4px}
 .shiny{margin-right:4px}
 .fim .pv{align-items:center}
+/* lado do jogador com aliados: sprites menores ao lado do seu, placas empilhadas */
+.mons-lado{display:flex;align-items:flex-end}
+.mon.mini{width:84px;height:84px;margin-left:-10px}
+.mon.mini .spr{width:76px;height:76px}
+.mon.mini .pad{height:18px}
+.plates{display:grid;gap:6px;width:min(270px,100%)}
+.plates .plate{width:auto}
+.plate.mini{padding:5px 10px}
+.plate.mini .pl-top{font-size:14px}
+@media(max-width:520px){.side.me{flex-wrap:wrap}.mon.mini{width:60px;height:60px}.mon.mini .spr{width:56px;height:56px}}
+.hp.amz .fill{background:#e86fa0}
+.bag-sec{font:600 15px var(--display);margin:14px 0 8px;width:100%}
+.item-btn.gosta{border-color:#e86fa0}
+ul.aliados{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+ul.aliados li{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center}
+ul.aliados img{width:56px;height:56px;image-rendering:pixelated;background:var(--panel2);border-radius:10px}
 .plate.agindo{outline:3px solid var(--yellow);outline-offset:2px;animation:agindo 1s ease-in-out infinite}
 @keyframes agindo{50%{outline-color:transparent}}
 @media(max-width:520px){.mon{width:110px;height:100px}.spr{width:96px;height:96px}.spr.back{width:110px;height:110px}.pl-top{font-size:14px}}

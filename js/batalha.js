@@ -3,18 +3,19 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save, dificuldadeDe, SAVE_KEY } from './estado.js';
+import { G, nm, save, dificuldadeDe, SAVE_KEY, ladoJogador, vivos, registrar, zerarDescontoCentro } from './estado.js';
 import { log, say, shake } from './ui.js';
 import { render, spriteFrente } from './render.js';
 import { changeStats, inflict, healFull } from './efeitos.js';
-import { gainExp } from './progressao.js';
+import { gainExp, gainExpAliado } from './progressao.js';
 import { useItem } from './itens.js';
+import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { telaFim } from './criacao.js';
-import { STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR } from './dados.js';
+import { STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
 import {
   freshVol, effStat, calcDamage, confDamage, heal, typeEff,
-  chanceAcerto, danoResidual, consegueFugir, jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs,
+  chanceAcerto, danoResidual, consegueFugir, ordenarAcoes, melhorGolpe, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura
 } from './regras.js';
 import { loadPokemon, loadSpecies } from './api.js';
@@ -117,13 +118,15 @@ function sortearOponente(z) {
   return { id: rand(1, 1025), level: clamp(G.S.player.level + rand(-2, 2), 2, 100) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
-function iniciar(B) { G.S.player.vol = freshVol(); G.B = B; G.mode = 'battle'; G.panel = 'moves'; render(); }
-// Intimidação ao entrar em campo. Na troca de Pokémon do treinador só o que acabou de entrar dispara
+function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), ...B }; G.mode = 'battle'; G.panel = 'moves'; render(); }
+// Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
+// Na troca de Pokémon do treinador só o que acabou de entrar dispara.
 async function intimidar(E, soInimigo = false) {
-  const P = G.S.player;
-  for (const [a, b] of soInimigo ? [[E, P]] : [[P, E], [E, P]]) if (a.ability === 'intimidate') {
+  const lado = vivos(ladoJogador());
+  const pares = [...(soInimigo ? [] : lado.map(a => [a, [E]])), [E, lado]];
+  for (const [a, alvos] of pares) if (a.ability === 'intimidate') {
     await say(`A Intimidação de ${nm(a)} assusta o oponente!`);
-    await changeStats(b, [{ stat: 'attack', change: -1 }]);
+    for (const b of alvos) await changeStats(b, [{ stat: 'attack', change: -1 }]);
   }
 }
 export async function startBattle(z) {
@@ -158,29 +161,33 @@ function acaoDoInimigo(E, P) {
   if (T && treinadorLancaBola(P.hp, P.stats.hp, T.bolas)) return { bola: true };
   return { move: chooseEnemyMove(E) };
 }
-async function agirInimigo(ea, E, P, movedFirst) {
-  if (ea.bola) { await vez('t'); return lancarBola(P); }
-  await vez('e'); await useMove(E, P, ea.move, movedFirst);
-}
 async function lancarBola(P) {
   const B = G.B, T = B.trainer, bola = BOLAS[T.bola];
   T.bolas--;
   await say(`${esc(T.nome)} lançou uma <b>${bola.nome}</b> em você!`, 'status');
   const real = balancosDaCaptura(valorCaptura(P.hp, P.stats.hp, B.taxaCaptura, bola.mult, P.status));
-  const facil = dificuldadeDe(G.S) === 'easy';
-  const balancos = facil ? Math.min(real, 3) : real; // Fácil: nunca fecha
+  const regra = DIFICULDADES[dificuldadeDe(G.S)];
+  const balancos = regra.semCaptura ? Math.min(real, 3) : real; // Fácil/Médio: nunca fecha
   for (let i = 0; i < Math.min(balancos, 3); i++) await say('A bola balança...', 'muted');
   if (balancos >= 4) { B.capturado = true; await say('Clique! A bola se fechou. Você foi capturado...', 'hit'); return; }
-  if (facil && real >= 4) await say('Por pouco! Você arrebenta a bola no último segundo. (modo Fácil: você sempre escapa)', 'good');
+  if (regra.semCaptura && real >= 4) await say(`Por pouco! Você arrebenta a bola no último segundo. (modo ${regra.nome}: você sempre escapa)`, 'good');
   else await say('Você se debate e escapa da bola!', 'good');
+}
+// id do destaque de quem age: 'p' você, 'a0'/'a1' aliados
+const idVez = m => m === G.S.player ? 'p' : 'a' + G.S.aliados.indexOf(m);
+// aliado que acabou de cair: anuncia uma vez só (B.caidos guarda quem já foi anunciado nesta batalha)
+async function anunciarQuedas() {
+  for (const A of G.S.aliados || []) if (A.hp <= 0 && !G.B.caidos.has(A)) { G.B.caidos.add(A); await say(`${nm(A)} desmaiou!`, 'hit'); }
 }
 export async function turn(action) {
   if (G.busy || !G.B) return;
   G.busy = true;
-  const B = G.B, P = G.S.player, E = B.enemy;
+  const B = G.B, S = G.S, P = S.player, E = B.enemy;
   // item sem efeito cancela o turno sem avançar B.turn — não repetir o divisor na próxima tentativa
   if (B.turnoNoLog !== B.turn) { log(`Turno ${B.turn}`, 'turno'); B.turnoNoLog = B.turn; }
   try {
+    // 1) sua ação que não é golpe resolve antes de tudo (fuga, item, petisco) — como item nos jogos
+    let pm = null;
     if (action.type === 'run') {
       B.runs++;
       await vez('p');
@@ -188,27 +195,47 @@ export async function turn(action) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
       await say('Não conseguiu fugir!');
-      await agirInimigo(acaoDoInimigo(E, P), E, P, true);
     } else if (action.type === 'item') {
       await vez('p');
       if (!(await useItem(action.id, true))) return;
       G.panel = 'moves';
-      await agirInimigo(acaoDoInimigo(E, P), E, P, true);
-    } else {
-      const pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
-      const ea = acaoDoInimigo(E, P);
-      // bola é item: sai antes de qualquer golpe, como item de treinador nos jogos
-      const pFirst = !ea.bola && jogadorAgePrimeiro(pm, ea.move, effStat(P, 'speed'), effStat(E, 'speed'));
-      const ordem = pFirst ? ['p', 'e'] : ['e', 'p'];
-      for (let i = 0; i < 2; i++) {
-        if (P.hp <= 0 || E.hp <= 0 || B.capturado) continue;
-        if (ordem[i] === 'p') { await vez('p'); await useMove(P, E, pm, i === 0); }
-        else await agirInimigo(ea, E, P, i === 0);
+    } else if (action.type === 'oferecer') {
+      await vez('p');
+      const r = await oferecer(action.id, E);
+      if (r === 'cancelado') return;
+      if (r === 'fim') { endBattle(); return; }
+      G.panel = 'moves';
+    } else pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
+
+    // 2) golpes do turno: você (se escolheu golpe), cada aliado em pé e o lado inimigo, por prioridade e velocidade.
+    //    Bola do treinador é item: prioridade máxima, sai antes de qualquer golpe.
+    const acoes = [];
+    if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: effStat(P, 'speed') });
+    for (const A of vivos(S.aliados || [])) {
+      const g = melhorGolpe(A.moves, A.data.types, E.data.types) || STRUGGLE;
+      acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: effStat(A, 'speed') });
+    }
+    const ea = acaoDoInimigo(E, P);
+    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: effStat(E, 'speed') });
+    const ordem = ordenarAcoes(acoes);
+    const posicao = m => ordem.findIndex(a => a.quem === m); // -1 = não age neste turno
+    for (let i = 0; i < ordem.length; i++) {
+      const a = ordem[i];
+      if (P.hp <= 0 || E.hp <= 0 || B.capturado) break;
+      if (a.quem.hp <= 0) continue;
+      if (a.bola) { await vez('t'); await lancarBola(P); continue; }
+      if (a.quem === E) {
+        const alvo = pick(vivos(ladoJogador()));
+        // recuo (flinch) só vale em quem ainda não agiu neste turno
+        await vez('e'); await useMove(E, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo));
+      } else {
+        await vez(idVez(a.quem)); await useMove(a.quem, E, a.golpe, i < posicao(E));
       }
+      await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
     }
     if (B.capturado) { await serCapturado(); return; }
-    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [P, E]) await residual(m); }
-    P.vol.flinch = E.vol.flinch = false;
+    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(ladoJogador()), E]) await residual(m); await anunciarQuedas(); }
+    for (const m of [...ladoJogador(), E]) m.vol.flinch = false;
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (E.hp <= 0) await win();
@@ -226,8 +253,16 @@ async function win() {
   for (const [s, add] of ganhoDeEVs(P.evs, E.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
   const money = T ? 0 : E.level * rand(8, 14); // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
+  S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
+  registrar(S, 'derrotados', E.data.speciesName);
   await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
   await gainExp(xp);
+  // aliados em pé ganham o mesmo XP e EVs (como o Exp. Share dos jogos novos)
+  for (const A of vivos(S.aliados || [])) {
+    for (const [s, add] of ganhoDeEVs(A.evs, E.data.effort)) A.evs[s] += add;
+    await say(`${nm(A)} ganhou ${xp} de XP.`, 'muted');
+    await gainExpAliado(A, xp);
+  }
   if (T && T.atual < T.equipe.length - 1) {
     T.atual++; B.enemy = T.equipe[T.atual]; render();
     await say(`${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
@@ -246,12 +281,12 @@ async function lose() {
   await say(`${nm(S.player)} desmaiou...`, 'hit');
   const lost = Math.floor(S.money / 2); S.money -= lost;
   await say(`Você perdeu ₽${lost} e acordou no Centro Pokémon.`);
-  healFull(); endBattle();
+  healFull(); zerarDescontoCentro(); endBattle();
 }
-// capturado por treinador: Difícil = foge depois com perdas; Hardcore = fim de jogo (Fácil nunca chega aqui)
+// capturado por treinador: `fimDeJogo` (Hardcore) = acabou; senão foge depois com perdas. `semCaptura` (Fácil/Médio) nunca chega aqui
 async function serCapturado() {
   const S = G.S, T = G.B.trainer, P = S.player;
-  if (dificuldadeDe(S) === 'hardcore') {
+  if (DIFICULDADES[dificuldadeDe(S)].fimDeJogo) {
     await say(`${esc(T.nome)} guarda a bola no cinto. Sua jornada selvagem termina aqui.`, 'hit');
     const resumo = { nome: P.nick || fmt(P.name), especie: fmt(P.name), nivel: P.level, sprite: spriteFrente(P), vitorias: S.wins || 0, treinadores: S.treinadoresVencidos || 0, cacador: T.nome };
     store.del(SAVE_KEY);
@@ -268,4 +303,4 @@ async function serCapturado() {
   await say(`${esc(T.nome)} levou você embora... Dias depois, você força a bola a abrir e foge.`, 'status');
   await say(`Você perdeu ₽${perdeu}${itens ? ` e os ${itens} itens da mochila` : ''}, e acordou em ${z.name}.`, 'hit');
 }
-export function endBattle() { G.B = null; G.mode = 'explore'; G.panel = 'main'; G.S.player.vol = freshVol(); G.S.player.vol.flashFire = false; }
+export function endBattle() { G.B = null; G.mode = 'explore'; G.panel = 'main'; for (const m of ladoJogador()) m.vol = freshVol(); }

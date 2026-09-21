@@ -1,16 +1,17 @@
 /* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
-import { G, SAVE_KEY, save } from './estado.js';
+import { G, SAVE_KEY, save, ladoJogador, centroPokemon, zerarDescontoCentro } from './estado.js';
 import { $, log, logRaw, ask } from './ui.js';
 import { render, buildGame } from './render.js';
-import { showCreate, previewSearch, renderPreview, startGame, fullRandomizer } from './criacao.js';
+import { showCreate, previewSearch, renderPreview, renderDificuldade, startGame, fullRandomizer } from './criacao.js';
 import { explore } from './mundo.js';
 import { turn } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem } from './itens.js';
 import { ITEMS } from './dados.js';
-import { freshVol, custoCentro, precisaCurar } from './regras.js';
+import { freshVol } from './regras.js';
+import { despedir } from './amizade.js';
 import { rand, store } from './util.js';
 
 /* ============ eventos ============ */
@@ -22,7 +23,7 @@ document.addEventListener('click', async e => {
     case 'random': return previewSearch(rand(1, 1025));
     case 'pick': return previewSearch(v);
     case 'ability': G.PV.ability = v; return renderPreview();
-    case 'dificuldade': G.PV.dificuldade = v; return renderPreview();
+    case 'dificuldade': G.dif = v; return renderDificuldade();
     case 'randomizer': return fullRandomizer(b);
     case 'recomecar': G.S = null; G.B = null; G.PV = null; return showCreate();
     case 'start': return startGame(b);
@@ -31,11 +32,13 @@ document.addEventListener('click', async e => {
     case 'panel': G.panel = v; return render();
     case 'heal': {
       // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
-      const custo = custoCentro(G.S.player.level);
-      if (G.busy || !precisaCurar(G.S.player) || G.S.money < custo) return;
-      G.S.money -= custo; healFull();
-      log(`Você pagou ₽${custo} e descansou no Centro Pokémon. HP, PP e status restaurados.`, 'good'); save(); return render();
+      const { precisa, custo } = centroPokemon();
+      if (G.busy || !precisa || G.S.money < custo) return;
+      G.S.money -= custo; healFull(); zerarDescontoCentro();
+      log(`${custo ? `Você pagou ₽${custo} e descansou` : 'Você descansou'} no Centro Pokémon. HP, PP e status ${G.S.aliados?.length ? 'da equipe ' : ''}restaurados.`, 'good'); save(); return render();
     }
+    case 'oferecer': return turn({ type: 'oferecer', id: v });
+    case 'despedir': if (G.busy) return; G.busy = true; render(); try { await despedir(+v); } finally { G.busy = false; render(); save(); } return;
     case 'buy': {
       const it = ITEMS[v]; if (!it || G.S.money < it.price) return;
       G.S.money -= it.price; addItem(v, 1); log(`Você comprou ${it.name} por ₽${it.price}.`); save(); return render();
@@ -63,7 +66,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id
 (function boot() {
   const s = store.get(SAVE_KEY);
   if (s?.player?.data && s.meta?.growth) {
-    G.S = s; G.S.player.vol = freshVol(); G.mode = 'explore'; G.panel = 'main';
+    G.S = s; for (const m of ladoJogador()) m.vol = freshVol(); G.mode = 'explore'; G.panel = 'main';
     buildGame();
     (G.S.log || []).slice(-20).forEach(logRaw);
     log('Jogo carregado deste navegador.', 'muted');
