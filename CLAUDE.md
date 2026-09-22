@@ -20,6 +20,7 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `sw.js` | Service worker do modo offline (ver "Modo offline"). |
 | `README.md` | Página do projeto (o que tem + próximos passos). **Atualizar a cada funcionalidade nova.** |
 | `css/estilo.css` | Todo o CSS. |
+| `img/` | `logo.png` (topo), `favicon-32.png`, `icone-192.png` (favicon / atalho no celular). |
 | `js/main.js` | Ponto de entrada: listeners delegados (`data-act`/`data-v`) e `boot()` (carrega save ou abre criação). |
 | `js/estado.js` | `G` = estado mutável compartilhado (`S` save, `B` batalha, `PV` prévia, `mode`, `busy`, `panel`), `zone()`, `nm()`, `save()`. |
 | `js/util.js` | `rand`/`pick`/`clamp`/`sleep`/`fmt`/`esc`/`lastSeg`/`store`. Sem DOM. |
@@ -137,7 +138,8 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Tudo que só `regras.js`/`dados.js`/`util.js`/`api.js` importa precisa continuar sem DOM (importável no Node).
 - `esc()` em todo texto vindo de fora (apelido, dados da API) dentro de template string.
 - Estado compartilhado sempre via `G.*` (nunca `let` exportado).
-- Fontes: `--display` (Fredoka) para títulos e números, `--body` (Atkinson Hyperlegible) para texto, `--logo` (Pixelify Sans) **só no logo** — a pixelada confundia 2/5/8 em HP, stats e PP; não voltar a usá-la em número.
+- Fontes: `--display` (Fredoka) para títulos e números, `--body` (Atkinson Hyperlegible) para texto. A Pixelify Sans saiu (confundia 2/5/8); não voltar a usar fonte pixelada em número.
+- Logo e ícones: `img/logo.png` (topo e README, fundo transparente), `img/favicon-32.png` e `img/icone-192.png` (quadrados, gerados do logo com margem transparente — o original é 373×309). Estão no PRECACHE do sw.js.
 
 ## Testes
 

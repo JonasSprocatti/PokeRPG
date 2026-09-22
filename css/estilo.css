@@ -3,7 +3,6 @@
   --text:#EEE8D8; --muted:#A3A6C8; --yellow:#F7C548; --grass:#5FB36A; --red:#E4572E;
   --paper:#F4EFE3; --paper-ink:#1C1F3A;
   --display:'Fredoka', 'Atkinson Hyperlegible', system-ui, sans-serif; /* títulos e números: arredondada, 2/5/8 bem distintos */
-  --logo:'Pixelify Sans', ui-monospace, monospace; /* só o logo — pixelada é ilegível em números pequenos */
   --body:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
@@ -19,7 +18,8 @@ img{max-width:100%}
 .muted{color:var(--muted)} .small{font-size:14px}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:2px solid var(--line)}
-.brand{font:700 22px var(--logo);color:var(--yellow)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{height:46px;width:auto;display:block} /* img/logo.png (o favicon sai de img/favicon-32.png) */
 .brand small{font:500 13px var(--display);color:var(--muted);margin-left:10px}
 .top-r{display:flex;gap:14px;align-items:center;font:700 16px var(--display)}
 /* topo: dinheiro sempre visível; botões (#topr + conta) no menu ☰ abaixo de 720px */
@@ -33,6 +33,7 @@ img{max-width:100%}
 @media(max-width:720px){
   .top{padding:10px 14px}
   .brand small{display:none}
+  .brand .logo{height:38px}
   .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
   .menu-links{display:none;position:absolute;top:calc(100% + 6px);left:10px;right:10px;z-index:9;flex-direction:column;gap:10px;
     background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 14px 34px rgba(0,0,0,.5)}

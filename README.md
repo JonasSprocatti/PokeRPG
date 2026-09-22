@@ -1,3 +1,5 @@
+<p align="center"><img src="img/logo.png" alt="PokéRPG" width="240"></p>
+
 # PokéRPG
 
 RPG de texto no navegador em que **você é o Pokémon**: sem treinador e sem Pokébola. Você começa como um inicial, explora a região, luta contra selvagens, foge de treinadores que querem te capturar, faz amigos e enfrenta os Alfas de cada zona.

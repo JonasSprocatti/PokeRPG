@@ -7,7 +7,7 @@
 const CACHE_JOGO = 'pokerpg-jogo-v1';
 const CACHE_EXTERNO = 'pokerpg-externo-v1';
 const PRECACHE = [
-  './', './index.html', './css/estilo.css',
+  './', './index.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
   './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',
   './js/criacao.js', './js/dados.js', './js/efeitos.js', './js/estado.js', './js/fim.js', './js/itens.js',
   './js/layout.js', './js/main.js', './js/missoes.js', './js/mp-motor.js', './js/multiplayer.js', './js/mundo.js', './js/nuvem.js', './js/paineis.js',
