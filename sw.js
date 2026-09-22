@@ -10,8 +10,8 @@ const PRECACHE = [
   './', './index.html', './css/estilo.css',
   './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',
   './js/criacao.js', './js/dados.js', './js/efeitos.js', './js/estado.js', './js/fim.js', './js/itens.js',
-  './js/layout.js', './js/main.js', './js/missoes.js', './js/mundo.js', './js/nuvem.js', './js/paineis.js',
-  './js/pokemon.js', './js/progressao.js', './js/regras.js', './js/render.js', './js/roguelike.js', './js/ui.js', './js/util.js'
+  './js/layout.js', './js/main.js', './js/missoes.js', './js/mp-motor.js', './js/multiplayer.js', './js/mundo.js', './js/nuvem.js', './js/paineis.js',
+  './js/pokemon.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/render.js', './js/roguelike.js', './js/ui.js', './js/util.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)
 const EXTERNOS = ['pokeapi.co', 'raw.githubusercontent.com', 'esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com'];

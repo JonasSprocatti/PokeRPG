@@ -60,6 +60,16 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 - A jornada termina com Game Over ou quando você a encerra (**Novo jogo**). A tela de fim compara tudo com o seu recorde naquela espécie.
 - **📊 Carreira:** Pokémon favorito, Pokédex (quantos já viraram amigos e quantos faltam dos 1025, além dos vistos), shinies, maior quantia de dinheiro, mais missões numa jornada, nível máximo, tempo total e o melhor resultado por espécie.
 
+### 👥 Multiplayer cooperativo
+Até **4 jogadores**, cada um com o Pokémon da própria jornada, lutam **juntos** contra selvagens (um por jogador) ou contra o **Alfa** da zona (que aguenta o grupo todo).
+- Um cria a sala e passa o **código de 4 letras**; os outros entram com ele. Não precisa de conta.
+- O anfitrião escolhe a zona e começa. Cada um escolhe o próprio golpe, e o turno sai quando todos escolherem (ou em 45 segundos, no automático).
+- XP, EVs e dinheiro vão para a jornada de cada um. Desmaiar no co-op não conta como desmaio: você volta com 1 de HP.
+- Em breve: **PvP** (jogador contra jogador) com o mesmo sistema de salas.
+
+### 🏆 Ranking global
+A melhor jornada de cada jogador, **geral** ou **por espécie**, com a sua posição destacada. Dá para ver sem conta; para aparecer, entre e termine jornadas. A pontuação é **recalculada no servidor** a partir dos números da jornada, e números impossíveis são recusados.
+
 ### Tela
 Os painéis (Ficha, Missões, Aliados, Mochila, Registro) podem ser **arrastados, redimensionados, recolhidos e trocados de coluna**. A cena da batalha fica fixa no centro. Botão **↺ Layout** volta ao padrão. No celular vira uma coluna só.
 
@@ -97,7 +107,8 @@ Depois abra http://localhost:3000.
 | `js/batalha.js`, `js/amizade.js`, `js/progressao.js`, `js/itens.js`, `js/missoes.js`, `js/mundo.js` | Regras narradas do jogo |
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
 | `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
-| `js/nuvem.js`, `js/conta.js`, `js/config.js` | Login e nuvem (Supabase) |
+| `js/nuvem.js`, `js/conta.js`, `js/config.js`, `js/ranking.js` | Login, nuvem (Supabase) e ranking global |
+| `js/mp-motor.js`, `js/multiplayer.js` | Motor da batalha multiplayer (puro, testado) e salas |
 | `sw.js` | Modo offline |
 | `supabase/` | Banco (`schema.sql`) e passo a passo de configuração |
 | `CLAUDE.md` | Mapa técnico detalhado (para quem mexe no código) |
@@ -106,9 +117,14 @@ Depois abra http://localhost:3000.
 
 ## Próximos passos
 
-- [ ] **Ranking global** por espécie, com a melhor pontuação de todos os jogadores (o banco já está pronto; falta a tela e a validação contra trapaça).
-- [ ] **Multiplayer:** Pokémon de jogadores diferentes no mesmo lado da batalha (a batalha já aceita vários do mesmo lado).
-- [ ] Mais habilidades, clima, golpes de dois turnos e IA do inimigo.
+- [ ] **PvP:** jogador contra jogador, na mesma sala por código (o motor da batalha multiplayer já aceita jogadores dos dois lados).
+- [ ] **Batalha mais completa**, nesta ordem:
+  1. **Habilidades:** as mais comuns com efeito de verdade (hoje são 13).
+  2. **Clima:** sol, chuva, tempestade de areia e granizo/neve, e as habilidades ligadas a eles.
+  3. **Terrenos:** elétrico, grama, psíquico e névoa.
+  4. **Itens segurados:** Leftovers, Choice, Life Orb, frutas…
+  5. **Golpes especiais:** dois turnos, proteção, troca de campo, e uma IA de inimigo mais esperta.
+  6. **Mecânicas especiais:** Mega Evolução, Z-Moves, Dynamax/Gigantamax e Terastalização.
 - [ ] Acabamento: sons, animações e instalação como app (PWA).
 
 ### Já feito
@@ -120,3 +136,6 @@ Depois abra http://localhost:3000.
 - [x] Painéis modulares
 - [x] Login (Google / e-mail), carreira e jornada na nuvem, modo offline
 - [x] Roguelike com desbloqueio de espécies e evoluções entre runs
+- [x] Ranking global (geral e por espécie), com pontuação conferida no servidor
+- [x] Multiplayer cooperativo com sala por código (até 4)
+- [x] Menu ☰ no celular e tela de login com Google / link por e-mail

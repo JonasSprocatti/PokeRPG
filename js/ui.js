@@ -6,6 +6,35 @@ import { sleep } from './util.js';
 export const $ = s => document.querySelector(s);
 export const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ---- topo: dinheiro sempre visível + menu ☰ no celular ---- */
+// telas fora do jogo limpam o topo por aqui (botões + dinheiro), nunca direto no #topr
+export function limparTopo() {
+  $('#topr').innerHTML = '';
+  const d = $('#top-dinheiro'); if (d) d.textContent = '';
+  fecharMenu();
+}
+export function fecharMenu() {
+  $('#menu-links')?.classList.remove('open');
+  const b = $('#menu-burger'); if (b) { b.textContent = '☰'; b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-label', 'Abrir menu'); }
+}
+// ☰ abre/fecha; clicar num botão do menu, fora dele, ou Esc fecha (sem mouse/teclado também dá pra sair: toque fora)
+export function iniciarMenu() {
+  document.addEventListener('click', e => {
+    const menu = $('#menu-links'), burger = e.target.closest('#menu-burger');
+    if (burger) {
+      const abrir = !menu.classList.contains('open');
+      menu.classList.toggle('open', abrir);
+      burger.textContent = abrir ? '✕' : '☰';
+      burger.setAttribute('aria-expanded', String(abrir));
+      burger.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+      return;
+    }
+    if (!menu?.classList.contains('open')) return;
+    if (!e.target.closest('#menu-links') || e.target.closest('button, a')) fecharMenu();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharMenu(); });
+}
+
 export function logRaw(l) {
   const el = $('#log'); if (!el) return;
   const p = document.createElement('p'); if (l.cls) p.className = l.cls; p.innerHTML = l.html;

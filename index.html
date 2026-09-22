@@ -12,7 +12,12 @@
 <body>
 <header class="top">
   <div class="brand">PokéRPG<small>protótipo de RPG de texto</small></div>
-  <div class="top-r"><div class="top-r" id="topr"></div><div id="conta-chip"></div></div>
+  <div class="top-r">
+    <span id="top-dinheiro" class="dinheiro"></span>
+    <!-- celular: os botões vão pra dentro do menu ☰ (no computador .menu-links é display:contents — some da conta) -->
+    <button type="button" id="menu-burger" class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-links">☰</button>
+    <nav id="menu-links" class="menu-links" aria-label="Menu"><div class="top-r" id="topr"></div><div id="conta-chip"></div></nav>
+  </div>
 </header>
 <div id="app"></div>
 

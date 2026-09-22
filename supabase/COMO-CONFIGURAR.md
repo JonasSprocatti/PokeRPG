@@ -7,6 +7,7 @@ A Vercel continua hospedando o site. O login e o banco ficam no **Supabase** (te
 ## 1. Criar o projeto no Supabase
 1. Em https://supabase.com crie uma conta e um projeto novo (guarde a senha do banco).
 2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/schema.sql` e clique em **Run**.
+3. **Sempre que o `schema.sql` mudar** (ex.: quando entrou o ranking), rode ele de novo do mesmo jeito. É seguro: ele só cria o que falta e atualiza as funções, sem apagar dados.
 
 ## 2. Ligar as chaves no jogo
 1. No Supabase: **Project Settings → API**.

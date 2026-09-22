@@ -105,12 +105,16 @@ export async function sincronizar() {
     const { data: linhas, error: ej } = await c.from('jornadas').select('resumo'); if (ej) throw ej;
     const remotas = linhas.map(l => l.resumo);
     const { todas, subir } = mesclarJornadas(carregarCarreira().jornadas, remotas, u.id);
-    if (subir.length) {
-      const { error } = await c.from('jornadas').upsert(subir.map(linhaJornada), { onConflict: 'id', ignoreDuplicates: true });
-      if (error) throw error;
+    // uma por vez: se o servidor recusar uma (validar_jornada), as outras sobem mesmo assim
+    let subiram = 0;
+    for (const j of subir) {
+      const { error } = await c.from('jornadas').upsert(linhaJornada(j), { onConflict: 'id', ignoreDuplicates: true });
+      if (!error) { subiram++; continue; }
+      if (error.code === 'P0001') { const x = todas.find(t => t.id === j.id); if (x) x.recusada = error.message; } // recusada: não reenvia
+      else throw error; // rede/permissão: tenta tudo de novo na próxima
     }
     salvarCarreira({ jornadas: todas });
-    nuvem.naNuvem = remotas.length + subir.length;
+    nuvem.naNuvem = remotas.length + subiram;
 
     // save da jornada em andamento
     const terminadas = new Set(todas.map(j => j.id));
@@ -137,6 +141,30 @@ export async function sincronizar() {
   }
   avisar();
 }
+
+// Ranking global (funções `ranking` e `especies_ranqueadas` do schema.sql). Funciona sem login (só pra ver).
+// especie null = geral. Devolve linhas { posicao, apelido, especie, pontuacao, nivel, dificuldade, terminou_em, eu }.
+export async function buscarRanking(especie = null, limite = 50) {
+  const c = await sb(); if (!c) throw new Error('nuvem não configurada');
+  if (offline()) throw new Error('sem internet');
+  const { data, error } = await c.rpc('ranking', { p_especie: especie, p_limite: limite });
+  if (error) throw error;
+  return data;
+}
+export async function especiesRanqueadas() {
+  const c = await sb(); if (!c) return [];
+  const { data, error } = await c.rpc('especies_ranqueadas');
+  if (error) throw error;
+  return data;
+}
+
+// Multiplayer: canal Realtime da sala (broadcast + presence). `chave` = id do jogador na presença.
+// Não precisa de login: basta o Supabase configurado (visitante usa um id aleatório guardado no navegador).
+export async function canalSala(codigo, chave) {
+  const c = await sb(); if (!c) throw new Error('modo online não configurado');
+  return c.channel('pokerpg-sala-' + codigo, { config: { broadcast: { self: false }, presence: { key: chave } } });
+}
+export async function fecharCanal(canal) { const c = await sb(); if (c && canal) await c.removeChannel(canal); }
 
 // Save da jornada: agendado depois de cada save() local (espera 5 s juntando vários), ou na hora ao sair da aba.
 let timer = null, pendente = false;

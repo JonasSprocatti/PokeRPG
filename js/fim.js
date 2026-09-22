@@ -4,7 +4,7 @@
 // jornadas terminadas, local e na nuvem), apaga o save da jornada (aqui e na nuvem) e mostra a tela de fim.
 // telaCarreira() mostra tudo calculado da carreira: números gerais, Pokédex, shinies e o melhor por espécie.
 import { G, SAVE_KEY, dificuldadeDe, marcarTempo } from './estado.js';
-import { $ } from './ui.js';
+import { $, limparTopo } from './ui.js';
 import { spriteFrente } from './render.js';
 import { DIFICULDADES, SPR } from './dados.js';
 import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
@@ -46,7 +46,7 @@ const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jo
   ['Missões', 'missoes'], ['Mais dinheiro de uma vez', 'maxDinheiro', v => '₽' + n(v)]];
 
 function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
-  G.mode = 'fim'; $('#topr').innerHTML = '';
+  G.mode = 'fim'; limparTopo();
   const f = (l, v) => l[2] ? l[2](v || 0) : n(v);
   $('#app').innerHTML = `<main class="create fim">
     <h1>${TITULO[r.motivo]}.</h1>
@@ -62,7 +62,7 @@ function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
           const v = r[l[1]], a = anterior?.[l[1]];
           return `<div class="stat-fim"><span>${l[0]}</span><b>${f(l, v)}</b>${anterior ? `<small class="${v > a ? 'up' : v < a ? 'down' : ''}">recorde ${f(l, a)}</small>` : ''}</div>`;
         }).join('')}</div>
-        <div class="subrow" style="margin-top:18px"><button class="btn big" data-act="recomecar">Nova jornada</button><button class="btn ghost" data-act="carreira">📊 Ver carreira</button></div>
+        <div class="subrow" style="margin-top:18px"><button class="btn big" data-act="recomecar">Nova jornada</button><button class="btn ghost" data-act="carreira">📊 Ver carreira</button><button class="btn ghost" data-act="ranking">🏆 Ranking</button></div>
       </div>
     </section></main>`;
 }
@@ -80,7 +80,7 @@ function secaoRoguelike(terminadas) {
 export function telaCarreira() {
   const emJogo = !!G.S;
   const jornadas = [...carregarCarreira().jornadas, ...(emJogo ? [{ ...montarResumo(G.S, 'andamento'), emAndamento: true }] : [])];
-  G.mode = 'fim'; $('#topr').innerHTML = '';
+  G.mode = 'fim'; limparTopo();
   const c = calcularCarreira(jornadas);
   const especies = Object.entries(c.porEspecie).sort((a, b) => b[1].melhor.pontuacao - a[1].melhor.pontuacao);
   const card = (rot, val, dica = '') => `<div class="stat-fim"><span>${rot}</span><b>${val}</b>${dica ? `<small>${dica}</small>` : ''}</div>`;
@@ -112,5 +112,5 @@ export function telaCarreira() {
         <div><b>${m.shiny ? '✨ ' : ''}${esc(fmt(esp))}${esp === c.favorito ? ' ⭐' : ''}</b><small>${esc(m.nome)} · Nv. ${m.nivel} · ${DIFICULDADES[m.dificuldade]?.nome || m.dificuldade} · ${formatarTempo(m.tempoMs)} · ${q} jornada${q > 1 ? 's' : ''}${m.emAndamento ? ' · em andamento' : ''}</small></div>
         <b class="pts">${n(m.pontuacao)}</b></div>`).join('')}</div>`
     : '<p class="muted">Nenhuma jornada ainda. Os números aparecem aqui quando você encerra uma jornada ou leva Game Over.</p>'}
-    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button></div></main>`;
+    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button><button class="btn ghost" data-act="ranking">🏆 Ranking global</button></div></main>`;
 }

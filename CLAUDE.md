@@ -41,6 +41,9 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `js/carreira.js` | Carreira = lista de jornadas terminadas (`pokerpg-carreira-v1`; migra o `pokerpg-recordes-v1` antigo). `calcularCarreira`, `mesclarJornadas`, `melhorDaEspecie`. Puro + `store`, testado. |
 | `js/config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (marcadores = jogo só local). |
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. |
+| `js/mp-motor.js` | Motor puro da batalha multiplayer (lados A/B com N Pokémon). Testado. |
+| `js/multiplayer.js` | Salas co-op por código (Realtime), anfitrião autoritativo, telas da sala. |
+| `js/ranking.js` | Tela do ranking global (geral / por espécie). |
 | `js/conta.js` | Tela de conta e o botão 👤 no topo (`#conta-chip`). |
 | `js/missoes.js` | `verificarMissoes()` — anuncia missões novas e entrega prêmio das concluídas. |
 | `js/mundo.js` | `explore()`, `desafiarChefe()`. |
@@ -97,7 +100,27 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Forma do meio/final: `evolve()` anota `registro.formas[especie] = 'meio' | 'final'` (final = nó sem `to` na árvore de evolução). `registro.ids` dá o id pra buscar o Pokémon e o sprite.
 - Telas: seção "🔓 Desbloqueados" + "Quase lá" na criação (Roguelike), "Desbloqueado pra próxima jornada" na tela de fim (`novosDesbloqueios(antes, depois)`), seção Roguelike na Carreira.
 
-### Próximos passos combinados (em ordem sugerida) Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
+## Ranking global
+
+- `ranking.js` (tela, `G.mode = 'ranking'`) → `buscarRanking(especie|null)` / `especiesRanqueadas()` (nuvem.js) → funções SQL `ranking(p_especie, p_limite)` e `especies_ranqueadas()` (SECURITY DEFINER, devolvem só apelido + números + `eu`). Funciona sem login (só leitura).
+- **Pontuação é do servidor**: gatilho `validar_jornada` (schema.sql) recalcula `pontuacao` do resumo e recusa número impossível (nível > 100, Alfas > 7, missões > 36…). **Pesos, multiplicadores e limites do SQL precisam acompanhar `PESOS_PONTOS`, `DIFICULDADES[].multPontos`, nº de Alfas e `MISSOES.length`** — `tests/schema.test.js` falha se divergirem. Modo novo → acrescentar no `case` do SQL.
+- Jornada recusada (erro `P0001`) fica marcada `recusada` na carreira local e não é reenviada; as outras sobem uma a uma (uma recusa não trava a sincronização).
+- Mudou o schema.sql → usuário precisa rodar de novo no SQL Editor (idempotente).
+
+## Multiplayer (co-op; PvP em seguida)
+
+- Decisão do usuário: **os dois formatos** (co-op primeiro, depois PvP), **sala por código** (4 caracteres, sem lista pública). Até `MAX_JOGADORES` = 4. Funciona sem login (id de visitante em `pokerpg-visitante`), só precisa do Supabase configurado (Realtime).
+- `mp-motor.js` (PURO, `tests/mp-motor.test.js`): dois lados A/B com N Pokémon, `fotoDoMon` (cópia enxuta pra rede), `resolverTurnoMP(estado, ações)` → estado novo + eventos em texto (sem HTML — quem exibe escapa), `acaoDaIA`. É uma **versão pura do `useMove` do single player** (mesmas regras de regras.js) — duplicação consciente: ao mudar uma regra de batalha, mudar nos dois (ou migrar o single player pro motor um dia).
+- `multiplayer.js`: canal `pokerpg-sala-<código>` (presence = membros com a foto do Pokémon; broadcast `estado`/`acao`/`fim`/`lobby`). **Anfitrião é a autoridade**: gera inimigos (1 selvagem por jogador, ou o Alfa com HP × nº de jogadores), junta as escolhas (só o dono escolhe pelo próprio Pokémon), prazo de 45 s com golpe automático, roda o motor e publica. Cada cliente aplica o `fim` na PRÓPRIA jornada (HP/PP, XP via `gainExp`, EVs, dinheiro, registro, Alfa); desmaio no co-op = volta com 1 HP, não conta desmaio. Anfitrião saiu = sala acaba.
+- `render()` só desenha em `G.mode` 'explore'/'battle' — gainExp roda na tela da sala e chama render().
+
+## Topo (menu ☰) e login
+
+- Header: `#top-dinheiro` (sempre visível) + `#menu-burger` + `nav#menu-links` (`#topr` + `#conta-chip`). No computador `.menu-links` é `display:contents` (tudo em linha); ≤ 720px vira painel aberto pelo ☰ (`iniciarMenu`/`fecharMenu` em ui.js: fecha ao tocar num botão, fora, ou Esc). **Telas fora do jogo limpam o topo com `limparTopo()`**, nunca `#topr.innerHTML = ''` direto (o dinheiro ficaria velho).
+- Login: botão `.btn-login` no topo; tela de conta com "Continuar com Google" no padrão visual do Google (`G_LOGO`) + link por e-mail.
+
+### Próximos passos combinados (em ordem sugerida)
+- **PvP** (mesma sala, `mp-motor` com jogadores nos dois lados) → **batalha completa**: habilidades → clima → terrenos → itens segurados → golpes especiais/IA → Mega, Z-Moves, Dynamax/Gigantamax, Tera. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 

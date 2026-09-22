@@ -22,6 +22,36 @@ img{max-width:100%}
 .brand{font:700 22px var(--logo);color:var(--yellow)}
 .brand small{font:500 13px var(--display);color:var(--muted);margin-left:10px}
 .top-r{display:flex;gap:14px;align-items:center;font:700 16px var(--display)}
+/* topo: dinheiro sempre visível; botões (#topr + conta) no menu ☰ abaixo de 720px */
+.top{position:relative}
+.dinheiro{color:var(--yellow);white-space:nowrap}
+.dinheiro:empty{display:none}
+.burger{display:none}
+.menu-links{display:contents} /* no computador some da conta: filhos ficam em linha no .top-r */
+#topr{flex-wrap:wrap;justify-content:flex-end}
+.btn-login{border-radius:999px;padding:8px 18px;box-shadow:0 0 0 3px rgba(247,197,72,.25)}
+@media(max-width:720px){
+  .top{padding:10px 14px}
+  .brand small{display:none}
+  .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
+  .menu-links{display:none;position:absolute;top:calc(100% + 6px);left:10px;right:10px;z-index:9;flex-direction:column;gap:10px;
+    background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+  .menu-links.open{display:flex}
+  .menu-links .top-r,#conta-chip{flex-direction:column;align-items:stretch;gap:8px}
+  .menu-links .btn{width:100%;text-align:center;padding:12px 14px;font-size:16px}
+  .selo-offline{text-align:center}
+}
+/* tela de login */
+.login-card{max-width:460px;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:12px}
+.login-card h2{margin:0;font:700 24px var(--display)}
+.login-card p{margin:0}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1f1f1f;border:1px solid #747775;border-radius:999px;padding:12px 18px;font:600 16px var(--body)}
+.btn-google:hover{background:#f2f2f2}
+.login-ou{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+.login-ou::before,.login-ou::after{content:'';flex:1;height:2px;background:var(--line)}
+.login-card input{flex:1;min-width:0;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:11px 12px;color:var(--text)}
+.login-card .subrow{flex-wrap:nowrap}
+@media(max-width:420px){.login-card .subrow{flex-wrap:wrap}.login-card .subrow .btn{width:100%}}
 
 .btn{background:var(--yellow);color:#1b1b2f;border:0;border-radius:8px;padding:10px 16px;font-weight:700}
 .btn:hover:not(:disabled){filter:brightness(1.08)}
@@ -240,6 +270,26 @@ ul.quase .fill{background:var(--grass)}
 ul.quase small{color:var(--muted);font-size:12px}
 .desbloq-novo{margin:8px 0 12px;padding:10px 12px;border:2px solid var(--grass);border-radius:12px;background:var(--panel2)}
 .desbloq-novo .picks{margin-top:8px}
+/* multiplayer (sala) */
+.mp .textbox{margin:14px 0}
+.mp-cab h1{margin-bottom:4px}
+.mp-cab .codigo{font-family:var(--display);letter-spacing:.12em;background:var(--yellow);color:#1b1b2f;border-radius:10px;padding:0 12px}
+.mp-grupo,.mp-lado{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.mp-campo{display:grid;gap:12px;background:linear-gradient(#34428a 0 50%,#3d6a4b 50%);border-radius:14px;padding:12px}
+.mp-mon{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:8px 12px}
+.mp-mon img{width:64px;height:64px;image-rendering:pixelated}
+.mp-mon small{display:block}
+.mp-mon .bar{background:#cfc8b6}
+.mp-mon.caido{opacity:.45}
+.mp-grupo .mp-mon{background:var(--panel);color:var(--text);border:2px solid var(--line)}
+/* ranking global */
+table.ranking{width:100%;border-collapse:collapse;margin-top:12px;background:var(--panel);border-radius:12px;overflow:hidden}
+table.ranking th{font:600 13px var(--display);color:var(--muted);text-align:left;padding:8px 12px;border-bottom:2px solid var(--line)}
+table.ranking td{padding:8px 12px;border-top:1px solid var(--line)}
+table.ranking td.pos{font:700 16px var(--display);width:48px}
+table.ranking td.pts{font:700 16px var(--display);text-align:right}
+table.ranking tr.eu td{background:var(--panel2);color:var(--yellow)}
+.campo select{background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text);max-width:320px}
 .pokedex{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;margin-top:10px}
 .dex-item{display:grid;place-items:center;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:4px;text-align:center}
 .dex-item img{width:64px;height:64px;image-rendering:pixelated}

@@ -33,6 +33,11 @@ test('mesclarJornadas: sobe só o que falta na nuvem, e nunca jornada de outra c
   assert.equal(mesclarJornadas(todas, [...remotas, ...subir], 'eu').subir.length, 0);
 });
 
+test('mesclarJornadas: jornada recusada pelo servidor não é reenviada', () => {
+  const { subir } = mesclarJornadas([j('a', { recusada: 'nível impossível' }), j('bb')], [], 'eu');
+  assert.deepEqual(subir.map(x => x.id), ['bb']);
+});
+
 test('melhorDaEspecie ignora a própria jornada', () => {
   const js = [j('a', { pontuacao: 300 }), j('b', { pontuacao: 900 }), j('c', { especie: 'eevee', pontuacao: 5000 })];
   assert.equal(melhorDaEspecie(js, 'mudkip').id, 'b');

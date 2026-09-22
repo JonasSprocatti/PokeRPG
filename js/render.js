@@ -199,9 +199,12 @@ function renderActions() {
   }
 }
 export function render() {
-  if (G.mode === 'create' || !G.S) return;
+  // só as telas de jogo têm painéis; nas outras (criação, carreira, conta, ranking, sala multiplayer) não desenha —
+  // gainExp/useItem chamam render() e podem rodar fora da tela de jogo (ex.: recompensa do co-op)
+  if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   renderSheet(); renderScene(); renderActions();
-  $('#topr').innerHTML = `<span>₽${G.S.money}</span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
+  $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
+  $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
 }
 // monta a tela do jogo (esqueleto de painéis de paineis.js), aplica o layout salvo e desenha
 export function buildGame() {

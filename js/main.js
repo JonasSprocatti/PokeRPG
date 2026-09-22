@@ -2,12 +2,14 @@
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave } from './estado.js';
-import { $, log, logRaw, ask } from './ui.js';
+import { $, log, logRaw, ask, iniciarMenu } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira } from './fim.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar } from './nuvem.js';
 import { renderChipConta, telaConta } from './conta.js';
+import { telaRanking } from './ranking.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, mirarMP, escolherZona } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
 import { turn } from './batalha.js';
@@ -27,7 +29,18 @@ document.addEventListener('click', async e => {
     case 'search': return previewSearch($('#q')?.value || '');
     case 'random': return sortearEspecie();
     case 'carreira': if (G.busy || G.mode === 'battle') return; return telaCarreira();
-    case 'voltar': return voltar();
+    case 'voltar': if (naSala()) await sairSala(); return voltar();
+    // multiplayer (co-op)
+    case 'mp': if (G.busy || G.mode !== 'explore') return; return telaMultiplayer();
+    case 'mp-criar': return criarSala();
+    case 'mp-entrar': return entrarSala($('#mp-codigo')?.value);
+    case 'mp-sair': await sairSala(); return voltar();
+    case 'mp-explorar': return iniciarBatalhaMP('selvagem');
+    case 'mp-alfa': return iniciarBatalhaMP('alfa');
+    case 'mp-golpe': return escolherGolpeMP(+v);
+    case 'mp-fugir': return fugirMP();
+    case 'mp-mirar': return mirarMP(v);
+    case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
     // conta / nuvem
     case 'conta': if (G.busy || G.mode === 'battle') return; return telaConta();
     case 'entrar-google': try { await entrarGoogle(); } catch (err) { telaConta(`Não deu pra entrar com o Google: ${esc(err.message)}`); } return;
@@ -89,6 +102,8 @@ document.addEventListener('click', async e => {
   }
 });
 document.addEventListener('change', e => {
+  if (e.target.matches?.('[data-ranking-especie]')) return telaRanking(e.target.value || null);
+  if (e.target.matches?.('[data-mp-zona]')) return escolherZona(e.target.value);
   // ordem de aliado (vale a partir da próxima escolha de golpe — o turno em andamento já decidiu as ações)
   const io = e.target.dataset?.ordem;
   if (io !== undefined && G.S?.aliados?.[+io] && ORDENS[e.target.value]) {
@@ -104,7 +119,11 @@ document.addEventListener('toggle', e => {
   const i = e.target.dataset?.aliado; if (i === undefined) return;
   if (e.target.open) G.abertos.add(+i); else G.abertos.delete(+i);
 }, true);
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'q') previewSearch(e.target.value); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'q') previewSearch(e.target.value);
+  if (e.target.id === 'mp-codigo') entrarSala(e.target.value);
+});
 
 /* ============ jornada: abrir / voltar ============ */
 const saveValido = s => !!(s?.player?.data && s.meta?.growth);
@@ -149,6 +168,7 @@ ganchos.carregarSave = remoto => {
 
 /* ============ início ============ */
 iniciarPaineis(); // listeners de arrastar/▲▼/divisória, uma vez só
+iniciarMenu();    // ☰ do topo no celular
 (function boot() {
   const s = store.get(SAVE_KEY);
   if (saveValido(s)) abrirJornada(s, 'Jogo carregado deste navegador.');

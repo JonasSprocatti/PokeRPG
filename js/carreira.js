@@ -32,9 +32,10 @@ export const adicionarJornada = (carreira, resumo) => ({ jornadas: [...(carreira
 
 // Junta as jornadas deste navegador com as da nuvem de `dono`. Sobe só as que a nuvem não tem E que são de
 // visitante (sem dono) ou já desse dono — jornada de outra conta que logou neste navegador não vai pra sua.
+// `recusada` = o servidor já rejeitou (números impossíveis, validar_jornada no schema.sql): não tenta de novo.
 export function mesclarJornadas(locais, remotas, dono) {
   const naNuvem = new Set(remotas.map(j => j.id));
-  const subir = locais.filter(j => !naNuvem.has(j.id) && (!j.dono || j.dono === dono)).map(j => ({ ...j, dono }));
+  const subir = locais.filter(j => !naNuvem.has(j.id) && !j.recusada && (!j.dono || j.dono === dono)).map(j => ({ ...j, dono }));
   const porId = new Map();
   for (const j of [...locais, ...subir, ...remotas]) porId.set(j.id, j);
   const todas = [...porId.values()].sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
