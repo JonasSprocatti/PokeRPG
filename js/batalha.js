@@ -3,7 +3,8 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro } from './estado.js';
+import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais } from './estado.js';
+import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS } from './mapas.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
@@ -12,7 +13,7 @@ import { gainExp, gainExpAliado } from './progressao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
-import { encerrarJornada } from './fim.js';
+import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
@@ -20,8 +21,8 @@ import {
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
-import { loadPokemon, loadSpecies, pokemonEmCache, idsEmCache } from './api.js';
-import { rand, pick, clamp, esc, fmt, offline, erroOffline } from './util.js';
+import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
+import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
 // golpes e fim de turno vêm do motor único (golpe.js), narrados pelo CTX do single player (efeitos.js)
 const useMove = (user, target, move, movedFirst) => usarGolpe(user, target, move, movedFirst, CTX);
@@ -32,18 +33,12 @@ function chooseEnemyMove(E) {
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 
 /* ---- início de batalha ---- */
-// selvagem: da lista da zona; Fenda Dimensional (sem lista): qualquer um perto do seu nível.
+// selvagem: da lista da rota, pela taxa de aparição de cada um (mapas.js). Míticos da Gen: bem raros, nas rotas altas.
 // Offline: só entre os que já estão no cache deste navegador (buscados em alguma partida online).
 function sortearOponente(z) {
-  const off = offline();
-  if (z.pool) {
-    const pool = off ? z.pool.filter(pokemonEmCache) : z.pool;
-    if (!pool.length) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma zona que você já explorou online.`);
-    return { id: pick(pool), level: rand(z.min, z.max) };
-  }
-  const ids = off ? idsEmCache() : null;
-  if (off && !ids.length) throw erroOffline('📴 Sem internet, e nenhum Pokémon está salvo neste aparelho ainda.');
-  return { id: off ? pick(ids) : rand(1, 1025), level: clamp(G.S.player.level + rand(-2, 2), 2, 100) };
+  const p = sortearDaRota(z, offline() ? pokemonEmCache : null);
+  if (!p) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma rota que você já explorou online.`);
+  return { id: p.id, level: rand(z.min, z.max) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
 function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
@@ -61,6 +56,7 @@ export async function startBattle(z) {
   const E = await novoOponente(z);
   iniciar({ enemy: E, turn: 1, runs: 0 });
   await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${E.level}) apareceu!`, 'enc');
+  if (z.pool.find(p => p.id === E.id)?.m) await say('🌟 Um Pokémon mítico! Quase ninguém chega a ver um desses.', 'level');
   if (E.shiny) await say('✨ Ele brilha! Um Pokémon shiny.', 'level');
   await intimidar(E);
 }
@@ -76,10 +72,29 @@ export async function startBossBattle(z) {
   if (E.shiny) await say('✨ E ele brilha! Um Alfa shiny.', 'level');
   await intimidar(E);
 }
+// Luta final do mapa: os lendários da Gen em sequência (mapas.js sequenciaLendaria), um de cada vez, como a equipe
+// de um treinador — só que sem bolas. IVs perfeitos; o último (o principal) ainda vem turbinado como Alfa.
+// Vencer = fechar a Gen (vencerGen). Dá pra fugir e voltar depois; não aceita petisco.
+export async function startLendarios(z) {
+  const seq = sequenciaLendaria(z), max = Object.fromEntries(STATS.map(s => [s, 31]));
+  if (offline() && seq.some(l => !pokemonEmCache(l.id))) throw erroOffline(`📴 Sem internet: os lendários de ${z.name} ainda não estão salvos neste aparelho.`);
+  const equipe = await Promise.all(seq.map(async (l, i) => {
+    const M = await makeMon(await loadPokemon(l.id), l.nivel, { ivs: max });
+    if (i === seq.length - 1) { M.stats = statsDeChefe(M.stats); M.hp = M.stats.hp; }
+    M.lendario = true; return M;
+  }));
+  const regiao = dadosDaGen(z.gen).regiao;
+  const trainer = { nome: `Lendários de ${regiao}`, equipe, atual: 0, bolas: 0, bola: 'poke-ball', lendarios: true };
+  iniciar({ enemy: equipe[0], turn: 1, runs: 0, trainer, chefe: z.id, lendarios: true });
+  await say(`⚡ O ar pesa em ${esc(z.name)}. <b>${equipe.length} lendários de ${regiao}</b> se revelam, um depois do outro.`, 'enc');
+  await say(`Vença todos pra fechar a Gen ${z.gen}. O último, ${esc(fmt(equipe[equipe.length - 1].name))}, é o mais forte: HP ×2 e +30% no resto.`, 'muted');
+  await say(`<b>${esc(fmt(equipe[0].name))}</b> (Nv. ${equipe[0].level}) avança!${equipe[0].shiny ? ' ✨ Shiny!' : ''}`);
+  await intimidar(equipe[0]);
+}
 // Treinador caçador: 1–3 Pokémon da zona (mais na zona alta), algumas bolas, e quer te capturar
 export async function startTrainerBattle(z) {
   const P = G.S.player;
-  const nivelRef = z.pool ? z.max : P.level;
+  const nivelRef = z.max;
   const n = rand(1, Math.min(3, 1 + Math.floor(nivelRef / 15)));
   const [equipe, especie] = await Promise.all([
     Promise.all(Array.from({ length: n }, () => novoOponente(z))),
@@ -223,10 +238,12 @@ async function win() {
   }
   if (T && T.atual < T.equipe.length - 1) {
     T.atual++; B.enemy = T.equipe[T.atual]; registrarVisto(B.enemy); render();
-    await say(`${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
+    await say(T.lendarios ? `Outro lendário surge: <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Shiny!' : ''}`
+      : `${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
     await intimidar(B.enemy, true);
     return;
   }
+  if (B.lendarios) { await vencerGen(); return; }
   if (B.chefe && !S.chefes?.[B.chefe]) {
     const premio = premioChefe(E.level), z = ZONES.find(x => x.id === B.chefe);
     (S.chefes ||= {})[B.chefe] = true;
@@ -239,6 +256,23 @@ async function win() {
     await say(`Você derrotou ${esc(T.nome)}! Na fuga, deixou cair ₽${premio}.`, 'good');
   }
   endBattle();
+}
+// Venceu os lendários: a Gen está fechada (S.gensVencidas). Modo com `fimNaGen` (Roguelike) = a run termina em
+// vitória e o mapa seguinte libera pras próximas runs; nos outros, você escolhe o próximo mapa (telaEscolherGen).
+async function vencerGen() {
+  const S = G.S, B = G.B, g = genDe(S), regiao = dadosDaGen(g).regiao, premio = premioChefe(B.enemy.level) * 3;
+  (S.chefes ||= {})[B.chefe] = true;
+  if (!(S.gensVencidas ||= []).includes(g)) S.gensVencidas.push(g);
+  S.money += premio;
+  await say(`🏆 Você venceu os lendários de ${regiao}! A Gen ${g} está fechada. Prêmio: ₽${premio}.`, 'level');
+  endBattle();
+  if (DIFICULDADES[dificuldadeDe(S)].fimNaGen) {
+    await say(g < TOTAL_GENS ? `A run termina em vitória. O mapa da Gen ${g + 1} está liberado pras próximas runs.` : 'A run termina em vitória. Você fechou a última Gen!', 'level');
+    encerrarJornada('venceu', { genVencida: g });
+    return;
+  }
+  S.escolhendoGen = true; // se fechar o jogo agora, a escolha volta ao abrir (main.js abrirJornada)
+  save(); telaEscolherGen();
 }
 // Desmaio: do Médio pra cima (`desmaiosLivres`), depois dos desmaios livres cada um gasta um Revive — sem Revive, Game Over
 async function lose() {
@@ -268,8 +302,8 @@ async function serCapturado() {
   }
   const perdeu = Math.floor(S.money / 2), itens = Object.values(S.bag).reduce((a, n) => a + n, 0);
   S.money -= perdeu; S.bag = {};
-  const destinos = ZONES.filter(z => z.pool && zonaLiberada(z, P.level) && z.id !== S.zone);
-  const z = destinos.length ? pick(destinos) : ZONES[0];
+  const rotas = rotasAtuais(), destinos = rotas.filter(z => zonaLiberada(z, P.level) && z.id !== S.zone);
+  const z = destinos.length ? pick(destinos) : rotas[0];
   S.zone = z.id; S.capturas = (S.capturas || 0) + 1;
   healFull(); endBattle();
   await say(`${esc(T.nome)} levou você embora... Dias depois, você força a bola a abrir e foge.`, 'status');

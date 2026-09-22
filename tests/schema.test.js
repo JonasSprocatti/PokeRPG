@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PESOS_PONTOS } from '../js/regras.js';
 import { DIFICULDADES, ZONES, MISSOES } from '../js/dados.js';
+import { TOTAL_GENS } from '../js/mapas.js';
 
 const sql = readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
 const corpo = sql.slice(sql.indexOf('function public.validar_jornada'), sql.indexOf('drop trigger if exists validar_jornada'));
@@ -28,6 +29,9 @@ test('pesos da pontuação no SQL = PESOS_PONTOS', () => {
 test('limites do SQL acompanham o conteúdo (Alfas e missões que existem)', () => {
   const alfas = Number(corpo.match(/'alfas'\)::int, 0\) > (\d+)/)[1]);
   const missoes = Number(corpo.match(/'missoes'\)::int, 0\) > (\d+)/)[1]);
-  assert.equal(alfas, ZONES.filter(z => z.chefe).length, 'limite de Alfas');
+  const gens = Number(corpo.match(/'gens'\)::int, 0\) > (\d+)/)[1]);
+  // Alfas = S.chefes: as rotas com Alfa + a rota final de cada Gen (vencer os lendários também marca)
+  assert.equal(alfas, ZONES.filter(z => z.chefe || z.lendarios).length, 'limite de Alfas');
   assert.equal(missoes, MISSOES.length, 'limite de missões');
+  assert.equal(gens, TOTAL_GENS, 'limite de Gens vencidas');
 });

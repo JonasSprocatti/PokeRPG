@@ -380,7 +380,7 @@ test('estatisticasDaJornada + pontuacao', () => {
   const e = estatisticasDaJornada({ ...S, money: 800, maxDinheiro: 1500, gasto: 400 });
   const { registro, ...numeros } = e;
   assert.deepEqual(numeros, { especie: 'charmander', especieFinal: 'charmeleon', nivel: 16, vitorias: 12, derrotados: 10, treinadores: 2,
-    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, tempoMs: 90000, shiny: true,
+    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, gen: 1, gens: 0, tempoMs: 90000, shiny: true,
     maxDinheiro: 1500, gasto: 400, shiniesVistos: 0, shiniesAmigos: 0 });
   assert.deepEqual(registro.derrotados, { pidgey: 4, rattata: 6 });
   registro.derrotados.pidgey = 99; assert.equal(S.registro.derrotados.pidgey, 4); // é cópia, não referência
@@ -389,6 +389,17 @@ test('estatisticasDaJornada + pontuacao', () => {
   assert.equal(pontuacao(e, 2), 6060); // Hardcore vale o dobro
   // save antigo sem especieInicial: usa a espécie atual
   assert.equal(estatisticasDaJornada({ player: { level: 5, data: { speciesName: 'mudkip' } } }).especie, 'mudkip');
+  // cada Gen fechada vale 2000
+  const g2 = estatisticasDaJornada({ ...S, gen: 3, gensVencidas: [1, 2] });
+  assert.deepEqual([g2.gen, g2.gens], [3, 2]);
+  assert.equal(pontuacao(g2), 3030 + 4000);
+});
+
+test('situacaoMissoes: missão de outro mapa (gen) nem aparece', () => {
+  const M = [{ id: 'k', gen: 1, objetivo: { vitorias: 1 } }, { id: 'todas', objetivo: { vitorias: 1 } }];
+  const ids = S => situacaoMissoes(M, { wins: 0, player: { level: 5 }, ...S }).ativas.map(x => x.m.id);
+  assert.deepEqual(ids({}), ['k', 'todas']);          // save sem gen = Gen 1
+  assert.deepEqual(ids({ gen: 2 }), ['todas']);
 });
 
 test('formatarTempo', () => {

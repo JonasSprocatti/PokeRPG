@@ -25,7 +25,10 @@ export function carregarCarreira() {
   const antigo = store.get(RECORDES_ANTIGO);
   return antigo ? migrarRecordes(antigo) : { jornadas: [] };
 }
-export const salvarCarreira = c => store.set(CARREIRA_KEY, c);
+// versão sobe a cada gravação: quem guarda algo calculado da carreira (a Pokédex da rota, em render.js) sabe quando refazer
+let versao = 0;
+export const versaoCarreira = () => versao;
+export const salvarCarreira = c => { versao++; store.set(CARREIRA_KEY, c); };
 
 // adiciona sem duplicar (mesmo id = substitui)
 export const adicionarJornada = (carreira, resumo) => ({ jornadas: [...(carreira?.jornadas || []).filter(j => j.id !== resumo.id), resumo] });
@@ -51,7 +54,7 @@ export function melhorDaEspecie(jornadas, especie, excetoId) {
 
 export function calcularCarreira(jornadas) {
   const c = { jornadas: jornadas.length, tempoTotal: 0, melhorPontuacao: 0, maxNivel: 0, maxDinheiro: 0, maxMissoes: 0,
-    maxVitorias: 0, maxAlfas: 0, totalVitorias: 0, totalDerrotados: 0, totalTreinadores: 0,
+    maxVitorias: 0, maxAlfas: 0, maxGens: 0, totalVitorias: 0, totalDerrotados: 0, totalTreinadores: 0,
     shiniesVistos: 0, shiniesAmigos: 0, jornadasShiny: 0 };
   const vistos = new Set(), amigos = new Set(), ids = {}, porEspecie = {};
   for (const j of jornadas) {
@@ -62,6 +65,7 @@ export function calcularCarreira(jornadas) {
     c.maxMissoes = Math.max(c.maxMissoes, j.missoes || 0);
     c.maxVitorias = Math.max(c.maxVitorias, j.vitorias || 0);
     c.maxAlfas = Math.max(c.maxAlfas, j.alfas || 0);
+    c.maxGens = Math.max(c.maxGens, j.gens || 0);
     c.totalVitorias += j.vitorias || 0;
     c.totalDerrotados += j.derrotados || 0;
     c.totalTreinadores += j.treinadores || 0;

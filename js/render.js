@@ -1,8 +1,10 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
-import { G, zone, rotulo, dificuldadeDe, centroPokemon } from './estado.js';
+import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, ZONES, MISSOES, ORDENS } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS } from './dados.js';
+import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS } from './mapas.js';
+import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { IMPL } from './habilidades.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
@@ -49,7 +51,9 @@ function turnoBar(B, P, E) {
     : B.vez?.[0] === 'a' ? `${esc(rotulo(G.S.aliados[+B.vez.slice(1)]))} está agindo`
     : B.vez === 'fim' ? 'Fim do turno' : '…';
   // treinador: equipe (● em pé / ○ derrotado) e bolas que ainda restam
-  const info = T ? `<span class="treinador" title="Pokémon e bolas do treinador">🎯 ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span> <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}</span>` : '';
+  // lendários (luta final do mapa) usam a mesma sequência do treinador, mas sem bolas
+  const bolas = T && !T.lendarios ? ` <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}` : '';
+  const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : 'Pokémon e bolas do treinador'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span>${bolas}</span>` : '';
   return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${info}<span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
 }
 // contador de desmaios do Médio pra cima: "2/3 livres", depois "precisa de Revive (tem N)"
@@ -157,17 +161,38 @@ function renderScene() {
           ${AL.map(([A, i]) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A)}</div>`).join('')}
         </div></div>`;
   } else {
-    const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id];
+    const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id], g = genDe(G.S);
     sc.className = 'scene';
-    // zona bloqueada: chip desativado com 🔒 e o nível pedido
+    // rota bloqueada: chip desativado com 🔒 e o nível pedido; ★ = rota final (lendários)
     const chip = o => { const ok = zonaLiberada(o, nv);
-      return `<button class="chip ${o.id === z.id ? 'on' : ''} ${ok ? '' : 'trancada'}" data-act="zone" data-v="${o.id}" ${G.busy || !ok ? 'disabled' : ''} title="${ok ? '' : `Liberada no nível ${o.libera}`}">${ok ? '' : '🔒 '}${o.name}<small>${ok ? (o.pool ? `${o.min}–${o.max}` : '±2') : `Nv. ${o.libera}`}</small></button>`; };
+      return `<button class="chip ${o.id === z.id ? 'on' : ''} ${ok ? '' : 'trancada'} ${o.final ? 'final' : ''}" data-act="zone" data-v="${o.id}" ${G.busy || !ok ? 'disabled' : ''} title="${ok ? '' : `Liberada no nível ${o.libera}`}">${ok ? '' : '🔒 '}${o.final ? '★ ' : ''}${o.name}<small>${ok ? `${o.min}–${o.max}` : `Nv. ${o.libera}`}</small></button>`; };
+    const lend = z.lendarios, fechada = (G.S.gensVencidas || []).includes(g);
     sc.innerHTML = `
-      <div class="zone-head"><h2>${z.name}</h2><p>${z.desc} ${z.pool ? `Pokémon entre os níveis ${z.min} e ${z.max}.` : ''}</p></div>
-      <div class="zones">${ZONES.map(chip).join('')}</div>
-      <div class="locals" aria-hidden="true">${z.pool ? z.pool.map(id => `<img src="${SPR(id)}" alt="">`).join('') : '<span class="muted">Qualquer um dos 1025 pode aparecer.</span>'}</div>
-      ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}`;
+      <div class="zone-head"><h2>${z.name}</h2><p><span class="gen-tag">Gen ${g} · ${dadosDaGen(g).regiao}</span> ${z.desc} Pokémon entre os níveis ${z.min} e ${z.max}.</p></div>
+      <div class="zones">${rotasAtuais().map(chip).join('')}</div>
+      ${pokedexRota(z)}
+      ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}
+      ${lend ? `<div class="chefe-box lendarios ${fechada ? 'vencido' : ''}"><div class="lend-imgs">${lend.map((l, i) => `<img src="${SPR(l.id)}" alt="" class="${i === lend.length - 1 ? 'principal' : ''}" title="${esc(l.nome)}">`).join('')}</div><div><b>Lendários de ${dadosDaGen(g).regiao}</b> <span class="muted">Nv. ${lend[0].nivel}–${lend[lend.length - 1].nivel}</span><small>${fechada ? '✓ Gen fechada.' : `Até ${Math.min(4, lend.length)} lendários em sequência; ${esc(lend[lend.length - 1].nome)} por último, turbinado. Vencer fecha a Gen ${g}${DIFICULDADES[dificuldadeDe(G.S)].fimNaGen ? ' e encerra a run em vitória' : ''}.`}</small></div><button class="btn ${fechada ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Enfrentar</button></div>` : ''}`;
   }
+}
+// O que você já sabe de cada espécie: todas as jornadas da carreira + a atual. A parte da carreira fica guardada
+// até a carreira mudar (versaoCarreira) — ler e somar tudo a cada render seria desperdício.
+let saberCarreira = null;
+function conhecimento() {
+  if (saberCarreira?.v !== versaoCarreira()) {
+    saberCarreira = { v: versaoCarreira(), soma: somarRegistros(carregarCarreira().jornadas.map(j => j.registro)) };
+  }
+  return somarRegistros([saberCarreira.soma, G.S.registro]);
+}
+// Pokédex da rota: "?" = nunca enfrentou; silhueta = já enfrentou; colorido + taxa = REVELA_DERROTADOS derrotados
+function pokedexRota(z) {
+  const dex = pokedexDaRota(z, conhecimento()), vistos = dex.filter(p => p.estado !== 'oculto').length;
+  const item = p => p.estado === 'oculto'
+    ? `<div class="dexr oculto ${p.mitico ? 'mitico' : ''}" title="${p.mitico ? 'Algo muito raro vive aqui…' : 'Ainda não encontrado'}"><span>${p.mitico ? '✦' : '?'}</span></div>`
+    : `<div class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" title="${esc(fmt(p.n))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`}">
+        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.n))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</div>`;
+  return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados. Silhueta = já enfrentou; com ${REVELA_DERROTADOS} derrotados (somando suas jornadas) aparece a taxa de aparição.</p>
+    <div class="dexr-grade">${dex.map(item).join('')}</div></div>`;
 }
 function renderActions() {
   const S = G.S, a = $('#actions'), dis = G.busy ? 'disabled' : '';
@@ -179,7 +204,8 @@ function renderActions() {
       const petiscos = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]?.afinidade);
       // petisco: destaca os que o tipo do alvo gosta
       const gosta = k => E.data.types.some(t => ITEMS[k].afinidade.includes(t));
-      const secPetisco = T ? '<p class="small muted">Pokémon de treinador tem dono: petiscos não funcionam aqui.</p>'
+      const secPetisco = T?.lendarios ? '<p class="small muted">Lendários não se deixam levar por petiscos.</p>'
+        : T ? '<p class="small muted">Pokémon de treinador tem dono: petiscos não funcionam aqui.</p>'
         : G.B.chefe ? '<p class="small muted">Um Alfa guarda o território: não aceita petiscos.</p>'
         : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
         : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';

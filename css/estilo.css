@@ -213,8 +213,38 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .chip{background:var(--panel2);border:2px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px}
 .chip small{color:var(--muted);margin-left:6px;font-family:var(--display)}
 .chip.on{border-color:var(--yellow)}
-.locals{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:72px}
-.locals img{width:64px;height:64px;image-rendering:pixelated;filter:brightness(0) invert(.75);opacity:.55}
+/* ---- Pokédex da rota (mapas.js pokedexDaRota): ? → silhueta → colorido com a taxa de aparição ---- */
+.gen-tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:0 10px;font:600 13px var(--display);color:var(--yellow);margin-right:4px}
+.chip.final{border-style:dashed}
+.dex-rota p{margin:0 0 6px}
+.dexr-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
+.dexr{position:relative;display:grid;justify-items:center;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:2px 2px 4px;min-height:92px;font-size:11px;color:var(--muted);text-align:center}
+.dexr img{width:60px;height:60px;image-rendering:pixelated}
+.dexr small{line-height:1.2;overflow-wrap:anywhere}
+.dexr.oculto{place-items:center;border-style:dashed}
+.dexr.oculto span{font:700 28px var(--display);color:var(--line)}
+.dexr.silhueta img{filter:brightness(0) invert(.8);opacity:.6}
+.dexr.revelado{border-color:var(--grass);color:var(--text)}
+.dexr .taxa{font:700 12px var(--display);color:var(--grass)}
+.dexr .falta{font:500 11px var(--display);font-style:normal;color:var(--muted)}
+.dexr.mitico{border-color:#b68cff}
+.dexr.mitico.oculto span{color:#b68cff}
+/* rota final: os lendários do mapa */
+.chefe-box.lendarios{grid-template-columns:auto 1fr auto;border-color:var(--yellow)}
+.chefe-box.lendarios.vencido{border-color:var(--grass)}
+.lend-imgs{display:flex;align-items:flex-end}
+.lend-imgs img{width:44px;height:44px;margin-right:-10px}
+.lend-imgs img.principal{width:64px;height:64px;margin-right:0}
+/* escolha de mapa (Gen): criação e depois de fechar uma Gen */
+.gens{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.gen-card{display:grid;justify-items:center;gap:0;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:6px 6px 10px;color:var(--text)}
+.gen-card img{width:72px;height:72px;image-rendering:pixelated}
+.gen-card b{font:700 16px var(--display)}
+.gen-card span,.gen-card small{font-size:13px;color:var(--muted)}
+.gen-card:hover:not(:disabled),.gen-card.on{border-color:var(--yellow);background:var(--panel2)}
+.gen-card.feita{border-color:var(--grass)}
+.gen-card.trancada{opacity:.5}
+.gen-card.trancada img{filter:brightness(0) invert(.6)}
 
 .scene.battle{display:grid;grid-template-rows:auto 1fr 1fr;gap:6px;background:linear-gradient(#34428a 0 52%,#3d6a4b 52%);padding:14px 18px}
 .side{display:flex;align-items:center;justify-content:space-between;gap:12px}

@@ -135,7 +135,8 @@ declare
 begin
   if mult is null then raise exception 'dificuldade desconhecida: %', new.dificuldade; end if;
   if n < 1 or n > 100 then raise exception 'nível impossível: %', n; end if;
-  if coalesce((r->>'alfas')::int, 0) > 7 then raise exception 'mais Alfas do que existem'; end if;
+  if coalesce((r->>'alfas')::int, 0) > 90 then raise exception 'mais Alfas do que existem'; end if;
+  if coalesce((r->>'gens')::int, 0) > 9 then raise exception 'mais Gens do que existem'; end if;
   if coalesce((r->>'missoes')::int, 0) > 36 then raise exception 'mais missões do que existem'; end if;
   if coalesce((r->>'amigos')::int, 0) > 2000 or coalesce((r->>'vitorias')::int, 0) > 100000
      or coalesce((r->>'treinadores')::int, 0) > 100000 or coalesce((r->>'evolucoes')::int, 0) > 1000 then
@@ -146,7 +147,8 @@ begin
   new.pontuacao := round((n * 100
     + coalesce((r->>'vitorias')::int, 0) * 10 + coalesce((r->>'treinadores')::int, 0) * 50
     + coalesce((r->>'alfas')::int, 0) * 300 + coalesce((r->>'amigos')::int, 0) * 100
-    + coalesce((r->>'evolucoes')::int, 0) * 150 + coalesce((r->>'missoes')::int, 0) * 120) * mult);
+    + coalesce((r->>'evolucoes')::int, 0) * 150 + coalesce((r->>'missoes')::int, 0) * 120
+    + coalesce((r->>'gens')::int, 0) * 2000) * mult);
   new.resumo := jsonb_set(r, '{pontuacao}', to_jsonb(new.pontuacao));
   return new;
 end $$;

@@ -6,7 +6,8 @@ import { $, limparTopo, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
-import { SPR, STATS, STAT_PT, NATURES, ZONES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
+import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
+import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
@@ -29,7 +30,9 @@ export function showCreate() {
     <p class="lead">Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta. Os outros Pokémon você encontra pelo caminho.</p>
     <h3 class="passo"><span>1</span> Dificuldade</h3>
     <div id="difs" class="difs"></div>
-    <h3 class="passo"><span>2</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
+    <h3 class="passo"><span>2</span> Mapa (Gen)</h3>
+    <div id="gens"></div>
+    <h3 class="passo"><span>3</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
     <div id="escolha"></div>
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
     <div id="netwarn"></div>
@@ -65,9 +68,22 @@ function secaoDesbloqueios() {
       ${quase.length ? `<h4>Quase lá</h4><ul class="quase">${quase.map(p => `<li>${p.id ? `<img src="${SPR(p.id)}" alt="">` : ''}<b>${esc(fmt(p.especie))}</b><div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div><small>${esc(textoProgresso(p))}</small></li>`).join('')}</ul>` : ''}
     </div>`;
 }
-// cartões de dificuldade + monta o passo 2 conforme o modo (Randomizer não escolhe Pokémon)
+// mapas que dá pra escolher neste modo: no Roguelike (fimNaGen), só os liberados vencendo a Gen anterior; nos outros, todos
+const gensLiberadas = () => DIFICULDADES[G.dif].fimNaGen ? gensLiberadasRoguelike(carregarCarreira().jornadas) : GENS.map(x => x.gen);
+// passo 2: mapa (Gen). Full Randomizer sorteia o mapa também (não mostra escolha)
+function renderGens() {
+  const ok = gensLiberadas();
+  if (!ok.includes(G.gen)) G.gen = ok[ok.length - 1];
+  if (G.dif === 'randomizer') { $('#gens').innerHTML = '<p class="small muted">🎲 O mapa também é sorteado.</p>'; return; }
+  $('#gens').innerHTML = `<div class="gens">${GENS.map(x => { const lib = ok.includes(x.gen), lend = x.rotas[x.rotas.length - 1].lendarios;
+    return `<button class="gen-card ${G.gen === x.gen ? 'on' : ''} ${lib ? '' : 'trancada'}" data-act="gen" data-v="${x.gen}" ${lib ? '' : 'disabled'} aria-pressed="${G.gen === x.gen}" title="${lib ? '' : `Vença a Gen ${x.gen - 1} no Roguelike pra liberar`}">
+      <img src="${SPR(lend[lend.length - 1].id)}" alt="" loading="lazy"><b>${lib ? '' : '🔒 '}Gen ${x.gen}</b><span>${x.regiao}</span></button>`; }).join('')}</div>
+    <p class="small muted">${DIFICULDADES[G.dif].fimNaGen ? 'No Roguelike, vencer os lendários de um mapa encerra a run em vitória e libera o mapa da Gen seguinte.' : 'Cada mapa tem 10 rotas; vencer os lendários da última deixa você escolher o próximo mapa, com a mesma equipe.'} Os Pokémon selvagens são os daquela Gen.</p>`;
+}
+// cartões de dificuldade + monta os passos 2 e 3 conforme o modo (Randomizer não escolhe Pokémon nem mapa)
 export function renderDificuldade() {
   $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
+  renderGens();
   const rnd = G.dif === 'randomizer';
   $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
   $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';
@@ -125,19 +141,20 @@ export function renderPreview() {
     </div></section>`;
 }
 // Monta o save e entra no jogo. `nature`/`ability` undefined = sorteadas pelo makeMon.
-async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade }) {
+async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen }) {
   const sp = await loadSpecies(data.speciesUrl);
   const growth = await loadGrowth(sp.growthUrl);
   const evo = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
   const mon = await makeMon(data, level, { nature, ability, nick });
   mon.exp = growth[mon.level];
-  const startZone = [...ZONES].reverse().find(z => z.pool && zonaLiberada(z, mon.level) && z.min <= mon.level) || ZONES[0];
-  G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+  // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
+  const rotas = rotasDaGen(gen), startZone = [...rotas].reverse().find(z => !z.final && zonaLiberada(z, mon.level) && z.min <= mon.level) || rotas[0];
+  G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
   G.mode = 'explore'; G.panel = 'main';
   buildGame();
-  log(`Você abre os olhos em ${startZone.name}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
+  log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');
@@ -149,7 +166,8 @@ export async function startGame(btn) {
   const PV = G.PV, livre = DIFICULDADES[G.dif].escolhaLivre;
   try {
     PV.nick = ($('#pv-nick')?.value || '').trim();
-    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif });
+    const gen = gensLiberadas().includes(G.gen) ? G.gen : 1; // garantia (o cartão trancado já vem desativado)
+    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif, gen });
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Tentar de novo';
     $('#preview').insertAdjacentHTML('beforeend', `<p class="err">${apiErr(e)}</p>`);
@@ -160,7 +178,7 @@ export async function fullRandomizer(btn) {
   btn.disabled = true; btn.textContent = '🎲 Sorteando…';
   try {
     const data = await resolvePokemon(livres() ? rand(1, 1025) : pick(INICIAIS));
-    await iniciarJornada({ data, level: 5, dificuldade: 'randomizer' });
+    await iniciarJornada({ data, level: 5, dificuldade: 'randomizer', gen: pick(GENS).gen });
   } catch (e) {
     btn.disabled = false; btn.textContent = '🎲 Sortear tudo e começar';
     $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`;

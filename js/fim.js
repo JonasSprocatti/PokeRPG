@@ -11,6 +11,7 @@ import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
 import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES } from './carreira.js';
 import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
 import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
+import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
 import { esc, fmt, store, novoId } from './util.js';
 
 // resumo de uma jornada (a atual, ainda em andamento, ou a que está terminando)
@@ -20,7 +21,8 @@ export function montarResumo(S, motivo, extra = {}) {
     data: new Date().toISOString(), pontuacao: pontuacao(est, DIFICULDADES[dif].multPontos), ...extra };
 }
 
-// motivo: 'capturado' | 'desmaiou' | 'encerrou'. `extra` entra no resumo (ex.: { cacador })
+// motivo: 'capturado' | 'desmaiou' | 'encerrou' | 'venceu' (Roguelike: fechou a Gen). `extra` entra no resumo
+// (ex.: { cacador }, { genVencida } — é o que libera o mapa seguinte, mapas.js gensLiberadasRoguelike)
 export function encerrarJornada(motivo, extra = {}) {
   const S = G.S; if (!S) return;
   marcarTempo();
@@ -35,8 +37,10 @@ export function encerrarJornada(motivo, extra = {}) {
   telaFim(resumo, anterior, !anterior || resumo.pontuacao > anterior.pontuacao, jornadas, novosDesbloqueios(carreira.jornadas, nova.jornadas));
 }
 
-const TITULO = { capturado: 'Game Over', desmaiou: 'Game Over', encerrou: 'Jornada encerrada' };
-const frase = r => r.motivo === 'capturado' ? `${esc(r.cacador || 'Um treinador')} capturou ${esc(r.nome)}. No ${DIFICULDADES[r.dificuldade].nome} não existe segunda chance.`
+const TITULO = { capturado: 'Game Over', desmaiou: 'Game Over', encerrou: 'Jornada encerrada', venceu: '🏆 Vitória' };
+const frase = r => r.motivo === 'venceu' ? `${esc(r.nome)} venceu os lendários de ${dadosDaGen(r.genVencida).regiao} e fechou a Gen ${r.genVencida}. `
+    + (r.genVencida < TOTAL_GENS ? `<b>🗺 O mapa da Gen ${r.genVencida + 1} (${dadosDaGen(r.genVencida + 1).regiao}) está liberado</b> pras próximas runs.` : 'Era a última Gen: você fechou o jogo!')
+  : r.motivo === 'capturado' ? `${esc(r.cacador || 'Um treinador')} capturou ${esc(r.nome)}. No ${DIFICULDADES[r.dificuldade].nome} não existe segunda chance.`
   : r.motivo === 'desmaiou' ? (DIFICULDADES[r.dificuldade]?.permadeath ? `${esc(r.nome)} desmaiou. No Roguelike não existe segunda chance: a run acabou.`
     : `${esc(r.nome)} desmaiou sem nenhum Revive na mochila. A jornada termina aqui.`)
   : `Você encerrou a jornada de ${esc(r.nome)}. O resultado foi para a sua carreira.`;
@@ -44,7 +48,7 @@ const n = v => (v || 0).toLocaleString('pt-BR');
 // linhas da tela: [rótulo, campo, formatação]
 const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jogo', 'tempoMs', formatarTempo], ['Vitórias', 'vitorias'],
   ['Pokémon derrotados', 'derrotados'], ['Treinadores', 'treinadores'], ['Alfas', 'alfas'], ['Amigos', 'amigos'], ['Evoluções', 'evolucoes'],
-  ['Missões', 'missoes'], ['Mais dinheiro de uma vez', 'maxDinheiro', v => '₽' + n(v)]];
+  ['Missões', 'missoes'], ['Gens fechadas', 'gens'], ['Mais dinheiro de uma vez', 'maxDinheiro', v => '₽' + n(v)]];
 
 function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
   G.mode = 'fim'; limparTopo();
@@ -101,6 +105,7 @@ export function telaCarreira() {
       ${card('Pokémon derrotados', n(c.totalDerrotados))}
       ${card('Treinadores', n(c.totalTreinadores))}
       ${card('Alfas numa jornada', n(c.maxAlfas))}
+      ${card('Gens fechadas numa jornada', n(c.maxGens), `mapas do Roguelike liberados: ${gensLiberadasRoguelike(jornadas).length} de ${TOTAL_GENS}`)}
       ${card('✨ Shinies vistos', n(c.shiniesVistos), `${n(c.shiniesAmigos)} viraram amigos · ${n(c.jornadasShiny)} jornada(s) sendo shiny`)}
     </div>
     ${secaoRoguelike(jornadas.filter(j => !j.emAndamento))}
@@ -114,4 +119,18 @@ export function telaCarreira() {
         <b class="pts">${n(m.pontuacao)}</b></div>`).join('')}</div>`
     : '<p class="muted">Nenhuma jornada ainda. Os números aparecem aqui quando você encerra uma jornada ou leva Game Over.</p>'}
     <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button><button class="btn ghost" data-act="ranking">🏆 Ranking global</button></div></main>`;
+}
+
+// Fora do Roguelike, vencer os lendários de um mapa não encerra a jornada: você escolhe o próximo (qualquer Gen, até
+// uma já fechada). O mapa novo começa no seu nível (mapas.js escalaNivel). S.escolhendoGen = esta tela está pendente
+// (se fechar o jogo aqui, ela volta ao abrir). O clique "proxima-gen" é tratado em main.js.
+export function telaEscolherGen() {
+  const S = G.S, g = genDe(S), feitas = S.gensVencidas || [];
+  G.mode = 'gen'; limparTopo();
+  $('#app').innerHTML = `<main class="create fim">
+    <h1>🏆 Gen ${g} fechada!</h1>
+    <p class="lead">Você venceu os lendários de ${dadosDaGen(g).regiao}. Pra qual mapa agora? Você leva a equipe, a mochila e o dinheiro; os níveis do mapa novo começam no seu (${S.player.level}) e sobem até o 100. <b>${feitas.length} de ${TOTAL_GENS}</b> Gens fechadas nesta jornada.</p>
+    <div class="gens">${GENS.map(x => { const lend = x.rotas[x.rotas.length - 1].lendarios, fechada = feitas.includes(x.gen);
+      return `<button class="gen-card ${fechada ? 'feita' : ''}" data-act="proxima-gen" data-v="${x.gen}"><img src="${SPR(lend[lend.length - 1].id)}" alt="" loading="lazy"><b>Gen ${x.gen}</b><span>${x.regiao}</span><small>${fechada ? '✓ fechada (dá pra jogar de novo)' : `${x.rotas.length} rotas`}</small></button>`; }).join('')}</div>
+    <div class="subrow" style="margin-top:18px"><button class="btn ghost" data-act="carreira">📊 Ver carreira</button><button class="btn ghost" data-act="new">Encerrar a jornada aqui</button></div></main>`;
 }

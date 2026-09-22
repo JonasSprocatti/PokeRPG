@@ -242,6 +242,7 @@ export function situacaoMissoes(missoes, S) {
   let escondidas = 0;
   for (const m of missoes) {
     if (feitas.includes(m.id)) continue;
+    if (m.gen && m.gen !== (S.gen || 1)) continue;          // missão de outro mapa (ex.: Alfas de Kanto) nem conta
     if (m.libera && !progressoCondicao(m.libera, S).ok) { escondidas++; continue; }
     const p = progressoCondicao(m.objetivo, S);
     (p.ok ? prontas : ativas).push({ m, ...p });
@@ -262,7 +263,9 @@ export function estatisticasDaJornada(S) {
     especie: S.especieInicial || S.player.data.speciesName, especieFinal: S.player.data.speciesName,
     nivel: S.player.level, vitorias: S.wins || 0, derrotados: soma(r.derrotados), treinadores: S.treinadoresVencidos || 0,
     alfas: Object.keys(S.chefes || {}).length, amigos: soma(r.amigos), evolucoes: soma(r.evolucoes),
-    missoes: (S.missoesFeitas || []).length, capturas: S.capturas || 0, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
+    missoes: (S.missoesFeitas || []).length, capturas: S.capturas || 0,
+    // mapa (Gen) em que a jornada estava e quantas Gens fechou (venceu os lendários)
+    gen: S.gen || 1, gens: (S.gensVencidas || []).length, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
     maxDinheiro: Math.max(S.maxDinheiro || 0, S.money || 0), gasto: S.gasto || 0,
     shiniesVistos: soma(r.shinies), shiniesAmigos: soma(r.shiniesAmigos),
     // cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui
@@ -270,7 +273,7 @@ export function estatisticasDaJornada(S) {
   };
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)
-export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 300, amigos: 100, evolucoes: 150, missoes: 120 };
+export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 300, amigos: 100, evolucoes: 150, missoes: 120, gens: 2000 };
 export const pontuacao = (est, multDificuldade = 1) =>
   Math.round(Object.entries(PESOS_PONTOS).reduce((a, [k, p]) => a + (est[k] || 0) * p, 0) * multDificuldade);
 

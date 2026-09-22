@@ -9,10 +9,11 @@
 // pelos próprios Pokémon), prazo de 45 s com golpe automático, roda o motor puro (mp-motor.js) e publica.
 // Resultado: co-op aplica na jornada de cada um (HP proporcional, PP, XP, EVs, dinheiro; Roguelike = permadeath, fora
 // dele desmaio volta com 1 HP); PvP é amistoso (não mexe em HP/PP, só conta vitórias/derrotas em S.pvp).
-import { G, save, registrar, dificuldadeDe } from './estado.js';
+import { G, save, registrar, dificuldadeDe, rotasAtuais } from './estado.js';
 import { $, limparTopo, logRaw, say, toast } from './ui.js';
 import { spriteFrente } from './render.js';
 import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
+import { sortearDaRota } from './mapas.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal } from './mp-motor.js';
 import { carregarCarreira } from './carreira.js';
@@ -164,8 +165,8 @@ function publicarLobby() { enviar('lobby', { zona: sala.zona, config: sala.confi
 export function configurarSala(campo, valor) {
   if (!sala?.anfitriao || sala.batalha) return;
   if (campo === 'zona') {
-    const z = ZONES.find(x => x.id === valor);
-    if (!temRun() || !z || !zonaLiberada(z, G.S.player.level)) return;
+    const z = temRun() && rotasAtuais().find(x => x.id === valor); // só rotas do mapa (Gen) da run do anfitrião
+    if (!z || !zonaLiberada(z, G.S.player.level)) return;
     sala.zona = valor;
   } else if (campo === 'modo' && ['coop', 'pvp'].includes(valor)) {
     if (valor === 'coop' && !temRun()) return renderSala(); // co-op é a run do anfitrião
@@ -205,9 +206,9 @@ export async function iniciarBatalhaMP(tipo) {
       }
       opcoes.pvp = true;
     } else {
-      const z = ZONES.find(x => x.id === sala.zona) || ZONES[0];
-      if (tipo === 'alfa' && !z.chefe) return;
       if (!temRun()) throw new Error('Co-op é jogar a run de alguém: o anfitrião precisa de uma run em andamento.');
+      const rs = rotasAtuais(), z = rs.find(x => x.id === sala.zona) || rs[0]; // níveis da run do anfitrião
+      if (tipo === 'alfa' && !z.chefe) return; // a luta dos lendários (rota final) é só no single player
       A = montarLado(membros, 'A');
       const meuNivel = G.S.player.level;
       if (cfg.balancear) { A = balancearCoop(A, meuNivel); abertura = `Balanceado: o time todo no nível ${meuNivel} (o do anfitrião). Quem teve o nível ajustado não leva XP nem itens pra própria run.`; }
@@ -222,11 +223,10 @@ export async function iniciarBatalhaMP(tipo) {
         E.stats = statsDeChefe(E.stats); E.stats.hp *= membros.length; E.hp = E.stats.hp; // Alfa aguenta o grupo todo
         B = [fotoDoMon(E, 'B0', 'ia', fmt(E.name) + ' Alfa')];
       } else {
-        const media = Math.round(A.reduce((a, m) => a + m.level, 0) / A.length);
         B = await Promise.all(membros.map(async (_, i) => { // um selvagem por jogador
-          let lvl = z.pool ? rand(z.min, z.max) : clamp(media + rand(-2, 2), 2, 100);
+          let lvl = rand(z.min, z.max);
           if (!cfg.balancear) lvl = Math.max(lvl, maisForte);
-          const E = await makeMon(await loadPokemon(z.pool ? pick(z.pool) : rand(1, 1025)), lvl);
+          const E = await makeMon(await loadPokemon(sortearDaRota(z).id), lvl); // pela taxa de aparição da rota
           return fotoDoMon(E, 'B' + i, 'ia', fmt(E.name) + ' selvagem');
         }));
       }
@@ -446,7 +446,7 @@ function renderLobby(cabecalho, pvp, z) {
   const trocarTime = pvp ? `<div class="subrow">Seu time: ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
   const sair = '<button class="btn ghost" data-act="mp-sair">Sair da sala</button>';
   if (!sala.anfitriao) { $('#mp-acoes').innerHTML = trocarTime + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
-  const zonas = temRun() ? ZONES.filter(x => zonaLiberada(x, G.S.player.level)) : [];
+  const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level)) : []; // rotas do mapa (Gen) da run
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
   const naSalaIds = new Set(sala.membros.map(m => m.id));
   const amigosFora = usuario() ? nuvem.amigos.filter(a => a.status === 'aceita' && !naSalaIds.has(a.amigo)) : [];

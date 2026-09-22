@@ -17,7 +17,7 @@ export function contextoTecnico() {
   return {
     versao: 'pokerpg-jogo-v1', tela: G.mode, navegador: navigator.userAgent.slice(0, 200),
     viewport: `${innerWidth}x${innerHeight}`, online: !offline(), data: new Date().toISOString(),
-    jornada: S ? { modo: dificuldadeDe(S), especie: P.data.speciesName, nivel: P.level, zona: S.zone, aliados: (S.aliados || []).length,
+    jornada: S ? { modo: dificuldadeDe(S), especie: P.data.speciesName, nivel: P.level, gen: S.gen || 1, zona: S.zone, aliados: (S.aliados || []).length,
       emBatalha: !!G.B, ultimasLinhas: (S.log || []).slice(-8).map(l => semHtml(l.html)) } : null
   };
 }

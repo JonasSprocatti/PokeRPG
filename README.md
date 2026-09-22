@@ -2,7 +2,7 @@
 
 # PokéRPG
 
-RPG de texto no navegador em que **você é o Pokémon**: sem treinador e sem Pokébola. Você começa como um inicial, explora a região, luta contra selvagens, foge de treinadores que querem te capturar, faz amigos e enfrenta os Alfas de cada zona.
+RPG de texto no navegador em que **você é o Pokémon**: sem treinador e sem Pokébola. Você começa como um inicial, explora as rotas de uma região (um mapa por Gen, de Kanto a Paldea), luta contra selvagens, foge de treinadores que querem te capturar, faz amigos, enfrenta os Alfas de cada rota e, no fim do mapa, os lendários daquela Gen.
 
 Os dados vêm ao vivo da [PokéAPI](https://pokeapi.co) (1025 espécies, golpes, habilidades, evoluções), e as contas seguem as fórmulas dos jogos: stats com IV/EV e natureza, dano com STAB, tipos e crítico, estágios, status, XP por curva de crescimento e captura da Gen 3/4.
 
@@ -14,8 +14,9 @@ Feito em JavaScript puro (ES modules), sem build e sem dependências. Funciona o
 
 ### Começando
 1. **Escolha o modo**. O principal é o **Roguelike** (abaixo).
-2. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea) ou Pikachu e Eevee. No Roguelike, também aparecem as espécies que você já desbloqueou.
-3. Explore. O jogo salva sozinho.
+2. **Escolha o mapa (Gen)**. No Roguelike, só os já liberados; nos outros modos, qualquer um. No Full Randomizer, o mapa também é sorteado.
+3. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea) ou Pikachu e Eevee. No Roguelike, também aparecem as espécies que você já desbloqueou.
+4. Explore. O jogo salva sozinho.
 
 ### Roguelike (modo principal)
 Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloqueia novas espécies para as próximas runs**. Os contadores somam todas as suas jornadas Roguelike:
@@ -26,6 +27,8 @@ Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloq
 A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de fim mostra o que aquela run liberou, e a Carreira mostra todo o progresso. Só jornadas Roguelike contam.
 
 **Sem segunda chance:** no Roguelike, se você desmaiar, a run acaba (nem Revive salva). Se um **aliado** desmaiar, ele é **perdido para sempre**, e o Centro não traz de volta. Ser capturado também encerra a run. O Centro é pago (com desconto por vitória) e você começa no nível 5.
+
+**Vencer a run:** vença os **lendários da última rota** do mapa. A run termina em vitória e o **mapa da Gen seguinte** fica liberado para as próximas runs (Gen 1 → Gen 2 → … → Gen 9).
 
 ### Todos os modos
 
@@ -41,8 +44,13 @@ A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de 
 Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### O mundo
-- **Zonas** que abrem por nível: Rota 1, Floresta de Viridian, Monte Lua, Rota 24, Torre Pokémon, Zona Safari, Caverna Cerúlea e a Fenda Dimensional (qualquer Pokémon perto do seu nível).
-- **Alfas:** cada zona tem um chefe mais forte que o normal (HP ×2, +30% no resto, IVs perfeitos). Prêmio na primeira vitória.
+- **Um mapa por Gen** (Kanto, Johto, Hoenn, Sinnoh, Unova, Kalos, Alola, Galar, Paldea), cada um com **10 rotas** que abrem por nível (do 2 ao ~62). Os selvagens de cada mapa são os daquela Gen, cada um na rota que combina com o nível e o tipo dele. Nenhuma rota tem todos os Pokémon: para achar todos, você passa pelos vários mapas.
+- **Taxa de aparição:** comuns aparecem mais, raros menos (pela taxa de captura da espécie). **Míticos** da Gen (Mew, Celebi…) podem aparecer nas duas rotas mais altas, bem raramente (~0,4% dos encontros).
+- **Pokédex da rota:** cada espécie da rota aparece como **?** até você enfrentá-la. Depois de enfrentar, vira **silhueta**. Com **10 derrotados** (somando todas as suas jornadas), aparece colorida e com a **taxa de aparição** naquela rota.
+- **Alfas:** cada rota tem um chefe mais forte que o normal (HP ×2, +30% no resto, IVs perfeitos). Prêmio na primeira vitória.
+- **Lendários:** a última rota de cada mapa guarda os lendários da Gen. Você enfrenta até 4 em sequência, e o principal (Mewtwo, Ho-Oh, Rayquaza…) vem por último, turbinado. Vencer **fecha a Gen**:
+  - no Roguelike, a run termina em vitória e libera o mapa seguinte;
+  - nos outros modos, você **escolhe o próximo mapa** (qualquer Gen) e segue com a mesma equipe. Os níveis do mapa novo começam no seu e sobem até o 100.
 - **Treinadores caçadores:** aparecem explorando, com 1 a 3 Pokémon e Pokébolas. Com seu HP pela metade, podem tentar te capturar, e a chance depende da taxa de captura da **sua** espécie.
 - **Shiny:** 1 em 4096, para você e para qualquer Pokémon que aparecer.
 - **Centro Pokémon, loja e mochila:** Potion, curas de status, Ether, X-itens, Rare Candy, Revive e petiscos.
@@ -68,10 +76,10 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 - Itens podem ser usados em qualquer um da equipe, e o Revive reanima um aliado.
 
 ### Missões
-36 missões que vão aparecendo conforme você joga: derrotar espécies (mais para as comuns, menos para as raras), fazer amigos, vencer a trilha dos Alfas, juntar e gastar dinheiro, subir de nível, evoluir e derrotar treinadores.
+36 missões que vão aparecendo conforme você joga: derrotar espécies (mais para as comuns, menos para as raras), fazer amigos, vencer a trilha dos Alfas (a de Kanto só aparece no mapa da Gen 1), juntar e gastar dinheiro, subir de nível, evoluir e derrotar treinadores.
 
 ### Fim de jornada e carreira
-- A jornada termina com Game Over ou quando você a encerra (**Novo jogo**). A tela de fim compara tudo com o seu recorde naquela espécie.
+- A jornada termina com Game Over, com vitória (Roguelike: venceu os lendários) ou quando você a encerra (**Novo jogo**). A tela de fim compara tudo com o seu recorde naquela espécie. Cada Gen fechada vale **2000 pontos**.
 - **📊 Carreira:** Pokémon favorito, Pokédex (quantos já viraram amigos e quantos faltam dos 1025, além dos vistos), shinies, maior quantia de dinheiro, mais missões numa jornada, nível máximo, tempo total e o melhor resultado por espécie.
 
 ### 👥 Multiplayer: co-op e PvP
@@ -136,7 +144,8 @@ Depois abra http://localhost:3000.
 |---|---|
 | `index.html`, `css/estilo.css` | Página e estilo |
 | `js/regras.js` | Fórmulas puras (dano, stats, captura, missões, pontuação…), todas testadas |
-| `js/dados.js` | Tabelas: tipos, naturezas, itens, zonas e Alfas, missões, dificuldades, iniciais, ordens |
+| `js/dados.js` | Tabelas: tipos, naturezas, itens, missões, dificuldades, iniciais, ordens |
+| `js/mapas.js`, `js/dados-mapas.js` | Mapas por Gen: rotas, taxas de aparição, Alfas, lendários, Pokédex da rota. `dados-mapas.js` é **gerado** da PokéAPI por `ferramentas/gerar-mapas.ps1` (não editar à mão) |
 | `js/golpe.js`, `js/habilidades.js`, `js/especiais.js` | Motor único dos golpes, a tabela de habilidades e a de golpes especiais (Protect, Rest, Explosion, carga/recarga…) |
 | `docs/auditoria-batalha.md` | Auditoria de todos os golpes e habilidades contra o motor: o que funciona, o que é aproximado e o que falta |
 | `js/relatos.js` | Bugs e sugestões |
@@ -164,6 +173,7 @@ Depois abra http://localhost:3000.
   4. **Itens segurados:** Leftovers, Choice, Life Orb, frutas…
   5. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
   6. **Mecânicas especiais:** Mega Evolução, Z-Moves, Dynamax/Gigantamax e Terastalização.
+- [ ] **Mapas por Gen, próximos passos:** missões próprias de cada mapa (hoje as de espécie valem em qualquer mapa, e a trilha de Alfas é só de Kanto) e a luta dos lendários no co-op (hoje é só no single player).
 - [ ] Acabamento: sons, animações e instalação como app (PWA).
 
 ### Já feito
@@ -171,6 +181,7 @@ Depois abra http://localhost:3000.
 - [x] Treinadores caçadores, dificuldades, shiny, Full Randomizer
 - [x] Amizade, aliados com ordens, batalha com vários do mesmo lado
 - [x] Zonas por nível, Alfas, missões
+- [x] Mapas por Gen (9 regiões × 10 rotas), lendários no fim de cada mapa, míticos raros, Pokédex da rota com silhuetas e taxa de aparição
 - [x] Game Over, carreira, Revive
 - [x] Painéis modulares
 - [x] Login (Google / e-mail), carreira e jornada na nuvem, modo offline

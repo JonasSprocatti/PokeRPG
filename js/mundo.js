@@ -3,7 +3,7 @@
 import { G, zone, save } from './estado.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
-import { startBattle, startTrainerBattle, startBossBattle } from './batalha.js';
+import { startBattle, startTrainerBattle, startBossBattle, startLendarios } from './batalha.js';
 import { verificarMissoes } from './missoes.js';
 import { addItem } from './itens.js';
 import { ITEMS, FIND_ITEMS, FLAVOR } from './dados.js';
@@ -31,12 +31,13 @@ export async function explore() {
     G.busy = false; render(); save();
   }
 }
-// botão "⚔ Desafiar" do Alfa da zona atual
+// botão "⚔ Desafiar": o Alfa da rota atual, ou os lendários na rota final do mapa
 export async function desafiarChefe() {
   const z = zone();
-  if (G.busy || !z.chefe) return;
+  if (G.busy || !(z.chefe || z.lendarios)) return;
+  if (z.lendarios && G.S.player.level < z.libera) return; // o botão já vem desativado; garantia
   G.busy = true; render();
-  try { await startBossBattle(z); }
+  try { await (z.lendarios ? startLendarios(z) : startBossBattle(z)); }
   catch (e) { console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main'; log(e.offline ? e.message : apiErr(e), 'hit'); }
   finally { G.busy = false; render(); save(); }
 }

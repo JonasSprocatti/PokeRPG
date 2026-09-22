@@ -3,6 +3,8 @@
 // `let` exportado não pode ser reatribuído por quem importa, então tudo mora num objeto só (mesma
 // referência sempre, só os campos mudam).
 //   S     = save do jogo (player, aliados, bag, money, zone, meta.growth/evo, wins, registro, dificuldade, log) — vai pro localStorage.
+//           Mapas por Gen (mapas.js): gen (mapa atual; sem campo = 1), gensVencidas [g…], nivelInicioGen (nível ao entrar
+//           num mapa depois do 1º — escala os níveis), escolhendoGen (fechou uma Gen e falta escolher o próximo mapa).
 //           Cada aliado é um Pokémon completo (makeMon) + `growth` (curva de XP da espécie dele).
 //   B     = batalha em andamento ou null: { enemy, turn, runs, vez, turnoNoLog, trainer?, taxaCaptura?, capturado? }
 //           vez = quem está agindo agora ('p' | 'e' | 't' treinador | 'fim' | null) — só apresentação (barra de turno, placa destacada)
@@ -11,18 +13,24 @@
 //   mode  = 'create' | 'explore' | 'battle'
 //   busy  = true enquanto um turno/exploração está resolvendo (trava os botões)
 //   panel = painel de ações visível: 'main' | 'shop' | 'moves' | 'bag'
-import { ZONES, DIFICULDADES } from './dados.js';
+import { DIFICULDADES } from './dados.js';
 import { precisaCurar, custoCentroEquipe, custoComDesconto } from './regras.js';
+import { genDe, rotasDaGen, rotaNaJornada } from './mapas.js';
 import { esc, fmt, store } from './util.js';
 
 export const SAVE_KEY = 'pokerpg-save-v1';
 //   dif   = dificuldade escolhida na tela inicial (antes de existir PV/S); vira S.dificuldade ao começar
 //   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', abertos: new Set() };
+//   gen   = mapa (Gen) escolhido na tela inicial; vira S.gen ao começar
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, abertos: new Set() };
 
-export const zone = () => ZONES.find(z => z.id === G.S.zone) || ZONES[0];
+// rotas do mapa (Gen) atual, já com os níveis desta jornada (mapas.js: escalaNivel depois de trocar de Gen)
+export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z, G.S));
+// rota atual (save sem rota válida nesse mapa — ex.: a Fenda Dimensional, que saiu — cai na 1ª rota do mapa)
+export const zone = () => { const rs = rotasAtuais(); return rs.find(z => z.id === G.S.zone) || rs[0]; };
 // nome de exibição: seu apelido / nome do aliado, "Pidgey de Caçador Rui" (batalha de treinador) ou "Pidgey selvagem"
 export const rotulo = m => m === G.S?.player || G.S?.aliados?.includes(m) ? (m.nick || fmt(m.name))
+  : m.lendario ? fmt(m.name) + ' lendário'
   : m.chefe ? fmt(m.name) + ' Alfa'
   : G.B?.trainer ? `${fmt(m.name)} de ${G.B.trainer.nome}` : fmt(m.name) + ' selvagem';
 

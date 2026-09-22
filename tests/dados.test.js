@@ -121,15 +121,16 @@ test('MISSOES: ids únicos e toda referência (zona, missão, item) existe', () 
   const ids = MISSOES.map(m => m.id), zonas = ZONES.map(z => z.id);
   assert.equal(new Set(ids).size, ids.length);
   const chaves = ['derrotar', 'vitorias', 'amigos', 'nivel', 'chefe', 'treinadores', 'missao', 'dinheiro', 'gasto', 'evolucoes'];
-  const confere = (c, onde) => {
+  const confere = (c, onde, m = {}) => {
     assert.equal(Object.keys(c).filter(k => chaves.includes(k)).length, 1, `${onde}: condição precisa de exatamente um tipo`);
-    if (c.chefe) assert.ok(zonas.includes(c.chefe) && ZONES.find(z => z.id === c.chefe).chefe, `${onde}: zona "${c.chefe}" sem Alfa`);
+    if (c.chefe) { const z = ZONES.find(z => z.id === c.chefe); assert.ok(z && (z.chefe || z.lendarios), `${onde}: zona "${c.chefe}" sem Alfa nem lendários`); }
+    if (c.chefe && m.gen) assert.equal(ZONES.find(z => z.id === c.chefe).gen, m.gen, `${onde}: Alfa de outro mapa`);
     if (c.missao) assert.ok(ids.includes(c.missao), `${onde}: missão "${c.missao}" não existe`);
     if (c.derrotar) assert.match(c.derrotar, /^[a-z0-9-]+$/, `${onde}: espécie deve ser o speciesName em minúsculas`);
   };
   for (const m of MISSOES) {
-    confere(m.objetivo, `${m.id}.objetivo`);
-    if (m.libera) confere(m.libera, `${m.id}.libera`);
+    confere(m.objetivo, `${m.id}.objetivo`, m);
+    if (m.libera) confere(m.libera, `${m.id}.libera`, m);
     assert.ok(m.premio.dinheiro || m.premio.itens, `${m.id}: sem prêmio`);
     for (const k of Object.keys(m.premio.itens || {})) assert.ok(ITEMS[k], `${m.id}: prêmio "${k}" não existe em ITEMS`);
   }
@@ -139,10 +140,17 @@ test('MISSOES: ids únicos e toda referência (zona, missão, item) existe', () 
 test('ZONES: ids únicos, faixa de nível coerente, ambientação só de zona que existe', () => {
   const ids = ZONES.map(z => z.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const z of ZONES.filter(z => z.pool)) {
+  for (const z of ZONES) {
     assert.ok(z.min >= 1 && z.min <= z.max && z.max <= 100, `${z.id}: faixa ${z.min}–${z.max}`);
-    assert.ok(z.pool.length > 0);
-    for (const id of z.pool) assert.ok(Number.isInteger(id) && id >= 1 && id <= 1025);
+    assert.ok(z.pool.length >= 5, `${z.id}: pouca espécie`);
+    for (const p of z.pool) {
+      assert.ok(Number.isInteger(p.id) && p.id >= 1 && p.id <= 1025, `${z.id}: id ${p.id}`);
+      assert.match(p.n, /^[a-z0-9-]+$/, `${z.id}: nome da espécie (speciesName) "${p.n}"`);
+      assert.ok(p.p > 0, `${z.id}: peso de ${p.n}`);
+    }
+    assert.equal(new Set(z.pool.map(p => p.id)).size, z.pool.length, `${z.id}: espécie repetida na rota`);
+    // míticos: bem raros (< 1% cada) e só nas rotas altas
+    for (const p of z.pool.filter(p => p.m)) assert.ok(p.p / z.pool.reduce((a, x) => a + x.p, 0) < 0.01 && z.min >= 30, `${z.id}: mítico ${p.n}`);
   }
   for (const k of Object.keys(FLAVOR)) assert.ok(k === 'default' || ids.includes(k), `FLAVOR.${k} não é uma zona`);
 });

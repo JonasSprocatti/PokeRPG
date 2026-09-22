@@ -1,11 +1,12 @@
 /* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
-import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave } from './estado.js';
+import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
-import { encerrarJornada, telaCarreira } from './fim.js';
+import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
+import { GENS, dadosDaGen, entrarNaGen } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
   nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
@@ -18,7 +19,7 @@ import { turn } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
-import { ITEMS, ZONES, ORDENS } from './dados.js';
+import { ITEMS, ORDENS } from './dados.js';
 import { freshVol, zonaLiberada } from './regras.js';
 import { despedir } from './amizade.js';
 import { store, esc, fmt, novoId } from './util.js';
@@ -111,10 +112,17 @@ document.addEventListener('click', async e => {
     case 'start': return startGame(b);
     case 'explore': return explore();
     case 'zone': {
-      const z = ZONES.find(x => x.id === v);
+      const z = rotasAtuais().find(x => x.id === v); // só rotas do mapa atual
       if (!z || !zonaLiberada(z, G.S.player.level)) return; // chip trancado já vem desativado; isto é a garantia
       G.S.zone = v; save(); return render();
     }
+    // fechou uma Gen (fora do Roguelike): vai pro mapa escolhido
+    case 'proxima-gen': {
+      if (!G.S?.escolhendoGen || !GENS.some(x => x.gen === +v)) return;
+      entrarNaGen(G.S, +v); save();
+      return abrirJornada(G.S, `🗺 Você chega em ${dadosDaGen(+v).regiao} (Gen ${v}). Os Pokémon daqui começam perto do seu nível.`);
+    }
+    case 'gen': G.gen = +v; return renderDificuldade();
     case 'chefe': return desafiarChefe();
     case 'panel': G.panel = v; return render();
     case 'heal': {
@@ -180,6 +188,7 @@ function abrirJornada(s, aviso) {
   for (const m of ladoJogador()) m.vol = freshVol();
   G.mode = 'explore'; G.panel = 'main';
   G.S.ultimoTick = Date.now(); // tempo de jogo recomeça a contar agora (não conta o tempo com o jogo fechado)
+  if (G.S.escolhendoGen) return telaEscolherGen(); // fechou uma Gen e ainda não escolheu o próximo mapa
   buildGame();
   (G.S.log || []).slice(-20).forEach(logRaw);
   if (aviso) log(aviso, 'muted');
