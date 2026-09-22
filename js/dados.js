@@ -72,6 +72,8 @@ export const ITEMS = {
   'x-sp-atk': { name: 'X Sp. Atk', desc: 'At. Esp. +2 nesta batalha.', stage: 'special-attack', battle: true, price: 500 },
   'x-speed': { name: 'X Speed', desc: 'Velocidade +2 nesta batalha.', stage: 'speed', battle: true, price: 500 },
   'rare-candy': { name: 'Rare Candy', desc: 'Sobe um nível na hora.', candy: true },
+  // Revive: em você é gasto sozinho ao desmaiar (depois dos desmaios livres do modo); num aliado desmaiado, reanima com metade do HP
+  revive: { name: 'Revive', desc: 'Reanima um aliado desmaiado com metade do HP. Do Médio pra cima, te salva do Game Over depois do 3º desmaio.', revive: true, price: 1500 },
   // petiscos de afinidade (Etapa 3.2): oferecidos a um selvagem pra ganhar amizade. Chave = nome do sprite na PokéAPI.
   // Os 6 grupos cobrem os 18 tipos exatamente uma vez (teste em dados.test.js).
   charcoal: { name: 'Carvão Doce', desc: 'Petisco que Fogo, Dragão e Lutador adoram.', afinidade: ['fire', 'dragon', 'fighting'], price: 300 },
@@ -98,19 +100,50 @@ export const ZONES = [
 
 // Missões (Etapa 2). `libera` = condição pra missão aparecer (sem ela: visível desde o início); `objetivo` = pra concluir.
 // Condição (uma chave só): { derrotar: especie, qtd } · { vitorias } · { amigos } · { nivel } · { chefe: zona } ·
-// { treinadores } · { missao: id }. Avaliada por progressoCondicao(cond, S) em regras.js — espécie = speciesName.
+// { treinadores } · { missao: id } · { dinheiro } (ter de uma vez) · { gasto } (total gasto) · { evolucoes }.
+// Avaliada por progressoCondicao(cond, S) em regras.js — espécie = speciesName.
+// Quantidade de "derrotar" segue a facilidade de achar: comum da 1ª rota = 10, meio = 5–8, raro/forte = 1–3.
 // `premio`: { dinheiro?, itens?: { idItem: qtd } }.
 export const MISSOES = [
+  // começo
   { id: 'primeiros', nome: 'Primeiros passos', desc: 'Vença 3 batalhas.', objetivo: { vitorias: 3 }, premio: { dinheiro: 300 } },
-  { id: 'pidgey', nome: 'Dono do céu da Rota 1', desc: 'Derrote 3 Pidgey.', libera: { derrotar: 'pidgey', qtd: 1 }, objetivo: { derrotar: 'pidgey', qtd: 3 }, premio: { itens: { honey: 2 } } },
-  { id: 'rattata', nome: 'Praga de Rattata', desc: 'Derrote 5 Rattata.', libera: { derrotar: 'rattata', qtd: 1 }, objetivo: { derrotar: 'rattata', qtd: 5 }, premio: { itens: { potion: 3 } } },
+  { id: 'vitorias25', nome: 'Pegando o jeito', desc: 'Vença 25 batalhas.', libera: { missao: 'primeiros' }, objetivo: { vitorias: 25 }, premio: { dinheiro: 1000 } },
+  { id: 'vitorias100', nome: 'Terror da região', desc: 'Vença 100 batalhas.', libera: { missao: 'vitorias25' }, objetivo: { vitorias: 100 }, premio: { itens: { 'rare-candy': 3 } } },
+  // Rota 1 e Floresta (comuns: contagem alta)
+  { id: 'pidgey', nome: 'Dono do céu da Rota 1', desc: 'Derrote 10 Pidgey.', libera: { derrotar: 'pidgey', qtd: 1 }, objetivo: { derrotar: 'pidgey', qtd: 10 }, premio: { itens: { honey: 2 } } },
+  { id: 'rattata', nome: 'Praga de Rattata', desc: 'Derrote 10 Rattata.', libera: { derrotar: 'rattata', qtd: 1 }, objetivo: { derrotar: 'rattata', qtd: 10 }, premio: { itens: { potion: 4 } } },
+  { id: 'caterpie', nome: 'Folhas mastigadas', desc: 'Derrote 8 Caterpie.', libera: { derrotar: 'caterpie', qtd: 1 }, objetivo: { derrotar: 'caterpie', qtd: 8 }, premio: { itens: { honey: 2 } } },
+  { id: 'weedle', nome: 'Ferrão por ferrão', desc: 'Derrote 8 Weedle.', libera: { derrotar: 'weedle', qtd: 1 }, objetivo: { derrotar: 'weedle', qtd: 8 }, premio: { itens: { antidote: 3 } } },
+  { id: 'spearow', nome: 'Bico afiado', desc: 'Derrote 6 Spearow.', libera: { derrotar: 'spearow', qtd: 1 }, objetivo: { derrotar: 'spearow', qtd: 6 }, premio: { itens: { 'mystic-water': 2 } } },
+  { id: 'pikachu', nome: 'Faísca na floresta', desc: 'Derrote 3 Pikachu.', libera: { derrotar: 'pikachu', qtd: 1 }, objetivo: { derrotar: 'pikachu', qtd: 3 }, premio: { itens: { magnet: 2, 'paralyze-heal': 2 } } },
+  // Monte Lua e Rota 24
+  { id: 'zubat', nome: 'Asas na escuridão', desc: 'Derrote 10 Zubat.', libera: { derrotar: 'zubat', qtd: 1 }, objetivo: { derrotar: 'zubat', qtd: 10 }, premio: { itens: { 'tiny-mushroom': 2 } } },
+  { id: 'geodude', nome: 'Quebra-pedra', desc: 'Derrote 8 Geodude.', libera: { derrotar: 'geodude', qtd: 1 }, objetivo: { derrotar: 'geodude', qtd: 8 }, premio: { itens: { 'hard-stone': 2 } } },
+  { id: 'clefairy', nome: 'Dança da lua', desc: 'Derrote 3 Clefairy.', libera: { derrotar: 'clefairy', qtd: 1 }, objetivo: { derrotar: 'clefairy', qtd: 3 }, premio: { itens: { 'rare-candy': 1 } } },
+  { id: 'mankey', nome: 'Briga de rua', desc: 'Derrote 6 Mankey.', libera: { derrotar: 'mankey', qtd: 1 }, objetivo: { derrotar: 'mankey', qtd: 6 }, premio: { itens: { charcoal: 2 } } },
+  // Torre e Safari (mais raros: contagem baixa)
+  { id: 'gastly', nome: 'Caça-fantasmas', desc: 'Derrote 8 Gastly.', libera: { derrotar: 'gastly', qtd: 1 }, objetivo: { derrotar: 'gastly', qtd: 8 }, premio: { itens: { 'tiny-mushroom': 3 } } },
+  { id: 'cubone', nome: 'O capacete de osso', desc: 'Derrote 3 Cubone.', libera: { derrotar: 'cubone', qtd: 1 }, objetivo: { derrotar: 'cubone', qtd: 3 }, premio: { itens: { revive: 1 } } },
+  { id: 'scyther', nome: 'Lâminas no capim', desc: 'Derrote 1 Scyther.', libera: { derrotar: 'scyther', qtd: 1 }, objetivo: { derrotar: 'scyther', qtd: 1 }, premio: { dinheiro: 3000 } },
+  // amizade
   { id: 'amigo1', nome: 'Um amigo no caminho', desc: 'Faça amizade com um Pokémon selvagem.', objetivo: { amigos: 1 }, premio: { itens: { 'super-potion': 2 } } },
   { id: 'bando', nome: 'Bando formado', desc: 'Faça amizade com 3 Pokémon ao todo.', libera: { amigos: 1 }, objetivo: { amigos: 3 }, premio: { dinheiro: 1000 } },
+  { id: 'matilha', nome: 'Líder da matilha', desc: 'Faça amizade com 6 Pokémon ao todo.', libera: { missao: 'bando' }, objetivo: { amigos: 6 }, premio: { itens: { revive: 2 } } },
+  { id: 'evolui', nome: 'Metamorfose', desc: 'Evolua (você ou um aliado).', libera: { nivel: 10 }, objetivo: { evolucoes: 1 }, premio: { dinheiro: 1000 } },
+  // dinheiro: juntar (ter de uma vez) e gastar (loja + Centro)
+  { id: 'cofre1', nome: 'Porquinho', desc: 'Junte ₽2.000 de uma vez.', objetivo: { dinheiro: 2000 }, premio: { itens: { 'super-potion': 2 } } },
+  { id: 'cofre2', nome: 'Cofre cheio', desc: 'Junte ₽10.000 de uma vez.', libera: { missao: 'cofre1' }, objetivo: { dinheiro: 10000 }, premio: { itens: { 'rare-candy': 2 } } },
+  { id: 'cofre3', nome: 'Magnata selvagem', desc: 'Junte ₽50.000 de uma vez.', libera: { missao: 'cofre2' }, objetivo: { dinheiro: 50000 }, premio: { itens: { revive: 3 } } },
+  { id: 'gasto1', nome: 'Cliente da loja', desc: 'Gaste ₽1.000 (loja e Centro).', objetivo: { gasto: 1000 }, premio: { dinheiro: 300 } },
+  { id: 'gasto2', nome: 'Freguês fiel', desc: 'Gaste ₽5.000 (loja e Centro).', libera: { missao: 'gasto1' }, objetivo: { gasto: 5000 }, premio: { dinheiro: 1500 } },
+  { id: 'gasto3', nome: 'Patrocinador do Centro', desc: 'Gaste ₽20.000 (loja e Centro).', libera: { missao: 'gasto2' }, objetivo: { gasto: 20000 }, premio: { itens: { revive: 2 } } },
+  // treinadores
+  { id: 'cacadores', nome: 'Caça aos caçadores', desc: 'Derrote 3 treinadores.', libera: { treinadores: 1 }, objetivo: { treinadores: 3 }, premio: { dinheiro: 2000 } },
+  { id: 'cacadores10', nome: 'Pesadelo dos caçadores', desc: 'Derrote 10 treinadores.', libera: { missao: 'cacadores' }, objetivo: { treinadores: 10 }, premio: { itens: { revive: 2 } } },
+  // trilha dos Alfas
   { id: 'alfa1', nome: 'O Alfa da Rota 1', desc: 'Derrote o Alfa da Rota 1.', libera: { nivel: 6 }, objetivo: { chefe: 'rota1' }, premio: { itens: { 'rare-candy': 1 } } },
   { id: 'alfa2', nome: 'Rainha da Floresta', desc: 'Derrote o Alfa da Floresta de Viridian.', libera: { chefe: 'rota1' }, objetivo: { chefe: 'floresta' }, premio: { dinheiro: 1500 } },
-  { id: 'zubat', nome: 'Asas na escuridão', desc: 'Derrote 5 Zubat.', libera: { derrotar: 'zubat', qtd: 1 }, objetivo: { derrotar: 'zubat', qtd: 5 }, premio: { itens: { 'tiny-mushroom': 2 } } },
   { id: 'alfa3', nome: 'A lua cheia', desc: 'Derrote o Alfa do Monte Lua.', libera: { chefe: 'floresta' }, objetivo: { chefe: 'montelua' }, premio: { dinheiro: 2500 } },
-  { id: 'cacadores', nome: 'Caça aos caçadores', desc: 'Derrote 3 treinadores.', libera: { treinadores: 1 }, objetivo: { treinadores: 3 }, premio: { dinheiro: 2000 } },
   { id: 'alfa4', nome: 'Punho da Rota 24', desc: 'Derrote o Alfa da Rota 24.', libera: { chefe: 'montelua' }, objetivo: { chefe: 'rota24' }, premio: { itens: { 'rare-candy': 2 } } },
   { id: 'alfa5', nome: 'A sombra da Torre', desc: 'Derrote o Alfa da Torre Pokémon.', libera: { nivel: 20 }, objetivo: { chefe: 'torre' }, premio: { dinheiro: 5000 } },
   { id: 'alfa6', nome: 'Estouro no Safari', desc: 'Derrote o Alfa da Zona Safari.', libera: { chefe: 'torre' }, objetivo: { chefe: 'safari' }, premio: { itens: { 'rare-candy': 3 } } },
@@ -124,9 +157,15 @@ export const FLAVOR = {
   torre: ['Uma vela se apaga sozinha.', 'Você sente um arrepio na nuca.'],
   fenda: ['O ar tremula como se o espaço estivesse dobrando.']
 };
-// Iniciais das 9 regiões (planta, fogo, água) + Pikachu e Eevee: a única escolha inicial do Roguelike (3.3).
-export const INICIAIS = [1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393, 495, 498, 501, 650, 653, 656, 722, 725, 728, 810, 813, 816, 906, 909, 912, 25, 133];
-export const QUICK = [1, 4, 7, 25, 133, 39, 92, 147, 152, 155, 158, 246, 252, 255, 258, 280, 387, 390, 393, 448];
+// Única escolha inicial em TODOS os modos (criação, Sortear e Full Randomizer): os iniciais das 9 regiões
+// (planta, fogo, água) + Pikachu e Eevee. O resto dos 1025 aparece jogando (e, no Roguelike, vira desbloqueio).
+export const REGIOES_INICIAIS = [
+  { nome: 'Kanto', ids: [1, 4, 7], nomes: ['Bulbasaur', 'Charmander', 'Squirtle'] }, { nome: 'Johto', ids: [152, 155, 158], nomes: ['Chikorita', 'Cyndaquil', 'Totodile'] }, { nome: 'Hoenn', ids: [252, 255, 258], nomes: ['Treecko', 'Torchic', 'Mudkip'] },
+  { nome: 'Sinnoh', ids: [387, 390, 393], nomes: ['Turtwig', 'Chimchar', 'Piplup'] }, { nome: 'Unova', ids: [495, 498, 501], nomes: ['Snivy', 'Tepig', 'Oshawott'] }, { nome: 'Kalos', ids: [650, 653, 656], nomes: ['Chespin', 'Fennekin', 'Froakie'] },
+  { nome: 'Alola', ids: [722, 725, 728], nomes: ['Rowlet', 'Litten', 'Popplio'] }, { nome: 'Galar', ids: [810, 813, 816], nomes: ['Grookey', 'Scorbunny', 'Sobble'] }, { nome: 'Paldea', ids: [906, 909, 912], nomes: ['Sprigatito', 'Fuecoco', 'Quaxly'] },
+  { nome: 'Especiais', ids: [25, 133], nomes: ['Pikachu', 'Eevee'] }
+];
+export const INICIAIS = REGIOES_INICIAIS.flatMap(r => r.ids);
 
 /* ---- treinadores caçadores e dificuldade (Etapa 3) ---- */
 // chave = nome do sprite em ITEM_SPR; mult = multiplicador da fórmula de captura
@@ -144,12 +183,23 @@ export const NOMES_TREINADOR = ['Rui', 'Bia', 'Otávio', 'Lúcia', 'Caio', 'Mart
 //   descontoPorVitoria = fração do preço do Centro que cada vitória desde a última visita tira (S.vitoriasDesdeCentro)
 //   nivelLivre   = escolher o nível inicial (senão começa no 5)
 //   escolhaLivre = escolher natureza e habilidade (senão são sorteadas ao começar)
+//   especiesLivres = começar com QUALQUER Pokémon (busca livre); false = só REGIOES_INICIAIS. Hoje false em todos — decisão do usuário, pode mudar por modo
+//   multPontos   = multiplicador da pontuação final da jornada (recordes / ranking)
+//   desmaiosLivres = desmaios sem custo; depois disso cada desmaio gasta um Revive, e sem Revive é Game Over (null = ilimitado)
 // Save antigo sem o campo dificuldade = easy (dificuldadeDe).
 export const DIFICULDADES = {
-  easy: { nome: 'Fácil', semCaptura: true, centroGratis: true, nivelLivre: true, escolhaLivre: true, desc: 'Treinadores nunca te capturam e o Centro Pokémon é de graça. Nível inicial, natureza e habilidade à sua escolha.' },
-  medium: { nome: 'Médio', semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: true, escolhaLivre: true, desc: 'Igual ao Fácil, mas o Centro Pokémon cobra: cada vitória desde a última visita tira 10% do preço.' },
-  hard: { nome: 'Difícil', semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Centro pago. Começa no nível 5.' },
-  hardcore: { nome: 'Hardcore', semCaptura: false, fimDeJogo: true, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Ser capturado é o fim da jornada: o save é apagado. Centro pago. Começa no nível 5, com natureza e habilidade sorteadas.' },
+  easy: { nome: 'Fácil', especiesLivres: false, multPontos: 1, desmaiosLivres: null, semCaptura: true, centroGratis: true, nivelLivre: true, escolhaLivre: true, desc: 'Treinadores nunca te capturam e o Centro Pokémon é de graça. Nível inicial, natureza e habilidade à sua escolha.' },
+  medium: { nome: 'Médio', especiesLivres: false, multPontos: 1.2, desmaiosLivres: 3, semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: true, escolhaLivre: true, desc: 'Igual ao Fácil, mas o Centro Pokémon cobra: cada vitória desde a última visita tira 10% do preço.' },
+  hard: { nome: 'Difícil', especiesLivres: false, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Centro pago. Começa no nível 5.' },
+  hardcore: { nome: 'Hardcore', especiesLivres: false, multPontos: 2, desmaiosLivres: 3, semCaptura: false, fimDeJogo: true, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Ser capturado é o fim da jornada: o save é apagado. Centro pago. Começa no nível 5, com natureza e habilidade sorteadas.' },
   // sorteia até a espécie (a tela inicial troca a busca por um botão só). Captura e Centro = regras do Difícil
-  randomizer: { nome: 'Full Randomizer', semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Captura e Centro seguem o Difícil.' }
+  randomizer: { nome: 'Full Randomizer', especiesLivres: false, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Captura e Centro seguem o Difícil.' }
+};
+// Ordens pros aliados (A.ordem; sem campo = 'livre'). A escolha do golpe mora em golpeDoAliado (regras.js).
+export const ORDENS = {
+  livre: { nome: 'À vontade', desc: 'Usa o golpe mais eficaz contra o inimigo.' },
+  fraco: { nome: 'Pegar leve', desc: 'Usa o golpe de dano mais fraco. Bom pra não derrubar quem você quer fazer de amigo.' },
+  status: { nome: 'Só status', desc: 'Só usa golpes de status (baixar atributos, dormir, paralisar…). Sem nenhum com PP, espera.' },
+  parado: { nome: 'Não atacar', desc: 'Fica em campo de guarda, sem agir. Ainda pode ser atacado.' },
+  fora: { nome: 'Descansar', desc: 'Fica fora das batalhas: não luta, não é atacado e não ganha XP.' }
 };

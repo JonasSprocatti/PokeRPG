@@ -126,6 +126,24 @@ export function melhorGolpe(moves, tiposAtacante, tiposAlvo) {
   return melhor;
 }
 
+// O que o aliado faz neste turno, pela ordem dele (ORDENS em dados.js):
+//   { golpe }        → usa esse golpe (golpe null = sem PP em nada → Struggle, só no 'livre')
+//   { parado: txt }  → não age neste turno (txt vai pro log)
+export function golpeDoAliado(ordem, moves, tiposA, tiposAlvo, sorte = Math.random) {
+  const comPP = moves.filter(m => m.ppLeft > 0);
+  if (ordem === 'parado' || ordem === 'fora') return { parado: 'fica de guarda, sem atacar.' };
+  if (ordem === 'status') {
+    const st = comPP.filter(m => m.cls === 'status');
+    return st.length ? { golpe: st[Math.floor(sorte() * st.length)] } : { parado: 'não tem golpe de status com PP e espera.' };
+  }
+  if (ordem === 'fraco') {
+    const dano = comPP.filter(m => m.cls !== 'status');
+    if (!dano.length) return { parado: 'não tem golpe de dano com PP e espera.' };
+    return { golpe: dano.reduce((a, m) => (m.power || 60) < (a.power || 60) ? m : a) };
+  }
+  return { golpe: melhorGolpe(moves, tiposA, tiposAlvo) };
+}
+
 /* ---- amizade (Etapa 3.2) ---- */
 export const MAX_ALIADOS = 2;
 export const AMIZADE_MAX = 100;
@@ -145,6 +163,7 @@ export const custoComDesconto = (custo, vitorias, pct) => Math.round(custo * Mat
 // O item faria efeito neste Pokémon agora? (desmaiado nunca — Potion não revive). `podeSubir` = tem curva de XP
 // (o jogador sempre; o aliado se tiver `growth`) — sem ela o Rare Candy não tem como subir o nível.
 export function itemTemEfeito(it, M, podeSubir = true) {
+  if (it.revive) return M.hp <= 0; // o único que serve em desmaiado — e só nele
   if (M.hp <= 0) return false;
   if (it.heal) return M.hp < M.stats.hp;
   if (it.cure) return !!M.status && (it.cure === 'all' || it.cure.includes(M.status));
@@ -174,6 +193,9 @@ export function progressoCondicao(cond, S) {
     : 'chefe' in cond ? [S.chefes?.[cond.chefe] ? 1 : 0, 1]
     : 'treinadores' in cond ? [S.treinadoresVencidos || 0, cond.treinadores]
     : 'missao' in cond ? [(S.missoesFeitas || []).includes(cond.missao) ? 1 : 0, 1]
+    : 'dinheiro' in cond ? [S.money || 0, cond.dinheiro]         // ter isso de uma vez (gastar faz cair)
+    : 'gasto' in cond ? [S.gasto || 0, cond.gasto]               // total gasto na loja + Centro (S.gasto)
+    : 'evolucoes' in cond ? [soma(r.evolucoes), cond.evolucoes]  // suas e dos aliados
     : [0, 1];
   return { atual: Math.min(atual, alvo), alvo, ok: atual >= alvo };
 }
@@ -189,6 +211,39 @@ export function situacaoMissoes(missoes, S) {
   }
   return { ativas, prontas, feitas: feitas.length, escondidas };
 }
+
+// Desmaio número `n` (já contando este) precisa de Revive? `livres` null = modo sem limite (Fácil)
+export const desmaioPrecisaRevive = (n, livres) => livres != null && n > livres;
+
+/* ---- fim de jornada e recordes ---- */
+
+const soma = o => Object.values(o || {}).reduce((a, n) => a + n, 0);
+// Números da jornada, tirados do save. Espécie = a inicial (S.especieInicial; save antigo cai na atual).
+export function estatisticasDaJornada(S) {
+  const r = S.registro || {};
+  return {
+    especie: S.especieInicial || S.player.data.speciesName, especieFinal: S.player.data.speciesName,
+    nivel: S.player.level, vitorias: S.wins || 0, derrotados: soma(r.derrotados), treinadores: S.treinadoresVencidos || 0,
+    alfas: Object.keys(S.chefes || {}).length, amigos: soma(r.amigos), evolucoes: soma(r.evolucoes),
+    missoes: (S.missoesFeitas || []).length, capturas: S.capturas || 0, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
+    maxDinheiro: Math.max(S.maxDinheiro || 0, S.money || 0), gasto: S.gasto || 0,
+    shiniesVistos: soma(r.shinies), shiniesAmigos: soma(r.shiniesAmigos),
+    // cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui
+    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, ids: r.ids || {} }))
+  };
+}
+// Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)
+export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 300, amigos: 100, evolucoes: 150, missoes: 120 };
+export const pontuacao = (est, multDificuldade = 1) =>
+  Math.round(Object.entries(PESOS_PONTOS).reduce((a, [k, p]) => a + (est[k] || 0) * p, 0) * multDificuldade);
+
+export function formatarTempo(ms) {
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return 'menos de 1 min';
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h}h ${String(m).padStart(2, '0')}min` : `${m} min`;
+}
+
 
 // shiny: 1 em 4096 (Gen 6+), sorteado pra todo Pokémon criado — você, selvagem ou de treinador, em qualquer modo
 export const CHANCE_SHINY = 1 / 4096;

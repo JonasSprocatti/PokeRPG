@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -48,6 +48,25 @@ test('ITEMS: itens encontráveis existem e estágios apontam pra atributo real',
     if (it.stage) assert.ok(STATS.includes(it.stage), `${k}: estágio "${it.stage}" inválido`);
     if (Array.isArray(it.cure)) for (const s of it.cure) assert.ok(AIL_MSG[s], `${k}: cura status desconhecido "${s}"`);
   }
+});
+
+test('ORDENS: as cinco ordens dos aliados têm nome e descrição', () => {
+  assert.deepEqual(Object.keys(ORDENS), ['livre', 'fraco', 'status', 'parado', 'fora']);
+  for (const o of Object.values(ORDENS)) assert.ok(o.nome && o.desc);
+});
+
+test('REGIOES_INICIAIS: 9 regiões de 3 + Especiais (Pikachu, Eevee), um nome por id', () => {
+  assert.equal(REGIOES_INICIAIS.length, 10);
+  for (const r of REGIOES_INICIAIS) assert.equal(r.ids.length, r.nomes.length, `${r.nome}: ids e nomes desalinhados`);
+  assert.deepEqual(REGIOES_INICIAIS.at(-1).nomes, ['Pikachu', 'Eevee']);
+});
+
+test('DIFICULDADES: hoje todo modo começa só com iniciais; desmaio e pontos crescem com a dificuldade', () => {
+  for (const [k, d] of Object.entries(DIFICULDADES)) assert.equal(d.especiesLivres, false, `${k} liberou espécies — decisão do usuário é só iniciais`);
+  assert.equal(DIFICULDADES.easy.desmaiosLivres, null);
+  for (const k of ['medium', 'hard', 'hardcore', 'randomizer']) assert.equal(DIFICULDADES[k].desmaiosLivres, 3);
+  assert.ok(DIFICULDADES.easy.multPontos < DIFICULDADES.medium.multPontos && DIFICULDADES.medium.multPontos < DIFICULDADES.hard.multPontos && DIFICULDADES.hard.multPontos < DIFICULDADES.hardcore.multPontos);
+  assert.ok(ITEMS.revive?.revive && ITEMS.revive.price > 0);
 });
 
 test('INICIAIS: 3 por região × 9 regiões + Pikachu e Eevee, sem repetir', () => {
@@ -102,7 +121,7 @@ test('ZONES: toda zona tem nível de liberação; Alfa acima do teto da própria
 test('MISSOES: ids únicos e toda referência (zona, missão, item) existe', () => {
   const ids = MISSOES.map(m => m.id), zonas = ZONES.map(z => z.id);
   assert.equal(new Set(ids).size, ids.length);
-  const chaves = ['derrotar', 'vitorias', 'amigos', 'nivel', 'chefe', 'treinadores', 'missao'];
+  const chaves = ['derrotar', 'vitorias', 'amigos', 'nivel', 'chefe', 'treinadores', 'missao', 'dinheiro', 'gasto', 'evolucoes'];
   const confere = (c, onde) => {
     assert.equal(Object.keys(c).filter(k => chaves.includes(k)).length, 1, `${onde}: condição precisa de exatamente um tipo`);
     if (c.chefe) assert.ok(zonas.includes(c.chefe) && ZONES.find(z => z.id === c.chefe).chefe, `${onde}: zona "${c.chefe}" sem Alfa`);

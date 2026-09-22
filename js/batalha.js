@@ -3,25 +3,25 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save, dificuldadeDe, SAVE_KEY, ladoJogador, vivos, registrar, zerarDescontoCentro } from './estado.js';
+import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro } from './estado.js';
 import { log, say, shake } from './ui.js';
-import { render, spriteFrente } from './render.js';
+import { render } from './render.js';
 import { changeStats, inflict, healFull } from './efeitos.js';
 import { gainExp, gainExpAliado } from './progressao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
-import { telaFim } from './criacao.js';
+import { encerrarJornada } from './fim.js';
 import { STATS, STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
 import {
   freshVol, effStat, calcDamage, confDamage, heal, typeEff,
-  chanceAcerto, danoResidual, consegueFugir, ordenarAcoes, melhorGolpe, xpPorVitoria, ganhoDeEVs,
+  chanceAcerto, danoResidual, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
-import { loadPokemon, loadSpecies } from './api.js';
-import { rand, pick, clamp, esc, fmt, store } from './util.js';
+import { loadPokemon, loadSpecies, pokemonEmCache, idsEmCache } from './api.js';
+import { rand, pick, clamp, esc, fmt, offline, erroOffline } from './util.js';
 
 async function statusMove(user, target, move, selfT) {
   const meta = move.meta || {}; let did = false;
@@ -114,17 +114,25 @@ async function residual(m) {
 }
 
 /* ---- início de batalha ---- */
-// selvagem: da lista da zona; Fenda Dimensional (sem lista): qualquer um perto do seu nível
+// selvagem: da lista da zona; Fenda Dimensional (sem lista): qualquer um perto do seu nível.
+// Offline: só entre os que já estão no cache deste navegador (buscados em alguma partida online).
 function sortearOponente(z) {
-  if (z.pool) return { id: pick(z.pool), level: rand(z.min, z.max) };
-  return { id: rand(1, 1025), level: clamp(G.S.player.level + rand(-2, 2), 2, 100) };
+  const off = offline();
+  if (z.pool) {
+    const pool = off ? z.pool.filter(pokemonEmCache) : z.pool;
+    if (!pool.length) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma zona que você já explorou online.`);
+    return { id: pick(pool), level: rand(z.min, z.max) };
+  }
+  const ids = off ? idsEmCache() : null;
+  if (off && !ids.length) throw erroOffline('📴 Sem internet, e nenhum Pokémon está salvo neste aparelho ainda.');
+  return { id: off ? pick(ids) : rand(1, 1025), level: clamp(G.S.player.level + rand(-2, 2), 2, 100) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
-function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), ...B }; G.mode = 'battle'; G.panel = 'moves'; render(); }
+function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
 // Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
 // Na troca de Pokémon do treinador só o que acabou de entrar dispara.
 async function intimidar(E, soInimigo = false) {
-  const lado = vivos(ladoJogador());
+  const lado = vivos(emCampo());
   const pares = [...(soInimigo ? [] : lado.map(a => [a, [E]])), [E, lado]];
   for (const [a, alvos] of pares) if (a.ability === 'intimidate') {
     await say(`A Intimidação de ${nm(a)} assusta o oponente!`);
@@ -141,6 +149,7 @@ export async function startBattle(z) {
 // Alfa da zona: IVs perfeitos + statsDeChefe (HP ×2, resto ×1,3). Não aceita petisco; dá pra fugir.
 export async function startBossBattle(z) {
   const c = z.chefe, max = Object.fromEntries(STATS.map(s => [s, 31]));
+  if (offline() && !pokemonEmCache(c.id)) throw erroOffline(`📴 Sem internet: o Alfa de ${z.name} ainda não está salvo neste aparelho. Desafie ele online uma vez.`);
   const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: max });
   E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id;
   iniciar({ enemy: E, turn: 1, runs: 0, chefe: z.id });
@@ -156,7 +165,7 @@ export async function startTrainerBattle(z) {
   const n = rand(1, Math.min(3, 1 + Math.floor(nivelRef / 15)));
   const [equipe, especie] = await Promise.all([
     Promise.all(Array.from({ length: n }, () => novoOponente(z))),
-    loadSpecies(P.data.speciesUrl)
+    loadSpecies(P.data.speciesUrl).catch(() => ({ captureRate: 45 })) // offline sem cache: taxa média
   ]);
   const trainer = { nome: `${pick(CLASSES_TREINADOR)} ${pick(NOMES_TREINADOR)}`, equipe, atual: 0, bolas: rand(2, 4), bola: bolaPorNivel(Math.max(...equipe.map(m => m.level))) };
   iniciar({ enemy: equipe[0], turn: 1, runs: 0, trainer, taxaCaptura: especie.captureRate ?? 45 });
@@ -224,8 +233,11 @@ export async function turn(action) {
     //    Bola do treinador é item: prioridade máxima, sai antes de qualquer golpe.
     const acoes = [];
     if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: effStat(P, 'speed') });
-    for (const A of vivos(S.aliados || [])) {
-      const g = melhorGolpe(A.moves, A.data.types, E.data.types) || STRUGGLE;
+    // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
+    for (const A of vivos(emCampo()).filter(m => m !== P)) {
+      const d = golpeDoAliado(A.ordem || 'livre', A.moves, A.data.types, E.data.types);
+      if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: effStat(A, 'speed') }); continue; }
+      const g = d.golpe || STRUGGLE;
       acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: effStat(A, 'speed') });
     }
     const ea = acaoDoInimigo(E, P);
@@ -237,8 +249,9 @@ export async function turn(action) {
       if (P.hp <= 0 || E.hp <= 0 || B.capturado) break;
       if (a.quem.hp <= 0) continue;
       if (a.bola) { await vez('t'); await lancarBola(P); continue; }
+      if (a.parado) { await vez(idVez(a.quem)); await say(`${nm(a.quem)} ${a.parado}`, 'muted'); continue; }
       if (a.quem === E) {
-        const alvo = pick(vivos(ladoJogador()));
+        const alvo = pick(vivos(emCampo()));
         // recuo (flinch) só vale em quem ainda não agiu neste turno
         await vez('e'); await useMove(E, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo));
       } else {
@@ -247,7 +260,7 @@ export async function turn(action) {
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
     }
     if (B.capturado) { await serCapturado(); return; }
-    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(ladoJogador()), E]) await residual(m); await anunciarQuedas(); }
+    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), E]) m.vol.flinch = false;
     B.turn++;
     if (P.hp <= 0) await lose();
@@ -272,17 +285,17 @@ async function win() {
   const money = T ? 0 : E.level * rand(8, 14); // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
-  registrar(S, 'derrotados', E.data.speciesName);
+  registrar(S, 'derrotados', E.data.speciesName, E.id);
   await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
   await gainExp(xp);
   // aliados em pé ganham o mesmo XP e EVs (como o Exp. Share dos jogos novos)
-  for (const A of vivos(S.aliados || [])) {
+  for (const A of vivos(emCampo()).filter(m => m !== P)) { // quem está descansando não ganha XP
     for (const [s, add] of ganhoDeEVs(A.evs, E.data.effort)) A.evs[s] += add;
     await say(`${nm(A)} ganhou ${xp} de XP.`, 'muted');
     await gainExpAliado(A, xp);
   }
   if (T && T.atual < T.equipe.length - 1) {
-    T.atual++; B.enemy = T.equipe[T.atual]; render();
+    T.atual++; B.enemy = T.equipe[T.atual]; registrarVisto(B.enemy); render();
     await say(`${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
     await intimidar(B.enemy, true);
     return;
@@ -300,9 +313,19 @@ async function win() {
   }
   endBattle();
 }
+// Desmaio: do Médio pra cima (`desmaiosLivres`), depois dos desmaios livres cada um gasta um Revive — sem Revive, Game Over
 async function lose() {
-  const S = G.S;
+  const S = G.S, livres = DIFICULDADES[dificuldadeDe(S)].desmaiosLivres;
+  S.desmaios = (S.desmaios || 0) + 1;
   await say(`${nm(S.player)} desmaiou...`, 'hit');
+  if (desmaioPrecisaRevive(S.desmaios, livres)) {
+    if (!S.bag.revive) { await say('Não há nenhum Revive na mochila...', 'hit'); encerrarJornada('desmaiou'); return; }
+    S.bag.revive--; if (S.bag.revive <= 0) delete S.bag.revive;
+    await say(`O Revive da mochila te trouxe de volta! (restam ${S.bag.revive || 0})`, 'good');
+  } else if (livres != null) {
+    await say(S.desmaios < livres ? `Desmaio ${S.desmaios} de ${livres} livres. Depois disso, cada desmaio gasta um Revive.`
+      : 'Esse foi o último desmaio livre. Daqui pra frente, cada desmaio gasta um Revive, e sem Revive é Game Over.', 'status');
+  }
   const lost = Math.floor(S.money / 2); S.money -= lost;
   await say(`Você perdeu ₽${lost} e acordou no Centro Pokémon.`);
   healFull(); zerarDescontoCentro(); endBattle();
@@ -312,10 +335,7 @@ async function serCapturado() {
   const S = G.S, T = G.B.trainer, P = S.player;
   if (DIFICULDADES[dificuldadeDe(S)].fimDeJogo) {
     await say(`${esc(T.nome)} guarda a bola no cinto. Sua jornada selvagem termina aqui.`, 'hit');
-    const resumo = { nome: P.nick || fmt(P.name), especie: fmt(P.name), nivel: P.level, sprite: spriteFrente(P), vitorias: S.wins || 0, treinadores: S.treinadoresVencidos || 0, cacador: T.nome };
-    store.del(SAVE_KEY);
-    G.S = null; G.B = null;
-    telaFim(resumo);
+    encerrarJornada('capturado', { cacador: T.nome });
     return;
   }
   const perdeu = Math.floor(S.money / 2), itens = Object.values(S.bag).reduce((a, n) => a + n, 0);

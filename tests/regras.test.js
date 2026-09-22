@@ -8,7 +8,8 @@ import {
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, chancePorBalanco, balancosDaCaptura,
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
-  progressoCondicao, situacaoMissoes
+  progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
+  golpeDoAliado
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -328,6 +329,28 @@ test('missões: progresso de cada tipo de condição, nunca passa do alvo', () =
   assert.equal(progressoCondicao({}, { player: { level: 1 } }).ok, false); // condição desconhecida nunca conclui
 });
 
+test('missões de dinheiro, gasto e evolução', () => {
+  const S = { money: 2500, gasto: 900, player: { level: 5 }, registro: { evolucoes: { ivysaur: 1 } } };
+  assert.equal(progressoCondicao({ dinheiro: 2000 }, S).ok, true);
+  assert.equal(progressoCondicao({ dinheiro: 2000 }, { ...S, money: 1999 }).ok, false); // gastar faz cair
+  assert.deepEqual(progressoCondicao({ gasto: 1000 }, S), { atual: 900, alvo: 1000, ok: false });
+  assert.equal(progressoCondicao({ gasto: 1000 }, { player: { level: 1 } }).atual, 0); // save antigo sem S.gasto
+  assert.equal(progressoCondicao({ evolucoes: 1 }, S).ok, true);
+});
+
+test('golpeDoAliado: cada ordem escolhe o golpe certo', () => {
+  const g = (name, type, power, cls = 'physical', ppLeft = 5) => ({ name, type, power, cls, ppLeft });
+  const moves = [g('tackle', 'normal', 40), g('ember', 'fire', 40), g('flamethrower', 'fire', 90), g('growl', 'normal', null, 'status')];
+  assert.equal(golpeDoAliado('livre', moves, ['fire'], ['grass']).golpe.name, 'flamethrower');
+  assert.equal(golpeDoAliado(undefined, moves, ['fire'], ['grass']).golpe.name, 'flamethrower'); // sem ordem = livre
+  assert.equal(golpeDoAliado('fraco', moves, ['fire'], ['grass']).golpe.name, 'tackle');       // menor poder (empate: o 1º)
+  assert.equal(golpeDoAliado('status', moves, ['fire'], ['grass']).golpe.name, 'growl');
+  assert.ok(golpeDoAliado('status', [g('ember', 'fire', 40)], ['fire'], ['grass']).parado);       // sem status: espera
+  assert.ok(golpeDoAliado('parado', moves, ['fire'], ['grass']).parado);
+  assert.ok(golpeDoAliado('fora', moves, ['fire'], ['grass']).parado);
+  assert.equal(golpeDoAliado('livre', [g('ember', 'fire', 40, 'physical', 0)], ['fire'], ['grass']).golpe, null); // sem PP → Struggle
+});
+
 test('situacaoMissoes: escondida até liberar, pronta quando cumpre, feita some da lista', () => {
   const M = [
     { id: 'a', objetivo: { vitorias: 1 } },
@@ -340,6 +363,38 @@ test('situacaoMissoes: escondida até liberar, pronta quando cumpre, feita some 
   assert.deepEqual([s.ativas.map(x => x.m.id), s.prontas.map(x => x.m.id), s.escondidas], [['b'], ['a'], 1]);
   s = situacaoMissoes(M, { wins: 1, player: { level: 5 }, missoesFeitas: ['a'] });
   assert.deepEqual([s.ativas.map(x => x.m.id), s.feitas, s.escondidas], [['c'], 1, 1]);
+});
+
+test('desmaioPrecisaRevive: 3 livres no Médio+, ilimitado no Fácil', () => {
+  assert.equal(desmaioPrecisaRevive(3, 3), false);
+  assert.equal(desmaioPrecisaRevive(4, 3), true);
+  assert.equal(desmaioPrecisaRevive(99, null), false);
+  assert.equal(itemTemEfeito({ revive: true }, mon({ hp: 0 })), true);   // Revive só em desmaiado
+  assert.equal(itemTemEfeito({ revive: true }, mon({ hp: 10 })), false);
+});
+
+test('estatisticasDaJornada + pontuacao', () => {
+  const S = { wins: 12, treinadoresVencidos: 2, chefes: { rota1: true, floresta: true }, missoesFeitas: ['a', 'b', 'c'], tempoMs: 90000,
+    especieInicial: 'charmander', player: { level: 16, shiny: true, data: { speciesName: 'charmeleon' } },
+    registro: { derrotados: { pidgey: 4, rattata: 6 }, amigos: { pidgey: 1 }, evolucoes: { charmeleon: 1 } } };
+  const e = estatisticasDaJornada({ ...S, money: 800, maxDinheiro: 1500, gasto: 400 });
+  const { registro, ...numeros } = e;
+  assert.deepEqual(numeros, { especie: 'charmander', especieFinal: 'charmeleon', nivel: 16, vitorias: 12, derrotados: 10, treinadores: 2,
+    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, tempoMs: 90000, shiny: true,
+    maxDinheiro: 1500, gasto: 400, shiniesVistos: 0, shiniesAmigos: 0 });
+  assert.deepEqual(registro.derrotados, { pidgey: 4, rattata: 6 });
+  registro.derrotados.pidgey = 99; assert.equal(S.registro.derrotados.pidgey, 4); // é cópia, não referência
+  // 16×100 + 12×10 + 2×50 + 2×300 + 1×100 + 1×150 + 3×120 = 1600+120+100+600+100+150+360 = 3030
+  assert.equal(pontuacao(e), 3030);
+  assert.equal(pontuacao(e, 2), 6060); // Hardcore vale o dobro
+  // save antigo sem especieInicial: usa a espécie atual
+  assert.equal(estatisticasDaJornada({ player: { level: 5, data: { speciesName: 'mudkip' } } }).especie, 'mudkip');
+});
+
+test('formatarTempo', () => {
+  assert.equal(formatarTempo(30000), 'menos de 1 min');
+  assert.equal(formatarTempo(12 * 60000), '12 min');
+  assert.equal(formatarTempo(65 * 60000), '1h 05min');
 });
 
 test('ehShiny: 1 em 4096', () => {

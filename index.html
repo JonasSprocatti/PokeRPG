@@ -12,7 +12,7 @@
 <body>
 <header class="top">
   <div class="brand">PokéRPG<small>protótipo de RPG de texto</small></div>
-  <div class="top-r" id="topr"></div>
+  <div class="top-r"><div class="top-r" id="topr"></div><div id="conta-chip"></div></div>
 </header>
 <div id="app"></div>
 
@@ -23,5 +23,9 @@
     'Na pasta do projeto, rode <code>python -m http.server 3000</code> e abra <b>http://localhost:3000</b>.</div></main>';
 </script>
 <script type="module" src="js/main.js"></script>
+<script>
+  // modo offline: service worker guarda o jogo, a PokéAPI e os sprites depois do primeiro acesso online (sw.js)
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
+</script>
 </body>
 </html>

@@ -24,7 +24,7 @@ export async function explore() {
     else await say(pick(FLAVOR[z.id] || FLAVOR.default));
   } catch (e) {
     console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main';
-    log(apiErr(e), 'hit');
+    log(e.offline ? e.message : apiErr(e), 'hit');
   } finally {
     // missões também aparecem fora de batalha (ex.: a primeira vez que o jogo roda com missões)
     if (!G.B) try { await verificarMissoes(); } catch (e) { console.error(e); }
@@ -37,6 +37,6 @@ export async function desafiarChefe() {
   if (G.busy || !z.chefe) return;
   G.busy = true; render();
   try { await startBossBattle(z); }
-  catch (e) { console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main'; log(apiErr(e), 'hit'); }
+  catch (e) { console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main'; log(e.offline ? e.message : apiErr(e), 'hit'); }
   finally { G.busy = false; render(); save(); }
 }

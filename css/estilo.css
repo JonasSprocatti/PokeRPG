@@ -76,9 +76,40 @@ img{max-width:100%}
 .pv .btn.big{margin-top:18px}
 
 /* jogo */
-.game{display:grid;grid-template-columns:minmax(300px,370px) 1fr;gap:20px;padding:20px;max-width:1280px;margin:0 auto}
-@media(max-width:880px){.game{grid-template-columns:1fr}.stage{order:-1}}
-.sheet{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:18px;align-self:start}
+/* tela do jogo: coluna esq · divisória · centro (cena fixa + zona + ações) · divisória · coluna dir.
+   Larguras vêm de --larg-esq/--larg-dir (paineis.js, arrastando a divisória). */
+.game{display:grid;grid-template-columns:var(--larg-esq,340px) 10px minmax(420px,1fr) 10px var(--larg-dir,340px);gap:0 6px;padding:20px;max-width:1800px;margin:0 auto;align-items:start}
+.stage{display:grid;gap:14px;min-width:0}
+.zona{display:grid;gap:14px;align-content:start;min-width:0;min-height:60px;border-radius:14px}
+.zona.vazia{border:2px dashed var(--line);display:grid;place-items:center}
+.zona.vazia::before{content:'Arraste um painel pra cá';color:var(--muted);font-size:14px}
+.divisor{cursor:col-resize;align-self:stretch;border-radius:5px;touch-action:none}
+.divisor:hover,.divisor.ativo{background:var(--line)}
+/* painel */
+.painel{background:var(--panel);border:2px solid var(--line);border-radius:14px;min-width:0}
+.painel.arrastando{opacity:.4}
+.painel-cab{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 12px;border-bottom:2px solid var(--line);cursor:grab}
+.painel.recolhido .painel-cab{border-bottom:0}
+.painel-cab .alca{color:var(--muted);font-size:18px;line-height:1}
+.painel-titulo{flex:1;min-width:0;margin:0;font:700 15px var(--display);color:var(--yellow);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.painel-botoes{display:flex;gap:2px}
+.painel-botoes button{background:none;border:0;color:var(--muted);border-radius:6px;padding:2px 6px;font-size:13px}
+.painel-botoes button:hover{background:var(--panel2);color:var(--text)}
+.painel-corpo{padding:14px 16px;overflow:auto;resize:vertical;min-height:60px}
+.painel-marcador{height:6px;border-radius:3px;background:var(--yellow)}
+.painel[data-painel="log"] .painel-corpo{padding:8px;display:flex}
+.painel[data-painel="log"] .textbox{margin:0;flex:1;display:flex;min-height:0}
+.painel[data-painel="log"] .log{height:auto;flex:1;min-height:0}
+/* celular: uma coluna, cena primeiro; reordenar pelos botões ▲▼⇄ (arrastar no toque é ruim) */
+@media(max-width:880px){
+  .game{grid-template-columns:1fr;gap:14px}
+  .stage{order:-1}
+  .divisor{display:none}
+  .painel-cab{cursor:default}
+  .painel-cab .alca{display:none}
+  .painel-corpo{resize:none}
+  .zona.vazia{display:none}
+}
 .me{display:flex;gap:12px;align-items:center}
 .me img{width:96px;height:96px;image-rendering:pixelated;background:var(--panel2);border-radius:12px;flex:none}
 .me h2{margin:0;font:700 26px/1.1 var(--display)}
@@ -160,9 +191,16 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .hp.amz .fill{background:#e86fa0}
 .bag-sec{font:600 15px var(--display);margin:14px 0 8px;width:100%}
 .item-btn.gosta{border-color:#e86fa0}
-ul.aliados{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-ul.aliados li{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center}
-ul.aliados img{width:56px;height:56px;image-rendering:pixelated;background:var(--panel2);border-radius:10px}
+.aliados{display:grid;gap:12px}
+.aliado{background:var(--panel2);border-radius:12px;padding:10px 12px}
+.aliado.descansando{opacity:.7}
+.aliado-top{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center}
+.aliado-top img{width:56px;height:56px;image-rendering:pixelated;background:var(--panel);border-radius:10px}
+.aliado .ordem{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;color:var(--muted)}
+.aliado .ordem select{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:4px 8px;color:var(--text)}
+.aliado details{margin:6px 0}
+.aliado summary{cursor:pointer;color:var(--yellow);font-size:14px}
+.aliado .btn{margin-top:6px}
 /* Etapa 2: zonas trancadas, Alfa da zona, missões */
 .chip.trancada{opacity:.6}
 .chefe-box{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;margin-top:14px;padding:10px 12px;background:var(--panel2);border:2px solid var(--red);border-radius:12px}
@@ -172,13 +210,42 @@ ul.aliados img{width:56px;height:56px;image-rendering:pixelated;background:var(-
 .missao{border-top:1px solid var(--line);padding:6px 0}
 .missao small{display:block;color:var(--muted);font-size:13px}
 .hp.mis .fill{background:var(--yellow)}
+/* criação: iniciais por região */
+.topo-criacao{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.regioes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.regiao h4{font:600 14px var(--display);color:var(--muted);margin:0 0 6px}
+.regiao .picks{grid-template-columns:repeat(3,1fr)}
+/* fim de jornada e recordes */
+.selo-recorde{display:inline-block;background:var(--yellow);color:#1b1b2f;border-radius:999px;padding:4px 14px;font:700 15px var(--display);margin:4px 0 10px}
+.stats-fim{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px}
+.stat-fim{background:var(--panel2);border-radius:10px;padding:8px 12px;display:grid}
+.stat-fim span{color:var(--muted);font-size:13px}
+.stat-fim b{font:700 22px var(--display)}
+.stat-fim small{font-size:12px;color:var(--muted)}
+.recordes{display:grid;gap:8px;margin-top:18px}
+.recorde{display:grid;grid-template-columns:36px 56px 1fr auto;align-items:center;gap:12px;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:8px 14px}
+.recorde .pos{font:700 18px var(--display);color:var(--yellow)}
+.recorde img{width:56px;height:56px;image-rendering:pixelated}
+.recorde small{display:block;color:var(--muted);font-size:13px}
+.recorde .pts{font:700 20px var(--display)}
+.pokedex{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;margin-top:10px}
+.dex-item{display:grid;place-items:center;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:4px;text-align:center}
+.dex-item img{width:64px;height:64px;image-rendering:pixelated}
+.dex-item small{font-size:11px;color:var(--muted)}
+.pv.conta{grid-template-columns:1fr;max-width:640px}
+.campo{display:grid;gap:6px;margin:12px 0;color:var(--muted);font-size:14px}
+.pv.conta input{flex:1;min-width:200px;background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--text)}
+#conta-chip{display:flex;gap:8px;align-items:center}
+#conta-chip .btn{white-space:nowrap}
+.selo-offline{font:600 13px var(--display);background:#3a1f2a;border:2px solid var(--red);border-radius:999px;padding:3px 10px;white-space:nowrap}
+ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;display:grid;gap:4px}
 .plate.agindo{outline:3px solid var(--yellow);outline-offset:2px;animation:agindo 1s ease-in-out infinite}
 @keyframes agindo{50%{outline-color:transparent}}
 @media(max-width:520px){.mon{width:110px;height:100px}.spr{width:96px;height:96px}.spr.back{width:110px;height:110px}.pl-top{font-size:14px}}
 @keyframes shake{0%,100%{translate:0}25%{translate:-7px 0}75%{translate:7px 0}}
 .mon.shake{animation:shake .25s 2}
 
-.textbox{margin-top:14px;background:var(--paper);color:var(--paper-ink);border-radius:10px;border:3px solid var(--paper-ink);box-shadow:inset 0 0 0 3px var(--paper),inset 0 0 0 5px #6d74b8;padding:5px}
+.textbox{background:var(--paper);color:var(--paper-ink);border-radius:10px;border:3px solid var(--paper-ink);box-shadow:inset 0 0 0 3px var(--paper),inset 0 0 0 5px #6d74b8;padding:5px}
 .log{height:180px;overflow-y:auto;padding:10px 14px;font-size:15px}
 .log p{margin:0 0 4px}
 .log .good{color:#1f7a3a}.log .hit{color:#a83418}.log .level{color:#5a33c2}.log .muted{color:#6b6e8f}
@@ -186,7 +253,7 @@ ul.aliados img{width:56px;height:56px;image-rendering:pixelated;background:var(-
 .log p.turno{display:flex;align-items:center;gap:10px;margin:10px 0 4px;font:600 13px var(--display);letter-spacing:.08em;text-transform:uppercase;color:#6d74b8}
 .log p.turno::before,.log p.turno::after{content:'';flex:1;height:2px;background:#cfc8b6}
 
-.actions{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
 .moves{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
 @media(max-width:420px){.moves{grid-template-columns:1fr}}
 .mv{text-align:left;background:var(--panel2);border:2px solid var(--line);border-left:8px solid var(--c);border-radius:10px;padding:9px 12px;display:grid;gap:1px}

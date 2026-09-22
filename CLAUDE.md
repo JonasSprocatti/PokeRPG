@@ -16,7 +16,9 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 
 | Arquivo | Papel |
 |---|---|
-| `index.html` | Esqueleto: header, `#app`, aviso de `file://`, carrega `js/main.js`. |
+| `index.html` | Esqueleto: header (`#topr` + `#conta-chip`), `#app`, aviso de `file://`, carrega `js/main.js`, registra `sw.js`. |
+| `sw.js` | Service worker do modo offline (ver "Modo offline"). |
+| `README.md` | Página do projeto (o que tem + próximos passos). **Atualizar a cada funcionalidade nova.** |
 | `css/estilo.css` | Todo o CSS. |
 | `js/main.js` | Ponto de entrada: listeners delegados (`data-act`/`data-v`) e `boot()` (carrega save ou abre criação). |
 | `js/estado.js` | `G` = estado mutável compartilhado (`S` save, `B` batalha, `PV` prévia, `mode`, `busy`, `panel`), `zone()`, `nm()`, `save()`. |
@@ -25,18 +27,25 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `js/regras.js` | **Fórmulas puras** (testadas): `calcStats`, `calcDamage`, `effStat`, `typeEff`, `chanceAcerto`, `consegueFugir`, `jogadorAgePrimeiro`, `danoResidual`, `imuneAoStatus`, `xpPorVitoria`, `ganhoDeEVs`… |
 | `js/api.js` | PokéAPI com cache (memória + `localStorage` `pk:*`). `buildLearnset`/`slimPokemon`/`slimMove` são puras (testadas). |
 | `js/ui.js` | `$`, `REDUCED`, log (`log`/`say`/`logRaw`), modal `ask`, `shake`. |
-| `js/render.js` | `render()` (re-render total da ficha, cena e ações), `buildGame()`, `badge`. |
+| `js/render.js` | `render()` (re-render total: conteúdo dos painéis, cena e ações), `buildGame()`, `badge`, `spriteFrente`. |
+| `js/layout.js` | Modelo puro do layout dos painéis (zonas, larguras, alturas, recolhidos). Testado. |
+| `js/paineis.js` | Painéis na página: esqueleto, aplicar layout, arrastar, ▲▼⇄▾, divisórias, restaurar. |
 | `js/pokemon.js` | `makeMon(data, level, opt)` — instância jogável (jogador e selvagem). |
 | `js/efeitos.js` | `changeStats`, `inflict`, `healFull` — efeitos com narração, usados pela batalha e pelos itens. |
 | `js/batalha.js` | `turn(action)` (único ponto de entrada da UI), `useMove`, `startBattle`/`startTrainerBattle`, bola do treinador, vitória/derrota/captura, `endBattle`. |
 | `js/progressao.js` | `gainExp`, aprender golpe, evolução por nível. |
 | `js/itens.js` | `addItem`, `useItem`. |
 | `js/amizade.js` | `oferecer` (petisco em batalha), recrutar aliado, `despedir`. |
+| `js/fim.js` | `encerrarJornada(motivo)` (resumo → carreira → apaga save aqui e na nuvem), `montarResumo`, tela de fim, `telaCarreira`. |
+| `js/carreira.js` | Carreira = lista de jornadas terminadas (`pokerpg-carreira-v1`; migra o `pokerpg-recordes-v1` antigo). `calcularCarreira`, `mesclarJornadas`, `melhorDaEspecie`. Puro + `store`, testado. |
+| `js/config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (marcadores = jogo só local). |
+| `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. |
+| `js/conta.js` | Tela de conta e o botão 👤 no topo (`#conta-chip`). |
 | `js/missoes.js` | `verificarMissoes()` — anuncia missões novas e entrega prêmio das concluídas. |
 | `js/mundo.js` | `explore()`, `desafiarChefe()`. |
-| `js/criacao.js` | Tela de criação (busca, prévia com dificuldade, `startGame`, `fullRandomizer`) e `telaFim` (fim de jogo do Hardcore). |
+| `js/criacao.js` | Tela de criação: passo 1 dificuldade, passo 2 iniciais por região (ou busca livre em modo `especiesLivres`), prévia, `startGame`, `fullRandomizer`. |
 
-Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → `ui` → `render` → `efeitos`/`progressao`/`pokemon` → `itens`/`amizade`/`missoes`/`criacao` → `batalha` → `mundo` → `main` (`batalha` importa `telaFim` de `criacao`, então `criacao` nunca pode importar `batalha`). Manter sem ciclos.
+Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `estado` → `ui` → `paineis` → `render` → `efeitos`/`progressao`/`pokemon` → `itens`/`amizade`/`missoes`/`fim`/`criacao` → `batalha` → `mundo` → `main` (`batalha` importa `encerrarJornada` de `fim`, então `fim` nunca pode importar `batalha`). Manter sem ciclos.
 
 ## Mecânicas (Etapa 3)
 
@@ -60,14 +69,40 @@ Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → 
 - **Alfas (chefes)**: `ZONES[i].chefe = { id, nome, nivel }`, sempre acima do teto da zona (teste garante). Botão "⚔ Desafiar" na cena da zona → `startBossBattle`: IVs 31, `statsDeChefe` (HP ×2, resto ×1,3 — `MULT_CHEFE`). Não aceita petisco, dá pra fugir. 1ª vitória: `premioChefe(nível)` + 1 Rare Candy e marca `S.chefes[zona]`; revanche só dá XP.
 - **Missões**: `MISSOES` (dados.js), cada uma com `libera` (condição pra aparecer; sem ela, visível desde o início), `objetivo` e `premio`. Condições: `derrotar`+`qtd`, `vitorias`, `amigos`, `nivel`, `chefe`, `treinadores`, `missao` — avaliadas por `progressoCondicao`/`situacaoMissoes` (regras.js, testadas). `verificarMissoes()` (missoes.js) anuncia missão nova 🔓 (`S.missoesVistas`), entrega prêmio 📜 (`S.missoesFeitas`) e é chamada no `finally` de todo turno, depois de explorar e depois de usar item. Ficha mostra as ativas com barra de progresso e quantas seguem escondidas. Teste de dados garante que toda missão aponta pra zona/missão/item que existe.
 
+- **Missões de dinheiro**: `{ dinheiro }` = ter ₽X de uma vez (cai se gastar); `{ gasto }` = total em `S.gasto` (loja + Centro, somado em main.js). Também `{ evolucoes }`. Contagem de "derrotar" segue a facilidade de achar (comum da 1ª rota = 10, raro = 1–3).
+
+## Fim de jornada, carreira e conta
+
+- **Só iniciais na criação**: `REGIOES_INICIAIS` (9 regiões × 3 + Especiais Pikachu/Eevee) em TODOS os modos — Sortear e Full Randomizer também. Flag por modo `especiesLivres` (hoje false em todos, decisão do usuário "a princípio, pode mudar"): true volta a busca livre só naquele modo.
+- **Fim de jornada** (`fim.js`, `encerrarJornada(motivo)`): capturado no Hardcore (`'capturado'`), desmaio sem Revive (`'desmaiou'`) ou "Novo jogo" (`'encerrou'` — o botão agora ENCERRA a jornada, não só apaga). Monta o resumo (`montarResumo`: `estatisticasDaJornada` + `pontuacao` × `multPontos`, com `id` da jornada e cópia do registro por espécie), adiciona na **carreira** (`pokerpg-carreira-v1`, lista de TODAS as jornadas terminadas — sobrevive entre jornadas) e apaga o save (aqui e na nuvem). Tela de fim compara com o melhor daquela espécie. `telaCarreira()` (📊, na tela inicial e no topo do jogo fora de batalha) calcula tudo da lista: favorito (espécie mais jogada), máximos (nível, dinheiro de uma vez, missões, vitórias, Alfas), totais, Pokédex (amigos = "capturados" / 1025, faltam, vistos; sprite pelo `registro.ids`), shinies (vistos / amigos / jornadas sendo shiny) e melhor por espécie. Inclui a jornada atual como "em andamento".
+- **Conta / nuvem** (Supabase — a Vercel só hospeda; setup em `supabase/COMO-CONFIGURAR.md`, banco em `supabase/schema.sql` com RLS): login com Google ou link por e-mail. `sincronizar()` junta a carreira local com a da conta por `id` (`mesclarJornadas`: sobe só jornada de visitante ou da própria conta, nunca de outra conta que logou no mesmo navegador) e reconcilia a jornada em andamento (tabela `saves`, **uma por conta**): mesma jornada → vale a mais nova (`S.salvoEm`); jornadas diferentes → pergunta qual manter; jornada que já terminou em outro aparelho → descartada aqui. Envio do save: `ganchosSave.aoSalvar` → `agendarEnvioSave` (espera 5 s) + na hora ao esconder/fechar a aba. Sem config, tudo é no-op.
+- `S.id` (jornada), `S.salvoEm`, `S.maxDinheiro`, `registro.vistos/shinies/shiniesAmigos/ids` foram adicionados pra isso; save antigo ganha `id` ao abrir.
+- **Revive / desmaios**: `desmaiosLivres` por modo (Fácil null = ilimitado; Médio+ = 3). `S.desmaios` conta; do 4º em diante cada desmaio gasta um `revive` da mochila, sem ele = Game Over. Revive também reanima aliado desmaiado (½ HP) — único item que `itemTemEfeito` aceita em desmaiado.
+- **Tempo de jogo**: `S.tempoMs`, somado em cada `save()` (`marcarTempo`), ignorando pausas > 5 min; o boot zera `S.ultimoTick`.
+- **Ordens dos aliados** (`ORDENS`, `A.ordem`, `golpeDoAliado`): livre (mais eficaz) · fraco ("pegar leve", pra não derrubar quem você quer de amigo) · status · parado (em campo, sem agir) · fora (descansando: fora da batalha, não é alvo, sem XP — `emCampo()`). Troca pelo `<select data-ordem>` na ficha, a qualquer hora. Ficha completa do aliado num `<details data-aliado>` (aberto guardado em `G.abertos`).
+
+## Painéis modulares
+
+- Tela do jogo = coluna esq · centro (**cena fixa** → zona de painéis → ações fixas) · coluna dir. Painéis: `ficha`, `missoes`, `aliados`, `mochila`, `log`. **Um layout pro jogo inteiro** (decisão do usuário), salvo em `pokerpg-layout-v1`.
+- Modelo puro em `layout.js` (testado em `tests/layout.test.js`): `normalizarLayout` garante cada painel exatamente uma vez mesmo com save velho/quebrado; `moverPainel`/`deslocar`/`trocarZona`/`alternarRecolhido`/`definirLargura`/`definirAltura` nunca mutam.
+- DOM em `paineis.js`: `htmlJogo()` (esqueleto), `aplicarLayout()` (MOVE os nós entre zonas — conteúdo e scroll do log vão junto), `tituloPainel(id, html)`, `iniciarPaineis()` (listeners uma vez só: arrastar pelo cabeçalho com marcador, ▲▼⇄▾, divisórias de largura com pointer capture, "↺ Layout"). Altura = `resize: vertical` nativo + ResizeObserver que só grava quando `style.height` mudou.
+- `render.js` escreve só o CONTEÚDO de cada painel em `#p-<id>` (`renderFicha/Missoes/Aliados/Mochila`); o `#log` mora dentro do painel `log`. Painel novo: adicionar em `PAINEIS` + `LAYOUT_PADRAO` (layout.js), `TITULOS` (paineis.js) e um `render<X>()`.
+- Celular (≤ 880px): uma coluna, cena primeiro, sem arrastar/redimensionar — reordena pelos botões.
+
 ### Próximos passos combinados (em ordem sugerida)
-- **Game Over / recordes**: tela de fim com Pokémon derrotados, nível, tempo de jogo e outros números, comparando com o **recorde pessoal daquela espécie** (precisa de um save de recordes separado do save da jornada — o mesmo que o Roguelike usa).
-- **3.3 Roguelike**: começa só com `INICIAIS` (iniciais das 9 regiões + Pikachu + Eevee, em `dados.js`). Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
+- **3.3 Roguelike**: começa só com `INICIAIS` (hoje já é a regra de todos os modos). Lê os recordes (`pokerpg-recordes-v1`) + registro por espécie. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 
+## Modo offline
+
+- `sw.js` (service worker, registrado no `index.html`): arquivos do jogo em **rede primeiro** (online pega sempre a versão nova, sem trocar versão a cada deploy; offline cai no cache), PokéAPI/sprites/esm.sh/fontes em **cache primeiro**, Supabase nunca em cache. **Todo arquivo novo em `js/` entra em `PRECACHE`** — `tests/sw.test.js` falha se esquecer.
+- Offline (`offline()` em util.js): `sortearOponente` só sorteia Pokémon já em cache (`pokemonEmCache`/`idsEmCache` em api.js); sem nenhum, `erroOffline` com mensagem clara em vez do erro da PokéAPI. Alfa idem.
+- Nuvem offline: envio do save fica pendente; `online` → `sincronizar()` (sobe jornadas terminadas + save; save da nuvem de jornada que já terminou é apagado ali). Se o jogo abriu offline, `iniciarNuvem` tenta de novo no `online` (listeners de rede registrados uma vez só). Selo "📴 offline" no topo (`#conta-chip`), com ou sem conta.
+
 ## Convenções
 
+- **Toda funcionalidade nova atualiza o `README.md`** (o que o jogo tem + a lista de próximos passos/já feito) — pedido explícito do usuário, vale sempre.
 - Regra nova (conta, fórmula, probabilidade) vai em `regras.js` como função pura, com teste; o módulo de narração só chama e escreve a mensagem.
 - Tudo que só `regras.js`/`dados.js`/`util.js`/`api.js` importa precisa continuar sem DOM (importável no Node).
 - `esc()` em todo texto vindo de fora (apelido, dados da API) dentro de template string.

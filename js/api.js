@@ -20,6 +20,10 @@ function cached(key, loader) {
   memo.set(key, p);
   return p;
 }
+// Modo offline: dá pra montar este Pokémon sem rede? (já buscado antes: memória ou localStorage)
+export const pokemonEmCache = q => { const v = memo.get('mon:' + q); return (v && !(v instanceof Promise)) || store.has('pk:mon:' + q); };
+// todos os Pokémon (por número) que já estão no cache deste navegador — o sorteio da Fenda offline sai daqui
+export const idsEmCache = () => store.chaves('pk:mon:').map(k => +k.slice(7)).filter(Number.isInteger);
 export function syncGet(key) { const v = memo.get(key); return v && !(v instanceof Promise) ? v : null; }
 
 const VG_PREF = ['scarlet-violet', 'sword-shield', 'brilliant-diamond-shining-pearl', 'ultra-sun-ultra-moon', 'sun-moon', 'omega-ruby-alpha-sapphire', 'x-y', 'black-2-white-2', 'black-white', 'heartgold-soulsilver', 'platinum', 'diamond-pearl', 'emerald', 'firered-leafgreen', 'ruby-sapphire', 'crystal', 'gold-silver', 'yellow', 'red-blue'];
@@ -91,4 +95,6 @@ export async function resolvePokemon(q) {
     return loadPokemon(sp.defaultPokemon);
   }
 }
-export const apiErr = e => `Não consegui falar com a PokéAPI (${esc(e.message)}). Se você abriu este jogo dentro do chat do Claude, o visualizador de lá bloqueia requisições externas: rode num servidor local (<code>python -m http.server</code>) ou publique na Vercel.`;
+export const apiErr = e => typeof navigator !== 'undefined' && navigator.onLine === false
+  ? '📴 Sem internet: isto precisa de um dado da PokéAPI que ainda não está salvo neste aparelho.'
+  : `Não consegui falar com a PokéAPI (${esc(e.message)}). Se você abriu este jogo dentro do chat do Claude, o visualizador de lá bloqueia requisições externas: rode num servidor local (<code>python -m http.server</code>) ou publique na Vercel.`;

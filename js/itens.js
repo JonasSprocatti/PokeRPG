@@ -11,7 +11,7 @@ import { heal, itemTemEfeito } from './regras.js';
 import { esc } from './util.js';
 
 // mensagem quando ninguém da equipe se beneficiaria
-const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.' };
+const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
 export async function useItem(id, inBattle) {
@@ -43,6 +43,11 @@ export async function useItem(id, inBattle) {
   } else if (it.ether) {
     M.moves.forEach(m => m.ppLeft = Math.min(m.pp, m.ppLeft + it.ether)); render();
     await say(`Você usou ${it.name}${em}. PP restaurados.`, 'good');
+  } else if (it.revive) {
+    M.hp = Math.max(1, Math.floor(M.stats.hp / 2)); M.status = null; M.sleep = 0;
+    G.B?.caidos?.delete(M); // em batalha: se cair de novo, anuncia de novo
+    render();
+    await say(`Você usou ${it.name}${em}. ${nm(M)} se levanta com metade do HP!`, 'good');
   } else if (it.stage) {
     await say(`Você usou ${it.name}${em}.`);
     await changeStats(M, [{ stat: it.stage, change: 2 }]);

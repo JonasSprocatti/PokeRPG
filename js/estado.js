@@ -17,7 +17,8 @@ import { esc, fmt, store } from './util.js';
 
 export const SAVE_KEY = 'pokerpg-save-v1';
 //   dif   = dificuldade escolhida na tela inicial (antes de existir PV/S); vira S.dificuldade ao começar
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'hard' };
+//   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'hard', abertos: new Set() };
 
 export const zone = () => ZONES.find(z => z.id === G.S.zone) || ZONES[0];
 // nome de exibição: seu apelido / nome do aliado, "Pidgey de Caçador Rui" (batalha de treinador) ou "Pidgey selvagem"
@@ -29,6 +30,8 @@ export const rotulo = m => m === G.S?.player || G.S?.aliados?.includes(m) ? (m.n
 // reaproveitar (vários Pokémon de jogadores diferentes no mesmo lado) — a batalha nunca assume "só 1 do meu lado".
 export const ladoJogador = () => [G.S.player, ...(G.S.aliados || [])];
 export const vivos = lista => lista.filter(m => m.hp > 0);
+// quem participa da batalha: você + aliados que não estão com a ordem "Descansar" (A.ordem === 'fora')
+export const emCampo = () => ladoJogador().filter(m => m.ordem !== 'fora');
 
 // Centro Pokémon: se alguém da equipe precisa de cura e quanto custa no modo atual (grátis no Fácil; no Médio,
 // cada vitória desde a última visita — S.vitoriasDesdeCentro — tira 10%). `cheio` = preço sem desconto, pra mostrar.
@@ -45,12 +48,39 @@ export const zerarDescontoCentro = () => { if (G.S) G.S.vitoriasDesdeCentro = 0;
 // Registro por espécie (S.registro = { derrotados, amigos, evolucoes }, cada um {especie: n}) — base das missões
 // e dos desbloqueios do Roguelike (3.3): derrotar/fazer amizade N vezes, ou evoluir pra forma do meio 5× / final 10×.
 // Chave = speciesName (formas regionais contam como a espécie). Lista nova é criada na primeira vez.
-export function registrar(S, lista, especie) {
+// Também: vistos (encontrados), shinies (shinies encontrados), shiniesAmigos. `id` (opcional) guarda o número
+// da Pokédex da espécie em registro.ids — é o que a Pokédex da carreira usa pra mostrar o sprite.
+export function registrar(S, lista, especie, id) {
   const r = (S.registro ||= {});
   const l = (r[lista] ||= {});
   l[especie] = (l[especie] || 0) + 1;
+  if (id) (r.ids ||= {})[especie] = id;
+}
+// Pokémon apareceu na sua frente (selvagem, de treinador ou Alfa): conta como visto (e shiny visto)
+export function registrarVisto(M) {
+  if (!G.S) return;
+  registrar(G.S, 'vistos', M.data.speciesName, M.id);
+  if (M.shiny) registrar(G.S, 'shinies', M.data.speciesName, M.id);
 }
 export const nm = m => '<b>' + esc(rotulo(m)) + '</b>';
 // save de antes da dificuldade existir conta como Fácil (não punir retroativamente quem não escolheu)
 export const dificuldadeDe = S => S?.dificuldade || 'easy';
-export function save() { const S = G.S; if (S) { S.log = (S.log || []).slice(-40); store.set(SAVE_KEY, S); } }
+// aoSalvar: chamado depois de todo save() local (main.js liga no envio pra nuvem) — estado não conhece a nuvem
+export const ganchosSave = { aoSalvar: null };
+export function save() {
+  const S = G.S; if (!S) return;
+  marcarTempo();
+  S.maxDinheiro = Math.max(S.maxDinheiro || 0, S.money || 0); // maior quantia de uma vez na jornada (carreira)
+  S.salvoEm = Date.now(); // desempate entre o save deste aparelho e o da nuvem
+  S.log = (S.log || []).slice(-40); store.set(SAVE_KEY, S);
+  ganchosSave.aoSalvar?.(S);
+}
+// Tempo de jogo (S.tempoMs): soma o intervalo desde o último save, mas ignora pausas > 5 min (aba parada ou jogo fechado).
+// O boot zera S.ultimoTick pra não contar o tempo com o jogo fechado.
+const PAUSA_MAX = 5 * 60 * 1000;
+export function marcarTempo() {
+  const S = G.S; if (!S) return;
+  const agora = Date.now();
+  if (S.ultimoTick) S.tempoMs = (S.tempoMs || 0) + Math.min(agora - S.ultimoTick, PAUSA_MAX);
+  S.ultimoTick = agora;
+}

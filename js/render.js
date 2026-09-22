@@ -2,9 +2,10 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES, MISSOES } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES, MISSOES, ORDENS } from './dados.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
+import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { clamp, esc, fmt } from './util.js';
 
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
@@ -44,14 +45,53 @@ function turnoBar(B, P, E) {
   const info = T ? `<span class="treinador" title="Pokémon e bolas do treinador">🎯 ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span> <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}</span>` : '';
   return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${info}<span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
 }
-function renderSheet() {
-  const S = G.S, P = S.player, GR = S.meta.growth, [up, down] = NATURES[P.nature] || [];
-  const cur = P.exp - GR[P.level], need = P.level < 100 ? GR[P.level + 1] - GR[P.level] : 1;
-  const abInfo = P.data.abilities.find(a => a.name === P.ability);
-  const abDesc = syncGet('ab:' + P.ability)?.effect;
-  if (!abDesc && abInfo) loadAbility(abInfo).then(renderSheet).catch(() => {});
-  const bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]), AL = S.aliados || [], MS = situacaoMissoes(MISSOES, S);
-  $('#sheet').innerHTML = `
+// contador de desmaios do Médio pra cima: "2/3 livres", depois "precisa de Revive (tem N)"
+function desmaiosTxt(S) {
+  const livres = DIFICULDADES[dificuldadeDe(S)].desmaiosLivres, n = S.desmaios || 0;
+  if (livres == null) return '';
+  return n < livres ? `<br>Desmaios: <b>${n}/${livres}</b> livres.`
+    : `<br><span class="${S.bag.revive ? '' : 'err'}">Desmaios: <b>${n}</b>. O próximo gasta um Revive (você tem ${S.bag.revive || 0})${S.bag.revive ? '' : ': sem Revive é Game Over'}.</span>`;
+}
+/* peças da ficha, usadas pra você e pra cada aliado */
+function barraXp(M, GR) {
+  if (!GR) return '';
+  const cur = M.exp - GR[M.level], need = M.level < 100 ? GR[M.level + 1] - GR[M.level] : 1;
+  return `<div class="hp xp"><span>XP</span><div class="bar"><div class="fill" style="width:${M.level < 100 ? clamp(cur / need * 100, 0, 100) : 100}%"></div></div><span>${M.level < 100 ? `faltam ${GR[M.level + 1] - M.exp}` : 'máx.'}</span></div>`;
+}
+function tabelaStats(M) {
+  const [up, down] = NATURES[M.nature] || [];
+  return `<table class="stats">
+      <thead><tr><th>Atributo</th><th>Valor</th><th>Base</th><th>IV</th><th>EV</th></tr></thead>
+      <tbody>${STATS.map(s => `<tr><td>${STAT_PT[s]} ${s === up ? '<span class="up" title="Natureza">▲</span>' : s === down ? '<span class="down" title="Natureza">▼</span>' : ''}</td><td class="v">${M.stats[s]}</td><td>${M.data.base[s]}</td><td>${M.ivs[s]}</td><td>${M.evs[s]}</td></tr>`).join('')}</tbody>
+    </table>`;
+}
+function blocoHabilidade(M) {
+  const abInfo = M.data.abilities.find(a => a.name === M.ability), abDesc = syncGet('ab:' + M.ability)?.effect;
+  if (!abDesc && abInfo) loadAbility(abInfo).then(() => { if (G.S) renderSheet(); }).catch(() => {});
+  return `<div class="sec"><h3>Habilidade: ${esc(fmt(M.ability))}</h3>
+      <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(M.ability) ? '<span class="impl">✓ ativa no protótipo</span>' : '<em class="small">(ainda só descritiva)</em>'}</p></div>`;
+}
+const listaGolpes = M => `<div class="sec mlist"><h3>Golpes</h3>
+      ${M.moves.map(m => `<details><summary><b>${esc(fmt(m.name))}</b><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`).join('')}
+    </div>`;
+// aliado: resumo + seletor de ordem + ficha completa num <details> (aberto/fechado sobrevive ao re-render via G.abertos)
+function cartaoAliado(A, i) {
+  const ordem = A.ordem || 'livre';
+  return `<div class="aliado ${ordem === 'fora' ? 'descansando' : ''}">
+    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${A.data.types.map(badge).join('')}</div>${hpbar(A)}${barraXp(A, A.growth)}${chipsFor(A)}</div></div>
+    <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
+    <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
+    <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
+      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoHabilidade(A)}${listaGolpes(A)}
+    </details>
+    ${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}
+  </div>`;
+}
+// Conteúdo de cada painel (as caixas e o lugar delas são de paineis.js). Títulos com número vão pro cabeçalho.
+function renderFicha() {
+  const S = G.S, P = S.player;
+  tituloPainel('ficha', `${brilho(P)}${esc(P.nick || fmt(P.name))}`);
+  $('#p-ficha').innerHTML = `
     <div class="me">
       ${imgMon(P, '', spriteFrente(P))}
       <div>
@@ -62,48 +102,51 @@ function renderSheet() {
     </div>
     <div class="bars">
       ${hpbar(P)}
-      <div class="hp xp"><span>XP</span><div class="bar"><div class="fill" style="width:${P.level < 100 ? clamp(cur / need * 100, 0, 100) : 100}%"></div></div><span>${P.level < 100 ? `faltam ${GR[P.level + 1] - P.exp}` : 'máx.'}</span></div>
+      ${barraXp(P, S.meta.growth)}
       ${chipsFor(P)}
     </div>
-    <table class="stats">
-      <thead><tr><th>Atributo</th><th>Valor</th><th>Base</th><th>IV</th><th>EV</th></tr></thead>
-      <tbody>${STATS.map(s => `<tr><td>${STAT_PT[s]} ${s === up ? '<span class="up" title="Natureza">▲</span>' : s === down ? '<span class="down" title="Natureza">▼</span>' : ''}</td><td class="v">${P.stats[s]}</td><td>${P.data.base[s]}</td><td>${P.ivs[s]}</td><td>${P.evs[s]}</td></tr>`).join('')}</tbody>
-    </table>
-    <p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(P.nature))}. Vitórias: ${S.wins || 0}${S.treinadoresVencidos ? `, ${S.treinadoresVencidos} treinador${S.treinadoresVencidos > 1 ? 'es' : ''}` : ''}.<br>Modo <b title="${esc(DIFICULDADES[dificuldadeDe(S)].desc)}">${DIFICULDADES[dificuldadeDe(S)].nome}</b>${S.capturas ? ` · capturado ${S.capturas}×` : ''}.</p>
-    <div class="sec"><h3>Habilidade: ${esc(fmt(P.ability))}</h3>
-      <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(P.ability) ? '<span class="impl">✓ ativa no protótipo</span>' : '<em class="small">(ainda só descritiva)</em>'}</p></div>
-    <div class="sec mlist"><h3>Golpes</h3>
-      ${P.moves.map(m => `<details><summary><b>${esc(fmt(m.name))}</b><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`).join('')}
-    </div>
-    <div class="sec"><h3>Missões <span class="muted small">(${MS.feitas} concluída${MS.feitas === 1 ? '' : 's'})</span></h3>
-      ${[...MS.ativas, ...MS.prontas].map(({ m, atual, alvo }) => `<div class="missao"><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small><div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${atual / alvo * 100}%"></div></div><span>${atual}/${alvo}</span></div></div>`).join('') || '<p class="small muted">Nenhuma missão ativa agora.</p>'}
-      ${MS.escondidas ? `<p class="small muted">🔒 ${MS.escondidas} ainda escondida${MS.escondidas === 1 ? '' : 's'}: aparecem conforme você derrota, faz amigos e vence Alfas.</p>` : ''}
-    </div>
-    <div class="sec"><h3>Aliados (${AL.length}/${MAX_ALIADOS})</h3>
-      ${AL.length ? `<ul class="aliados">${AL.map((A, i) => `<li>${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}</span><div class="types">${A.data.types.map(badge).join('')}</div>${hpbar(A)}</div>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}</li>`).join('')}</ul>`
-        : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>'}
-    </div>
-    <div class="sec"><h3>Mochila</h3>
-      ${bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle && !ITEMS[k].afinidade ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>Usar</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>'}
-    </div>`;
+    ${tabelaStats(P)}
+    <p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(P.nature))}. Vitórias: ${S.wins || 0}${S.treinadoresVencidos ? `, ${S.treinadoresVencidos} treinador${S.treinadoresVencidos > 1 ? 'es' : ''}` : ''}.<br>Modo <b title="${esc(DIFICULDADES[dificuldadeDe(S)].desc)}">${DIFICULDADES[dificuldadeDe(S)].nome}</b>${S.capturas ? ` · capturado ${S.capturas}×` : ''}.${desmaiosTxt(S)}</p>
+    ${blocoHabilidade(P)}
+    ${listaGolpes(P)}`;
 }
+function renderMissoes() {
+  const MS = situacaoMissoes(MISSOES, G.S);
+  tituloPainel('missoes', `Missões <span class="muted small">(${MS.feitas} concluída${MS.feitas === 1 ? '' : 's'})</span>`);
+  $('#p-missoes').innerHTML = `
+      ${[...MS.ativas, ...MS.prontas].map(({ m, atual, alvo }) => `<div class="missao"><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small><div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${atual / alvo * 100}%"></div></div><span>${atual}/${alvo}</span></div></div>`).join('') || '<p class="small muted">Nenhuma missão ativa agora.</p>'}
+      ${MS.escondidas ? `<p class="small muted">🔒 ${MS.escondidas} ainda escondida${MS.escondidas === 1 ? '' : 's'}: aparecem conforme você derrota, faz amigos e vence Alfas.</p>` : ''}`;
+}
+function renderAliados() {
+  const AL = G.S.aliados || [];
+  tituloPainel('aliados', `Aliados <span class="muted small">(${AL.length}/${MAX_ALIADOS})</span>`);
+  $('#p-aliados').innerHTML = AL.length ? `<div class="aliados">${AL.map(cartaoAliado).join('')}</div>`
+    : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>';
+}
+function renderMochila() {
+  const S = G.S, bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]);
+  $('#p-mochila').innerHTML = bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle && !ITEMS[k].afinidade ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>Usar</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
+}
+// nome antigo mantido: blocoHabilidade() chama renderSheet quando a descrição da habilidade chega da API
+function renderSheet() { renderFicha(); renderMissoes(); renderAliados(); renderMochila(); }
 function renderScene() {
   const sc = $('#scene');
   if (G.mode === 'battle' && G.B) {
     const E = G.B.enemy, P = G.S.player;
     sc.className = 'scene battle';
-    const B = G.B, AL = G.S.aliados || [];
+    // aliado descansando (ordem "fora") não aparece em campo; o índice `i` continua sendo o de S.aliados (ids mon-a{i})
+    const B = G.B, AL = (G.S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.ordem !== 'fora');
     sc.innerHTML = `${turnoBar(B, P, E)}
       <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E)}</div>
         <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
       <div class="side me">
         <div class="mons-lado">
           <div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
-          ${AL.map((A, i) => `<div class="mon mini ${A.hp <= 0 ? 'fainted' : ''}" id="mon-a${i}"><div class="pad"></div>${imgMon(A, `spr ${sprCostas(A) ? '' : 'flip'}`, sprCostas(A) || spriteFrente(A))}</div>`).join('')}
+          ${AL.map(([A, i]) => `<div class="mon mini ${A.hp <= 0 ? 'fainted' : ''}" id="mon-a${i}"><div class="pad"></div>${imgMon(A, `spr ${sprCostas(A) ? '' : 'flip'}`, sprCostas(A) || spriteFrente(A))}</div>`).join('')}
         </div>
         <div class="plates">
           <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P)}</div>
-          ${AL.map((A, i) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A)}</div>`).join('')}
+          ${AL.map(([A, i]) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A)}</div>`).join('')}
         </div></div>`;
   } else {
     const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id];
@@ -158,12 +201,11 @@ function renderActions() {
 export function render() {
   if (G.mode === 'create' || !G.S) return;
   renderSheet(); renderScene(); renderActions();
-  $('#topr').innerHTML = `<span>₽${G.S.money}</span><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
+  $('#topr').innerHTML = `<span>₽${G.S.money}</span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
 }
+// monta a tela do jogo (esqueleto de painéis de paineis.js), aplica o layout salvo e desenha
 export function buildGame() {
-  $('#app').innerHTML = `<main class="game"><aside id="sheet" class="sheet"></aside>
-    <section class="stage"><div id="scene" class="scene"></div>
-      <div class="textbox"><div id="log" class="log" aria-live="polite"></div></div>
-      <div id="actions" class="actions"></div></section></main>`;
+  $('#app').innerHTML = htmlJogo();
+  aplicarLayout();
   render();
 }

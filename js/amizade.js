@@ -38,7 +38,7 @@ async function recrutar(E) {
     const c = await ask(`${nm(E)} quer seguir você, mas você já anda com ${MAX_ALIADOS} aliados. Alguém se despede?`,
       [...S.aliados.map((a, i) => ({ label: `Despedir ${esc(rotulo(a))} (Nv. ${a.level})`, value: i })), { label: `Não levar ${esc(fmt(E.name))}`, value: -1, ghost: true }]);
     if (c < 0) { await say(`${nm(E)} fica para trás, olhando você partir.`); return; }
-    const [saiu] = S.aliados.splice(c, 1);
+    const [saiu] = S.aliados.splice(c, 1); G.abertos.clear(); // índices mudaram
     await say(`${esc(rotulo(saiu))} volta para a natureza. Até mais!`);
   }
   const sp = await loadSpecies(E.data.speciesUrl);
@@ -46,7 +46,8 @@ async function recrutar(E) {
   E.exp = E.growth[E.level]; E.vol = freshVol(); delete E.amizade;
   const nome = nm(E); // ainda "X selvagem" — rotulo muda assim que entrar em S.aliados
   S.aliados.push(E);
-  registrar(S, 'amigos', E.data.speciesName);
+  registrar(S, 'amigos', E.data.speciesName, E.id);
+  if (E.shiny) registrar(S, 'shiniesAmigos', E.data.speciesName, E.id);
   await say(`💚 ${nome} agora faz a jornada com você!${E.shiny ? ' ✨ E é shiny!' : ''}`, 'level');
 }
 
@@ -55,6 +56,6 @@ export async function despedir(i) {
   const S = G.S, A = S.aliados?.[i]; if (!A) return;
   const ok = await ask(`Despedir ${nm(A)}? Ele volta para a natureza e não dá pra desfazer.`, [{ label: 'Despedir', value: true }, { label: 'Cancelar', value: false, ghost: true }]);
   if (!ok) return;
-  S.aliados.splice(i, 1);
+  S.aliados.splice(i, 1); G.abertos.clear(); // índices mudaram
   await say(`${esc(rotulo(A))} volta para a natureza. Até mais!`);
 }

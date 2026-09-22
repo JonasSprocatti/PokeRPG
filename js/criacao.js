@@ -1,53 +1,70 @@
 /* ============ render: criação ============ */
-// Tela inicial: busca/sorteio de espécie, prévia (habilidade, natureza, nível, apelido) e início do jogo.
+// Tela inicial: passo 1 dificuldade, passo 2 espécie (só os iniciais — REGIOES_INICIAIS — salvo modo com
+// `especiesLivres`), prévia (habilidade, natureza, nível, apelido) e início do jogo.
 import { G, save, nm } from './estado.js';
 import { $, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
-import { SPR, STATS, STAT_PT, NATURES, IMPL, ZONES, QUICK, DIFICULDADES } from './dados.js';
+import { SPR, STATS, STAT_PT, NATURES, IMPL, ZONES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS } from './dados.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
-import { rand, pick, esc, fmt } from './util.js';
+import { rand, pick, esc, fmt, novoId } from './util.js';
+
+const livres = () => DIFICULDADES[G.dif].especiesLivres;
 
 // Passo 1 = dificuldade (sempre visível no topo), passo 2 = escolher o Pokémon — ou, no Randomizer, um botão só.
 export function showCreate() {
   G.mode = 'create'; $('#topr').innerHTML = '';
   $('#app').innerHTML = `<main class="create">
-    <h1>Escolha quem você vai ser.</h1>
-    <p class="lead">Qualquer Pokémon da PokéAPI. Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta.</p>
+    <div class="topo-criacao"><h1>Escolha quem você vai ser.</h1><button class="btn ghost" data-act="carreira">📊 Carreira</button></div>
+    <p class="lead">Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta. Os outros Pokémon você encontra pelo caminho.</p>
     <h3 class="passo"><span>1</span> Dificuldade</h3>
     <div id="difs" class="difs"></div>
     <h3 class="passo"><span>2</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
-    <div id="escolha">
-      <div class="search">
-        <input id="q" list="dex" placeholder="Nome em inglês ou número (ex.: eevee, 448)" autocomplete="off" aria-label="Buscar Pokémon">
-        <button class="btn" data-act="search">Buscar</button>
-        <button class="btn ghost" data-act="random">Sortear</button>
-      </div>
-      <datalist id="dex"></datalist>
-      <div class="picks">${QUICK.map(id => `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">#${id}</button>`).join('')}</div>
-    </div>
+    <div id="escolha"></div>
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
     <div id="netwarn"></div>
     <div id="preview"></div></main>`;
   renderDificuldade();
-  loadList().then(list => { $('#dex').innerHTML = list.map(n => `<option value="${n}">`).join(''); })
+}
+// passo 2: grade de iniciais por região (padrão) ou busca livre (modo com `especiesLivres`)
+function renderEscolha() {
+  if (!livres()) {
+    $('#escolha').innerHTML = `<p class="small muted">Os iniciais de cada região, mais Pikachu e Eevee.</p>
+      <div class="regioes">${REGIOES_INICIAIS.map(r => `<div class="regiao"><h4>${r.nome}</h4><div class="picks">${r.ids.map((id, i) =>
+        `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">${r.nomes[i]}</button>`).join('')}</div></div>`).join('')}</div>
+      <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear um inicial</button></div>`;
+    return;
+  }
+  $('#escolha').innerHTML = `<div class="search">
+      <input id="q" list="dex" placeholder="Nome em inglês ou número (ex.: eevee, 448)" autocomplete="off" aria-label="Buscar Pokémon">
+      <button class="btn" data-act="search">Buscar</button>
+      <button class="btn ghost" data-act="random">Sortear</button>
+    </div><datalist id="dex"></datalist>`;
+  loadList().then(list => { if ($('#dex')) $('#dex').innerHTML = list.map(n => `<option value="${n}">`).join(''); })
     .catch(e => { $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`; });
 }
-// cartões de dificuldade + mostra/esconde o passo 2 conforme o modo (Randomizer não escolhe Pokémon)
+// cartões de dificuldade + monta o passo 2 conforme o modo (Randomizer não escolhe Pokémon)
 export function renderDificuldade() {
   $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
   const rnd = G.dif === 'randomizer';
   $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
   $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';
-  if (rnd) $('#preview').innerHTML = '';
-  else if (G.PV) renderPreview();
+  if (!rnd) renderEscolha();
+  // prévia de uma espécie que este modo não permite (ex.: veio de um modo livre) some
+  if (G.PV && !livres() && !INICIAIS.includes(G.PV.data.id)) G.PV = null;
+  if (rnd || !G.PV) $('#preview').innerHTML = '';
+  else renderPreview();
 }
+// "Sortear": entre os iniciais, ou entre todos se o modo for livre
+export const sortearEspecie = () => previewSearch(livres() ? rand(1, 1025) : pick(INICIAIS));
 export async function previewSearch(q) {
   q = String(q).trim().toLowerCase().replace(/\s+/g, '-'); if (!q) return;
   const box = $('#preview'); box.innerHTML = '<p class="loading">Consultando a PokéAPI…</p>';
   try {
     const data = await resolvePokemon(q);
+    // garantia (a UI só oferece iniciais, mas `pick`/`search` vêm de atributo do HTML)
+    if (!livres() && !INICIAIS.includes(data.id)) { box.innerHTML = '<p class="err">Neste modo só dá pra começar com um inicial, Pikachu ou Eevee.</p>'; return; }
     // nível sobrevive a trocar de espécie na prévia; a dificuldade mora em G.dif (passo 1)
     G.PV = { data, ability: (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name, nature: pick(Object.keys(NATURES)), level: G.PV?.level || 5, nick: '' };
     renderPreview();
@@ -92,7 +109,9 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   const mon = await makeMon(data, level, { nature, ability, nick });
   mon.exp = growth[mon.level];
   const startZone = [...ZONES].reverse().find(z => z.pool && zonaLiberada(z, mon.level) && z.min <= mon.level) || ZONES[0];
-  G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade };
+  G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+    especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
+    id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
   G.mode = 'explore'; G.panel = 'main';
   buildGame();
   log(`Você abre os olhos em ${startZone.name}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
@@ -117,25 +136,10 @@ export async function startGame(btn) {
 export async function fullRandomizer(btn) {
   btn.disabled = true; btn.textContent = '🎲 Sorteando…';
   try {
-    const data = await resolvePokemon(rand(1, 1025));
+    const data = await resolvePokemon(livres() ? rand(1, 1025) : pick(INICIAIS));
     await iniciarJornada({ data, level: 5, dificuldade: 'randomizer' });
   } catch (e) {
     btn.disabled = false; btn.textContent = '🎲 Sortear tudo e começar';
     $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`;
   }
-}
-// fim de jogo do Hardcore (o save já foi apagado por quem chama)
-export function telaFim(r) {
-  G.mode = 'fim'; $('#topr').innerHTML = '';
-  $('#app').innerHTML = `<main class="create fim">
-    <h1>Fim da jornada.</h1>
-    <p class="lead">${esc(r.cacador)} capturou ${esc(r.nome)}. No Hardcore não existe segunda chance: o save foi apagado.</p>
-    <section class="pv">
-      <div class="pv-art"><img src="${r.sprite}" alt="${esc(r.especie)}"></div>
-      <div>
-        <h2>${esc(r.nome)}</h2>
-        <p class="muted">${esc(r.especie)} · nível ${r.nivel} · ${r.vitorias} vitória${r.vitorias === 1 ? '' : 's'} · ${r.treinadores} treinador${r.treinadores === 1 ? '' : 'es'} derrotado${r.treinadores === 1 ? '' : 's'}</p>
-        <button class="btn big" data-act="recomecar">Nova jornada</button>
-      </div>
-    </section></main>`;
 }
