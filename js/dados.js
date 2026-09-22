@@ -81,6 +81,37 @@ export const ITEMS = {
   magnet: { name: 'Bateria Velha', desc: 'Petisco que Elétrico e Psíquico adoram.', afinidade: ['electric', 'psychic'], price: 300 },
   'tiny-mushroom': { name: 'Cogumelo Sombrio', desc: 'Petisco que Fantasma, Sombrio e Venenoso adoram.', afinidade: ['ghost', 'dark', 'poison'], price: 300 }
 };
+// Itens de evolução (evolucao.js). `evo: true` = usar num Pokémon da equipe pra evoluir (gatilho da PokéAPI
+// 'use-item'); `troca: true` = o Cabo de Conexão (gatilho 'trade'); `segurar: true` = a evolução pede ele na mochila
+// (troca segurando, ou subir de nível segurando — some ao evoluir). Pedras e o Cabo vendem na loja; o resto se acha
+// explorando rotas a partir da 4ª (ITENS_EVO_ACHADOS) ou vem de prêmio de Alfa.
+const pedra = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}).`, evo: true, price: 2100 });
+const segurado = (name, desc) => ({ name, desc: `Evolução por troca ou por nível: fica na mochila e é gasto ao evoluir (${desc}).`, segurar: true });
+const especial = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}).`, evo: true });
+export const ITENS_EVO = {
+  'fire-stone': pedra('Pedra do Fogo', 'Vulpix, Growlithe, Eevee…'), 'water-stone': pedra('Pedra da Água', 'Poliwhirl, Shellder, Eevee…'),
+  'thunder-stone': pedra('Pedra do Trovão', 'Pikachu, Eevee, Magneton…'), 'leaf-stone': pedra('Pedra da Folha', 'Gloom, Weepinbell, Eevee…'),
+  'moon-stone': pedra('Pedra da Lua', 'Clefairy, Jigglypuff, Nidorina…'), 'sun-stone': pedra('Pedra do Sol', 'Gloom, Sunkern, Cottonee…'),
+  'shiny-stone': pedra('Pedra Brilhante', 'Togetic, Roselia, Minccino…'), 'dusk-stone': pedra('Pedra do Crepúsculo', 'Murkrow, Misdreavus, Lampent…'),
+  'dawn-stone': pedra('Pedra da Aurora', 'Kirlia, Snorunt'), 'ice-stone': pedra('Pedra do Gelo', 'Eevee, Vulpix de Alola, Cetoddle…'),
+  'linking-cord': { name: 'Cabo de Conexão', desc: 'Simula uma troca: evolui quem só evolui trocando (Kadabra, Machoke, Graveler, Haunter…). Alguns pedem também um item na mochila.', troca: true, price: 3000 },
+  'metal-coat': segurado('Revestimento Metálico', 'Onix, Scyther'), 'kings-rock': segurado('Pedra do Rei', 'Poliwhirl, Slowpoke'),
+  'dragon-scale': segurado('Escama de Dragão', 'Seadra'), 'up-grade': segurado('Melhoria', 'Porygon'), 'dubious-disc': segurado('Disco Duvidoso', 'Porygon2'),
+  protector: segurado('Protetor', 'Rhydon'), electirizer: segurado('Eletrizador', 'Electabuzz'), magmarizer: segurado('Magmatizador', 'Magmar'),
+  'reaper-cloth': segurado('Pano Ceifador', 'Dusclops'), 'prism-scale': segurado('Escama Prisma', 'Feebas'),
+  'deep-sea-tooth': segurado('Dente Abissal', 'Clamperl'), 'deep-sea-scale': segurado('Escama Abissal', 'Clamperl'),
+  sachet: segurado('Sachê', 'Spritzee'), 'whipped-dream': segurado('Chantili dos Sonhos', 'Swirlix'),
+  'razor-claw': segurado('Garra Afiada', 'Sneasel, à noite'), 'razor-fang': segurado('Presa Afiada', 'Gligar, à noite'), 'oval-stone': segurado('Pedra Oval', 'Happiny, de dia'),
+  'sweet-apple': especial('Maçã Doce', 'Applin'), 'tart-apple': especial('Maçã Azeda', 'Applin'), 'cracked-pot': especial('Bule Rachado', 'Sinistea'),
+  'galarica-cuff': especial('Bracelete Galarica', 'Slowpoke de Galar'), 'galarica-wreath': especial('Coroa Galarica', 'Slowpoke de Galar'),
+  'auspicious-armor': especial('Armadura Auspiciosa', 'Charcadet'), 'malicious-armor': especial('Armadura Maliciosa', 'Charcadet'),
+  'black-augurite': especial('Augurita Negra', 'Scyther'), 'peat-block': especial('Bloco de Turfa', 'Ursaring, à noite'),
+  'strawberry-sweet': especial('Doce de Morango', 'Milcery'), 'scroll-of-darkness': especial('Pergaminho das Trevas', 'Kubfu'),
+  'scroll-of-waters': especial('Pergaminho das Águas', 'Kubfu')
+};
+// o que dá pra achar explorando (as pedras também; o Cabo de Conexão só na loja)
+export const ITENS_EVO_ACHADOS = Object.keys(ITENS_EVO).filter(k => k !== 'linking-cord');
+Object.assign(ITEMS, ITENS_EVO); // mochila, loja e sprites tratam igual aos outros itens
 export const FIND_ITEMS = ['potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
 
 // Zonas = as rotas de todos os mapas por Gen (dados-mapas.js; lógica em mapas.js). `libera` = nível mínimo pra

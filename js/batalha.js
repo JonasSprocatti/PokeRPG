@@ -9,12 +9,13 @@ import { log, say } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
 import { usarGolpe, fimDeTurno, fimDaRodada } from './golpe.js';
-import { gainExp, gainExpAliado } from './progressao.js';
+import { gainExp, gainExpAliado, checkEvolution } from './progressao.js';
+import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
-import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
+import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
@@ -245,17 +246,26 @@ async function win() {
   }
   if (B.lendarios) { await vencerGen(); return; }
   if (B.chefe && !S.chefes?.[B.chefe]) {
-    const premio = premioChefe(E.level), z = ZONES.find(x => x.id === B.chefe);
+    const premio = premioChefe(E.level), z = ZONES.find(x => x.id === B.chefe), evo = pick(ITENS_EVO_ACHADOS);
     (S.chefes ||= {})[B.chefe] = true;
-    S.money += premio; S.bag['rare-candy'] = (S.bag['rare-candy'] || 0) + 1;
-    await say(`🏆 Você derrotou o Alfa de ${esc(z?.name || B.chefe)}! Prêmio: ₽${premio} e 1 Rare Candy.`, 'level');
+    S.money += premio; S.bag['rare-candy'] = (S.bag['rare-candy'] || 0) + 1; S.bag[evo] = (S.bag[evo] || 0) + 1;
+    await say(`🏆 Você derrotou o Alfa de ${esc(z?.name || B.chefe)}! Prêmio: ₽${premio}, 1 Rare Candy e 1 ${ITEMS[evo].name} (item de evolução).`, 'level');
   }
+  await depoisDaVitoria();
   if (T) {
     const premio = premioTreinador(T.equipe);
     S.money += premio; S.treinadoresVencidos = (S.treinadoresVencidos || 0) + 1;
     await say(`Você derrotou ${esc(T.nome)}! Na fuga, deixou cair ₽${premio}.`, 'good');
   }
   endBattle();
+}
+// Fim de uma vitória (antes de endBattle zerar m.vol): +1 de vínculo pra quem lutou, e evoluções que dependem do
+// que aconteceu NESTA batalha (evolucao.js 'pos-batalha': Sirfetch'd com 3 críticos, Runerigus que aguentou 49 de dano)
+async function depoisDaVitoria() {
+  for (const M of vivos(emCampo())) {
+    ganharFelicidade(M, 1);
+    if ((M.vol?.criticos || 0) >= 3 || (M.vol?.danoSofrido || 0) >= 49) await checkEvolution(M, { gatilho: 'pos-batalha' });
+  }
 }
 // Venceu os lendários: a Gen está fechada (S.gensVencidas). Modo com `fimNaGen` (Roguelike) = a run termina em
 // vitória e o mapa seguinte libera pras próximas runs; nos outros, você escolhe o próximo mapa (telaEscolherGen).

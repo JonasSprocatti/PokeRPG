@@ -6,6 +6,7 @@ import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS,
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { IMPL } from './habilidades.js';
+import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
@@ -94,7 +95,7 @@ function cartaoAliado(A, i) {
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
-      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoHabilidade(A)}${listaGolpes(A)}
+      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A)}
     </details>
     ${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}
   </div>`;
@@ -119,8 +120,15 @@ function renderFicha() {
     </div>
     ${tabelaStats(P)}
     <p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(P.nature))}. Vitórias: ${S.wins || 0}${S.treinadoresVencidos ? `, ${S.treinadoresVencidos} treinador${S.treinadoresVencidos > 1 ? 'es' : ''}` : ''}.<br>Modo <b title="${esc(DIFICULDADES[dificuldadeDe(S)].desc)}">${DIFICULDADES[dificuldadeDe(S)].nome}</b>${S.capturas ? ` · capturado ${S.capturas}×` : ''}.${desmaiosTxt(S)}</p>
+    ${blocoEvolucao(P, S.meta.evo)}
     ${blocoHabilidade(P)}
     ${listaGolpes(P)}`;
+}
+// vínculo (amizade que algumas evoluções pedem) + como cada próxima forma evolui (evolucao.js)
+function blocoEvolucao(M, arvore) {
+  const f = felicidadeDe(M), evs = arvore ? comoEvolui(arvore, M.data.speciesName, k => ITEMS[k]?.name || fmt(k)) : [];
+  return `<p class="small muted evo-info"><span title="Sobe com os níveis e as vitórias. Algumas evoluções pedem vínculo alto (${FELICIDADE_EVOLUCAO}).">♥ Vínculo <b>${f}</b>/255${f >= FELICIDADE_EVOLUCAO ? ' (alto)' : ''}</span>
+    ${evs.length ? `<br>Evolui: ${evs.map(e => `<b>${esc(fmt(e.name))}</b> (${esc(e.texto)})`).join(' · ')}` : arvore ? '<br>Não evolui mais.' : ''}</p>`;
 }
 function renderMissoes() {
   const MS = situacaoMissoes(MISSOES, G.S);
@@ -137,7 +145,7 @@ function renderAliados() {
 }
 function renderMochila() {
   const S = G.S, bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]);
-  $('#p-mochila').innerHTML = bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle && !ITEMS[k].afinidade ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>Usar</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
+  $('#p-mochila').innerHTML = bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle && !ITEMS[k].afinidade && !ITEMS[k].segurar ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>${ITEMS[k].evo || ITEMS[k].troca ? 'Usar (evoluir)' : 'Usar'}</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
 }
 // nome antigo mantido: blocoHabilidade() chama renderSheet quando a descrição da habilidade chega da API
 function renderSheet() { renderFicha(); renderMissoes(); renderAliados(); renderMochila(); }
@@ -206,7 +214,7 @@ function renderActions() {
     const P = S.player;
     if (G.panel === 'bag') {
       const E = G.B.enemy, T = G.B.trainer;
-      const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy && !ITEMS[k].afinidade);
+      const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy && !ITEMS[k].afinidade && !ITEMS[k].evo && !ITEMS[k].troca && !ITEMS[k].segurar);
       const petiscos = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]?.afinidade);
       // petisco: destaca os que o tipo do alvo gosta
       const gosta = k => E.data.types.some(t => ITEMS[k].afinidade.includes(t));

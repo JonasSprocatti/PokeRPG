@@ -1,12 +1,14 @@
 /* ============ progressão ============ */
-// XP → nível, golpes aprendidos por nível e evolução (por nível; outros gatilhos ainda não) — pra você e pros aliados.
-// Diferença entre os dois: você escolhe qual golpe esquecer; o aliado troca sozinho o de menor poder.
+// XP → nível, golpes aprendidos por nível e evolução — pra você e pros aliados. As condições de evolução (nível,
+// pedra, troca, vínculo, hora do dia, golpe conhecido…) moram em evolucao.js; aqui fica a narração e a troca de espécie.
+// Diferença entre você e o aliado: você escolhe qual golpe esquecer; o aliado troca sozinho o de menor poder.
 // A evolução pergunta nos dois casos (é decisão sua deixar o aliado evoluir ou não).
-import { G, nm, registrar } from './estado.js';
+import { G, nm, registrar, rotulo, ladoJogador } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
-import { API, STATS, STAT_PT, TYPE_PT, CLS_PT } from './dados.js';
+import { API, STATS, STAT_PT, TYPE_PT, CLS_PT, ITEMS } from './dados.js';
 import { recalc } from './regras.js';
+import { evolucoesPossiveis, caminhoMostrado, textoCondicao, ganharFelicidade, ganhoFelicidadeNivel, felicidadeDe } from './evolucao.js';
 import { loadMove, loadSpecies, loadPokemon, loadEvo } from './api.js';
 import { esc, fmt } from './util.js';
 
@@ -18,7 +20,7 @@ export async function gainExp(xp) {
   let leveled = false;
   while (P.level < 100 && P.exp >= GR[P.level + 1]) {
     const before = { ...P.stats };
-    P.level++; recalc(P); leveled = true; render();
+    P.level++; recalc(P); leveled = true; ganharFelicidade(P, ganhoFelicidadeNivel(felicidadeDe(P))); render();
     await say(`<b>${esc(P.nick || fmt(P.name))} subiu para o nível ${P.level}!</b>`, 'level');
     await say(STATS.map(s => `${STAT_PT[s]} +${P.stats[s] - before[s]}`).join(', '), 'muted');
     for (const mv of P.data.learnset.list.filter(m => m.level === P.level)) await aprender(P, mv);
@@ -32,7 +34,7 @@ export async function gainExpAliado(A, xp) {
   A.exp += xp;
   let leveled = false;
   while (A.level < 100 && A.exp >= A.growth[A.level + 1]) {
-    A.level++; recalc(A); leveled = true; render();
+    A.level++; recalc(A); leveled = true; ganharFelicidade(A, ganhoFelicidadeNivel(felicidadeDe(A))); render();
     await say(`${nm(A)} subiu para o nível ${A.level}!`, 'level');
     for (const ref of A.data.learnset.list.filter(m => m.level === A.level)) await aprender(A, ref);
   }
@@ -60,25 +62,79 @@ async function aprender(M, ref) {
 }
 
 export function findNode(n, name) { if (n.name === name) return n; for (const c of n.to) { const f = findNode(c, name); if (f) return f; } return null; }
-// árvore de evolução: a sua fica em S.meta.evo; a do aliado é buscada na 1ª vez e guardada nele (A.evo, null = não evolui)
+// Árvore de evolução: a sua fica em S.meta.evo; a do aliado é buscada na 1ª vez e guardada nele (A.evo, null = não
+// evolui). Árvore sem `v: 2` é de save antigo (só nível): busca de novo com todas as condições (offline: usa a velha).
 async function arvoreDe(M) {
-  if (ehJogador(M)) return G.S.meta.evo;
-  if (M.evo === undefined) {
+  const atual = ehJogador(M) ? G.S.meta.evo : M.evo;
+  if (atual === null || atual?.v === 2) return atual;
+  try {
     const sp = await loadSpecies(M.data.speciesUrl);
-    M.evo = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
-  }
-  return M.evo;
+    const nova = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
+    if (ehJogador(M)) G.S.meta.evo = nova; else M.evo = nova;
+    return nova;
+  } catch (e) { if (atual) return atual; throw e; }
 }
-async function checkEvolution(M) {
-  const arvore = await arvoreDe(M); if (!arvore) return;
-  const node = findNode(arvore, M.data.speciesName); if (!node) return;
-  const opts = node.to.filter(n => n.details.some(d => d.trigger === 'level-up' && d.min_level && d.min_level <= M.level));
-  if (!opts.length) return;
+// o que as condições precisam saber (evolucao.js): hora de verdade, os outros da equipe, mochila, registro, dinheiro
+const contexto = (M, extra) => ({ gatilho: 'level-up', hora: new Date().getHours(), aliados: ladoJogador().filter(x => x !== M),
+  bag: G.S.bag, registro: G.S.registro, dinheiro: G.S.money, ...extra });
+const nomeItem = k => ITEMS[k]?.name || fmt(k);
+// gasta o que a evolução pede (item segurado na mochila, dinheiro)
+function pagar(o) {
+  const S = G.S;
+  if (o.consome) { S.bag[o.consome]--; if (S.bag[o.consome] <= 0) delete S.bag[o.consome]; }
+  if (o.custo) S.money -= o.custo;
+}
+const extraTexto = o => [o.consome ? `gasta ${nomeItem(o.consome)}` : '', o.custo ? `custa ₽${o.custo.toLocaleString('pt-BR')}` : ''].filter(Boolean).join(', ');
+
+// Evolução por nível (ou depois da batalha, `extra.gatilho = 'pos-batalha'`): pergunta se deixa evoluir.
+export async function checkEvolution(M, extra = {}) {
+  const arvore = await arvoreDe(M).catch(() => null); if (!arvore) return false;
+  const node = findNode(arvore, M.data.speciesName); if (!node) return false;
+  const opts = evolucoesPossiveis(node, M, contexto(M, extra));
+  if (!opts.length) return false;
   const pergunta = ehJogador(M) ? `Algo está acontecendo com ${nm(M)}... Você sente seu corpo mudar. Deixar evoluir?`
     : `Algo está acontecendo com seu aliado ${nm(M)}... Deixar ele evoluir?`;
-  const c = await ask(pergunta, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}`, value: o.name })), { label: ehJogador(M) ? 'Resistir à evolução' : 'Impedir a evolução', value: null, ghost: true }]);
-  if (!c) { await say(`${nm(M)} ${ehJogador(M) ? 'resistiu à' : 'não passou pela'} evolução.`); return; }
+  const c = await ask(pergunta, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}${extraTexto(o) ? ` (${extraTexto(o)})` : ''}`, value: o.name })), { label: ehJogador(M) ? 'Resistir à evolução' : 'Impedir a evolução', value: null, ghost: true }]);
+  if (!c) { await say(`${nm(M)} ${ehJogador(M) ? 'resistiu à' : 'não passou pela'} evolução.`); return false; }
+  pagar(opts.find(o => o.name === c));
   await evolve(M, c, arvore);
+  return true;
+}
+
+// Usar um item de evolução (pedra etc.: 'use-item') ou o Cabo de Conexão ('trade') fora de batalha.
+// Pergunta em quem (só quem pode evoluir com ele agora) e pra quê. true = item gasto.
+export async function evoluirComItem(id) {
+  const it = ITEMS[id], gatilho = it.troca ? 'trade' : 'use-item', S = G.S;
+  const cands = [], faltas = [];
+  for (const M of ladoJogador().filter(x => x.hp > 0)) {
+    let arvore; try { arvore = await arvoreDe(M); } catch { continue; }
+    const node = arvore && findNode(arvore, M.data.speciesName); if (!node) continue;
+    const opts = evolucoesPossiveis(node, M, contexto(M, { gatilho, item: id }));
+    if (opts.length) { cands.push({ M, arvore, opts }); continue; }
+    // quase: tem esse tipo de evolução, mas falta algo (ex.: o item que vai junto na troca)
+    for (const alvo of node.to) {
+      const d = caminhoMostrado(alvo);
+      if (d?.trigger === gatilho && (gatilho === 'trade' || d.item === id)) faltas.push(`${esc(rotulo(M))} → ${esc(fmt(alvo.name))}: precisa ${esc(textoCondicao(d, nomeItem))}`);
+    }
+  }
+  if (!cands.length) {
+    await say(`${it.name} não faz ninguém da equipe evoluir agora.${faltas.length ? '<br>' + faltas.join('<br>') : ''}`, 'muted');
+    return false;
+  }
+  let esc1 = cands[0];
+  if (cands.length > 1) {
+    const i = await ask(`Usar <b>${it.name}</b> em quem?`, [...cands.map((x, j) => ({ label: `${esc(rotulo(x.M))} → ${x.opts.map(o => esc(fmt(o.name))).join(' / ')}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    if (i < 0) return false;
+    esc1 = cands[i];
+  }
+  const { M, arvore, opts } = esc1;
+  const c = await ask(`Usar <b>${it.name}</b> em ${nm(M)}?`, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}${extraTexto(o) ? ` (${extraTexto(o)})` : ''}`, value: o.name })), { label: 'Cancelar', value: null, ghost: true }]);
+  if (!c) return false;
+  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+  pagar(opts.find(o => o.name === c));
+  await say(it.troca ? `Você conecta o ${it.name}... ${nm(M)} sente uma energia estranha.` : `Você usa ${it.name} em ${nm(M)}.`);
+  await evolve(M, c, arvore);
+  return true;
 }
 async function evolve(M, speciesName, arvore) {
   // forma do meio (ainda evolui) ou final (não evolui mais): o Roguelike pede 5 ou 10 evoluções pra desbloquear

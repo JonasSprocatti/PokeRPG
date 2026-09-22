@@ -5,7 +5,7 @@ import { G, nm, rotulo, ladoJogador } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
-import { gainExp, gainExpAliado } from './progressao.js';
+import { gainExp, gainExpAliado, evoluirComItem } from './progressao.js';
 import { ITEMS, ST_SHORT } from './dados.js';
 import { heal, itemTemEfeito } from './regras.js';
 import { esc } from './util.js';
@@ -18,6 +18,12 @@ export async function useItem(id, inBattle) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it || !S.bag[id]) return false;
   if (it.battle && !inBattle) { await say('Esse item só funciona durante uma batalha.'); return false; }
+  // itens de evolução (evolucao.js): pedras/maçãs/etc. e o Cabo de Conexão — fora de batalha
+  if (it.evo || it.troca) {
+    if (inBattle) { await say('Não dá pra evoluir no meio de uma batalha.'); return false; }
+    return evoluirComItem(id);
+  }
+  if (it.segurar) { await say(`${it.name} fica na mochila: é gasto sozinho quando a evolução que pede ele acontecer.`, 'muted'); return false; }
   const equipe = ladoJogador();
   const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
   if (!alvos.length) {

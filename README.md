@@ -69,6 +69,15 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
   A ficha marca quais estão ativas.
 
+### Evoluções
+Além de subir de nível, os Pokémon evoluem como nos jogos:
+- **Pedras e itens:** 10 pedras (Fogo, Água, Trovão, Folha, Lua, Sol, Brilhante, Crepúsculo, Aurora, Gelo) e itens como Maçã Doce, Bule Rachado e Armadura Auspiciosa. As pedras e o **Cabo de Conexão** são vendidos na loja; o resto aparece explorando (da 4ª rota em diante) e como prêmio de Alfa.
+- **Troca:** o **Cabo de Conexão** simula a troca e evolui quem só evolui assim (Kadabra, Machoke, Graveler, Haunter…). Alguns pedem também um item na mochila (Metal Coat, Escama de Dragão…), que é gasto junto; outros pedem o parceiro na equipe (Karrablast com Shelmet).
+- **Vínculo (amizade):** cada Pokémon tem um vínculo de 0 a 255, que sobe a cada nível e a cada vitória. Com **160 ou mais** evoluem Golbat, Pichu, Eevee (Espeon de dia, Umbreon à noite) e companhia. Aparece na ficha.
+- **Hora do dia:** pelo relógio do seu aparelho (dia 6h–18h, noite 18h–6h).
+- **Outras condições:** saber um golpe, ter um aliado de certa espécie ou tipo, Ataque × Defesa (Tyrogue) e itens segurados.
+- **Casos especiais:** evoluções que dependem de coisas que o jogo não tem (chuva, virar o console, contar passos) ganharam uma regra equivalente. Exemplos: Sirfetch'd com **3 críticos numa batalha**, Runerigus ao **aguentar 49 de dano**, Kingambit ao **derrotar 3 Bisharp**, Annihilape sabendo **Rage Fist**. A ficha mostra o que falta para cada evolução.
+
 ### Amizade e aliados
 - Em batalha contra um selvagem, ofereça um **petisco** que o tipo dele goste. Com a amizade cheia, ele passa a te seguir (até **2 aliados**). São 6 petiscos que cobrem os 18 tipos.
 - Aliados lutam **junto com você** no mesmo turno, ganham XP, aprendem golpes e evoluem.
@@ -154,6 +163,7 @@ Depois abra http://localhost:3000.
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
 | `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
 | `js/nuvem.js`, `js/conta.js`, `js/config.js`, `js/ranking.js` | Login, nuvem (Supabase) e ranking global |
+| `js/evolucao.js` | Condições de evolução (pedra, troca, vínculo, hora, golpe…) e as regras equivalentes dos casos raros |
 | `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
 | `js/mp-motor.js`, `js/multiplayer.js` | Motor da batalha multiplayer (puro, testado) e salas |
 | `sw.js` | Modo offline |
@@ -164,10 +174,7 @@ Depois abra http://localhost:3000.
 
 ## Próximos passos
 
-- [ ] **Evoluções especiais**, porque hoje só a evolução por nível funciona:
-  - **pedras e itens** (loja e achados, usados pela Mochila);
-  - **troca:** "Cabo de Conexão" no single player, e troca de verdade com um amigo no multiplayer;
-  - **condições:** amizade (vínculo), dia ou noite pelo relógio real, saber um golpe, estar numa zona.
+- [ ] **Troca de verdade** entre dois jogadores no multiplayer (hoje a troca é simulada pelo Cabo de Conexão) e o caso do **Shedinja** (aparecer numa vaga livre quando Nincada evolui).
 - [ ] **Batalha mais completa**, nesta ordem:
   1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela).
   2. **Clima:** sol, chuva, tempestade de areia e granizo/neve, e as habilidades ligadas a eles.
@@ -183,6 +190,7 @@ Depois abra http://localhost:3000.
 - [x] Treinadores caçadores, dificuldades, shiny, Full Randomizer
 - [x] Amizade, aliados com ordens, batalha com vários do mesmo lado
 - [x] Zonas por nível, Alfas, missões
+- [x] Evoluções especiais: pedras e itens, Cabo de Conexão (troca), vínculo, hora do dia, golpe conhecido e regras equivalentes para os casos raros
 - [x] 💾 Jornadas salvas: várias runs em andamento (guardar, continuar, excluir), na nuvem também
 - [x] Mapas por Gen (9 regiões × 10 rotas), lendários no fim de cada mapa, míticos raros, Pokédex da rota com silhuetas e taxa de aparição
 - [x] Game Over, carreira, Revive

@@ -8,6 +8,7 @@ import { render } from './render.js';
 import { ITEMS, TYPE_PT } from './dados.js';
 import { ganhoAmizade, podeFazerAmizade, freshVol, MAX_ALIADOS, AMIZADE_MAX } from './regras.js';
 import { loadSpecies, loadGrowth } from './api.js';
+import { FELICIDADE_ALIADO } from './evolucao.js';
 import { esc, fmt } from './util.js';
 
 // 'cancelado' = nada gasto (turno não conta) · 'ok' = petisco gasto, turno segue · 'fim' = batalha acabou em paz
@@ -44,6 +45,7 @@ async function recrutar(E) {
   const sp = await loadSpecies(E.data.speciesUrl);
   E.growth = await loadGrowth(sp.growthUrl);
   E.exp = E.growth[E.level]; E.vol = freshVol(); delete E.amizade;
+  E.felicidade = FELICIDADE_ALIADO; // escolheu seguir você: já começa com um vínculo maior (evolucao.js)
   const nome = nm(E); // ainda "X selvagem" — rotulo muda assim que entrar em S.aliados
   S.aliados.push(E);
   registrar(S, 'amigos', E.data.speciesName, E.id);

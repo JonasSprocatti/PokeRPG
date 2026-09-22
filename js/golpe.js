@@ -204,7 +204,9 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
     t.hp = Math.max(0, t.hp - dano); total += dano; acertos++; crit ||= r.crit;
+    if (r.crit) u.vol.criticos = (u.vol.criticos || 0) + 1;                                  // Sirfetch'd (evolucao.js)
   }
+  t.vol.danoSofrido = (t.vol.danoSofrido || 0) + total;                                      // Runerigus (evolucao.js)
   up(ctx); (ctx.tremer || nada)(t);
   if (crit) await ctx.say('Um golpe crítico!', 'crit');
   if (ef > 1) await ctx.say('É super efetivo!', 'good'); else if (ef < 1) await ctx.say('Não é muito efetivo...');
@@ -214,7 +216,9 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (resistiu) await ctx.say(`${T} aguentou o golpe!`, 'status');
 
   if (meta.drain > 0) { const h = Math.max(1, Math.floor(total * meta.drain / 100)); heal(u, h); up(ctx); await ctx.say(`${U} drenou ${h} HP.`, 'good'); }
-  else if (meta.drain < 0 && !hu.semDanoRecuo) { const d = Math.max(1, Math.floor(total * -meta.drain / 100)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} sofreu ${d} de dano de recuo.`, 'hit'); } // Rock Head
+  else if (meta.drain < 0 && !hu.semDanoRecuo) { // Rock Head evita; o total de recuo conta pra Basculegion (evolucao.js)
+    const d = Math.max(1, Math.floor(total * -meta.drain / 100)); u.hp = Math.max(0, u.hp - d); u.recuoTotal = (u.recuoTotal || 0) + d; up(ctx); await ctx.say(`${U} sofreu ${d} de dano de recuo.`, 'hit');
+  }
   if (meta.heal > 0 && u.hp > 0) { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); }
 
   // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo

@@ -81,11 +81,21 @@ export const loadGrowth = url => cached('gr:' + lastSeg(url), async () => {
   for (const l of g.levels) arr[l.level] = l.experience;
   return arr;
 });
-export const loadEvo = url => cached('evo:' + lastSeg(url), async () => {
-  const c = await getJSON(url);
-  const n = x => ({ name: x.species.name, details: x.evolution_details.map(d => ({ trigger: d.trigger?.name, min_level: d.min_level })), to: x.evolves_to.map(n) });
-  return n(c.chain);
-});
+// Árvore de evolução com TODAS as condições de cada caminho (evolucao.js avalia). Chave 'evo2:' (era 'evo:', que
+// só guardava gatilho e nível). A raiz leva `v: 2` — save antigo com a árvore velha (S.meta.evo) é refeito.
+export function slimEvo(chain) {
+  const nome = x => x?.name || null;
+  const det = d => ({
+    trigger: d.trigger?.name, min_level: d.min_level, item: nome(d.item), held_item: nome(d.held_item),
+    known_move: nome(d.known_move), known_move_type: nome(d.known_move_type), min_happiness: d.min_happiness, min_affection: d.min_affection,
+    time_of_day: d.time_of_day || '', trade_species: nome(d.trade_species), party_species: nome(d.party_species), party_type: nome(d.party_type),
+    relative_physical_stats: d.relative_physical_stats, location: nome(d.location), rain: !!d.needs_overworld_rain,
+    upside_down: !!d.turn_upside_down, beauty: d.min_beauty
+  });
+  const n = x => ({ name: x.species.name, details: x.evolution_details.map(det), to: x.evolves_to.map(n) });
+  return { ...n(chain), v: 2 };
+}
+export const loadEvo = url => cached('evo2:' + lastSeg(url), async () => slimEvo((await getJSON(url)).chain));
 export const loadList = () => cached('list', async () => (await getJSON(`${API}/pokemon-species?limit=1025`)).results.map(r => r.name));
 export async function resolvePokemon(q) {
   try { return await loadPokemon(q); }
