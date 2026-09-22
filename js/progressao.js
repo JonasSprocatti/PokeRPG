@@ -78,16 +78,19 @@ async function checkEvolution(M) {
     : `Algo está acontecendo com seu aliado ${nm(M)}... Deixar ele evoluir?`;
   const c = await ask(pergunta, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}`, value: o.name })), { label: ehJogador(M) ? 'Resistir à evolução' : 'Impedir a evolução', value: null, ghost: true }]);
   if (!c) { await say(`${nm(M)} ${ehJogador(M) ? 'resistiu à' : 'não passou pela'} evolução.`); return; }
-  await evolve(M, c);
+  await evolve(M, c, arvore);
 }
-async function evolve(M, speciesName) {
+async function evolve(M, speciesName, arvore) {
+  // forma do meio (ainda evolui) ou final (não evolui mais): o Roguelike pede 5 ou 10 evoluções pra desbloquear
+  const forma = findNode(arvore, speciesName)?.to.length ? 'meio' : 'final';
   const sp = await loadSpecies(`${API}/pokemon-species/${speciesName}/`);
   const data = await loadPokemon(sp.defaultPokemon);
   const oldName = ehJogador(M) ? fmt(M.name) : (M.nick || fmt(M.name)), idx = M.data.abilities.findIndex(a => a.name === M.ability);
   M.id = data.id; M.name = data.name; M.data = data;
   M.ability = (data.abilities[idx] || data.abilities[0]).name;
   recalc(M); render();
-  registrar(G.S, 'evolucoes', data.speciesName); // conta pro Roguelike (5× forma do meio / 10× final)
+  registrar(G.S, 'evolucoes', data.speciesName, data.id); // conta pro Roguelike (5× forma do meio / 10× final)
+  (G.S.registro.formas ||= {})[data.speciesName] = forma;
   await say(`Parabéns! ${esc(oldName)} evoluiu para <b>${esc(fmt(data.name))}</b>!`, 'level');
   for (const mv of data.learnset.list.filter(m => m.level === 0 || m.level === M.level)) await aprender(M, mv);
 }

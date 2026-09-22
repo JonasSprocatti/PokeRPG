@@ -11,14 +11,23 @@ Feito em JavaScript puro (ES modules), sem build e sem dependências. Funciona o
 ## Como jogar
 
 ### Começando
-1. **Escolha a dificuldade** (tabela abaixo).
-2. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea) ou Pikachu e Eevee. Os outros você encontra pelo caminho.
+1. **Escolha o modo**. O principal é o **Roguelike** (abaixo).
+2. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea) ou Pikachu e Eevee. No Roguelike, também aparecem as espécies que você já desbloqueou.
 3. Explore. O jogo salva sozinho.
 
-### Dificuldades
+### Roguelike (modo principal)
+Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloqueia novas espécies para as próximas runs**. Os contadores somam todas as suas jornadas Roguelike:
+- derrotar **10** de uma espécie, **ou**
+- fazer amizade com **5** dela, **ou**
+- evoluir para ela **5 vezes** (forma do meio, como Charmeleon) ou **10 vezes** (forma final, como Charizard).
+
+A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de fim mostra o que aquela run liberou, e a Carreira mostra todo o progresso. Só jornadas Roguelike contam. No Roguelike, ser capturado encerra a run, o Centro é pago (com desconto por vitória) e você começa no nível 5.
+
+### Todos os modos
 
 | Modo | Treinador te captura? | Centro Pokémon | Desmaios | Na criação | Pontos |
 |---|---|---|---|---|---|
+| **Roguelike** | sim: **fim da run** | pago, −10% por vitória | 3 livres, depois Revive | nível 5; iniciais + desbloqueados | ×1,5 |
 | **Fácil** | nunca | grátis | ilimitados | escolhe tudo | ×1 |
 | **Médio** | nunca | pago, −10% por vitória desde a última visita | 3 livres, depois gasta Revive | escolhe tudo | ×1,2 |
 | **Difícil** | sim: você foge depois, sem a mochila e com metade do dinheiro | pago | 3 livres, depois Revive | nível 5 | ×1,5 |
@@ -87,7 +96,7 @@ Depois abra http://localhost:3000.
 | `js/dados.js` | Tabelas: tipos, naturezas, itens, zonas e Alfas, missões, dificuldades, iniciais, ordens |
 | `js/batalha.js`, `js/amizade.js`, `js/progressao.js`, `js/itens.js`, `js/missoes.js`, `js/mundo.js` | Regras narradas do jogo |
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
-| `js/criacao.js`, `js/fim.js`, `js/carreira.js` | Criação, fim de jornada e carreira |
+| `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
 | `js/nuvem.js`, `js/conta.js`, `js/config.js` | Login e nuvem (Supabase) |
 | `sw.js` | Modo offline |
 | `supabase/` | Banco (`schema.sql`) e passo a passo de configuração |
@@ -97,7 +106,6 @@ Depois abra http://localhost:3000.
 
 ## Próximos passos
 
-- [ ] **Roguelike:** começa só com os iniciais. Derrotar ou fazer amizade com 5 a 10 de uma espécie a desbloqueia para as próximas runs, e evoluir 5 vezes para a forma do meio ou 10 vezes para a forma final desbloqueia essas formas.
 - [ ] **Ranking global** por espécie, com a melhor pontuação de todos os jogadores (o banco já está pronto; falta a tela e a validação contra trapaça).
 - [ ] **Multiplayer:** Pokémon de jogadores diferentes no mesmo lado da batalha (a batalha já aceita vários do mesmo lado).
 - [ ] Mais habilidades, clima, golpes de dois turnos e IA do inimigo.
@@ -111,3 +119,4 @@ Depois abra http://localhost:3000.
 - [x] Game Over, carreira, Revive
 - [x] Painéis modulares
 - [x] Login (Google / e-mail), carreira e jornada na nuvem, modo offline
+- [x] Roguelike com desbloqueio de espécies e evoluções entre runs

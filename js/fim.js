@@ -10,6 +10,7 @@ import { DIFICULDADES, SPR } from './dados.js';
 import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
 import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES } from './carreira.js';
 import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
+import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
 import { esc, fmt, store, novoId } from './util.js';
 
 // resumo de uma jornada (a atual, ainda em andamento, ou a que está terminando)
@@ -31,7 +32,7 @@ export function encerrarJornada(motivo, extra = {}) {
   store.del(SAVE_KEY); G.S = null; G.B = null;
   if (usuario()) apagarSaveNuvem().then(sincronizar).catch(e => console.error(e)); // sobe a jornada e tira o save da nuvem
   const jornadas = nova.jornadas.filter(j => j.especie === resumo.especie).length;
-  telaFim(resumo, anterior, !anterior || resumo.pontuacao > anterior.pontuacao, jornadas);
+  telaFim(resumo, anterior, !anterior || resumo.pontuacao > anterior.pontuacao, jornadas, novosDesbloqueios(carreira.jornadas, nova.jornadas));
 }
 
 const TITULO = { capturado: 'Game Over', desmaiou: 'Game Over', encerrou: 'Jornada encerrada' };
@@ -44,7 +45,7 @@ const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jo
   ['Pokémon derrotados', 'derrotados'], ['Treinadores', 'treinadores'], ['Alfas', 'alfas'], ['Amigos', 'amigos'], ['Evoluções', 'evolucoes'],
   ['Missões', 'missoes'], ['Mais dinheiro de uma vez', 'maxDinheiro', v => '₽' + n(v)]];
 
-function telaFim(r, anterior, novoRecorde, jornadas) {
+function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
   G.mode = 'fim'; $('#topr').innerHTML = '';
   const f = (l, v) => l[2] ? l[2](v || 0) : n(v);
   $('#app').innerHTML = `<main class="create fim">
@@ -56,6 +57,7 @@ function telaFim(r, anterior, novoRecorde, jornadas) {
         <h2>${r.shiny ? '✨ ' : ''}${esc(r.nome)}</h2>
         <p class="muted">${esc(fmt(r.especie))}${r.especieFinal !== r.especie ? ` → ${esc(fmt(r.especieFinal))}` : ''} · modo ${DIFICULDADES[r.dificuldade].nome} (pontos ×${DIFICULDADES[r.dificuldade].multPontos}) · ${jornadas}ª jornada com ${esc(fmt(r.especie))}</p>
         ${novoRecorde ? `<p class="selo-recorde">🏆 ${anterior ? 'Novo recorde' : 'Primeiro recorde'} com esta espécie!</p>` : ''}
+        ${desbloqueios.length ? `<div class="desbloq-novo"><b>🔓 Desbloqueado pra próxima jornada Roguelike:</b><div class="picks">${desbloqueios.map(p => `<div class="pick" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="">${esc(fmt(p.especie))}</div>`).join('')}</div></div>` : ''}
         <div class="stats-fim">${LINHAS.map(l => {
           const v = r[l[1]], a = anterior?.[l[1]];
           return `<div class="stat-fim"><span>${l[0]}</span><b>${f(l, v)}</b>${anterior ? `<small class="${v > a ? 'up' : v < a ? 'down' : ''}">recorde ${f(l, a)}</small>` : ''}</div>`;
@@ -65,6 +67,15 @@ function telaFim(r, anterior, novoRecorde, jornadas) {
     </section></main>`;
 }
 
+// Roguelike na carreira: desbloqueados + progresso (só jornadas terminadas contam, como na criação)
+function secaoRoguelike(terminadas) {
+  const prog = progressoRoguelike(terminadas);
+  if (!prog.length) return '';
+  const des = prog.filter(p => p.desbloqueada);
+  return `<h3 class="passo">Roguelike</h3>
+    <p class="muted">Espécies desbloqueadas como opção inicial: <b>${n(des.length)}</b> (além dos iniciais, Pikachu e Eevee). Contam as jornadas Roguelike já terminadas.</p>
+    <ul class="quase">${prog.slice(0, 24).map(p => `<li class="${p.desbloqueada ? 'feito' : ''}">${p.id ? `<img src="${SPR(p.id)}" alt="">` : ''}<b>${p.desbloqueada ? '🔓 ' : ''}${esc(fmt(p.especie))}</b><div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div><small>${esc(textoProgresso(p))}</small></li>`).join('')}</ul>`;
+}
 // Carreira: jornadas terminadas + (se aberta do meio do jogo) a atual, marcada como "em andamento"
 export function telaCarreira() {
   const emJogo = !!G.S;
@@ -91,6 +102,7 @@ export function telaCarreira() {
       ${card('Alfas numa jornada', n(c.maxAlfas))}
       ${card('✨ Shinies vistos', n(c.shiniesVistos), `${n(c.shiniesAmigos)} viraram amigos · ${n(c.jornadasShiny)} jornada(s) sendo shiny`)}
     </div>
+    ${secaoRoguelike(jornadas.filter(j => !j.emAndamento))}
     <h3 class="passo">Pokédex</h3>
     <p class="muted">Amigos (capturados): <b>${n(c.amigos.length)}</b> de ${n(TOTAL_ESPECIES)}, faltam <b>${n(c.faltam)}</b> · vistos: <b>${n(c.vistos.length)}</b></p>
     ${c.amigos.length ? `<div class="pokedex">${c.amigos.map(e => `<div class="dex-item" title="${esc(fmt(e))}">${c.ids[e] ? `<img src="${SPR(c.ids[e])}" alt="" loading="lazy">` : ''}<small>${esc(fmt(e))}</small></div>`).join('')}</div>` : '<p class="small muted">Nenhum amigo ainda: ofereça petiscos a Pokémon selvagens.</p>'}

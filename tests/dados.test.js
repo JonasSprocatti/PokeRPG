@@ -64,7 +64,7 @@ test('REGIOES_INICIAIS: 9 regiões de 3 + Especiais (Pikachu, Eevee), um nome po
 test('DIFICULDADES: hoje todo modo começa só com iniciais; desmaio e pontos crescem com a dificuldade', () => {
   for (const [k, d] of Object.entries(DIFICULDADES)) assert.equal(d.especiesLivres, false, `${k} liberou espécies — decisão do usuário é só iniciais`);
   assert.equal(DIFICULDADES.easy.desmaiosLivres, null);
-  for (const k of ['medium', 'hard', 'hardcore', 'randomizer']) assert.equal(DIFICULDADES[k].desmaiosLivres, 3);
+  for (const k of ['roguelike', 'medium', 'hard', 'hardcore', 'randomizer']) assert.equal(DIFICULDADES[k].desmaiosLivres, 3);
   assert.ok(DIFICULDADES.easy.multPontos < DIFICULDADES.medium.multPontos && DIFICULDADES.medium.multPontos < DIFICULDADES.hard.multPontos && DIFICULDADES.hard.multPontos < DIFICULDADES.hardcore.multPontos);
   assert.ok(ITEMS.revive?.revive && ITEMS.revive.price > 0);
 });
@@ -90,8 +90,10 @@ test('treinadores: toda bola sorteável existe em BOLAS; listas de nome não vaz
   assert.ok(CLASSES_TREINADOR.length && NOMES_TREINADOR.length);
 });
 
-test('DIFICULDADES: os cinco modos e as restrições crescem com a dificuldade', () => {
-  assert.deepEqual(Object.keys(DIFICULDADES), ['easy', 'medium', 'hard', 'hardcore', 'randomizer']);
+test('DIFICULDADES: Roguelike primeiro (modo principal), depois os outros cinco', () => {
+  assert.deepEqual(Object.keys(DIFICULDADES), ['roguelike', 'easy', 'medium', 'hard', 'hardcore', 'randomizer']);
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].desbloqueios), ['roguelike']);
+  assert.equal(DIFICULDADES.roguelike.fimDeJogo, true); // ser capturado encerra a jornada
   assert.equal(DIFICULDADES.easy.nivelLivre && DIFICULDADES.easy.escolhaLivre, true);
   // Médio = Fácil com Centro pago
   const { centroGratis: gE, ...facil } = DIFICULDADES.easy, { centroGratis: gM, ...medio } = DIFICULDADES.medium;
@@ -100,7 +102,7 @@ test('DIFICULDADES: os cinco modos e as restrições crescem com a dificuldade',
   assert.equal(facil.nivelLivre === medio.nivelLivre && facil.escolhaLivre === medio.escolhaLivre, true);
   // só o Fácil tem Centro grátis; só o Hardcore acaba o jogo na captura
   assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].centroGratis), ['easy']);
-  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].fimDeJogo), ['hardcore']);
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].fimDeJogo), ['roguelike', 'hardcore']);
   assert.equal(DIFICULDADES.hard.nivelLivre, false);
   assert.equal(DIFICULDADES.hard.escolhaLivre, true);
   assert.equal(DIFICULDADES.hardcore.nivelLivre || DIFICULDADES.hardcore.escolhaLivre, false);

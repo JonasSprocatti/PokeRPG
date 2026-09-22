@@ -5,12 +5,20 @@ import { G, save, nm } from './estado.js';
 import { $, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
-import { SPR, STATS, STAT_PT, NATURES, IMPL, ZONES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS } from './dados.js';
+import { SPR, STATS, STAT_PT, NATURES, IMPL, ZONES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
+import { carregarCarreira } from './carreira.js';
+import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
 import { rand, pick, esc, fmt, novoId } from './util.js';
 
 const livres = () => DIFICULDADES[G.dif].especiesLivres;
+// ids que dá pra escolher neste modo: iniciais + (Roguelike) os desbloqueados na carreira. null = qualquer um
+function permitidos() {
+  if (livres()) return null;
+  const extra = DIFICULDADES[G.dif].desbloqueios ? desbloqueadas(carregarCarreira().jornadas).map(p => p.id) : [];
+  return [...new Set([...INICIAIS, ...extra])];
+}
 
 // Passo 1 = dificuldade (sempre visível no topo), passo 2 = escolher o Pokémon — ou, no Randomizer, um botão só.
 export function showCreate() {
@@ -33,7 +41,8 @@ function renderEscolha() {
     $('#escolha').innerHTML = `<p class="small muted">Os iniciais de cada região, mais Pikachu e Eevee.</p>
       <div class="regioes">${REGIOES_INICIAIS.map(r => `<div class="regiao"><h4>${r.nome}</h4><div class="picks">${r.ids.map((id, i) =>
         `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">${r.nomes[i]}</button>`).join('')}</div></div>`).join('')}</div>
-      <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear um inicial</button></div>`;
+      ${DIFICULDADES[G.dif].desbloqueios ? secaoDesbloqueios() : ''}
+      <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear ${DIFICULDADES[G.dif].desbloqueios ? 'entre os disponíveis' : 'um inicial'}</button></div>`;
     return;
   }
   $('#escolha').innerHTML = `<div class="search">
@@ -44,6 +53,17 @@ function renderEscolha() {
   loadList().then(list => { if ($('#dex')) $('#dex').innerHTML = list.map(n => `<option value="${n}">`).join(''); })
     .catch(e => { $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`; });
 }
+// Roguelike: espécies desbloqueadas (escolhíveis) + as mais perto de desbloquear
+function secaoDesbloqueios() {
+  const prog = progressoRoguelike(carregarCarreira().jornadas);
+  const livresJa = prog.filter(p => p.desbloqueada && p.id), quase = prog.filter(p => !p.desbloqueada).slice(0, 6);
+  const regra = `Pra desbloquear uma espécie, somando suas jornadas Roguelike: derrote ${DESBLOQUEIO.derrotados}, faça amizade com ${DESBLOQUEIO.amigos}, ou evolua pra ela ${DESBLOQUEIO.evolucaoMeio}× (forma do meio) / ${DESBLOQUEIO.evolucaoFinal}× (forma final).`;
+  return `<div class="regiao desbloq"><h4>🔓 Desbloqueados (${livresJa.length})</h4>
+      ${livresJa.length ? `<div class="picks">${livresJa.map(p => `<button class="pick" data-act="pick" data-v="${p.id}" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="" loading="lazy">${esc(fmt(p.especie))}</button>`).join('')}</div>` : ''}
+      <p class="small muted">${regra}</p>
+      ${quase.length ? `<h4>Quase lá</h4><ul class="quase">${quase.map(p => `<li>${p.id ? `<img src="${SPR(p.id)}" alt="">` : ''}<b>${esc(fmt(p.especie))}</b><div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div><small>${esc(textoProgresso(p))}</small></li>`).join('')}</ul>` : ''}
+    </div>`;
+}
 // cartões de dificuldade + monta o passo 2 conforme o modo (Randomizer não escolhe Pokémon)
 export function renderDificuldade() {
   $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
@@ -51,20 +71,22 @@ export function renderDificuldade() {
   $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
   $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';
   if (!rnd) renderEscolha();
-  // prévia de uma espécie que este modo não permite (ex.: veio de um modo livre) some
-  if (G.PV && !livres() && !INICIAIS.includes(G.PV.data.id)) G.PV = null;
+  // prévia de uma espécie que este modo não permite (ex.: desbloqueada, mas trocou pra um modo sem desbloqueios) some
+  const ok = permitidos();
+  if (G.PV && ok && !ok.includes(G.PV.data.id)) G.PV = null;
   if (rnd || !G.PV) $('#preview').innerHTML = '';
   else renderPreview();
 }
 // "Sortear": entre os iniciais, ou entre todos se o modo for livre
-export const sortearEspecie = () => previewSearch(livres() ? rand(1, 1025) : pick(INICIAIS));
+export const sortearEspecie = () => { const ok = permitidos(); return previewSearch(ok ? pick(ok) : rand(1, 1025)); };
 export async function previewSearch(q) {
   q = String(q).trim().toLowerCase().replace(/\s+/g, '-'); if (!q) return;
   const box = $('#preview'); box.innerHTML = '<p class="loading">Consultando a PokéAPI…</p>';
   try {
     const data = await resolvePokemon(q);
     // garantia (a UI só oferece iniciais, mas `pick`/`search` vêm de atributo do HTML)
-    if (!livres() && !INICIAIS.includes(data.id)) { box.innerHTML = '<p class="err">Neste modo só dá pra começar com um inicial, Pikachu ou Eevee.</p>'; return; }
+    const ok = permitidos();
+    if (ok && !ok.includes(data.id)) { box.innerHTML = '<p class="err">Neste modo só dá pra começar com um inicial, Pikachu, Eevee ou uma espécie desbloqueada.</p>'; return; }
     // nível sobrevive a trocar de espécie na prévia; a dificuldade mora em G.dif (passo 1)
     G.PV = { data, ability: (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name, nature: pick(Object.keys(NATURES)), level: G.PV?.level || 5, nick: '' };
     renderPreview();

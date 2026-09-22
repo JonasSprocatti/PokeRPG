@@ -229,7 +229,7 @@ export function estatisticasDaJornada(S) {
     maxDinheiro: Math.max(S.maxDinheiro || 0, S.money || 0), gasto: S.gasto || 0,
     shiniesVistos: soma(r.shinies), shiniesAmigos: soma(r.shiniesAmigos),
     // cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui
-    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, ids: r.ids || {} }))
+    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {} }))
   };
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)

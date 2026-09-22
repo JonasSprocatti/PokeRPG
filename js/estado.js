@@ -18,7 +18,7 @@ import { esc, fmt, store } from './util.js';
 export const SAVE_KEY = 'pokerpg-save-v1';
 //   dif   = dificuldade escolhida na tela inicial (antes de existir PV/S); vira S.dificuldade ao começar
 //   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'hard', abertos: new Set() };
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', abertos: new Set() };
 
 export const zone = () => ZONES.find(z => z.id === G.S.zone) || ZONES[0];
 // nome de exibição: seu apelido / nome do aliado, "Pidgey de Caçador Rui" (batalha de treinador) ou "Pidgey selvagem"

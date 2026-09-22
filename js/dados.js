@@ -183,11 +183,14 @@ export const NOMES_TREINADOR = ['Rui', 'Bia', 'Otávio', 'Lúcia', 'Caio', 'Mart
 //   descontoPorVitoria = fração do preço do Centro que cada vitória desde a última visita tira (S.vitoriasDesdeCentro)
 //   nivelLivre   = escolher o nível inicial (senão começa no 5)
 //   escolhaLivre = escolher natureza e habilidade (senão são sorteadas ao começar)
+//   desbloqueios = além dos iniciais, oferece as espécies desbloqueadas em jornadas deste modo (roguelike.js)
 //   especiesLivres = começar com QUALQUER Pokémon (busca livre); false = só REGIOES_INICIAIS. Hoje false em todos — decisão do usuário, pode mudar por modo
 //   multPontos   = multiplicador da pontuação final da jornada (recordes / ranking)
 //   desmaiosLivres = desmaios sem custo; depois disso cada desmaio gasta um Revive, e sem Revive é Game Over (null = ilimitado)
 // Save antigo sem o campo dificuldade = easy (dificuldadeDe).
 export const DIFICULDADES = {
+  // modo principal: começa só com iniciais; espécies novas desbloqueiam jogando (desbloqueios, ver roguelike.js)
+  roguelike: { nome: 'Roguelike', especiesLivres: false, desbloqueios: true, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, fimDeJogo: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: false, escolhaLivre: true, desc: 'O modo principal. Começa com os iniciais; derrotar, fazer amizade ou evoluir desbloqueia novas espécies pras próximas jornadas. Ser capturado encerra a jornada. Nível 5.' },
   easy: { nome: 'Fácil', especiesLivres: false, multPontos: 1, desmaiosLivres: null, semCaptura: true, centroGratis: true, nivelLivre: true, escolhaLivre: true, desc: 'Treinadores nunca te capturam e o Centro Pokémon é de graça. Nível inicial, natureza e habilidade à sua escolha.' },
   medium: { nome: 'Médio', especiesLivres: false, multPontos: 1.2, desmaiosLivres: 3, semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: true, escolhaLivre: true, desc: 'Igual ao Fácil, mas o Centro Pokémon cobra: cada vitória desde a última visita tira 10% do preço.' },
   hard: { nome: 'Difícil', especiesLivres: false, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Centro pago. Começa no nível 5.' },
@@ -203,3 +206,6 @@ export const ORDENS = {
   parado: { nome: 'Não atacar', desc: 'Fica em campo de guarda, sem agir. Ainda pode ser atacado.' },
   fora: { nome: 'Descansar', desc: 'Fica fora das batalhas: não luta, não é atacado e não ganha XP.' }
 };
+// Roguelike: quanto precisa, SOMANDO as jornadas Roguelike terminadas, pra uma espécie virar opção inicial.
+// Forma do meio = ainda evolui; forma final = não evolui mais (anotado em registro.formas na hora de evoluir).
+export const DESBLOQUEIO = { derrotados: 10, amigos: 5, evolucaoMeio: 5, evolucaoFinal: 10 };

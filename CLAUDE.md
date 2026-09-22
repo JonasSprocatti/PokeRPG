@@ -37,6 +37,7 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `js/itens.js` | `addItem`, `useItem`. |
 | `js/amizade.js` | `oferecer` (petisco em batalha), recrutar aliado, `despedir`. |
 | `js/fim.js` | `encerrarJornada(motivo)` (resumo → carreira → apaga save aqui e na nuvem), `montarResumo`, tela de fim, `telaCarreira`. |
+| `js/roguelike.js` | Desbloqueios do Roguelike entre runs (puro, testado). |
 | `js/carreira.js` | Carreira = lista de jornadas terminadas (`pokerpg-carreira-v1`; migra o `pokerpg-recordes-v1` antigo). `calcularCarreira`, `mesclarJornadas`, `melhorDaEspecie`. Puro + `store`, testado. |
 | `js/config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (marcadores = jogo só local). |
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. |
@@ -89,8 +90,14 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - `render.js` escreve só o CONTEÚDO de cada painel em `#p-<id>` (`renderFicha/Missoes/Aliados/Mochila`); o `#log` mora dentro do painel `log`. Painel novo: adicionar em `PAINEIS` + `LAYOUT_PADRAO` (layout.js), `TITULOS` (paineis.js) e um `render<X>()`.
 - Celular (≤ 880px): uma coluna, cena primeiro, sem arrastar/redimensionar — reordena pelos botões.
 
-### Próximos passos combinados (em ordem sugerida)
-- **3.3 Roguelike**: começa só com `INICIAIS` (hoje já é a regra de todos os modos). Lê os recordes (`pokerpg-recordes-v1`) + registro por espécie. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
+## Roguelike (modo principal)
+
+- `DIFICULDADES.roguelike` (primeiro da lista, `G.dif` padrão): flag `desbloqueios` — a criação oferece `INICIAIS` + `desbloqueadas(carreira)` (`permitidos()` em criacao.js, usado na grade, no Sortear e na checagem do `previewSearch`). Captura = fim da run (`fimDeJogo`), 3 desmaios livres, Centro pago com desconto por vitória, nível 5, natureza/habilidade livres, pontos ×1,5.
+- `roguelike.js` (puro, `tests/roguelike.test.js`): `progressoRoguelike(jornadas)` soma `registro.derrotados/amigos/evolucoes` **só das jornadas com `dificuldade === 'roguelike'`** (decisão: não dá pra farmar no Fácil) e aplica `DESBLOQUEIO` (dados.js): 10 derrotas · 5 amizades · evoluir 5× pra forma do meio / 10× pra forma final. Iniciais ficam fora (já liberados). Vale pra PRÓXIMA run: só jornadas terminadas contam.
+- Forma do meio/final: `evolve()` anota `registro.formas[especie] = 'meio' | 'final'` (final = nó sem `to` na árvore de evolução). `registro.ids` dá o id pra buscar o Pokémon e o sprite.
+- Telas: seção "🔓 Desbloqueados" + "Quase lá" na criação (Roguelike), "Desbloqueado pra próxima jornada" na tela de fim (`novosDesbloqueios(antes, depois)`), seção Roguelike na Carreira.
+
+### Próximos passos combinados (em ordem sugerida) Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 
