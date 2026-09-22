@@ -2,6 +2,23 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.1', data: '2026-09-22', titulo: 'Celular, sala mais firme e Caça Shiny', piada: 'Um Fake Out estava sendo usado até no meio da conversa. Agora ele só assusta uma vez, como manda a boa educação.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'No celular, a batalha virou tela fixa: a cena do combate fica presa no topo e os golpes na parte de baixo, então dá pra ver o seu Pokémon e o inimigo enquanto escolhe o que fazer, sem rolar a tela.',
+        'Ainda no celular, três abas embaixo da cena decidem o que ocupa o meio: ⚔ Luta (registro curtinho), 💬 Registro (o registro inteiro) e 📋 Painéis (ficha, missões, aliados e mochila). O registro continua ali, só que sem atrapalhar.',
+        'Novo modo 🎯 Caça Shiny, ligado no começo da jornada: quando você revelar todas as espécies de uma rota, escolhe UMA delas pra ser a única que aparece por ali. Bom pra caçar shiny — ou pra farmar uma espécie específica. Muda só o selvagem: treinador, item e dinheiro continuam aparecendo igual.',
+        'Dois repelentes na loja: o Seletivo (30 explorações) deixa passar só a espécie que você escolher da rota, e o Total (40 explorações) espanta todos os selvagens. Com eles ligados você segue achando treinadores, itens e dinheiro normalmente.',
+        'Na sala multiplayer agora tem Centro Pokémon: dá pra curar a equipe entre as lutas sem sair da sala.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Dava pra escapar de qualquer batalha "sem fuga" — treinador, Alfa, lendário — só recarregando a página. A batalha em andamento agora vai junto no save e volta do jeito que estava, no mesmo turno.',
+        'Fake Out (e First Impression) só funcionam no primeiro golpe da batalha. Antes dava pra usar em qualquer turno e fazer o inimigo recuar sempre.',
+        'Sala multiplayer: as escolhas às vezes não chegavam no anfitrião e o turno só saía quando o prazo de 45 segundos estourava. Agora cada mensagem é reenviada quando falha, o anfitrião repete o estado da luta de tempos em tempos e existe um botão 🔄 Sincronizar.',
+        'Trocar de aba não derruba mais você da sala: a conexão tenta voltar sozinha, e o jogo espera o anfitrião reaparecer antes de encerrar a sala.',
+        'A sala mostra o estado da conexão (conectado / instável / sem conexão) e tem um diagnóstico com as últimas mensagens trocadas, pra dar pra saber o que aconteceu quando algo falha.'
+      ] }
+    ] },
   { versao: '1.0', data: '2026-09-22', titulo: 'Itens para segurar, mochila arrumada e estas notas', piada: 'Um Snorlax segurando Restos entrou em recursão e quase comeu o servidor. Já foi contido.',
     secoes: [
       { nome: 'Novidades', itens: [

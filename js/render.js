@@ -3,7 +3,7 @@
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
-import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS } from './mapas.js';
+import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
@@ -196,6 +196,7 @@ function renderScene() {
     sc.innerHTML = `
       <div class="zone-head"><h2>${z.name}</h2><p><span class="gen-tag">Gen ${g} · ${dadosDaGen(g).regiao}</span> ${z.desc} Pokémon entre os níveis ${z.min} e ${z.max}.</p></div>
       <div class="zones">${rotasAtuais().map(chip).join('')}</div>
+      ${avisoRepelente(z)}
       ${pokedexRota(z)}
       ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}
       ${lend ? `<div class="chefe-box lendarios ${fechada ? 'vencido' : ''}"><div class="lend-imgs">${lend.map((l, i) => `<img src="${SPR(l.id)}" alt="" class="${i === lend.length - 1 ? 'principal' : ''}" title="${esc(l.nome)}">`).join('')}</div><div><b>Lendários de ${dadosDaGen(g).regiao}</b> <span class="muted">Nv. ${lend[0].nivel}–${lend[lend.length - 1].nivel}</span><small>${fechada ? '✓ Gen fechada.' : `Até ${Math.min(4, lend.length)} lendários em sequência; ${esc(lend[lend.length - 1].nome)} por último, turbinado. Vencer fecha a Gen ${g}${DIFICULDADES[dificuldadeDe(G.S)].fimNaGen ? ' e encerra a run em vitória' : ''}.`}</small></div><button class="btn ${fechada ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Enfrentar</button></div>` : ''}`;
@@ -210,6 +211,27 @@ function conhecimento() {
   }
   return somarRegistros([saberCarreira.soma, G.S.registro]);
 }
+// Repelente ativo: quantas explorações faltam e o que ele está fazendo nesta rota (mapas.js)
+function avisoRepelente(z) {
+  const r = repelenteAtivo(G.S); if (!r) return '';
+  const fora = semSelvagens(G.S, z);
+  const txt = r.tipo === 'total' ? 'Nenhum selvagem aparece'
+    : fora ? `Só <b>${esc(fmt(r.especie))}</b> passaria — e ele não vive nesta rota, então nenhum selvagem aparece aqui`
+    : `Só <b>${esc(fmt(r.especie))}</b> aparece`;
+  return `<p class="small repel-aviso">🚫 <b>Repelente ativo</b> · ${txt} · restam <b>${r.passos}</b> explorações. Treinadores, itens e dinheiro seguem normais.</p>`;
+}
+// Caça Shiny (só no modo ligado na criação): com a rota inteira revelada, escolha uma espécie e só ela aparece.
+function blocoCaca(z, dex) {
+  const S = G.S; if (!S.cacaShiny) return '';
+  const saber = conhecimento(), alvo = cacaDaRota(S, z);
+  if (!rotaLiberaCaca(z, saber)) {
+    const { reveladas, total } = progressoCaca(z, saber);
+    return `<p class="small muted caca-prog">🎯 <b>Caça Shiny</b>: revele todas as espécies desta rota pra escolher qual vai aparecer (${reveladas}/${total}).</p>`;
+  }
+  const opcoes = dex.filter(p => !p.mitico).map(p => `<button class="btn ${p.n === alvo ? '' : 'ghost'} sm" data-act="caca" data-v="${esc(p.n)}">${esc(fmt(p.n))}</button>`).join('');
+  return `<div class="caca-box ${alvo ? 'on' : ''}"><p class="small"><b>🎯 Caça Shiny liberada nesta rota!</b> ${alvo ? `Só aparece <b>${esc(fmt(alvo))}</b>.` : 'Escolha quem vai aparecer:'} <span class="muted">Muda só o selvagem: treinadores, itens e dinheiro continuam iguais.</span></p>
+    <div class="subrow">${opcoes}${alvo ? '<button class="btn ghost sm" data-act="caca" data-v="">✕ Parar a caça</button>' : ''}</div></div>`;
+}
 // Pokédex da rota: "?" = nunca enfrentou; silhueta = já enfrentou; colorido + taxa = REVELA_DERROTADOS derrotados
 function pokedexRota(z) {
   const dex = pokedexDaRota(z, conhecimento()), vistos = dex.filter(p => p.estado !== 'oculto').length;
@@ -218,6 +240,7 @@ function pokedexRota(z) {
     : `<div class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" title="${esc(fmt(p.n))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`}">
         <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.n))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</div>`;
   return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados.</p>
+    ${blocoCaca(z, dex)}
     <ul class="dex-legenda small muted">
       <li><b>?</b> vive nesta rota, mas você ainda não encontrou (pode ser comum ou raro: explore mais)</li>
       <li><b>Silhueta</b> já enfrentou; o número mostra quantos derrotou de ${REVELA_DERROTADOS}</li>
@@ -266,10 +289,21 @@ function renderActions() {
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>`;
   }
 }
+// Celular: qual seção ocupa o meio da tela (abas de paineis.js). Só muda classes no <body> — o CSS faz o resto,
+// então não precisa redesenhar a tela inteira. 'luta' é o padrão.
+export const ABAS_MOB = ['luta', 'registro', 'paineis'];
+export function abaMobile(v = 'luta') {
+  const aba = ABAS_MOB.includes(v) ? v : 'luta';
+  for (const a of ABAS_MOB) document.body.classList.toggle('mob-' + a, a === aba);
+  document.querySelectorAll('.aba-mob').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === aba)));
+}
 export function render() {
   // só as telas de jogo têm painéis; nas outras (criação, carreira, conta, ranking, sala multiplayer) não desenha —
   // gainExp/useItem chamam render() e podem rodar fora da tela de jogo (ex.: recompensa do co-op)
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
+  // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
+  document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
+  if (!ABAS_MOB.some(a => document.body.classList.contains('mob-' + a))) abaMobile('luta');
   renderSheet(); renderScene(); renderActions();
   $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
   $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button><button class="btn ghost sm" data-act="saves" ${G.busy ? 'disabled' : ''}>💾 Jornadas salvas</button><button class="btn ghost sm" data-act="relatos" ${G.busy ? 'disabled' : ''} title="Bugs e sugestões">🐞 Bugs e sugestões</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;

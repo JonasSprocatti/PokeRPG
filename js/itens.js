@@ -1,14 +1,14 @@
 /* ============ itens ============ */
 // Mochila (G.S.bag = { idDoItem: qtd }). useItem devolve true se o item foi gasto (em batalha, gasta o turno).
 // Funciona em você e nos aliados: com mais de um alvo possível, pergunta "Usar em quem?" (itemTemEfeito decide quem conta).
-import { G, nm, rotulo, ladoJogador } from './estado.js';
+import { G, nm, rotulo, ladoJogador, zone } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
 import { gainExp, gainExpAliado, evoluirComItem } from './progressao.js';
 import { ITEMS, ST_SHORT } from './dados.js';
 import { heal, itemTemEfeito } from './regras.js';
-import { esc } from './util.js';
+import { esc, fmt } from './util.js';
 
 // mensagem quando ninguém da equipe se beneficiaria
 const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
@@ -35,6 +35,25 @@ export async function equiparItem(id, inBattle = false) {
   render(); await say(`${nm(M)} está segurando <b>${it.name}</b>.`, 'good');
   return true;
 }
+// Repelentes (mapas.js): o total espanta todo selvagem; o seletivo deixa passar só a espécie que você escolher,
+// entre as que vivem na rota atual. Nenhum dos dois mexe em treinador, item, dinheiro ou ambientação.
+async function usarRepelente(id) {
+  const S = G.S, it = ITEMS[id], z = zone();
+  let especie = null;
+  if (it.repelente === 'seletivo') {
+    const lista = z.pool.filter(p => !p.m);
+    const i = await ask(`<b>${it.name}</b>: qual espécie de ${esc(z.name)} NÃO vai ser repelida?`,
+      [...lista.map((p, j) => ({ label: esc(fmt(p.n)), value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    if (i < 0) return false;
+    especie = lista[i].n;
+  }
+  S.repelente = { tipo: it.repelente, passos: it.passos, especie };
+  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+  render();
+  await say(especie ? `Você usa ${it.name}. Por ${it.passos} explorações, só <b>${esc(fmt(especie))}</b> aparece por aqui.`
+    : `Você usa ${it.name}. Por ${it.passos} explorações, nenhum selvagem chega perto.`, 'good');
+  return true;
+}
 // devolve pra mochila o item que alguém está segurando (botão da ficha)
 export async function tirarItem(M) {
   if (!M?.item) return;
@@ -53,6 +72,7 @@ export async function useItem(id, inBattle) {
   }
   if (it.segurar) { await say(`${it.name} fica na mochila: é gasto sozinho quando a evolução que pede ele acontecer.`, 'muted'); return false; }
   if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
+  if (it.repelente) { if (inBattle) { await say('Repelente só funciona explorando.'); return false; } return usarRepelente(id); }
   const equipe = ladoJogador();
   const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
   if (!alvos.length) {

@@ -14,7 +14,7 @@
 //   busy  = true enquanto um turno/exploração está resolvendo (trava os botões)
 //   panel = painel de ações visível: 'main' | 'shop' | 'moves' | 'bag'
 import { DIFICULDADES } from './dados.js';
-import { precisaCurar, custoCentroEquipe, custoComDesconto } from './regras.js';
+import { precisaCurar, custoCentroEquipe, custoComDesconto, bonusShiny } from './regras.js';
 import { genDe, rotasDaGen, rotaNaJornada } from './mapas.js';
 import { esc, fmt, store } from './util.js';
 
@@ -22,7 +22,8 @@ export const SAVE_KEY = 'pokerpg-save-v1';
 //   dif   = dificuldade escolhida na tela inicial (antes de existir PV/S); vira S.dificuldade ao começar
 //   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
 //   gen   = mapa (Gen) escolhido na tela inicial; vira S.gen ao começar
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, abertos: new Set() };
+//   cacaShiny = 🎯 modo Caça Shiny marcado na tela inicial; vira S.cacaShiny (só dá pra ligar ao começar)
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, abertos: new Set() };
 
 // rotas do mapa (Gen) atual, já com os níveis desta jornada (mapas.js: escalaNivel depois de trocar de Gen)
 export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z, G.S));
@@ -46,7 +47,8 @@ export const emCampo = () => ladoJogador().filter(m => m.ordem !== 'fora');
 // Único lugar que decide isso — o botão (render) e o clique (main) leem daqui.
 export function centroPokemon() {
   const equipe = ladoJogador(), regra = DIFICULDADES[dificuldadeDe(G.S)];
-  const cheio = regra.centroGratis ? 0 : custoCentroEquipe(equipe), vit = G.S.vitoriasDesdeCentro || 0;
+  // segredo do brilho (regras.bonusShiny): quem é shiny se cura de graça, em qualquer modo
+  const cheio = regra.centroGratis || bonusShiny(G.S) ? 0 : custoCentroEquipe(equipe), vit = G.S.vitoriasDesdeCentro || 0;
   const custo = regra.descontoPorVitoria ? custoComDesconto(cheio, vit, regra.descontoPorVitoria) : cheio;
   return { precisa: equipe.some(precisaCurar), custo, cheio, vitorias: regra.descontoPorVitoria ? vit : 0 };
 }
@@ -73,11 +75,14 @@ export function registrarVisto(M) {
 export const nm = m => '<b>' + esc(rotulo(m)) + '</b>';
 // save de antes da dificuldade existir conta como Fácil (não punir retroativamente quem não escolheu)
 export const dificuldadeDe = S => S?.dificuldade || 'easy';
-// aoSalvar: chamado depois de todo save() local (main.js liga no envio pra nuvem) — estado não conhece a nuvem
-export const ganchosSave = { aoSalvar: null };
+// aoSalvar: chamado depois de todo save() local (main.js liga no envio pra nuvem) — estado não conhece a nuvem.
+// serializarBatalha: batalha.js registra aqui como transformar G.B em algo que cabe no save (Set não vai em JSON).
+export const ganchosSave = { aoSalvar: null, serializarBatalha: null };
 export function save() {
   const S = G.S; if (!S) return;
   marcarTempo();
+  // batalha em andamento vai junto: recarregar a página não é mais fuga grátis (batalha.js serializarBatalha)
+  if (G.B) S.batalha = ganchosSave.serializarBatalha?.(G.B) || null; else delete S.batalha;
   S.maxDinheiro = Math.max(S.maxDinheiro || 0, S.money || 0); // maior quantia de uma vez na jornada (carreira)
   S.salvoEm = Date.now(); // desempate entre o save deste aparelho e o da nuvem
   S.log = (S.log || []).slice(-40); store.set(SAVE_KEY, S);

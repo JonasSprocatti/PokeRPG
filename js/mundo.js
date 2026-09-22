@@ -1,6 +1,7 @@
 /* ============ exploração ============ */
 // Um clique em "Explorar": 10% treinador caçador, 58% selvagem, 15% item, 7% dinheiro, 10% só ambientação.
 import { G, zone, save, emCampo, rotasAtuais } from './estado.js';
+import { gastarRepelente, semSelvagens } from './mapas.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { startBattle, startTrainerBattle, startBossBattle, startLendarios } from './batalha.js';
@@ -17,8 +18,14 @@ export async function explore() {
   try {
     await say(`Você anda por ${z.name}...`, 'muted');
     for (const M of emCampo()) M.passos = (M.passos || 0) + 1; // Pawmot, Brambleghast, Rabsca (evolucao.js)
+    // repelente gasta um passo por exploração; quando acaba, avisa (mapas.js)
+    if (gastarRepelente(G.S) === 'acabou') await say('O efeito do repelente passou.', 'muted');
     const r = Math.random();
+    // com repelente ativo o encontro selvagem simplesmente não acontece — treinador, item, dinheiro e
+    // ambientação continuam com a MESMA chance de sempre (o sorteio abaixo é o mesmo; só o selvagem vira ambientação)
+    const semBicho = semSelvagens(G.S, z);
     if (r < 0.10) await startTrainerBattle(z);
+    else if (r < 0.68 && semBicho) await say(pick(FLAVOR[z.id] || FLAVOR.default), 'muted');
     else if (r < 0.68) await startBattle(z);
     else if (r < 0.83) {
       // da 4ª rota do mapa em diante, 1 em 5 achados é um item de evolução (pedra, Metal Coat…)

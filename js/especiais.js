@@ -19,6 +19,7 @@
 //   furia            ataca sozinho por 2–3 turnos e depois fica confuso (Thrash, Outrage)
 //   poder: fórmula   poder calculado na hora (poderEspecial em regras.js)
 //   danoIgualHp      o alvo fica com o HP de quem usou (Endeavor)
+//   soPrimeiroTurno  só funciona no primeiro golpe que você dá na batalha (Fake Out, First Impression)
 export const GOLPES_ESPECIAIS = {
   protect: { protege: true }, detect: { protege: true }, 'spiky-shield': { protege: true }, 'kings-shield': { protege: true },
   'baneful-bunker': { protege: true }, obstruct: { protege: true }, 'silk-trap': { protege: true }, 'burning-bulwark': { protege: true },
@@ -43,6 +44,8 @@ export const GOLPES_ESPECIAIS = {
   'gyro-ball': { poder: 'giroscopio' }, 'electro-ball': { poder: 'eletro' },
   hex: { poder: 'dobraAlvoComStatus' }, facade: { poder: 'dobraComStatus' }, venoshock: { poder: 'dobraAlvoEnvenenado' },
   brine: { poder: 'dobraAlvoMetade' },
-  endeavor: { danoIgualHp: true }
+  endeavor: { danoIgualHp: true },
+  // só no primeiro golpe que o Pokémon dá na batalha (senão falha) — é o que segura o recuo do Fake Out
+  'fake-out': { soPrimeiroTurno: true }, 'first-impression': { soPrimeiroTurno: true }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

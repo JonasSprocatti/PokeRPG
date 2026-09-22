@@ -290,6 +290,11 @@ export function formatarTempo(ms) {
 // shiny: 1 em 4096 (Gen 6+), sorteado pra todo Pokémon criado — você, selvagem ou de treinador, em qualquer modo
 export const CHANCE_SHINY = 1 / 4096;
 export const ehShiny = (sorte = Math.random()) => sorte < CHANCE_SHINY;
+// Segredo do brilho: ser um Pokémon shiny (1 em 4096) dobra XP e dinheiro e deixa o Centro Pokémon de graça.
+// Não está escrito em lugar nenhum da tela inicial — quem tirar um shiny descobre jogando.
+export const MULT_SHINY = 2;
+export const bonusShiny = S => !!S?.player?.shiny;
+export const multShiny = S => bonusShiny(S) ? MULT_SHINY : 1;
 
 /* ---- treinadores caçadores (Etapa 3) ---- */
 

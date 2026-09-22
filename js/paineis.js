@@ -30,12 +30,27 @@ const htmlPainel = id => `<section class="painel" data-painel="${id}" aria-label
     <div class="painel-corpo" id="p-${id}">${id === 'log' ? '<div class="textbox"><div id="log" class="log" aria-live="polite"></div></div>' : ''}</div>
   </section>`;
 
+// Abas do celular (só aparecem em tela estreita, CSS): no computador tudo fica junto na mesma tela, mas no celular
+// a cena fica presa no topo, as ações embaixo, e estas abas dizem o que ocupa o meio — o registro curto (⚔ Luta),
+// o registro inteiro (💬 Registro) ou os painéis de ficha/missões/aliados/mochila (📋 Painéis). Ver render.abaMobile.
+const ABA_BOTAO = (v, txt, dica) => `<button type="button" class="aba-mob" data-act="aba-mob" data-v="${v}" title="${dica}">${txt}</button>`;
+const ABAS_MOB = `<nav class="abas-mob" aria-label="O que mostrar no meio da tela">
+    ${ABA_BOTAO('luta', '⚔ Luta', 'Cena e golpes, com um resumo do registro')}
+    ${ABA_BOTAO('registro', '💬 Registro', 'O registro da batalha inteiro')}
+    ${ABA_BOTAO('paineis', '📋 Painéis', 'Ficha, missões, aliados e mochila')}
+  </nav>`;
+
 // esqueleto da tela do jogo; os painéis nascem na zona esquerda e aplicarLayout() os distribui
 export function htmlJogo() {
   return `<main class="game">
     <div class="zona" data-zona="esq">${PAINEIS.map(htmlPainel).join('')}</div>
     <div class="divisor" data-divisor="esq" title="Arraste pra mudar a largura" aria-hidden="true"></div>
-    <section class="stage"><div id="scene" class="scene"></div><div class="zona" data-zona="centro"></div><div id="actions" class="actions"></div></section>
+    <section class="stage">
+      <div id="scene" class="scene"></div>
+      ${ABAS_MOB}
+      <div class="zona" data-zona="centro"></div>
+      <div id="actions" class="actions"></div>
+    </section>
     <div class="divisor" data-divisor="dir" title="Arraste pra mudar a largura" aria-hidden="true"></div>
     <div class="zona" data-zona="dir"></div>
   </main>`;

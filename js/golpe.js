@@ -155,6 +155,10 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
   else if (!travado && g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1);  // fúria: só o 1º turno gasta
   if (esp.furia && !u.vol.furia) u.vol.furia = { golpe: g, turnos: rand(2, 3) };
   await ctx.say(`${U} usou ${ctx.golpe(g)}!`);
+  // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)
+  const primeiroGolpe = !u.vol.golpesDados;
+  u.vol.golpesDados = (u.vol.golpesDados || 0) + 1;
+  if (esp.soPrimeiroTurno && !primeiroGolpe) { await ctx.say('Mas falhou! (só funciona no primeiro golpe da batalha)'); return; }
 
   const res = await executar(u, t, g, primeiro, ctx, esp);
   if (esp.autoDesmaio && u.hp > 0) { u.hp = 0; up(ctx); (ctx.tremer || nada)(u); await ctx.say(`${U} desmaiou com o esforço!`, 'hit'); }

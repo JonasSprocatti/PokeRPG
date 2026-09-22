@@ -9,7 +9,8 @@
 // pelos próprios Pokémon), prazo de 45 s com golpe automático, roda o motor puro (mp-motor.js) e publica.
 // Resultado: co-op aplica na jornada de cada um (HP proporcional, PP, XP, EVs, dinheiro; Roguelike = permadeath, fora
 // dele desmaio volta com 1 HP); PvP é amistoso (não mexe em HP/PP, só conta vitórias/derrotas em S.pvp).
-import { G, save, registrar, dificuldadeDe, rotasAtuais } from './estado.js';
+import { G, save, registrar, dificuldadeDe, rotasAtuais, centroPokemon, zerarDescontoCentro } from './estado.js';
+import { healFull } from './efeitos.js';
 import { $, limparTopo, logRaw, say, toast } from './ui.js';
 import { spriteFrente } from './render.js';
 import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
@@ -73,7 +74,50 @@ export async function convidarAmigoMP(amigoId) {
   try { await convidarAmigo(amigoId, { codigo: sala.codigo, modo: sala.config.modo }); toast(`Convite enviado pra <b>${esc(a?.apelido || 'seu amigo')}</b>.`, 4000); }
   catch (e) { toast(`Não deu pra convidar: ${esc(e.message)}`, 6000); }
 }
-const enviar = (event, payload) => sala?.canal?.send({ type: 'broadcast', event, payload });
+/* ---------- rede: envio confiável, diagnóstico e ressincronização ----------
+   O Realtime do Supabase às vezes engole um broadcast (aba em segundo plano, rede oscilando). Antes isso travava a
+   sala: a escolha de alguém não chegava no anfitrião e o turno só saía quando o prazo de 45 s estourava. Agora:
+   • `enviar` confere a resposta e tenta de novo (o `send` devolve 'ok' | 'timed out' | 'error');
+   • o anfitrião republica o estado a cada PULSO_MS enquanto espera escolhas (quem perdeu a mensagem se acerta sozinho);
+   • qualquer um pede o estado de novo com 🔄 Sincronizar (evento 'sincronizar');
+   • tudo fica no diagnóstico da sala (últimas linhas) e no console com o prefixo [mp]. */
+const PULSO_MS = 4000, ESPERA_ANFITRIAO_MS = 20000;
+const diario = [];
+function anotar(txt, ruim = false) {
+  diario.push({ t: Date.now(), txt, ruim });
+  if (diario.length > 40) diario.shift();
+  console[ruim ? 'warn' : 'debug']('[mp]', txt);
+  if (sala) sala.ultimoEvento = Date.now();
+}
+export const diarioMP = () => diario.slice(-8).reverse();
+async function enviar(event, payload, tentativas = 3) {
+  for (let i = 1; i <= tentativas; i++) {
+    if (!sala?.canal) return false;
+    let r;
+    try { r = await sala.canal.send({ type: 'broadcast', event, payload }); } catch (e) { r = 'erro: ' + e.message; }
+    if (r === 'ok') { anotar(`→ ${event}${i > 1 ? ` (na ${i}ª tentativa)` : ''}`); if (sala) sala.conexao = 'ok'; return true; }
+    anotar(`⚠ não consegui enviar "${event}" (${r}) — tentativa ${i} de ${tentativas}`, true);
+    await new Promise(ok => setTimeout(ok, 400 * i));
+  }
+  if (sala) { sala.conexao = 'instavel'; renderSala(); }
+  return false;
+}
+// pacote do estado atual (sem mexer no prazo) — usado pelo pulso e por quem pede pra sincronizar
+const pacoteEstado = (eventos = []) => ({ batalha: sala.batalha, eventos, prazo: sala.prazo, acoesFeitas: Object.keys(sala.acoes), tipo: sala.tipo, zona: sala.zona });
+function ligarPulso() {
+  if (!sala?.anfitriao) return;
+  clearInterval(sala.pulso);
+  sala.pulso = setInterval(() => { if (sala?.anfitriao && sala.batalha && !sala.resolvendo) enviar('estado', pacoteEstado(), 1); }, PULSO_MS);
+}
+const desligarPulso = () => { if (sala) clearInterval(sala.pulso); };
+// 🔄 Sincronizar: o anfitrião reenvia o que vale agora; quem não é anfitrião pede pra ele
+export function sincronizarSala() {
+  if (!sala) return;
+  anotar('🔄 sincronizando');
+  if (sala.anfitriao) { if (sala.batalha) enviar('estado', pacoteEstado()); else publicarLobby(); }
+  else enviar('sincronizar', { de: meuId() });
+  renderSala();
+}
 const membroDe = id => sala.membros.find(m => m.id === id);
 const retrack = () => sala?.canal?.track(meuPayload());
 
@@ -134,10 +178,27 @@ async function conectar(codigo, anfitriao) {
       .on('broadcast', { event: 'estado' }, ({ payload }) => aoReceberEstado(payload))
       .on('broadcast', { event: 'acao' }, ({ payload }) => { if (sala?.anfitriao) registrarAcao(payload.de, payload.acao); })
       .on('broadcast', { event: 'fim' }, ({ payload }) => aoReceberFim(payload))
-      .on('broadcast', { event: 'lobby' }, ({ payload }) => { if (sala && !sala.anfitriao) { sala.zona = payload.zona; sala.config = payload.config; renderSala(); } });
+      .on('broadcast', { event: 'lobby' }, ({ payload }) => { anotar('← lobby'); if (sala && !sala.anfitriao) { sala.zona = payload.zona; sala.config = payload.config; renderSala(); } })
+      .on('broadcast', { event: 'sincronizar' }, () => { // alguém pediu o estado de novo
+        if (!sala?.anfitriao) return;
+        anotar('← pedido de sincronização');
+        if (sala.batalha) enviar('estado', pacoteEstado()); else publicarLobby();
+      });
     canal.subscribe(async status => {
-      if (status === 'SUBSCRIBED') { await canal.track(meuPayload()); if (sala?.anfitriao) publicarLobby(); }
-      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { await sairSala(); telaMultiplayer('Não consegui conectar na sala. Tente de novo.'); }
+      anotar('canal: ' + status, !['SUBSCRIBED', 'CLOSED'].includes(status));
+      if (!sala) return;
+      if (status === 'SUBSCRIBED') {
+        sala.conexao = 'ok'; sala.tentativas = 0;
+        await canal.track(meuPayload());
+        if (sala.anfitriao) { publicarLobby(); if (sala.batalha) enviar('estado', pacoteEstado()); }
+        else enviar('sincronizar', { de: meuId() }); // voltei: me manda o que está valendo agora
+        renderSala();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        // Antes isso fechava a sala na hora: trocar de aba já derrubava todo mundo. Agora tenta voltar sozinho.
+        sala.conexao = 'caiu'; renderSala();
+        if ((sala.tentativas = (sala.tentativas || 0) + 1) > 5) { await sairSala(); return telaMultiplayer('Perdi a conexão com a sala e não consegui voltar. Tente entrar de novo.'); }
+        setTimeout(() => { if (sala?.canal === canal && sala.conexao === 'caiu') { anotar(`reconectando (tentativa ${sala.tentativas})`, true); canal.subscribe(); } }, 1500 * sala.tentativas);
+      }
     });
   } catch (e) { console.error(e); sala = null; return telaMultiplayer(`Não consegui abrir a sala: ${esc(e.message)}`); }
   telaSala();
@@ -148,15 +209,25 @@ async function conectar(codigo, anfitriao) {
 export async function sairSala() {
   if (!sala) return;
   const s = sala; sala = null;
-  clearTimeout(s.timer); clearInterval(s.relogio);
+  anotar('saindo da sala');
+  clearTimeout(s.timer); clearInterval(s.relogio); clearInterval(s.pulso); clearTimeout(s.semAnfitriao);
   try { await s.canal?.untrack(); await fecharCanal(s.canal); } catch (e) { console.error(e); }
 }
 function aoMudarPresenca() {
   if (!sala) return;
   sala.membros = Object.values(sala.canal.presenceState()).map(l => l[0]).filter(Boolean)
     .sort((a, b) => (b.anfitriao - a.anfitriao) || (a.entrouEm - b.entrouEm));
-  if (sala.membros.some(m => m.anfitriao)) sala.encontrouAnfitriao = true;
-  else if (sala.encontrouAnfitriao && !sala.anfitriao) { sairSala(); return telaMultiplayer('O anfitrião saiu. A sala acabou.'); }
+  if (sala.membros.some(m => m.anfitriao)) {
+    sala.encontrouAnfitriao = true;
+    clearTimeout(sala.semAnfitriao); sala.semAnfitriao = null; // voltou (ou nem chegou a sumir de verdade)
+  } else if (sala.encontrouAnfitriao && !sala.anfitriao && !sala.semAnfitriao) {
+    // o anfitrião sumindo da presença costuma ser a aba dele em segundo plano: espera antes de desistir da sala
+    anotar('anfitrião sumiu da presença — esperando ele voltar', true);
+    sala.semAnfitriao = setTimeout(() => {
+      if (!sala || sala.membros.some(m => m.anfitriao)) return;
+      sairSala(); telaMultiplayer('O anfitrião saiu e não voltou. A sala acabou.');
+    }, ESPERA_ANFITRIAO_MS);
+  }
   if (!sala.anfitriao && sala.membros.findIndex(m => m.id === meuId()) >= MAX_JOGADORES) { sairSala(); return telaMultiplayer(`A sala está cheia (máximo ${MAX_JOGADORES}).`); }
   if (sala.anfitriao) publicarLobby(); // quem acabou de entrar recebe a configuração
   renderSala();
@@ -241,8 +312,9 @@ export async function iniciarBatalhaMP(tipo) {
 }
 function publicarEstado(eventos, novoTurno) {
   if (novoTurno) { sala.prazo = Date.now() + PRAZO_MS; clearTimeout(sala.timer); sala.timer = setTimeout(autoCompletar, PRAZO_MS); }
-  const p = { batalha: sala.batalha, eventos, prazo: sala.prazo, acoesFeitas: Object.keys(sala.acoes), tipo: sala.tipo, zona: sala.zona };
+  const p = pacoteEstado(eventos);
   enviar('estado', p);
+  ligarPulso(); // enquanto a batalha rola, o anfitrião repete o estado de tempos em tempos
   aoReceberEstado(p); // broadcast não volta pra quem enviou
 }
 const jogaveis = b => [...b.lados.A, ...b.lados.B].filter(m => m.hp > 0 && m.dono !== 'ia');
@@ -250,7 +322,8 @@ const primeiroInimigo = (b, m) => b.lados[ladoDe(b, m.ref) === 'A' ? 'B' : 'A'].
 function registrarAcao(de, acao) {
   const b = sala?.batalha; if (!b || !acao) return;
   const m = monMP(b, acao.ref);
-  if (!m || m.dono !== de || m.hp <= 0) return; // só o dono escolhe pelos próprios Pokémon
+  if (!m || m.dono !== de || m.hp <= 0) { anotar(`← escolha ignorada (${acao.ref}): não é dela ou já caiu`, true); return; } // só o dono escolhe pelos próprios
+  anotar(`← escolha de ${m.nome} (${acao.tipo})`);
   sala.acoes[acao.ref] = acao;
   if (jogaveis(b).some(x => !sala.acoes[x.ref])) publicarEstado([], false); else resolver();
 }
@@ -307,7 +380,8 @@ function finalizar(eventos) {
 /* ---------- todos: receber, escolher, aplicar ---------- */
 function aoReceberEstado(p) {
   if (!sala) return;
-  if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) sala.escolhidos = new Set(); // turno novo: escolhe de novo
+  sala.conexao = 'ok'; sala.ultimoEvento = Date.now();
+  if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) { anotar(`← estado (turno ${p.batalha.turno})`); sala.escolhidos = new Set(); } // turno novo: escolhe de novo
   sala.batalha = p.batalha; sala.prazo = p.prazo; sala.acoesFeitas = p.acoesFeitas || []; sala.tipo = p.tipo; sala.zona = p.zona;
   for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
   renderSala();
@@ -318,6 +392,16 @@ export function escolherGolpeMP(i) { escolher({ tipo: 'golpe', golpe: i, alvo: s
 export function fugirMP() { escolher({ tipo: 'fugir' }); }
 export function desistirMP() { escolher({ tipo: 'desistir' }); }
 export function mirarMP(ref) { if (sala) { sala.alvo = ref; renderSala(); } }
+// Centro Pokémon sem sair da sala (mesma conta e mesmas regras do jogo sozinho)
+export function centroMP() {
+  if (!sala || sala.batalha || !temRun()) return;
+  const { precisa, custo } = centroPokemon();
+  if (!precisa || G.S.money < custo) return;
+  G.S.money -= custo; G.S.gasto = (G.S.gasto || 0) + custo;
+  healFull(); zerarDescontoCentro(); save();
+  logRaw({ html: `🏥 ${custo ? `Você pagou ₽${custo} e curou` : 'Você curou'} a equipe no Centro Pokémon.`, cls: 'good' });
+  retrack(); renderSala(); // a presença mostra o HP dos seus Pokémon pros outros
+}
 function escolher(acao) {
   const m = minhaVez(); if (!m) return;
   if (acao.tipo === 'golpe') { const alvos = inimigosDe(m); if (!alvos.some(e => e.ref === acao.alvo)) acao.alvo = alvos[0]?.ref; }
@@ -330,7 +414,7 @@ const inimigosDe = m => { const b = sala.batalha; return b.lados[ladoDe(b, m.ref
 async function aoReceberFim(p) {
   if (!sala) return;
   for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
-  sala.batalha = null; sala.acoes = {}; sala.ocupado = true; clearTimeout(sala.timer);
+  sala.batalha = null; sala.acoes = {}; sala.ocupado = true; clearTimeout(sala.timer); desligarPulso();
   renderSala();
   let acabouARun = false;
   try { acabouARun = await (p.pvp ? aplicarPvP(p) : aplicarCoop(p)); } catch (e) { console.error(e); }
@@ -414,12 +498,24 @@ function cartao(m, legenda, destaque = false) {
 }
 const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${m.id === meuId() ? ' (você)' : ''}</b>
   <div class="mp-mons">${(m.mons || []).slice(0, sala.config.porJogador).map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : '')).join('')}</div></div>`;
+// Linha de conexão + diagnóstico: some quando está tudo bem? Não — fica sempre, porque saber se a sala está viva
+// é metade do problema num jogo em rede. Mostra o estado, há quanto tempo chegou algo, o 🔄 e o detalhe escondido.
+function barraConexao() {
+  const c = sala.conexao || 'ok', seg = sala.ultimoEvento ? Math.round((Date.now() - sala.ultimoEvento) / 1000) : null;
+  const txt = c === 'ok' ? '🟢 conectado' : c === 'instavel' ? '🟡 rede instável (tentando de novo)' : '🔴 sem conexão com a sala (reconectando…)';
+  return `<div class="mp-conexao ${c}">
+    <span>${txt}${seg != null ? ` · último sinal há ${seg}s` : ''}${sala.semAnfitriao ? ' · esperando o anfitrião voltar' : ''}</span>
+    <button class="btn ghost sm" data-act="mp-sync" title="Pedir o estado atual da sala de novo">🔄 Sincronizar</button>
+    <details class="mp-diag"><summary>Diagnóstico</summary><ul>${diarioMP().map(l => `<li class="${l.ruim ? 'err' : ''}">${new Date(l.t).toLocaleTimeString('pt-BR')} · ${esc(l.txt)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul></details>
+  </div>`;
+}
 function renderSala() {
   if (!sala || G.mode !== 'mp' || !$('#mp-topo')) return;
   const b = sala.batalha, cfg = sala.config, pvp = cfg.modo === 'pvp', z = ZONES.find(x => x.id === sala.zona) || ZONES[0];
   const resumoCfg = `${pvp ? 'PvP' : 'Co-op'} · ${cfg.porJogador} Pokémon por jogador · ${cfg.balancear ? 'balanceado' : 'sem balancear'}${pvp ? '' : ' · ' + esc(z.name)}`;
   const cabecalho = `<div class="mp-cab"><h1>Sala <span class="codigo">${esc(sala.codigo)}</span></h1>
-    <p class="muted">${sala.anfitriao ? 'Você é o anfitrião. Passe o código pros amigos.' : 'O anfitrião configura e começa.'} · ${sala.membros.length}/${MAX_JOGADORES} jogadores · ${resumoCfg}</p></div>`;
+    <p class="muted">${sala.anfitriao ? 'Você é o anfitrião. Passe o código pros amigos.' : 'O anfitrião configura e começa.'} · ${sala.membros.length}/${MAX_JOGADORES} jogadores · ${resumoCfg}</p>
+    ${barraConexao()}</div>`;
   if (!b) return renderLobby(cabecalho, pvp, z);
   const dono = id => id === 'ia' ? '' : (membroDe(id)?.nome || 'jogador que saiu') + (id === meuId() ? ' (você)' : '');
   const vez = minhaVez();
@@ -439,6 +535,16 @@ function renderSala() {
       : vez.moves.map((g, i) => `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`).join('')}</div>
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }
+// Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.
+// Mesmo preço e mesma regra do jogo sozinho (estado.centroPokemon); só aparece entre as lutas, com uma run em andamento.
+function centroNaSala() {
+  if (!temRun() || sala.batalha || sala.convidado) return '';
+  const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = G.S.money < custo;
+  const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s>` : '';
+  return `<div class="subrow mp-centro"><button class="btn ghost" data-act="mp-centro" ${!precisa || semGrana || sala.ocupado ? 'disabled' : ''}
+    title="${!precisa ? 'Sua equipe já está curada' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">🏥 Centro Pokémon${!precisa ? ' (equipe curada)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}`}</button>
+    <span class="small muted">₽${G.S.money.toLocaleString('pt-BR')}</span></div>`;
+}
 function renderLobby(cabecalho, pvp, z) {
   const cfg = sala.config, dis = sala.ocupado ? 'disabled' : '';
   const time = t => sala.membros.filter(m => (m.time || 'B') === t);
@@ -447,7 +553,7 @@ function renderLobby(cabecalho, pvp, z) {
     : `<div class="mp-grupo">${sala.membros.map(cartaoMembro).join('')}</div>`);
   const trocarTime = pvp ? `<div class="subrow">Seu time: ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
   const sair = '<button class="btn ghost" data-act="mp-sair">Sair da sala</button>';
-  if (!sala.anfitriao) { $('#mp-acoes').innerHTML = trocarTime + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
+  if (!sala.anfitriao) { $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
   const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level)) : []; // rotas do mapa (Gen) da run
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
   const naSalaIds = new Set(sala.membros.map(m => m.id));
@@ -461,7 +567,7 @@ function renderLobby(cabecalho, pvp, z) {
       ${pvp ? '' : `<label class="campo">Zona<select data-mp-cfg="zona" ${dis}>${zonas.map(x => `<option value="${x.id}" ${x.id === sala.zona ? 'selected' : ''}>${x.name}</option>`).join('')}</select></label>`}
       <label class="check"><input type="checkbox" data-mp-cfg="balancear" ${cfg.balancear ? 'checked' : ''} ${dis}> Balancear níveis
         <small class="muted">${pvp ? 'Todos no nível médio da luta; o time menor ganha HP extra.' : 'O grupo todo no nível do seu Pokémon. Quem tiver o nível ajustado joga por diversão: não leva XP nem itens pra própria run.'} Desligado: níveis reais${pvp ? '' : ', cada um leva o que ganhar pra própria run, e os inimigos acompanham o mais forte'} (mais difícil).</small></label>
-    </div>${trocarTime}${convites}
+    </div>${trocarTime}${centroNaSala()}${convites}
     <div class="subrow">${pvp
       ? `<button class="btn big" data-act="mp-pvp" ${dis || !podePvp ? 'disabled' : ''} title="${podePvp ? '' : 'Cada time precisa de pelo menos um jogador'}">⚔ Começar PvP</button>`
       : `<button class="btn big" data-act="mp-explorar" ${dis}>🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${dis}>⚔ Desafiar o Alfa (${z.chefe.nome})</button>` : ''}`}${sair}</div>`;

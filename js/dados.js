@@ -129,11 +129,20 @@ export const ITENS_SEGURADOS = {
 };
 Object.assign(ITEMS, ITENS_SEGURADOS);
 
+// Repelentes (mapas.js): mexem SÓ no encontro selvagem — treinador, item, dinheiro e ambientação continuam iguais.
+// `passos` = quantas explorações duram.
+export const ITENS_REPELENTE = {
+  repel: { name: 'Repelente Seletivo', desc: 'Por 30 explorações, o único selvagem que aparece é a espécie que você escolher (das que vivem na rota).', repelente: 'seletivo', passos: 30, price: 900 },
+  'max-repel': { name: 'Repelente Total', desc: 'Por 40 explorações, nenhum selvagem aparece: só treinadores, itens e dinheiro.', repelente: 'total', passos: 40, price: 1200 }
+};
+Object.assign(ITEMS, ITENS_REPELENTE);
+
 // Divisões da mochila e da loja, na ordem em que aparecem. `de(it)` diz a que divisão o item pertence.
 export const CATEGORIAS_ITEM = [
   { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.cure || it.ether || it.revive },
   { id: 'batalha', nome: '⚔ Em batalha', de: it => it.battle || it.stage },
   { id: 'segurado', nome: '🎒 Para segurar', de: it => it.segurado },
+  { id: 'exploracao', nome: '🧭 Exploração', de: it => it.repelente },
   { id: 'evolucao', nome: '💎 Evolução', de: it => it.evo || it.troca || it.segurar },
   { id: 'petisco', nome: '🍖 Petiscos (amizade)', de: it => it.afinidade },
   { id: 'especial', nome: '✨ Especiais', de: it => it.candy },

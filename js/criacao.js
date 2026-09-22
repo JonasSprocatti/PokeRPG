@@ -35,6 +35,8 @@ export function showCreate() {
     <div id="difs" class="difs"></div>
     <h3 class="passo"><span>2</span> Mapa (Gen)</h3>
     <div id="gens"></div>
+    <label class="check caca-opcao"><input type="checkbox" id="pv-caca" ${G.cacaShiny ? 'checked' : ''}> 🎯 Modo Caça Shiny
+      <small class="muted">Quando você revelar todas as espécies de uma rota (10 derrotados de cada), pode escolher UMA delas pra ser a única que aparece ali. Serve pra caçar shiny — ou o que você quiser — sem depender da sorte do sorteio. Só dá pra ligar agora, no começo da jornada.</small></label>
     <h3 class="passo"><span>3</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
     <div id="escolha"></div>
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
@@ -155,12 +157,14 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   // começar outra com uma jornada aberta (veio pelo 🏠 Início): a de antes vai pras guardadas, não some (saves.js)
   const anterior = G.S?.player ? (save(), guardar(G.S) ? G.S : null) : null;
   G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+    cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
   G.mode = 'explore'; G.panel = 'main';
   buildGame();
   log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
   if (anterior) log(`💾 A jornada de ${esc(anterior.player.nick || fmt(anterior.player.name))} foi guardada: dá pra voltar nela em Jornadas salvas.`, 'muted');
+  if (G.S.cacaShiny) log('🎯 Modo Caça Shiny ligado: revele todas as espécies de uma rota pra escolher qual vai aparecer nela.', 'muted');
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');

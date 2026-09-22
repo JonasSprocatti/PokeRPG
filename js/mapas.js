@@ -71,6 +71,43 @@ export function pokedexDaRota(z, saber) {
   });
 }
 
+/* ---- Caça Shiny (modo ligado na criação: S.cacaShiny) ----
+   Quando TODA espécie da rota estiver revelada (REVELA_DERROTADOS derrotados de cada uma), a rota libera a caça:
+   você escolhe uma espécie e só ela aparece ali. Míticos ficam de fora da conta — derrotar 10 Mew não é razoável. */
+export const cacaveisDaRota = (z, saber) => pokedexDaRota(z, saber).filter(p => !p.mitico);
+export const rotaLiberaCaca = (z, saber) => { const l = cacaveisDaRota(z, saber); return l.length > 0 && l.every(p => p.estado === 'revelado'); };
+// quanto falta pra liberar: { reveladas, total }
+export function progressoCaca(z, saber) {
+  const l = cacaveisDaRota(z, saber);
+  return { reveladas: l.filter(p => p.estado === 'revelado').length, total: l.length };
+}
+// espécie caçada nesta rota (ou null). `S.caca` = { idDaRota: speciesName }
+export const cacaDaRota = (S, z) => (S?.cacaShiny && S.caca?.[z?.id]) || null;
+
+/* ---- Repelentes (itens da loja: `S.repelente = { tipo, passos, especie? }`) ----
+   'total'    = nenhum selvagem aparece enquanto durar
+   'seletivo' = só a espécie escolhida aparece (se ela vive nesta rota; se não, é como o total)
+   Nem um nem outro mexem em treinador, item, dinheiro ou ambientação: só no encontro selvagem. Dura N explorações. */
+export const repelenteAtivo = S => (S?.repelente?.passos > 0 ? S.repelente : null);
+// quem aparece de verdade nesta rota: repelente seletivo na frente, depois a Caça Shiny; null = sorteio normal
+export function especieForcada(S, z) {
+  const r = repelenteAtivo(S);
+  if (r?.tipo === 'seletivo' && z?.pool?.some(p => p.n === r.especie)) return r.especie;
+  return cacaDaRota(S, z);
+}
+// true = nenhum selvagem aparece agora (repelente total, ou seletivo de uma espécie que não vive aqui)
+export function semSelvagens(S, z) {
+  const r = repelenteAtivo(S); if (!r) return false;
+  return r.tipo === 'total' || !z?.pool?.some(p => p.n === r.especie);
+}
+// uma exploração passou: gasta um "passo" do repelente. Devolve o que sobrou, 'acabou' no último, ou null.
+export function gastarRepelente(S) {
+  const r = S?.repelente; if (!r?.passos) return null;
+  r.passos--;
+  if (r.passos <= 0) { delete S.repelente; return 'acabou'; }
+  return r.passos;
+}
+
 // luta final: o principal (último da lista) + até 3 dos outros lendários (sorteados, na ordem da lista)
 export function sequenciaLendaria(z, sorte = Math.random) {
   const todos = z.lendarios || [];

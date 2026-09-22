@@ -69,6 +69,16 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
   A ficha marca quais estão ativas.
 
+### No celular
+A batalha vira uma tela fixa: a **cena fica presa no topo** e os **golpes na parte de baixo**, sem rolagem para agir. Embaixo da cena, três abas dizem o que ocupa o meio: **⚔ Luta** (registro curto), **💬 Registro** (o registro inteiro) e **📋 Painéis** (ficha, missões, aliados e mochila).
+
+### 🎯 Caça Shiny
+Modo opcional, ligado **no começo da jornada**. Quando você revela todas as espécies de uma rota (10 derrotados de cada), pode escolher **uma delas para ser a única que aparece ali** — bom para caçar um shiny ou farmar uma espécie. Dá para trocar ou parar a caça quando quiser, rota por rota. **Muda só o Pokémon selvagem:** treinadores, itens, dinheiro e as frases de ambientação continuam com a mesma chance.
+
+### Repelentes (loja)
+- **Repelente Seletivo** (30 explorações): você escolhe **a única espécie da rota que não é repelida** — só ela aparece.
+- **Repelente Total** (40 explorações): **nenhum selvagem** aparece; você continua encontrando treinadores, itens e dinheiro normalmente.
+
 ### Itens segurados
 Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Para equipar: mochila → divisão **🎒 Para segurar** → "Segurar". A ficha mostra o que cada um leva, com botão para guardar de volta.
 - **Restos** (cura 1/16 por turno), **Lodo Negro** (cura Venenosos, machuca o resto), **Sino-Concha** (drena 1/8 do dano que você causa).
@@ -128,6 +138,8 @@ Um jogador cria a sala e passa o **código de 4 letras**; até 6 entram com ele.
 
 Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos escolherem, ou em 45 segundos, no automático.
 - **Co-op:** XP, EVs e dinheiro vão para a jornada de cada um, e o HP e o PP gastos voltam junto. Fora do Roguelike, desmaiar volta com 1 de HP; **no Roguelike, desmaiar conta de verdade**.
+- **Sala firme:** cada mensagem é reenviada se falhar, o anfitrião repete o estado da luta de tempos em tempos e há um botão **🔄 Sincronizar**. Trocar de aba não derruba ninguém, e a sala mostra o estado da conexão com um diagnóstico das últimas mensagens.
+- **Centro Pokémon na sala:** dá para curar a equipe entre as lutas sem sair.
 - **PvP:** é amistoso. Não gasta HP nem PP, só conta vitórias e derrotas. Dá para **desistir**.
 
 ### 👤 Ícone e amigos
@@ -212,6 +224,7 @@ Depois abra http://localhost:3000.
 - [x] Treinadores caçadores, dificuldades, shiny, Full Randomizer
 - [x] Amizade, aliados com ordens, batalha com vários do mesmo lado
 - [x] Zonas por nível, Alfas, missões
+- [x] Batalha no celular (cena e golpes fixos, abas), 🎯 Caça Shiny, sala multiplayer resistente a queda de conexão e batalha que não some ao recarregar
 - [x] Itens segurados (13), mochila e loja em divisões, tela 📜 Novidades com as notas de atualização
 - [x] Evoluções especiais: pedras e itens, Cabo de Conexão (troca), vínculo, hora do dia, golpe conhecido e regras equivalentes para os casos raros
 - [x] 💾 Jornadas salvas: várias runs em andamento (guardar, continuar, excluir), na nuvem também

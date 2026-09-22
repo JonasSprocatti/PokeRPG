@@ -4,7 +4,7 @@
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
 import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais } from './estado.js';
-import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS } from './mapas.js';
+import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada } from './mapas.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
@@ -19,7 +19,7 @@ import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINA
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
@@ -37,6 +37,12 @@ const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Sh
 // selvagem: da lista da rota, pela taxa de aparição de cada um (mapas.js). Míticos da Gen: bem raros, nas rotas altas.
 // Offline: só entre os que já estão no cache deste navegador (buscados em alguma partida online).
 function sortearOponente(z) {
+  // repelente seletivo ou Caça Shiny: só a espécie escolhida aparece (mapas.js especieForcada)
+  const caca = especieForcada(G.S, z);
+  if (caca) {
+    const alvo = z.pool.find(x => x.n === caca);
+    if (alvo && (!offline() || pokemonEmCache(alvo.id))) return { id: alvo.id, level: rand(z.min, z.max) };
+  }
   const p = sortearDaRota(z, offline() ? pokemonEmCache : null);
   if (!p) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma rota que você já explorou online.`);
   return { id: p.id, level: rand(z.min, z.max) };
@@ -222,10 +228,11 @@ export async function turn(action) {
 async function win() {
   const S = G.S, B = G.B, T = B.trainer, P = S.player, E = B.enemy;
   await say(`${nm(E)} desmaiou!`, 'good');
-  const xp = xpPorVitoria(E, !!T);
+  const mult = multShiny(S); // segredo do brilho: shiny ganha XP e dinheiro em dobro (regras.js)
+  const xp = xpPorVitoria(E, !!T) * mult;
   const gained = [];
   for (const [s, add] of ganhoDeEVs(P.evs, E.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
-  const money = T ? 0 : E.level * rand(8, 14); // de treinador, o dinheiro vem todo no prêmio final
+  const money = T ? 0 : E.level * rand(8, 14) * mult; // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
   registrar(S, 'derrotados', E.data.speciesName, E.id);
@@ -246,14 +253,14 @@ async function win() {
   }
   if (B.lendarios) { await vencerGen(); return; }
   if (B.chefe && !S.chefes?.[B.chefe]) {
-    const premio = premioChefe(E.level), z = ZONES.find(x => x.id === B.chefe), evo = pick(ITENS_EVO_ACHADOS);
+    const premio = premioChefe(E.level) * mult, z = ZONES.find(x => x.id === B.chefe), evo = pick(ITENS_EVO_ACHADOS);
     (S.chefes ||= {})[B.chefe] = true;
     S.money += premio; S.bag['rare-candy'] = (S.bag['rare-candy'] || 0) + 1; S.bag[evo] = (S.bag[evo] || 0) + 1;
     await say(`🏆 Você derrotou o Alfa de ${esc(z?.name || B.chefe)}! Prêmio: ₽${premio}, 1 Rare Candy e 1 ${ITEMS[evo].name} (item de evolução).`, 'level');
   }
   await depoisDaVitoria();
   if (T) {
-    const premio = premioTreinador(T.equipe);
+    const premio = premioTreinador(T.equipe) * mult;
     S.money += premio; S.treinadoresVencidos = (S.treinadoresVencidos || 0) + 1;
     await say(`Você derrotou ${esc(T.nome)}! Na fuga, deixou cair ₽${premio}.`, 'good');
   }
@@ -320,3 +327,16 @@ async function serCapturado() {
   await say(`Você perdeu ₽${perdeu}${itens ? ` e os ${itens} itens da mochila` : ''}, e acordou em ${z.name}.`, 'hit');
 }
 export function endBattle() { G.B = null; G.mode = 'explore'; G.panel = 'main'; for (const m of ladoJogador()) m.vol = freshVol(); }
+
+/* ---- batalha em andamento no save (sem fuga por F5) ----
+   Recarregar a página apagava a batalha: dava pra escapar de treinador, Alfa ou lendário — e de uma derrota no
+   Roguelike — só dando refresh. Agora ela vai junto no save (estado.save) e volta ao abrir o jogo, no mesmo turno.
+   `caidos` é um Set (quem já foi anunciado) e não sobrevive ao JSON: volta vazio, no máximo repete um anúncio. */
+export const serializarBatalha = B => B ? { ...B, caidos: null, vez: null } : null;
+export function restaurarBatalha(b) {
+  if (!b?.enemy) return null;
+  const B = { ...b, caidos: new Set(), vez: null };
+  // o inimigo é o Pokémon atual do treinador: sem isso seriam dois objetos iguais e o dano iria só pra um deles
+  if (B.trainer?.equipe?.length) B.enemy = B.trainer.equipe[B.trainer.atual] || B.enemy;
+  return B;
+}

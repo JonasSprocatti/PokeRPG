@@ -3,7 +3,7 @@
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast } from './ui.js';
-import { render, buildGame } from './render.js';
+import { render, buildGame, abaMobile } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
@@ -17,10 +17,10 @@ import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem,
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP } from './multiplayer.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
-import { turn } from './batalha.js';
+import { turn, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
@@ -65,6 +65,8 @@ document.addEventListener('click', async e => {
     case 'mp-golpe': return escolherGolpeMP(+v);
     case 'mp-fugir': return fugirMP();
     case 'mp-mirar': return mirarMP(v);
+    case 'mp-sync': return sincronizarSala();   // pedir o estado da sala de novo (rede engoliu alguma mensagem)
+    case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
     // bugs e sugestões
     case 'relatos': if (G.busy || G.mode === 'battle') return; return telaRelatos();
@@ -138,7 +140,16 @@ document.addEventListener('click', async e => {
     }
     case 'gen': G.gen = +v; return renderDificuldade();
     case 'chefe': return desafiarChefe();
+    // 🎯 Caça Shiny: escolher (ou parar de caçar) a espécie que aparece nesta rota
+    case 'caca': {
+      if (G.busy || G.mode !== 'explore' || !G.S.cacaShiny) return;
+      const z = zone(); (G.S.caca ||= {});
+      if (v) G.S.caca[z.id] = v; else delete G.S.caca[z.id];
+      log(v ? `🎯 Caçando <b>${esc(fmt(v))}</b> em ${esc(z.name)}: só ele vai aparecer por aqui.` : `🎯 Caça encerrada em ${esc(z.name)}.`, 'muted');
+      save(); return render();
+    }
     case 'panel': G.panel = v; return render();
+    case 'aba-mob': return abaMobile(v); // celular: o que mostrar no meio (só troca classe no body)
     case 'heal': {
       // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
       const { precisa, custo } = centroPokemon();
@@ -195,6 +206,7 @@ document.addEventListener('change', e => {
     const A = G.S.aliados[+io]; A.ordem = e.target.value;
     log(`${nm(A)}: ${ORDENS[A.ordem].nome}.`, 'muted'); save(); return render();
   }
+  if (e.target.id === 'pv-caca') { G.cacaShiny = e.target.checked; return; } // vale mesmo sem prévia de Pokémon
   if (!G.PV) return;
   if (e.target.id === 'pv-nature') G.PV.nature = e.target.value;
   if (e.target.id === 'pv-level') { G.PV.level = +e.target.value; renderPreview(); }
@@ -222,13 +234,17 @@ const saveValido = s => !!(s?.player?.data && s.meta?.growth);
 // abre uma jornada salva (deste navegador ou da nuvem) na tela do jogo
 function abrirJornada(s, aviso) {
   G.S = s; G.B = null; G.S.id ||= novoId(); // save de antes do id existir ganha um agora
-  for (const m of ladoJogador()) m.vol = freshVol();
   G.mode = 'explore'; G.panel = 'main';
+  // batalha em andamento volta do jeito que estava (fechar/recarregar não é fuga): os `vol` vêm salvos junto
+  G.B = restaurarBatalha(s.batalha);
+  if (G.B) { G.mode = 'battle'; G.panel = 'moves'; }
+  else for (const m of ladoJogador()) m.vol = freshVol();
   G.S.ultimoTick = Date.now(); // tempo de jogo recomeça a contar agora (não conta o tempo com o jogo fechado)
   if (G.S.escolhendoGen) return telaEscolherGen(); // fechou uma Gen e ainda não escolheu o próximo mapa
   buildGame();
   (G.S.log || []).slice(-20).forEach(logRaw);
   if (aviso) log(aviso, 'muted');
+  if (G.B) log(`⚔ Você voltou pra batalha contra ${esc(fmt(G.B.enemy.name))} (turno ${G.B.turn}). Não dá pra escapar fechando o jogo.`, 'enc');
 }
 // "Voltar" das telas de carreira/conta: pro jogo, se houver jornada; senão pra criação
 function voltar() {
@@ -259,6 +275,7 @@ function continuarGuardada(id) {
 /* ============ nuvem: ganchos ============ */
 // o save local sempre avisa a nuvem (que só envia se houver conta, com espera juntando vários saves)
 ganchosSave.aoSalvar = () => agendarEnvioSave();
+ganchosSave.serializarBatalha = serializarBatalha; // batalha em andamento entra no save (sem fuga por F5)
 ganchos.saveLocal = () => G.S || (saveValido(store.get(SAVE_KEY)) ? store.get(SAVE_KEY) : null);
 ganchos.jornadaTerminada = () => {
   store.del(SAVE_KEY);
