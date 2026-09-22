@@ -2,8 +2,8 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES } from './dados.js';
-import { natureLabel, MAX_ALIADOS } from './regras.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES, MISSOES } from './dados.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { clamp, esc, fmt } from './util.js';
 
@@ -50,7 +50,7 @@ function renderSheet() {
   const abInfo = P.data.abilities.find(a => a.name === P.ability);
   const abDesc = syncGet('ab:' + P.ability)?.effect;
   if (!abDesc && abInfo) loadAbility(abInfo).then(renderSheet).catch(() => {});
-  const bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]), AL = S.aliados || [];
+  const bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]), AL = S.aliados || [], MS = situacaoMissoes(MISSOES, S);
   $('#sheet').innerHTML = `
     <div class="me">
       ${imgMon(P, '', spriteFrente(P))}
@@ -74,6 +74,10 @@ function renderSheet() {
       <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(P.ability) ? '<span class="impl">✓ ativa no protótipo</span>' : '<em class="small">(ainda só descritiva)</em>'}</p></div>
     <div class="sec mlist"><h3>Golpes</h3>
       ${P.moves.map(m => `<details><summary><b>${esc(fmt(m.name))}</b><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`).join('')}
+    </div>
+    <div class="sec"><h3>Missões <span class="muted small">(${MS.feitas} concluída${MS.feitas === 1 ? '' : 's'})</span></h3>
+      ${[...MS.ativas, ...MS.prontas].map(({ m, atual, alvo }) => `<div class="missao"><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small><div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${atual / alvo * 100}%"></div></div><span>${atual}/${alvo}</span></div></div>`).join('') || '<p class="small muted">Nenhuma missão ativa agora.</p>'}
+      ${MS.escondidas ? `<p class="small muted">🔒 ${MS.escondidas} ainda escondida${MS.escondidas === 1 ? '' : 's'}: aparecem conforme você derrota, faz amigos e vence Alfas.</p>` : ''}
     </div>
     <div class="sec"><h3>Aliados (${AL.length}/${MAX_ALIADOS})</h3>
       ${AL.length ? `<ul class="aliados">${AL.map((A, i) => `<li>${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}</span><div class="types">${A.data.types.map(badge).join('')}</div>${hpbar(A)}</div>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}</li>`).join('')}</ul>`
@@ -102,12 +106,16 @@ function renderScene() {
           ${AL.map((A, i) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A)}</div>`).join('')}
         </div></div>`;
   } else {
-    const z = zone();
+    const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id];
     sc.className = 'scene';
+    // zona bloqueada: chip desativado com 🔒 e o nível pedido
+    const chip = o => { const ok = zonaLiberada(o, nv);
+      return `<button class="chip ${o.id === z.id ? 'on' : ''} ${ok ? '' : 'trancada'}" data-act="zone" data-v="${o.id}" ${G.busy || !ok ? 'disabled' : ''} title="${ok ? '' : `Liberada no nível ${o.libera}`}">${ok ? '' : '🔒 '}${o.name}<small>${ok ? (o.pool ? `${o.min}–${o.max}` : '±2') : `Nv. ${o.libera}`}</small></button>`; };
     sc.innerHTML = `
       <div class="zone-head"><h2>${z.name}</h2><p>${z.desc} ${z.pool ? `Pokémon entre os níveis ${z.min} e ${z.max}.` : ''}</p></div>
-      <div class="zones">${ZONES.map(o => `<button class="chip ${o.id === z.id ? 'on' : ''}" data-act="zone" data-v="${o.id}" ${G.busy ? 'disabled' : ''}>${o.name}<small>${o.pool ? `${o.min}–${o.max}` : '±2'}</small></button>`).join('')}</div>
-      <div class="locals" aria-hidden="true">${z.pool ? z.pool.map(id => `<img src="${SPR(id)}" alt="">`).join('') : '<span class="muted">Qualquer um dos 1025 pode aparecer.</span>'}</div>`;
+      <div class="zones">${ZONES.map(chip).join('')}</div>
+      <div class="locals" aria-hidden="true">${z.pool ? z.pool.map(id => `<img src="${SPR(id)}" alt="">`).join('') : '<span class="muted">Qualquer um dos 1025 pode aparecer.</span>'}</div>
+      ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}`;
   }
 }
 function renderActions() {
@@ -121,6 +129,7 @@ function renderActions() {
       // petisco: destaca os que o tipo do alvo gosta
       const gosta = k => E.data.types.some(t => ITEMS[k].afinidade.includes(t));
       const secPetisco = T ? '<p class="small muted">Pokémon de treinador tem dono: petiscos não funcionam aqui.</p>'
+        : G.B.chefe ? '<p class="small muted">Um Alfa guarda o território: não aceita petiscos.</p>'
         : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
         : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';
       a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>

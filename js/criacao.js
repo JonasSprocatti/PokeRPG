@@ -5,7 +5,7 @@ import { $, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
 import { SPR, STATS, STAT_PT, NATURES, IMPL, ZONES, QUICK, DIFICULDADES } from './dados.js';
-import { natureLabel, defaultMoves } from './regras.js';
+import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
 import { rand, pick, esc, fmt } from './util.js';
 
@@ -91,7 +91,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   const evo = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
   const mon = await makeMon(data, level, { nature, ability, nick });
   mon.exp = growth[mon.level];
-  const startZone = [...ZONES].reverse().find(z => z.pool && z.min <= mon.level) || ZONES[0];
+  const startZone = [...ZONES].reverse().find(z => z.pool && zonaLiberada(z, mon.level) && z.min <= mon.level) || ZONES[0];
   G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade };
   G.mode = 'explore'; G.panel = 'main';
   buildGame();

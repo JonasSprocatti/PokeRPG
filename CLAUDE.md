@@ -32,10 +32,11 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `js/progressao.js` | `gainExp`, aprender golpe, evolução por nível. |
 | `js/itens.js` | `addItem`, `useItem`. |
 | `js/amizade.js` | `oferecer` (petisco em batalha), recrutar aliado, `despedir`. |
-| `js/mundo.js` | `explore()`. |
+| `js/missoes.js` | `verificarMissoes()` — anuncia missões novas e entrega prêmio das concluídas. |
+| `js/mundo.js` | `explore()`, `desafiarChefe()`. |
 | `js/criacao.js` | Tela de criação (busca, prévia com dificuldade, `startGame`, `fullRandomizer`) e `telaFim` (fim de jogo do Hardcore). |
 
-Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → `ui` → `render` → `efeitos`/`progressao`/`pokemon` → `itens`/`amizade`/`criacao` → `batalha` → `mundo` → `main` (`batalha` importa `telaFim` de `criacao`, então `criacao` nunca pode importar `batalha`). Manter sem ciclos.
+Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → `ui` → `render` → `efeitos`/`progressao`/`pokemon` → `itens`/`amizade`/`missoes`/`criacao` → `batalha` → `mundo` → `main` (`batalha` importa `telaFim` de `criacao`, então `criacao` nunca pode importar `batalha`). Manter sem ciclos.
 
 ## Mecânicas (Etapa 3)
 
@@ -50,14 +51,20 @@ Grafo de imports sem ciclos: `util`/`dados` → `regras`/`api` → `estado` → 
 - **Centro Pokémon**: `centroPokemon()` (estado.js) é o ÚNICO lugar que decide se precisa e quanto custa — cada Pokémon da equipe que precisa de cura paga `custoCentro(nível)` = ₽50 + ₽15/nível, com as regras do modo por cima. Desmaiar continua curando de graça (com a perda de metade do dinheiro).
 - **Amizade / aliados (3.2)** (`amizade.js`): na Mochila, em batalha contra **selvagem**, ofereça um petisco (`ITEMS` com `afinidade`: 6 petiscos que cobrem os 18 tipos uma vez cada). Tipo que gosta: +20–35; errado: 0–5 (`ganhoAmizade`). Só aceita se `nivel ≤ seu nível + 5`. Em 100, vira aliado (`S.aliados`, máx. `MAX_ALIADOS` = 2; cheio → escolhe quem despedir). Aliado tem `growth` próprio, ganha o mesmo XP/EVs que você (Exp. Share), aprende golpes sozinho (troca o de menor poder), ainda **não evolui**.
 - **Batalha com vários do mesmo lado**: `ladoJogador()` = você + aliados. Todos agem no turno (`ordenarAcoes`: prioridade → velocidade → sorteio); aliado usa `melhorGolpe` (poder × eficácia × STAB); o inimigo mira um aleatório em pé do seu lado; a bola do treinador mira só você. Você desmaiar = derrota mesmo com aliado em pé. **Nunca assumir "só 1 do meu lado"** — é a base do multiplayer.
-- **Registro** (`registrar(S, lista, especie)` → `S.registro.derrotados/amigos/evolucoes`): contado desde já pras missões e o Roguelike.
+- **Registro** (`registrar(S, lista, especie)` → `S.registro.derrotados/amigos/evolucoes`): lido pelas missões, e pelo Roguelike no futuro.
+- **Aliado evolui** como você (pergunta antes; árvore buscada na 1ª vez e guardada em `A.evo`, `null` = não evolui) e **itens valem pra equipe**: `itemTemEfeito` decide quem se beneficia; com mais de um alvo, "Usar em quem?". Desmaiado nunca recebe item (Potion não revive).
+
+## Mundo e progressão (Etapa 2)
+
+- **Zonas por nível**: `ZONES[i].libera` = nível mínimo (`zonaLiberada`). Chip trancado com 🔒; o clique também checa (main.js). A zona inicial e o destino depois de capturado respeitam isso.
+- **Alfas (chefes)**: `ZONES[i].chefe = { id, nome, nivel }`, sempre acima do teto da zona (teste garante). Botão "⚔ Desafiar" na cena da zona → `startBossBattle`: IVs 31, `statsDeChefe` (HP ×2, resto ×1,3 — `MULT_CHEFE`). Não aceita petisco, dá pra fugir. 1ª vitória: `premioChefe(nível)` + 1 Rare Candy e marca `S.chefes[zona]`; revanche só dá XP.
+- **Missões**: `MISSOES` (dados.js), cada uma com `libera` (condição pra aparecer; sem ela, visível desde o início), `objetivo` e `premio`. Condições: `derrotar`+`qtd`, `vitorias`, `amigos`, `nivel`, `chefe`, `treinadores`, `missao` — avaliadas por `progressoCondicao`/`situacaoMissoes` (regras.js, testadas). `verificarMissoes()` (missoes.js) anuncia missão nova 🔓 (`S.missoesVistas`), entrega prêmio 📜 (`S.missoesFeitas`) e é chamada no `finally` de todo turno, depois de explorar e depois de usar item. Ficha mostra as ativas com barra de progresso e quantas seguem escondidas. Teste de dados garante que toda missão aponta pra zona/missão/item que existe.
 
 ### Próximos passos combinados (em ordem sugerida)
-- **Etapa 2 — mundo e progressão**: zonas liberadas por nível; objetivos e níveis de progressão; missões que se liberam ao derrotar um Pokémon ou fazer amizade com outro; **chefes** com status aumentados como desafio.
 - **Game Over / recordes**: tela de fim com Pokémon derrotados, nível, tempo de jogo e outros números, comparando com o **recorde pessoal daquela espécie** (precisa de um save de recordes separado do save da jornada — o mesmo que o Roguelike usa).
 - **3.3 Roguelike**: começa só com `INICIAIS` (iniciais das 9 regiões + Pikachu + Eevee, em `dados.js`). Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
-- Pendências menores: aliado evoluir; usar Potion/itens no aliado (hoje só em você).
+- Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 
 ## Convenções
 

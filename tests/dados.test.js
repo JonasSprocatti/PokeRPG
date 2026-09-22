@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -86,6 +86,36 @@ test('DIFICULDADES: os cinco modos e as restrições crescem com a dificuldade',
   assert.equal(DIFICULDADES.hard.escolhaLivre, true);
   assert.equal(DIFICULDADES.hardcore.nivelLivre || DIFICULDADES.hardcore.escolhaLivre, false);
   assert.equal(DIFICULDADES.randomizer.nivelLivre || DIFICULDADES.randomizer.escolhaLivre, false);
+});
+
+test('ZONES: toda zona tem nível de liberação; Alfa acima do teto da própria zona', () => {
+  for (const z of ZONES) {
+    assert.ok(Number.isInteger(z.libera) && z.libera >= 1, `${z.id}: libera inválido`);
+    if (z.chefe) {
+      assert.ok(z.chefe.nivel > z.max, `${z.id}: Alfa Nv. ${z.chefe.nivel} não passa do teto ${z.max}`);
+      assert.ok(z.chefe.nome && Number.isInteger(z.chefe.id));
+    }
+  }
+  assert.equal(ZONES[0].libera, 1); // sempre há uma zona aberta pra começar
+});
+
+test('MISSOES: ids únicos e toda referência (zona, missão, item) existe', () => {
+  const ids = MISSOES.map(m => m.id), zonas = ZONES.map(z => z.id);
+  assert.equal(new Set(ids).size, ids.length);
+  const chaves = ['derrotar', 'vitorias', 'amigos', 'nivel', 'chefe', 'treinadores', 'missao'];
+  const confere = (c, onde) => {
+    assert.equal(Object.keys(c).filter(k => chaves.includes(k)).length, 1, `${onde}: condição precisa de exatamente um tipo`);
+    if (c.chefe) assert.ok(zonas.includes(c.chefe) && ZONES.find(z => z.id === c.chefe).chefe, `${onde}: zona "${c.chefe}" sem Alfa`);
+    if (c.missao) assert.ok(ids.includes(c.missao), `${onde}: missão "${c.missao}" não existe`);
+    if (c.derrotar) assert.match(c.derrotar, /^[a-z0-9-]+$/, `${onde}: espécie deve ser o speciesName em minúsculas`);
+  };
+  for (const m of MISSOES) {
+    confere(m.objetivo, `${m.id}.objetivo`);
+    if (m.libera) confere(m.libera, `${m.id}.libera`);
+    assert.ok(m.premio.dinheiro || m.premio.itens, `${m.id}: sem prêmio`);
+    for (const k of Object.keys(m.premio.itens || {})) assert.ok(ITEMS[k], `${m.id}: prêmio "${k}" não existe em ITEMS`);
+  }
+  assert.ok(MISSOES.some(m => !m.libera), 'precisa haver missão visível desde o início');
 });
 
 test('ZONES: ids únicos, faixa de nível coerente, ambientação só de zona que existe', () => {

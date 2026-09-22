@@ -22,6 +22,7 @@ export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, pane
 export const zone = () => ZONES.find(z => z.id === G.S.zone) || ZONES[0];
 // nome de exibição: seu apelido / nome do aliado, "Pidgey de Caçador Rui" (batalha de treinador) ou "Pidgey selvagem"
 export const rotulo = m => m === G.S?.player || G.S?.aliados?.includes(m) ? (m.nick || fmt(m.name))
+  : m.chefe ? fmt(m.name) + ' Alfa'
   : G.B?.trainer ? `${fmt(m.name)} de ${G.B.trainer.nome}` : fmt(m.name) + ' selvagem';
 
 // Lado do jogador em batalha: você + aliados (S.aliados, até MAX_ALIADOS). É o conceito que o multiplayer vai

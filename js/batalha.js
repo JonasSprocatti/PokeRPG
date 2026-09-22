@@ -12,12 +12,14 @@ import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { telaFim } from './criacao.js';
-import { STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
+import { STATS, STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
 import {
   freshVol, effStat, calcDamage, confDamage, heal, typeEff,
   chanceAcerto, danoResidual, consegueFugir, ordenarAcoes, melhorGolpe, xpPorVitoria, ganhoDeEVs,
-  premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura
+  premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
+  statsDeChefe, premioChefe, zonaLiberada
 } from './regras.js';
+import { verificarMissoes } from './missoes.js';
 import { loadPokemon, loadSpecies } from './api.js';
 import { rand, pick, clamp, esc, fmt, store } from './util.js';
 
@@ -136,6 +138,17 @@ export async function startBattle(z) {
   if (E.shiny) await say('✨ Ele brilha! Um Pokémon shiny.', 'level');
   await intimidar(E);
 }
+// Alfa da zona: IVs perfeitos + statsDeChefe (HP ×2, resto ×1,3). Não aceita petisco; dá pra fugir.
+export async function startBossBattle(z) {
+  const c = z.chefe, max = Object.fromEntries(STATS.map(s => [s, 31]));
+  const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: max });
+  E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id;
+  iniciar({ enemy: E, turn: 1, runs: 0, chefe: z.id });
+  await say(`⚔ O chão treme. <b>${esc(fmt(E.name))} Alfa</b> (Nv. ${E.level}) guarda ${esc(z.name)}!`, 'enc');
+  await say('Alfas são muito mais fortes que o normal: o dobro de HP e 30% a mais em todo o resto.', 'muted');
+  if (E.shiny) await say('✨ E ele brilha! Um Alfa shiny.', 'level');
+  await intimidar(E);
+}
 // Treinador caçador: 1–3 Pokémon da zona (mais na zona alta), algumas bolas, e quer te capturar
 export async function startTrainerBattle(z) {
   const P = G.S.player;
@@ -241,7 +254,12 @@ export async function turn(action) {
     else if (E.hp <= 0) await win();
   } catch (e) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
-  } finally { B.vez = null; G.busy = false; render(); save(); }
+  } finally {
+    B.vez = null;
+    // missões no fim de TODO turno (inclusive fuga/amizade que saem cedo com `return`); G.S some no fim de jogo do Hardcore
+    try { await verificarMissoes(); } catch (e) { console.error(e); }
+    G.busy = false; render(); save();
+  }
 }
 
 /* ---- fim de batalha ---- */
@@ -268,6 +286,12 @@ async function win() {
     await say(`${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
     await intimidar(B.enemy, true);
     return;
+  }
+  if (B.chefe && !S.chefes?.[B.chefe]) {
+    const premio = premioChefe(E.level), z = ZONES.find(x => x.id === B.chefe);
+    (S.chefes ||= {})[B.chefe] = true;
+    S.money += premio; S.bag['rare-candy'] = (S.bag['rare-candy'] || 0) + 1;
+    await say(`🏆 Você derrotou o Alfa de ${esc(z?.name || B.chefe)}! Prêmio: ₽${premio} e 1 Rare Candy.`, 'level');
   }
   if (T) {
     const premio = premioTreinador(T.equipe);
@@ -296,7 +320,7 @@ async function serCapturado() {
   }
   const perdeu = Math.floor(S.money / 2), itens = Object.values(S.bag).reduce((a, n) => a + n, 0);
   S.money -= perdeu; S.bag = {};
-  const destinos = ZONES.filter(z => z.pool && z.min <= P.level && z.id !== S.zone);
+  const destinos = ZONES.filter(z => z.pool && zonaLiberada(z, P.level) && z.id !== S.zone);
   const z = destinos.length ? pick(destinos) : ZONES[0];
   S.zone = z.id; S.capturas = (S.capturas || 0) + 1;
   healFull(); endBattle();

@@ -7,7 +7,8 @@ import {
   jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, chancePorBalanco, balancosDaCaptura,
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
-  MAX_ALIADOS, AMIZADE_MAX, custoComDesconto
+  MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
+  progressoCondicao, situacaoMissoes
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -286,6 +287,59 @@ test('custoComDesconto: 10% por vitória, grátis a partir de 10, nunca negativo
   assert.equal(custoComDesconto(150, 1, 0.1), 135);
   assert.equal(custoComDesconto(133, 1, 0.1), 120); // arredonda (119,7 → 120)
   assert.equal(custoComDesconto(125, 2, 0.1), 100);
+});
+
+test('itemTemEfeito: só em quem se beneficia, nunca em desmaiado', () => {
+  const golpes = (ppLeft = 10) => [{ pp: 10, ppLeft }];
+  const cheio = mon({ moves: golpes() }), ferido = mon({ moves: golpes(), hp: 40 }), caido = mon({ moves: golpes(), hp: 0 });
+  assert.equal(itemTemEfeito({ heal: 20 }, cheio), false);
+  assert.equal(itemTemEfeito({ heal: 20 }, ferido), true);
+  assert.equal(itemTemEfeito({ heal: 20 }, caido), false); // Potion não revive
+  assert.equal(itemTemEfeito({ cure: ['poison'] }, mon({ moves: golpes(), status: 'poison' })), true);
+  assert.equal(itemTemEfeito({ cure: ['poison'] }, mon({ moves: golpes(), status: 'burn' })), false);
+  assert.equal(itemTemEfeito({ cure: 'all' }, mon({ moves: golpes(), status: 'burn' })), true);
+  assert.equal(itemTemEfeito({ ether: 10 }, mon({ moves: golpes(3) })), true);
+  assert.equal(itemTemEfeito({ ether: 10 }, cheio), false);
+  assert.equal(itemTemEfeito({ candy: true }, cheio), true);
+  assert.equal(itemTemEfeito({ candy: true }, cheio, false), false); // aliado sem curva de XP
+  assert.equal(itemTemEfeito({ candy: true }, mon({ moves: golpes(), level: 100 })), false);
+});
+
+test('zonaLiberada e chefe (Alfa)', () => {
+  assert.equal(zonaLiberada({ libera: 8 }, 7), false);
+  assert.equal(zonaLiberada({ libera: 8 }, 8), true);
+  assert.equal(zonaLiberada({}, 1), true); // sem `libera` = aberta
+  assert.deepEqual(statsDeChefe({ hp: 30, attack: 20, speed: 11 }), { hp: 60, attack: 26, speed: 14 });
+  assert.equal(premioChefe(10), 600);
+});
+
+test('missões: progresso de cada tipo de condição, nunca passa do alvo', () => {
+  const S = { wins: 7, treinadoresVencidos: 1, player: { level: 12 }, chefes: { rota1: true }, missoesFeitas: ['a'],
+    registro: { derrotados: { pidgey: 2 }, amigos: { rattata: 1, zubat: 2 } } };
+  assert.deepEqual(progressoCondicao({ derrotar: 'pidgey', qtd: 5 }, S), { atual: 2, alvo: 5, ok: false });
+  assert.deepEqual(progressoCondicao({ derrotar: 'onix', qtd: 1 }, S), { atual: 0, alvo: 1, ok: false });
+  assert.deepEqual(progressoCondicao({ vitorias: 3 }, S), { atual: 3, alvo: 3, ok: true });
+  assert.equal(progressoCondicao({ amigos: 3 }, S).ok, true); // soma todas as espécies
+  assert.equal(progressoCondicao({ nivel: 15 }, S).ok, false);
+  assert.equal(progressoCondicao({ chefe: 'rota1' }, S).ok, true);
+  assert.equal(progressoCondicao({ chefe: 'floresta' }, S).ok, false);
+  assert.equal(progressoCondicao({ treinadores: 3 }, S).atual, 1);
+  assert.equal(progressoCondicao({ missao: 'a' }, S).ok, true);
+  assert.equal(progressoCondicao({}, { player: { level: 1 } }).ok, false); // condição desconhecida nunca conclui
+});
+
+test('situacaoMissoes: escondida até liberar, pronta quando cumpre, feita some da lista', () => {
+  const M = [
+    { id: 'a', objetivo: { vitorias: 1 } },
+    { id: 'b', libera: { derrotar: 'zubat', qtd: 1 }, objetivo: { derrotar: 'zubat', qtd: 5 } },
+    { id: 'c', libera: { missao: 'a' }, objetivo: { vitorias: 10 } }
+  ];
+  let s = situacaoMissoes(M, { wins: 0, player: { level: 5 } });
+  assert.deepEqual([s.ativas.map(x => x.m.id), s.prontas.length, s.escondidas], [['a'], 0, 2]);
+  s = situacaoMissoes(M, { wins: 1, player: { level: 5 }, registro: { derrotados: { zubat: 1 } } });
+  assert.deepEqual([s.ativas.map(x => x.m.id), s.prontas.map(x => x.m.id), s.escondidas], [['b'], ['a'], 1]);
+  s = situacaoMissoes(M, { wins: 1, player: { level: 5 }, missoesFeitas: ['a'] });
+  assert.deepEqual([s.ativas.map(x => x.m.id), s.feitas, s.escondidas], [['c'], 1, 1]);
 });
 
 test('ehShiny: 1 em 4096', () => {

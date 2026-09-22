@@ -1,37 +1,55 @@
 /* ============ itens ============ */
 // Mochila (G.S.bag = { idDoItem: qtd }). useItem devolve true se o item foi gasto (em batalha, gasta o turno).
-import { G, nm } from './estado.js';
-import { say } from './ui.js';
+// Funciona em você e nos aliados: com mais de um alvo possível, pergunta "Usar em quem?" (itemTemEfeito decide quem conta).
+import { G, nm, rotulo, ladoJogador } from './estado.js';
+import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
-import { gainExp } from './progressao.js';
-import { ITEMS } from './dados.js';
-import { heal } from './regras.js';
+import { gainExp, gainExpAliado } from './progressao.js';
+import { ITEMS, ST_SHORT } from './dados.js';
+import { heal, itemTemEfeito } from './regras.js';
+import { esc } from './util.js';
+
+// mensagem quando ninguém da equipe se beneficiaria
+const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
 export async function useItem(id, inBattle) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it || !S.bag[id]) return false;
   if (it.battle && !inBattle) { await say('Esse item só funciona durante uma batalha.'); return false; }
+  const equipe = ladoJogador();
+  const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
+  if (!alvos.length) {
+    const tipo = Object.keys(SEM_EFEITO).find(k => it[k]);
+    await say(tipo ? SEM_EFEITO[tipo] + (equipe.length > 1 ? ' (ninguém da equipe precisa)' : '') : 'Não teria efeito agora.');
+    return false;
+  }
+  let M = alvos[0];
+  if (alvos.length > 1) {
+    const i = await ask(`Usar <b>${it.name}</b> em quem?`,
+      [...alvos.map((A, j) => ({ label: `${esc(rotulo(A))} · Nv. ${A.level} · HP ${A.hp}/${A.stats.hp}${A.status ? ' · ' + ST_SHORT[A.status] : ''}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    if (i < 0) return false;
+    M = alvos[i];
+  }
+  const em = M === P ? '' : ` em ${nm(M)}`;
+  S.bag[id]--;
   if (it.heal) {
-    if (P.hp >= P.stats.hp) { await say('O HP já está cheio.'); return false; }
-    const h = Math.min(it.heal, P.stats.hp - P.hp); S.bag[id]--; heal(P, h); render();
-    await say(`Você usou ${it.name}. ${nm(P)} recuperou ${h} HP.`, 'good');
+    const h = Math.min(it.heal, M.stats.hp - M.hp); heal(M, h); render();
+    await say(`Você usou ${it.name}${em}. ${nm(M)} recuperou ${h} HP.`, 'good');
   } else if (it.cure) {
-    if (!P.status || !(it.cure === 'all' || it.cure.includes(P.status))) { await say('Não teria efeito agora.'); return false; }
-    S.bag[id]--; P.status = null; P.sleep = 0; render();
-    await say(`Você usou ${it.name}. ${nm(P)} está curado!`, 'good');
+    M.status = null; M.sleep = 0; render();
+    await say(`Você usou ${it.name}${em}. ${nm(M)} está curado!`, 'good');
   } else if (it.ether) {
-    if (P.moves.every(m => m.ppLeft >= m.pp)) { await say('Os PP já estão cheios.'); return false; }
-    S.bag[id]--; P.moves.forEach(m => m.ppLeft = Math.min(m.pp, m.ppLeft + it.ether)); render();
-    await say(`Você usou ${it.name}. PP restaurados.`, 'good');
+    M.moves.forEach(m => m.ppLeft = Math.min(m.pp, m.ppLeft + it.ether)); render();
+    await say(`Você usou ${it.name}${em}. PP restaurados.`, 'good');
   } else if (it.stage) {
-    S.bag[id]--; await say(`Você usou ${it.name}.`);
-    await changeStats(P, [{ stat: it.stage, change: 2 }]);
+    await say(`Você usou ${it.name}${em}.`);
+    await changeStats(M, [{ stat: it.stage, change: 2 }]);
   } else if (it.candy) {
-    if (P.level >= 100) { await say('Já está no nível máximo.'); return false; }
-    S.bag[id]--; await say(`Você comeu uma ${it.name}.`);
-    await gainExp(S.meta.growth[P.level + 1] - P.exp);
+    await say(M === P ? `Você comeu uma ${it.name}.` : `${nm(M)} comeu uma ${it.name}.`);
+    if (M === P) await gainExp(S.meta.growth[M.level + 1] - M.exp);
+    else await gainExpAliado(M, M.growth[M.level + 1] - M.exp);
   }
   if (S.bag[id] <= 0) delete S.bag[id];
   render(); return true;

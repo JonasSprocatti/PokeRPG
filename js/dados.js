@@ -83,15 +83,39 @@ export const ITEMS = {
 };
 export const FIND_ITEMS = ['potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
 
+// Zonas (Etapa 2). `libera` = nível mínimo pra entrar (zonaLiberada). `chefe` = o Alfa da zona: versão turbinada
+// (statsDeChefe) de um Pokémon da região, desafiado por botão; recompensa só na 1ª vitória (S.chefes[zona]).
 export const ZONES = [
-  { id: 'rota1', name: 'Rota 1', min: 2, max: 5, pool: [16, 19, 10, 13, 21], desc: 'Grama baixa e trilhas de terra.' },
-  { id: 'floresta', name: 'Floresta de Viridian', min: 3, max: 8, pool: [10, 11, 13, 14, 25, 16], desc: 'Árvores fechadas, muitos insetos.' },
-  { id: 'montelua', name: 'Monte Lua', min: 7, max: 13, pool: [41, 74, 46, 35, 27], desc: 'Caverna escura e cheia de pedras.' },
-  { id: 'rota24', name: 'Rota 24', min: 10, max: 16, pool: [63, 43, 69, 56, 23, 52], desc: 'Campos abertos ao norte da cidade.' },
-  { id: 'torre', name: 'Torre Pokémon', min: 20, max: 28, pool: [92, 93, 104], desc: 'Silêncio, velas e névoa.' },
-  { id: 'safari', name: 'Zona Safari', min: 22, max: 30, pool: [111, 115, 123, 127, 128, 113, 102, 48, 84], desc: 'Pokémon raros em terreno selvagem.' },
-  { id: 'caverna', name: 'Caverna Cerúlea', min: 45, max: 60, pool: [42, 47, 49, 64, 67, 82, 101, 132, 202], desc: 'Só para quem já é forte.' },
-  { id: 'fenda', name: 'Fenda Dimensional', min: 0, max: 0, pool: null, desc: 'Qualquer Pokémon de qualquer geração, perto do seu nível.' }
+  { id: 'rota1', name: 'Rota 1', min: 2, max: 5, libera: 1, pool: [16, 19, 10, 13, 21], desc: 'Grama baixa e trilhas de terra.', chefe: { id: 17, nome: 'Pidgeotto', nivel: 9 } },
+  { id: 'floresta', name: 'Floresta de Viridian', min: 3, max: 8, libera: 4, pool: [10, 11, 13, 14, 25, 16], desc: 'Árvores fechadas, muitos insetos.', chefe: { id: 15, nome: 'Beedrill', nivel: 13 } },
+  { id: 'montelua', name: 'Monte Lua', min: 7, max: 13, libera: 8, pool: [41, 74, 46, 35, 27], desc: 'Caverna escura e cheia de pedras.', chefe: { id: 36, nome: 'Clefable', nivel: 18 } },
+  { id: 'rota24', name: 'Rota 24', min: 10, max: 16, libera: 12, pool: [63, 43, 69, 56, 23, 52], desc: 'Campos abertos ao norte da cidade.', chefe: { id: 57, nome: 'Primeape', nivel: 22 } },
+  { id: 'torre', name: 'Torre Pokémon', min: 20, max: 28, libera: 18, pool: [92, 93, 104], desc: 'Silêncio, velas e névoa.', chefe: { id: 94, nome: 'Gengar', nivel: 32 } },
+  { id: 'safari', name: 'Zona Safari', min: 22, max: 30, libera: 22, pool: [111, 115, 123, 127, 128, 113, 102, 48, 84], desc: 'Pokémon raros em terreno selvagem.', chefe: { id: 128, nome: 'Tauros', nivel: 36 } },
+  { id: 'caverna', name: 'Caverna Cerúlea', min: 45, max: 60, libera: 40, pool: [42, 47, 49, 64, 67, 82, 101, 132, 202], desc: 'Só para quem já é forte.', chefe: { id: 150, nome: 'Mewtwo', nivel: 70 } },
+  { id: 'fenda', name: 'Fenda Dimensional', min: 0, max: 0, libera: 25, pool: null, desc: 'Qualquer Pokémon de qualquer geração, perto do seu nível.' }
+];
+
+// Missões (Etapa 2). `libera` = condição pra missão aparecer (sem ela: visível desde o início); `objetivo` = pra concluir.
+// Condição (uma chave só): { derrotar: especie, qtd } · { vitorias } · { amigos } · { nivel } · { chefe: zona } ·
+// { treinadores } · { missao: id }. Avaliada por progressoCondicao(cond, S) em regras.js — espécie = speciesName.
+// `premio`: { dinheiro?, itens?: { idItem: qtd } }.
+export const MISSOES = [
+  { id: 'primeiros', nome: 'Primeiros passos', desc: 'Vença 3 batalhas.', objetivo: { vitorias: 3 }, premio: { dinheiro: 300 } },
+  { id: 'pidgey', nome: 'Dono do céu da Rota 1', desc: 'Derrote 3 Pidgey.', libera: { derrotar: 'pidgey', qtd: 1 }, objetivo: { derrotar: 'pidgey', qtd: 3 }, premio: { itens: { honey: 2 } } },
+  { id: 'rattata', nome: 'Praga de Rattata', desc: 'Derrote 5 Rattata.', libera: { derrotar: 'rattata', qtd: 1 }, objetivo: { derrotar: 'rattata', qtd: 5 }, premio: { itens: { potion: 3 } } },
+  { id: 'amigo1', nome: 'Um amigo no caminho', desc: 'Faça amizade com um Pokémon selvagem.', objetivo: { amigos: 1 }, premio: { itens: { 'super-potion': 2 } } },
+  { id: 'bando', nome: 'Bando formado', desc: 'Faça amizade com 3 Pokémon ao todo.', libera: { amigos: 1 }, objetivo: { amigos: 3 }, premio: { dinheiro: 1000 } },
+  { id: 'alfa1', nome: 'O Alfa da Rota 1', desc: 'Derrote o Alfa da Rota 1.', libera: { nivel: 6 }, objetivo: { chefe: 'rota1' }, premio: { itens: { 'rare-candy': 1 } } },
+  { id: 'alfa2', nome: 'Rainha da Floresta', desc: 'Derrote o Alfa da Floresta de Viridian.', libera: { chefe: 'rota1' }, objetivo: { chefe: 'floresta' }, premio: { dinheiro: 1500 } },
+  { id: 'zubat', nome: 'Asas na escuridão', desc: 'Derrote 5 Zubat.', libera: { derrotar: 'zubat', qtd: 1 }, objetivo: { derrotar: 'zubat', qtd: 5 }, premio: { itens: { 'tiny-mushroom': 2 } } },
+  { id: 'alfa3', nome: 'A lua cheia', desc: 'Derrote o Alfa do Monte Lua.', libera: { chefe: 'floresta' }, objetivo: { chefe: 'montelua' }, premio: { dinheiro: 2500 } },
+  { id: 'cacadores', nome: 'Caça aos caçadores', desc: 'Derrote 3 treinadores.', libera: { treinadores: 1 }, objetivo: { treinadores: 3 }, premio: { dinheiro: 2000 } },
+  { id: 'alfa4', nome: 'Punho da Rota 24', desc: 'Derrote o Alfa da Rota 24.', libera: { chefe: 'montelua' }, objetivo: { chefe: 'rota24' }, premio: { itens: { 'rare-candy': 2 } } },
+  { id: 'alfa5', nome: 'A sombra da Torre', desc: 'Derrote o Alfa da Torre Pokémon.', libera: { nivel: 20 }, objetivo: { chefe: 'torre' }, premio: { dinheiro: 5000 } },
+  { id: 'alfa6', nome: 'Estouro no Safari', desc: 'Derrote o Alfa da Zona Safari.', libera: { chefe: 'torre' }, objetivo: { chefe: 'safari' }, premio: { itens: { 'rare-candy': 3 } } },
+  { id: 'veterano', nome: 'Veterano', desc: 'Chegue ao nível 40.', libera: { nivel: 30 }, objetivo: { nivel: 40 }, premio: { dinheiro: 8000 } },
+  { id: 'lenda', nome: 'A lenda da caverna', desc: 'Derrote o Alfa da Caverna Cerúlea.', libera: { chefe: 'safari' }, objetivo: { chefe: 'caverna' }, premio: { dinheiro: 20000 } }
 ];
 export const FLAVOR = {
   default: ['O vento balança a grama. Nada por aqui.', 'Você ouve algo ao longe, mas não vê ninguém.', 'Um treinador passa correndo e nem nota você.'],

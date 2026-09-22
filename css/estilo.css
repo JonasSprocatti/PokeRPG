@@ -163,6 +163,15 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 ul.aliados{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 ul.aliados li{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center}
 ul.aliados img{width:56px;height:56px;image-rendering:pixelated;background:var(--panel2);border-radius:10px}
+/* Etapa 2: zonas trancadas, Alfa da zona, missões */
+.chip.trancada{opacity:.6}
+.chefe-box{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;margin-top:14px;padding:10px 12px;background:var(--panel2);border:2px solid var(--red);border-radius:12px}
+.chefe-box.vencido{border-color:var(--grass)}
+.chefe-box img{width:64px;height:64px;image-rendering:pixelated}
+.chefe-box small{display:block;color:var(--muted);font-size:13px}
+.missao{border-top:1px solid var(--line);padding:6px 0}
+.missao small{display:block;color:var(--muted);font-size:13px}
+.hp.mis .fill{background:var(--yellow)}
 .plate.agindo{outline:3px solid var(--yellow);outline-offset:2px;animation:agindo 1s ease-in-out infinite}
 @keyframes agindo{50%{outline-color:transparent}}
 @media(max-width:520px){.mon{width:110px;height:100px}.spr{width:96px;height:96px}.spr.back{width:110px;height:110px}.pl-top{font-size:14px}}

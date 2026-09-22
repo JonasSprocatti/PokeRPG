@@ -3,7 +3,8 @@
 import { G, zone, save } from './estado.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
-import { startBattle, startTrainerBattle } from './batalha.js';
+import { startBattle, startTrainerBattle, startBossBattle } from './batalha.js';
+import { verificarMissoes } from './missoes.js';
 import { addItem } from './itens.js';
 import { ITEMS, FIND_ITEMS, FLAVOR } from './dados.js';
 import { apiErr } from './api.js';
@@ -24,5 +25,18 @@ export async function explore() {
   } catch (e) {
     console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main';
     log(apiErr(e), 'hit');
-  } finally { G.busy = false; render(); save(); }
+  } finally {
+    // missões também aparecem fora de batalha (ex.: a primeira vez que o jogo roda com missões)
+    if (!G.B) try { await verificarMissoes(); } catch (e) { console.error(e); }
+    G.busy = false; render(); save();
+  }
+}
+// botão "⚔ Desafiar" do Alfa da zona atual
+export async function desafiarChefe() {
+  const z = zone();
+  if (G.busy || !z.chefe) return;
+  G.busy = true; render();
+  try { await startBossBattle(z); }
+  catch (e) { console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main'; log(apiErr(e), 'hit'); }
+  finally { G.busy = false; render(); save(); }
 }

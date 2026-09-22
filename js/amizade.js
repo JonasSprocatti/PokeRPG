@@ -15,6 +15,7 @@ export async function oferecer(id, E) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it?.afinidade || !S.bag[id]) return 'cancelado';
   if (G.B.trainer) { await say(`${nm(E)} tem dono. Não adianta oferecer nada.`); return 'cancelado'; }
+  if (G.B.chefe) { await say(`${nm(E)} guarda o território. Não aceita nada de você.`); return 'cancelado'; }
   S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
   await say(`Você oferece ${it.name} a ${nm(E)}.`);
   if (!podeFazerAmizade(E.level, P.level)) {

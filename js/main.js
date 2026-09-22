@@ -5,12 +5,13 @@ import { G, SAVE_KEY, save, ladoJogador, centroPokemon, zerarDescontoCentro } fr
 import { $, log, logRaw, ask } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, startGame, fullRandomizer } from './criacao.js';
-import { explore } from './mundo.js';
+import { explore, desafiarChefe } from './mundo.js';
 import { turn } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem } from './itens.js';
-import { ITEMS } from './dados.js';
-import { freshVol } from './regras.js';
+import { verificarMissoes } from './missoes.js';
+import { ITEMS, ZONES } from './dados.js';
+import { freshVol, zonaLiberada } from './regras.js';
 import { despedir } from './amizade.js';
 import { rand, store } from './util.js';
 
@@ -28,7 +29,12 @@ document.addEventListener('click', async e => {
     case 'recomecar': G.S = null; G.B = null; G.PV = null; return showCreate();
     case 'start': return startGame(b);
     case 'explore': return explore();
-    case 'zone': G.S.zone = v; save(); return render();
+    case 'zone': {
+      const z = ZONES.find(x => x.id === v);
+      if (!z || !zonaLiberada(z, G.S.player.level)) return; // chip trancado já vem desativado; isto é a garantia
+      G.S.zone = v; save(); return render();
+    }
+    case 'chefe': return desafiarChefe();
     case 'panel': G.panel = v; return render();
     case 'heal': {
       // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
@@ -43,7 +49,7 @@ document.addEventListener('click', async e => {
       const it = ITEMS[v]; if (!it || G.S.money < it.price) return;
       G.S.money -= it.price; addItem(v, 1); log(`Você comprou ${it.name} por ₽${it.price}.`); save(); return render();
     }
-    case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); } finally { G.busy = false; render(); save(); } return;
+    case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
     case 'move': return turn({ type: 'move', idx: +v });
     case 'run': return turn({ type: 'run' });

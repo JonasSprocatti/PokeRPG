@@ -142,6 +142,54 @@ export const custoCentroEquipe = mons => mons.filter(precisaCurar).reduce((a, m)
 // Desconto por vitória (modo Médio): cada vitória desde a última ida ao Centro tira `pct` do preço (10 × 10% = grátis)
 export const custoComDesconto = (custo, vitorias, pct) => Math.round(custo * Math.max(0, 1 - vitorias * pct));
 
+// O item faria efeito neste Pokémon agora? (desmaiado nunca — Potion não revive). `podeSubir` = tem curva de XP
+// (o jogador sempre; o aliado se tiver `growth`) — sem ela o Rare Candy não tem como subir o nível.
+export function itemTemEfeito(it, M, podeSubir = true) {
+  if (M.hp <= 0) return false;
+  if (it.heal) return M.hp < M.stats.hp;
+  if (it.cure) return !!M.status && (it.cure === 'all' || it.cure.includes(M.status));
+  if (it.ether) return M.moves.some(m => m.ppLeft < m.pp);
+  if (it.stage) return true;
+  if (it.candy) return podeSubir && M.level < 100;
+  return false;
+}
+
+/* ---- mundo e progressão (Etapa 2) ---- */
+
+export const zonaLiberada = (z, nivel) => nivel >= (z.libera || 1);
+
+// Alfa: HP ×2 e demais stats ×1,3 (arredondado pra baixo). Não muta.
+export const MULT_CHEFE = { hp: 2, outros: 1.3 };
+export const statsDeChefe = stats => Object.fromEntries(Object.entries(stats).map(([s, v]) => [s, Math.floor(v * (s === 'hp' ? MULT_CHEFE.hp : MULT_CHEFE.outros))]));
+export const premioChefe = nivel => nivel * 60;
+
+// Progresso de uma condição de missão (formato em MISSOES, dados.js) sobre o save. Nunca passa do alvo.
+export function progressoCondicao(cond, S) {
+  const r = S.registro || {}, soma = o => Object.values(o || {}).reduce((a, n) => a + n, 0);
+  const [atual, alvo] =
+    'derrotar' in cond ? [r.derrotados?.[cond.derrotar] || 0, cond.qtd || 1]
+    : 'vitorias' in cond ? [S.wins || 0, cond.vitorias]
+    : 'amigos' in cond ? [soma(r.amigos), cond.amigos]
+    : 'nivel' in cond ? [S.player.level, cond.nivel]
+    : 'chefe' in cond ? [S.chefes?.[cond.chefe] ? 1 : 0, 1]
+    : 'treinadores' in cond ? [S.treinadoresVencidos || 0, cond.treinadores]
+    : 'missao' in cond ? [(S.missoesFeitas || []).includes(cond.missao) ? 1 : 0, 1]
+    : [0, 1];
+  return { atual: Math.min(atual, alvo), alvo, ok: atual >= alvo };
+}
+// Situação de todas as missões: visíveis e em andamento, prontas pra entregar, feitas e quantas ainda escondidas
+export function situacaoMissoes(missoes, S) {
+  const feitas = S.missoesFeitas || [], ativas = [], prontas = [];
+  let escondidas = 0;
+  for (const m of missoes) {
+    if (feitas.includes(m.id)) continue;
+    if (m.libera && !progressoCondicao(m.libera, S).ok) { escondidas++; continue; }
+    const p = progressoCondicao(m.objetivo, S);
+    (p.ok ? prontas : ativas).push({ m, ...p });
+  }
+  return { ativas, prontas, feitas: feitas.length, escondidas };
+}
+
 // shiny: 1 em 4096 (Gen 6+), sorteado pra todo Pokémon criado — você, selvagem ou de treinador, em qualquer modo
 export const CHANCE_SHINY = 1 / 4096;
 export const ehShiny = (sorte = Math.random()) => sorte < CHANCE_SHINY;
