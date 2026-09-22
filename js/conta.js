@@ -1,6 +1,7 @@
 /* ============ conta (login, ícone, amigos + botão no topo) ============ */
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
+import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { SPR, SPR_SHINY } from './dados.js';
 import { nuvem, nuvemConfigurada, usuario, meuIcone } from './nuvem.js';
 import { loadList } from './api.js';
@@ -101,8 +102,9 @@ export function telaConta(msg = '') {
         <p class="small muted">Abra o e-mail neste aparelho e toque no link: você entra direto. A primeira vez já cria a conta.</p>
       </section>${secaoIcone(false)}`;
   $('#app').innerHTML = `<main class="create" id="conta-editando">
+    ${barraTelas('conta')}
     <h1>Conta.</h1>
     ${msg ? `<p class="notice">${msg}</p>` : ''}
     ${corpo}
-    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button></div></main>`;
+    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
 }

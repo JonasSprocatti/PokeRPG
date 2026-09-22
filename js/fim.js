@@ -12,6 +12,7 @@ import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, ca
 import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
 import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
 import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
+import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, fmt, store, novoId } from './util.js';
 
 // resumo de uma jornada (a atual, ainda em andamento, ou a que está terminando)
@@ -91,6 +92,7 @@ export function telaCarreira() {
   const card = (rot, val, dica = '') => `<div class="stat-fim"><span>${rot}</span><b>${val}</b>${dica ? `<small>${dica}</small>` : ''}</div>`;
   const conta = usuario();
   $('#app').innerHTML = `<main class="create">
+    ${barraTelas('carreira')}
     <h1>Sua carreira.</h1>
     <p class="lead">Tudo o que você já fez, somando todas as jornadas${emJogo ? ' (inclusive a atual, ainda em andamento)' : ''}. ${conta ? 'Salvo na sua conta: aparece em qualquer aparelho em que você entrar.' : 'Só neste navegador por enquanto. <button class="btn ghost sm" data-act="conta">👤 Entrar</button> pra guardar na nuvem.'}</p>
     ${c.jornadas ? `
@@ -118,7 +120,7 @@ export function telaCarreira() {
         <div><b>${m.shiny ? '✨ ' : ''}${esc(fmt(esp))}${esp === c.favorito ? ' ⭐' : ''}</b><small>${esc(m.nome)} · Nv. ${m.nivel} · ${DIFICULDADES[m.dificuldade]?.nome || m.dificuldade} · ${formatarTempo(m.tempoMs)} · ${q} jornada${q > 1 ? 's' : ''}${m.emAndamento ? ' · em andamento' : ''}</small></div>
         <b class="pts">${n(m.pontuacao)}</b></div>`).join('')}</div>`
     : '<p class="muted">Nenhuma jornada ainda. Os números aparecem aqui quando você encerra uma jornada ou leva Game Over.</p>'}
-    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button><button class="btn ghost" data-act="ranking">🏆 Ranking global</button></div></main>`;
+    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
 }
 
 // Fora do Roguelike, vencer os lendários de um mapa não encerra a jornada: você escolhe o próximo (qualquer Gen, até

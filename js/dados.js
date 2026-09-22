@@ -109,6 +109,42 @@ export const ITENS_EVO = {
   'strawberry-sweet': especial('Doce de Morango', 'Milcery'), 'scroll-of-darkness': especial('Pergaminho das Trevas', 'Kubfu'),
   'scroll-of-waters': especial('Pergaminho das Águas', 'Kubfu')
 };
+// Itens SEGURADOS (segurados.js): cada Pokémon da equipe pode segurar um, e ele age sozinho na batalha.
+// `segurado: true` marca o item; o efeito em si é uma linha da tabela SEGURADOS.
+const ter = (name, desc, price) => ({ name, desc, segurado: true, price });
+export const ITENS_SEGURADOS = {
+  leftovers: ter('Restos', 'Recupera 1/16 do HP no fim de cada turno.', 2000),
+  'black-sludge': ter('Lodo Negro', 'Recupera 1/16 do HP por turno em Pokémon Venenosos; nos outros, machuca 1/8.', 1500),
+  'life-orb': ter('Orbe da Vida', 'Golpes de dano batem 30% mais forte, mas custam 10% do seu HP máximo a cada golpe.', 3000),
+  'focus-sash': ter('Faixa de Foco', 'Com o HP cheio, sobrevive a um golpe que derrubaria com 1 de HP. Gasta-se no uso.', 2500),
+  'shell-bell': ter('Sino-Concha', 'Recupera 1/8 do dano que você causa.', 2000),
+  'rocky-helmet': ter('Elmo Rochoso', 'Quem te acerta com um golpe físico perde 1/6 do HP máximo.', 2500),
+  'expert-belt': ter('Cinto do Perito', 'Golpes super efetivos batem 20% mais forte.', 2500),
+  'muscle-band': ter('Faixa Muscular', 'Golpes físicos batem 10% mais forte.', 1800),
+  'wise-glasses': ter('Óculos do Sábio', 'Golpes especiais batem 10% mais forte.', 1800),
+  'assault-vest': ter('Colete de Assalto', 'Defesa Especial +50%, mas você não consegue usar golpes de status.', 2800),
+  'oran-berry': ter('Fruta Oran', 'Come sozinha e recupera 10 de HP quando você cai para metade do HP.', 300),
+  'sitrus-berry': ter('Fruta Sitrus', 'Come sozinha e recupera 1/4 do HP quando você cai para metade do HP.', 800),
+  'lum-berry': ter('Fruta Lum', 'Come sozinha e cura qualquer condição de status (queimado, dormindo, envenenado…).', 900)
+};
+Object.assign(ITEMS, ITENS_SEGURADOS);
+
+// Divisões da mochila e da loja, na ordem em que aparecem. `de(it)` diz a que divisão o item pertence.
+export const CATEGORIAS_ITEM = [
+  { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.cure || it.ether || it.revive },
+  { id: 'batalha', nome: '⚔ Em batalha', de: it => it.battle || it.stage },
+  { id: 'segurado', nome: '🎒 Para segurar', de: it => it.segurado },
+  { id: 'evolucao', nome: '💎 Evolução', de: it => it.evo || it.troca || it.segurar },
+  { id: 'petisco', nome: '🍖 Petiscos (amizade)', de: it => it.afinidade },
+  { id: 'especial', nome: '✨ Especiais', de: it => it.candy },
+  { id: 'outros', nome: '📦 Outros', de: () => true }
+];
+export const categoriaDoItem = it => (CATEGORIAS_ITEM.find(c => it && c.de(it)) || CATEGORIAS_ITEM.at(-1)).id;
+// agrupa [id, qtd] (ou [id, item]) nas divisões, pulando as vazias: [{ id, nome, itens: [...] }]
+export function porCategoria(pares) {
+  return CATEGORIAS_ITEM.map(c => ({ ...c, itens: pares.filter(([k]) => ITEMS[k] && categoriaDoItem(ITEMS[k]) === c.id) })).filter(c => c.itens.length);
+}
+
 // o que dá pra achar explorando (as pedras também; o Cabo de Conexão só na loja)
 export const ITENS_EVO_ACHADOS = Object.keys(ITENS_EVO).filter(k => k !== 'linking-cord');
 Object.assign(ITEMS, ITENS_EVO); // mochila, loja e sprites tratam igual aos outros itens

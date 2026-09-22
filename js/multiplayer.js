@@ -14,6 +14,7 @@ import { $, limparTopo, logRaw, say, toast } from './ui.js';
 import { spriteFrente } from './render.js';
 import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
 import { sortearDaRota } from './mapas.js';
+import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal } from './mp-motor.js';
 import { carregarCarreira } from './carreira.js';
@@ -91,6 +92,7 @@ export function telaMultiplayer(msg = '') {
       <button class="abil ${conv ? 'on' : ''}" data-act="mp-entrada" data-v="convidado" aria-pressed="${conv}"><b>✨ Um Pokémon convidado</b><small>Emprestado só pra sala: não mexe na sua run, não ganha recompensa, sem risco. Os iniciais, Pikachu, Eevee e o que você desbloqueou no Roguelike.</small></button></div>
     ${conv ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${entrada.id === e.id ? 'on' : ''}" data-act="mp-convidado" data-v="${e.id}" aria-pressed="${entrada.id === e.id}"><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : ''}`;
   $('#app').innerHTML = `<main class="create">
+    ${barraTelas('mp')}
     <h1>Multiplayer.</h1>
     <p class="lead">Chame amigos pra sua run (co-op contra selvagens e Alfas) ou lute contra eles (PvP: 1×1, 2×2, 3×3, 2×1…), com seus aliados. Por padrão o nível de todo mundo é balanceado.</p>
     ${msg ? `<p class="notice">${msg}</p>` : ''}
@@ -103,7 +105,7 @@ export function telaMultiplayer(msg = '') {
       <h3 style="margin-top:22px">Entrar com código</h3>
       <span class="subrow"><input id="mp-codigo" maxlength="4" placeholder="EX.: K7Q2" autocomplete="off" aria-label="Código da sala" style="text-transform:uppercase"><button class="btn ghost" data-act="mp-entrar">Entrar</button></span>
     </div></section>`}
-    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${temRun() ? 'Voltar ao jogo' : 'Voltar'}</button></div></main>`;
+    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
 }
 export const criarSala = () => conectar(novoCodigo(), true);
 export function entrarSala(codigo) {

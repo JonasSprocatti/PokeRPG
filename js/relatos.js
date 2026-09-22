@@ -5,6 +5,7 @@
 import { G, dificuldadeDe } from './estado.js';
 import { $, limparTopo } from './ui.js';
 import { enviarRelato, relatosNaFila, meusRelatos, usuario, nuvemConfigurada } from './nuvem.js';
+import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, offline } from './util.js';
 
 let tipo = 'bug';
@@ -32,6 +33,7 @@ export async function telaRelatos(msg = '') {
   G.mode = 'relatos'; limparTopo();
   const bug = tipo === 'bug', fila = relatosNaFila();
   $('#app').innerHTML = `<main class="create relatos">
+    ${barraTelas('relatos')}
     <h1>Bugs e sugestões.</h1>
     <p class="lead">Achou algo quebrado ou teve uma ideia? Conta aqui. Tudo chega pra quem mantém o jogo.${usuario() ? '' : ' Não precisa de conta.'}</p>
     ${msg ? `<p class="notice">${msg}</p>` : ''}
@@ -50,7 +52,7 @@ export async function telaRelatos(msg = '') {
       <button class="btn big" data-act="rel-enviar">Enviar ${bug ? 'bug' : 'sugestão'}</button>
     </section>
     <div id="rel-meus"></div>
-    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button></div></main>`;
+    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
   // os seus relatos já enviados (com conta)
   if (usuario() && !offline()) meusRelatos().then(lista => {
     if (!lista.length || G.mode !== 'relatos') return;

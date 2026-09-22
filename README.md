@@ -69,6 +69,24 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
   A ficha marca quais estão ativas.
 
+### Itens segurados
+Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Para equipar: mochila → divisão **🎒 Para segurar** → "Segurar". A ficha mostra o que cada um leva, com botão para guardar de volta.
+- **Restos** (cura 1/16 por turno), **Lodo Negro** (cura Venenosos, machuca o resto), **Sino-Concha** (drena 1/8 do dano que você causa).
+- **Orbe da Vida** (+30% de dano, custa 10% do seu HP por golpe), **Faixa Muscular** (+10% físico), **Óculos do Sábio** (+10% especial), **Cinto do Perito** (+20% em super efetivo).
+- **Faixa de Foco** (com HP cheio, sobra com 1 de HP; gasta-se), **Elmo Rochoso** (quem te acerta no físico perde 1/6), **Colete de Assalto** (+50% de Defesa Especial, sem golpes de status).
+- **Frutas** comidas sozinhas: **Oran** e **Sitrus** quando o HP cai à metade, **Lum** ao pegar qualquer status.
+
+### Mochila e loja em divisões
+Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para segurar · 💎 Evolução · 🍖 Petiscos · ✨ Especiais, tanto na mochila quanto na loja.
+
+### 📜 Novidades (notas de atualização)
+Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, com as correções e uma piadinha por versão. Quando sai uma atualização nova, o botão fica marcado até você ler.
+
+### Telas e ajustes
+- **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
+- **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
+- **⚙ Ajustes → Fonte:** escolha entre 6 fontes (padrão, Atkinson Hyperlegible para máxima legibilidade, Lexend, Andika, Nunito e uma monoespaçada). Cada opção é mostrada já na própria fonte, vale para o jogo inteiro e fica salva neste navegador.
+
 ### Evoluções
 Além de subir de nível, os Pokémon evoluem como nos jogos:
 - **Pedras e itens:** 10 pedras (Fogo, Água, Trovão, Folha, Lua, Sol, Brilhante, Crepúsculo, Aurora, Gelo) e itens como Maçã Doce, Bule Rachado e Armadura Auspiciosa. As pedras e o **Cabo de Conexão** são vendidos na loja; o resto aparece explorando (da 4ª rota em diante) e como prêmio de Alfa.
@@ -76,6 +94,7 @@ Além de subir de nível, os Pokémon evoluem como nos jogos:
 - **Vínculo (amizade):** cada Pokémon tem um vínculo de 0 a 255, que sobe a cada nível e a cada vitória. Com **160 ou mais** evoluem Golbat, Pichu, Eevee (Espeon de dia, Umbreon à noite) e companhia. Aparece na ficha.
 - **Hora do dia:** pelo relógio do seu aparelho (dia 6h–18h, noite 18h–6h).
 - **Outras condições:** saber um golpe, ter um aliado de certa espécie ou tipo, Ataque × Defesa (Tyrogue) e itens segurados.
+- **Shedinja:** quando Nincada vira Ninjask, a casca ganha vida. Com vaga na equipe, **Shedinja entra sozinho como aliado**; com a equipe cheia, você escolhe em qual dos dois o seu Pokémon vira.
 - **Casos especiais:** evoluções que dependem de coisas que o jogo não tem (chuva, virar o console, contar passos) ganharam uma regra equivalente. Exemplos: Sirfetch'd com **3 críticos numa batalha**, Runerigus ao **aguentar 49 de dano**, Kingambit ao **derrotar 3 Bisharp**, Annihilape sabendo **Rage Fist**. A ficha mostra o que falta para cada evolução.
 
 ### Amizade e aliados
@@ -163,6 +182,9 @@ Depois abra http://localhost:3000.
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
 | `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
 | `js/nuvem.js`, `js/conta.js`, `js/config.js`, `js/ranking.js` | Login, nuvem (Supabase) e ranking global |
+| `js/segurados.js` | Efeito de cada item segurado (Restos, Orbe da Vida, frutas…) |
+| `js/dados-patchnotes.js`, `js/tela-patchnotes.js`, `js/novidades.js` | Notas de atualização e o aviso de novidade |
+| `js/navegacao.js`, `js/ajustes.js`, `js/tela-ajustes.js` | Barra de navegação das telas, escolha de fonte e a tela de ajustes |
 | `js/evolucao.js` | Condições de evolução (pedra, troca, vínculo, hora, golpe…) e as regras equivalentes dos casos raros |
 | `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
 | `js/mp-motor.js`, `js/multiplayer.js` | Motor da batalha multiplayer (puro, testado) e salas |
@@ -174,12 +196,12 @@ Depois abra http://localhost:3000.
 
 ## Próximos passos
 
-- [ ] **Troca de verdade** entre dois jogadores no multiplayer (hoje a troca é simulada pelo Cabo de Conexão) e o caso do **Shedinja** (aparecer numa vaga livre quando Nincada evolui).
+- [ ] **Troca de verdade** entre dois jogadores no multiplayer (hoje a troca é simulada pelo Cabo de Conexão).
 - [ ] **Batalha mais completa**, nesta ordem:
   1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela).
   2. **Clima:** sol, chuva, tempestade de areia e granizo/neve, e as habilidades ligadas a eles.
   3. **Terrenos:** elétrico, grama, psíquico e névoa.
-  4. **Itens segurados:** Leftovers, Choice, Life Orb, frutas…
+  4. ~~Itens segurados~~ ✔ (13 itens; faltam os Choice, que travam o golpe, e frutas de aperto por tipo).
   5. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
   6. **Mecânicas especiais:** Mega Evolução, Z-Moves, Dynamax/Gigantamax e Terastalização.
 - [ ] **Mapas por Gen, próximos passos:** missões próprias de cada mapa (hoje as de espécie valem em qualquer mapa, e a trilha de Alfas é só de Kanto) e a luta dos lendários no co-op (hoje é só no single player).
@@ -190,6 +212,7 @@ Depois abra http://localhost:3000.
 - [x] Treinadores caçadores, dificuldades, shiny, Full Randomizer
 - [x] Amizade, aliados com ordens, batalha com vários do mesmo lado
 - [x] Zonas por nível, Alfas, missões
+- [x] Itens segurados (13), mochila e loja em divisões, tela 📜 Novidades com as notas de atualização
 - [x] Evoluções especiais: pedras e itens, Cabo de Conexão (troca), vínculo, hora do dia, golpe conhecido e regras equivalentes para os casos raros
 - [x] 💾 Jornadas salvas: várias runs em andamento (guardar, continuar, excluir), na nuvem também
 - [x] Mapas por Gen (9 regiões × 10 rotas), lendários no fim de cada mapa, míticos raros, Pokédex da rota com silhuetas e taxa de aparição

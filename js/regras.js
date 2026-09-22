@@ -5,6 +5,7 @@
 import { API, STATS, STAT_PT, CHART, NATURES } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
+import { seg, multDanoDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
 
 export function typeEff(atk, defs) {
@@ -36,7 +37,7 @@ export function effStat(m, stat, crit = false, attacking = true) {
   let st = m.vol?.stages[stat] || 0;
   if (crit) { if (attacking && st < 0) st = 0; if (!attacking && st > 0) st = 0; }
   const h = hab(m);
-  let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1);
+  let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
   if (m.status && h.comStatus?.[stat]) v *= h.comStatus[stat];                     // Guts, Quick Feet, Marvel Scale
   else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
   return Math.max(1, Math.floor(v));
@@ -91,6 +92,7 @@ export function calcDamage(u, t, move) {
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
   if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
+  mod *= multDanoDoItem(u, { ef, fisico: phys });                                    // item segurado (Orbe da Vida…)
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
 export function confDamage(u) {

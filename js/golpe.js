@@ -12,11 +12,14 @@
 import { STAT_PT, AIL_MSG, SELF_TARGETS } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
+import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
+import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
 const up = ctx => (ctx.atualizar || nada)();
+const nomeDoItem = m => ITEMS[m.item]?.name || 'o item';
 
 // Golpe em que o Pokémon está travado (carregando, em fúria) — a escolha do jogador/IA é ignorada neste turno
 export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || null;
@@ -139,6 +142,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
       if (Math.random() < 1 / 3) { interromper(u); const d = confDamage(u); u.hp = Math.max(0, u.hp - d); up(ctx); (ctx.tremer || nada)(u); await ctx.say(`Ele se machucou na confusão! (−${d})`, 'hit'); return; }
     }
   }
+  if (g.cls === 'status' && seg(u).semStatus) { await ctx.say(`${U} não consegue usar golpe de status segurando o Colete de Assalto!`); return; }
   const esp = especial(g);
   if (!esp.protege && !esp.aguentaTurno) u.vol.protSeguidas = 0;
   // golpe de carga, 1º turno: gasta PP, prepara (e some, se for Fly/Dig…) e ataca só no próximo
@@ -197,12 +201,13 @@ async function executar(u, t, g, primeiro, ctx, esp) {
 
   const hits = meta.minHits ? (hu.maxAcertos ? meta.maxHits || meta.minHits : rand(meta.minHits, meta.maxHits || meta.minHits)) : 1;
   const cheio = t.hp >= t.stats.hp;
-  let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false;
+  let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
     const r = calcDamage(u, t, g);
     let dano = r.dmg;
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
+    else if (seg(t).aguentaCheio && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; faixa = t.item; t.item = null; } // Faixa de Foco
     t.hp = Math.max(0, t.hp - dano); total += dano; acertos++; crit ||= r.crit;
     if (r.crit) u.vol.criticos = (u.vol.criticos || 0) + 1;                                  // Sirfetch'd (evolucao.js)
   }
@@ -214,6 +219,13 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   await ctx.say(`${T} perdeu ${total} HP.`, 'hit');
   if (aguentou) await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`, 'status');
   if (resistiu) await ctx.say(`${T} aguentou o golpe!`, 'status');
+  if (faixa) await ctx.say(`${T} aguentou com 1 de HP usando a Faixa de Foco! (item gasto)`, 'status');
+  // itens segurados de quem ataca: Sino-Concha drena, Orbe da Vida cobra HP; Elmo Rochoso machuca quem encostou
+  const si = seg(u);
+  if (si.drenaDano && total > 0 && u.hp > 0 && u.hp < u.stats.hp) { const h = Math.max(1, Math.floor(total * si.drenaDano)); heal(u, h); up(ctx); await ctx.say(`${U} recuperou ${h} HP com o Sino-Concha.`, 'good'); }
+  if (si.recuoPorGolpe && total > 0 && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
+  if (g.cls === 'physical' && seg(t).espinhos && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espinhos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
+  await comerFruta(t, ctx); await comerFruta(u, ctx);                                        // Frutas Oran/Sitrus na hora do aperto
 
   if (meta.drain > 0) { const h = Math.max(1, Math.floor(total * meta.drain / 100)); heal(u, h); up(ctx); await ctx.say(`${U} drenou ${h} HP.`, 'good'); }
   else if (meta.drain < 0 && !hu.semDanoRecuo) { // Rock Head evita; o total de recuo conta pra Basculegion (evolucao.js)
@@ -256,5 +268,19 @@ export async function fimDeTurno(m, ctx) {
     const quem = ctx.monPorRef?.(m.vol.semente);
     if (quem && quem.hp > 0 && quem.hp < quem.stats.hp) { heal(quem, s); up(ctx); await ctx.say(`${ctx.nome(quem)} recuperou ${s} HP.`, 'good'); }
   }
+  // item segurado: Restos curam, Lodo Negro cura Venenoso e machuca o resto (segurados.js)
+  const di = fimDeTurnoDoItem(m);
+  if (di > 0 && m.hp > 0) { heal(m, di); up(ctx); await ctx.say(`${ctx.nome(m)} recuperou ${di} HP com ${nomeDoItem(m)}.`, 'good'); }
+  else if (di < 0 && m.hp > 0) { m.hp = Math.max(0, m.hp + di); up(ctx); await ctx.say(`${nomeDoItem(m)} machucou ${ctx.nome(m)}. (${di})`, 'hit'); }
   if (m.hp > 0 && h.fimTurno) await mudarEstagios(m, [{ stat: h.fimTurno, change: 1 }], ctx);
+  await comerFruta(m, ctx);
+}
+// Frutas que o Pokémon come sozinho (Oran, Sitrus, Lum): checadas no fim do turno e logo depois de levar dano.
+export async function comerFruta(m, ctx) {
+  const f = frutaAgora(m); if (!f) return;
+  const nome = nomeDoItem(m);
+  m.item = null;
+  if (f.curaStatus) { m.status = null; m.sleep = 0; delete m.vol.toxico; up(ctx); await ctx.say(`${ctx.nome(m)} comeu a ${nome} e se curou!`, 'good'); return; }
+  heal(m, f.cura); up(ctx);
+  await ctx.say(`${ctx.nome(m)} comeu a ${nome} e recuperou ${f.cura} HP.`, 'good');
 }

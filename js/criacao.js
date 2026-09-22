@@ -8,7 +8,8 @@ import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
 import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
-import { listaGuardadas } from './saves.js';
+import { barraTelas } from './navegacao.js';
+import { guardar } from './saves.js';
 import { carregarCarreira } from './carreira.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
@@ -27,7 +28,8 @@ function permitidos() {
 export function showCreate() {
   G.mode = 'create'; limparTopo();
   $('#app').innerHTML = `<main class="create">
-    <div class="topo-criacao"><h1>Escolha quem você vai ser.</h1><span class="subrow"><button class="btn ghost" data-act="mp">👥 Multiplayer</button><button class="btn ghost" data-act="carreira">📊 Carreira</button>${listaGuardadas().length ? `<button class="btn ghost" data-act="saves">💾 Jornadas salvas (${listaGuardadas().length})</button>` : ''}<button class="btn ghost" data-act="ranking">🏆 Ranking</button><button class="btn ghost" data-act="relatos">🐞 Bugs e sugestões</button></span></div>
+    ${barraTelas('create')}
+    <h1>Escolha quem você vai ser.</h1>
     <p class="lead">Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta. Os outros Pokémon você encontra pelo caminho.</p>
     <h3 class="passo"><span>1</span> Dificuldade</h3>
     <div id="difs" class="difs"></div>
@@ -150,12 +152,15 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   mon.exp = growth[mon.level];
   // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
   const rotas = rotasDaGen(gen), startZone = [...rotas].reverse().find(z => !z.final && zonaLiberada(z, mon.level) && z.min <= mon.level) || rotas[0];
+  // começar outra com uma jornada aberta (veio pelo 🏠 Início): a de antes vai pras guardadas, não some (saves.js)
+  const anterior = G.S?.player ? (save(), guardar(G.S) ? G.S : null) : null;
   G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
   G.mode = 'explore'; G.panel = 'main';
   buildGame();
   log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
+  if (anterior) log(`💾 A jornada de ${esc(anterior.player.nick || fmt(anterior.player.name))} foi guardada: dá pra voltar nela em Jornadas salvas.`, 'muted');
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');

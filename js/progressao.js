@@ -7,9 +7,10 @@ import { G, nm, registrar, rotulo, ladoJogador } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { API, STATS, STAT_PT, TYPE_PT, CLS_PT, ITEMS } from './dados.js';
-import { recalc } from './regras.js';
-import { evolucoesPossiveis, caminhoMostrado, textoCondicao, ganharFelicidade, ganhoFelicidadeNivel, felicidadeDe } from './evolucao.js';
-import { loadMove, loadSpecies, loadPokemon, loadEvo } from './api.js';
+import { recalc, MAX_ALIADOS } from './regras.js';
+import { makeMon } from './pokemon.js';
+import { evolucoesPossiveis, caminhoMostrado, textoCondicao, ganharFelicidade, ganhoFelicidadeNivel, felicidadeDe, FELICIDADE_ALIADO } from './evolucao.js';
+import { loadMove, loadSpecies, loadPokemon, loadEvo, loadGrowth } from './api.js';
 import { esc, fmt } from './util.js';
 
 const ehJogador = M => M === G.S.player;
@@ -97,8 +98,35 @@ export async function checkEvolution(M, extra = {}) {
   const c = await ask(pergunta, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}${extraTexto(o) ? ` (${extraTexto(o)})` : ''}`, value: o.name })), { label: ehJogador(M) ? 'Resistir à evolução' : 'Impedir a evolução', value: null, ghost: true }]);
   if (!c) { await say(`${nm(M)} ${ehJogador(M) ? 'resistiu à' : 'não passou pela'} evolução.`); return false; }
   pagar(opts.find(o => o.name === c));
-  await evolve(M, c, arvore);
+  await evolve(M, await casulo(M, c, node), arvore);
   return true;
+}
+
+// Nincada: ao virar Ninjask, o casco deixado pra trás vira Shedinja. Com vaga na equipe, ele entra sozinho como
+// aliado; com a equipe cheia, você escolhe em qual dos dois o seu Pokémon vira. Devolve a espécie final.
+const CASCA_PRA_TRAS = { ninjask: 'shedinja' };
+async function casulo(M, escolha, node) {
+  const outra = CASCA_PRA_TRAS[escolha];
+  if (!outra || !node.to.some(x => x.name === outra)) return escolha;
+  const S = G.S; S.aliados ||= [];
+  if (S.aliados.length >= MAX_ALIADOS) {
+    const c = await ask(`A casca de ${nm(M)} vai ficar pra trás e ganhar vida própria — mas sua equipe já está cheia (${MAX_ALIADOS} aliados). Em qual dos dois ${ehJogador(M) ? 'você vira' : 'ele vira'}?`,
+      [{ label: `Virar ${esc(fmt(escolha))}`, value: escolha }, { label: `Virar ${esc(fmt(outra))}`, value: outra }]);
+    return c || escolha;
+  }
+  try {
+    const data = await loadPokemon(outra);
+    const novo = await makeMon(data, M.level);
+    const sp = await loadSpecies(data.speciesUrl);
+    novo.growth = await loadGrowth(sp.growthUrl); novo.exp = novo.growth[novo.level];
+    novo.felicidade = FELICIDADE_ALIADO;
+    S.aliados.push(novo); G.abertos.clear();
+    registrar(S, 'amigos', data.speciesName, data.id);
+    if (novo.shiny) registrar(S, 'shiniesAmigos', data.speciesName, data.id);
+    render();
+    await say(`A casca vazia se mexe... <b>${esc(fmt(data.name))}</b> ganhou vida e agora segue com você!${novo.shiny ? ' ✨ E é shiny!' : ''}`, 'level');
+  } catch (e) { console.error(e); await say('A casca ficou pra trás, imóvel. (não deu pra buscar os dados dela agora)', 'muted'); }
+  return escolha;
 }
 
 // Usar um item de evolução (pedra etc.: 'use-item') ou o Cabo de Conexão ('trade') fora de batalha.

@@ -14,6 +14,34 @@ import { esc } from './util.js';
 const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
+
+// Itens SEGURADOS (segurados.js): cada um da equipe segura no máximo um. Equipar tira da mochila; trocar devolve o
+// antigo. O efeito acontece sozinho na batalha (Restos, Orbe da Vida, frutas…).
+export async function equiparItem(id, inBattle = false) {
+  const S = G.S, it = ITEMS[id];
+  if (inBattle) { await say('Dá pra trocar o item segurado só fora da batalha.'); return false; }
+  const equipe = ladoJogador();
+  let M = equipe[0];
+  if (equipe.length > 1) {
+    const i = await ask(`Quem vai segurar <b>${it.name}</b>?`,
+      [...equipe.map((A, j) => ({ label: `${esc(rotulo(A))}${A.item ? ` (segurando ${ITEMS[A.item]?.name})` : ''}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    if (i < 0) return false;
+    M = equipe[i];
+  }
+  if (M.item === id) { await say(`${nm(M)} já está segurando ${it.name}.`); return false; }
+  if (M.item) { addItem(M.item, 1); await say(`${nm(M)} devolveu ${ITEMS[M.item]?.name || 'o item'} pra mochila.`, 'muted'); }
+  M.item = id;
+  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+  render(); await say(`${nm(M)} está segurando <b>${it.name}</b>.`, 'good');
+  return true;
+}
+// devolve pra mochila o item que alguém está segurando (botão da ficha)
+export async function tirarItem(M) {
+  if (!M?.item) return;
+  const nome = ITEMS[M.item]?.name || 'o item';
+  addItem(M.item, 1); M.item = null;
+  render(); await say(`${nm(M)} guardou ${nome} na mochila.`, 'muted');
+}
 export async function useItem(id, inBattle) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it || !S.bag[id]) return false;
@@ -24,6 +52,7 @@ export async function useItem(id, inBattle) {
     return evoluirComItem(id);
   }
   if (it.segurar) { await say(`${it.name} fica na mochila: é gasto sozinho quando a evolução que pede ele acontecer.`, 'muted'); return false; }
+  if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
   const equipe = ladoJogador();
   const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
   if (!alvos.length) {

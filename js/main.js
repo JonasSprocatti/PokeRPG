@@ -8,6 +8,9 @@ import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEsp
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
 import { telaSaves } from './tela-saves.js';
+import { telaAjustes } from './tela-ajustes.js';
+import { telaPatchNotes } from './tela-patchnotes.js';
+import { aplicarFonte } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
   nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
@@ -19,7 +22,7 @@ import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
 import { turn } from './batalha.js';
 import { healFull } from './efeitos.js';
-import { addItem, useItem } from './itens.js';
+import { addItem, useItem, tirarItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS } from './dados.js';
 import { freshVol, zonaLiberada } from './regras.js';
@@ -30,13 +33,22 @@ import { store, esc, fmt, novoId } from './util.js';
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
+  // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'ranking', 'conta', 'ajustes', 'relatos', 'patch'];
+  if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
     case 'random': return sortearEspecie();
     case 'carreira': if (G.busy || G.mode === 'battle') return; return telaCarreira();
+    // navegação (navegacao.js): início e ajustes
+    case 'inicio': if (G.busy || G.mode === 'battle') return; G.PV = null; return showCreate();
+    case 'ajustes': if (G.busy || G.mode === 'battle') return; return telaAjustes();
+    case 'patch': if (G.busy || G.mode === 'battle') return; return telaPatchNotes();
+    case 'fonte': aplicarFonte(v); return telaAjustes();
     case 'voltar': if (naSala()) await sairSala(); return voltar();
     // multiplayer (co-op)
-    case 'mp': if (G.busy || !['explore', 'create'].includes(G.mode)) return; return telaMultiplayer(); // da run ou da tela inicial (sem run: Pokémon convidado)
+    // da run, da tela inicial ou de qualquer outra tela (sem run: entra com um Pokémon convidado)
+    case 'mp': if (G.busy || G.mode === 'battle') return; return telaMultiplayer();
     case 'mp-entrada': return escolherEntrada(v);
     case 'mp-convidado': return escolherConvidado(v);
     case 'mp-criar': return criarSala();
@@ -55,7 +67,7 @@ document.addEventListener('click', async e => {
     case 'mp-mirar': return mirarMP(v);
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
     // bugs e sugestões
-    case 'relatos': if (G.busy || G.mode === 'battle' || G.mode === 'mp') return; return telaRelatos();
+    case 'relatos': if (G.busy || G.mode === 'battle') return; return telaRelatos();
     case 'rel-tipo': return escolherTipoRelato(v);
     case 'rel-enviar': return enviarRelatoTela();
     // conta / nuvem
@@ -142,6 +154,12 @@ document.addEventListener('click', async e => {
       G.S.money -= it.price; G.S.gasto = (G.S.gasto || 0) + it.price; addItem(v, 1); log(`Você comprou ${it.name} por ₽${it.price}.`);
       await verificarMissoes(); save(); return render(); // missões de gastar dinheiro
     }
+    // tirar o item segurado (ficha): 'p' = você, número = aliado
+    case 'tirar-item': {
+      if (G.busy || G.mode !== 'explore') return;
+      const M = v === 'p' ? G.S.player : G.S.aliados?.[+v];
+      await tirarItem(M); save(); return render();
+    }
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
     case 'move': return turn({ type: 'move', idx: +v });
@@ -187,6 +205,11 @@ document.addEventListener('toggle', e => {
   if (e.target.open) G.abertos.add(+i); else G.abertos.delete(+i);
 }, true);
 document.addEventListener('keydown', e => {
+  // Esc volta da tela em que você está (o mesmo botão de voltar da barra de navegação), menos no meio do jogo
+  if (e.key === 'Escape' && !['explore', 'battle', 'create'].includes(G.mode) && !document.querySelector('.modal')) {
+    $('.nav-voltar, [data-act="voltar"]')?.click();
+    return;
+  }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'q') previewSearch(e.target.value);
   if (e.target.id === 'mp-codigo') entrarSala(e.target.value);
@@ -271,6 +294,7 @@ ganchos.carregarSave = (remoto, { guardarAtual = false } = {}) => {
 };
 
 /* ============ início ============ */
+aplicarFonte();   // fonte escolhida neste navegador (ajustes.js), antes de desenhar qualquer tela
 iniciarPaineis(); // listeners de arrastar/▲▼/divisória, uma vez só
 iniciarMenu();    // ☰ do topo no celular
 (function boot() {

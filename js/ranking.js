@@ -3,6 +3,7 @@
 // a pontuação é recalculada no servidor). Dá pra ver sem conta; pra aparecer, precisa entrar e terminar jornadas.
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
+import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { DIFICULDADES } from './dados.js';
 import { buscarRanking, especiesRanqueadas, nuvemConfigurada, usuario } from './nuvem.js';
 import { htmlIcone } from './conta.js';
@@ -14,10 +15,11 @@ export async function telaRanking(especie = especieAtual) {
   especieAtual = especie || null;
   G.mode = 'ranking'; limparTopo();
   const casca = corpo => `<main class="create">
+    ${barraTelas('ranking')}
     <h1>Ranking.</h1>
     <p class="lead">A melhor jornada de cada jogador, ${especieAtual ? `com <b>${esc(fmt(especieAtual))}</b>` : 'com qualquer Pokémon'}. A pontuação é conferida no servidor.</p>
     ${corpo}
-    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">Voltar</button></div></main>`;
+    <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
   if (!nuvemConfigurada()) { $('#app').innerHTML = casca('<div class="notice">O ranking precisa do modo online, que ainda não foi configurado neste site (<code>js/config.js</code>).</div>'); return; }
   if (offline()) { $('#app').innerHTML = casca('<div class="notice">📴 Sem internet: o ranking aparece quando a conexão voltar.</div>'); return; }
   $('#app').innerHTML = casca('<p class="loading">Carregando o ranking…</p>');

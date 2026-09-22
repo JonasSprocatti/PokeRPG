@@ -2,7 +2,7 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { IMPL } from './habilidades.js';
@@ -95,7 +95,7 @@ function cartaoAliado(A, i) {
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
-      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A)}
+      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoItem(A, i)}${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A)}
     </details>
     ${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}
   </div>`;
@@ -120,9 +120,17 @@ function renderFicha() {
     </div>
     ${tabelaStats(P)}
     <p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(P.nature))}. Vitórias: ${S.wins || 0}${S.treinadoresVencidos ? `, ${S.treinadoresVencidos} treinador${S.treinadoresVencidos > 1 ? 'es' : ''}` : ''}.<br>Modo <b title="${esc(DIFICULDADES[dificuldadeDe(S)].desc)}">${DIFICULDADES[dificuldadeDe(S)].nome}</b>${S.capturas ? ` · capturado ${S.capturas}×` : ''}.${desmaiosTxt(S)}</p>
+    ${blocoItem(P, 'p')}
     ${blocoEvolucao(P, S.meta.evo)}
     ${blocoHabilidade(P)}
     ${listaGolpes(P)}`;
+}
+// item segurado (segurados.js): o que está na mão e um botão pra devolver pra mochila. `quem` = 'p' ou o índice do aliado
+function blocoItem(M, quem) {
+  const it = M.item && ITEMS[M.item];
+  return `<div class="sec item-seg"><h3>Item segurado</h3>${it
+    ? `<div class="seg-linha"><img src="${ITEM_SPR(M.item)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${it.name}</b><small>${esc(it.desc)}</small></span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="tirar-item" data-v="${quem}" ${G.busy ? 'disabled' : ''}>Tirar</button>` : ''}</div>`
+    : '<p class="small muted">Nenhum. Na mochila, em <b>🎒 Para segurar</b>, toque em “Segurar”.</p>'}</div>`;
 }
 // vínculo (amizade que algumas evoluções pedem) + como cada próxima forma evolui (evolucao.js)
 function blocoEvolucao(M, arvore) {
@@ -143,9 +151,19 @@ function renderAliados() {
   $('#p-aliados').innerHTML = AL.length ? `<div class="aliados">${AL.map(cartaoAliado).join('')}</div>`
     : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>';
 }
+// Mochila em divisões (dados.js CATEGORIAS_ITEM): cura, em batalha, para segurar, evolução, petiscos, especiais.
 function renderMochila() {
   const S = G.S, bag = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]);
-  $('#p-mochila').innerHTML = bag.length ? `<ul class="bag">${bag.map(([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${G.mode === 'explore' && !ITEMS[k].battle && !ITEMS[k].afinidade && !ITEMS[k].segurar ? `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>${ITEMS[k].evo || ITEMS[k].troca ? 'Usar (evoluir)' : 'Usar'}</button>` : ''}</li>`).join('')}</ul>` : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
+  const botao = k => {
+    const it = ITEMS[k];
+    if (G.mode !== 'explore' || it.battle || it.afinidade || it.segurar) return '';
+    const rot = it.segurado ? 'Segurar' : it.evo || it.troca ? 'Usar (evoluir)' : 'Usar';
+    return `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>${rot}</button>`;
+  };
+  const linha = ([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${botao(k)}</li>`;
+  $('#p-mochila').innerHTML = bag.length
+    ? porCategoria(bag).map(c => `<h4 class="bag-div">${c.nome} <span class="muted">(${c.itens.length})</span></h4><ul class="bag">${c.itens.map(linha).join('')}</ul>`).join('')
+    : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
 }
 // nome antigo mantido: blocoHabilidade() chama renderSheet quando a descrição da habilidade chega da API
 function renderSheet() { renderFicha(); renderMissoes(); renderAliados(); renderMochila(); }
@@ -233,8 +251,10 @@ function renderActions() {
       : P.moves.map((m, i) => `<button class="mv" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small><span class="pp">PP ${m.ppLeft}/${m.pp}</span></button>`).join('')}</div>
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
   } else if (G.panel === 'shop') {
+    // loja nas mesmas divisões da mochila
     const forSale = Object.entries(ITEMS).filter(([, it]) => it.price);
-    a.innerHTML = `<div class="bag-grid">${forSale.map(([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${it.name}</span><small>₽${it.price}</small></button>`).join('')}</div>
+    const btn = ([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${it.name}</span><small>₽${it.price}</small></button>`;
+    a.innerHTML = `${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
