@@ -37,7 +37,8 @@ export function encerrarJornada(motivo, extra = {}) {
 
 const TITULO = { capturado: 'Game Over', desmaiou: 'Game Over', encerrou: 'Jornada encerrada' };
 const frase = r => r.motivo === 'capturado' ? `${esc(r.cacador || 'Um treinador')} capturou ${esc(r.nome)}. No ${DIFICULDADES[r.dificuldade].nome} não existe segunda chance.`
-  : r.motivo === 'desmaiou' ? `${esc(r.nome)} desmaiou sem nenhum Revive na mochila. A jornada termina aqui.`
+  : r.motivo === 'desmaiou' ? (DIFICULDADES[r.dificuldade]?.permadeath ? `${esc(r.nome)} desmaiou. No Roguelike não existe segunda chance: a run acabou.`
+    : `${esc(r.nome)} desmaiou sem nenhum Revive na mochila. A jornada termina aqui.`)
   : `Você encerrou a jornada de ${esc(r.nome)}. O resultado foi para a sua carreira.`;
 const n = v => (v || 0).toLocaleString('pt-BR');
 // linhas da tela: [rótulo, campo, formatação]

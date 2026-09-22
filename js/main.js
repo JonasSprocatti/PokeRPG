@@ -2,14 +2,15 @@
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave } from './estado.js';
-import { $, log, logRaw, ask, iniciarMenu } from './ui.js';
+import { $, log, logRaw, ask, iniciarMenu, toast } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira } from './fim.js';
-import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar } from './nuvem.js';
-import { renderChipConta, telaConta } from './conta.js';
+import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
+  nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
+import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, mirarMP, escolherZona } from './multiplayer.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
 import { turn } from './batalha.js';
@@ -31,12 +32,20 @@ document.addEventListener('click', async e => {
     case 'carreira': if (G.busy || G.mode === 'battle') return; return telaCarreira();
     case 'voltar': if (naSala()) await sairSala(); return voltar();
     // multiplayer (co-op)
-    case 'mp': if (G.busy || G.mode !== 'explore') return; return telaMultiplayer();
+    case 'mp': if (G.busy || !['explore', 'create'].includes(G.mode)) return; return telaMultiplayer(); // da run ou da tela inicial (sem run: Pokémon convidado)
+    case 'mp-entrada': return escolherEntrada(v);
+    case 'mp-convidado': return escolherConvidado(v);
     case 'mp-criar': return criarSala();
     case 'mp-entrar': return entrarSala($('#mp-codigo')?.value);
     case 'mp-sair': await sairSala(); return voltar();
     case 'mp-explorar': return iniciarBatalhaMP('selvagem');
     case 'mp-alfa': return iniciarBatalhaMP('alfa');
+    case 'mp-pvp': return iniciarBatalhaMP('pvp');
+    case 'mp-time': return escolherTime(v);
+    case 'mp-desistir': {
+      const ok = await ask('Desistir da luta? Seu time inteiro sai e o outro vence.', [{ label: 'Desistir', value: true }, { label: 'Continuar lutando', value: false, ghost: true }]);
+      return ok ? desistirMP() : undefined;
+    }
     case 'mp-golpe': return escolherGolpeMP(+v);
     case 'mp-fugir': return fugirMP();
     case 'mp-mirar': return mirarMP(v);
@@ -58,6 +67,36 @@ document.addEventListener('click', async e => {
       return;
     }
     case 'sincronizar': await sincronizar(); return telaConta();
+    // ícone (qualquer Pokémon, normal ou shiny)
+    case 'icone-buscar': return mudarIconeEdit($('#icone-busca')?.value);
+    case 'icone-sortear': return sortearIcone();
+    case 'icone-shiny': return alternarShinyIcone();
+    case 'icone-salvar': {
+      const ic = iconeEscolhido();
+      try { await salvarIcone(ic.id, ic.shiny); limparIconeEdit(); telaConta('Ícone salvo.'); } catch (err) { telaConta(`Não deu pra salvar o ícone: ${esc(err.message)}`); }
+      return;
+    }
+    // amigos
+    case 'amigo-add': {
+      const cod = ($('#amigo-codigo')?.value || '').trim();
+      if (!/^[A-Za-z0-9]{6}$/.test(cod)) return telaConta('O código de amigo tem 6 letras/números.');
+      try { telaConta((await pedirAmizade(cod)) === 'aceita' ? 'Vocês agora são amigos! 🎉' : 'Pedido enviado. Quando a pessoa aceitar, ela aparece na sua lista.'); }
+      catch (err) { telaConta(`Não deu: ${esc(err.message)}`); }
+      return;
+    }
+    case 'amigo-aceitar': try { await aceitarAmizade(+v); telaConta('Amizade aceita! 🎉'); } catch (err) { telaConta(`Não deu: ${esc(err.message)}`); } return;
+    case 'amigo-remover': {
+      if (b.dataset.nome && !(await ask(`Remover ${esc(b.dataset.nome)} dos amigos?`, [{ label: 'Remover', value: true }, { label: 'Cancelar', value: false, ghost: true }]))) return;
+      try { await removerAmizade(+v); telaConta(); } catch (err) { telaConta(`Não deu: ${esc(err.message)}`); }
+      return;
+    }
+    // convite de amigo pra sala (toast)
+    case 'mp-convidar': try { await convidarAmigoMP(v); } catch (err) { console.error(err); } return;
+    case 'mp-aceitar-convite': {
+      if (G.busy || G.mode === 'battle') return toast('Termine a batalha antes de entrar na sala.', 5000);
+      if (naSala()) await sairSala();
+      return entrarSala(v);
+    }
     case 'sair': await sair(); return telaConta('Você saiu da conta. O que já foi salvo continua na nuvem e neste navegador.');
     case 'pick': return previewSearch(v);
     case 'ability': G.PV.ability = v; return renderPreview();
@@ -103,7 +142,8 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', e => {
   if (e.target.matches?.('[data-ranking-especie]')) return telaRanking(e.target.value || null);
-  if (e.target.matches?.('[data-mp-zona]')) return escolherZona(e.target.value);
+  const cfg = e.target.dataset?.mpCfg; // configuração da sala (anfitrião): modo, porJogador, zona, balancear
+  if (cfg) return configurarSala(cfg, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
   // ordem de aliado (vale a partir da próxima escolha de golpe — o turno em andamento já decidiu as ações)
   const io = e.target.dataset?.ordem;
   if (io !== undefined && G.S?.aliados?.[+io] && ORDENS[e.target.value]) {
@@ -123,6 +163,8 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   if (e.target.id === 'q') previewSearch(e.target.value);
   if (e.target.id === 'mp-codigo') entrarSala(e.target.value);
+  if (e.target.id === 'icone-busca') mudarIconeEdit(e.target.value);
+  if (e.target.id === 'amigo-codigo') $('[data-act="amigo-add"]')?.click();
 });
 
 /* ============ jornada: abrir / voltar ============ */
@@ -159,6 +201,10 @@ ganchos.oferecerSave = async (remoto, local) => {
       : 'Continuar ela aqui? Se você começar uma jornada nova, esta da nuvem é substituída.'),
     [{ label: `Continuar ${esc(r.nick || fmt(r.name))} (nuvem)`, value: true }, { label: local ? 'Manter a deste aparelho' : 'Agora não', value: false, ghost: true }]);
 };
+// amigo chamou pra sala: aviso em qualquer tela, com botão de entrar (usa a escolha de Pokémon do menu multiplayer)
+ganchos.convite = p => toast(`${htmlIcone(meuIconeDe(p.de), 'icone-mini')} <b>${esc(p.nome)}</b> te chamou pra sala <b>${esc(p.codigo)}</b>${p.modo === 'pvp' ? ' (PvP)' : ' (co-op)'}.
+  <div class="subrow" style="margin-top:8px"><button class="btn sm" data-act="mp-aceitar-convite" data-v="${esc(p.codigo)}">Entrar</button></div>`, 60000);
+const meuIconeDe = id => { const a = nuvem.amigos.find(x => x.amigo === id); return a ? { id: a.icone_id, shiny: a.icone_shiny } : null; };
 ganchos.carregarSave = remoto => {
   // no meio de um turno não dá pra trocar a jornada: espera ele terminar (senão o save do turno sobrescreveria)
   if (G.busy) { setTimeout(() => ganchos.carregarSave(remoto), 500); return; }

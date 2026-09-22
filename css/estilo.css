@@ -42,6 +42,28 @@ img{max-width:100%}
   .menu-links .btn{width:100%;text-align:center;padding:12px 14px;font-size:16px}
   .selo-offline{text-align:center}
 }
+/* ícone do jogador, amigos, convites */
+.icone-mini{width:32px;height:32px;image-rendering:pixelated;vertical-align:middle;margin:-6px 4px -6px -4px}
+.icone-grande{width:96px;height:96px;image-rendering:pixelated}
+.chip-conta{display:inline-flex;align-items:center;gap:2px;position:relative}
+.bolinha{background:var(--red);color:#fff;border-radius:999px;font-size:11px;min-width:18px;height:18px;display:inline-grid;place-items:center;margin-left:4px}
+.icone-editor{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+@media(max-width:520px){.icone-editor{grid-template-columns:1fr}}
+.icone-preview{display:grid;place-items:center;background:var(--panel2);border-radius:14px;padding:8px 14px;font:600 14px var(--display)}
+.icone-controles{display:grid;gap:10px}
+.icone-controles input,#amigo-codigo{flex:1;min-width:0;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text)}
+.pv.conta + .pv.conta{margin-top:16px}
+ul.amigos{list-style:none;margin:6px 0 12px;padding:0;display:grid;gap:6px}
+ul.amigos li{display:flex;align-items:center;gap:8px;background:var(--panel2);border-radius:10px;padding:6px 10px}
+ul.amigos li b{flex:1}
+ul.amigos .subrow{width:auto}
+.codigo{font-family:var(--display);letter-spacing:.12em;background:var(--yellow);color:#1b1b2f;border-radius:8px;padding:0 10px}
+.mp-convites{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%}
+.mp-nome{display:flex;align-items:center}
+table.ranking td.jogador{white-space:nowrap}
+#toasts{position:fixed;right:14px;bottom:14px;z-index:20;display:grid;gap:8px;max-width:min(380px,calc(100vw - 28px))}
+.toast{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;background:var(--panel);border:2px solid var(--yellow);border-radius:14px;padding:12px 14px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.toast-x{background:none;border:0;color:var(--muted);font-size:16px}
 /* tela de login */
 .login-card{max-width:460px;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:12px}
 .login-card h2{margin:0;font:700 24px var(--display)}
@@ -77,6 +99,7 @@ img{max-width:100%}
 .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}
 .pick{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:2px 2px 6px;display:grid;place-items:center;font-size:12px;color:var(--muted)}
 .pick:hover{border-color:var(--yellow);color:var(--text)}
+.pick.on{border-color:var(--yellow);color:var(--text);background:var(--panel2)}
 .pick img{width:72px;height:72px;image-rendering:pixelated}
 .notice{background:#3a1f2a;border:2px solid var(--red);border-radius:12px;padding:14px 16px;margin-top:18px}
 .loading{font:500 16px var(--display);color:var(--muted)}
@@ -282,7 +305,19 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-mon small{display:block}
 .mp-mon .bar{background:#cfc8b6}
 .mp-mon.caido{opacity:.45}
-.mp-grupo .mp-mon{background:var(--panel);color:var(--text);border:2px solid var(--line)}
+.mp-grupo .mp-mon,.mp-times .mp-mon{background:var(--panel2);color:var(--text);border:2px solid var(--line)}
+.mp-mon.vez{outline:3px solid var(--yellow);outline-offset:2px}
+.mp-membro{display:grid;gap:6px;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px}
+.mp-mons{display:grid;gap:6px}
+.mp-grupo{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.mp-times{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.mp-times{grid-template-columns:1fr}}
+.mp-time{display:grid;gap:8px;align-content:start;background:var(--panel2);border-radius:14px;padding:10px}
+.mp-time h3{margin:0;font:700 16px var(--display);color:var(--yellow)}
+.mp-config{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;width:100%}
+.check{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;font-size:14px}
+.check small{grid-column:2}
+.mp-quem{margin:4px 0;width:100%}
 /* ranking global */
 table.ranking{width:100%;border-collapse:collapse;margin-top:12px;background:var(--panel);border-radius:12px;overflow:hidden}
 table.ranking th{font:600 13px var(--display);color:var(--muted);text-align:left;padding:8px 12px;border-bottom:2px solid var(--line)}

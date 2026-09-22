@@ -7,7 +7,7 @@
 // O cliente do Supabase é carregado sob demanda (import dinâmico) — nada disso roda nos testes.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { carregarCarreira, salvarCarreira, mesclarJornadas } from './carreira.js';
-import { offline } from './util.js';
+import { offline, store } from './util.js';
 
 export const nuvemConfigurada = () => !!SUPABASE_URL && !SUPABASE_URL.includes('SEU-PROJETO') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('SUA-CHAVE');
 
@@ -23,7 +23,62 @@ async function sb() {
 export const usuario = () => sessao?.user || null;
 
 // estado mostrado na tela de conta / no chip do topo
-export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null };
+export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [] };
+
+/* ---- ícone do jogador: qualquer Pokémon, normal ou shiny. Sem conta fica só neste navegador. ---- */
+const ICONE_KEY = 'pokerpg-icone';
+export const iconeLocal = () => store.get(ICONE_KEY) || { id: 25, shiny: false };
+export const meuIcone = () => nuvem.icone || iconeLocal();
+export async function salvarIcone(id, shiny) {
+  id = Math.min(1025, Math.max(1, Math.round(+id) || 25)); shiny = !!shiny;
+  nuvem.icone = { id, shiny }; store.set(ICONE_KEY, nuvem.icone);
+  const c = await sb(), u = usuario();
+  if (c && u) { const { error } = await c.from('perfis').update({ icone_id: id, icone_shiny: shiny }).eq('id', u.id); if (error) throw error; }
+  avisar();
+}
+
+/* ---- amigos (precisa de conta) ---- */
+export async function carregarAmigos() {
+  const c = await sb(); if (!c || !usuario()) { nuvem.amigos = []; return []; }
+  const { data, error } = await c.rpc('meus_amigos'); if (error) throw error;
+  nuvem.amigos = data || []; avisar();
+  return nuvem.amigos;
+}
+// devolve 'pedido' (esperando o outro aceitar) ou 'aceita' (o outro já tinha pedido)
+export async function pedirAmizade(codigo) {
+  const c = await sb(); if (!c || !usuario()) throw new Error('entre na conta primeiro');
+  const { data, error } = await c.rpc('pedir_amizade', { p_codigo: String(codigo || '').trim().toUpperCase() });
+  if (error) throw error;
+  await carregarAmigos(); return data;
+}
+export async function aceitarAmizade(id) {
+  const c = await sb(); const { error } = await c.from('amizades').update({ status: 'aceita' }).eq('id', id); if (error) throw error;
+  await carregarAmigos();
+}
+export async function removerAmizade(id) {
+  const c = await sb(); const { error } = await c.from('amizades').delete().eq('id', id); if (error) throw error;
+  await carregarAmigos();
+}
+
+/* ---- convites pra sala: cada conta ouve o próprio canal; o anfitrião manda pro canal do amigo ---- */
+let canalConvites = null;
+async function ouvirConvites() {
+  const c = await sb(), u = usuario(); if (!c || !u) return;
+  if (canalConvites) await c.removeChannel(canalConvites);
+  canalConvites = c.channel('pokerpg-convites-' + u.id)
+    .on('broadcast', { event: 'convite' }, ({ payload }) => {
+      // só aceita convite de quem é amigo de verdade (a lista vem do banco, não do convite)
+      if (nuvem.amigos.some(a => a.amigo === payload?.de && a.status === 'aceita')) ganchos.convite(payload);
+    })
+    .subscribe();
+}
+export async function convidarAmigo(amigoId, sala) {
+  const c = await sb(), u = usuario(); if (!c || !u) throw new Error('entre na conta primeiro');
+  const ch = c.channel('pokerpg-convites-' + amigoId);
+  await new Promise((ok, erro) => { ch.subscribe(s => { if (s === 'SUBSCRIBED') ok(); else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') erro(new Error('não consegui avisar o amigo')); }); });
+  await ch.send({ type: 'broadcast', event: 'convite', payload: { de: u.id, nome: nuvem.apelido || 'Um amigo', ...sala } });
+  await c.removeChannel(ch);
+}
 const ouvintes = new Set();
 const avisar = () => ouvintes.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
 export const aoMudarNuvem = fn => { ouvintes.add(fn); fn(); };
@@ -34,7 +89,8 @@ export const aoMudarNuvem = fn => { ouvintes.add(fn); fn(); };
 //   oferecerSave(remoto, local) → perguntar se quer continuar a jornada da nuvem (local = a deste aparelho, que
 //                            seria descartada, ou null); devolve true pra carregar a da nuvem
 //   carregarSave(remoto)   → trocar a jornada atual pela da nuvem
-export const ganchos = { saveLocal: () => null, jornadaTerminada: () => {}, oferecerSave: async () => false, carregarSave: () => {} };
+//   convite(payload)       → um amigo chamou pra sala ({ de, nome, codigo, modo })
+export const ganchos = { saveLocal: () => null, jornadaTerminada: () => {}, oferecerSave: async () => false, carregarSave: () => {}, convite: () => {} };
 
 let iniciada = false, ouvindoRede = false;
 export async function iniciarNuvem() {
@@ -54,10 +110,14 @@ export async function iniciarNuvem() {
   sessao = data.session; avisar();
   c.auth.onAuthStateChange((evento, s) => {
     sessao = s; avisar();
-    if (evento === 'SIGNED_IN') sincronizar();
-    if (evento === 'SIGNED_OUT') { nuvem.apelido = ''; nuvem.naNuvem = 0; nuvem.status = 'ocioso'; avisar(); }
+    if (evento === 'SIGNED_IN') { sincronizar(); ouvirConvites(); }
+    if (evento === 'SIGNED_OUT') {
+      nuvem.apelido = ''; nuvem.naNuvem = 0; nuvem.status = 'ocioso'; nuvem.icone = null; nuvem.codigoAmigo = ''; nuvem.amigos = [];
+      if (canalConvites) { c.removeChannel(canalConvites); canalConvites = null; }
+      avisar();
+    }
   });
-  if (sessao) sincronizar();
+  if (sessao) { sincronizar(); ouvirConvites(); }
   // sair da aba / fechar: manda o save pendente na hora
   addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') enviarSaveAgora(); });
   addEventListener('pagehide', enviarSaveAgora);
@@ -92,14 +152,21 @@ export async function sincronizar() {
   if (offline()) { nuvem.status = 'offline'; avisar(); return; } // o listener 'online' chama de novo
   nuvem.status = 'sincronizando'; nuvem.erro = null; avisar();
   try {
-    // perfil (apelido padrão = começo do e-mail)
-    const { data: perfil, error: ep } = await c.from('perfis').select('apelido').eq('id', u.id).maybeSingle();
+    // perfil (apelido padrão = começo do e-mail; ícone = o escolhido neste navegador antes de entrar)
+    let { data: perfil, error: ep } = await c.from('perfis').select('apelido, icone_id, icone_shiny, codigo_amigo').eq('id', u.id).maybeSingle();
+    if (ep?.code === '42703') ({ data: perfil, error: ep } = await c.from('perfis').select('apelido').eq('id', u.id).maybeSingle()); // schema.sql antigo
     if (ep) throw ep;
     if (!perfil) {
       const apelido = (u.user_metadata?.name || u.email || 'Treinador').split('@')[0].slice(0, 20);
       const { error } = await c.from('perfis').insert({ id: u.id, apelido }); if (error) throw error;
       nuvem.apelido = apelido;
-    } else nuvem.apelido = perfil.apelido || '';
+      const local = iconeLocal(); if (local.id !== 25 || local.shiny) await salvarIcone(local.id, local.shiny).catch(() => {});
+      ({ data: perfil } = await c.from('perfis').select('apelido, icone_id, icone_shiny, codigo_amigo').eq('id', u.id).maybeSingle());
+    }
+    nuvem.apelido = perfil?.apelido || nuvem.apelido || '';
+    if (perfil?.icone_id) { nuvem.icone = { id: perfil.icone_id, shiny: !!perfil.icone_shiny }; store.set(ICONE_KEY, nuvem.icone); }
+    nuvem.codigoAmigo = perfil?.codigo_amigo || '';
+    await carregarAmigos().catch(e => console.warn('amigos', e)); // sem a tabela ainda: segue sem amigos
 
     // carreira: sobe o que só existe aqui, baixa o que só existe lá
     const { data: linhas, error: ej } = await c.from('jornadas').select('resumo'); if (ej) throw ej;

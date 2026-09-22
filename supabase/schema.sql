@@ -16,6 +16,60 @@ create policy "perfil: criar o próprio" on public.perfis for insert with check 
 drop policy if exists "perfil: editar o próprio" on public.perfis;
 create policy "perfil: editar o próprio" on public.perfis for update using (auth.uid() = id) with check (auth.uid() = id);
 
+-- Ícone do jogador (qualquer Pokémon, normal ou shiny) e código de amigo (6 caracteres, pra adicionar amigos)
+alter table public.perfis add column if not exists icone_id int not null default 25 check (icone_id between 1 and 1025);
+alter table public.perfis add column if not exists icone_shiny boolean not null default false;
+alter table public.perfis add column if not exists codigo_amigo text unique default upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
+update public.perfis set codigo_amigo = upper(substr(md5(random()::text || id::text), 1, 6)) where codigo_amigo is null;
+
+-- Amizades: pedido (pendente) de `de` pra `para`; `para` aceita. Um par só, em qualquer direção.
+create table if not exists public.amizades (
+  id bigint generated always as identity primary key,
+  de uuid not null references auth.users on delete cascade default auth.uid(),
+  para uuid not null references auth.users on delete cascade,
+  status text not null default 'pendente' check (status in ('pendente', 'aceita')),
+  criado_em timestamptz not null default now(),
+  check (de <> para)
+);
+create unique index if not exists amizades_par on public.amizades (least(de, para), greatest(de, para));
+alter table public.amizades enable row level security;
+drop policy if exists "amizade: ver as minhas" on public.amizades;
+create policy "amizade: ver as minhas" on public.amizades for select using (auth.uid() in (de, para));
+drop policy if exists "amizade: pedir" on public.amizades;
+create policy "amizade: pedir" on public.amizades for insert with check (auth.uid() = de and status = 'pendente');
+drop policy if exists "amizade: aceitar pedido recebido" on public.amizades;
+create policy "amizade: aceitar pedido recebido" on public.amizades for update using (auth.uid() = para) with check (status = 'aceita');
+drop policy if exists "amizade: desfazer" on public.amizades;
+create policy "amizade: desfazer" on public.amizades for delete using (auth.uid() in (de, para));
+
+-- Pedir amizade pelo código. Se o outro já tinha pedido, vira amizade na hora. Devolve 'pedido' ou 'aceita'.
+create or replace function public.pedir_amizade(p_codigo text) returns text
+language plpgsql security definer set search_path = public as $$
+declare alvo uuid;
+begin
+  if auth.uid() is null then raise exception 'entre na conta primeiro'; end if;
+  select id into alvo from perfis where codigo_amigo = upper(trim(p_codigo));
+  if alvo is null then raise exception 'código de amigo não encontrado'; end if;
+  if alvo = auth.uid() then raise exception 'esse é o seu próprio código'; end if;
+  update amizades set status = 'aceita' where de = alvo and para = auth.uid() and status = 'pendente';
+  if found then return 'aceita'; end if;
+  insert into amizades (de, para) values (auth.uid(), alvo) on conflict do nothing;
+  return 'pedido';
+end $$;
+grant execute on function public.pedir_amizade(text) to authenticated;
+
+-- Minha lista: amigos e pedidos (recebido = true: o outro pediu, eu aceito ou recuso). Só apelido + ícone do outro.
+create or replace function public.meus_amigos()
+returns table (amizade bigint, amigo uuid, apelido text, icone_id int, icone_shiny boolean, status text, recebido boolean)
+language sql stable security definer set search_path = public as $$
+  select a.id, p.id, p.apelido, p.icone_id, p.icone_shiny, a.status, a.para = auth.uid()
+  from public.amizades a
+  join public.perfis p on p.id = case when a.de = auth.uid() then a.para else a.de end
+  where auth.uid() in (a.de, a.para)
+  order by a.status, p.apelido
+$$;
+grant execute on function public.meus_amigos() to authenticated;
+
 -- Jornadas terminadas (a carreira é calculada delas no jogo). `id` vem do jogo (texto: uuid ou id antigo migrado).
 create table if not exists public.jornadas (
   id text primary key,
@@ -83,11 +137,12 @@ create trigger validar_jornada before insert on public.jornadas for each row exe
 -- Melhor jornada de cada jogador (uma linha por jogador). p_especie null = geral (todas as espécies).
 -- SECURITY DEFINER pra enxergar as jornadas de todos, mas só devolve apelido + números (+ `eu` = é você).
 drop function if exists public.ranking_especie(text, int);
+drop function if exists public.ranking(text, int); -- o tipo de retorno mudou (entrou o ícone): precisa recriar
 create or replace function public.ranking(p_especie text default null, p_limite int default 50)
-returns table (posicao bigint, apelido text, especie text, pontuacao int, nivel int, dificuldade text, terminou_em timestamptz, eu boolean)
+returns table (posicao bigint, apelido text, especie text, pontuacao int, nivel int, dificuldade text, terminou_em timestamptz, eu boolean, icone_id int, icone_shiny boolean)
 language sql stable security definer set search_path = public as $$
   select row_number() over (order by j.pontuacao desc, j.terminou_em), coalesce(p.apelido, 'Treinador'),
-         j.especie, j.pontuacao, j.nivel, j.dificuldade, j.terminou_em, j.user_id = auth.uid()
+         j.especie, j.pontuacao, j.nivel, j.dificuldade, j.terminou_em, j.user_id = auth.uid(), coalesce(p.icone_id, 25), coalesce(p.icone_shiny, false)
   from (select distinct on (user_id) * from public.jornadas
         where p_especie is null or especie = p_especie
         order by user_id, pontuacao desc, terminou_em) j

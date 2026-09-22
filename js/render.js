@@ -47,7 +47,8 @@ function turnoBar(B, P, E) {
 }
 // contador de desmaios do Médio pra cima: "2/3 livres", depois "precisa de Revive (tem N)"
 function desmaiosTxt(S) {
-  const livres = DIFICULDADES[dificuldadeDe(S)].desmaiosLivres, n = S.desmaios || 0;
+  const regra = DIFICULDADES[dificuldadeDe(S)], livres = regra.desmaiosLivres, n = S.desmaios || 0;
+  if (regra.permadeath) return '<br><span class="err">Sem segunda chance: desmaiou, a run acaba; aliado que desmaia é perdido.</span>';
   if (livres == null) return '';
   return n < livres ? `<br>Desmaios: <b>${n}/${livres}</b> livres.`
     : `<br><span class="${S.bag.revive ? '' : 'err'}">Desmaios: <b>${n}</b>. O próximo gasta um Revive (você tem ${S.bag.revive || 0})${S.bag.revive ? '' : ': sem Revive é Game Over'}.</span>`;

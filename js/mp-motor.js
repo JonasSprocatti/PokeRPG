@@ -10,22 +10,58 @@
 import { STAT_PT, AIL_MSG, SELF_TARGETS, STRUGGLE, ABSORB } from './dados.js';
 import {
   calcDamage, confDamage, heal, typeEff, effStat, chanceAcerto, imuneAoStatus, danoResidual,
-  consegueFugir, ordenarAcoes, freshVol
+  consegueFugir, ordenarAcoes, freshVol, calcStats
 } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
-// cópia enxuta de um Pokémon do jogo pra batalha multiplayer (sem descrições longas: vai pela rede)
-export function fotoDoMon(M, ref, dono, nome) {
+// Cópia enxuta de um Pokémon do jogo pra batalha multiplayer (sem descrições longas: vai pela rede).
+// `slot` = 0 principal, 1..2 aliados (índice em S.aliados + 1) — é por ele que o resultado volta pro Pokémon certo.
+// Leva base/IVs/EVs/natureza pra dar pra recalcular os stats em outro nível (balancear).
+export function fotoDoMon(M, ref, dono, nome, slot = 0) {
   return {
-    ref, dono, nome: nome || M.nick || fmt(M.name), id: M.id, name: M.name, level: M.level, shiny: !!M.shiny, ability: M.ability,
-    data: { types: [...M.data.types], sprite: M.data.sprite, back: M.data.back, speciesName: M.data.speciesName, baseExp: M.data.baseExp, effort: { ...(M.data.effort || {}) } },
+    ref, dono, slot, nome: nome || M.nick || fmt(M.name), id: M.id, name: M.name, level: M.level, shiny: !!M.shiny, ability: M.ability,
+    nature: M.nature, ivs: { ...(M.ivs || {}) }, evs: { ...(M.evs || {}) },
+    data: { types: [...M.data.types], sprite: M.data.sprite, back: M.data.back, speciesName: M.data.speciesName, baseExp: M.data.baseExp,
+      effort: { ...(M.data.effort || {}) }, base: { ...(M.data.base || {}) } },
     stats: { ...M.stats }, hp: M.hp, status: M.status || null, sleep: M.sleep || 0,
     moves: M.moves.map(m => ({ name: m.name, type: m.type, cls: m.cls, power: m.power, acc: m.acc, pp: m.pp, ppLeft: m.ppLeft,
       priority: m.priority || 0, target: m.target, meta: m.meta || {}, stats: m.stats || [] })),
     vol: freshVol()
   };
 }
-export const novaBatalhaMP = (A, B) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null });
+// pvp: ninguém foge (só dá pra desistir)
+export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp });
+
+/* ---- balancear ---- */
+// mesmo Pokémon em outro nível: recalcula os stats (base/IVs/EVs/natureza) e mantém a FRAÇÃO de HP
+// `nivelReal` guarda o nível de verdade (só quem lutou no nível real leva XP/itens de volta pra run — naNivelReal)
+export function nivelarMon(m, nivel) {
+  const n = structuredClone(m);
+  n.nivelReal = m.nivelReal ?? m.level;
+  n.level = clamp(Math.round(nivel), 1, 100);
+  n.stats = calcStats({ data: { base: m.data.base }, ivs: m.ivs, evs: m.evs, nature: m.nature, level: n.level });
+  n.hp = m.hp <= 0 ? 0 : Math.max(1, Math.round(n.stats.hp * m.hp / m.stats.hp));
+  return n;
+}
+// HP máximo (e atual) × fator — pro lado em menor número aguentar a diferença
+export function escalarHP(m, fator) {
+  const n = structuredClone(m), max = Math.round(m.stats.hp * fator);
+  n.hp = m.hp <= 0 ? 0 : Math.max(1, Math.round(max * m.hp / m.stats.hp));
+  n.stats.hp = max;
+  return n;
+}
+export const naNivelReal = m => (m.nivelReal ?? m.level) === m.level;
+export const nivelMedio = mons => Math.round(mons.reduce((a, m) => a + m.level, 0) / mons.length);
+// PvP balanceado: todo mundo no nível médio; o lado com menos Pokémon ganha HP × (maior / menor)
+export function balancearPvP(A, B) {
+  const nivel = nivelMedio([...A, ...B]);
+  let a = A.map(m => nivelarMon(m, nivel)), b = B.map(m => nivelarMon(m, nivel));
+  if (a.length < b.length) a = a.map(m => escalarHP(m, b.length / a.length));
+  else if (b.length < a.length) b = b.map(m => escalarHP(m, a.length / b.length));
+  return { A: a, B: b, nivel };
+}
+// co-op balanceado ("chamar alguém pra sua run"): o time inteiro no nível do anfitrião
+export const balancearCoop = (A, nivel) => A.map(m => nivelarMon(m, nivel));
 
 export const todosMP = e => [...e.lados.A, ...e.lados.B];
 export const ladoDe = (e, ref) => e.lados.A.some(m => m.ref === ref) ? 'A' : 'B';
@@ -46,8 +82,16 @@ export function resolverTurnoMP(estado, acoes) {
   if (s.fim) return { estado: s, eventos: ev };
   const valida = a => { const m = monMP(s, a.ref); return m && m.hp > 0; };
 
-  // 1) fuga (só o lado A): o mais rápido de quem pediu tenta contra o mais rápido do outro lado
-  const fugindo = acoes.filter(a => a.tipo === 'fugir' && valida(a) && ladoDe(s, a.ref) === 'A').map(a => monMP(s, a.ref));
+  // 0) desistir (PvP): todos os Pokémon do dono daquela ação saem da luta
+  for (const a of acoes.filter(x => x.tipo === 'desistir' && valida(x))) {
+    const dono = monMP(s, a.ref).dono;
+    const dele = todosMP(s).filter(m => m.dono === dono && m.hp > 0);
+    for (const m of dele) { m.hp = 0; m.caido = true; }
+    say(`${dele[0]?.nome || 'Alguém'} e a equipe desistiram da luta.`, 'hit');
+  }
+
+  // 1) fuga (só o lado A, e nunca no PvP): o mais rápido de quem pediu tenta contra o mais rápido do outro lado
+  const fugindo = s.pvp ? [] : acoes.filter(a => a.tipo === 'fugir' && valida(a) && ladoDe(s, a.ref) === 'A').map(a => monMP(s, a.ref));
   if (fugindo.length) {
     s.fugas++;
     const quem = fugindo.reduce((a, b) => effStat(b, 'speed') > effStat(a, 'speed') ? b : a);

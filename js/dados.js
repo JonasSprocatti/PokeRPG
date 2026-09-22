@@ -186,11 +186,12 @@ export const NOMES_TREINADOR = ['Rui', 'Bia', 'Otávio', 'Lúcia', 'Caio', 'Mart
 //   desbloqueios = além dos iniciais, oferece as espécies desbloqueadas em jornadas deste modo (roguelike.js)
 //   especiesLivres = começar com QUALQUER Pokémon (busca livre); false = só REGIOES_INICIAIS. Hoje false em todos — decisão do usuário, pode mudar por modo
 //   multPontos   = multiplicador da pontuação final da jornada (recordes / ranking)
+//   permadeath   = desmaiou, acabou (sem Revive); aliado que desmaia é perdido na hora (o Centro não traz de volta)
 //   desmaiosLivres = desmaios sem custo; depois disso cada desmaio gasta um Revive, e sem Revive é Game Over (null = ilimitado)
 // Save antigo sem o campo dificuldade = easy (dificuldadeDe).
 export const DIFICULDADES = {
   // modo principal: começa só com iniciais; espécies novas desbloqueiam jogando (desbloqueios, ver roguelike.js)
-  roguelike: { nome: 'Roguelike', especiesLivres: false, desbloqueios: true, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, fimDeJogo: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: false, escolhaLivre: true, desc: 'O modo principal. Começa com os iniciais; derrotar, fazer amizade ou evoluir desbloqueia novas espécies pras próximas jornadas. Ser capturado encerra a jornada. Nível 5.' },
+  roguelike: { nome: 'Roguelike', especiesLivres: false, desbloqueios: true, permadeath: true, multPontos: 1.5, desmaiosLivres: 0, semCaptura: false, fimDeJogo: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: false, escolhaLivre: true, desc: 'O modo principal. Sem segunda chance: desmaiou, a run acabou; aliado que desmaia é perdido pra sempre. Começa com os iniciais; derrotar, fazer amizade ou evoluir desbloqueia novas espécies pras próximas runs. Nível 5.' },
   easy: { nome: 'Fácil', especiesLivres: false, multPontos: 1, desmaiosLivres: null, semCaptura: true, centroGratis: true, nivelLivre: true, escolhaLivre: true, desc: 'Treinadores nunca te capturam e o Centro Pokémon é de graça. Nível inicial, natureza e habilidade à sua escolha.' },
   medium: { nome: 'Médio', especiesLivres: false, multPontos: 1.2, desmaiosLivres: 3, semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: true, escolhaLivre: true, desc: 'Igual ao Fácil, mas o Centro Pokémon cobra: cada vitória desde a última visita tira 10% do preço.' },
   hard: { nome: 'Difícil', especiesLivres: false, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: true, desc: 'Se for capturado, você foge dias depois: sem a mochila, com metade do dinheiro, em outra zona. Centro pago. Começa no nível 5.' },

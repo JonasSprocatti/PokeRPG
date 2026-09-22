@@ -64,7 +64,10 @@ test('REGIOES_INICIAIS: 9 regiões de 3 + Especiais (Pikachu, Eevee), um nome po
 test('DIFICULDADES: hoje todo modo começa só com iniciais; desmaio e pontos crescem com a dificuldade', () => {
   for (const [k, d] of Object.entries(DIFICULDADES)) assert.equal(d.especiesLivres, false, `${k} liberou espécies — decisão do usuário é só iniciais`);
   assert.equal(DIFICULDADES.easy.desmaiosLivres, null);
-  for (const k of ['roguelike', 'medium', 'hard', 'hardcore', 'randomizer']) assert.equal(DIFICULDADES[k].desmaiosLivres, 3);
+  for (const k of ['medium', 'hard', 'hardcore', 'randomizer']) assert.equal(DIFICULDADES[k].desmaiosLivres, 3);
+  // Roguelike: permadeath — desmaiou, acabou (nem Revive salva)
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].permadeath), ['roguelike']);
+  assert.equal(DIFICULDADES.roguelike.desmaiosLivres, 0);
   assert.ok(DIFICULDADES.easy.multPontos < DIFICULDADES.medium.multPontos && DIFICULDADES.medium.multPontos < DIFICULDADES.hard.multPontos && DIFICULDADES.hard.multPontos < DIFICULDADES.hardcore.multPontos);
   assert.ok(ITEMS.revive?.revive && ITEMS.revive.price > 0);
 });

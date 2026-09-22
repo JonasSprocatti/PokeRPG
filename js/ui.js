@@ -35,6 +35,18 @@ export function iniciarMenu() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharMenu(); });
 }
 
+// aviso flutuante (canto de baixo), por cima de qualquer tela; pode ter botões com data-act. `ms` 0 = só fecha no ✕
+export function toast(html, ms = 15000) {
+  let pilha = $('#toasts');
+  if (!pilha) { pilha = document.createElement('div'); pilha.id = 'toasts'; pilha.setAttribute('aria-live', 'polite'); document.body.appendChild(pilha); }
+  const t = document.createElement('div'); t.className = 'toast';
+  t.innerHTML = `<div>${html}</div><button type="button" class="toast-x" aria-label="Fechar aviso">✕</button>`;
+  const fechar = () => t.remove();
+  t.addEventListener('click', e => { if (e.target.closest('.toast-x, [data-act]')) setTimeout(fechar); });
+  pilha.appendChild(t);
+  if (ms) setTimeout(fechar, ms);
+}
+
 export function logRaw(l) {
   const el = $('#log'); if (!el) return;
   const p = document.createElement('p'); if (l.cls) p.className = l.cls; p.innerHTML = l.html;

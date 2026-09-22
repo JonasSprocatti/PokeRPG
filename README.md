@@ -23,13 +23,15 @@ Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloq
 - fazer amizade com **5** dela, **ou**
 - evoluir para ela **5 vezes** (forma do meio, como Charmeleon) ou **10 vezes** (forma final, como Charizard).
 
-A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de fim mostra o que aquela run liberou, e a Carreira mostra todo o progresso. Só jornadas Roguelike contam. No Roguelike, ser capturado encerra a run, o Centro é pago (com desconto por vitória) e você começa no nível 5.
+A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de fim mostra o que aquela run liberou, e a Carreira mostra todo o progresso. Só jornadas Roguelike contam.
+
+**Sem segunda chance:** no Roguelike, se você desmaiar, a run acaba (nem Revive salva). Se um **aliado** desmaiar, ele é **perdido para sempre**, e o Centro não traz de volta. Ser capturado também encerra a run. O Centro é pago (com desconto por vitória) e você começa no nível 5.
 
 ### Todos os modos
 
 | Modo | Treinador te captura? | Centro Pokémon | Desmaios | Na criação | Pontos |
 |---|---|---|---|---|---|
-| **Roguelike** | sim: **fim da run** | pago, −10% por vitória | 3 livres, depois Revive | nível 5; iniciais + desbloqueados | ×1,5 |
+| **Roguelike** | sim: **fim da run** | pago, −10% por vitória | **nenhum**: desmaiou, acabou; aliado desmaiado é perdido | nível 5; iniciais + desbloqueados | ×1,5 |
 | **Fácil** | nunca | grátis | ilimitados | escolhe tudo | ×1 |
 | **Médio** | nunca | pago, −10% por vitória desde a última visita | 3 livres, depois gasta Revive | escolhe tudo | ×1,2 |
 | **Difícil** | sim: você foge depois, sem a mochila e com metade do dinheiro | pago | 3 livres, depois Revive | nível 5 | ×1,5 |
@@ -62,12 +64,28 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 - A jornada termina com Game Over ou quando você a encerra (**Novo jogo**). A tela de fim compara tudo com o seu recorde naquela espécie.
 - **📊 Carreira:** Pokémon favorito, Pokédex (quantos já viraram amigos e quantos faltam dos 1025, além dos vistos), shinies, maior quantia de dinheiro, mais missões numa jornada, nível máximo, tempo total e o melhor resultado por espécie.
 
-### 👥 Multiplayer cooperativo
-Até **4 jogadores**, cada um com o Pokémon da própria jornada, lutam **juntos** contra selvagens (um por jogador) ou contra o **Alfa** da zona (que aguenta o grupo todo).
-- Um cria a sala e passa o **código de 4 letras**; os outros entram com ele. Não precisa de conta.
-- O anfitrião escolhe a zona e começa. Cada um escolhe o próprio golpe, e o turno sai quando todos escolherem (ou em 45 segundos, no automático).
-- XP, EVs e dinheiro vão para a jornada de cada um. Desmaiar no co-op não conta como desmaio: você volta com 1 de HP.
-- Em breve: **PvP** (jogador contra jogador) com o mesmo sistema de salas.
+### 👥 Multiplayer: co-op e PvP
+Um jogador cria a sala e passa o **código de 4 letras**; até 6 entram com ele. Não precisa de conta. O anfitrião escolhe:
+- **Modo:**
+  - **Co-op:** chama amigos para a sua run. Todos juntos contra selvagens (um por jogador) ou contra o **Alfa** da zona (que aguenta o grupo todo).
+  - **PvP:** cada um escolhe o **Time A** ou o **Time B**. Dá para fazer 1×1, 2×2, 3×3, 2×1, 3×2…
+- **Pokémon por jogador:** 1 (só o principal) ou 2 a 3 (com os seus aliados).
+- **Balancear (ligado por padrão):**
+  - **Co-op:** o grupo todo fica no nível do Pokémon do anfitrião, então um amigo forte não atropela a sua run.
+  - **PvP:** todos no nível médio da luta, e o time em menor número ganha HP extra.
+  - **Desligado:** níveis reais. No co-op os inimigos acompanham o mais forte do grupo, então é mais difícil.
+
+**Com qual Pokémon entrar:** o **da sua run** (a luta conta para ela) ou um **convidado**. O convidado é escolhido entre os iniciais, Pikachu, Eevee e as espécies desbloqueadas no Roguelike; é emprestado só para a sala e não mexe em nada. Sem run em andamento, dá para entrar com um convidado direto da tela inicial.
+
+**Ganhos da run de outra pessoa:** se você lutou no **seu nível real**, **XP, EVs, dinheiro, itens** (35% de chance por vitória) e prêmios de Alfa **voltam com você** para a sua run. Se o Balancear ajustou o seu nível, a luta vale como diversão e não leva ganhos.
+
+Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos escolherem, ou em 45 segundos, no automático.
+- **Co-op:** XP, EVs e dinheiro vão para a jornada de cada um, e o HP e o PP gastos voltam junto. Fora do Roguelike, desmaiar volta com 1 de HP; **no Roguelike, desmaiar conta de verdade**.
+- **PvP:** é amistoso. Não gasta HP nem PP, só conta vitórias e derrotas. Dá para **desistir**.
+
+### 👤 Ícone e amigos
+- **Ícone:** qualquer um dos 1025 Pokémon, normal ou ✨ shiny. Aparece no topo, no ranking, nas salas e para os seus amigos. Sem conta, fica só no seu navegador.
+- **Amigos** (com conta): cada um tem um **código de amigo** de 6 caracteres. Adicione pelo código, e o outro aceita ou recusa. Na sala multiplayer, o anfitrião **chama um amigo com um toque**, e ele recebe o convite em qualquer tela do jogo.
 
 ### 🏆 Ranking global
 A melhor jornada de cada jogador, **geral** ou **por espécie**, com a sua posição destacada. Dá para ver sem conta; para aparecer, entre e termine jornadas. A pontuação é **recalculada no servidor** a partir dos números da jornada, e números impossíveis são recusados.
@@ -119,7 +137,6 @@ Depois abra http://localhost:3000.
 
 ## Próximos passos
 
-- [ ] **PvP:** jogador contra jogador, na mesma sala por código (o motor da batalha multiplayer já aceita jogadores dos dois lados).
 - [ ] **Batalha mais completa**, nesta ordem:
   1. **Habilidades:** as mais comuns com efeito de verdade (hoje são 13).
   2. **Clima:** sol, chuva, tempestade de areia e granizo/neve, e as habilidades ligadas a eles.
@@ -139,5 +156,8 @@ Depois abra http://localhost:3000.
 - [x] Login (Google / e-mail), carreira e jornada na nuvem, modo offline
 - [x] Roguelike com desbloqueio de espécies e evoluções entre runs
 - [x] Ranking global (geral e por espécie), com pontuação conferida no servidor
-- [x] Multiplayer cooperativo com sala por código (até 4)
+- [x] Multiplayer co-op e PvP (1×1 a 3×3, times desiguais, com aliados), sala por código, balanceamento de nível
+- [x] Roguelike sem segunda chance (permadeath de você e dos aliados)
+- [x] Entrar numa sala com um Pokémon convidado; ganhos da run de outra pessoa voltam com você (no nível real)
+- [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail

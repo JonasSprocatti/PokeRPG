@@ -96,6 +96,7 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 ## Roguelike (modo principal)
 
+- **Permadeath** (flag `permadeath`, pedido do usuário): desmaiou = `encerrarJornada('desmaiou')` na hora em `lose()` (nem Revive salva); aliado que desmaia é removido de `S.aliados` em `anunciarQuedas` (Centro não traz de volta). Vale no co-op também.
 - `DIFICULDADES.roguelike` (primeiro da lista, `G.dif` padrão): flag `desbloqueios` — a criação oferece `INICIAIS` + `desbloqueadas(carreira)` (`permitidos()` em criacao.js, usado na grade, no Sortear e na checagem do `previewSearch`). Captura = fim da run (`fimDeJogo`), 3 desmaios livres, Centro pago com desconto por vitória, nível 5, natureza/habilidade livres, pontos ×1,5.
 - `roguelike.js` (puro, `tests/roguelike.test.js`): `progressoRoguelike(jornadas)` soma `registro.derrotados/amigos/evolucoes` **só das jornadas com `dificuldade === 'roguelike'`** (decisão: não dá pra farmar no Fácil) e aplica `DESBLOQUEIO` (dados.js): 10 derrotas · 5 amizades · evoluir 5× pra forma do meio / 10× pra forma final. Iniciais ficam fora (já liberados). Vale pra PRÓXIMA run: só jornadas terminadas contam.
 - Forma do meio/final: `evolve()` anota `registro.formas[especie] = 'meio' | 'final'` (final = nó sem `to` na árvore de evolução). `registro.ids` dá o id pra buscar o Pokémon e o sprite.
@@ -108,12 +109,24 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Jornada recusada (erro `P0001`) fica marcada `recusada` na carreira local e não é reenviada; as outras sobem uma a uma (uma recusa não trava a sincronização).
 - Mudou o schema.sql → usuário precisa rodar de novo no SQL Editor (idempotente).
 
-## Multiplayer (co-op; PvP em seguida)
+## Multiplayer (co-op e PvP)
 
-- Decisão do usuário: **os dois formatos** (co-op primeiro, depois PvP), **sala por código** (4 caracteres, sem lista pública). Até `MAX_JOGADORES` = 4. Funciona sem login (id de visitante em `pokerpg-visitante`), só precisa do Supabase configurado (Realtime).
+- Decisão do usuário: **os dois formatos**, **sala por código** (4 caracteres, sem lista pública). Até `MAX_JOGADORES` = 6. Funciona sem login (id de visitante em `pokerpg-visitante`), só precisa do Supabase configurado (Realtime).
+- Config da sala (anfitrião, broadcast `lobby`): `modo` 'coop'|'pvp', `porJogador` 1–3 (principal + aliados em pé e não "Descansar"; `slot` 0 = principal, k = `S.aliados[k-1]`), `balancear` (padrão **ligado**, pedido do usuário). PvP: cada jogador escolhe `time` A/B (presença). Balancear: co-op → `balancearCoop` (todos no nível do principal do anfitrião = "chamar alguém pra sua run"); PvP → `balancearPvP` (nível médio + HP × (maior/menor) pro time menor). Desligado: níveis reais; co-op com inimigos no nível do mais forte (Alfa +5).
+- Escolha é **por Pokémon** (`minhaVez` = próximo Pokémon meu sem ação no turno; `sala.escolhidos` zera a cada turno). Resultado volta por `"dono:slot"` com **fração** de HP (o nível pode ter sido balanceado). PvP é amistoso: só `S.pvp {vitorias, derrotas}`; `desistir` (motor) tira o time inteiro; ninguém foge (`estado.pvp`).
+- **Entrada na sala** (`entrada` em multiplayer.js, escolhida no menu): `'run'` (Pokémon da jornada atual, com aliados) ou `'convidado'` (`makeMon` Nv. 5 de `especiesConvidado()` = iniciais + desbloqueados do Roguelike; foto com `convidado: true`; resultado NÃO mexe em save nenhum, nem PvP conta). Sem run: só convidado; anfitrião sem run só abre PvP. Convidado sem balancear: nível do anfitrião (co-op) / média dos outros (PvP).
+- **Ganhos voltam só no nível real** (pedido do usuário): `nivelarMon` guarda `nivelReal`; `naNivelReal(m)` vai no `final` de cada Pokémon. Co-op: XP, EVs, dinheiro, item (35% por jogador, `FIND_ITEMS`), vitória e prêmio de Alfa só entram na run se o principal lutou no nível real (aliado idem pro XP dele). Balanceado com nível ajustado = diversão (HP e permadeath continuam valendo).
+- **Roguelike no co-op**: principal desmaiado = `encerrarJornada('desmaiou')` (sai da sala antes); aliado desmaiado = removido de `S.aliados` (do maior slot pro menor). Fora do Roguelike, desmaio no co-op volta com 1 HP.
 - `mp-motor.js` (PURO, `tests/mp-motor.test.js`): dois lados A/B com N Pokémon, `fotoDoMon` (cópia enxuta pra rede), `resolverTurnoMP(estado, ações)` → estado novo + eventos em texto (sem HTML — quem exibe escapa), `acaoDaIA`. É uma **versão pura do `useMove` do single player** (mesmas regras de regras.js) — duplicação consciente: ao mudar uma regra de batalha, mudar nos dois (ou migrar o single player pro motor um dia).
 - `multiplayer.js`: canal `pokerpg-sala-<código>` (presence = membros com a foto do Pokémon; broadcast `estado`/`acao`/`fim`/`lobby`). **Anfitrião é a autoridade**: gera inimigos (1 selvagem por jogador, ou o Alfa com HP × nº de jogadores), junta as escolhas (só o dono escolhe pelo próprio Pokémon), prazo de 45 s com golpe automático, roda o motor e publica. Cada cliente aplica o `fim` na PRÓPRIA jornada (HP/PP, XP via `gainExp`, EVs, dinheiro, registro, Alfa); desmaio no co-op = volta com 1 HP, não conta desmaio. Anfitrião saiu = sala acaba.
 - `render()` só desenha em `G.mode` 'explore'/'battle' — gainExp roda na tela da sala e chama render().
+
+## Ícone e amigos
+
+- **Ícone** `{ id 1–1025, shiny }`: `perfis.icone_id/icone_shiny` (conta) ou `pokerpg-icone` (sem conta; sobe no 1º login). `meuIcone()` (nuvem.js), `htmlIcone(ic, cls)` (conta.js, cai no sprite normal se o shiny faltar). Aparece no chip do topo, ranking (`ranking()` devolve `icone_*`), presença da sala, amigos e convites.
+- **Amigos**: `perfis.codigo_amigo` (6 caracteres, gerado no banco) + tabela `amizades` (de→para, pendente/aceita, par único, RLS). `pedir_amizade(código)` (se o outro já pediu, aceita na hora) e `meus_amigos()` (SECURITY DEFINER: só apelido + ícone do outro). Aceitar = update pelo `para`; recusar/cancelar/remover = delete. Lista em `nuvem.amigos` (carregada no sync).
+- **Convite pra sala**: cada conta logada ouve `pokerpg-convites-<uid>`; `convidarAmigo(id, {codigo, modo})` manda broadcast no canal do amigo; quem recebe só mostra se o remetente está em `nuvem.amigos` como aceito → `toast` (ui.js) com "Entrar" (`mp-aceitar-convite`).
+- `sincronizar()` lê as colunas novas com fallback (`42703`) pra quem ainda não rodou o schema.sql novo.
 
 ## Topo (menu ☰) e login
 
@@ -121,7 +134,7 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Login: botão `.btn-login` no topo; tela de conta com "Continuar com Google" no padrão visual do Google (`G_LOGO`) + link por e-mail.
 
 ### Próximos passos combinados (em ordem sugerida)
-- **PvP** (mesma sala, `mp-motor` com jogadores nos dois lados) → **batalha completa**: habilidades → clima → terrenos → itens segurados → golpes especiais/IA → Mega, Z-Moves, Dynamax/Gigantamax, Tera. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
+- **Batalha completa** (próximo): habilidades → clima → terrenos → itens segurados → golpes especiais/IA → Mega, Z-Moves, Dynamax/Gigantamax, Tera. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 

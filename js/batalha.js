@@ -199,7 +199,16 @@ async function lancarBola(P) {
 const idVez = m => m === G.S.player ? 'p' : 'a' + G.S.aliados.indexOf(m);
 // aliado que acabou de cair: anuncia uma vez só (B.caidos guarda quem já foi anunciado nesta batalha)
 async function anunciarQuedas() {
-  for (const A of G.S.aliados || []) if (A.hp <= 0 && !G.B.caidos.has(A)) { G.B.caidos.add(A); await say(`${nm(A)} desmaiou!`, 'hit'); }
+  const permadeath = DIFICULDADES[dificuldadeDe(G.S)].permadeath;
+  for (const A of [...(G.S.aliados || [])]) if (A.hp <= 0 && !G.B.caidos.has(A)) {
+    G.B.caidos.add(A);
+    if (!permadeath) { await say(`${nm(A)} desmaiou!`, 'hit'); continue; }
+    // Roguelike: aliado que cai é perdido na hora (sai da equipe; nem Revive nem Centro trazem de volta)
+    const nome = nm(A);
+    G.S.aliados.splice(G.S.aliados.indexOf(A), 1); G.abertos.clear();
+    render();
+    await say(`${nome} desmaiou... e não vai voltar. Aliado perdido pra sempre.`, 'hit');
+  }
 }
 export async function turn(action) {
   if (G.busy || !G.B) return;
@@ -315,9 +324,10 @@ async function win() {
 }
 // Desmaio: do Médio pra cima (`desmaiosLivres`), depois dos desmaios livres cada um gasta um Revive — sem Revive, Game Over
 async function lose() {
-  const S = G.S, livres = DIFICULDADES[dificuldadeDe(S)].desmaiosLivres;
+  const S = G.S, regra = DIFICULDADES[dificuldadeDe(S)], livres = regra.desmaiosLivres;
   S.desmaios = (S.desmaios || 0) + 1;
   await say(`${nm(S.player)} desmaiou...`, 'hit');
+  if (regra.permadeath) { await say('No Roguelike não existe segunda chance. A run acabou.', 'hit'); encerrarJornada('desmaiou'); return; }
   if (desmaioPrecisaRevive(S.desmaios, livres)) {
     if (!S.bag.revive) { await say('Não há nenhum Revive na mochila...', 'hit'); encerrarJornada('desmaiou'); return; }
     S.bag.revive--; if (S.bag.revive <= 0) delete S.bag.revive;
