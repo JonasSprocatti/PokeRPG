@@ -4,18 +4,18 @@
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
 import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro } from './estado.js';
-import { log, say, shake } from './ui.js';
+import { log, say } from './ui.js';
 import { render } from './render.js';
-import { changeStats, inflict, healFull } from './efeitos.js';
+import { changeStats, healFull, CTX } from './efeitos.js';
+import { usarGolpe, fimDeTurno, fimDaRodada } from './golpe.js';
 import { gainExp, gainExpAliado } from './progressao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { encerrarJornada } from './fim.js';
-import { STATS, STAT_PT, TC, ABSORB, SELF_TARGETS, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
+import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES } from './dados.js';
 import {
-  freshVol, effStat, calcDamage, confDamage, heal, typeEff,
-  chanceAcerto, danoResidual, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
+  freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive
 } from './regras.js';
@@ -23,95 +23,13 @@ import { verificarMissoes } from './missoes.js';
 import { loadPokemon, loadSpecies, pokemonEmCache, idsEmCache } from './api.js';
 import { rand, pick, clamp, esc, fmt, offline, erroOffline } from './util.js';
 
-async function statusMove(user, target, move, selfT) {
-  const meta = move.meta || {}; let did = false;
-  if (meta.heal > 0) {
-    did = true;
-    if (user.hp >= user.stats.hp) await say(`O HP de ${nm(user)} já está cheio!`);
-    else { heal(user, Math.floor(user.stats.hp * meta.heal / 100)); render(); await say(`${nm(user)} recuperou HP.`, 'good'); }
-  }
-  if (move.stats.length) { did = true; await changeStats(selfT || meta.cat === 'damage+raise' ? user : target, move.stats); }
-  if (meta.ailment && meta.ailment !== 'none') {
-    did = true;
-    if (Math.random() * 100 < (meta.ailChance || 100)) await inflict(selfT ? user : target, meta.ailment, true);
-  }
-  if (!did) await say('Mas nada aconteceu... (efeito ainda não implementado no protótipo)', 'muted');
-}
-async function useMove(user, target, move, movedFirst) {
-  const U = nm(user), T = nm(target);
-  if (user.status === 'sleep') {
-    user.sleep--;
-    if (user.sleep > 0) { await say(`${U} está dormindo profundamente.`); return; }
-    user.status = null; render(); await say(`${U} acordou!`);
-  }
-  if (user.status === 'freeze') {
-    if (Math.random() < 0.2) { user.status = null; render(); await say(`${U} descongelou!`); }
-    else { await say(`${U} está congelado!`); return; }
-  }
-  if (user.status === 'paralysis' && Math.random() < 0.25) { await say(`${U} está paralisado e não consegue se mover!`); return; }
-  if (user.vol.flinch) { user.vol.flinch = false; await say(`${U} recuou e não conseguiu atacar!`); return; }
-  if (user.vol.conf > 0) {
-    user.vol.conf--;
-    if (user.vol.conf === 0) await say(`${U} não está mais confuso.`);
-    else {
-      await say(`${U} está confuso...`);
-      if (Math.random() < 1 / 3) { const d = confDamage(user); user.hp = Math.max(0, user.hp - d); render(); shake(user); await say(`Ele se machucou na confusão! (−${d})`, 'hit'); return; }
-    }
-  }
-  if (move.ppLeft !== undefined) move.ppLeft = Math.max(0, move.ppLeft - 1);
-  await say(`${U} usou <b style="color:${TC[move.type] || 'inherit'};filter:brightness(.7)">${esc(fmt(move.name))}</b>!`);
-
-  const selfT = SELF_TARGETS.has(move.target), meta = move.meta || {};
-  if (!selfT && move.acc != null) {
-    if (Math.random() > chanceAcerto(move, user, target)) { await say('Mas errou!'); return; }
-  }
-  if (move.cls === 'status') { await statusMove(user, target, move, selfT); render(); return; }
-
-  const ab = ABSORB[target.ability];
-  if (ab && ab.type === move.type) {
-    await say(`A habilidade ${esc(fmt(target.ability))} de ${T} anulou o golpe!`);
-    if (ab.heal && target.hp < target.stats.hp) { heal(target, Math.floor(target.stats.hp / 4)); render(); await say(`${T} recuperou HP.`, 'good'); }
-    if (target.ability === 'flash-fire') target.vol.flashFire = true;
-    return;
-  }
-  const eff = typeEff(move.type, target.data.types);
-  if (eff === 0) { await say(`Não afeta ${T}...`); return; }
-
-  const hits = meta.minHits ? rand(meta.minHits, meta.maxHits || meta.minHits) : 1;
-  let total = 0, landed = 0, crit = false;
-  for (let i = 0; i < hits && target.hp > 0; i++) {
-    const r = calcDamage(user, target, move);
-    target.hp = Math.max(0, target.hp - r.dmg); total += r.dmg; landed++; crit ||= r.crit;
-  }
-  render(); shake(target);
-  if (crit) await say('Um golpe crítico!', 'crit');
-  if (eff > 1) await say('É super efetivo!', 'good'); else if (eff < 1) await say('Não é muito efetivo...');
-  if (hits > 1) await say(`Acertou ${landed} vez${landed > 1 ? 'es' : ''}!`);
-  await say(`${T} perdeu ${total} HP.`, 'hit');
-
-  if (meta.drain > 0) { const h = Math.max(1, Math.floor(total * meta.drain / 100)); heal(user, h); render(); await say(`${U} drenou ${h} HP.`, 'good'); }
-  else if (meta.drain < 0) { const d = Math.max(1, Math.floor(total * -meta.drain / 100)); user.hp = Math.max(0, user.hp - d); render(); await say(`${U} sofreu ${d} de dano de recuo.`, 'hit'); }
-  if (meta.heal > 0 && user.hp > 0) { heal(user, Math.floor(user.stats.hp * meta.heal / 100)); render(); }
-
-  if (move.stats.length && Math.random() * 100 < (meta.statChance || 100)) {
-    if (meta.cat === 'damage+raise' && user.hp > 0) await changeStats(user, move.stats);
-    else if (meta.cat !== 'damage+raise' && target.hp > 0) await changeStats(target, move.stats);
-  }
-  if (target.hp > 0) {
-    if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && Math.random() * 100 < meta.ailChance) await inflict(target, meta.ailment);
-    if (meta.flinch > 0 && movedFirst && Math.random() * 100 < meta.flinch) target.vol.flinch = true;
-  }
-}
+// golpes e fim de turno vêm do motor único (golpe.js), narrados pelo CTX do single player (efeitos.js)
+const useMove = (user, target, move, movedFirst) => usarGolpe(user, target, move, movedFirst, CTX);
 function chooseEnemyMove(E) {
   const ok = E.moves.filter(m => m.ppLeft > 0);
   return ok.length ? pick(ok) : STRUGGLE;
 }
-async function residual(m) {
-  const d = danoResidual(m);
-  if (!d) return;
-  m.hp = Math.max(0, m.hp - d); render();
-  await say(`${nm(m)} sofreu com ${m.status === 'burn' ? 'a queimadura' : 'o veneno'}. (−${d})`, 'hit');
-}
+const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 
 /* ---- início de batalha ---- */
 // selvagem: da lista da zona; Fenda Dimensional (sem lista): qualquer um perto do seu nível.
@@ -136,7 +54,7 @@ async function intimidar(E, soInimigo = false) {
   const pares = [...(soInimigo ? [] : lado.map(a => [a, [E]])), [E, lado]];
   for (const [a, alvos] of pares) if (a.ability === 'intimidate') {
     await say(`A Intimidação de ${nm(a)} assusta o oponente!`);
-    for (const b of alvos) await changeStats(b, [{ stat: 'attack', change: -1 }]);
+    for (const b of alvos) await changeStats(b, [{ stat: 'attack', change: -1 }], a); // Clear Body & cia. impedem
   }
 }
 export async function startBattle(z) {
@@ -270,7 +188,7 @@ export async function turn(action) {
     }
     if (B.capturado) { await serCapturado(); return; }
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await anunciarQuedas(); }
-    for (const m of [...ladoJogador(), E]) m.vol.flinch = false;
+    for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (E.hp <= 0) await win();

@@ -5,7 +5,8 @@ import { G, save, nm } from './estado.js';
 import { $, limparTopo, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
-import { SPR, STATS, STAT_PT, NATURES, IMPL, ZONES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
+import { IMPL } from './habilidades.js';
+import { SPR, STATS, STAT_PT, NATURES, ZONES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
 import { carregarCarreira } from './carreira.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
@@ -24,7 +25,7 @@ function permitidos() {
 export function showCreate() {
   G.mode = 'create'; limparTopo();
   $('#app').innerHTML = `<main class="create">
-    <div class="topo-criacao"><h1>Escolha quem você vai ser.</h1><span class="subrow"><button class="btn ghost" data-act="mp">👥 Multiplayer</button><button class="btn ghost" data-act="carreira">📊 Carreira</button><button class="btn ghost" data-act="ranking">🏆 Ranking</button></span></div>
+    <div class="topo-criacao"><h1>Escolha quem você vai ser.</h1><span class="subrow"><button class="btn ghost" data-act="mp">👥 Multiplayer</button><button class="btn ghost" data-act="carreira">📊 Carreira</button><button class="btn ghost" data-act="ranking">🏆 Ranking</button><button class="btn ghost" data-act="relatos">🐞 Bugs e sugestões</button></span></div>
     <p class="lead">Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta. Os outros Pokémon você encontra pelo caminho.</p>
     <h3 class="passo"><span>1</span> Dificuldade</h3>
     <div id="difs" class="difs"></div>

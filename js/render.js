@@ -2,7 +2,8 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, IMPL, ST_SHORT, ITEMS, ZONES, MISSOES, ORDENS } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, ZONES, MISSOES, ORDENS } from './dados.js';
+import { IMPL } from './habilidades.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
@@ -21,8 +22,14 @@ function hpbar(m) {
   return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${col}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`;
 }
 function chipsFor(m) {
-  let h = m.status ? `<span class="st st-${m.status}">${ST_SHORT[m.status]}</span>` : '';
+  let h = m.status ? `<span class="st st-${m.status}">${m.status === 'poison' && m.vol?.toxico ? 'TÓX' : ST_SHORT[m.status]}</span>` : '';
   if (m.vol?.conf) h += '<span class="st">CONF</span>';
+  // golpes especiais (especiais.js): carga, recarga, fúria, semente, foco
+  if (m.vol?.carregando) h += `<span class="st" title="Ataca sozinho no próximo turno">CARREGANDO</span>`;
+  if (m.vol?.recarga) h += `<span class="st" title="Não age no próximo turno">RECARGA</span>`;
+  if (m.vol?.furia) h += `<span class="st" title="Repete o golpe e depois fica confuso">FÚRIA</span>`;
+  if (m.vol?.semente != null) h += `<span class="st" title="Perde 1/8 do HP por turno">SEMENTE</span>`;
+  if (m.vol?.foco) h += `<span class="st" title="Crítico mais fácil">FOCO</span>`;
   for (const [s, v] of Object.entries(m.vol?.stages || {})) if (v) h += `<span class="stg ${v > 0 ? 'up' : 'down'}">${STAGE_SHORT[s]} ${v > 0 ? '+' : ''}${v}</span>`;
   return `<div class="chips">${h}</div>`;
 }
@@ -205,7 +212,7 @@ export function render() {
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   renderSheet(); renderScene(); renderActions();
   $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
-  $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
+  $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button><button class="btn ghost sm" data-act="relatos" ${G.busy ? 'disabled' : ''} title="Bugs e sugestões">🐞 Bugs e sugestões</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
 }
 // monta a tela do jogo (esqueleto de painéis de paineis.js), aplica o layout salvo e desenha
 export function buildGame() {

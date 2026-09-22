@@ -260,11 +260,16 @@ function autoCompletar() {
   }
   resolver();
 }
-function resolver() {
-  const b = sala.batalha;
+async function resolver() {
+  if (!sala?.batalha || sala.resolvendo) return; // trava: uma escolha atrasada não resolve o mesmo turno de novo
+  sala.resolvendo = true;
+  const b = sala.batalha, acoes = Object.values(sala.acoes);
   clearTimeout(sala.timer);
   const ia = [...b.lados.A, ...b.lados.B].filter(m => m.hp > 0 && m.dono === 'ia').map(m => acaoDaIA(b, m));
-  const { estado, eventos } = resolverTurnoMP(b, [...Object.values(sala.acoes), ...ia]);
+  let res;
+  try { res = await resolverTurnoMP(b, [...acoes, ...ia]); } finally { if (sala) sala.resolvendo = false; }
+  if (!sala) return;
+  const { estado, eventos } = res;
   sala.batalha = estado; sala.acoes = {};
   const cab = [{ txt: `Turno ${b.turno}`, cls: 'turno' }];
   if (estado.fim) finalizar([...cab, ...eventos]); else publicarEstado([...cab, ...eventos], true);

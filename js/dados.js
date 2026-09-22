@@ -45,10 +45,7 @@ export const NATURES = {
   calm: ['special-defense', 'attack'], gentle: ['special-defense', 'defense'], sassy: ['special-defense', 'speed'], careful: ['special-defense', 'special-attack'], quirky: []
 };
 
-// habilidades que o protótipo realmente aplica em batalha
-export const PINCH = { overgrow: 'grass', blaze: 'fire', torrent: 'water', swarm: 'bug' };
-export const ABSORB = { levitate: { type: 'ground' }, 'flash-fire': { type: 'fire' }, 'volt-absorb': { type: 'electric', heal: true }, 'water-absorb': { type: 'water', heal: true } };
-export const IMPL = new Set([...Object.keys(PINCH), ...Object.keys(ABSORB), 'guts', 'intimidate', 'adaptability', 'run-away']);
+// habilidades com efeito em batalha: js/habilidades.js
 
 export const SELF_TARGETS = new Set(['user', 'users-field', 'user-or-ally', 'user-and-allies', 'entire-field', 'all-allies', 'ally']);
 export const STRUGGLE = { name: 'struggle', type: 'normal', cls: 'physical', power: 50, acc: null, priority: 0, target: 'selected-pokemon', meta: { drain: -25 }, stats: [], desc: '' };

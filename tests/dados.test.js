@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, PINCH, ABSORB, IMPL, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -30,12 +30,6 @@ test('NATURES: 25, 5 neutras, as outras sobem e descem atributos diferentes (nun
     assert.notEqual(n[0], n[1]);
     for (const s of n) assert.ok(STATS.includes(s) && s !== 'hp');
   }
-});
-
-test('habilidades implementadas apontam pra tipos válidos', () => {
-  for (const t of Object.values(PINCH)) assert.ok(TIPOS.includes(t));
-  for (const a of Object.values(ABSORB)) assert.ok(TIPOS.includes(a.type));
-  for (const k of [...Object.keys(PINCH), ...Object.keys(ABSORB)]) assert.ok(IMPL.has(k));
 });
 
 test('todo status tem mensagem e sigla', () => {

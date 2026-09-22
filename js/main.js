@@ -10,6 +10,7 @@ import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, entrarGoogle, en
   nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
+import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
@@ -50,6 +51,10 @@ document.addEventListener('click', async e => {
     case 'mp-fugir': return fugirMP();
     case 'mp-mirar': return mirarMP(v);
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
+    // bugs e sugestões
+    case 'relatos': if (G.busy || G.mode === 'battle' || G.mode === 'mp') return; return telaRelatos();
+    case 'rel-tipo': return escolherTipoRelato(v);
+    case 'rel-enviar': return enviarRelatoTela();
     // conta / nuvem
     case 'conta': if (G.busy || G.mode === 'battle') return; return telaConta();
     case 'entrar-google': try { await entrarGoogle(); } catch (err) { telaConta(`Não deu pra entrar com o Google: ${esc(err.message)}`); } return;

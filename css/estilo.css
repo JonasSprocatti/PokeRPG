@@ -64,6 +64,13 @@ table.ranking td.jogador{white-space:nowrap}
 #toasts{position:fixed;right:14px;bottom:14px;z-index:20;display:grid;gap:8px;max-width:min(380px,calc(100vw - 28px))}
 .toast{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;background:var(--panel);border:2px solid var(--yellow);border-radius:14px;padding:12px 14px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
 .toast-x{background:none;border:0;color:var(--muted);font-size:16px}
+/* bugs e sugestões */
+.relato-card{max-width:640px}
+.relato-card textarea{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);font:inherit;resize:vertical}
+.relato-card .campo input{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text)}
+.rel-tipos{grid-template-columns:1fr 1fr}
+@media(max-width:520px){.rel-tipos{grid-template-columns:1fr}}
+.rel-ctx{max-height:220px;overflow:auto;background:var(--ink);border-radius:8px;padding:8px;font-size:12px;white-space:pre-wrap}
 /* tela de login */
 .login-card{max-width:460px;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:12px}
 .login-card h2{margin:0;font:700 24px var(--display)}

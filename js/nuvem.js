@@ -98,7 +98,11 @@ export async function iniciarNuvem() {
   if (!ouvindoRede) { // uma vez só, mesmo que iniciarNuvem seja tentada de novo depois de abrir offline
     ouvindoRede = true;
     // voltou a internet: termina de iniciar (se o jogo abriu offline) e manda tudo o que ficou pendente
-    addEventListener('online', () => { avisar(); if (!iniciada) iniciarNuvem().catch(e => console.error(e)); else if (usuario()) sincronizar(); });
+    addEventListener('online', () => {
+      avisar();
+      if (!iniciada) iniciarNuvem().catch(e => console.error(e)); else if (usuario()) sincronizar();
+      enviarFilaRelatos().catch(e => console.warn('relatos', e)); // bugs/sugestões escritos offline
+    });
     addEventListener('offline', avisar);
   }
   let c;
@@ -118,6 +122,7 @@ export async function iniciarNuvem() {
     }
   });
   if (sessao) { sincronizar(); ouvirConvites(); }
+  enviarFilaRelatos().catch(e => console.warn('relatos', e));
   // sair da aba / fechar: manda o save pendente na hora
   addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') enviarSaveAgora(); });
   addEventListener('pagehide', enviarSaveAgora);
@@ -221,6 +226,35 @@ export async function buscarRanking(especie = null, limite = 50) {
 export async function especiesRanqueadas() {
   const c = await sb(); if (!c) return [];
   const { data, error } = await c.rpc('especies_ranqueadas');
+  if (error) throw error;
+  return data;
+}
+
+// Bugs e sugestões (tabela `relatos`). Sem internet / sem config / falha: vai pra uma fila neste navegador e sobe
+// sozinho depois (enviarFilaRelatos no sync e ao voltar a internet). Devolve 'enviado' ou 'na-fila'.
+const FILA_RELATOS = 'pokerpg-relatos-fila';
+export const relatosNaFila = () => (store.get(FILA_RELATOS) || []).length;
+export async function enviarRelato(relato) {
+  const c = await sb().catch(() => null);
+  if (c && !offline()) {
+    const { error } = await c.from('relatos').insert({ ...relato, user_id: usuario()?.id ?? null });
+    if (!error) return 'enviado';
+    if (error.code === '23514') throw new Error('Título (3 a 120 letras) e descrição (5 a 4000) precisam estar preenchidos.'); // check do banco
+    console.warn('relato: vai pra fila', error);
+  }
+  store.set(FILA_RELATOS, [...(store.get(FILA_RELATOS) || []), relato]);
+  return 'na-fila';
+}
+export async function enviarFilaRelatos() {
+  const fila = store.get(FILA_RELATOS) || []; if (!fila.length || offline()) return;
+  const c = await sb(); if (!c) return;
+  const sobra = [];
+  for (const r of fila) { const { error } = await c.from('relatos').insert({ ...r, user_id: usuario()?.id ?? null }); if (error && error.code !== '23514') sobra.push(r); }
+  store.set(FILA_RELATOS, sobra);
+}
+export async function meusRelatos() {
+  const c = await sb(); if (!c || !usuario()) return [];
+  const { data, error } = await c.from('relatos').select('id, tipo, titulo, status, criado_em').order('criado_em', { ascending: false }).limit(20);
   if (error) throw error;
   return data;
 }

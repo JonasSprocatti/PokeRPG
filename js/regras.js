@@ -2,7 +2,9 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
-import { API, STATS, STAT_PT, CHART, NATURES, PINCH } from './dados.js';
+import { API, STATS, STAT_PT, CHART, NATURES } from './dados.js';
+import { hab } from './habilidades.js';
+import { especial } from './especiais.js';
 import { rand, clamp, fmt } from './util.js';
 
 export function typeEff(atk, defs) {
@@ -33,9 +35,10 @@ export const stageMul = n => n >= 0 ? (2 + n) / 2 : 2 / (2 - n);
 export function effStat(m, stat, crit = false, attacking = true) {
   let st = m.vol?.stages[stat] || 0;
   if (crit) { if (attacking && st < 0) st = 0; if (!attacking && st > 0) st = 0; }
-  let v = m.stats[stat] * stageMul(st);
-  if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;
-  if (stat === 'attack' && m.status && m.ability === 'guts') v *= 1.5;
+  const h = hab(m);
+  let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1);
+  if (m.status && h.comStatus?.[stat]) v *= h.comStatus[stat];                     // Guts, Quick Feet, Marvel Scale
+  else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
   return Math.max(1, Math.floor(v));
 }
 export function defaultMoves(list, level) {
@@ -45,19 +48,49 @@ export function defaultMoves(list, level) {
   if (!out.length) out.push({ name: 'tackle', url: `${API}/move/33/`, level: 1 });
   return out.reverse();
 }
+// Dano de um golpe. Habilidades (habilidades.js) entram aqui: quem ataca (stab, técnico, crítico, pinch, pouco
+// efetivo, queimadura ignorada) e quem recebe (resiste, super efetivo reduzido, HP cheio). Estágios/atributos em effStat.
+// Poder de golpe que depende da situação (especiais.js → poder). null = usa o poder da tabela.
+export function poderEspecial(u, t, move) {
+  const f = especial(move).poder; if (!f) return null;
+  const base = move.power || 60, hpU = u.hp / u.stats.hp;
+  switch (f) {
+    case 'hpBaixo': { const p = Math.floor(48 * u.hp / u.stats.hp); return p <= 1 ? 200 : p <= 4 ? 150 : p <= 9 ? 100 : p <= 16 ? 80 : p <= 32 ? 40 : 20; } // Flail, Reversal
+    case 'hpAlto': return Math.max(1, Math.floor(150 * hpU));                                           // Eruption, Water Spout
+    case 'giroscopio': return Math.min(150, Math.floor(25 * effStat(t, 'speed') / effStat(u, 'speed')) + 1); // Gyro Ball: mais lento = mais forte
+    case 'eletro': { const r = effStat(u, 'speed') / effStat(t, 'speed'); return r >= 4 ? 150 : r >= 3 ? 120 : r >= 2 ? 80 : r >= 1 ? 60 : 40; } // Electro Ball
+    case 'dobraAlvoComStatus': return t.status ? base * 2 : base;                                      // Hex
+    case 'dobraComStatus': return u.status ? base * 2 : base;                                          // Facade
+    case 'dobraAlvoEnvenenado': return t.status === 'poison' ? base * 2 : base;                       // Venoshock
+    case 'dobraAlvoMetade': return t.hp <= t.stats.hp / 2 ? base * 2 : base;                           // Brine
+  }
+  return null;
+}
+// OHKO (Fissure, Guillotine…): 30% + diferença de nível; alvo de nível maior nunca cai
+export const chanceOhko = (u, t) => t.level > u.level ? 0 : Math.min(1, (30 + u.level - t.level) / 100);
+
 export function calcDamage(u, t, move) {
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
-  const power = move.power || 60, phys = move.cls === 'physical';
-  const crit = Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, move.meta?.crit || 0)];
+  const hu = hab(u), ht = hab(t);
+  let power = poderEspecial(u, t, move) ?? (move.power || 60);
+  if (hu.tecnico && power <= 60) power = Math.floor(power * 1.5);                   // Technician
+  const phys = move.cls === 'physical';
+  // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)
+  const crit = Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0))];
   const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true);
   const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
-  let mod = (crit ? 1.5 : 1) * rand(85, 100) / 100;
-  if (u.data.types.includes(move.type)) mod *= u.ability === 'adaptability' ? 2 : 1.5;
-  mod *= typeEff(move.type, t.data.types);
-  if (phys && u.status === 'burn' && u.ability !== 'guts') mod *= 0.5;
-  if (PINCH[u.ability] === move.type && u.hp <= u.stats.hp / 3) mod *= 1.5;
+  let mod = (crit ? hu.critico || 1.5 : 1) * rand(85, 100) / 100;
+  if (u.data.types.includes(move.type)) mod *= hu.stab || 1.5;                        // STAB (Adaptability = ×2)
+  const ef = typeEff(move.type, t.data.types);
+  mod *= ef;
+  if (ef > 1 && ht.superEfetivo) mod *= ht.superEfetivo;                            // Filter, Solid Rock
+  if (ef < 1 && hu.poucoEfetivo) mod *= hu.poucoEfetivo;                            // Tinted Lens
+  if (phys && u.status === 'burn' && !hu.comStatus?.attack && move.name !== 'facade') mod *= 0.5; // Guts e Facade ignoram a queimadura
+  if (hu.pinch === move.type && u.hp <= u.stats.hp / 3) mod *= 1.5;                 // Overgrow, Blaze, Torrent, Swarm
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
+  if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
+  if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
 export function confDamage(u) {
@@ -70,18 +103,22 @@ export const heal = (m, h) => { m.hp = Math.min(m.stats.hp, m.hp + h); };
 
 // probabilidade de acertar: precisão do golpe × estágio de precisão de quem usa contra evasão do alvo
 export function chanceAcerto(move, user, target) {
-  const n = clamp((user.vol.stages.accuracy || 0) - (target.vol.stages.evasion || 0), -6, 6);
-  return move.acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n));
+  const n = clamp((user.vol.stages.accuracy || 0) - (target.vol.stages.evasion || 0), -6, 6), h = hab(user);
+  return move.acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n)) * (h.precisao || 1) * (move.cls === 'physical' ? h.precisaoFisica || 1 : 1);
 }
 
 // imunidades de tipo a status (Elétrico não paralisa, Fogo não queima, Gelo não congela, Venenoso/Aço não envenenam)
 export function imuneAoStatus(tipos, ail) {
   return (ail === 'paralysis' && tipos.includes('electric')) || (ail === 'burn' && tipos.includes('fire')) || (ail === 'freeze' && tipos.includes('ice')) || (ail === 'poison' && (tipos.includes('poison') || tipos.includes('steel')));
 }
+// tipo OU habilidade (Immunity, Limber, Insomnia, Own Tempo…)
+export const imuneAoStatusMon = (m, ail) => (ail !== 'confusion' && imuneAoStatus(m.data.types, ail)) || !!hab(m).imuneStatus?.includes(ail);
 
 // dano de queimadura (1/16) e veneno (1/8) no fim do turno, mínimo 1 (como nos jogos); 0 = sem status que cause dano.
 // Sem o mínimo, HP máximo < 16 (queimadura) ou < 8 (veneno) dava floor = 0 e o status nunca machucava.
+// Veneno grave (Toxic, m.vol.toxico = n): n/16 do HP, n sobe a cada turno (golpe.js fimDeTurno).
 export function danoResidual(m) {
+  if (m.status === 'poison' && m.vol?.toxico) return Math.max(1, Math.floor(m.stats.hp * m.vol.toxico / 16));
   const frac = m.status === 'burn' ? 16 : m.status === 'poison' ? 8 : 0;
   return frac ? Math.max(1, Math.floor(m.stats.hp / frac)) : 0;
 }

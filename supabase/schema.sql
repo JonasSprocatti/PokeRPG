@@ -101,6 +101,25 @@ alter table public.saves enable row level security;
 drop policy if exists "save: tudo no próprio" on public.saves;
 create policy "save: tudo no próprio" on public.saves for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- ============ Bugs e sugestões ============
+-- Qualquer um envia (com ou sem conta); cada conta lê só os próprios. Quem mantém o jogo lê tudo pelo Table Editor.
+create table if not exists public.relatos (
+  id bigint generated always as identity primary key,
+  user_id uuid references auth.users on delete set null default auth.uid(),
+  tipo text not null check (tipo in ('bug', 'sugestao')),
+  titulo text not null check (char_length(titulo) between 3 and 120),
+  texto text not null check (char_length(texto) between 5 and 4000),
+  contexto jsonb,
+  status text not null default 'novo',
+  criado_em timestamptz not null default now()
+);
+alter table public.relatos enable row level security;
+drop policy if exists "relato: enviar" on public.relatos;
+create policy "relato: enviar" on public.relatos for insert to anon, authenticated
+  with check ((user_id is null or user_id = auth.uid()) and status = 'novo' and pg_column_size(contexto) < 20000);
+drop policy if exists "relato: ver os meus" on public.relatos;
+create policy "relato: ver os meus" on public.relatos for select using (user_id = auth.uid());
+
 -- ============ Ranking global ============
 -- Anti-trapaça (parcial): a pontuação NÃO é confiada ao navegador. Antes de gravar, o servidor recalcula a partir
 -- dos números do resumo — mesmos pesos de PESOS_PONTOS e multPontos do jogo (regras.js / dados.js; mudou lá,

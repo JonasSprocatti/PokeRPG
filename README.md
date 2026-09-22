@@ -49,7 +49,17 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
-- Habilidades que já funcionam: Overgrow/Blaze/Torrent/Swarm, Levitate, Flash Fire, Volt/Water Absorb, Guts, Intimidate, Adaptability e Run Away.
+- **~60 habilidades com efeito de verdade**, iguais no single player e no multiplayer:
+  - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head.
+  - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard.
+  - **Absorção de tipo:** Levitate, Flash Fire, Volt/Water Absorb, Lightning Rod, Motor Drive, Sap Sipper.
+  - **Status:** Immunity, Limber, Insomnia, Own Tempo.
+  - **Atributos que não caem:** Clear Body, Hyper Cutter.
+  - **Contato:** Static, Flame Body, Rough Skin.
+  - **Fim de turno:** Speed Boost, Shed Skin.
+  - **Outras:** Intimidate, Run Away…
+
+  A ficha marca quais estão ativas.
 
 ### Amizade e aliados
 - Em batalha contra um selvagem, ofereça um **petisco** que o tipo dele goste. Com a amizade cheia, ele passa a te seguir (até **2 aliados**). São 6 petiscos que cobrem os 18 tipos.
@@ -86,6 +96,9 @@ Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos 
 ### 👤 Ícone e amigos
 - **Ícone:** qualquer um dos 1025 Pokémon, normal ou ✨ shiny. Aparece no topo, no ranking, nas salas e para os seus amigos. Sem conta, fica só no seu navegador.
 - **Amigos** (com conta): cada um tem um **código de amigo** de 6 caracteres. Adicione pelo código, e o outro aceita ou recusa. Na sala multiplayer, o anfitrião **chama um amigo com um toque**, e ele recebe o convite em qualquer tela do jogo.
+
+### 🐞 Bugs e sugestões
+Na tela inicial e no topo do jogo. Escolha **Bug** ou **Sugestão**, dê um título e descreva. Não precisa de conta. Os bugs podem levar um **anexo técnico** (versão, navegador, tela, Pokémon, últimas linhas do registro, **nada pessoal**), que você vê antes de enviar. Sem internet, fica guardado e é enviado depois.
 
 ### 🏆 Ranking global
 A melhor jornada de cada jogador, **geral** ou **por espécie**, com a sua posição destacada. Dá para ver sem conta; para aparecer, entre e termine jornadas. A pontuação é **recalculada no servidor** a partir dos números da jornada, e números impossíveis são recusados.
@@ -124,6 +137,9 @@ Depois abra http://localhost:3000.
 | `index.html`, `css/estilo.css` | Página e estilo |
 | `js/regras.js` | Fórmulas puras (dano, stats, captura, missões, pontuação…), todas testadas |
 | `js/dados.js` | Tabelas: tipos, naturezas, itens, zonas e Alfas, missões, dificuldades, iniciais, ordens |
+| `js/golpe.js`, `js/habilidades.js`, `js/especiais.js` | Motor único dos golpes, a tabela de habilidades e a de golpes especiais (Protect, Rest, Explosion, carga/recarga…) |
+| `docs/auditoria-batalha.md` | Auditoria de todos os golpes e habilidades contra o motor: o que funciona, o que é aproximado e o que falta |
+| `js/relatos.js` | Bugs e sugestões |
 | `js/batalha.js`, `js/amizade.js`, `js/progressao.js`, `js/itens.js`, `js/missoes.js`, `js/mundo.js` | Regras narradas do jogo |
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
 | `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
@@ -137,12 +153,16 @@ Depois abra http://localhost:3000.
 
 ## Próximos passos
 
+- [ ] **Evoluções especiais**, porque hoje só a evolução por nível funciona:
+  - **pedras e itens** (loja e achados, usados pela Mochila);
+  - **troca:** "Cabo de Conexão" no single player, e troca de verdade com um amigo no multiplayer;
+  - **condições:** amizade (vínculo), dia ou noite pelo relógio real, saber um golpe, estar numa zona.
 - [ ] **Batalha mais completa**, nesta ordem:
-  1. **Habilidades:** as mais comuns com efeito de verdade (hoje são 13).
+  1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela).
   2. **Clima:** sol, chuva, tempestade de areia e granizo/neve, e as habilidades ligadas a eles.
   3. **Terrenos:** elétrico, grama, psíquico e névoa.
   4. **Itens segurados:** Leftovers, Choice, Life Orb, frutas…
-  5. **Golpes especiais:** dois turnos, proteção, troca de campo, e uma IA de inimigo mais esperta.
+  5. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
   6. **Mecânicas especiais:** Mega Evolução, Z-Moves, Dynamax/Gigantamax e Terastalização.
 - [ ] Acabamento: sons, animações e instalação como app (PWA).
 
@@ -160,4 +180,7 @@ Depois abra http://localhost:3000.
 - [x] Roguelike sem segunda chance (permadeath de você e dos aliados)
 - [x] Entrar numa sala com um Pokémon convidado; ganhos da run de outra pessoa voltam com você (no nível real)
 - [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
+- [x] Motor de golpes único (single player e multiplayer) com ~60 habilidades
+- [x] Tela de bugs e sugestões (funciona sem conta e offline)
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail
+- [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)
