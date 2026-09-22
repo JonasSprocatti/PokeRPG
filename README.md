@@ -79,6 +79,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 36 missões que vão aparecendo conforme você joga: derrotar espécies (mais para as comuns, menos para as raras), fazer amigos, vencer a trilha dos Alfas (a de Kanto só aparece no mapa da Gen 1), juntar e gastar dinheiro, subir de nível, evoluir e derrotar treinadores.
 
 ### Fim de jornada e carreira
+- **💾 Jornadas salvas:** dá para ter várias runs em andamento. Em **Novo jogo**, escolha **Guardar e começar outra** (nada se perde) ou **Encerrar**. A tela 💾 Jornadas salvas lista todas, com **Continuar** e **Excluir**. Com conta, todas ficam na nuvem. Quando chega uma jornada de outro aparelho, você escolhe **Continuar**, **Guardar pra depois** (fica na lista e não pergunta de novo) ou **Excluir**. Até 12 guardadas.
 - A jornada termina com Game Over, com vitória (Roguelike: venceu os lendários) ou quando você a encerra (**Novo jogo**). A tela de fim compara tudo com o seu recorde naquela espécie. Cada Gen fechada vale **2000 pontos**.
 - **📊 Carreira:** Pokémon favorito, Pokédex (quantos já viraram amigos e quantos faltam dos 1025, além dos vistos), shinies, maior quantia de dinheiro, mais missões numa jornada, nível máximo, tempo total e o melhor resultado por espécie.
 
@@ -153,6 +154,7 @@ Depois abra http://localhost:3000.
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
 | `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
 | `js/nuvem.js`, `js/conta.js`, `js/config.js`, `js/ranking.js` | Login, nuvem (Supabase) e ranking global |
+| `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
 | `js/mp-motor.js`, `js/multiplayer.js` | Motor da batalha multiplayer (puro, testado) e salas |
 | `sw.js` | Modo offline |
 | `supabase/` | Banco (`schema.sql`) e passo a passo de configuração |
@@ -181,6 +183,7 @@ Depois abra http://localhost:3000.
 - [x] Treinadores caçadores, dificuldades, shiny, Full Randomizer
 - [x] Amizade, aliados com ordens, batalha com vários do mesmo lado
 - [x] Zonas por nível, Alfas, missões
+- [x] 💾 Jornadas salvas: várias runs em andamento (guardar, continuar, excluir), na nuvem também
 - [x] Mapas por Gen (9 regiões × 10 rotas), lendários no fim de cada mapa, míticos raros, Pokédex da rota com silhuetas e taxa de aparição
 - [x] Game Over, carreira, Revive
 - [x] Painéis modulares

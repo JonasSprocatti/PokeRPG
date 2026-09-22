@@ -1,12 +1,14 @@
 /* ============ nuvem (Supabase: login + carreira + save da jornada) ============ */
 // Login com Google ou link por e-mail. Com conta:
 //   • carreira: jornadas terminadas sobem/descem (tabela `jornadas`), juntadas sem duplicar (mesclarJornadas)
-//   • save da jornada em andamento (tabela `saves`, uma linha por conta): sobe sozinho depois de cada save()
-//     (agendarEnvioSave, com espera) e ao sair da aba; em outro aparelho, a sincronização oferece continuar.
+//   • jornadas em andamento (tabela `saves`, uma linha por jornada: a atual e as guardadas de saves.js): a atual
+//     sobe sozinha depois de cada save() (agendarEnvioSave, com espera) e ao sair da aba; em outro aparelho, a
+//     sincronização oferece continuar, guardar ou excluir (sincronizarSaves).
 // Sem config (js/config.js com marcadores) tudo aqui vira no-op e o jogo segue só local.
 // O cliente do Supabase é carregado sob demanda (import dinâmico) — nada disso roda nos testes.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { carregarCarreira, salvarCarreira, mesclarJornadas } from './carreira.js';
+import { reconciliarSaves, guardadas, excluidos, guardar, excluir, esquecerExcluido, GUARDADOS_KEY, MAX_GUARDADAS } from './saves.js';
 import { offline, store } from './util.js';
 
 export const nuvemConfigurada = () => !!SUPABASE_URL && !SUPABASE_URL.includes('SEU-PROJETO') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('SUA-CHAVE');
@@ -85,10 +87,10 @@ export const aoMudarNuvem = fn => { ouvintes.add(fn); fn(); };
 
 // Ganchos que o jogo registra (main.js) — a nuvem não conhece a tela:
 //   saveLocal()            → o save da jornada atual (ou null)
-//   jornadaTerminada(id)   → descartar o save local dessa jornada (ela já acabou em outro aparelho)
-//   oferecerSave(remoto, local) → perguntar se quer continuar a jornada da nuvem (local = a deste aparelho, que
-//                            seria descartada, ou null); devolve true pra carregar a da nuvem
-//   carregarSave(remoto)   → trocar a jornada atual pela da nuvem
+//   jornadaTerminada()     → descartar o save local da jornada atual (ela já acabou em outro aparelho)
+//   oferecerSave(remoto, local) → jornada da nuvem que este aparelho não conhece (local = a atual daqui, ou null);
+//                            devolve 'continuar' | 'guardar' | 'excluir'
+//   carregarSave(remoto, { guardarAtual }) → trocar a jornada atual pela da nuvem (guardarAtual: a daqui vai pras guardadas)
 //   convite(payload)       → um amigo chamou pra sala ({ de, nome, codigo, modo })
 export const ganchos = { saveLocal: () => null, jornadaTerminada: () => {}, oferecerSave: async () => false, carregarSave: () => {}, convite: () => {} };
 
@@ -188,24 +190,8 @@ export async function sincronizar() {
     salvarCarreira({ jornadas: todas });
     nuvem.naNuvem = remotas.length + subiram;
 
-    // save da jornada em andamento
-    const terminadas = new Set(todas.map(j => j.id));
-    const local = ganchos.saveLocal();
-    if (local?.id && terminadas.has(local.id)) ganchos.jornadaTerminada(local.id); // acabou em outro aparelho
-    const { data: remoto, error: es } = await c.from('saves').select('jornada_id, dados, atualizado_em').eq('user_id', u.id).maybeSingle();
-    if (es) throw es;
-    // Uma jornada em andamento por conta. Mesma jornada: vale a versão mais nova, sem perguntar.
-    // Jornadas diferentes (ou só existe a da nuvem): pergunta — a que não for escolhida é descartada.
-    const localAgora = ganchos.saveLocal();
-    if (remoto && terminadas.has(remoto.jornada_id)) await apagarSaveNuvem();
-    else if (remoto && localAgora && remoto.jornada_id === localAgora.id) {
-      if ((remoto.dados.salvoEm || 0) > (localAgora.salvoEm || 0)) ganchos.carregarSave(remoto.dados);
-      else await enviarSaveAgora(true);
-    } else if (remoto) {
-      if (await ganchos.oferecerSave(remoto.dados, localAgora)) ganchos.carregarSave(remoto.dados);
-      else if (localAgora) await enviarSaveAgora(true);
-      // sem jornada aqui e recusou: não apaga nada — a da nuvem só é substituída quando uma jornada nova for salva
-    } else if (localAgora) await enviarSaveAgora(true);
+    // jornadas em andamento (a atual + as guardadas — saves.js): uma linha por jornada na nuvem
+    await sincronizarSaves(c, u, new Set(todas.map(j => j.id)));
 
     nuvem.status = 'ok'; nuvem.ultimaSync = new Date();
   } catch (e) {
@@ -267,6 +253,37 @@ export async function canalSala(codigo, chave) {
 }
 export async function fecharCanal(canal) { const c = await sb(); if (c && canal) await c.removeChannel(canal); }
 
+// Jornadas em andamento: reconciliarSaves (saves.js) decide; aqui só executa. Jornada da nuvem que este aparelho
+// não conhece → pergunta (ganchos.oferecerSave): 'continuar' (a atual daqui vai pras guardadas), 'guardar' (fica na
+// lista, sem perguntar de novo) ou 'excluir' (apaga daqui e da nuvem). Nada some sem o jogador pedir.
+let savesPorJornada = null; // null = ainda não sei; false = schema.sql antigo (uma jornada por conta)
+async function sincronizarSaves(c, u, terminadas) {
+  const { data: remotos, error } = await c.from('saves').select('jornada_id, dados').eq('user_id', u.id);
+  if (error) throw error;
+  const r = reconciliarSaves({ ativo: ganchos.saveLocal(), guardadas: guardadas(), remotos, terminadas, excluidos: excluidos() });
+  if (r.ativoTerminou) ganchos.jornadaTerminada(); // acabou em outro aparelho
+  store.set(GUARDADOS_KEY, r.guardadas);
+  for (const id of r.apagarRemotos) { if (await apagarSaveNuvem(id)) esquecerExcluido(id); }
+  for (const id of r.esquecer) esquecerExcluido(id);
+  if (r.novoAtivo) ganchos.carregarSave(r.novoAtivo);
+  for (const S of r.subir) await subirSave(c, u, S);
+  for (const d of r.perguntar) {
+    const escolha = await ganchos.oferecerSave(d, ganchos.saveLocal());
+    if (escolha === 'continuar') ganchos.carregarSave(d, { guardarAtual: true });
+    else if (escolha === 'excluir') { excluir(d.id); if (await apagarSaveNuvem(d.id)) esquecerExcluido(d.id); }
+    else if (!guardar(d)) nuvem.erro = `Limite de ${MAX_GUARDADAS} jornadas guardadas: a de ${d.player?.nick || d.player?.name} continua só na nuvem.`;
+  }
+}
+async function subirSave(c, u, S) {
+  if (savesPorJornada === false && S.id !== ganchos.saveLocal()?.id) return null; // schema antigo: guardada não sobrescreve a atual
+  const linha = { user_id: u.id, jornada_id: S.id, dados: S, atualizado_em: new Date().toISOString() };
+  let { error } = await c.from('saves').upsert(linha, { onConflict: savesPorJornada === false ? 'user_id' : 'user_id,jornada_id' });
+  // schema.sql antigo (chave só user_id): funciona como antes, uma jornada por conta — só a atual sobe
+  if (error?.code === '42P10' && savesPorJornada !== false) { savesPorJornada = false; ({ error } = await c.from('saves').upsert(linha, { onConflict: 'user_id' })); }
+  else if (!error) savesPorJornada ??= true;
+  return error;
+}
+
 // Save da jornada: agendado depois de cada save() local (espera 5 s juntando vários), ou na hora ao sair da aba.
 let timer = null, pendente = false;
 export function agendarEnvioSave() {
@@ -284,13 +301,15 @@ export async function enviarSaveAgora(forcar = false) {
   pendente = false;
   const c = await sb(), u = usuario(), S = ganchos.saveLocal();
   if (!c || !u || !S?.id) return;
-  const { error } = await c.from('saves').upsert({ user_id: u.id, jornada_id: S.id, dados: S, atualizado_em: new Date().toISOString() });
+  const error = await subirSave(c, u, S);
   if (error) { pendente = true; console.error(error); nuvem.status = 'erro'; nuvem.erro = 'Não consegui salvar a jornada na nuvem (tento de novo sozinho): ' + error.message; avisar(); }
 }
-// (offline: não precisa fila — ao voltar, sincronizar() vê que a jornada do save da nuvem já terminou e apaga)
-export async function apagarSaveNuvem() {
-  pendente = false; clearTimeout(timer);
-  const c = await sb(), u = usuario(); if (!c || !u || offline()) return;
-  const { error } = await c.from('saves').delete().eq('user_id', u.id);
-  if (error) console.error(error);
+// Apaga UMA jornada em andamento da nuvem (terminou ou foi excluída). true = apagou (ou não havia o que apagar).
+// Offline: não precisa fila — a próxima sincronizar() vê que ela terminou (carreira) ou foi excluída (saves.js) e apaga.
+export async function apagarSaveNuvem(id) {
+  const c = await sb(), u = usuario(); if (!c || !u || !id || offline()) return false;
+  if (ganchos.saveLocal()?.id === id) { pendente = false; clearTimeout(timer); }
+  const { error } = await c.from('saves').delete().eq('user_id', u.id).eq('jornada_id', id);
+  if (error) { console.error(error); return false; }
+  return true;
 }

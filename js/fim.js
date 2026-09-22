@@ -32,7 +32,7 @@ export function encerrarJornada(motivo, extra = {}) {
   const nova = adicionarJornada(carreira, resumo);
   salvarCarreira(nova);
   store.del(SAVE_KEY); G.S = null; G.B = null;
-  if (usuario()) apagarSaveNuvem().then(sincronizar).catch(e => console.error(e)); // sobe a jornada e tira o save da nuvem
+  if (usuario()) apagarSaveNuvem(resumo.id).then(sincronizar).catch(e => console.error(e)); // sobe a jornada e tira o save da nuvem
   const jornadas = nova.jornadas.filter(j => j.especie === resumo.especie).length;
   telaFim(resumo, anterior, !anterior || resumo.pontuacao > anterior.pontuacao, jornadas, novosDesbloqueios(carreira.jornadas, nova.jornadas));
 }

@@ -6,8 +6,10 @@ import { $, log, logRaw, ask, iniciarMenu, toast } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
+import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
+import { telaSaves } from './tela-saves.js';
 import { GENS, dadosDaGen, entrarNaGen } from './mapas.js';
-import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
+import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
   nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
@@ -145,11 +147,23 @@ document.addEventListener('click', async e => {
     case 'move': return turn({ type: 'move', idx: +v });
     case 'run': return turn({ type: 'run' });
     case 'new': {
-      if (G.busy) return;
-      // encerrar a jornada: resultado vai pra carreira (fim.js) e a tela de fim aparece; depois dela, "Nova jornada"
-      const ok = await ask('Encerrar esta jornada e começar outra? O resultado vai para a sua carreira e o save desta jornada é apagado (aqui e na nuvem).', [{ label: 'Encerrar jornada', value: true }, { label: 'Continuar jogando', value: false, ghost: true }]);
-      if (ok) { G.PV = null; encerrarJornada('encerrou'); }
+      if (G.busy || G.mode === 'battle') return;
+      // guardar (continua depois, 💾 Jornadas salvas) ou encerrar (resultado vai pra carreira, fim.js)
+      const r = await ask('Começar outra jornada? Você pode <b>guardar</b> esta pra continuar depois (💾 Jornadas salvas) ou <b>encerrar</b>: o resultado vai para a sua carreira e o save desta jornada é apagado (aqui e na nuvem).',
+        [{ label: '💾 Guardar e começar outra', value: 'guardar' }, { label: 'Encerrar jornada', value: 'encerrar', ghost: true }, { label: 'Continuar jogando', value: null, ghost: true }]);
+      if (r === 'guardar') return guardarAtual();
+      if (r === 'encerrar') { G.PV = null; encerrarJornada('encerrou'); }
       return;
+    }
+    // 💾 jornadas salvas (saves.js / tela-saves.js)
+    case 'saves': if (G.busy || G.mode === 'battle') return; return telaSaves();
+    case 'save-guardar': return guardarAtual();
+    case 'save-continuar': return continuarGuardada(v);
+    case 'save-excluir': {
+      if (!(await ask(`Excluir a jornada de <b>${esc(b.dataset.nome || '')}</b>? Ela some deste aparelho e da nuvem, e <b>não vai pra carreira</b>. Não dá pra desfazer.`,
+        [{ label: 'Excluir', value: true }, { label: 'Cancelar', value: false, ghost: true }]))) return;
+      excluir(v); await apagarSaveNuvem(v); // offline: a próxima sincronização apaga da nuvem
+      return telaSaves('Jornada excluída.');
     }
   }
 });
@@ -198,6 +212,26 @@ function voltar() {
   if (G.S) abrirJornada(G.S);
   else { G.PV = null; showCreate(); }
 }
+// tira a jornada atual da frente sem perder nada (vai pras guardadas) e volta pra tela inicial
+function guardarAtual() {
+  if (!G.S || G.busy || G.mode === 'battle') return;
+  if (naSala()) return toast('Saia da sala multiplayer antes de guardar a jornada.', 5000);
+  save(); // grava o estado mais novo (e sobe pra nuvem) antes de guardar
+  if (!guardar(G.S)) return telaSaves(`Você já tem ${MAX_GUARDADAS} jornadas guardadas. Continue ou exclua uma antes de guardar outra.`);
+  store.del(SAVE_KEY); G.S = null; G.B = null; G.PV = null;
+  showCreate();
+  toast('💾 Jornada guardada. Ela está em <b>Jornadas salvas</b>.', 5000);
+}
+// continua uma guardada; a atual (se houver) vai pras guardadas no lugar dela
+function continuarGuardada(id) {
+  if (G.busy || G.mode === 'battle') return;
+  const S = guardadas()[id];
+  if (!saveValido(S)) return telaSaves('Esse save está incompleto e não pôde ser aberto.');
+  if (G.S && G.S.id !== id) { save(); if (!guardar(G.S)) return telaSaves(`Limite de ${MAX_GUARDADAS} jornadas guardadas: exclua uma antes.`); }
+  retirar(id); store.set(SAVE_KEY, S);
+  abrirJornada(S, '💾 Jornada retomada.');
+  save();
+}
 
 /* ============ nuvem: ganchos ============ */
 // o save local sempre avisa a nuvem (que só envia se houver conta, com espera juntando vários saves)
@@ -208,20 +242,30 @@ ganchos.jornadaTerminada = () => {
   if (G.S) { G.S = null; G.B = null; G.PV = null; showCreate(); }
   ask('A jornada que estava neste aparelho já terminou em outro aparelho. O resultado está na sua carreira.', [{ label: 'Ok', value: true }]);
 };
+// jornada da nuvem que este aparelho não conhece: continuar, guardar (fica em 💾 Jornadas salvas, sem perguntar
+// de novo) ou excluir (daqui e da nuvem). Nada é descartado sem escolher.
 ganchos.oferecerSave = async (remoto, local) => {
   const r = remoto.player, desc = s => `${esc(s.player.nick || fmt(s.player.name))} (${esc(fmt(s.player.name))}, Nv. ${s.player.level})`;
-  return ask(`☁ Tem uma jornada salva na sua conta: <b>${desc(remoto)}</b>, salva em ${new Date(remoto.salvoEm || 0).toLocaleString('pt-BR')}.<br><br>`
-    + (local ? `Neste aparelho está outra: ${desc(local)}. Só uma jornada em andamento fica na conta; <b>a que você não escolher é descartada</b>.`
-      : 'Continuar ela aqui? Se você começar uma jornada nova, esta da nuvem é substituída.'),
-    [{ label: `Continuar ${esc(r.nick || fmt(r.name))} (nuvem)`, value: true }, { label: local ? 'Manter a deste aparelho' : 'Agora não', value: false, ghost: true }]);
+  const escolha = await ask(`☁ Tem uma jornada na sua conta, vinda de outro aparelho: <b>${desc(remoto)}</b>, salva em ${new Date(remoto.salvoEm || 0).toLocaleString('pt-BR')}.<br><br>`
+    + (local ? `Você está jogando ${desc(local)} aqui. Se continuar a da nuvem, esta vai pras <b>jornadas guardadas</b> (não perde nada).`
+      : 'O que fazer com ela?'),
+    [{ label: `Continuar ${esc(r.nick || fmt(r.name))}`, value: 'continuar' },
+     { label: '💾 Guardar pra depois', value: 'guardar', ghost: true },
+     { label: '🗑 Excluir', value: 'excluir', ghost: true }]);
+  if (escolha !== 'excluir') return escolha;
+  // excluir é definitivo: confirma
+  return (await ask(`Excluir a jornada de <b>${esc(r.nick || fmt(r.name))}</b>? Ela some da nuvem e não vai pra carreira.`, [{ label: 'Excluir', value: true }, { label: 'Guardar em vez disso', value: false, ghost: true }])) ? 'excluir' : 'guardar';
 };
 // amigo chamou pra sala: aviso em qualquer tela, com botão de entrar (usa a escolha de Pokémon do menu multiplayer)
 ganchos.convite = p => toast(`${htmlIcone(meuIconeDe(p.de), 'icone-mini')} <b>${esc(p.nome)}</b> te chamou pra sala <b>${esc(p.codigo)}</b>${p.modo === 'pvp' ? ' (PvP)' : ' (co-op)'}.
   <div class="subrow" style="margin-top:8px"><button class="btn sm" data-act="mp-aceitar-convite" data-v="${esc(p.codigo)}">Entrar</button></div>`, 60000);
 const meuIconeDe = id => { const a = nuvem.amigos.find(x => x.amigo === id); return a ? { id: a.icone_id, shiny: a.icone_shiny } : null; };
-ganchos.carregarSave = remoto => {
+ganchos.carregarSave = (remoto, { guardarAtual = false } = {}) => {
   // no meio de um turno não dá pra trocar a jornada: espera ele terminar (senão o save do turno sobrescreveria)
-  if (G.busy) { setTimeout(() => ganchos.carregarSave(remoto), 500); return; }
+  if (G.busy || G.mode === 'battle') { setTimeout(() => ganchos.carregarSave(remoto, { guardarAtual }), 500); return; }
+  // a jornada daqui (outra) vai pras guardadas, não some
+  if (guardarAtual && G.S && G.S.id !== remoto.id) { save(); if (!guardar(G.S)) { toast(`Limite de ${MAX_GUARDADAS} jornadas guardadas: a da nuvem ficou em 💾 Jornadas salvas.`, 8000); guardar(remoto); return; } }
+  retirar(remoto.id); // se estava guardada, sai da lista (virou a atual)
   store.set(SAVE_KEY, remoto);
   abrirJornada(remoto, '☁ Jornada carregada da sua conta.');
 };

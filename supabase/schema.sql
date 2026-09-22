@@ -90,13 +90,23 @@ drop policy if exists "jornada: gravar as próprias" on public.jornadas;
 create policy "jornada: gravar as próprias" on public.jornadas for insert with check (auth.uid() = user_id);
 -- sem update/delete: jornada terminada não muda
 
--- Jornada em andamento (uma por conta) — é o que deixa continuar em outro aparelho
+-- Jornadas em andamento (a atual + as guardadas de js/saves.js, uma linha por jornada) — é o que deixa continuar
+-- em outro aparelho e ter várias runs abertas
 create table if not exists public.saves (
-  user_id uuid primary key references auth.users on delete cascade default auth.uid(),
+  user_id uuid not null references auth.users on delete cascade default auth.uid(),
   jornada_id text not null,
   dados jsonb not null,
-  atualizado_em timestamptz not null default now()
+  atualizado_em timestamptz not null default now(),
+  primary key (user_id, jornada_id)
 );
+-- banco criado pela versão antiga (chave só user_id = uma jornada por conta): passa a ser uma por jornada
+do $$ begin
+  if (select count(*) from information_schema.key_column_usage
+      where table_schema = 'public' and table_name = 'saves' and constraint_name = 'saves_pkey') = 1 then
+    alter table public.saves drop constraint saves_pkey;
+    alter table public.saves add primary key (user_id, jornada_id);
+  end if;
+end $$;
 alter table public.saves enable row level security;
 drop policy if exists "save: tudo no próprio" on public.saves;
 create policy "save: tudo no próprio" on public.saves for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

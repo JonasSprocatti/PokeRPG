@@ -1,6 +1,6 @@
 # PokéRPG
 
-RPG de texto no navegador em que **você é o Pokémon** (sem treinador, sem captura). Dados ao vivo da PokéAPI; fórmulas dos jogos (stats, IV/EV, natureza, dano, tipos, estágios, status, XP, evolução). JavaScript puro em ES modules, sem build, sem dependências. Save no `localStorage` (`pokerpg-save-v1`). PT-BR na UI, comentários e nomes novos (identificadores herdados do protótipo seguem em inglês).
+RPG de texto no navegador em que **você é o Pokémon** (sem treinador, sem captura). **Não é mais protótipo** (pedido do usuário): nada de "protótipo" em texto de UI; efeito que ainda não existe (golpe/habilidade sem efeito) diz "será ajustado em atualizações futuras". Dados ao vivo da PokéAPI; fórmulas dos jogos (stats, IV/EV, natureza, dano, tipos, estágios, status, XP, evolução). JavaScript puro em ES modules, sem build, sem dependências. Save no `localStorage` (`pokerpg-save-v1`). PT-BR na UI, comentários e nomes novos (identificadores herdados do protótipo seguem em inglês).
 
 ## Como rodar
 
@@ -25,6 +25,7 @@ Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido fal
 | `js/estado.js` | `G` = estado mutável compartilhado (`S` save, `B` batalha, `PV` prévia, `mode`, `busy`, `panel`), `zone()`, `nm()`, `save()`. |
 | `js/util.js` | `rand`/`pick`/`clamp`/`sleep`/`fmt`/`esc`/`lastSeg`/`store`. Sem DOM. |
 | `js/dados.js` | Tabelas fixas: tipos (`CHART`, `TYPE_PT`, `TC`), `NATURES`, `ITEMS`, `ZONES` (= rotas de `dados-mapas.js`), `FLAVOR`, `MISSOES`, `DIFICULDADES`… Sem DOM. |
+| `js/saves.js` / `js/tela-saves.js` | **Jornadas salvas**: a atual continua em `SAVE_KEY`; as outras em andamento ficam em `pokerpg-saves-guardados-v1` (`{id: S}`, até `MAX_GUARDADAS` = 12). `excluir(id)` lembra o id em `pokerpg-saves-excluidos-v1` pra apagar da nuvem na próxima sincronização (offline) e não ressuscitar. Na nuvem, `saves` tem chave `(user_id, jornada_id)` — uma linha por jornada (o `schema.sql` migra a chave antiga). `nuvem.js sincronizarSaves` executa `reconciliarSaves` (puro, `tests/saves.test.js`): mesma jornada = vale a mais nova; terminada/excluída = apaga; desconhecida vinda da nuvem = `ganchos.oferecerSave` → 'continuar' (a atual vai pras guardadas) / 'guardar' / 'excluir'. **Nada é descartado sem o jogador escolher.** Com o schema antigo (erro 42P10 no upsert), cai pro modo uma-jornada-por-conta e só a atual sobe. Tela: `telaSaves()`; cliques `saves`/`save-guardar`/`save-continuar`/`save-excluir` em main.js (`guardarAtual`, `continuarGuardada`). "Novo jogo" oferece guardar ou encerrar. |
 | `js/mapas.js` / `js/dados-mapas.js` | Mapas por Gen (ver "Mundo e progressão"). `dados-mapas.js` é gerado por `ferramentas/gerar-mapas.ps1`. |
 | `js/regras.js` | **Fórmulas puras** (testadas): `calcStats`, `calcDamage`, `effStat`, `typeEff`, `chanceAcerto`, `consegueFugir`, `jogadorAgePrimeiro`, `danoResidual`, `imuneAoStatus`, `xpPorVitoria`, `ganhoDeEVs`… |
 | `js/api.js` | PokéAPI com cache (memória + `localStorage` `pk:*`). `buildLearnset`/`slimPokemon`/`slimMove` são puras (testadas). |

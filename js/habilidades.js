@@ -1,6 +1,6 @@
 /* ============ habilidades (dados) ============ */
 // Cada habilidade é uma LINHA de dados que liga comportamentos já implementados no motor (regras.js / golpe.js).
-// Só as que estão aqui têm efeito em batalha ("✓ ativa no protótipo"); as outras são só descrição.
+// Só as que estão aqui têm efeito em batalha ("✓ ativa em batalha"); as outras são só descrição.
 // Pra adicionar uma: se o comportamento já existe (ex.: `imuneStatus`), é só uma linha. Comportamento novo = um
 // gancho novo no motor + teste. Sem imports: importável no Node (tests/habilidades.test.js).
 //
@@ -71,5 +71,5 @@ export const HABILIDADES = {
   'speed-boost': { fimTurno: 'speed' }, intimidate: { intimida: true }, 'run-away': { fuga: true }
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
-// tem efeito de verdade em batalha? (a ficha mostra "✓ ativa no protótipo")
+// tem efeito de verdade em batalha? (a ficha mostra "✓ ativa em batalha"; as outras, "será ajustado em atualizações futuras")
 export const IMPL = new Set(Object.keys(HABILIDADES));

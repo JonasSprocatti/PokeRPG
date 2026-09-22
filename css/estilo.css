@@ -130,6 +130,8 @@ table.ranking td.jogador{white-space:nowrap}
 .abil em{font-style:normal;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-left:6px}
 .abil small{display:block;color:var(--muted);margin-top:2px}
 .impl{font-size:12px;color:var(--grass);margin-left:6px}
+.impl-futura{font-size:12px;color:var(--muted);font-style:italic;margin-left:6px}
+.abil .impl-futura{display:block;margin:2px 0 0}
 .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
 @media(max-width:560px){.row3{grid-template-columns:1fr}}
 .row3 label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
@@ -216,7 +218,18 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 /* ---- Pokédex da rota (mapas.js pokedexDaRota): ? → silhueta → colorido com a taxa de aparição ---- */
 .gen-tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:0 10px;font:600 13px var(--display);color:var(--yellow);margin-right:4px}
 .chip.final{border-style:dashed}
-.dex-rota p{margin:0 0 6px}
+.dex-rota p{margin:0 0 4px}
+.dex-legenda{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:2px}
+.dex-legenda b{display:inline-block;min-width:74px;color:var(--text)}
+/* ---- 💾 jornadas salvas (tela-saves.js) ---- */
+.saves{display:grid;gap:10px;margin-top:18px;max-width:760px}
+.save-card{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:8px 12px}
+.save-card.atual{border-color:var(--yellow)}
+.save-card img{width:72px;height:72px;image-rendering:pixelated}
+.save-card small{display:block;font-size:13px}
+.save-acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tag-atual{font:600 12px var(--display);color:#1b1b2f;background:var(--yellow);border-radius:999px;padding:0 8px}
+@media (max-width:560px){ .save-card{grid-template-columns:56px 1fr} .save-card img{width:56px;height:56px} .save-acoes{grid-column:1/-1;justify-content:flex-start} }
 .dexr-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
 .dexr{position:relative;display:grid;justify-items:center;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:2px 2px 4px;min-height:92px;font-size:11px;color:var(--muted);text-align:center}
 .dexr img{width:60px;height:60px;image-rendering:pixelated}

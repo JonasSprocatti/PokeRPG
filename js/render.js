@@ -81,7 +81,7 @@ function blocoHabilidade(M) {
   const abInfo = M.data.abilities.find(a => a.name === M.ability), abDesc = syncGet('ab:' + M.ability)?.effect;
   if (!abDesc && abInfo) loadAbility(abInfo).then(() => { if (G.S) renderSheet(); }).catch(() => {});
   return `<div class="sec"><h3>Habilidade: ${esc(fmt(M.ability))}</h3>
-      <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(M.ability) ? '<span class="impl">✓ ativa no protótipo</span>' : '<em class="small">(ainda só descritiva)</em>'}</p></div>`;
+      <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(M.ability) ? '<span class="impl">✓ ativa em batalha</span>' : '<em class="small impl-futura">(efeito em batalha: será ajustado em atualizações futuras)</em>'}</p></div>`;
 }
 const listaGolpes = M => `<div class="sec mlist"><h3>Golpes</h3>
       ${M.moves.map(m => `<details><summary><b>${esc(fmt(m.name))}</b><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`).join('')}
@@ -191,7 +191,13 @@ function pokedexRota(z) {
     ? `<div class="dexr oculto ${p.mitico ? 'mitico' : ''}" title="${p.mitico ? 'Algo muito raro vive aqui…' : 'Ainda não encontrado'}"><span>${p.mitico ? '✦' : '?'}</span></div>`
     : `<div class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" title="${esc(fmt(p.n))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`}">
         <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.n))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</div>`;
-  return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados. Silhueta = já enfrentou; com ${REVELA_DERROTADOS} derrotados (somando suas jornadas) aparece a taxa de aparição.</p>
+  return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados.</p>
+    <ul class="dex-legenda small muted">
+      <li><b>?</b> vive nesta rota, mas você ainda não encontrou (pode ser comum ou raro: explore mais)</li>
+      <li><b>Silhueta</b> já enfrentou; o número mostra quantos derrotou de ${REVELA_DERROTADOS}</li>
+      <li><b>Colorido</b> ${REVELA_DERROTADOS} derrotados (somando suas jornadas): mostra a chance de aparecer aqui</li>
+      ${dex.some(p => p.mitico) ? '<li><b>✦</b> algo muito raro vive aqui…</li>' : ''}
+    </ul>
     <div class="dexr-grade">${dex.map(item).join('')}</div></div>`;
 }
 function renderActions() {
@@ -238,7 +244,7 @@ export function render() {
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   renderSheet(); renderScene(); renderActions();
   $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
-  $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button><button class="btn ghost sm" data-act="relatos" ${G.busy ? 'disabled' : ''} title="Bugs e sugestões">🐞 Bugs e sugestões</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
+  $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button><button class="btn ghost sm" data-act="saves" ${G.busy ? 'disabled' : ''}>💾 Jornadas salvas</button><button class="btn ghost sm" data-act="relatos" ${G.busy ? 'disabled' : ''} title="Bugs e sugestões">🐞 Bugs e sugestões</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
 }
 // monta a tela do jogo (esqueleto de painéis de paineis.js), aplica o layout salvo e desenha
 export function buildGame() {

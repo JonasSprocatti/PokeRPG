@@ -52,7 +52,7 @@ export async function aplicarStatus(t, ail, ctx, avisar = false) {
     if (t.vol.conf > 0) { if (avisar) await ctx.say(`${ctx.nome(t)} já está confuso!`); return; }
     t.vol.conf = rand(2, 5); await ctx.say(`${ctx.nome(t)} ficou confuso!`, 'status'); return;
   }
-  if (!AIL_MSG[ail]) { if (avisar) await ctx.say('Mas nada aconteceu... (efeito ainda não implementado)', 'muted'); return; }
+  if (!AIL_MSG[ail]) { if (avisar) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted'); return; }
   if (t.status) { if (avisar) await ctx.say(`${ctx.nome(t)} já tem uma condição de status.`); return; }
   t.status = ail; delete t.vol.toxico; if (ail === 'sleep') t.sleep = rand(2, 4);
   up(ctx); await ctx.say(`${ctx.nome(t)} ${AIL_MSG[ail]}!`, 'status');
@@ -111,7 +111,7 @@ async function golpeDeStatus(u, t, g, selfT, ctx) {
     fez = true;
     if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(selfT ? u : t, meta.ailment, ctx, true);
   }
-  if (!fez) await ctx.say('Mas nada aconteceu... (efeito ainda não implementado no protótipo)', 'muted');
+  if (!fez) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted');
 }
 
 // `primeiro` = u agiu antes de t neste turno (recuo só vale assim)

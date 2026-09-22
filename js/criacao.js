@@ -8,6 +8,7 @@ import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
 import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
+import { listaGuardadas } from './saves.js';
 import { carregarCarreira } from './carreira.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
@@ -26,7 +27,7 @@ function permitidos() {
 export function showCreate() {
   G.mode = 'create'; limparTopo();
   $('#app').innerHTML = `<main class="create">
-    <div class="topo-criacao"><h1>Escolha quem você vai ser.</h1><span class="subrow"><button class="btn ghost" data-act="mp">👥 Multiplayer</button><button class="btn ghost" data-act="carreira">📊 Carreira</button><button class="btn ghost" data-act="ranking">🏆 Ranking</button><button class="btn ghost" data-act="relatos">🐞 Bugs e sugestões</button></span></div>
+    <div class="topo-criacao"><h1>Escolha quem você vai ser.</h1><span class="subrow"><button class="btn ghost" data-act="mp">👥 Multiplayer</button><button class="btn ghost" data-act="carreira">📊 Carreira</button>${listaGuardadas().length ? `<button class="btn ghost" data-act="saves">💾 Jornadas salvas (${listaGuardadas().length})</button>` : ''}<button class="btn ghost" data-act="ranking">🏆 Ranking</button><button class="btn ghost" data-act="relatos">🐞 Bugs e sugestões</button></span></div>
     <p class="lead">Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta. Os outros Pokémon você encontra pelo caminho.</p>
     <h3 class="passo"><span>1</span> Dificuldade</h3>
     <div id="difs" class="difs"></div>
@@ -130,7 +131,7 @@ export function renderPreview() {
         <div class="bs total"><span>Total</span><b>${total}</b><i></i></div></div>
       <p class="small muted" style="margin-top:14px">Modo <b>${dif.nome}</b> (troque no passo 1, lá em cima).</p>
       <h3>Habilidade${livre ? '' : sorteada}</h3>
-      <div class="abils">${d.abilities.map(a => `<button class="abil ${livre && PV.ability === a.name ? 'on' : ''}" data-act="ability" data-v="${a.name}" aria-pressed="${livre && PV.ability === a.name}" ${livre ? '' : 'disabled'}><b>${esc(fmt(a.name))}</b>${a.hidden ? '<em>oculta</em>' : ''}${IMPL.has(a.name) ? '<span class="impl">✓ ativa no protótipo</span>' : ''}<small>${esc(syncGet('ab:' + a.name)?.effect || 'Carregando…')}</small></button>`).join('')}</div>
+      <div class="abils">${d.abilities.map(a => `<button class="abil ${livre && PV.ability === a.name ? 'on' : ''}" data-act="ability" data-v="${a.name}" aria-pressed="${livre && PV.ability === a.name}" ${livre ? '' : 'disabled'}><b>${esc(fmt(a.name))}</b>${a.hidden ? '<em>oculta</em>' : ''}${IMPL.has(a.name) ? '<span class="impl">✓ ativa em batalha</span>' : '<span class="impl-futura">efeito em batalha: será ajustado em atualizações futuras</span>'}<small>${esc(syncGet('ab:' + a.name)?.effect || 'Carregando…')}</small></button>`).join('')}</div>
       <div class="row3">
         <label>Natureza${livre ? `<select id="pv-nature">${Object.keys(NATURES).map(n => `<option value="${n}" ${n === PV.nature ? 'selected' : ''}>${esc(natureLabel(n))}</option>`).join('')}</select>` : '<select disabled><option>Sorteada ao começar</option></select>'}</label>
         <label>Nível inicial${dif.nivelLivre ? `<select id="pv-level">${[5, 15, 30, 50].map(l => `<option ${l === PV.level ? 'selected' : ''}>${l}</option>`).join('')}</select>` : `<select disabled title="${dif.nome}: começa no nível 5"><option>5</option></select>`}</label>
