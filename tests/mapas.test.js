@@ -77,13 +77,19 @@ test('Pokédex da rota: ? → silhueta (enfrentou) → revelado com taxa (10 der
   assert.equal(dex[2].mitico, true);
 });
 
-test('sequenciaLendaria: até 3 outros (na ordem) + o principal por último', () => {
-  const z = { lendarios: [1, 2, 3, 4, 5, 6].map(id => ({ id })) };
-  let k = 0; const seq = sequenciaLendaria(z, () => [0.9, 0.1, 0.5, 0.2, 0.8][k++]);
+test('sequenciaLendaria: até 3 outros + um principal SORTEADO, que herda o nível da vaga final', () => {
+  const z = { lendarios: [1, 2, 3, 4, 5, 6].map(id => ({ id, nivel: id === 6 ? 75 : 68 })) };
+  // o 1º sorteio escolhe o principal; os seguintes ordenam os coadjuvantes
+  let k = 0; const seq = sequenciaLendaria(z, () => [0, 0.9, 0.1, 0.5, 0.2, 0.8][k++]);
   assert.equal(seq.length, 4);
-  assert.equal(seq.at(-1).id, 6);
-  assert.deepEqual(seq.slice(0, 3).map(l => l.id), [2, 3, 4]); // os 3 de menor sorte, na ordem da lista
-  assert.deepEqual(sequenciaLendaria({ lendarios: [{ id: 9 }] }).map(l => l.id), [9]);
+  assert.equal(seq.at(-1).id, 1, 'sorte 0 = o primeiro da lista vira o chefe final');
+  assert.equal(seq.at(-1).nivel, 75, 'quem cai na vaga final luta no nível dela');
+  assert.equal(seq.every(l => l === seq.at(-1) || l.nivel === 68), true);
+  assert.equal(seq.some(l => l.id === 1 && l !== seq.at(-1)), false, 'o principal não se repete entre os outros');
+  // com outra sorte, outro lendário fecha a luta — é o que obriga a voltar ao mapa pra completar a dex
+  let j = 0; const seq2 = sequenciaLendaria(z, () => [0.99, 0.1, 0.2, 0.3, 0.4, 0.5][j++]);
+  assert.equal(seq2.at(-1).id, 6);
+  assert.deepEqual(sequenciaLendaria({ lendarios: [{ id: 9, nivel: 75 }] }).map(l => l.id), [9]);
   assert.deepEqual(sequenciaLendaria({}), []);
 });
 

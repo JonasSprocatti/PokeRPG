@@ -14,7 +14,7 @@ $raiz = Split-Path $PSScriptRoot -Parent
 $q = @'
 { s: pokemon_v2_pokemonspecies(order_by:{id:asc}) { id name generation_id is_legendary is_mythical is_baby capture_rate evolves_from_species_id
   ev: pokemon_v2_pokemonevolutions { min_level evolution_trigger_id }
-  p: pokemon_v2_pokemons(where:{is_default:{_eq:true}}) { st: pokemon_v2_pokemonstats { base_stat } ty: pokemon_v2_pokemontypes(order_by:{slot:asc}) { t: pokemon_v2_type { name } } } } }
+  p: pokemon_v2_pokemons(where:{is_default:{_eq:true}}) { base_experience st: pokemon_v2_pokemonstats { base_stat } ty: pokemon_v2_pokemontypes(order_by:{slot:asc}) { t: pokemon_v2_type { name } } } } }
 '@
 $r = Invoke-RestMethod -Uri 'https://beta.pokeapi.co/graphql/v1beta' -Method Post -Body (@{ query = $q } | ConvertTo-Json -Compress) -ContentType 'application/json' -TimeoutSec 180
 $esp = @{}
@@ -24,7 +24,7 @@ foreach ($s in $r.data.s) {
     id = [int]$s.id; nome = $s.name; gen = [int]$s.generation_id; lend = [bool]$s.is_legendary; mitico = [bool]$s.is_mythical; bebe = [bool]$s.is_baby
     captura = [int]$s.capture_rate; pai = $s.evolves_from_species_id
     evo = ($s.ev | Select-Object -First 1)
-    bst = ($p.st | Measure-Object base_stat -Sum).Sum; tipos = @($p.ty | ForEach-Object { $_.t.name })
+    bst = ($p.st | Measure-Object base_stat -Sum).Sum; xp = [int]$p.base_experience; tipos = @($p.ty | ForEach-Object { $_.t.name })
   }
 }
 # Formas regionais (Alolan, Galarian, Hisuian, Paldean). Na PokéAPI elas NÃO são espécies: são variedades de
@@ -76,6 +76,15 @@ function Natural($e) {
   $L = [math]::Min(58, [math]::Max(1, $L)); $memo[$e.id] = $L; return $L
 }
 function NomeBonito($n) { ($n -split '-' | ForEach-Object { $_.Substring(0,1).ToUpper() + $_.Substring(1) }) -join ' ' }
+
+# Alfas escolhidos à mão (id da rota => nome da espécie na PokéAPI). Tudo o mais é decidido pela regra (tema + força);
+# esta tabela existe pros casos em que a regra acerta tecnicamente mas erra no gosto.
+#   a-diglett: a regra só achava Sandygast (320 de BST) combinando com Terra/Pedra/Aço no nível da rota — fraco
+#              demais pra guardar um túnel. Lycanroc é Pedra, cabe no nível e tem cara de chefe de caverna.
+#   a-wela:    com o Lycanroc reservado, sobrava só Salandit (320). Turtonator (Fogo/Dragão, 485) é uma tartaruga
+#              VULCÂNICA guardando um parque vulcânico — a regra o descarta porque, sem evolução, o "nível natural"
+#              dele é estimado em 52, alto demais pra rota; aqui a escolha humana vale mais que a estimativa.
+$ALFA_FIXO = @{ 'a-diglett' = 'lycanroc'; 'a-wela' = 'turtonator' }
 
 # faixas de nível (iguais em toda Gen): min, max, libera
 $FAIXAS = @(@(2,6,1), @(5,10,5), @(9,15,9), @(13,20,13), @(18,26,18), @(24,32,24), @(30,38,30), @(36,45,36), @(43,55,43), @(52,62,50))
@@ -227,6 +236,65 @@ foreach ($R in $REGIOES) {
   $lends = @($esp.Values | Where-Object { $_.gen -eq $g -and $_.lend } | Sort-Object bst, id)
   $principal = $lends[-1]
   $outros = @($lends | Where-Object { $_ -ne $principal -and $_.bst -ge 500 })
+  <# ---- Alfas do mapa: um por rota, NUNCA repetindo dentro da mesma Gen ----
+     Força = BST + metade do XP base. São os dois sinais que a PokéAPI dá de "quão forte e quão valioso é derrotar";
+     o XP entra com peso menor porque a escala dele é bem menor que a do BST.
+     A escolha vai da rota MAIS ALTA pra mais baixa, cada uma levando o mais forte que ainda não virou Alfa. Isso
+     resolve as duas coisas de uma vez: a fila de Alfas cresce junto com o nível das rotas e ninguém se repete —
+     antes o mesmo Pokémon era Alfa de duas rotas em quase todo mapa (14 casos), porque cada rota escolhia sozinha.
+     Se uma rota ficar sem candidato próprio (todos já usados), abre pra qualquer espécie da Gen ainda livre. #>
+  $Forca = { param($e) $e.bst + [math]::Round($e.xp / 2) }
+  $alfas = @($null) * 10
+  $usados = New-Object System.Collections.Generic.HashSet[int]
+  # Alfas escolhidos À MÃO (rota => espécie): a regra acerta quase tudo, mas em alguns lugares a decisão é de gosto.
+  # Entram ANTES do resto, já reservados, pra nenhuma outra rota levar a espécie. Um por linha, com o motivo.
+  foreach ($par in $ALFA_FIXO.GetEnumerator()) {
+    $idx = [array]::IndexOf(@($R.rotas | ForEach-Object { $_[0] }), $par.Key)
+    if ($idx -lt 0 -or $idx -gt 8) { continue }
+    $escolhido = $esp.Values | Where-Object { $_.nome -eq $par.Value } | Select-Object -First 1
+    if (-not $escolhido) { throw "ALFA_FIXO: espécie '$($par.Value)' não existe" }
+    $alfas[$idx] = $escolhido; [void]$usados.Add([int]$escolhido.id)
+  }
+  for ($i = 8; $i -ge 0; $i--) {
+    if ($alfas[$i]) { continue }   # já veio do ALFA_FIXO
+    $fx = $FAIXAS[$i]
+    $opcoes = New-Object System.Collections.Generic.List[object]
+    foreach ($e in $pools[$i]) {
+      $opcoes.Add($e)
+      foreach ($fi in @($filhos[$e.id])) { if ($fi -and $fi.gen -eq $g -and -not $fi.lend -and -not $fi.mitico -and -not (EhInicial $fi.id)) { $opcoes.Add($fi) } }
+    }
+    <# O Alfa tem de FAZER SENTIDO na rota: um Aggron (Aço/Pedra) guardando o Mar de Hoenn era estranho de ler.
+       Cada rota declara tipos-tema (a 4ª coluna de REGIOES, a mesma que monta o elenco), e agora eles mandam na
+       escolha: primeiro quantos tipos do Alfa batem com o tema, e só depois a força. A ÚLTIMA rota com Alfa (a 9ª)
+       é a exceção pedida: lá vale o mais forte do mapa, sem tema — é o pseudo-lendário fechando a progressão.
+       O piso de força continua valendo, mas agora só procura substituto que também combine com o tema. #>
+    $piso = 350 + 4 * $fx[1]
+    $temaRota = $temas[$i]
+    $PontosTema = { param($e) @($e.tipos | Where-Object { $temaRota -contains $_ }).Count }
+    
+    $proprios = @($opcoes | Where-Object { (Natural $_) -le $fx[1] + 12 -and -not $usados.Contains($_.id) })
+    if ($i -eq 8) {
+      # rota do pseudo-lendário: só força
+      $alfa = $proprios | Sort-Object @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1
+      if (-not $alfa -or $alfa.bst -lt $piso) {
+        $m = $cands | Where-Object { -not $usados.Contains($_.id) -and $_.bst -ge $piso } | Sort-Object @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1
+        if ($m) { $alfa = $m }
+      }
+    } else {
+      $alfa = @($proprios | Where-Object { (& $PontosTema $_) -ge 1 }) | Sort-Object @{ Expression = { & $PontosTema $_ }; Descending = $true }, @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1
+      if (-not $alfa -or $alfa.bst -lt $piso) {
+        # abre pra Gen inteira, mas continua exigindo o tema da rota
+        $m = $cands | Where-Object { -not $usados.Contains($_.id) -and (Natural $_) -le $fx[1] + 12 -and $_.bst -ge $piso -and (& $PontosTema $_) -ge 1 } |
+          Sort-Object @{ Expression = { & $PontosTema $_ }; Descending = $true }, @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1
+        if ($m) { $alfa = $m }
+      }
+      # nada com o tema: cai no mais forte da própria rota (melhor um fora do tema do que rota sem Alfa)
+      if (-not $alfa) { $alfa = $proprios | Sort-Object @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1 }
+    }
+    if (-not $alfa) { $alfa = $cands | Where-Object { -not $usados.Contains($_.id) -and (Natural $_) -le $fx[1] + 12 } | Sort-Object @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1 }
+    if (-not $alfa) { $alfa = $cands | Where-Object { -not $usados.Contains($_.id) } | Sort-Object @{ Expression = { & $Forca $_ }; Descending = $true }, id | Select-Object -First 1 }
+    $alfas[$i] = $alfa; [void]$usados.Add([int]$alfa.id)
+  }
   $saida.Add("  { gen: $g, regiao: '$($R.regiao)', rotas: [")
   for ($i = 0; $i -lt 10; $i++) {
     $def = $R.rotas[$i]; $f = $FAIXAS[$i]
@@ -237,11 +305,7 @@ foreach ($R in $REGIOES) {
     if ($i -eq 7 -or $i -eq 8) { for ($k = 0; $k -lt $mitos.Count; $k++) { if (($k % 2) -eq ($i - 7) -or $mitos.Count -eq 1) { $pool += "{ id: $($mitos[$k].id), n: '$($mitos[$k].nome)', p: $pesoMito, m: 1 }" } } }
     $txt = "    { id: '$($def[0])', gen: $g, name: '$($def[1])', desc: '$($def[2] -replace "'", "\'")', min: $($f[0]), max: $($f[1]), libera: $($f[2]), pool: [$($pool -join ', ')]"
     if ($i -lt 9) {
-      # Alfa: o mais forte entre os da rota e as evoluções diretas deles (da mesma Gen, que não passem de 12 níveis acima do teto da rota)
-      $opcoes = New-Object System.Collections.Generic.List[object]
-      foreach ($e in $pools[$i]) { $opcoes.Add($e); foreach ($fi in @($filhos[$e.id])) { if ($fi -and $fi.gen -eq $g -and -not $fi.lend -and -not $fi.mitico) { $opcoes.Add($fi) } } }
-      $alfa = $opcoes | Where-Object { (Natural $_) -le $f[1] + 12 } | Sort-Object @{ Expression = { $_.bst }; Descending = $true }, id | Select-Object -First 1
-      if (-not $alfa) { $alfa = $pools[$i] | Sort-Object bst -Descending | Select-Object -First 1 }
+      $alfa = $alfas[$i]   # escolhido antes, pro mapa inteiro (sem repetir — ver o bloco "Alfas do mapa")
       $txt += ", chefe: { id: $($alfa.id), nome: '$(NomeBonito $alfa.nome)', nivel: $($f[1] + 4) }"
     } else {
       $seq = @($outros | ForEach-Object { "{ id: $($_.id), nome: '$(NomeBonito $_.nome)', nivel: 68 }" }) + "{ id: $($principal.id), nome: '$(NomeBonito $principal.nome)', nivel: 75 }"

@@ -175,8 +175,18 @@ export function gastarRepelente(S) {
 export function sequenciaLendaria(z, sorte = Math.random) {
   const todos = z.lendarios || [];
   if (!todos.length) return [];
-  const principal = todos[todos.length - 1];
-  const outros = todos.slice(0, -1).map((l, i) => ({ l, i, k: sorte() })).sort((a, b) => a.k - b.k).slice(0, 3).sort((a, b) => a.i - b.i).map(x => x.l);
+  /* O lendário FINAL é sorteado a cada run entre os da Gen — antes era sempre o mais forte da lista, então quem
+     fechava Kanto enfrentava Mewtwo toda vez. Sorteando, cada run tem uma luta final diferente e completar a
+     Pokédex dos lendários exige voltar ao mapa várias vezes (pedido do usuário).
+     Os NÍVEIS são das VAGAS, não dos Pokémon: quem cair na vaga final herda o nível dela (e o reforço de chefe),
+     quem entrar como coadjuvante herda o nível dos outros. Sem isso o sorteio bagunçaria a dificuldade — e também
+     perderia a escala de `rotaNaJornada`, que já ajustou esses níveis pro seu nível de entrada no mapa. */
+  const nivelFinal = todos[todos.length - 1].nivel, nivelOutros = todos[0].nivel;
+  const iPrincipal = Math.min(todos.length - 1, Math.floor(sorte() * todos.length));
+  const principal = { ...todos[iPrincipal], nivel: nivelFinal };
+  const resto = todos.filter((_, i) => i !== iPrincipal);
+  const outros = resto.map((l, i) => ({ l, i, k: sorte() })).sort((a, b) => a.k - b.k).slice(0, 3)
+    .sort((a, b) => a.i - b.i).map(x => ({ ...x.l, nivel: nivelOutros }));
   return [...outros, principal];
 }
 
