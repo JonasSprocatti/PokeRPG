@@ -6,10 +6,28 @@ import { API, SPR } from './dados.js';
 import { esc, lastSeg, store } from './util.js';
 
 const memo = new Map();
+// Rede de celular oscila: um `fetch` que falha uma vez costuma funcionar no segundo tento. Sem isso, uma piscada
+// de sinal no meio de uma exploração virava "Failed to fetch" na cara do jogador. Só repete falha de REDE (e 429,
+// quando a PokéAPI pede calma) — 404 e outros erros do servidor não adianta insistir.
+const TENTATIVAS = 3;
+const esperar = ms => new Promise(r => setTimeout(r, ms));
 async function getJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) { const e = new Error(r.status === 404 ? 'não encontrado' : 'HTTP ' + r.status); e.code = r.status; throw e; }
-  return r.json();
+  let ultimo;
+  for (let i = 1; i <= TENTATIVAS; i++) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) return await r.json();
+      const e = new Error(r.status === 404 ? 'não encontrado' : 'HTTP ' + r.status); e.code = r.status;
+      if (r.status !== 429 || i === TENTATIVAS) throw e;
+      ultimo = e;
+    } catch (e) {
+      if (e.code && e.code !== 429) throw e;          // erro do servidor: não insiste
+      ultimo = e;
+      if (i === TENTATIVAS) break;
+    }
+    await esperar(400 * i);                            // 400ms, 800ms
+  }
+  throw ultimo;
 }
 function cached(key, loader) {
   if (memo.has(key)) return Promise.resolve(memo.get(key));
@@ -105,6 +123,18 @@ export async function resolvePokemon(q) {
     return loadPokemon(sp.defaultPokemon);
   }
 }
-export const apiErr = e => typeof navigator !== 'undefined' && navigator.onLine === false
-  ? '📴 Sem internet: isto precisa de um dado da PokéAPI que ainda não está salvo neste aparelho.'
-  : `Não consegui falar com a PokéAPI (${esc(e.message)}). Se você abriu este jogo dentro do chat do Claude, o visualizador de lá bloqueia requisições externas: rode num servidor local (<code>python -m http.server</code>) ou publique na Vercel.`;
+// Mensagem de erro de rede escrita PRA QUEM JOGA: o caso comum é sinal ruim, não configuração errada.
+// A dica de servidor local só aparece pra quem está mesmo rodando fora de um servidor (file://).
+const BAIXE = 'Dica: em <b>⚙ Ajustes → Jogar offline</b> dá pra baixar o mapa inteiro e não depender mais da rede aqui.';
+export function apiErr(e) {
+  if (typeof location !== 'undefined' && location.protocol === 'file:') {
+    return 'Este jogo precisa ser aberto por um servidor pra falar com a PokéAPI. Rode <code>python -m http.server</code> na pasta do projeto, ou publique.';
+  }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return `📴 Sem internet: isto precisa de um dado da PokéAPI que ainda não está salvo neste aparelho. ${BAIXE}`;
+  }
+  if (e?.code === 429) return `A PokéAPI pediu calma (muitos pedidos seguidos). Espere alguns segundos e tente de novo. ${BAIXE}`;
+  if (e?.code) return `A PokéAPI respondeu com erro (${esc(String(e.code))}). Tente de novo daqui a pouco.`;
+  // sem `code` = falha de rede: tentamos 3 vezes e nenhuma passou
+  return `A conexão falhou ao buscar um dado da PokéAPI (sinal instável?). Tente de novo. ${BAIXE}`;
+}

@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.7', data: '2026-09-23', titulo: 'Sinal fraco não derruba mais a jornada', piada: 'O Porygon foi até a antena reclamar. Voltou com três barras de sinal e uma promessa.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Quando a internet do celular piscava, a exploração morria com um "Failed to fetch". Agora o jogo tenta de novo sozinho (até 3 vezes, com uma pausa entre elas) antes de desistir — o que resolve a maioria dessas falhas.',
+        'As mensagens de erro de rede foram reescritas pra quem joga: falam de conexão instável, de limite da PokéAPI ou de erro do servidor, e lembram que dá pra baixar o mapa inteiro em ⚙ Ajustes → Jogar offline. A antiga instrução técnica sobre abrir o jogo dentro de um chat saiu.',
+        'Os avisos de "sem internet" do Alfa, dos lendários e da exploração agora apontam pro download offline, em vez de só dizer que não dá.',
+        'O menu ☰ do celular estava com menos opções do que as telas ofereciam. Agora ele mostra os mesmos acessos: Início, Jornadas, Carreira, Ranking, Multiplayer, Conta, Novidades, Ajustes e Bugs — além de Layout e Novo jogo.'
+      ] }
+    ] },
   { versao: '1.6', data: '2026-09-23', titulo: 'Telas, proteções e armadilhas', piada: 'As Pedras Afiadas agora cobram pedágio na entrada. O sindicato dos Charizard já entrou com recurso.',
     secoes: [
       { nome: 'Novidades', itens: [

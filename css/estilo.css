@@ -21,7 +21,7 @@ img{max-width:100%}
 .brand{display:flex;align-items:center;gap:10px}
 .brand .logo{height:46px;width:auto;display:block} /* img/logo.png (o favicon sai de img/favicon-32.png) */
 .brand small{font:500 13px var(--display);color:var(--muted);margin-left:10px}
-.top-r{display:flex;gap:14px;align-items:center;font:700 16px var(--display)}
+.top-r{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;justify-content:flex-end;font:700 16px var(--display)}
 /* topo: dinheiro sempre visível; botões (#topr + conta) no menu ☰ abaixo de 720px */
 .top{position:relative}
 .dinheiro{color:var(--yellow);white-space:nowrap}

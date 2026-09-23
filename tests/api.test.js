@@ -1,12 +1,22 @@
 // Conversão do JSON cru da PokéAPI (js/api.js) — com JSON de exemplo, sem rede.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLearnset, slimPokemon, slimMove } from '../js/api.js';
+import { buildLearnset, slimPokemon, slimMove, apiErr } from '../js/api.js';
 
 // entrada de `pokemon.moves[]` no formato da API
 const mv = (name, ...detalhes) => ({
   move: { name, url: `https://pokeapi.co/api/v2/move/${name}/` },
   version_group_details: detalhes.map(([vg, level, metodo = 'level-up']) => ({ version_group: { name: vg }, level_learned_at: level, move_learn_method: { name: metodo } }))
+});
+
+// A mensagem de erro é lida por quem JOGA: o caso comum é sinal ruim, não configuração errada do site.
+test('apiErr: fala de conexão, de limite da PokéAPI e de erro do servidor — e aponta o download offline', () => {
+  const rede = apiErr(new Error('Failed to fetch'));
+  assert.match(rede, /conexão falhou/i);
+  assert.match(rede, /Jogar offline/);
+  assert.doesNotMatch(rede, /Claude/);                       // nada de instrução de desenvolvedor pro jogador
+  assert.match(apiErr(Object.assign(new Error('x'), { code: 429 })), /calma|muitos pedidos/i);
+  assert.match(apiErr(Object.assign(new Error('x'), { code: 500 })), /erro \(500\)/);
 });
 
 test('buildLearnset: usa o jogo mais recente disponível, só por nível, ordenado', () => {

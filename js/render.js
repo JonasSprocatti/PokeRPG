@@ -5,6 +5,8 @@ import { $ } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
+import { TELAS } from './navegacao.js';
+import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO } from './regras.js';
@@ -328,7 +330,12 @@ export function render() {
   if (!ABAS_MOB.some(a => document.body.classList.contains('mob-' + a))) abaMobile('luta');
   renderSheet(); renderScene(); renderActions();
   $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
-  $('#topr').innerHTML = `${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="mp" ${G.busy ? 'disabled' : ''}>👥 Multiplayer</button><button class="btn ghost sm" data-act="carreira" ${G.busy ? 'disabled' : ''}>📊 Carreira</button><button class="btn ghost sm" data-act="saves" ${G.busy ? 'disabled' : ''}>💾 Jornadas salvas</button><button class="btn ghost sm" data-act="relatos" ${G.busy ? 'disabled' : ''} title="Bugs e sugestões">🐞 Bugs e sugestões</button>` : ''}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
+  // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),
+  // mais o que só existe dentro do jogo: ↺ Layout e Novo jogo. Em batalha, só esses dois (navegar fica pra depois).
+  const telas = G.mode === 'explore'
+    ? TELAS.map(t => `<button class="btn ghost sm" data-act="${t.act}" title="${t.dica}" ${G.busy ? 'disabled' : ''}>${t.rotulo}${t.id === 'patch' && temNovidade() ? ' <span class="bolinha">novo</span>' : ''}</button>`).join('')
+    : '';
+  $('#topr').innerHTML = `${telas}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
 }
 // monta a tela do jogo (esqueleto de painéis de paineis.js), aplica o layout salvo e desenha
 export function buildGame() {

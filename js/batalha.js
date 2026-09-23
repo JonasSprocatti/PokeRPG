@@ -49,7 +49,7 @@ function sortearOponente(z) {
     if (alvo && (!offline() || pokemonEmCache(alvo.id))) return { id: alvo.id, level: rand(z.min, z.max) };
   }
   const p = sortearDaRota(z, offline() ? pokemonEmCache : null);
-  if (!p) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma rota que você já explorou online.`);
+  if (!p) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma rota que você já explorou, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   return { id: p.id, level: rand(z.min, z.max) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
@@ -81,7 +81,7 @@ export async function startBattle(z) {
 // Alfa da zona: IVs perfeitos + statsDeChefe (HP ×2, resto ×1,3). Não aceita petisco; dá pra fugir.
 export async function startBossBattle(z) {
   const c = z.chefe, max = Object.fromEntries(STATS.map(s => [s, 31]));
-  if (offline() && !pokemonEmCache(c.id)) throw erroOffline(`📴 Sem internet: o Alfa de ${z.name} ainda não está salvo neste aparelho. Desafie ele online uma vez.`);
+  if (offline() && !pokemonEmCache(c.id)) throw erroOffline(`📴 Sem internet: o Alfa de ${z.name} ainda não está salvo neste aparelho. Desafie ele online uma vez, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: max });
   E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id;
   iniciar({ enemy: E, turn: 1, runs: 0, chefe: z.id });
@@ -95,7 +95,7 @@ export async function startBossBattle(z) {
 // Vencer = fechar a Gen (vencerGen). Dá pra fugir e voltar depois; não aceita petisco.
 export async function startLendarios(z) {
   const seq = sequenciaLendaria(z), max = Object.fromEntries(STATS.map(s => [s, 31]));
-  if (offline() && seq.some(l => !pokemonEmCache(l.id))) throw erroOffline(`📴 Sem internet: os lendários de ${z.name} ainda não estão salvos neste aparelho.`);
+  if (offline() && seq.some(l => !pokemonEmCache(l.id))) throw erroOffline(`📴 Sem internet: os lendários de ${z.name} ainda não estão salvos neste aparelho. Baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   const equipe = await Promise.all(seq.map(async (l, i) => {
     const M = await makeMon(await loadPokemon(l.id), l.nivel, { ivs: max });
     if (i === seq.length - 1) { M.stats = statsDeChefe(M.stats); M.hp = M.stats.hp; }
