@@ -1,0 +1,7 @@
+﻿# Configuração do Supabase CLI. A integração do GitHub (Settings → Integrations → GitHub) lê esta pasta:
+# `working directory` no painel deve apontar pra /supabase, e as migrations ficam em supabase/migrations/.
+# `project_id` é só um rótulo local — o projeto de verdade é o que está conectado no painel.
+project_id = "pokerpg"
+
+[db]
+major_version = 15

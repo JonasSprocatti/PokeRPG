@@ -1,13 +1,15 @@
-﻿// O servidor recalcula a pontuação (validar_jornada em supabase/schema.sql). Se os pesos/multiplicadores/limites
+﻿// O servidor recalcula a pontuação (validar_jornada em supabase/migrations/). Se os pesos/multiplicadores/limites
 // do jogo mudarem e o SQL não, jornadas legítimas passam a ser recusadas ou pontuadas diferente — este teste pega.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { PESOS_PONTOS, multContinuacao } from '../js/regras.js';
 import { DIFICULDADES, ZONES, MISSOES } from '../js/dados.js';
 import { TOTAL_GENS } from '../js/mapas.js';
 
-const sql = readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
+// o schema mora em supabase/migrations/ (uma migration por mudança): o estado atual é a soma de todas
+const DIR = new URL('../supabase/migrations/', import.meta.url);
+const sql = readdirSync(DIR).filter(f => f.endsWith('.sql')).sort().map(f => readFileSync(new URL(f, DIR), 'utf8')).join('\n');
 const corpo = sql.slice(sql.indexOf('function public.validar_jornada'), sql.indexOf('drop trigger if exists validar_jornada'));
 
 test('multiplicador de cada modo no SQL = multPontos do jogo (e todo modo existe lá)', () => {

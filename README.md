@@ -243,7 +243,7 @@ Depois abra http://localhost:3000.
 `node --test` (sem caminho) roda `tests/*.test.js`: fórmulas de batalha, captura, missões, carreira, layout dos painéis, sanidade das tabelas de dados e a lista de arquivos do modo offline. O GitHub Actions roda os testes a cada push (aba **Actions**).
 
 ### Banco de dados (Supabase)
-O schema vive em supabase/schema.sql e é aplicado **automaticamente** a cada push no main que mexa nele (.github/workflows/supabase.yml). Para ligar num projeto novo, crie o secret SUPABASE_DB_URL no GitHub com a string de conexão direta do banco. O arquivo é idempotente: rodar de novo é sempre seguro.
+O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nativa do Supabase com o GitHub (no painel: **Settings → Integrations → GitHub**, com *working directory* `/supabase` e *Deploy to production* na branch `main`). Cada mudança no banco é um **arquivo novo** na pasta; ao fazer merge no `main`, o Supabase aplica os que ainda não rodaram. Migration já aplicada nunca é editada.
 
 ## Estrutura
 

@@ -1,4 +1,14 @@
-﻿-- PokéRPG — banco no Supabase. Rodar UMA vez no SQL Editor do projeto (é idempotente: pode rodar de novo).
+﻿-- ============================================================================
+-- 0001 — base do PokéRPG
+-- Este arquivo é o schema INTEIRO como ele está hoje. É idempotente de ponta a ponta
+-- (`create table if not exists`, `create or replace function`, `drop policy if exists` antes de cada policy),
+-- então aplicar num banco que já tem tudo não muda nada e não apaga dado.
+--
+-- Daqui pra frente, MUDANÇA NOVA = ARQUIVO NOVO nesta pasta (ex.: 0002_mega.sql). A integração do GitHub com o
+-- Supabase aplica os que ainda não rodaram quando você faz merge no main. Não edite uma migration já aplicada:
+-- o Supabase guarda quais rodaram e não roda de novo.
+-- ============================================================================
+-- PokéRPG — banco no Supabase. Rodar UMA vez no SQL Editor do projeto (é idempotente: pode rodar de novo).
 -- Toda tabela tem RLS: cada conta só lê/grava o que é dela. O ranking público sai por uma função que devolve
 -- só apelido + números (nada de e-mail).
 
@@ -209,3 +219,4 @@ alter table public.progresso enable row level security;
 drop policy if exists "progresso: tudo no próprio" on public.progresso;
 create policy "progresso: tudo no próprio" on public.progresso for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
