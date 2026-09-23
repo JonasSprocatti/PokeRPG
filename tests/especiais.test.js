@@ -15,7 +15,12 @@ const mon = (o = {}) => ({
 const ctx = (extra = {}) => { const msgs = []; return { msgs, nome: m => m.nome || 'X', golpe: g => g.name, say: t => { msgs.push(t); }, ...extra }; };
 
 test('tabela: só comportamentos que o motor conhece', () => {
-  const ok = new Set(['protege', 'aguentaTurno', 'foco', 'descanso', 'autoDesmaio', 'ohko', 'soDormindo', 'toxico', 'semente', 'carga', 'invulneravel', 'recarga', 'furia', 'poder', 'danoIgualHp']);
+  // Comportamento novo em especiais.js entra AQUI junto — a lista é o contrato entre a tabela e o motor (golpe.js).
+  // `poder` é o único que não é tratado em golpe.js: ele vira fórmula em regras.poderEspecial (checado logo abaixo).
+  const ok = new Set(['protege', 'aguentaTurno', 'foco', 'descanso', 'autoDesmaio', 'ohko', 'soDormindo', 'toxico', 'semente', 'carga', 'invulneravel', 'recarga', 'furia', 'poder', 'danoIgualHp',
+    'soPrimeiroTurno',                        // Fake Out, First Impression
+    'clima', 'terreno',                       // Rain Dance / Electric Terrain e cia.
+    'lado', 'soNoGelo', 'armadilha']);        // telas e armadilhas de entrada (Aurora Veil só no granizo/neve)
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade']);
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {
     for (const k of Object.keys(e)) assert.ok(ok.has(k), `${n}: comportamento desconhecido "${k}"`);
