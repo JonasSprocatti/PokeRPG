@@ -26,6 +26,8 @@ Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloq
 
 A tela inicial e a tela 🏅 Conquistas mostram os desbloqueados e os que estão **quase lá**, e a tela de fim mostra o que aquela run liberou. **Só jornadas Roguelike contam para desbloquear** — mas a espécie desbloqueada pode ser usada em todos os modos.
 
+**Rota esgotada:** no Roguelike, quando o seu nível passa do **dobro do teto de uma rota**, ela para de dar encontros — nada de farmar em rota fraca. Você continua entrando e vendo a Pokédex dela.
+
 **Sem segunda chance:** no Roguelike, se você desmaiar, a run acaba (nem Revive salva). Se um **aliado** desmaiar, ele é **perdido para sempre**, e o Centro não traz de volta. Ser capturado também encerra a run. O Centro é pago (com desconto por vitória) e você começa no nível 5.
 
 **Vencer a run:** vença os **lendários da última rota** do mapa. A run termina em vitória e o **mapa da Gen seguinte** fica liberado para as próximas runs (Gen 1 → Gen 2 → … → Gen 9).

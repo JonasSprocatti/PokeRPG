@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { clamp, esc, fmt } from './util.js';
@@ -224,6 +224,7 @@ function renderScene() {
     sc.innerHTML = `
       <div class="zone-head"><h2>${z.name}</h2><p><span class="gen-tag">Gen ${g} · ${dadosDaGen(g).regiao}</span> ${z.desc} Pokémon entre os níveis ${z.min} e ${z.max}.</p></div>
       <div class="zones">${rotasAtuais().map(chip).join('')}</div>
+      ${rotaEsgotada(z, nv, dificuldadeDe(G.S)) ? '<p class="small muted">✔ <b>Rota esgotada:</b> você passou do dobro do nível daqui, então não aparece mais ninguém. A Pokédex da rota continua abaixo — e as outras rotas seguem normais.</p>' : ''}
       ${avisoRepelente(z)}
       ${pokedexRota(z)}
       ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}
@@ -314,7 +315,8 @@ function renderActions() {
     const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = S.money < custo;
     // Médio: preço cheio riscado + quantas vitórias deram desconto
     const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s> <small>(${vitorias} vitória${vitorias > 1 ? 's' : ''})</small>` : '';
-    a.innerHTML = `<button class="btn big" data-act="explore" ${dis}>Explorar ${zone().name}</button>
+    const esgotada = rotaEsgotada(zone(), S.player.level, dificuldadeDe(S));   // anti-grind do Roguelike
+    a.innerHTML = `<button class="btn big" data-act="explore" ${dis || esgotada ? 'disabled' : ''} title="${esgotada ? 'Você está forte demais pra esta rota: nada mais aparece aqui' : ''}">${esgotada ? '✔ Rota esgotada' : `Explorar ${zone().name}`}</button>
       <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">Centro Pokémon${!precisa ? ' (todos saudáveis)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}${semGrana ? ' (sem dinheiro)' : ''}`}</button>
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>
       ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}`;

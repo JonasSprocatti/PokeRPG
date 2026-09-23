@@ -389,6 +389,13 @@ export function itemTemEfeito(it, M, podeSubir = true) {
    depois que você vence os lendários daquela Gen (S.gensVencidas), porque é lá que vivem os iniciais e os lendários
    — é a garantia de que dá pra encontrar TODA a Gen, mas só depois de fechar o mapa.
    Sem o save (`S`), ela fica trancada: é o padrão seguro pra quem chama sem saber da regra (ex.: criação). */
+/* Rota ESGOTADA (só no Roguelike): passou do DOBRO do teto de nível da rota, ela para de dar caçada. É anti-grind —
+   farmar numa rota de nível 6 sendo nível 60 rendia XP fácil e sem risco. Você continua entrando na rota e vendo a
+   Pokédex dela (quem vive ali, as taxas, o Alfa); o que some é o encontro selvagem. Fora do Roguelike, nada muda. */
+export const FATOR_ESGOTADA = 2;
+export const rotaEsgotada = (z, nivel, dificuldade) =>
+  dificuldade === 'roguelike' && !!z && nivel > (z.max || 0) * FATOR_ESGOTADA;
+
 export const zonaLiberada = (z, nivel, S = null) => z?.posVitoria
   ? !!(S?.gensVencidas || []).includes(z.gen)
   : nivel >= (z?.libera || 1);

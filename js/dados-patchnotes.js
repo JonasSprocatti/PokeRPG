@@ -8,7 +8,8 @@ export const PATCH_NOTES = [
         'Badges da conta: conquistas de longo prazo que aparecem na tela 🏅 Conquistas — marcos de caçada, um especialista por tipo, Pokédex regional e nacional, 100 aliados recrutados, recrutar um lendário, recrutar um shiny, fechar uma Gen no Hardcore, terminar uma jornada sem usar o Centro Pokémon, e mais.',
         'Cada badge conquistada vira vantagem na PRÓXIMA jornada: itens ou dinheiro no começo. Derrotar 1.000 Pokémon do tipo Planta, por exemplo, faz você começar com uma Pedra da Folha na mochila.',
         'Na criação dá pra desligar as vantagens e jogar do zero — quem faz isso ganha 10% a mais de pontos no ranking.',
-        'As duas conquistas do Rayquaza entraram: recrutar um shiny e conquistar a Mega dele contam separadas, em qualquer ordem. Quem tiver as duas ganha a loja de graça para sempre.'
+        'As duas conquistas do Rayquaza entraram: recrutar um shiny e conquistar a Mega dele contam separadas, em qualquer ordem. Quem tiver as duas ganha a loja de graça para sempre.',
+        'No Roguelike, quando o seu nível passa do dobro do teto de uma rota, ela fica esgotada: não aparece mais ninguém pra lutar ali. Você continua entrando e vendo a Pokédex da rota — o que acaba é o farm em rota fraca. Nos outros modos nada muda.'
       ] }
     ] },
   { versao: '2.8', data: '2026-09-23', titulo: 'Cada mapa, uma história', piada: 'Seu Pokémon pendurou as chuteiras como campeão da região. Recusou a aposentadoria três vezes antes, mas os pontos do ranking o convenceram.',

@@ -452,3 +452,13 @@ test('pontuação: seguir com o mesmo Pokémon pro mapa seguinte custa 20% por v
   assert.equal(multContinuacao(10), PENAL_MINIMO, 'tem piso: nunca zera a pontuação de quem jogou');
   assert.equal(multContinuacao(undefined), 1);
 });
+
+test('rota esgotada: anti-grind, e SÓ no Roguelike', () => {
+  const z = { max: 10 };
+  assert.equal(rotaEsgotada(z, 20, 'roguelike'), false, 'no limite ainda dá');
+  assert.equal(rotaEsgotada(z, 21, 'roguelike'), true, 'passou do dobro: acabou a caçada');
+  assert.equal(rotaEsgotada(z, 99, 'hard'), false, 'fora do Roguelike a rota velha continua valendo');
+  assert.equal(rotaEsgotada(z, 99, 'easy'), false);
+  assert.equal(rotaEsgotada(null, 99, 'roguelike'), false);
+  assert.equal(FATOR_ESGOTADA, 2);
+});

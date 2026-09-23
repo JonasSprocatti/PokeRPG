@@ -1,7 +1,8 @@
-/* ============ exploração ============ */
+﻿/* ============ exploração ============ */
 // Um clique em "Explorar": 10% treinador caçador, 58% selvagem, 15% item, 7% dinheiro, 10% só ambientação.
-import { G, zone, save, emCampo, rotasAtuais } from './estado.js';
+import { G, zone, save, emCampo, rotasAtuais, dificuldadeDe } from './estado.js';
 import { gastarRepelente, semSelvagens } from './mapas.js';
+import { rotaEsgotada } from './regras.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { startBattle, startTrainerBattle, startBossBattle, startLendarios } from './batalha.js';
@@ -21,6 +22,11 @@ export async function explore() {
   try {
     // evolução que ficou pendente por falta de rede acontece agora, antes de qualquer outra coisa (progressao.js)
     await verificarEvolucoesPendentes();
+    // rota esgotada (Roguelike): dá pra andar e olhar, mas não aparece mais ninguém pra lutar
+    if (rotaEsgotada(z, G.S.player.level, dificuldadeDe(G.S))) {
+      await say(`Você anda por ${z.name}, mas está forte demais pra este lugar: nada aparece. Suba de rota.`, 'muted');
+      return;
+    }
     await say(`Você anda por ${z.name}...`, 'muted');
     for (const M of emCampo()) M.passos = (M.passos || 0) + 1; // Pawmot, Brambleghast, Rabsca (evolucao.js)
     // repelente gasta um passo por exploração; quando acaba, avisa (mapas.js)
