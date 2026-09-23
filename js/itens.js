@@ -17,12 +17,15 @@ export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
 
 // Itens SEGURADOS (segurados.js): cada um da equipe segura no máximo um. Equipar tira da mochila; trocar devolve o
 // antigo. O efeito acontece sozinho na batalha (Restos, Orbe da Vida, frutas…).
-export async function equiparItem(id, inBattle = false) {
+// `quem`: 'p' (você) ou índice do aliado — quando já se sabe pra quem vai (botão da ficha); senão pergunta
+export async function equiparItem(id, inBattle = false, quem = null) {
   const S = G.S, it = ITEMS[id];
   if (inBattle) { await say('Dá pra trocar o item segurado só fora da batalha.'); return false; }
+  if (!S.bag[id]) return false;
   const equipe = ladoJogador();
-  let M = equipe[0];
-  if (equipe.length > 1) {
+  let M = quem === 'p' ? S.player : quem != null ? S.aliados?.[+quem] : equipe[0];
+  if (!M) return false;
+  if (quem == null && equipe.length > 1) {
     const i = await ask(`Quem vai segurar <b>${it.name}</b>?`,
       [...equipe.map((A, j) => ({ label: `${esc(rotulo(A))}${A.item ? ` (segurando ${ITEMS[A.item]?.name})` : ''}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
     if (i < 0) return false;

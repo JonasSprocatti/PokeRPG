@@ -8,7 +8,7 @@ import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEsp
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
 import { telaSaves } from './tela-saves.js';
-import { telaAjustes } from './tela-ajustes.js';
+import { telaAjustes, baixarMapaOffline } from './tela-ajustes.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
 import { aplicarFonte } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen } from './mapas.js';
@@ -22,7 +22,7 @@ import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
 import { turn, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
-import { addItem, useItem, tirarItem } from './itens.js';
+import { addItem, useItem, tirarItem, equiparItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS } from './dados.js';
 import { freshVol, zonaLiberada } from './regras.js';
@@ -45,6 +45,7 @@ document.addEventListener('click', async e => {
     case 'ajustes': if (G.busy || G.mode === 'battle') return; return telaAjustes();
     case 'patch': if (G.busy || G.mode === 'battle') return; return telaPatchNotes();
     case 'fonte': aplicarFonte(v); return telaAjustes();
+    case 'baixar-gen': return baixarMapaOffline(v); // guarda um mapa inteiro pra jogar sem internet
     case 'voltar': if (naSala()) await sairSala(); return voltar();
     // multiplayer (co-op)
     // da run, da tela inicial ou de qualquer outra tela (sem run: entra com um Pokémon convidado)
@@ -164,6 +165,13 @@ document.addEventListener('click', async e => {
       const it = ITEMS[v]; if (!it || G.S.money < it.price) return;
       G.S.money -= it.price; G.S.gasto = (G.S.gasto || 0) + it.price; addItem(v, 1); log(`Você comprou ${it.name} por ₽${it.price}.`);
       await verificarMissoes(); save(); return render(); // missões de gastar dinheiro
+    }
+    // equipar um item da mochila direto pela ficha (data-quem: 'p' = você, número = aliado)
+    case 'segurar': {
+      if (G.busy || G.mode !== 'explore') return;
+      G.busy = true; render();
+      try { await equiparItem(v, false, b.dataset.quem); } finally { G.busy = false; save(); render(); }
+      return;
     }
     // tirar o item segurado (ficha): 'p' = você, número = aliado
     case 'tirar-item': {

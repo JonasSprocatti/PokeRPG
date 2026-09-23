@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem } from '../js/segurados.js';
-import { ITEMS, ITENS_SEGURADOS, CATEGORIAS_ITEM, categoriaDoItem, porCategoria } from '../js/dados.js';
+import { ITEMS, ITENS_SEGURADOS, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
 const mon = (o = {}) => ({ level: 50, ability: 'none', data: { types: ['normal'] }, status: null, vol: { stages: {} },
@@ -58,6 +58,17 @@ test('fim de turno: Restos curam; Lodo Negro cura Venenoso e machuca o resto', (
   assert.equal(fimDeTurnoDoItem(mon({ item: 'black-sludge', hp: 50 })), -12);
   assert.equal(fimDeTurnoDoItem(mon({ item: 'black-sludge', hp: 50, data: { types: ['poison'] } })), 6);
   assert.equal(fimDeTurnoDoItem(mon({ hp: 50 })), 0);
+});
+
+test('a loja mostra os itens pra segurar (é por onde o jogador conhece a mecânica)', () => {
+  const aVenda = Object.entries(ITEMS).filter(([, it]) => it.price);
+  const divisoes = porCategoria(aVenda);
+  const seg = divisoes.find(c => c.id === 'segurado');
+  assert.ok(seg, 'a divisão 🎒 Para segurar não aparece na loja');
+  assert.equal(seg.itens.length, Object.keys(ITENS_SEGURADOS).length);
+  for (const [k] of seg.itens) assert.ok(ITEMS[k].segurado && ITEMS[k].price > 0, k);
+  // uma fruta pra segurar também é achada explorando: a mecânica aparece sem precisar de dinheiro
+  assert.ok(FIND_ITEMS.some(k => ITEMS[k]?.segurado), 'nenhum item pra segurar aparece explorando');
 });
 
 test('divisões da mochila: todo item cai em exatamente uma, e as vazias somem', () => {

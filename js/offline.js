@@ -1,0 +1,58 @@
+/* ============ baixar pra jogar offline ============ */
+// O jogo já guarda sozinho o que você encontra (api.js: cache em memória + localStorage; o service worker guarda os
+// sprites). O problema é que, offline, só dá pra encontrar o que você JÁ tinha visto — e Pokémon novo aparece sem
+// sprite. Aqui a pessoa baixa de uma vez tudo o que um mapa (Gen) precisa: os Pokémon das rotas, os Alfas, os
+// lendários, os golpes que eles usam e os sprites de todos.
+//   - dados dos Pokémon e golpes: localStorage (via api.js), poucos KB cada
+//   - sprites: basta pedir a imagem que o service worker guarda ela (EXTERNOS, "cache primeiro")
+// Baixar um mapa inteiro são ~150 Pokémon: pesado pra rede, leve pro aparelho. Puro o bastante pra testar a lista
+// de alvos (alvosDaGen) em tests/offline.test.js; o download em si precisa de rede e não é testado.
+import { rotasDaGen, dadosDaGen } from './mapas.js';
+import { SPR, SPR_SHINY } from './dados.js';
+import { loadPokemon, loadMove, pokemonEmCache } from './api.js';
+
+// tudo o que um mapa precisa: { ids: [id de Pokémon], nomes: quantos são }
+export function alvosDaGen(gen) {
+  const ids = new Set();
+  for (const z of rotasDaGen(gen)) {
+    for (const p of z.pool) ids.add(p.id);
+    if (z.chefe) ids.add(z.chefe.id);
+    for (const l of z.lendarios || []) ids.add(l.id);
+  }
+  return [...ids];
+}
+// já está tudo guardado neste aparelho?
+export const jaBaixado = gen => alvosDaGen(gen).every(pokemonEmCache);
+export const quantoFalta = gen => alvosDaGen(gen).filter(id => !pokemonEmCache(id)).length;
+
+// pede a imagem só pra ela entrar no cache do service worker (não desenha nada na tela)
+const guardarSprite = url => fetch(url, { mode: 'no-cors' }).catch(() => {});
+
+/* Baixa o mapa inteiro. `aoAndar(feitos, total, oQue)` recebe o progresso; devolve { ok, falhas }.
+   Vai de poucos em poucos (LOTE) pra não afogar a rede nem a PokéAPI. */
+const LOTE = 6;
+export async function baixarGen(gen, aoAndar = () => {}, sinal = null) {
+  const ids = alvosDaGen(gen);
+  const nome = dadosDaGen(gen).regiao;
+  let feitos = 0, falhas = 0;
+  const golpes = new Set();
+  for (let i = 0; i < ids.length; i += LOTE) {
+    if (sinal?.cancelado) break;
+    await Promise.all(ids.slice(i, i + LOTE).map(async id => {
+      try {
+        const data = await loadPokemon(id);
+        // golpes que ele aprende até o nível 60: é o que dá pra encontrar nas rotas
+        for (const m of data.learnset.list) if (m.level <= 60) golpes.add(m.url);
+        await Promise.all([guardarSprite(SPR(id)), guardarSprite(SPR_SHINY(id)), data.back ? guardarSprite(data.back) : null]);
+      } catch (e) { falhas++; console.warn('offline: falhou', id, e.message); }
+      aoAndar(++feitos, ids.length, `Pokémon de ${nome}`);
+    }));
+  }
+  // os golpes vêm depois: são muitos repetidos entre espécies, então o Set já cortou a maior parte
+  const lista = [...golpes];
+  for (let i = 0; i < lista.length && !sinal?.cancelado; i += LOTE) {
+    await Promise.all(lista.slice(i, i + LOTE).map(u => loadMove(u).catch(() => { falhas++; })));
+    aoAndar(Math.min(feitos + i + LOTE, feitos + lista.length), feitos + lista.length, 'golpes');
+  }
+  return { ok: !falhas && !sinal?.cancelado, falhas, total: ids.length, golpes: lista.length };
+}

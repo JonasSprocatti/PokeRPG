@@ -2,6 +2,16 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.3', data: '2026-09-22', titulo: 'Offline de verdade e itens mais fáceis de achar', piada: 'O Porygon foi baixado com sucesso. Ele pediu pra avisar que agora mora no seu aparelho.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Em ⚙ Ajustes tem uma seção nova: baixe um mapa inteiro (Pokémon, golpes e sprites) pra jogar sem internet sem faltar nada. Antes, offline, só aparecia quem você já tinha encontrado — e Pokémon novo ficava sem imagem.',
+        'A tela mostra quantos Pokémon daquele mapa já estão guardados no aparelho e marca com ✅ os mapas completos.',
+        'A ficha agora tem atalho: se você tem um item pra segurar na mochila, dá pra equipar direto ali, sem procurar.',
+        'Uma Fruta Oran pode ser achada explorando, então a mecânica de segurar item aparece mesmo pra quem não passou na loja.',
+        'A loja ganhou uma frase explicando cada divisão (para segurar, evolução, exploração).'
+      ] }
+    ] },
   { versao: '1.2', data: '2026-09-22', titulo: 'Agora chove', piada: 'O departamento meteorológico de Kanto pede desculpas pelos 30 anos de sol constante.',
     secoes: [
       { nome: 'Novidades', itens: [

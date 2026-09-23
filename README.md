@@ -79,8 +79,11 @@ Modo opcional, ligado **no começo da jornada**. Quando você revela todas as es
 - **Repelente Seletivo** (30 explorações): você escolhe **a única espécie da rota que não é repelida** — só ela aparece.
 - **Repelente Total** (40 explorações): **nenhum selvagem** aparece; você continua encontrando treinadores, itens e dinheiro normalmente.
 
+### Jogar offline
+Depois do primeiro acesso o jogo abre sem internet, e guarda sozinho tudo o que você encontra. Em **⚙ Ajustes → Jogar offline** dá para **baixar um mapa inteiro de uma vez** (Pokémon, golpes e sprites), para que nada apareça sem imagem quando você estiver sem rede. A tela mostra quanto de cada mapa já está guardado.
+
 ### Itens segurados
-Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Para equipar: mochila → divisão **🎒 Para segurar** → "Segurar". A ficha mostra o que cada um leva, com botão para guardar de volta.
+Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Para equipar: **loja → 🎒 Para segurar**, e depois "Segurar" na mochila (ou direto pelo atalho na ficha). Uma **Fruta Oran** também aparece explorando. A ficha mostra o que cada um leva, com botão para guardar de volta.
 - **Restos** (cura 1/16 por turno), **Lodo Negro** (cura Venenosos, machuca o resto), **Sino-Concha** (drena 1/8 do dano que você causa).
 - **Orbe da Vida** (+30% de dano, custa 10% do seu HP por golpe), **Faixa Muscular** (+10% físico), **Óculos do Sábio** (+10% especial), **Cinto do Perito** (+20% em super efetivo).
 - **Faixa de Foco** (com HP cheio, sobra com 1 de HP; gasta-se), **Elmo Rochoso** (quem te acerta no físico perde 1/6), **Colete de Assalto** (+50% de Defesa Especial, sem golpes de status).

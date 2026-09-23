@@ -157,7 +157,8 @@ export function porCategoria(pares) {
 // o que dá pra achar explorando (as pedras também; o Cabo de Conexão só na loja)
 export const ITENS_EVO_ACHADOS = Object.keys(ITENS_EVO).filter(k => k !== 'linking-cord');
 Object.assign(ITEMS, ITENS_EVO); // mochila, loja e sprites tratam igual aos outros itens
-export const FIND_ITEMS = ['potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
+// itens achados explorando — inclui uma fruta pra segurar, pra todo mundo topar com a mecânica cedo
+export const FIND_ITEMS = ['oran-berry','potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
 
 // Zonas = as rotas de todos os mapas por Gen (dados-mapas.js; lógica em mapas.js). `libera` = nível mínimo pra
 // entrar (zonaLiberada). `chefe` = o Alfa da rota: versão turbinada (statsDeChefe), desafiado por botão; recompensa

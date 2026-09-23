@@ -133,7 +133,14 @@ function blocoItem(M, quem) {
   const it = M.item && ITEMS[M.item];
   return `<div class="sec item-seg"><h3>Item segurado</h3>${it
     ? `<div class="seg-linha"><img src="${ITEM_SPR(M.item)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${it.name}</b><small>${esc(it.desc)}</small></span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="tirar-item" data-v="${quem}" ${G.busy ? 'disabled' : ''}>Tirar</button>` : ''}</div>`
-    : '<p class="small muted">Nenhum. Na mochila, em <b>🎒 Para segurar</b>, toque em “Segurar”.</p>'}</div>`;
+    : semSegurar(quem)}</div>`;
+}
+// sem item na mão: se já tem algum na mochila, oferece equipar aqui mesmo; senão explica onde conseguir
+function semSegurar(quem) {
+  const naMochila = Object.entries(G.S.bag).filter(([k, n]) => n > 0 && ITEMS[k]?.segurado);
+  if (G.mode !== 'explore' || !naMochila.length) return `<p class="small muted">Nenhum. Compre em <b>Abrir loja → 🎒 Para segurar</b> (ou ache explorando) e toque em “Segurar” na mochila.</p>`;
+  return `<p class="small muted">Nenhum. Você tem na mochila:</p><div class="subrow">${naMochila.map(([k, n]) =>
+    `<button class="btn ghost sm" data-act="segurar" data-v="${k}" data-quem="${quem}" ${G.busy ? 'disabled' : ''} title="${esc(ITEMS[k].desc)}">${ITEMS[k].name} ×${n}</button>`).join('')}</div>`;
 }
 // vínculo (amizade que algumas evoluções pedem) + como cada próxima forma evolui (evolucao.js)
 function blocoEvolucao(M, arvore) {
@@ -280,7 +287,8 @@ function renderActions() {
     // loja nas mesmas divisões da mochila
     const forSale = Object.entries(ITEMS).filter(([, it]) => it.price);
     const btn = ([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${it.name}</span><small>₽${it.price}</small></button>`;
-    a.innerHTML = `${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
+    const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
+    a.innerHTML = `${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
