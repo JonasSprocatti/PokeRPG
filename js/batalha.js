@@ -8,7 +8,7 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno } from './golpe.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno, passarLados, aplicarArmadilhas } from './golpe.js';
 import { hab } from './habilidades.js';
 import { gainExp, gainExpAliado, checkEvolution } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
@@ -20,7 +20,7 @@ import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINA
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
@@ -53,7 +53,7 @@ function sortearOponente(z) {
   return { id: p.id, level: rand(z.min, z.max) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
-function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0 }, ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
+function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }, ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
 // Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
 // Na troca de Pokémon do treinador só o que acabou de entrar dispara.
 async function intimidar(E, soInimigo = false) {
@@ -193,7 +193,8 @@ export async function turn(action) {
     // 2) golpes do turno: você (se escolheu golpe), cada aliado em pé e o lado inimigo, por prioridade e velocidade.
     //    Bola do treinador é item: prioridade máxima, sai antes de qualquer golpe.
     const acoes = [], clima = climaDe(B.campo), terreno = terrenoDe(B.campo); // clima e terreno entram na velocidade
-    const vel = m => effStat(m, 'speed', false, true, clima, terreno);
+    // Vento de Cauda (Tailwind) dobra a velocidade do lado dele (regras.multVento)
+    const vel = m => effStat(m, 'speed', false, true, clima, terreno) * multVento(B.campo.lados?.[CTX.ladoDe(m)]);
     if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: vel(P) });
     // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
@@ -222,7 +223,7 @@ export async function turn(action) {
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
     }
     if (B.capturado) { await serCapturado(); return; }
-    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await anunciarQuedas(); }
+    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
     B.turn++;
     if (P.hp <= 0) await lose();
@@ -261,6 +262,10 @@ async function win() {
     T.atual++; B.enemy = T.equipe[T.atual]; registrarVisto(B.enemy); render();
     await say(T.lendarios ? `Outro lendário surge: <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Shiny!' : ''}`
       : `${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
+    await aplicarArmadilhas(B.enemy, CTX); // Stealth Rock e cia. pegam quem entra
+    await anunciarQuedas();
+    // caiu só com as armadilhas: resolve como qualquer derrota (XP e o próximo da fila)
+    if (B.enemy.hp <= 0) { await say(`${nm(B.enemy)} caiu antes mesmo de lutar!`, 'hit'); return win(); }
     await intimidar(B.enemy, true);
     return;
   }

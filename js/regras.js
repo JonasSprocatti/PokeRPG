@@ -94,6 +94,51 @@ export const CLIMAS = {
 };
 export const CLIMA_TURNOS = 5;
 
+/* ---- lado do campo (telas, proteções e armadilhas) ----
+   Cada lado da batalha tem o seu: `campo.lados = { jogador: {...}, inimigo: {...} }` (no multiplayer, A e B).
+     reflect/luz/veu   turnos de Reflect, Light Screen e Aurora Veil — cortam dano pela metade
+     salvaguarda       turnos sem pegar status
+     neblina           turnos em que o inimigo não consegue baixar seus atributos (Mist)
+     vento             turnos de Tailwind (velocidade × 2)
+     pedras            Stealth Rock posto (true/false)
+     espinhos/toxinas  camadas de Spikes e Toxic Spikes
+   Armadilha só machuca quem ENTRA em campo — aqui isso acontece quando o treinador (ou a fila de lendários) manda
+   o próximo Pokémon. Você nunca troca de Pokémon, então armadilha no seu lado não tem em quem pegar: os golpes
+   dizem isso na hora de usar, em vez de fingir que funcionaram. */
+export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, neblina: 0, vento: 0, pedras: false, espinhos: 0, toxinas: 0 });
+export const TELA_TURNOS = 5, VENTO_TURNOS = 4;
+export const MAX_ESPINHOS = 3, MAX_TOXINAS = 2;
+// dano cortado pelas telas do lado de quem DEFENDE (Aurora Veil vale pros dois tipos de golpe)
+export function multTelas(lado, move) {
+  if (!lado) return 1;
+  const fisico = move.cls === 'physical';
+  if (lado.veu > 0 || (fisico ? lado.reflect > 0 : lado.luz > 0)) return 0.5;
+  return 1;
+}
+export const temSalvaguarda = lado => !!lado && lado.salvaguarda > 0;
+export const temNeblina = lado => !!lado && lado.neblina > 0;
+export const multVento = lado => (lado?.vento > 0 ? 2 : 1);
+// Stealth Rock: 1/8 do HP máximo, corrigido pela eficácia de Pedra contra o tipo de quem entrou
+export const danoPedras = m => Math.max(1, Math.floor(m.stats.hp / 8 * typeEff('rock', m.data.types)));
+// Spikes: só pega quem está no chão; 1/8, 1/6 ou 1/4 conforme as camadas
+export const danoEspinhos = (m, camadas) => (!camadas || !noChao(m) ? 0 : Math.max(1, Math.floor(m.stats.hp * [0, 1 / 8, 1 / 6, 1 / 4][Math.min(camadas, MAX_ESPINHOS)])));
+// Toxic Spikes: Venenoso no chão limpa o campo; Aço e quem voa não ligam; 2 camadas = veneno grave
+export function efeitoToxinas(m, camadas) {
+  if (!camadas || !noChao(m)) return null;
+  if (m.data.types.includes('poison')) return 'limpa';
+  if (imuneAoStatus(m.data.types, 'poison') || hab(m).imuneStatus?.includes('poison')) return null;
+  return camadas >= MAX_TOXINAS ? 'grave' : 'veneno';
+}
+// fim da rodada: tudo que conta turno anda um. Devolve o que acabou agora, pra narrar.
+export function passarLado(lado) {
+  const acabou = [];
+  for (const k of ['reflect', 'luz', 'veu', 'salvaguarda', 'neblina', 'vento']) {
+    if (lado?.[k] > 0 && --lado[k] === 0) acabou.push(k);
+  }
+  return acabou;
+}
+export const NOME_LADO = { reflect: 'Refletir', luz: 'Tela de Luz', veu: 'Véu da Aurora', salvaguarda: 'Salvaguarda', neblina: 'Névoa', vento: 'Vento de Cauda' };
+
 /* ---- terrenos ----
    Também vivem no campo (`campo.terreno` / `campo.terrenoTurnos`) e duram 5 turnos, mas só valem pra quem está NO
    CHÃO: Pokémon do tipo Voador e quem tem Levitate flutuam e ficam de fora de tudo (bônus, cura e proteção). */
@@ -133,7 +178,8 @@ export function danoClima(clima, m) {
 // precisão que muda com o clima: Thunder/Hurricane acertam sempre na chuva e ficam ruins no sol; Blizzard, no gelo
 export const PRECISAO_CLIMA = { thunder: { chuva: 100, sol: 50 }, hurricane: { chuva: 100, sol: 50 }, blizzard: { granizo: 100, neve: 100 } };
 
-export function calcDamage(u, t, move, clima = null, terreno = null) {
+// `ladoAlvo` = o lado do campo de quem defende (telas: Reflect, Light Screen, Aurora Veil)
+export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = null) {
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
   const hu = hab(u), ht = hab(t);
   let power = poderEspecial(u, t, move) ?? (move.power || 60);
@@ -158,6 +204,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null) {
   mod *= multDanoDoItem(u, { ef, fisico: phys });                                    // item segurado (Orbe da Vida…)
   mod *= multClima(clima, move.type);                                                // sol/chuva (regras.CLIMAS)
   mod *= multTerreno(terreno, move.type, u);                                         // terreno, pra quem está no chão
+  mod *= multTelas(ladoAlvo, move);                                                  // telas do lado de quem defende
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
 export function confDamage(u) {

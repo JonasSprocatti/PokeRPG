@@ -118,6 +118,12 @@ As batalhas têm tempo, mostrado no topo com os turnos restantes:
 - Ligam com **Rain Dance, Sunny Day, Sandstorm, Hail e Snowscape** (5 turnos) ou com habilidades como **Drizzle** e **Drought**, assim que o Pokémon entra em campo.
 - **Habilidades que aproveitam o tempo:** Swift Swim, Chlorophyll, Sand Rush, Slush Rush, Rain Dish, Ice Body, Dry Skin, Solar Power, Sand Veil, Snow Cloak, Hydration, Leaf Guard, Magic Guard e Overcoat.
 
+### Lado do campo: telas, proteções e armadilhas
+Cada lado tem o seu, mostrado no topo da luta (🛡 o seu, ⚔ o do inimigo):
+- **Reflect** (dano físico pela metade), **Light Screen** (especial) e **Aurora Veil** (os dois, só no granizo ou na neve) — 5 turnos.
+- **Safeguard:** nenhum status vindo do inimigo pega por 5 turnos (Rest em si mesmo continua valendo). **Mist:** o inimigo não baixa seus atributos. **Tailwind:** velocidade dobrada por 4 turnos.
+- **Armadilhas:** **Stealth Rock** (dano pela fraqueza de quem entra), **Spikes** (até 3 camadas, só quem anda no chão) e **Toxic Spikes** (até 2; a segunda envenena gravemente, e Venenoso no chão limpa). Pegam **quem entra em campo** — os Pokémon do treinador e a fila de lendários. Você nunca troca de Pokémon, então o jogo avisa quando a armadilha não teria em quem pegar.
+
 ### Terrenos
 Duram 5 turnos e **só valem para quem está no chão** (Voador e Levitate flutuam e ficam de fora de tudo, inclusive da cura):
 - **⚡ Campo Elétrico:** golpes Elétricos ×1,3 e ninguém dorme.
@@ -234,7 +240,8 @@ Depois abra http://localhost:3000.
   3. ~~Terrenos~~ ✔ (elétrico, grama, psíquico e névoa, com as habilidades Surge).
   4. ~~Itens segurados~~ ✔ (13 itens; faltam os Choice, que travam o golpe, e frutas de aperto por tipo).
   5. ~~IA de inimigo~~ ✔ (escolhe o golpe mais eficaz; selvagem erra mais, Alfa quase não erra).
-  6. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
+  6. ~~Golpes de lado do campo~~ ✔ (telas, Safeguard, Mist, Tailwind e as armadilhas de entrada).
+  7. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
   6. **Mecânicas especiais:** Mega Evolução, Z-Moves, Dynamax/Gigantamax e Terastalização.
 - [ ] **Mapas por Gen, próximos passos:** missões próprias de cada mapa (hoje as de espécie valem em qualquer mapa, e a trilha de Alfas é só de Kanto) e a luta dos lendários no co-op (hoje é só no single player).
 - [ ] Acabamento: sons, animações e instalação como app (PWA).

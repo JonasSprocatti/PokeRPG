@@ -10,7 +10,8 @@
 //   semStatus     não deixa você usar golpes de status                (Colete de Assalto)
 //   recuoPorGolpe fração do SEU HP máximo perdida ao acertar          (Orbe da Vida)
 //   drenaDano     fração do dano causado que você recupera            (Sino-Concha)
-//   espinhos      fração do HP máximo que quem te acerta (físico) perde (Elmo Rochoso)
+//   espetos       fração do HP máximo que quem te acerta (físico) perde (Elmo Rochoso) — não confundir com os
+//                 espinhos do CAMPO (Spikes, em regras.js): aqueles ficam no chão e pegam quem entra
 //   aguentaCheio  com HP cheio, sobra com 1 HP (e o item é gasto)     (Faixa de Foco)
 //   curaFimTurno  fração do HP máximo recuperada por turno            (Restos)
 //   soTipo        `curaFimTurno` só pra esse tipo; nos outros machuca  (Lodo Negro)
@@ -25,7 +26,7 @@ export const SEGURADOS = {
   'life-orb': { multDano: 1.3, recuoPorGolpe: 0.1 },
   'focus-sash': { aguentaCheio: true, gastaNoUso: true },
   'shell-bell': { drenaDano: 1 / 8 },
-  'rocky-helmet': { espinhos: 1 / 6 },
+  'rocky-helmet': { espetos: 1 / 6 },
   'expert-belt': { multDano: 1.2, soSuperEfetivo: true },
   'muscle-band': { multDano: 1.1, soFisico: true },
   'wise-glasses': { multDano: 1.1, soEspecial: true },

@@ -16,7 +16,9 @@ import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
 import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko,
-  CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao } from './regras.js';
+  CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
+  LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
@@ -24,6 +26,18 @@ const up = ctx => (ctx.atualizar || nada)();
 const nomeDoItem = m => ITEMS[m.item]?.name || 'o item';
 const climaDoCtx = ctx => climaDe(ctx.campo);
 const terrenoDoCtx = ctx => terrenoDe(ctx.campo);
+// lado do campo de um Pokémon (telas, salvaguarda, armadilhas). ctx.ladoDe(m) diz em qual lado ele está.
+export function ladoDoCampo(ctx, m) {
+  const chave = ctx.ladoDe?.(m); if (!chave || !ctx.campo) return null;
+  const lados = (ctx.campo.lados ||= {});
+  return (lados[chave] ||= LADO_VAZIO());
+}
+// fim da rodada: telas, salvaguarda, névoa e vento andam um turno nos dois lados (batalha.js / mp-motor)
+export async function passarLados(campo, ctx) {
+  for (const lado of Object.values(campo?.lados || {})) {
+    for (const k of passarLado(lado)) await ctx.say(`${NOME_LADO[k]} passou.`, 'muted');
+  }
+}
 // liga um terreno novo (golpe ou habilidade) e narra
 export async function mudarTerreno(terreno, ctx, quem = null) {
   if (!TERRENOS[terreno] || !ctx.campo) return false;
@@ -74,6 +88,9 @@ export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
     if (c.change < 0 && fonte && fonte !== m && (h.semQueda === 'todas' || h.semQueda?.includes(c.stat))) {
       await ctx.say(`A habilidade ${fmt(m.ability)} de ${ctx.nome(m)} impede que ${STAT_PT[c.stat]} caia!`); continue;
     }
+    if (c.change < 0 && fonte && fonte !== m && temNeblina(ladoDoCampo(ctx, m))) {   // Mist
+      await ctx.say(`${NOME_LADO.neblina} impede que ${STAT_PT[c.stat]} de ${ctx.nome(m)} caia!`); continue;
+    }
     const cur = m.vol.stages[c.stat], nv = clamp(cur + c.change, -6, 6);
     if (nv === cur) { await ctx.say(`${STAT_PT[c.stat]} de ${ctx.nome(m)} não pode ${c.change > 0 ? 'subir' : 'cair'} mais!`); continue; }
     m.vol.stages[c.stat] = nv;
@@ -84,7 +101,33 @@ export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
 }
 
 // Aplica status (inclui confusão). `avisar` = narra por que não pegou (golpe de status); secundário falha calado.
-export async function aplicarStatus(t, ail, ctx, avisar = false) {
+// Armadilhas pegam quem ENTRA em campo (o próximo Pokémon do treinador / da fila de lendários)
+export async function aplicarArmadilhas(m, ctx) {
+  const lado = ladoDoCampo(ctx, m); if (!lado || m.hp <= 0) return;
+  if (lado.pedras) {
+    const d = danoPedras(m); m.hp = Math.max(0, m.hp - d); up(ctx);
+    await ctx.say(`Pedras afiadas acertam ${ctx.nome(m)} ao entrar! (−${d})`, 'hit');
+  }
+  if (m.hp > 0 && lado.espinhos) {
+    const d = danoEspinhos(m, lado.espinhos);
+    if (d) { m.hp = Math.max(0, m.hp - d); up(ctx); await ctx.say(`${ctx.nome(m)} pisa nos espinhos! (−${d})`, 'hit'); }
+  }
+  if (m.hp > 0 && lado.toxinas) {
+    const r = efeitoToxinas(m, lado.toxinas);
+    if (r === 'limpa') { lado.toxinas = 0; await ctx.say(`${ctx.nome(m)} absorveu os espinhos venenosos.`, 'muted'); }
+    else if (r) {
+      await aplicarStatus(m, 'poison', ctx);
+      if (r === 'grave' && m.status === 'poison') { m.vol.toxico = 1; await ctx.say(`O veneno em ${ctx.nome(m)} é grave!`, 'status'); }
+    }
+  }
+}
+
+// `fonte` = quem causou (Salvaguarda só protege de status vindo do inimigo, como nos jogos)
+export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
+  if (fonte && fonte !== t && temSalvaguarda(ladoDoCampo(ctx, t))) {
+    if (avisar) await ctx.say(`${NOME_LADO.salvaguarda} protege ${ctx.nome(t)}!`);
+    return;
+  }
   // Leaf Guard: no sol forte não pega status nenhum
   if (hab(t).semStatusClima && hab(t).semStatusClima === climaDe(ctx.campo)) {
     if (avisar) await ctx.say(`A habilidade ${fmt(t.ability)} de ${ctx.nome(t)} protege ${ctx.nome(t)} no ${CLIMAS[climaDe(ctx.campo)].nome.toLowerCase()}!`);
@@ -115,6 +158,32 @@ async function statusEspecial(u, t, g, esp, ctx) {
   const U = ctx.nome(u), T = ctx.nome(t);
   if (esp.clima) { if (!await mudarClima(esp.clima, ctx)) await ctx.say('Mas falhou!'); return true; }
   if (esp.terreno) { if (!await mudarTerreno(esp.terreno, ctx)) await ctx.say('Mas falhou!'); return true; }
+  // telas e proteções: valem no lado de quem usou
+  if (esp.lado) {
+    const meu = ladoDoCampo(ctx, u);
+    if (!meu) { await ctx.say('Mas falhou!'); return true; }
+    if (esp.soNoGelo && !['granizo', 'neve'].includes(climaDoCtx(ctx))) { await ctx.say('Mas falhou! (só funciona no granizo ou na neve)'); return true; }
+    if (meu[esp.lado] > 0) { await ctx.say('Mas falhou! (já está no ar)'); return true; }
+    meu[esp.lado] = esp.lado === 'vento' ? VENTO_TURNOS : TELA_TURNOS;
+    await ctx.say(`${NOME_LADO[esp.lado]} protege o lado de ${U} por ${meu[esp.lado]} turnos!`, 'good');
+    return true;
+  }
+  // armadilhas: ficam esperando no lado do inimigo
+  if (esp.armadilha) {
+    const deles = ladoDoCampo(ctx, t);
+    if (!deles) { await ctx.say('Mas falhou!'); return true; }
+    if (esp.armadilha === 'pedras') {
+      if (deles.pedras) { await ctx.say('Mas falhou! (as pedras já estão lá)'); return true; }
+      deles.pedras = true;
+    } else {
+      const max = esp.armadilha === 'espinhos' ? MAX_ESPINHOS : MAX_TOXINAS;
+      if (deles[esp.armadilha] >= max) { await ctx.say('Mas falhou! (não cabe mais)'); return true; }
+      deles[esp.armadilha]++;
+    }
+    await ctx.say(`${esp.armadilha === 'pedras' ? 'Pedras afiadas flutuam' : esp.armadilha === 'espinhos' ? 'Espinhos se espalham' : 'Espinhos venenosos se espalham'} em volta de ${T}!`, 'status');
+    if (!ctx.trocaDePokemon) await ctx.say('(só machuca quem entrar em campo depois — do seu lado ninguém troca)', 'muted');
+    return true;
+  }
   if (esp.protege) {
     // repetir seguido: 1/3, 1/9… de chance
     const n = u.vol.protSeguidas || 0;
@@ -162,7 +231,7 @@ async function golpeDeStatus(u, t, g, selfT, ctx) {
   if (g.stats.length) { fez = true; const alvo = selfT || meta.cat === 'damage+raise' ? u : t; await mudarEstagios(alvo, g.stats, ctx, u); }
   if (meta.ailment && meta.ailment !== 'none') {
     fez = true;
-    if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(selfT ? u : t, meta.ailment, ctx, true);
+    if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(selfT ? u : t, meta.ailment, ctx, true, u);
   }
   if (!fez) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted');
 }
@@ -265,7 +334,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   const cheio = t.hp >= t.stats.hp;
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
-    const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx));
+    const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx), ladoDoCampo(ctx, t));
     let dano = r.dmg;
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
@@ -286,7 +355,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   const si = seg(u);
   if (si.drenaDano && total > 0 && u.hp > 0 && u.hp < u.stats.hp) { const h = Math.max(1, Math.floor(total * si.drenaDano)); heal(u, h); up(ctx); await ctx.say(`${U} recuperou ${h} HP com o Sino-Concha.`, 'good'); }
   if (si.recuoPorGolpe && total > 0 && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
-  if (g.cls === 'physical' && seg(t).espinhos && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espinhos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
+  if (g.cls === 'physical' && seg(t).espetos && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
   await comerFruta(t, ctx); await comerFruta(u, ctx);                                        // Frutas Oran/Sitrus na hora do aperto
 
   if (meta.drain > 0) { const h = Math.max(1, Math.floor(total * meta.drain / 100)); heal(u, h); up(ctx); await ctx.say(`${U} drenou ${h} HP.`, 'good'); }
@@ -302,7 +371,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     else if (meta.cat !== 'damage+raise' && t.hp > 0 && !ht.semSecundario) await mudarEstagios(t, g.stats, ctx, u);
   }
   if (t.hp > 0 && !ht.semSecundario) {
-    if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx);
+    if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx, false, u);
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
   }
   // contato (golpe físico): Static, Flame Body, Poison Point; Rough Skin, Iron Barbs

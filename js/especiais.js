@@ -22,6 +22,9 @@
 //   soPrimeiroTurno  só funciona no primeiro golpe que você dá na batalha (Fake Out, First Impression)
 //   clima: tipo      muda o tempo da batalha por CLIMA_TURNOS (Rain Dance, Sunny Day, Sandstorm, Hail, Snowscape)
 //   terreno: tipo    muda o chão por TERRENO_TURNOS (Electric/Grassy/Psychic/Misty Terrain)
+//   lado: campo      liga algo no SEU lado do campo (Reflect, Light Screen, Aurora Veil, Safeguard, Mist, Tailwind)
+//   soNoGelo         esse golpe só funciona com granizo ou neve (Aurora Veil)
+//   armadilha: tipo  põe Stealth Rock / Spikes / Toxic Spikes no lado do inimigo (pega quem entrar depois)
 export const GOLPES_ESPECIAIS = {
   protect: { protege: true }, detect: { protege: true }, 'spiky-shield': { protege: true }, 'kings-shield': { protege: true },
   'baneful-bunker': { protege: true }, obstruct: { protege: true }, 'silk-trap': { protege: true }, 'burning-bulwark': { protege: true },
@@ -54,6 +57,11 @@ export const GOLPES_ESPECIAIS = {
   hail: { clima: 'granizo' }, snowscape: { clima: 'neve' }, chillyreception: { clima: 'neve' },
   // terrenos (regras.TERRENOS): duram TERRENO_TURNOS e só valem pra quem está no chão
   'electric-terrain': { terreno: 'eletrico' }, 'grassy-terrain': { terreno: 'grama' },
-  'psychic-terrain': { terreno: 'psiquico' }, 'misty-terrain': { terreno: 'fada' }
+  'psychic-terrain': { terreno: 'psiquico' }, 'misty-terrain': { terreno: 'fada' },
+  // lado do campo (regras.LADO_VAZIO): telas e proteções valem pro SEU lado
+  reflect: { lado: 'reflect' }, 'light-screen': { lado: 'luz' }, 'aurora-veil': { lado: 'veu', soNoGelo: true },
+  safeguard: { lado: 'salvaguarda' }, mist: { lado: 'neblina' }, tailwind: { lado: 'vento' },
+  // armadilhas: ficam no lado de QUEM RECEBE e pegam o próximo Pokémon que entrar em campo
+  'stealth-rock': { armadilha: 'pedras' }, spikes: { armadilha: 'espinhos' }, 'toxic-spikes': { armadilha: 'toxinas' }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

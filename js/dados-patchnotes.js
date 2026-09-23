@@ -2,6 +2,17 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.6', data: '2026-09-23', titulo: 'Telas, proteções e armadilhas', piada: 'As Pedras Afiadas agora cobram pedágio na entrada. O sindicato dos Charizard já entrou com recurso.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Cada lado da batalha passou a ter o seu campo, e o que está no ar aparece no topo da luta: 🛡 do seu lado, ⚔ do lado do inimigo.',
+        'Telas: Reflect corta pela metade o dano dos golpes físicos, Light Screen o dos especiais e Aurora Veil os dois (mas só funciona no granizo ou na neve). Duram 5 turnos e não empilham.',
+        'Safeguard bloqueia status vindos do inimigo por 5 turnos — e não atrapalha quando você mesmo se põe pra dormir com Rest.',
+        'Mist impede o inimigo de baixar os seus atributos, e Tailwind dobra a velocidade do seu lado por 4 turnos.',
+        'Armadilhas de entrada: Stealth Rock machuca conforme a fraqueza de quem entra (dobra em Voador!), Spikes empilha até 3 camadas e Toxic Spikes até 2 (a segunda envenena gravemente). Quem é Venenoso e anda no chão limpa os espinhos venenosos ao entrar.',
+        'As armadilhas pegam o próximo Pokémon que entra em campo, ou seja, os do treinador e a fila de lendários. Como você nunca troca de Pokémon, o jogo avisa na hora de usar que, do seu lado, não há em quem pegar.'
+      ] }
+    ] },
   { versao: '1.5', data: '2026-09-22', titulo: 'O inimigo aprendeu a mirar', piada: 'Os Pokémon selvagens fizeram um curso rápido. O Magikarp assistiu, mas continua no Splash.',
     secoes: [
       { nome: 'Equilíbrio', itens: [

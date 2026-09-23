@@ -478,6 +478,7 @@ table.ranking tr.eu td{background:var(--panel2);color:var(--yellow)}
 .selo-offline{font:600 13px var(--display);background:#3a1f2a;border:2px solid var(--red);border-radius:999px;padding:3px 10px;white-space:nowrap}
 ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;display:grid;gap:4px}
 .clima-selo{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:0 10px;font:600 12px var(--display);color:var(--text)}
+.clima-selo.lado-jogador{border-color:var(--grass)} .clima-selo.lado-inimigo{border-color:var(--red)}
 .plate.agindo{outline:3px solid var(--yellow);outline-offset:2px;animation:agindo 1s ease-in-out infinite}
 @keyframes agindo{50%{outline-color:transparent}}
 @media(max-width:520px){.mon{width:110px;height:100px}.spr{width:96px;height:96px}.spr.back{width:110px;height:110px}.pl-top{font-size:14px}}

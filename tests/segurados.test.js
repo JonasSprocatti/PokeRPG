@@ -15,7 +15,7 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
     assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
   }
   const ganchos = new Set(['multDano', 'soFisico', 'soEspecial', 'soSuperEfetivo', 'multStat', 'semStatus', 'recuoPorGolpe', 'drenaDano',
-    'espinhos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus']);
+    'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus']);
   for (const [k, s] of Object.entries(SEGURADOS)) for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);
   assert.equal(temSegurado(mon()), false);
   assert.equal(temSegurado(mon({ item: 'leftovers' })), true);

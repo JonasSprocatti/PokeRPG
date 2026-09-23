@@ -13,8 +13,12 @@ export const CTX = {
   nome: nm,
   golpe: g => `<b style="color:${TC[g.type] || 'inherit'};filter:brightness(.7)">${esc(fmt(g.name))}</b>`,
   say, atualizar: render, tremer: shake,
-  // campo da batalha (clima): vive em G.B.campo e é o mesmo objeto pros dois lados
-  get campo() { if (G.B) return (G.B.campo ||= { clima: null, turnos: 0 }); return null; },
+  // campo da batalha (clima, terreno e o lado de cada um): vive em G.B.campo
+  get campo() { if (G.B) return (G.B.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }); return null; },
+  // em que lado do campo este Pokémon está (telas, salvaguarda, armadilhas)
+  ladoDe: m => (ladoJogador().includes(m) ? 'jogador' : 'inimigo'),
+  // do lado do inimigo entra outro Pokémon (treinador/lendários); do seu, não — as armadilhas avisam isso
+  get trocaDePokemon() { return !!G.B?.trainer; },
   // Leech Seed: 'E' = inimigo; número = posição no seu lado (você e aliados)
   refDe: m => m === G.B?.enemy ? 'E' : ladoJogador().indexOf(m),
   monPorRef: r => r === 'E' ? G.B?.enemy : ladoJogador()[r]
