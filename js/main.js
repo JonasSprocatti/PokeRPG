@@ -27,6 +27,7 @@ import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS } from './dados.js';
 import { freshVol, zonaLiberada } from './regras.js';
 import { despedir } from './amizade.js';
+import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
 
 /* ============ eventos ============ */
@@ -45,7 +46,12 @@ document.addEventListener('click', async e => {
     case 'ajustes': if (G.busy || G.mode === 'battle') return; return telaAjustes();
     case 'patch': if (G.busy || G.mode === 'battle') return; return telaPatchNotes();
     case 'fonte': aplicarFonte(v); return telaAjustes();
-    case 'baixar-gen': return baixarMapaOffline(v); // guarda um mapa inteiro pra jogar sem internet
+    case 'baixar-gen': return baixarMapaOffline(v);   // guarda um mapa pra jogar sem internet
+    case 'baixar-tudo': {                             // o jogo inteiro: pode passar de 100 MB
+      const ok = await ask('Baixar <b>todos os mapas</b> (Pokémon, golpes e sprites das 9 Gens)? Pode passar de 100 MB e levar alguns minutos. Deixe esta tela aberta.',
+        [{ label: 'Baixar tudo', value: true }, { label: 'Agora não', value: false, ghost: true }]);
+      return ok ? baixarMapaOffline(null) : undefined;
+    }
     case 'voltar': if (naSala()) await sairSala(); return voltar();
     // multiplayer (co-op)
     // da run, da tela inicial ou de qualquer outra tela (sem run: entra com um Pokémon convidado)
@@ -322,10 +328,12 @@ ganchos.carregarSave = (remoto, { guardarAtual = false } = {}) => {
 aplicarFonte();   // fonte escolhida neste navegador (ajustes.js), antes de desenhar qualquer tela
 iniciarPaineis(); // listeners de arrastar/▲▼/divisória, uma vez só
 iniciarMenu();    // ☰ do topo no celular
-(function boot() {
+// O índice do cache (api.iniciarCache) precisa estar lido ANTES de abrir a jornada: é ele que diz o que dá pra
+// jogar offline. Se falhar, abre do mesmo jeito — só sem saber o que está guardado.
+iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
   const s = store.get(SAVE_KEY);
   if (saveValido(s)) abrirJornada(s, 'Jogo carregado deste navegador.');
   else showCreate();
-})();
+});
 aoMudarNuvem(renderChipConta);
 iniciarNuvem().catch(e => console.error(e)); // sem config: não faz nada

@@ -209,6 +209,10 @@ table.ranking td.jogador{white-space:nowrap}
   body.em-batalha.mob-luta .painel[data-painel="log"] .painel-corpo{max-height:30vh}
   body.em-batalha.mob-registro .painel[data-painel="log"] .painel-corpo{max-height:70vh}
   body.em-batalha.mob-luta .painel[data-painel="log"] .painel-cab{display:none}  /* na luta o registro é só o texto */
+  /* 📋 Painéis: a cena deixa de ficar presa no topo e encolhe. Sem isso ela ocupava a tela inteira e os painéis
+     (ficha, missões, aliados, mochila) nasciam embaixo do que dá pra ver — o botão parecia não fazer nada. */
+  body.em-batalha.mob-paineis .stage{position:static}
+  body.em-batalha.mob-paineis .scene.battle{max-height:32vh;overflow:hidden}
 }
 @media(max-width:420px){
   body.em-batalha .mon{width:96px;height:80px}

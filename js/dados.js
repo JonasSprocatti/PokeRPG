@@ -7,6 +7,13 @@ export const SPR = id => `https://raw.githubusercontent.com/PokeAPI/sprites/mast
 export const SPR_SHINY = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
 export const SPR_SHINY_COSTAS = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/${id}.png`;
 export const ITEM_SPR = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
+/* Alguns itens novos (Gen 8/9) simplesmente NÃO têm imagem no repositório de sprites da PokéAPI — Coroa Galárica,
+   Armadura Auspiciosa, Pote Rachado... Antes a figura quebrada era escondida (visibility:hidden) e sobrava um buraco:
+   parecia bug de renderização. Agora cai neste ícone de caixinha (SVG embutido, não depende de rede).
+   `ITEM_ERRO` vai no onerror="" da <img>; o encodeURIComponent tira toda aspa dupla, então cabe no atributo. */
+export const ITEM_SPR_RESERVA = 'data:image/svg+xml,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="4" y="11" width="24" height="16" rx="3" fill="#6b74c9"/><rect x="4" y="11" width="24" height="5" rx="2" fill="#9aa3ff"/><rect x="14" y="11" width="4" height="16" fill="#3b4190"/><path d="M16 10c0-3 3-4 4-2.5S18 10 16 10zm0 0c0-3-3-4-4-2.5S14 10 16 10z" fill="#9aa3ff"/></svg>`);
+export const ITEM_ERRO = `this.onerror=null;this.src='${ITEM_SPR_RESERVA}'`;
 
 export const STATS = ['hp', 'attack', 'defense', 'special-attack', 'special-defense', 'speed'];
 export const STAT_PT = { hp: 'HP', attack: 'Ataque', defense: 'Defesa', 'special-attack': 'At. Esp.', 'special-defense': 'Def. Esp.', speed: 'Velocidade', accuracy: 'Precisão', evasion: 'Evasão' };
@@ -230,7 +237,9 @@ export const REGIOES_INICIAIS = [
   { nome: 'Kanto', ids: [1, 4, 7], nomes: ['Bulbasaur', 'Charmander', 'Squirtle'] }, { nome: 'Johto', ids: [152, 155, 158], nomes: ['Chikorita', 'Cyndaquil', 'Totodile'] }, { nome: 'Hoenn', ids: [252, 255, 258], nomes: ['Treecko', 'Torchic', 'Mudkip'] },
   { nome: 'Sinnoh', ids: [387, 390, 393], nomes: ['Turtwig', 'Chimchar', 'Piplup'] }, { nome: 'Unova', ids: [495, 498, 501], nomes: ['Snivy', 'Tepig', 'Oshawott'] }, { nome: 'Kalos', ids: [650, 653, 656], nomes: ['Chespin', 'Fennekin', 'Froakie'] },
   { nome: 'Alola', ids: [722, 725, 728], nomes: ['Rowlet', 'Litten', 'Popplio'] }, { nome: 'Galar', ids: [810, 813, 816], nomes: ['Grookey', 'Scorbunny', 'Sobble'] }, { nome: 'Paldea', ids: [906, 909, 912], nomes: ['Sprigatito', 'Fuecoco', 'Quaxly'] },
-  { nome: 'Especiais', ids: [25, 133], nomes: ['Pikachu', 'Eevee'] }
+  // `nasRotas`: estes dois continuam aparecendo soltos no mundo (é assim nos jogos). Os outros iniciais — e as
+  // evoluções deles — são tirados dos pools das rotas por mapas.js, pra escolha do começo da jornada valer alguma coisa.
+  { nome: 'Especiais', ids: [25, 133], nomes: ['Pikachu', 'Eevee'], nasRotas: true }
 ];
 export const INICIAIS = REGIOES_INICIAIS.flatMap(r => r.ids);
 

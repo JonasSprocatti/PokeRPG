@@ -7,11 +7,12 @@ import { G, nm, registrar, rotulo, ladoJogador } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { API, STATS, STAT_PT, TYPE_PT, CLS_PT, ITEMS } from './dados.js';
-import { recalc, MAX_ALIADOS } from './regras.js';
+import { recalc, MAX_ALIADOS, golpesDaEvolucao } from './regras.js';
+import { habilidadeDaEvolucao } from './habilidades.js';
 import { makeMon } from './pokemon.js';
 import { evolucoesPossiveis, caminhoMostrado, textoCondicao, ganharFelicidade, ganhoFelicidadeNivel, felicidadeDe, FELICIDADE_ALIADO } from './evolucao.js';
 import { loadMove, loadSpecies, loadPokemon, loadEvo, loadGrowth } from './api.js';
-import { esc, fmt } from './util.js';
+import { esc, fmt, offline } from './util.js';
 
 const ehJogador = M => M === G.S.player;
 
@@ -89,17 +90,46 @@ const extraTexto = o => [o.consome ? `gasta ${nomeItem(o.consome)}` : '', o.cust
 
 // Evolução por nível (ou depois da batalha, `extra.gatilho = 'pos-batalha'`): pergunta se deixa evoluir.
 export async function checkEvolution(M, extra = {}) {
-  const arvore = await arvoreDe(M).catch(() => null); if (!arvore) return false;
-  const node = findNode(arvore, M.data.speciesName); if (!node) return false;
+  let arvore;
+  try { arvore = await arvoreDe(M); }
+  catch (e) {
+    // A REDE FALHOU bem na hora de evoluir: o nível subiu e ficou salvo, mas a evolução sumiria sem ninguém ver.
+    // Fica marcada como pendente e o jogo tenta de novo sozinho (verificarEvolucoesPendentes).
+    M.evoPendente = true;
+    await say(`${nm(M)} parece querer mudar, mas a conexão falhou agora. Fica pendente: o jogo tenta de novo em instantes.`, 'status');
+    return false;
+  }
+  if (!arvore) { delete M.evoPendente; return false; }
+  const node = findNode(arvore, M.data.speciesName); if (!node) { delete M.evoPendente; return false; }
   const opts = evolucoesPossiveis(node, M, contexto(M, extra));
+  delete M.evoPendente; // a árvore chegou: não há mais nada pendente, evoluindo ou não
   if (!opts.length) return false;
   const pergunta = ehJogador(M) ? `Algo está acontecendo com ${nm(M)}... Você sente seu corpo mudar. Deixar evoluir?`
     : `Algo está acontecendo com seu aliado ${nm(M)}... Deixar ele evoluir?`;
   const c = await ask(pergunta, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}${extraTexto(o) ? ` (${extraTexto(o)})` : ''}`, value: o.name })), { label: ehJogador(M) ? 'Resistir à evolução' : 'Impedir a evolução', value: null, ghost: true }]);
   if (!c) { await say(`${nm(M)} ${ehJogador(M) ? 'resistiu à' : 'não passou pela'} evolução.`); return false; }
   pagar(opts.find(o => o.name === c));
-  await evolve(M, await casulo(M, c, node), arvore);
+  try {
+    await evolve(M, await casulo(M, c, node), arvore);
+  } catch (e) {
+    // caiu a rede DEPOIS de você aceitar: não perde a evolução, ela volta a ficar pendente
+    console.error(e); M.evoPendente = true;
+    await say(`A evolução de ${nm(M)} travou por falta de conexão. Ela continua pendente e acontece assim que a rede voltar.`, 'hit');
+    return false;
+  }
   return true;
+}
+
+// Evolução que ficou pendente por falta de rede: tenta de novo. Chamada quando você explora e depois de vencer —
+// assim ninguém fica "no vácuo" subindo de nível sem nunca evoluir. Não faz nada offline nem no meio da batalha.
+export async function verificarEvolucoesPendentes() {
+  if (offline() || G.mode === 'battle') return false;
+  let algum = false;
+  for (const M of ladoJogador()) {
+    if (!M.evoPendente || M.hp <= 0) continue;
+    if (await checkEvolution(M)) algum = true;
+  }
+  return algum;
 }
 
 // Nincada: ao virar Ninjask, o casco deixado pra trás vira Shedinja. Com vaga na equipe, ele entra sozinho como
@@ -169,12 +199,15 @@ async function evolve(M, speciesName, arvore) {
   const forma = findNode(arvore, speciesName)?.to.length ? 'meio' : 'final';
   const sp = await loadSpecies(`${API}/pokemon-species/${speciesName}/`);
   const data = await loadPokemon(sp.defaultPokemon);
-  const oldName = ehJogador(M) ? fmt(M.name) : (M.nick || fmt(M.name)), idx = M.data.abilities.findIndex(a => a.name === M.ability);
+  const oldName = ehJogador(M) ? fmt(M.name) : (M.nick || fmt(M.name));
+  const habVelha = M.ability, habVelhas = M.data.abilities, golpesVelhos = M.data.learnset.list;
   M.id = data.id; M.name = data.name; M.data = data;
-  M.ability = (data.abilities[idx] || data.abilities[0]).name;
+  M.ability = habilidadeDaEvolucao(habVelhas, data.abilities, habVelha);
   recalc(M); render();
   registrar(G.S, 'evolucoes', data.speciesName, data.id); // conta pro Roguelike (5× forma do meio / 10× final)
   (G.S.registro.formas ||= {})[data.speciesName] = forma;
   await say(`Parabéns! ${esc(oldName)} evoluiu para <b>${esc(fmt(data.name))}</b>!`, 'level');
-  for (const mv of data.learnset.list.filter(m => m.level === 0 || m.level === M.level)) await aprender(M, mv);
+  // a habilidade acompanha a evolução (mesmo slot): avisa quando ela troca de nome, senão some sem ninguém ver
+  if (M.ability !== habVelha) await say(`A habilidade de ${nm(M)} virou <b>${esc(fmt(M.ability))}</b> (era ${esc(fmt(habVelha))}).`, 'status');
+  for (const mv of golpesDaEvolucao(golpesVelhos, data.learnset.list, M.level)) await aprender(M, mv);
 }

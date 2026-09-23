@@ -1,4 +1,4 @@
-<p align="center"><img src="img/logo.png" alt="PokéRPG" width="240"></p>
+﻿<p align="center"><img src="img/logo.png" alt="PokéRPG" width="240"></p>
 
 # PokéRPG
 
@@ -44,14 +44,14 @@ A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de 
 Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### O mundo
-- **Um mapa por Gen** (Kanto, Johto, Hoenn, Sinnoh, Unova, Kalos, Alola, Galar, Paldea), cada um com **10 rotas** que abrem por nível (do 2 ao ~62). Os selvagens de cada mapa são os daquela Gen, cada um na rota que combina com o nível e o tipo dele. Nenhuma rota tem todos os Pokémon: para achar todos, você passa pelos vários mapas.
+- **Um mapa por Gen** (Kanto, Johto, Hoenn, Sinnoh, Unova, Kalos, Alola, Galar, Paldea), cada um com **10 rotas** que abrem por nível (do 2 ao ~62). Os selvagens de cada mapa são os daquela Gen, cada um na rota que combina com o nível e o tipo dele. Nenhuma rota tem todos os Pokémon: para achar todos, você passa pelos vários mapas. **Os iniciais das nove regiões (e as evoluções deles) não aparecem nas rotas** — escolher o seu no começo da jornada é o que dá acesso a eles. Pikachu e Eevee são exceção: continuam aparecendo no mundo.
 - **Taxa de aparição:** comuns aparecem mais, raros menos (pela taxa de captura da espécie). **Míticos** da Gen (Mew, Celebi…) podem aparecer nas duas rotas mais altas, bem raramente (~0,4% dos encontros).
 - **Pokédex da rota:** cada espécie da rota aparece como **?** até você enfrentá-la. Depois de enfrentar, vira **silhueta**. Com **10 derrotados** (somando todas as suas jornadas), aparece colorida e com a **taxa de aparição** naquela rota.
 - **Alfas:** cada rota tem um chefe mais forte que o normal (HP ×2, +30% no resto, IVs perfeitos). Prêmio na primeira vitória.
 - **Lendários:** a última rota de cada mapa guarda os lendários da Gen. Você enfrenta até 4 em sequência, e o principal (Mewtwo, Ho-Oh, Rayquaza…) vem por último, turbinado. Vencer **fecha a Gen**:
   - no Roguelike, a run termina em vitória e libera o mapa seguinte;
   - nos outros modos, você **escolhe o próximo mapa** (qualquer Gen) e segue com a mesma equipe. Os níveis do mapa novo começam no seu e sobem até o 100.
-- **Treinadores caçadores:** aparecem explorando, com 1 a 3 Pokémon e Pokébolas. Com seu HP pela metade, podem tentar te capturar, e a chance depende da taxa de captura da **sua** espécie.
+- **Treinadores caçadores:** aparecem explorando, com 1 a 3 Pokémon e Pokébolas. A equipe deles **não é só da rota**: cerca de metade pode ser qualquer espécie daquele mapa, sempre no nível da rota — eles viajaram até ali. Com seu HP pela metade, podem tentar te capturar, e a chance depende da taxa de captura da **sua** espécie.
 - **Shiny:** 1 em 4096, para você e para qualquer Pokémon que aparecer.
 - **Centro Pokémon, loja e mochila:** Potion, curas de status, Ether, X-itens, Rare Candy, Revive e petiscos.
 
@@ -80,7 +80,7 @@ Modo opcional, ligado **no começo da jornada**. Quando você revela todas as es
 - **Repelente Total** (40 explorações): **nenhum selvagem** aparece; você continua encontrando treinadores, itens e dinheiro normalmente.
 
 ### Jogar offline
-Depois do primeiro acesso o jogo abre sem internet, e guarda sozinho tudo o que você encontra. Em **⚙ Ajustes → Jogar offline** dá para **baixar um mapa inteiro de uma vez** (Pokémon, golpes e sprites), para que nada apareça sem imagem quando você estiver sem rede. A tela mostra quanto de cada mapa já está guardado.
+Depois do primeiro acesso o jogo abre sem internet, e guarda sozinho tudo o que você encontra. Em **⚙ Ajustes → Jogar offline** dá para **baixar um mapa inteiro de uma vez** — ou **o jogo inteiro**, com os nove mapas (Pokémon, golpes e sprites) — para que nada apareça sem imagem quando você estiver sem rede. A tela mostra quanto de cada mapa já está guardado e quanto espaço isso ocupa no aparelho. O download do jogo todo passa de 100 MB e leva alguns minutos: use uma rede boa e deixe a tela aberta.
 
 ### Itens segurados
 Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Para equipar: **loja → 🎒 Para segurar**, e depois "Segurar" na mochila (ou direto pelo atalho na ficha). Uma **Fruta Oran** também aparece explorando. A ficha mostra o que cada um leva, com botão para guardar de volta.
@@ -108,6 +108,7 @@ Além de subir de nível, os Pokémon evoluem como nos jogos:
 - **Hora do dia:** pelo relógio do seu aparelho (dia 6h–18h, noite 18h–6h).
 - **Outras condições:** saber um golpe, ter um aliado de certa espécie ou tipo, Ataque × Defesa (Tyrogue) e itens segurados.
 - **Shedinja:** quando Nincada vira Ninjask, a casca ganha vida. Com vaga na equipe, **Shedinja entra sozinho como aliado**; com a equipe cheia, você escolhe em qual dos dois o seu Pokémon vira.
+- **Golpes e habilidade da evolução:** ao evoluir, o Pokémon aprende os golpes que a forma nova ganha de cara (o King's Shield do Aegislash, por exemplo) e a habilidade acompanha a mudança mantendo o tipo de slot — quem tinha habilidade oculta continua com a oculta. Se a internet cair bem na hora, a evolução fica **pendente** (aparece na ficha) e acontece sozinha assim que a rede volta.
 - **Casos especiais:** evoluções que dependem de coisas que o jogo não tem (chuva, virar o console, contar passos) ganharam uma regra equivalente. Exemplos: Sirfetch'd com **3 críticos numa batalha**, Runerigus ao **aguentar 49 de dano**, Kingambit ao **derrotar 3 Bisharp**, Annihilape sabendo **Rage Fist**. A ficha mostra o que falta para cada evolução.
 
 ### Clima
@@ -173,6 +174,20 @@ Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos 
 
 ### 🐞 Bugs e sugestões
 Na tela inicial e no topo do jogo. Escolha **Bug** ou **Sugestão**, dê um título e descreva. Não precisa de conta. Os bugs podem levar um **anexo técnico** (versão, navegador, tela, Pokémon, últimas linhas do registro, **nada pessoal**), que você vê antes de enviar. Sem internet, fica guardado e é enviado depois.
+
+**Para quem mantém o jogo — onde ler os relatos:** eles caem na tabela `relatos` do Supabase. Pela regra de acesso (RLS), cada conta só enxerga os próprios relatos **pelo jogo**; quem mantém lê tudo no painel do Supabase, que trabalha como administrador:
+
+1. [supabase.com](https://supabase.com) → o projeto do jogo → **Table Editor** → tabela **`relatos`** (dá para ordenar por `criado_em` e filtrar por `tipo` ou `status`).
+2. Ou **SQL Editor**, para ver os mais recentes com o anexo técnico junto:
+
+```sql
+select criado_em, tipo, status, titulo, descricao, contexto
+from relatos
+order by criado_em desc
+limit 50;
+```
+
+O campo `status` começa em `'novo'` e é seu para usar (`'lido'`, `'resolvido'`…): o jogo nunca deixa alguém mudar isso de fora. Não existe tela de administração dentro do jogo — é de propósito, para não haver caminho pelo navegador que leia relato de outra pessoa.
 
 ### 🏆 Ranking global
 A melhor jornada de cada jogador, **geral** ou **por espécie**, com a sua posição destacada. Dá para ver sem conta; para aparecer, entre e termine jornadas. A pontuação é **recalculada no servidor** a partir dos números da jornada, e números impossíveis são recusados.

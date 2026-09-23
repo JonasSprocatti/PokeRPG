@@ -2,6 +2,22 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.8', data: '2026-09-23', titulo: 'O jogo inteiro no bolso (e os iniciais em greve)', piada: 'Os iniciais se recusaram a continuar aparecendo no mato depois de tudo que passaram. Pikachu e Eevee furaram a greve e seguem trabalhando normalmente.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Dá pra baixar o JOGO INTEIRO pra jogar sem internet: ⚙ Ajustes → Jogar offline → "⬇⬇ Baixar o jogo inteiro". São os 9 mapas, com dados, golpes e sprites de todo mundo.',
+        'O que o jogo guarda no aparelho saiu da caixinha apertada de antes e foi pro armazenamento grande do navegador — é o que permite guardar todos os sprites sem estourar o limite. A mesma tela mostra quanto espaço está em uso.',
+        'Os iniciais das 9 regiões (e as evoluções deles) não aparecem mais soltos nas rotas: escolher o seu no começo da jornada volta a significar alguma coisa. Pikachu e Eevee continuam aparecendo normalmente.',
+        'Treinadores de rota não têm mais só bicho da rota: metade da equipe deles pode ser qualquer espécie do mapa, sempre no nível da rota. Eles viajam, afinal.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Evolução agora entrega os golpes que ela deveria entregar: o golpe assinatura da forma nova (o King\'s Shield do Aegislash é o caso clássico) era perdido para sempre por quem evoluía acima do nível 1.',
+        'A habilidade também acompanha a evolução direito, mantendo o slot — quem tinha habilidade oculta continua com a oculta. E o jogo avisa no registro quando ela muda de nome.',
+        'No celular, os botões ⚔ Luta / 💬 Registro / 📋 Painéis pareciam mortos durante a batalha: eles funcionavam, mas o conteúdo nascia embaixo da parte visível da tela. Agora a tela acompanha o botão.',
+        'Item sem imagem na PokéAPI (Coroa Galárica e companhia) mostra um ícone de caixinha no lugar do buraco que ficava antes.',
+        'Se a internet cair bem na hora de uma evolução, ela não some mais: fica pendente, aparece na ficha e acontece sozinha assim que a rede volta.'
+      ] }
+    ] },
   { versao: '1.7', data: '2026-09-23', titulo: 'Sinal fraco não derruba mais a jornada', piada: 'O Porygon foi até a antena reclamar. Voltou com três barras de sinal e uma promessa.',
     secoes: [
       { nome: 'Correções', itens: [

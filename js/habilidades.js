@@ -97,5 +97,16 @@ export const HABILIDADES = {
   'speed-boost': { fimTurno: 'speed' }, intimidate: { intimida: true }, 'run-away': { fuga: true }
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
+/* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).
+   Regra: fica no MESMO slot — oculta continua oculta, normal continua na mesma posição; se a forma nova tem menos
+   slots, cai no primeiro equivalente. Antes usávamos o índice cru na lista inteira, que embaralhava oculta com normal
+   quando a forma nova tinha número diferente de habilidades. Devolve o NOME da habilidade nova. */
+export function habilidadeDaEvolucao(velhas = [], novas = [], atual) {
+  if (!novas.length) return atual;
+  if (velhas.find(a => a.name === atual)?.hidden) return (novas.find(a => a.hidden) || novas[0]).name;
+  const normais = novas.filter(a => !a.hidden);
+  const i = velhas.filter(a => !a.hidden).findIndex(a => a.name === atual);
+  return (normais[Math.max(0, i)] || normais[0] || novas[0]).name;
+}
 // tem efeito de verdade em batalha? (a ficha mostra "✓ ativa em batalha"; as outras, "será ajustado em atualizações futuras")
 export const IMPL = new Set(Object.keys(HABILIDADES));

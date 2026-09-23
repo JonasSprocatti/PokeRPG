@@ -1,11 +1,66 @@
 /* ============ PokéAPI com cache ============ */
-// Cache em duas camadas: `memo` (memória da aba, guarda até a Promise em voo pra não repetir fetch)
-// e localStorage (`pk:<chave>`, sobrevive a F5). Só `fetch` na hora da chamada — importável no Node.
+// Cache em três camadas: `memo` (memória da aba, guarda até a Promise em voo pra não repetir fetch), IndexedDB
+// (`pokerpg-cache`, que aguenta centenas de MB) e, se o navegador não tiver IndexedDB, localStorage (`pk:<chave>`).
+// Trocamos o localStorage pelo IndexedDB porque ele trava em ~5 MB: baixar um mapa inteiro já chegava perto, e
+// baixar TODAS as Gens estourava e falhava em silêncio (store.set engole o erro de cota).
+// `chavesGuardadas` é um índice dos nomes das chaves em memória — é o que deixa `pokemonEmCache` responder na hora
+// (a batalha precisa saber SE dá pra montar aquele Pokémon offline, sem esperar leitura nenhuma).
+// Só `fetch` na hora da chamada — importável no Node (lá não há IndexedDB nem localStorage: tudo vira no-op).
 // buildLearnset/slimPokemon/slimMove são puras (JSON cru da API → objeto enxuto) e têm teste.
 import { API, SPR } from './dados.js';
 import { esc, lastSeg, store } from './util.js';
 
 const memo = new Map();
+const chavesGuardadas = new Set();
+
+/* ---- IndexedDB (com localStorage de reserva) ---- */
+const BD = 'pokerpg-cache', LOJA = 'dados';
+let bd = null, semIdb = typeof indexedDB === 'undefined';
+function abrirBd() {
+  if (bd || semIdb) return Promise.resolve(bd);
+  return new Promise(ok => {
+    let p; try { p = indexedDB.open(BD, 1); } catch { semIdb = true; return ok(null); }
+    p.onupgradeneeded = () => { if (!p.result.objectStoreNames.contains(LOJA)) p.result.createObjectStore(LOJA); };
+    p.onsuccess = () => { bd = p.result; ok(bd); };
+    p.onerror = () => { semIdb = true; ok(null); };   // aba anônima / IndexedDB bloqueado: cai no localStorage
+  });
+}
+const pedido = req => new Promise((ok, falhou) => { req.onsuccess = () => ok(req.result); req.onerror = () => falhou(req.error); });
+async function guardar(chave, valor) {
+  const db = await abrirBd();
+  if (!db) return store.set('pk:' + chave, valor);
+  try { await pedido(db.transaction(LOJA, 'readwrite').objectStore(LOJA).put(valor, chave)); chavesGuardadas.add(chave); }
+  catch (e) { console.warn('cache: não consegui guardar', chave, e); }
+}
+async function ler(chave) {
+  const db = await abrirBd();
+  if (!db) return store.get('pk:' + chave);
+  try { return await pedido(db.transaction(LOJA, 'readonly').objectStore(LOJA).get(chave)); } catch { return null; }
+}
+// Lê o índice de chaves e traz o que já estava no localStorage das versões antigas. main.js espera isto antes de abrir
+// o jogo, senão `pokemonEmCache` responderia "não tenho" pra coisa que está guardada.
+export async function iniciarCache() {
+  const db = await abrirBd();
+  if (db) {
+    try { for (const k of await pedido(db.transaction(LOJA, 'readonly').objectStore(LOJA).getAllKeys())) chavesGuardadas.add(k); }
+    catch (e) { console.warn('cache: não consegui ler o índice', e); }
+    // migração: o que estava no localStorage vai pro IndexedDB e sai de lá (libera os 5 MB)
+    for (const k of store.chaves('pk:')) {
+      const chave = k.slice(3);
+      if (!chavesGuardadas.has(chave)) { const v = store.get(k); if (v) await guardar(chave, v); }
+      store.del(k);
+    }
+  } else {
+    for (const k of store.chaves('pk:')) chavesGuardadas.add(k.slice(3));
+  }
+  // pede pro navegador não apagar o cache quando o espaço apertar (só funciona com interação; falha calado)
+  try { navigator.storage?.persist?.(); } catch {}
+  return chavesGuardadas.size;
+}
+// quanto o jogo está ocupando neste aparelho (dados + sprites), pra mostrar em Ajustes
+export async function espacoUsado() {
+  try { const e = await navigator.storage?.estimate?.(); return e ? { usado: e.usage || 0, total: e.quota || 0 } : null; } catch { return null; }
+}
 // Rede de celular oscila: um `fetch` que falha uma vez costuma funcionar no segundo tento. Sem isso, uma piscada
 // de sinal no meio de uma exploração virava "Failed to fetch" na cara do jogador. Só repete falha de REDE (e 429,
 // quando a PokéAPI pede calma) — 404 e outros erros do servidor não adianta insistir.
@@ -31,17 +86,21 @@ async function getJSON(url) {
 }
 function cached(key, loader) {
   if (memo.has(key)) return Promise.resolve(memo.get(key));
-  const hit = store.get('pk:' + key);
-  if (hit) { memo.set(key, hit); return Promise.resolve(hit); }
-  const p = loader().then(v => { memo.set(key, v); store.set('pk:' + key, v); return v; })
-    .catch(e => { memo.delete(key); throw e; });
+  const p = (async () => {
+    if (chavesGuardadas.has(key)) { const guardado = await ler(key); if (guardado) { memo.set(key, guardado); return guardado; } }
+    const v = await loader();
+    memo.set(key, v); guardar(key, v);        // grava em segundo plano: quem pediu não espera o disco
+    return v;
+  })().catch(e => { memo.delete(key); throw e; });
   memo.set(key, p);
   return p;
 }
 // Modo offline: dá pra montar este Pokémon sem rede? (já buscado antes: memória ou localStorage)
-export const pokemonEmCache = q => { const v = memo.get('mon:' + q); return (v && !(v instanceof Promise)) || store.has('pk:mon:' + q); };
-// todos os Pokémon (por número) que já estão no cache deste navegador — o sorteio da Fenda offline sai daqui
-export const idsEmCache = () => store.chaves('pk:mon:').map(k => +k.slice(7)).filter(Number.isInteger);
+export const pokemonEmCache = q => { const v = memo.get('mon:' + q); return (v && !(v instanceof Promise)) || chavesGuardadas.has('mon:' + q); };
+// todos os Pokémon (por número) que já estão guardados neste aparelho
+export const idsEmCache = () => [...chavesGuardadas].filter(k => k.startsWith('mon:')).map(k => +k.slice(4)).filter(Number.isInteger);
+// quantos dados estão guardados (Ajustes mostra)
+export const itensNoCache = () => chavesGuardadas.size;
 export function syncGet(key) { const v = memo.get(key); return v && !(v instanceof Promise) ? v : null; }
 
 const VG_PREF = ['scarlet-violet', 'sword-shield', 'brilliant-diamond-shining-pearl', 'ultra-sun-ultra-moon', 'sun-moon', 'omega-ruby-alpha-sapphire', 'x-y', 'black-2-white-2', 'black-white', 'heartgold-soulsilver', 'platinum', 'diamond-pearl', 'emerald', 'firered-leafgreen', 'ruby-sapphire', 'crystal', 'gold-silver', 'yellow', 'red-blue'];

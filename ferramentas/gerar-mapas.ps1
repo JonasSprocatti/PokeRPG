@@ -163,9 +163,15 @@ $saida.Add('/* GERADO por ferramentas/gerar-mapas.ps1 a partir da PokéAPI — n
 $saida.Add('// Mapas por Gen: 10 rotas cada (a 10ª é a final, com os lendários). pool = [{ id, n: speciesName, p: peso de aparição, m?: mítico }].')
 $saida.Add('// chefe = Alfa da rota; lendarios = sequência da luta final (o último é o principal). Lógica em js/mapas.js.')
 $saida.Add('export const GENS = [')
+# Iniciais das 9 regiões E as evoluções deles ficam FORA das rotas: o inicial é a escolha que abre a jornada, achar
+# um solto no mato tira o peso dela. Cada trio ocupa ids seguidos a partir do primeiro (1-9, 152-160, 252-260, ...).
+# Pikachu (25) e Eevee (133) não entram aqui — exceção pedida, eles aparecem no mundo como sempre.
+# js/mapas.js faz a MESMA limpeza em cima dos dados já gerados, então dados antigos também obedecem a regra.
+$INICIAIS_BASE = @(1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393, 495, 498, 501, 650, 653, 656, 722, 725, 728, 810, 813, 816, 906, 909, 912)
+function EhInicial($id) { foreach ($b in $INICIAIS_BASE) { if ($id -ge $b -and $id -le ($b + 2)) { return $true } } return $false }
 foreach ($R in $REGIOES) {
   $g = $R.gen
-  $cands = @($esp.Values | Where-Object { $_.gen -eq $g -and -not $_.lend -and -not $_.mitico } | Sort-Object { Natural $_ }, id)
+  $cands = @($esp.Values | Where-Object { $_.gen -eq $g -and -not $_.lend -and -not $_.mitico -and -not (EhInicial $_.id) } | Sort-Object { Natural $_ }, id)
   $temas = $R.rotas | ForEach-Object { ,@($_[3] -split ',') }
   $pools = @(); for ($i = 0; $i -lt 10; $i++) { $pools += ,(New-Object System.Collections.Generic.List[object]) }
   function Nota($e, $i) {

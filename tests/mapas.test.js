@@ -1,8 +1,9 @@
-// Mapas por Gen (js/mapas.js + dados gerados em js/dados-mapas.js).
+﻿// Mapas por Gen (js/mapas.js + dados gerados em js/dados-mapas.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, rotaNaJornada, sortearDaRota, taxaNaRota, textoTaxa,
-  somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen } from '../js/mapas.js';
+  somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL } from '../js/mapas.js';
+import { REGIOES_INICIAIS } from '../js/dados.js';
 
 test('9 Gens, 10 rotas cada; só a última é final (com lendários); Alfa acima do teto da rota', () => {
   assert.equal(TOTAL_GENS, 9);
@@ -96,4 +97,40 @@ test('entrarNaGen: muda o mapa, guarda o nível de entrada e vai pra 1ª rota', 
   const S = { gen: 1, zone: 'caverna', escolhendoGen: true, player: { level: 70 } };
   entrarNaGen(S, 3);
   assert.deepEqual([S.gen, S.nivelInicioGen, S.zone, S.escolhendoGen], [3, 70, rotasDaGen(3)[0].id, undefined]);
+});
+
+/* ---- iniciais fora das rotas (menos Pikachu e Eevee) ---- */
+test('nenhum inicial de região (nem evolução dele) aparece no pool de rota nenhuma', () => {
+  for (const g of GENS) for (const z of g.rotas) for (const p of z.pool)
+    assert.equal(ehInicialDeRegiao(p.id), false, `${p.n} (${p.id}) está no pool de ${z.id} da Gen ${g.gen}`);
+});
+
+test('Pikachu e Eevee continuam liberados; os 27 iniciais e as evoluções, não', () => {
+  for (const id of REGIOES_INICIAIS.find(r => r.nasRotas).ids) assert.equal(ehInicialDeRegiao(id), false);
+  assert.equal(ehInicialDeRegiao(26), false);   // Raichu
+  assert.equal(ehInicialDeRegiao(134), false);  // Vaporeon
+  for (const id of [1, 3, 4, 6, 7, 9, 152, 160, 252, 260, 387, 395, 495, 503, 650, 658, 722, 730, 810, 818, 906, 914])
+    assert.equal(ehInicialDeRegiao(id), true, `${id} devia estar barrado`);
+  assert.equal(ehInicialDeRegiao(10), false);   // Caterpie: o id logo depois do último Kanto
+  assert.equal(ehInicialDeRegiao(151), false);  // Mew
+});
+
+test('Alfa que era inicial vira o mais raro do pool, no mesmo nível', () => {
+  const fake = [{ gen: 1, rotas: [{ id: 'r', min: 2, max: 5, pool: [{ id: 4, n: 'charmander', p: 30 }, { id: 16, n: 'pidgey', p: 50 }, { id: 10, n: 'caterpie', p: 1 }], chefe: { id: 6, n: 'charizard', nivel: 12 } }] }];
+  tirarIniciais(fake);
+  const z = fake[0].rotas[0];
+  assert.deepEqual(z.pool.map(p => p.n), ['pidgey', 'caterpie']);
+  assert.deepEqual([z.chefe.n, z.chefe.nivel], ['caterpie', 12]);
+});
+
+test('rota que perdeu inicial é completada com vizinha do mesmo mapa (nunca fica magra)', () => {
+  for (const g of GENS) for (const z of g.rotas) assert.ok(z.pool.length >= MIN_POOL, `${z.id}: só ${z.pool.length} espécies`);
+});
+
+test('especiesDaGen: todo o mapa, sem repetir e sem mítico', () => {
+  const lista = especiesDaGen(1);
+  assert.ok(lista.length > 20);
+  assert.equal(new Set(lista.map(p => p.id)).size, lista.length);
+  assert.equal(lista.some(p => p.m), false);
+  for (const p of lista) assert.equal(ehInicialDeRegiao(p.id), false);
 });

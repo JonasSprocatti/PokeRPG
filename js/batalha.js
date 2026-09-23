@@ -4,13 +4,13 @@
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
 import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais } from './estado.js';
-import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada } from './mapas.js';
+import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen } from './mapas.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
 import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno, passarLados, aplicarArmadilhas } from './golpe.js';
 import { hab } from './habilidades.js';
-import { gainExp, gainExpAliado, checkEvolution } from './progressao.js';
+import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
@@ -53,6 +53,19 @@ function sortearOponente(z) {
   return { id: p.id, level: rand(z.min, z.max) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
+/* Equipe de treinador: metade dela NÃO sai do pool da rota. Um treinador andou até aqui — a rota diz em que NÍVEL
+   ele está, não quais espécies ele criou. O resto continua vindo do pool, pra rota manter a cara dela.
+   Vale pra todo treinador de rota (o de emboscada é o único que existe hoje). Offline, só o que está guardado. */
+const CHANCE_FORA_DA_ROTA = 0.5;
+function sortearDoTreinador(z) {
+  if (Math.random() < CHANCE_FORA_DA_ROTA) {
+    let lista = especiesDaGen(z.gen || genDe(G.S));
+    if (offline()) lista = lista.filter(p => pokemonEmCache(p.id));
+    if (lista.length) return { id: pick(lista).id, level: rand(z.min, z.max) };
+  }
+  return sortearOponente(z); // (offline sem nada guardado: o erro daqui é o mesmo do encontro selvagem)
+}
+async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinador(z); return makeMon(await loadPokemon(id), level); }
 function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }, ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
 // Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
 // Na troca de Pokémon do treinador só o que acabou de entrar dispara.
@@ -115,7 +128,7 @@ export async function startTrainerBattle(z) {
   const nivelRef = z.max;
   const n = rand(1, Math.min(3, 1 + Math.floor(nivelRef / 15)));
   const [equipe, especie] = await Promise.all([
-    Promise.all(Array.from({ length: n }, () => novoOponente(z))),
+    Promise.all(Array.from({ length: n }, () => novoOponenteTreinador(z))),
     loadSpecies(P.data.speciesUrl).catch(() => ({ captureRate: 45 })) // offline sem cache: taxa média
   ]);
   const trainer = { nome: `${pick(CLASSES_TREINADOR)} ${pick(NOMES_TREINADOR)}`, equipe, atual: 0, bolas: rand(2, 4), bola: bolaPorNivel(Math.max(...equipe.map(m => m.level))) };
@@ -234,6 +247,7 @@ export async function turn(action) {
     B.vez = null;
     // missões no fim de TODO turno (inclusive fuga/amizade que saem cedo com `return`); G.S some no fim de jogo do Hardcore
     try { await verificarMissoes(); } catch (e) { console.error(e); }
+    if (!G.B && G.S) await retomarEvolucoes(); // batalha acabou: evolução pendente por falta de rede tenta de novo
     G.busy = false; render(); save();
   }
 }
@@ -292,6 +306,8 @@ async function depoisDaVitoria() {
     if ((M.vol?.criticos || 0) >= 3 || (M.vol?.danoSofrido || 0) >= 49) await checkEvolution(M, { gatilho: 'pos-batalha' });
   }
 }
+// evolução que a rede deixou pendente tenta de novo assim que a batalha termina
+const retomarEvolucoes = () => verificarEvolucoesPendentes().catch(e => console.error(e));
 // Venceu os lendários: a Gen está fechada (S.gensVencidas). Modo com `fimNaGen` (Roguelike) = a run termina em
 // vitória e o mapa seguinte libera pras próximas runs; nos outros, você escolhe o próximo mapa (telaEscolherGen).
 async function vencerGen() {

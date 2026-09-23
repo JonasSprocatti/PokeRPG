@@ -1,8 +1,8 @@
-/* ============ render: jogo ============ */
+﻿/* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { TELAS } from './navegacao.js';
@@ -145,7 +145,7 @@ function renderFicha() {
 function blocoItem(M, quem) {
   const it = M.item && ITEMS[M.item];
   return `<div class="sec item-seg"><h3>Item segurado</h3>${it
-    ? `<div class="seg-linha"><img src="${ITEM_SPR(M.item)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${it.name}</b><small>${esc(it.desc)}</small></span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="tirar-item" data-v="${quem}" ${G.busy ? 'disabled' : ''}>Tirar</button>` : ''}</div>`
+    ? `<div class="seg-linha"><img src="${ITEM_SPR(M.item)}" alt="" onerror="${ITEM_ERRO}"><span><b>${it.name}</b><small>${esc(it.desc)}</small></span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="tirar-item" data-v="${quem}" ${G.busy ? 'disabled' : ''}>Tirar</button>` : ''}</div>`
     : semSegurar(quem)}</div>`;
 }
 // sem item na mão: se já tem algum na mochila, oferece equipar aqui mesmo; senão explica onde conseguir
@@ -158,8 +158,10 @@ function semSegurar(quem) {
 // vínculo (amizade que algumas evoluções pedem) + como cada próxima forma evolui (evolucao.js)
 function blocoEvolucao(M, arvore) {
   const f = felicidadeDe(M), evs = arvore ? comoEvolui(arvore, M.data.speciesName, k => ITEMS[k]?.name || fmt(k)) : [];
+  // a rede caiu na hora de evoluir: o jogador precisa saber que não perdeu nada (progressao.verificarEvolucoesPendentes)
+  const pendente = M.evoPendente ? '<br><span class="err">⏳ Evolução pendente: a conexão falhou. Acontece sozinha quando a rede voltar (explore ou lute pra tentar de novo).</span>' : '';
   return `<p class="small muted evo-info"><span title="Sobe com os níveis e as vitórias. Algumas evoluções pedem vínculo alto (${FELICIDADE_EVOLUCAO}).">♥ Vínculo <b>${f}</b>/255${f >= FELICIDADE_EVOLUCAO ? ' (alto)' : ''}</span>
-    ${evs.length ? `<br>Evolui: ${evs.map(e => `<b>${esc(fmt(e.name))}</b> (${esc(e.texto)})`).join(' · ')}` : arvore ? '<br>Não evolui mais.' : ''}</p>`;
+    ${evs.length ? `<br>Evolui: ${evs.map(e => `<b>${esc(fmt(e.name))}</b> (${esc(e.texto)})`).join(' · ')}` : arvore ? '<br>Não evolui mais.' : ''}${pendente}</p>`;
 }
 function renderMissoes() {
   const MS = situacaoMissoes(MISSOES, G.S);
@@ -183,7 +185,7 @@ function renderMochila() {
     const rot = it.segurado ? 'Segurar' : it.evo || it.troca ? 'Usar (evoluir)' : 'Usar';
     return `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>${rot}</button>`;
   };
-  const linha = ([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${botao(k)}</li>`;
+  const linha = ([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${botao(k)}</li>`;
   $('#p-mochila').innerHTML = bag.length
     ? porCategoria(bag).map(c => `<h4 class="bag-div">${c.nome} <span class="muted">(${c.itens.length})</span></h4><ul class="bag">${c.itens.map(linha).join('')}</ul>`).join('')
     : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
@@ -285,9 +287,9 @@ function renderActions() {
       const secPetisco = T?.lendarios ? '<p class="small muted">Lendários não se deixam levar por petiscos.</p>'
         : T ? '<p class="small muted">Pokémon de treinador tem dono: petiscos não funcionam aqui.</p>'
         : G.B.chefe ? '<p class="small muted">Um Alfa guarda o território: não aceita petiscos.</p>'
-        : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
+        : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
         : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';
-      a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
+      a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
         <h4 class="bag-sec">Fazer amizade com ${esc(fmt(E.name))} <span class="muted">(${E.data.types.map(t => TYPE_PT[t]).join('/')})</span></h4>${secPetisco}
         <div class="subrow"><button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button></div>`;
       return;
@@ -299,7 +301,7 @@ function renderActions() {
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila
     const forSale = Object.entries(ITEMS).filter(([, it]) => it.price);
-    const btn = ([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="this.style.visibility='hidden'"><span>${it.name}</span><small>₽${it.price}</small></button>`;
+    const btn = ([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${it.price}</small></button>`;
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
     a.innerHTML = `${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
@@ -320,6 +322,17 @@ export function abaMobile(v = 'luta') {
   const aba = ABAS_MOB.includes(v) ? v : 'luta';
   for (const a of ABAS_MOB) document.body.classList.toggle('mob-' + a, a === aba);
   document.querySelectorAll('.aba-mob').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === aba)));
+  // Trocar a classe não bastava: os painéis ficam ABAIXO da cena (que é presa no topo em batalha), então quem apertava
+  // 📋 Painéis via a mesma tela de sempre e achava que o botão estava quebrado — foi bug real, relatado no celular.
+  // Agora a tela rola até a seção escolhida; o que já mora dentro da cena (o registro) só volta pro topo.
+  if (!window.matchMedia?.('(max-width:880px)')?.matches) return;
+  requestAnimationFrame(() => {
+    const alvo = aba === 'paineis' ? document.querySelector('.painel:not([data-painel="log"])')
+      : aba === 'registro' ? document.querySelector('.painel[data-painel="log"]') : null;
+    const suave = matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth';
+    if (alvo && !alvo.closest('.stage')) alvo.scrollIntoView({ block: 'start', behavior: suave });
+    else window.scrollTo({ top: 0, behavior: suave });
+  });
 }
 export function render() {
   // só as telas de jogo têm painéis; nas outras (criação, carreira, conta, ranking, sala multiplayer) não desenha —

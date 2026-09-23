@@ -8,7 +8,50 @@
 // derrotados (somando todas as jornadas) aparece colorido, com a taxa de aparição na rota.
 // Puro (sem DOM): testado em tests/mapas.test.js.
 import { GENS } from './dados-mapas.js';
+import { REGIOES_INICIAIS } from './dados.js';
 import { clamp } from './util.js';
+
+/* ---- iniciais não aparecem nas rotas ----
+   O inicial é a escolha que abre a jornada; achar um solto no mato tira o peso dela. Então os 27 iniciais das 9
+   regiões e as evoluções deles saem dos pools. Pikachu e Eevee (a região marcada `nasRotas` em REGIOES_INICIAIS)
+   ficam: aparecem no mundo nos jogos, e o usuário pediu a exceção.
+   Cada trio de uma região ocupa ids SEGUIDOS a partir do primeiro inicial (1–9, 152–160, 252–260, …), então a
+   família inteira cabe numa faixa de 9. A limpeza roda uma vez, ao carregar: `rotasDaGen` é chamado o tempo todo. */
+const BASES_INICIAIS = REGIOES_INICIAIS.filter(r => !r.nasRotas).flatMap(r => r.ids);
+export const ehInicialDeRegiao = id => BASES_INICIAIS.some(b => id >= b && id <= b + 2);
+export const MIN_POOL = 5;
+/* Rota que ficou curta demais depois da limpeza empresta espécie das rotas vizinhas do MESMO mapa (as de nível mais
+   parecido primeiro), entrando com o peso do bicho mais raro de lá — é o que o gerador já faz quando uma rota nasce
+   magra. Sem isso, quatro rotas ficariam com 4 espécies e a exploração delas viraria repetição. */
+function completarPool(g, z) {
+  const tem = new Set(z.pool.map(p => p.id)), meio = (z.min + z.max) / 2;
+  const peso = z.pool.length ? Math.min(...z.pool.map(p => p.p)) : 1;
+  const vizinhos = g.rotas.filter(r => r !== z)
+    .flatMap(r => r.pool.filter(p => !p.m).map(p => ({ p, d: Math.abs((r.min + r.max) / 2 - meio) })))
+    .sort((a, b) => a.d - b.d);
+  for (const { p } of vizinhos) {
+    if (z.pool.length >= MIN_POOL) break;
+    if (tem.has(p.id)) continue;
+    tem.add(p.id); z.pool.push({ ...p, p: peso });
+  }
+}
+export function tirarIniciais(gens) {
+  // 1ª passada: limpa TODAS as rotas. Só depois uma rota empresta pra outra — senão uma rota ainda suja emprestaria
+  // justamente o inicial que acabamos de tirar da vizinha.
+  const curtas = [];
+  for (const g of gens) for (const z of g.rotas) {
+    const limpo = z.pool.filter(p => !ehInicialDeRegiao(p.id));
+    if (limpo.length && limpo.length < z.pool.length) { z.pool = limpo; curtas.push([g, z]); }
+    // Alfa da rota também não pode ser inicial: vira o Pokémon mais raro do que sobrou, no mesmo nível de sempre
+    if (z.chefe && ehInicialDeRegiao(z.chefe.id) && z.pool.length) {
+      const raro = z.pool.reduce((a, p) => p.p < a.p ? p : a);
+      z.chefe = { ...z.chefe, id: raro.id, n: raro.n };
+    }
+  }
+  for (const [g, z] of curtas) if (z.pool.length < MIN_POOL) completarPool(g, z);
+  return gens;
+}
+tirarIniciais(GENS);
 
 export { GENS };
 export const TOTAL_GENS = GENS.length;
@@ -45,6 +88,14 @@ export function sortearDaRota(z, filtro = null, sorte = Math.random) {
   let r = sorte() * total;
   for (const p of pool) { r -= p.p; if (r < 0) return p; }
   return pool[pool.length - 1];
+}
+/* Todas as espécies do mapa (qualquer rota da Gen), sem repetir e sem míticos. É de onde os treinadores tiram parte
+   da equipe: um treinador ANDA — ele estar na Rota 3 não quer dizer que criou só bicho da Rota 3. A rota dá o nível,
+   não a lista de espécies. */
+export function especiesDaGen(gen) {
+  const vistos = new Map();
+  for (const z of rotasDaGen(gen)) for (const p of z.pool) if (!p.m && !vistos.has(p.id)) vistos.set(p.id, p);
+  return [...vistos.values()];
 }
 // chance (0–100) de cada encontro selvagem na rota ser esta espécie
 export function taxaNaRota(z, id) {

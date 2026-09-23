@@ -5,6 +5,7 @@ import { gastarRepelente, semSelvagens } from './mapas.js';
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { startBattle, startTrainerBattle, startBossBattle, startLendarios } from './batalha.js';
+import { verificarEvolucoesPendentes } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
 import { addItem } from './itens.js';
 import { ITEMS, FIND_ITEMS, FLAVOR, ITENS_EVO_ACHADOS } from './dados.js';
@@ -16,6 +17,8 @@ export async function explore() {
   G.busy = true; render();
   const z = zone();
   try {
+    // evolução que ficou pendente por falta de rede acontece agora, antes de qualquer outra coisa (progressao.js)
+    await verificarEvolucoesPendentes();
     await say(`Você anda por ${z.name}...`, 'muted');
     for (const M of emCampo()) M.passos = (M.passos || 0) + 1; // Pawmot, Brambleghast, Rabsca (evolucao.js)
     // repelente gasta um passo por exploração; quando acaba, avisa (mapas.js)

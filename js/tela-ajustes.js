@@ -6,7 +6,9 @@ import { $, limparTopo } from './ui.js';
 import { FONTES, fonteEscolhida, urlDaFonte } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
-import { alvosDaGen, quantoFalta, baixarGen } from './offline.js';
+import { alvosDaGen, quantoFalta, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
+import { espacoUsado, itensNoCache } from './api.js';
+import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
 
 export function telaAjustes() {
@@ -31,6 +33,7 @@ export function telaAjustes() {
     <h3 class="passo"><span>B</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
   </main>`;
+  mostrarEspaco();
 }
 
 // Baixar um mapa inteiro pra jogar sem internet (offline.js). Sem isso, offline só aparece quem você já encontrou —
@@ -43,20 +46,29 @@ function htmlOffline() {
     <p class="small ${pronto ? 'ok-offline' : 'muted'}">${pronto ? `✅ Gen ${gen} (${esc(r.regiao)}) já está inteira neste aparelho.`
       : `Gen ${gen} (${esc(r.regiao)}): <b>${total - falta}/${total}</b> Pokémon guardados — faltam ${falta}.`}</p>
     <div class="subrow">${GENS.map(g => `<button class="btn ${g.gen === gen ? '' : 'ghost'} sm" data-act="baixar-gen" data-v="${g.gen}">⬇ Gen ${g.gen} · ${esc(g.regiao)}${quantoFalta(g.gen) ? '' : ' ✅'}</button>`).join('')}</div>
+    <div class="subrow" style="margin-top:10px"><button class="btn" data-act="baixar-tudo">⬇⬇ Baixar o jogo inteiro (${TOTAL_GENS} mapas)</button>
+      <span class="small muted">${quantoFaltaTudo() ? `faltam ${quantoFaltaTudo()} de ${totalDoJogo()} Pokémon` : '✅ tudo guardado'}</span></div>
     <div id="offline-progresso" class="small muted" style="margin-top:8px"></div>
-    <p class="small muted">São cerca de ${total} Pokémon por mapa. Use uma rede boa: o download pode gastar alguns megabytes.</p>`;
+    <p class="small muted">São cerca de ${total} Pokémon por mapa e ${totalDoJogo()} no jogo inteiro. Use uma rede boa e deixe a tela aberta: o download do jogo todo pode passar de 100 MB (com os sprites) e leva alguns minutos.<span id="offline-espaco"></span></p>`;
 }
-// chamado por main.js no clique; mostra o progresso sem redesenhar a tela toda
+// chamado por main.js no clique; mostra o progresso sem redesenhar a tela toda. `gen` null = o jogo inteiro.
 export async function baixarMapaOffline(gen) {
   const el = () => document.getElementById('offline-progresso');
   if (!el()) return;
   if (offline()) { el().innerHTML = '📴 Sem internet agora: conecte pra poder baixar.'; return; }
   el().innerHTML = 'Baixando…';
-  const r = await baixarGen(+gen, (feitos, total, oQue) => {
-    const p = el(); if (p) p.innerHTML = `Baixando ${esc(oQue)}… <b>${feitos}/${total}</b>`;
-  });
+  const andar = (feitos, total, oQue) => { const p = el(); if (p) p.innerHTML = `Baixando ${esc(oQue)}… <b>${feitos}/${total}</b>`; };
+  const r = gen ? await baixarGen(+gen, andar) : await baixarTudo(andar);
   const p = el(); if (!p) return;
-  p.innerHTML = r.ok ? `✅ Pronto! Gen ${gen} guardada (${r.total} Pokémon e ${r.golpes} golpes).`
+  const oQue = gen ? `Gen ${gen}` : 'O jogo inteiro';
+  p.innerHTML = r.ok ? `✅ Pronto! ${oQue} guardado neste aparelho (${r.total} Pokémon e ${r.golpes} golpes).`
     : `Terminou com ${r.falhas} falha(s) — dá pra tentar de novo, o que já baixou fica guardado.`;
-  const box = document.getElementById('offline-box'); if (box) box.innerHTML = htmlOffline();
+  const box = document.getElementById('offline-box'); if (box) { box.innerHTML = htmlOffline(); mostrarEspaco(); }
+}
+// espaço que o jogo ocupa neste aparelho (dados + sprites), quando o navegador deixa consultar
+async function mostrarEspaco() {
+  const e = await espacoUsado(); const el = document.getElementById('offline-espaco');
+  if (!e || !el) return;
+  const mb = n => (n / 1024 / 1024).toFixed(1).replace('.', ',');
+  el.innerHTML = ` Guardado agora: <b>${mb(e.usado)} MB</b>${e.total ? ` de ${mb(e.total)} MB disponíveis` : ''} (${itensNoCache()} itens).`;
 }

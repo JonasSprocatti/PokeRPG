@@ -60,6 +60,21 @@ export function defaultMoves(list, level) {
   if (!out.length) out.push({ name: 'tackle', url: `${API}/move/33/`, level: 1 });
   return out.reverse();
 }
+/* Golpes que chegam JUNTO com a evolução. Duas fontes:
+   - os que a espécie nova aprende "de cara" (nível 0 ou 1) e a forma anterior NÃO aprendia: é assim que a PokéAPI
+     guarda golpe de evolução (King's Shield do Aegislash, por exemplo);
+   - o golpe do nível atual, que já era o comportamento antigo.
+   Sem a primeira fonte, quem evoluía acima do nível 1 (ou seja, todo mundo) nunca aprendia o golpe assinatura da
+   forma nova — foi bug real com o Aegislash. Golpe que a forma antiga já aprendia não conta: seria repetir o que
+   você já viu (ou já escolheu esquecer). */
+export function golpesDaEvolucao(antes = [], depois = [], nivel) {
+  const tinha = new Set(antes.map(m => m.name)), out = [];
+  for (const m of depois) {
+    const vale = m.level <= 1 ? !tinha.has(m.name) : m.level === nivel;
+    if (vale && !out.some(x => x.name === m.name)) out.push(m);
+  }
+  return out;
+}
 // Dano de um golpe. Habilidades (habilidades.js) entram aqui: quem ataca (stab, técnico, crítico, pinch, pouco
 // efetivo, queimadura ignorada) e quem recebe (resiste, super efetivo reduzido, HP cheio). Estágios/atributos em effStat.
 // Poder de golpe que depende da situação (especiais.js → poder). null = usa o poder da tabela.

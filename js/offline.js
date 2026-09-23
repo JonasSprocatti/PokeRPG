@@ -7,7 +7,7 @@
 //   - sprites: basta pedir a imagem que o service worker guarda ela (EXTERNOS, "cache primeiro")
 // Baixar um mapa inteiro são ~150 Pokémon: pesado pra rede, leve pro aparelho. Puro o bastante pra testar a lista
 // de alvos (alvosDaGen) em tests/offline.test.js; o download em si precisa de rede e não é testado.
-import { rotasDaGen, dadosDaGen } from './mapas.js';
+import { rotasDaGen, dadosDaGen, GENS } from './mapas.js';
 import { SPR, SPR_SHINY } from './dados.js';
 import { loadPokemon, loadMove, pokemonEmCache } from './api.js';
 
@@ -56,3 +56,18 @@ export async function baixarGen(gen, aoAndar = () => {}, sinal = null) {
   }
   return { ok: !falhas && !sinal?.cancelado, falhas, total: ids.length, golpes: lista.length };
 }
+
+// Todos os mapas de uma vez: é o "jogo inteiro offline". Só faz sentido desde que os dados foram pro IndexedDB
+// (api.js) — no localStorage isso estourava a cota e falhava calado.
+export async function baixarTudo(aoAndar = () => {}, sinal = null) {
+  let falhas = 0, total = 0, golpes = 0;
+  for (const g of GENS) {
+    if (sinal?.cancelado) break;
+    const r = await baixarGen(g.gen, (feitos, quantos, oQue) => aoAndar(feitos, quantos, `${oQue} — Gen ${g.gen} de ${GENS.length}`), sinal);
+    falhas += r.falhas; total += r.total; golpes += r.golpes;
+  }
+  return { ok: !falhas && !sinal?.cancelado, falhas, total, golpes };
+}
+// quanto falta no jogo inteiro
+export const quantoFaltaTudo = () => GENS.reduce((a, g) => a + quantoFalta(g.gen), 0);
+export const totalDoJogo = () => new Set(GENS.flatMap(g => alvosDaGen(g.gen))).size;
