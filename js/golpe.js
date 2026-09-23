@@ -7,6 +7,7 @@
 //   ctx.atualizar()  redesenha (barras de HP) — opcional
 //   ctx.tremer(m)    animação de quem levou dano — opcional
 //   ctx.refDe(m) / ctx.monPorRef(ref)  identificam quem plantou Leech Seed (pra curar no fim do turno) — opcionais
+//   ctx.campo        objeto do campo da batalha, compartilhado pelos dois lados: { clima, turnos } — opcional
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
 // Sem DOM: importável no Node (tests/golpe.test.js).
 import { STAT_PT, AIL_MSG, SELF_TARGETS } from './dados.js';
@@ -14,12 +15,31 @@ import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
 import { ITEMS } from './dados.js';
-import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko } from './regras.js';
+import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko,
+  CLIMAS, CLIMA_TURNOS, climaDe, danoClima } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
 const up = ctx => (ctx.atualizar || nada)();
 const nomeDoItem = m => ITEMS[m.item]?.name || 'o item';
+const climaDoCtx = ctx => climaDe(ctx.campo);
+// liga um clima novo (golpe ou habilidade) e narra; o mesmo clima de novo só renova o tempo
+export async function mudarClima(clima, ctx, quem = null) {
+  if (!CLIMAS[clima] || !ctx.campo) return false;
+  const repetido = climaDoCtx(ctx) === clima;
+  ctx.campo.clima = clima; ctx.campo.turnos = CLIMA_TURNOS;
+  await ctx.say(`${CLIMAS[clima].icone} ${repetido ? `O tempo continua: ${CLIMAS[clima].nome.toLowerCase()}.` : CLIMAS[clima].comeca}${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
+  return true;
+}
+// fim da rodada: o clima anda um turno e acaba quando o tempo esgota (chamado por batalha.js e mp-motor.js)
+export async function passarClima(campo, ctx) {
+  if (!campo?.turnos) return;
+  campo.turnos--;
+  if (campo.turnos > 0) return;
+  const c = CLIMAS[campo.clima];
+  campo.clima = null;
+  if (c) await ctx.say(c.acaba, 'muted');
+}
 
 // Golpe em que o Pokémon está travado (carregando, em fúria) — a escolha do jogador/IA é ignorada neste turno
 export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || null;
@@ -47,6 +67,11 @@ export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
 
 // Aplica status (inclui confusão). `avisar` = narra por que não pegou (golpe de status); secundário falha calado.
 export async function aplicarStatus(t, ail, ctx, avisar = false) {
+  // Leaf Guard: no sol forte não pega status nenhum
+  if (hab(t).semStatusClima && hab(t).semStatusClima === climaDe(ctx.campo)) {
+    if (avisar) await ctx.say(`A habilidade ${fmt(t.ability)} de ${ctx.nome(t)} protege ${ctx.nome(t)} no ${CLIMAS[climaDe(ctx.campo)].nome.toLowerCase()}!`);
+    return;
+  }
   if (imuneAoStatusMon(t, ail)) {
     if (avisar) await ctx.say(hab(t).imuneStatus?.includes(ail) ? `A habilidade ${fmt(t.ability)} de ${ctx.nome(t)} impede isso!` : `Não afeta ${ctx.nome(t)}...`);
     return;
@@ -65,6 +90,7 @@ export async function aplicarStatus(t, ail, ctx, avisar = false) {
 // Golpes de status com regra própria (especiais.js). true = tratou (o genérico não roda).
 async function statusEspecial(u, t, g, esp, ctx) {
   const U = ctx.nome(u), T = ctx.nome(t);
+  if (esp.clima) { if (!await mudarClima(esp.clima, ctx)) await ctx.say('Mas falhou!'); return true; }
   if (esp.protege) {
     // repetir seguido: 1/3, 1/9… de chance
     const n = u.vol.protSeguidas || 0;
@@ -145,8 +171,10 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
   if (g.cls === 'status' && seg(u).semStatus) { await ctx.say(`${U} não consegue usar golpe de status segurando o Colete de Assalto!`); return; }
   const esp = especial(g);
   if (!esp.protege && !esp.aguentaTurno) u.vol.protSeguidas = 0;
+  // no sol forte, Solar Beam e Solar Blade saem na hora (não precisam carregar)
+  const cargaPulada = esp.carga && !esp.invulneravel && /^solar-/.test(g.name) && climaDoCtx(ctx) === 'sol';
   // golpe de carga, 1º turno: gasta PP, prepara (e some, se for Fly/Dig…) e ataca só no próximo
-  if (esp.carga && !u.vol.carregando) {
+  if (esp.carga && !cargaPulada && !u.vol.carregando) {
     if (g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1);
     u.vol.carregando = g; if (esp.invulneravel) u.vol.invul = true;
     await ctx.say(`${U} está se preparando para usar ${ctx.golpe(g)}!`); return;
@@ -182,7 +210,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (Math.random() >= chanceOhko(u, t)) { await ctx.say(t.level > u.level ? 'Mas falhou! (o alvo tem nível maior)' : 'Mas errou!'); return; }
     t.hp = 0; up(ctx); (ctx.tremer || nada)(t); await ctx.say('É um nocaute de um golpe só!', 'crit'); return 'acertou';
   }
-  if (!selfT && g.acc != null && Math.random() > chanceAcerto(g, u, t)) { await ctx.say('Mas errou!'); return; }
+  if (!selfT && g.acc != null && Math.random() > chanceAcerto(g, u, t, climaDoCtx(ctx))) { await ctx.say('Mas errou!'); return; }
   if (g.cls === 'status') { await golpeDeStatus(u, t, g, selfT, ctx); up(ctx); return; }
 
   // imunidades e absorções de tipo por habilidade
@@ -207,7 +235,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   const cheio = t.hp >= t.stats.hp;
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
-    const r = calcDamage(u, t, g);
+    const r = calcDamage(u, t, g, climaDoCtx(ctx));
     let dano = r.dmg;
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
@@ -259,7 +287,18 @@ async function executar(u, t, g, primeiro, ctx, esp) {
 // de turno (Speed Boost, Shed Skin)
 export async function fimDeTurno(m, ctx) {
   if (m.hp <= 0) return;
-  const h = hab(m);
+  const h = hab(m), clima = climaDoCtx(ctx);
+  if (clima) {
+    // areia/granizo castigam quem não é do tipo certo; chuva/sol curam ou machucam quem tem a habilidade certa
+    const dano = danoClima(clima, m);
+    if (dano) { m.hp = Math.max(0, m.hp - dano); up(ctx); await ctx.say(`${ctx.nome(m)} se machuca com ${CLIMAS[clima].nome.toLowerCase()}. (−${dano})`, 'hit'); }
+    const cura = h.curaClima?.[clima];
+    if (m.hp > 0 && cura && m.hp < m.stats.hp) { const n = Math.max(1, Math.floor(m.stats.hp * cura)); heal(m, n); up(ctx); await ctx.say(`${ctx.nome(m)} se recupera com o tempo. (+${n}, ${fmt(m.ability)})`, 'good'); }
+    const castigo = h.danoClimaProprio?.[clima];
+    if (m.hp > 0 && castigo) { const n = Math.max(1, Math.floor(m.stats.hp * castigo)); m.hp = Math.max(0, m.hp - n); up(ctx); await ctx.say(`${ctx.nome(m)} sofre com ${CLIMAS[clima].nome.toLowerCase()}. (−${n}, ${fmt(m.ability)})`, 'hit'); }
+    if (m.hp > 0 && h.curaStatusClima === clima && m.status) { m.status = null; m.sleep = 0; delete m.vol.toxico; up(ctx); await ctx.say(`${ctx.nome(m)} se curou com a chuva! (${fmt(m.ability)})`, 'good'); }
+    if (m.hp <= 0) return;
+  }
   if (h.curaStatusFimTurno && m.status && Math.random() < h.curaStatusFimTurno) {
     m.status = null; m.sleep = 0; delete m.vol.toxico; up(ctx); await ctx.say(`${ctx.nome(m)} trocou de pele e se curou! (${fmt(m.ability)})`, 'good');
   }

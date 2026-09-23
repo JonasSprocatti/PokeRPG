@@ -1,6 +1,7 @@
 // Habilidades (js/habilidades.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { HABILIDADES, IMPL } from '../js/habilidades.js';
 import { usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno } from '../js/golpe.js';
 import { calcDamage, effStat, chanceAcerto, freshVol } from '../js/regras.js';
@@ -19,7 +20,9 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
   const ganchos = new Set(['pinch', 'stab', 'tecnico', 'critico', 'multStat', 'comStatus', 'precisao', 'precisaoFisica', 'resiste', 'superEfetivo',
     'poucoEfetivo', 'hpCheio', 'imuneTipo', 'absorve', 'cura', 'estagio', 'flashFire', 'soSuperEfetivo', 'imuneStatus', 'semQueda', 'semRecuo',
     'contato', 'contatoDano', 'aguenta', 'semDanoRecuo', 'maxAcertos', 'chanceSecundaria', 'semSecundario', 'sonoRapido', 'fimTurno',
-    'curaStatusFimTurno', 'intimida', 'fuga']);
+    'curaStatusFimTurno', 'intimida', 'fuga',
+    // clima (regras.CLIMAS)
+    'climaAoEntrar', 'multStatClima', 'curaClima', 'danoClimaProprio', 'imuneClima', 'escondeNoClima', 'curaStatusClima', 'semStatusClima']);
   const tipos = Object.keys(TYPE_PT);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
     for (const k of Object.keys(h)) assert.ok(ganchos.has(k), `${nome}: gancho desconhecido "${k}" (não faz nada no motor)`);
@@ -28,6 +31,12 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     for (const s of Object.keys({ ...h.multStat, ...h.comStatus })) assert.ok(STATS.includes(s), `${nome}: atributo "${s}"`);
   }
   assert.ok(IMPL.size >= 50);
+  // cada habilidade aparece UMA vez na tabela: a segunda apagaria a primeira em silêncio (aconteceu com dry-skin)
+  const fonte = readFileSync(new URL('../js/habilidades.js', import.meta.url), 'utf8');
+  const bloco = fonte.slice(fonte.indexOf('export const HABILIDADES'), fonte.indexOf('export const hab'));
+  const escritas = [...bloco.matchAll(/(?:^|[{,]\s*)'?([a-z][a-z0-9-]*)'?\s*:\s*\{/gm)].map(m => m[1]).filter(n => HABILIDADES[n]);
+  const vistas = new Set();
+  for (const n of escritas) { assert.ok(!vistas.has(n), `${n}: escrita mais de uma vez na tabela`); vistas.add(n); }
 });
 
 test('Levitate: golpe Terrestre não afeta', async t => {

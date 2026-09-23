@@ -20,6 +20,7 @@
 //   poder: fórmula   poder calculado na hora (poderEspecial em regras.js)
 //   danoIgualHp      o alvo fica com o HP de quem usou (Endeavor)
 //   soPrimeiroTurno  só funciona no primeiro golpe que você dá na batalha (Fake Out, First Impression)
+//   clima: tipo      muda o tempo da batalha por CLIMA_TURNOS (Rain Dance, Sunny Day, Sandstorm, Hail, Snowscape)
 export const GOLPES_ESPECIAIS = {
   protect: { protege: true }, detect: { protege: true }, 'spiky-shield': { protege: true }, 'kings-shield': { protege: true },
   'baneful-bunker': { protege: true }, obstruct: { protege: true }, 'silk-trap': { protege: true }, 'burning-bulwark': { protege: true },
@@ -46,6 +47,9 @@ export const GOLPES_ESPECIAIS = {
   brine: { poder: 'dobraAlvoMetade' },
   endeavor: { danoIgualHp: true },
   // só no primeiro golpe que o Pokémon dá na batalha (senão falha) — é o que segura o recuo do Fake Out
-  'fake-out': { soPrimeiroTurno: true }, 'first-impression': { soPrimeiroTurno: true }
+  'fake-out': { soPrimeiroTurno: true }, 'first-impression': { soPrimeiroTurno: true },
+  // clima (regras.CLIMAS): duram CLIMA_TURNOS e valem pros dois lados
+  'rain-dance': { clima: 'chuva' }, 'sunny-day': { clima: 'sol' }, sandstorm: { clima: 'areia' },
+  hail: { clima: 'granizo' }, snowscape: { clima: 'neve' }, chillyreception: { clima: 'neve' }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

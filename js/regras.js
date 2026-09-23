@@ -33,11 +33,19 @@ export function calcStats(m) {
 export function recalc(m) { const old = m.stats.hp; m.stats = calcStats(m); m.hp = clamp(m.hp + (m.stats.hp - old), 0, m.stats.hp); }
 export const freshVol = () => ({ stages: { attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0, accuracy: 0, evasion: 0 }, conf: 0, flinch: false, flashFire: false });
 export const stageMul = n => n >= 0 ? (2 + n) / 2 : 2 / (2 - n);
-export function effStat(m, stat, crit = false, attacking = true) {
+// quanto o clima mexe num atributo deste Pokémon: habilidade (Swift Swim…) e o bônus do próprio clima (CLIMAS.defesaDe)
+export function multStatClima(m, stat, clima) {
+  if (!clima || !CLIMAS[clima]) return 1;
+  const porTipo = CLIMAS[clima].defesaDe || {};
+  const bonus = m.data.types.reduce((a, t) => a * (porTipo[t]?.[stat] || 1), 1);
+  return (hab(m).multStatClima?.[clima]?.[stat] || 1) * bonus;
+}
+export function effStat(m, stat, crit = false, attacking = true, clima = null) {
   let st = m.vol?.stages[stat] || 0;
   if (crit) { if (attacking && st < 0) st = 0; if (!attacking && st > 0) st = 0; }
   const h = hab(m);
   let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
+  v *= multStatClima(m, stat, clima);                                             // Swift Swim/Chlorophyll, Pedra na areia, Gelo na neve
   if (m.status && h.comStatus?.[stat]) v *= h.comStatus[stat];                     // Guts, Quick Feet, Marvel Scale
   else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
   return Math.max(1, Math.floor(v));
@@ -70,7 +78,35 @@ export function poderEspecial(u, t, move) {
 // OHKO (Fissure, Guillotine…): 30% + diferença de nível; alvo de nível maior nunca cai
 export const chanceOhko = (u, t) => t.level > u.level ? 0 : Math.min(1, (30 + u.level - t.level) / 100);
 
-export function calcDamage(u, t, move) {
+/* ---- clima (campo da batalha) ----
+   Vive em `campo.clima` (single player: G.B.campo; multiplayer: estado.campo) com `turnos` restantes. Sol e chuva
+   mexem no dano de Fogo/Água; areia e granizo machucam quem não é do tipo certo no fim do turno; neve dá Defesa
+   pros Gelo. Algumas habilidades ligam o clima ao entrar em campo e outras se aproveitam dele (habilidades.js). */
+export const CLIMAS = {
+  sol: { nome: 'Sol forte', icone: '☀', comeca: 'O sol fica forte!', acaba: 'O sol voltou ao normal.', sobe: { fire: 1.5 }, desce: { water: 0.5 } },
+  chuva: { nome: 'Chuva', icone: '🌧', comeca: 'Começou a chover!', acaba: 'A chuva parou.', sobe: { water: 1.5 }, desce: { fire: 0.5 } },
+  areia: { nome: 'Tempestade de areia', icone: '🏜', comeca: 'Uma tempestade de areia se levanta!', acaba: 'A areia baixou.', dano: 1 / 16, poupa: ['rock', 'ground', 'steel'], defesaDe: { rock: { 'special-defense': 1.5 } } },
+  granizo: { nome: 'Granizo', icone: '🧊', comeca: 'Começou a cair granizo!', acaba: 'O granizo parou.', dano: 1 / 16, poupa: ['ice'] },
+  neve: { nome: 'Neve', icone: '❄', comeca: 'Começou a nevar!', acaba: 'A neve parou.', poupa: ['ice'], defesaDe: { ice: { defense: 1.5 } } }
+};
+export const CLIMA_TURNOS = 5;
+export const climaDe = campo => (campo?.turnos > 0 && CLIMAS[campo.clima]) ? campo.clima : null;
+// multiplicador de dano do clima pro tipo do golpe
+export function multClima(clima, tipo) {
+  const c = CLIMAS[clima]; if (!c) return 1;
+  return c.sobe?.[tipo] || c.desce?.[tipo] || 1;
+}
+// dano de fim de turno do clima (areia/granizo); 0 = não machuca este Pokémon
+export function danoClima(clima, m) {
+  const c = CLIMAS[clima];
+  if (!c?.dano || (c.poupa || []).some(t => m.data.types.includes(t))) return 0;
+  if (hab(m).imuneClima?.includes(clima)) return 0;                       // Sand Veil, Snow Cloak, Ice Body, Magic Guard…
+  return Math.max(1, Math.floor(m.stats.hp * c.dano));
+}
+// precisão que muda com o clima: Thunder/Hurricane acertam sempre na chuva e ficam ruins no sol; Blizzard, no gelo
+export const PRECISAO_CLIMA = { thunder: { chuva: 100, sol: 50 }, hurricane: { chuva: 100, sol: 50 }, blizzard: { granizo: 100, neve: 100 } };
+
+export function calcDamage(u, t, move, clima = null) {
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
   const hu = hab(u), ht = hab(t);
   let power = poderEspecial(u, t, move) ?? (move.power || 60);
@@ -78,8 +114,8 @@ export function calcDamage(u, t, move) {
   const phys = move.cls === 'physical';
   // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)
   const crit = Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0))];
-  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true);
-  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false);
+  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima);
+  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * rand(85, 100) / 100;
   if (u.data.types.includes(move.type)) mod *= hu.stab || 1.5;                        // STAB (Adaptability = ×2)
@@ -93,6 +129,7 @@ export function calcDamage(u, t, move) {
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
   if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
   mod *= multDanoDoItem(u, { ef, fisico: phys });                                    // item segurado (Orbe da Vida…)
+  mod *= multClima(clima, move.type);                                                // sol/chuva (regras.CLIMAS)
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
 export function confDamage(u) {
@@ -104,9 +141,11 @@ export const heal = (m, h) => { m.hp = Math.min(m.stats.hp, m.hp + h); };
 /* ---- extraídas de dentro da batalha (antes eram contas inline em useMove/turn/win/inflict/residual) ---- */
 
 // probabilidade de acertar: precisão do golpe × estágio de precisão de quem usa contra evasão do alvo
-export function chanceAcerto(move, user, target) {
-  const n = clamp((user.vol.stages.accuracy || 0) - (target.vol.stages.evasion || 0), -6, 6), h = hab(user);
-  return move.acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n)) * (h.precisao || 1) * (move.cls === 'physical' ? h.precisaoFisica || 1 : 1);
+export function chanceAcerto(move, user, target, clima = null) {
+  const n = clamp((user.vol.stages.accuracy || 0) - (target.vol.stages.evasion || 0), -6, 6), h = hab(user), ht = hab(target);
+  const acc = PRECISAO_CLIMA[move.name]?.[clima] ?? move.acc;                        // Thunder na chuva, Blizzard no gelo…
+  const esconde = clima && ht.escondeNoClima?.includes(clima) ? 0.8 : 1;             // Sand Veil, Snow Cloak
+  return acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n)) * (h.precisao || 1) * (move.cls === 'physical' ? h.precisaoFisica || 1 : 1) * esconde;
 }
 
 // imunidades de tipo a status (Elétrico não paralisa, Fogo não queima, Gelo não congela, Venenoso/Aço não envenenam)

@@ -8,7 +8,8 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
-import { usarGolpe, fimDeTurno, fimDaRodada } from './golpe.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima } from './golpe.js';
+import { hab } from './habilidades.js';
 import { gainExp, gainExpAliado, checkEvolution } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
@@ -19,7 +20,7 @@ import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINA
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
@@ -48,7 +49,7 @@ function sortearOponente(z) {
   return { id: p.id, level: rand(z.min, z.max) };
 }
 async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
-function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
+function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), campo: { clima: null, turnos: 0 }, ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
 // Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
 // Na troca de Pokémon do treinador só o que acabou de entrar dispara.
 async function intimidar(E, soInimigo = false) {
@@ -57,6 +58,11 @@ async function intimidar(E, soInimigo = false) {
   for (const [a, alvos] of pares) if (a.ability === 'intimidate') {
     await say(`A Intimidação de ${nm(a)} assusta o oponente!`);
     for (const b of alvos) await changeStats(b, [{ stat: 'attack', change: -1 }], a); // Clear Body & cia. impedem
+  }
+  // habilidades que mudam o tempo ao entrar em campo (Drizzle, Drought, Sand Stream, Snow Warning)
+  for (const m of [...(soInimigo ? [] : lado), E]) {
+    const c = hab(m).climaAoEntrar;
+    if (c) await mudarClima(c, CTX, m);
   }
 }
 export async function startBattle(z) {
@@ -162,7 +168,8 @@ export async function turn(action) {
     if (action.type === 'run') {
       B.runs++;
       await vez('p');
-      if (consegueFugir(effStat(P, 'speed'), effStat(E, 'speed'), B.runs, P.ability)) {
+      const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
+      if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability)) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
       await say('Não conseguiu fugir!');
@@ -180,17 +187,18 @@ export async function turn(action) {
 
     // 2) golpes do turno: você (se escolheu golpe), cada aliado em pé e o lado inimigo, por prioridade e velocidade.
     //    Bola do treinador é item: prioridade máxima, sai antes de qualquer golpe.
-    const acoes = [];
-    if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: effStat(P, 'speed') });
+    const acoes = [], clima = climaDe(B.campo); // o clima entra na velocidade (Swift Swim, Chlorophyll…)
+    const vel = m => effStat(m, 'speed', false, true, clima);
+    if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: vel(P) });
     // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
       const d = golpeDoAliado(A.ordem || 'livre', A.moves, A.data.types, E.data.types);
-      if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: effStat(A, 'speed') }); continue; }
+      if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
       const g = d.golpe || STRUGGLE;
-      acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: effStat(A, 'speed') });
+      acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: vel(A) });
     }
     const ea = acaoDoInimigo(E, P);
-    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: effStat(E, 'speed') });
+    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: vel(E) });
     const ordem = ordenarAcoes(acoes);
     const posicao = m => ordem.findIndex(a => a.quem === m); // -1 = não age neste turno
     for (let i = 0; i < ordem.length; i++) {
@@ -209,7 +217,7 @@ export async function turn(action) {
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
     }
     if (B.capturado) { await serCapturado(); return; }
-    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await anunciarQuedas(); }
+    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
     B.turn++;
     if (P.hp <= 0) await lose();

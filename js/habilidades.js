@@ -33,7 +33,27 @@
 //   curaStatusFimTurno: p  chance p de curar o próprio status no fim do turno (golpe.js)
 //   intimida               ao entrar, baixa o Ataque do(s) oponente(s) (batalha.js)
 //   fuga                   sempre consegue fugir de selvagem (consegueFugir)
+//   climaAoEntrar: clima   ao entrar em campo, muda o tempo (batalha.js / mp-motor) — Drizzle, Drought…
+//   multStatClima: {clima:{stat:n}}  atributo × n naquele clima (effStat) — Swift Swim, Chlorophyll…
+//   curaClima: {clima: fração}  recupera essa fração do HP máx. por turno naquele clima (golpe.fimDeTurno)
+//   danoClimaProprio: {clima: fração}  perde HP por turno naquele clima (Dry Skin no sol)
+//   imuneClima: [clima]    não sofre o dano de areia/granizo (golpe.fimDeTurno / danoClima)
+//   escondeNoClima: [clima]  quem ataca você erra mais naquele clima (chanceAcerto) — Sand Veil, Snow Cloak
+//   curaStatusClima: clima   cura o próprio status por turno naquele clima (Hydration)
+//   semStatusClima: clima    não pega status naquele clima (Leaf Guard)
 export const HABILIDADES = {
+  // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
+  drizzle: { climaAoEntrar: 'chuva' }, drought: { climaAoEntrar: 'sol' }, 'sand-stream': { climaAoEntrar: 'areia' }, 'snow-warning': { climaAoEntrar: 'neve' },
+  'swift-swim': { multStatClima: { chuva: { speed: 2 } } }, chlorophyll: { multStatClima: { sol: { speed: 2 } } },
+  'sand-rush': { multStatClima: { areia: { speed: 2 } }, imuneClima: ['areia'] },
+  'slush-rush': { multStatClima: { granizo: { speed: 2 }, neve: { speed: 2 } }, imuneClima: ['granizo'] },
+  'solar-power': { multStatClima: { sol: { 'special-attack': 1.5 } }, danoClimaProprio: { sol: 1 / 8 } },
+  'rain-dish': { curaClima: { chuva: 1 / 16 } }, 'ice-body': { curaClima: { granizo: 1 / 16, neve: 1 / 16 }, imuneClima: ['granizo'] },
+  'dry-skin': { curaClima: { chuva: 1 / 8 }, danoClimaProprio: { sol: 1 / 8 }, absorve: 'water', cura: 0.25 },
+  'sand-veil': { escondeNoClima: ['areia'], imuneClima: ['areia'] }, 'snow-cloak': { escondeNoClima: ['granizo', 'neve'], imuneClima: ['granizo'] },
+  'magic-guard': { imuneClima: ['areia', 'granizo'] },
+  hydration: { curaStatusClima: 'chuva' }, 'leaf-guard': { semStatusClima: 'sol' },
+  overcoat: { imuneClima: ['areia', 'granizo'], semSecundario: true },
   // força em apuros
   overgrow: { pinch: 'grass' }, blaze: { pinch: 'fire' }, torrent: { pinch: 'water' }, swarm: { pinch: 'bug' },
   // ataque
@@ -51,7 +71,7 @@ export const HABILIDADES = {
   // imunidades e absorções de tipo
   levitate: { imuneTipo: 'ground' },
   'flash-fire': { absorve: 'fire', flashFire: true },
-  'volt-absorb': { absorve: 'electric', cura: 0.25 }, 'water-absorb': { absorve: 'water', cura: 0.25 }, 'dry-skin': { absorve: 'water', cura: 0.25 },
+  'volt-absorb': { absorve: 'electric', cura: 0.25 }, 'water-absorb': { absorve: 'water', cura: 0.25 }, // 'dry-skin' está lá em cima, com a parte de clima junto
   'lightning-rod': { absorve: 'electric', estagio: ['special-attack', 1] }, 'storm-drain': { absorve: 'water', estagio: ['special-attack', 1] },
   'motor-drive': { absorve: 'electric', estagio: ['speed', 1] }, 'sap-sipper': { absorve: 'grass', estagio: ['attack', 1] },
   // status

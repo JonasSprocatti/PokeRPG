@@ -2,6 +2,19 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.2', data: '2026-09-22', titulo: 'Agora chove', piada: 'O departamento meteorológico de Kanto pede desculpas pelos 30 anos de sol constante.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'As batalhas agora têm clima: sol forte, chuva, tempestade de areia, granizo e neve. Ele aparece no topo da luta, com quantos turnos ainda faltam.',
+        'Sol deixa os golpes de Fogo 50% mais fortes e afraquece os de Água; a chuva faz o contrário. Areia e granizo machucam todo turno quem não for do tipo certo, e a neve dá mais Defesa pros Pokémon de Gelo.',
+        'Rain Dance, Sunny Day, Sandstorm, Hail e Snowscape funcionam: ligam o tempo por 5 turnos, valendo pros dois lados.',
+        'Habilidades de clima entraram em peso: Drizzle, Drought, Sand Stream e Snow Warning mudam o tempo assim que o Pokémon aparece; Swift Swim, Chlorophyll, Sand Rush e Slush Rush dobram a velocidade no tempo certo; Rain Dish, Ice Body e Dry Skin curam; Sand Veil e Snow Cloak fazem o inimigo errar mais; Hydration limpa status na chuva; Leaf Guard protege no sol; Solar Power troca poder por HP.',
+        'Thunder e Hurricane nunca erram na chuva (e ficam bem imprecisos no sol) e Blizzard acerta sempre no granizo e na neve. Solar Beam e Solar Blade disparam na hora quando está sol.'
+      ] },
+      { nome: 'Correções', itens: [
+        'A habilidade Dry Skin estava escrita duas vezes na tabela interna, e a segunda apagava a primeira. Agora ela cura na chuva e sofre no sol, como deveria.'
+      ] }
+    ] },
   { versao: '1.1', data: '2026-09-22', titulo: 'Celular, sala mais firme e Caça Shiny', piada: 'Um Fake Out estava sendo usado até no meio da conversa. Agora ele só assusta uma vez, como manda a boa educação.',
     secoes: [
       { nome: 'Novidades', itens: [
