@@ -199,6 +199,12 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 `tests/*.test.js` com `node:test` — rodar com `node --test` **sem caminho**. CI em `.github/workflows/testes.yml` roda a cada push/PR (aba Actions do GitHub).
 
+## Supabase: schema sobe sozinho
+
+.github/workflows/supabase.yml aplica supabase/schema.sql no banco a cada push no main que toque em supabase/** (e dá pra rodar à mão pela aba Actions). Precisa do secret **SUPABASE_DB_URL** no GitHub (Settings → Secrets → Actions), com a string de conexão DIRETA do projeto (porta 5432, não a do pooler).
+
+Funciona porque o schema.sql é **idempotente de ponta a ponta** — create table if not exists, create or replace function, drop policy if exists antes de cada create policy. **Manter assim**: qualquer coisa não idempotente (um lter/drop destrutivo, uma migração de dados) NÃO entra nesse arquivo; vai num .sql separado, rodado à mão, porque este fluxo roda sozinho e nunca deve poder apagar dado de jogador.
+
 ## Decidido com o usuário, ainda NÃO implementado
 
 Ordem acordada: **1 ✅ contadores + telas** · **2 ✅ cada Gen é uma jornada** · **3 badges com vantagem** · **4 Mega** · **5 Tera** · **6 Z-Move** · **7 Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.

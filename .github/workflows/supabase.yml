@@ -1,0 +1,44 @@
+﻿# Sobe o schema do Supabase sozinho quando `supabase/**` muda no main.
+#
+# COMO LIGAR (uma vez):
+#   1. No painel do Supabase: Project Settings → Database → Connection string → URI.
+#      Copie a string (postgresql://postgres:SENHA@db.XXXX.supabase.co:5432/postgres) e troque [YOUR-PASSWORD]
+#      pela senha do banco. Use a conexão DIRETA (porta 5432), não a do pooler.
+#   2. No GitHub: Settings → Secrets and variables → Actions → New repository secret
+#      Nome: SUPABASE_DB_URL      Valor: a string acima
+#   3. Pronto. A partir daí, todo push no main que mexa em supabase/ roda o schema.
+#
+# POR QUE `psql -f schema.sql` e não migrations: o nosso schema.sql é IDEMPOTENTE de ponta a ponta
+# (`create table if not exists`, `create or replace function`, `drop policy if exists` antes de cada `create policy`),
+# então rodar de novo é seguro e sempre converge pro estado desejado. Migrations exigiriam um arquivo por mudança e
+# um histórico versionado no banco — mais cerimônia do que este projeto precisa hoje.
+#
+# CUIDADO: isto NUNCA deve apagar dado. Se um dia o schema precisar de um `drop`/`alter` destrutivo, faça em um
+# arquivo separado e rode à mão — este fluxo é só pra mudanças que somam.
+name: Supabase
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**']
+  workflow_dispatch:          # também dá pra rodar na mão pela aba Actions
+
+jobs:
+  aplicar-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar o cliente do Postgres
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Aplicar supabase/schema.sql
+        env:
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then
+            echo "::error::Falta o secret SUPABASE_DB_URL (veja as instruções no topo deste arquivo)."
+            exit 1
+          fi
+          # ON_ERROR_STOP: se qualquer comando falhar, o job falha — melhor saber na hora do que ficar meio aplicado
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/schema.sql
+      - name: Resumo
+        run: echo "Schema aplicado com sucesso." >> $GITHUB_STEP_SUMMARY
