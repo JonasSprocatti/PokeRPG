@@ -4,8 +4,8 @@
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
 import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais } from './estado.js';
-import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen } from './mapas.js';
-import { log, say } from './ui.js';
+import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
+import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { changeStats, healFull, CTX } from './efeitos.js';
 import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno, passarLados, aplicarArmadilhas } from './golpe.js';
@@ -85,9 +85,13 @@ async function intimidar(E, soInimigo = false) {
 }
 export async function startBattle(z) {
   const E = await novoOponente(z);
+  // no Santuário existe encontro selvagem com lendário/mítico: marca aqui, que é onde se sabe de que pool ele veio
+  // (amizade.js deixa a amizade deles subir bem mais devagar)
+  const entrada = z.pool.find(p => p.id === E.id);
+  if (entrada?.l || entrada?.m) E.lendario = true;
   iniciar({ enemy: E, turn: 1, runs: 0 });
   await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${E.level}) apareceu!`, 'enc');
-  if (z.pool.find(p => p.id === E.id)?.m) await say('🌟 Um Pokémon mítico! Quase ninguém chega a ver um desses.', 'level');
+  if (entrada?.m) await say('🌟 Um Pokémon mítico! Quase ninguém chega a ver um desses.', 'level');
   if (E.shiny) await say('✨ Ele brilha! Um Pokémon shiny.', 'level');
   await intimidar(E);
 }
@@ -318,8 +322,18 @@ async function vencerGen() {
   await say(`🏆 Você venceu os lendários de ${regiao}! A Gen ${g} está fechada. Prêmio: ₽${premio}.`, 'level');
   endBattle();
   if (DIFICULDADES[dificuldadeDe(S)].fimNaGen) {
-    await say(g < TOTAL_GENS ? `A run termina em vitória. O mapa da Gen ${g + 1} está liberado pras próximas runs.` : 'A run termina em vitória. Você fechou a última Gen!', 'level');
-    encerrarJornada('venceu', { genVencida: g });
+    // A vitória fica GRAVADA no save agora (não no fim da run): quem escolhe seguir no Santuário e morre lá termina
+    // em derrota, mas a Gen vencida continua contando pro desbloqueio do mapa seguinte (mapas.gensLiberadasRoguelike).
+    S.genVencida = g;
+    await say(g < TOTAL_GENS ? `Vitória garantida: o mapa da Gen ${g + 1} está liberado pras próximas runs.` : 'Vitória garantida: você fechou a última Gen!', 'level');
+    const santuario = rotasDaGen(g).find(z => z.posVitoria);
+    const seguir = santuario && await ask(
+      `O 🏛 ${esc(santuario.name)} acabou de abrir: lá vive a Gen ${g} inteira — os iniciais, os lendários, os míticos e as formas regionais.<br>Encerrar a run agora, ou continuar explorando por sua conta e risco?`,
+      [{ label: 'Encerrar a run (vitória)', value: false }, { label: `Continuar no ${esc(santuario.name)}`, value: true, ghost: true }]);
+    if (!seguir) { encerrarJornada('venceu', { genVencida: g }); return; }
+    S.aposVitoria = true; S.zone = santuario.id;
+    await say(`Você segue em frente. Se desmaiar aqui, a run acaba em derrota — mas a Gen ${g} continua fechada e liberada. Dá pra encerrar em vitória quando quiser, pelo botão na tela da rota.`, 'level');
+    save(); render();
     return;
   }
   S.escolhendoGen = true; // se fechar o jogo agora, a escolha volta ao abrir (main.js abrirJornada)

@@ -93,6 +93,8 @@ test('Roguelike: mapa seguinte libera ao vencer a Gen (em sequência); outros mo
   assert.deepEqual(gensLiberadasRoguelike([j('roguelike', 'venceu', 1)]), [1, 2]);
   assert.deepEqual(gensLiberadasRoguelike([j('roguelike', 'venceu', 1), j('roguelike', 'venceu', 2)]), [1, 2, 3]);
   assert.deepEqual(gensLiberadasRoguelike([j('easy', 'venceu', 3), j('roguelike', 'desmaiou', 3)]), [1]);
+  // venceu a Gen e escolheu seguir no Santuário; morreu lá. A run terminou em derrota, mas a Gen vencida CONTA
+  assert.deepEqual(gensLiberadasRoguelike([j('roguelike', 'desmaiou', 1)]), [1, 2]);
   assert.equal(gensLiberadasRoguelike([j('roguelike', 'venceu', 9)]).length, 9); // não passa do total
 });
 

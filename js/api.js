@@ -84,10 +84,24 @@ async function getJSON(url) {
   }
   throw ultimo;
 }
-function cached(key, loader) {
-  if (memo.has(key)) return Promise.resolve(memo.get(key));
+/* `valido(v)` (opcional) diz se o que está guardado ainda serve. É como um campo NOVO chega a quem já tinha a
+   espécie no cache: o cache não expira, então sem isso um registro velho ficaria pra sempre sem o campo e a
+   funcionalidade que depende dele nasceria quebrada só pra quem já jogou (foi o caso do Disco Técnico, que precisa
+   de `learnset.extras`). A alternativa antiga era trocar a chave ('sp:' → 'sp2:'), mas isso joga fora tudo o que
+   foi baixado pra jogar offline; aqui o registro velho é trocado pelo novo na primeira vez que alguém pede a
+   espécie ESTANDO ONLINE. Sem internet, o velho continua valendo — é melhor que falhar. */
+const semRede = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+function cached(key, loader, valido = null) {
+  if (memo.has(key)) {
+    const v = memo.get(key);
+    if (v instanceof Promise || !valido || valido(v) || semRede()) return Promise.resolve(v);
+    memo.delete(key);                         // guardado velho demais: busca de novo logo abaixo
+  }
   const p = (async () => {
-    if (chavesGuardadas.has(key)) { const guardado = await ler(key); if (guardado) { memo.set(key, guardado); return guardado; } }
+    if (chavesGuardadas.has(key)) {
+      const guardado = await ler(key);
+      if (guardado && (!valido || valido(guardado) || semRede())) { memo.set(key, guardado); return guardado; }
+    }
     const v = await loader();
     memo.set(key, v); guardar(key, v);        // grava em segundo plano: quem pediu não espera o disco
     return v;
@@ -152,7 +166,10 @@ export function slimMove(m) {
     stats: (m.stat_changes || []).map(s => ({ stat: s.stat.name, change: s.change })), desc
   };
 }
-export const loadPokemon = q => cached('mon:' + q, async () => slimPokemon(await getJSON(`${API}/pokemon/${q}`)));
+// o `valido` aqui existe por causa do `learnset.extras` (golpes de MT/tutor/herança), que nasceu depois do cache:
+// registro guardado sem ele é atualizado na primeira busca online. Ao acrescentar OUTRO campo, estenda esta checagem.
+export const loadPokemon = q => cached('mon:' + q, async () => slimPokemon(await getJSON(`${API}/pokemon/${q}`)),
+  v => Array.isArray(v?.learnset?.extras));
 export const loadMove = url => cached('move:' + lastSeg(url), async () => slimMove(await getJSON(url)));
 export const loadAbility = a => cached('ab:' + a.name, async () => {
   const d = await getJSON(a.url); const en = (d.effect_entries || []).find(e => e.language.name === 'en');

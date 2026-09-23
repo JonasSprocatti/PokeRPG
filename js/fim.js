@@ -1,4 +1,4 @@
-/* ============ fim de jornada e carreira ============ */
+﻿/* ============ fim de jornada e carreira ============ */
 // Toda jornada termina aqui: capturado no Hardcore, desmaio sem Revive (Médio+), ou "Novo jogo" (encerrar).
 // Monta o resumo (estatisticasDaJornada + pontuacao, em regras.js), adiciona na CARREIRA (carreira.js — lista de
 // jornadas terminadas, local e na nuvem), apaga o save da jornada (aqui e na nuvem) e mostra a tela de fim.
@@ -27,6 +27,8 @@ export function montarResumo(S, motivo, extra = {}) {
 export function encerrarJornada(motivo, extra = {}) {
   const S = G.S; if (!S) return;
   marcarTempo();
+  // a Gen vencida acompanha a jornada mesmo quando o fim não é a vitória (seguiu no Santuário e desmaiou lá)
+  if (S.genVencida && !extra.genVencida) extra = { ...extra, genVencida: S.genVencida };
   const resumo = montarResumo(S, motivo, extra);
   const carreira = carregarCarreira();
   const anterior = melhorDaEspecie(carreira.jornadas, resumo.especie, resumo.id);

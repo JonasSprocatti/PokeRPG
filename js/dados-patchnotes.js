@@ -2,6 +2,17 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.1', data: '2026-09-23', titulo: 'A run não precisa acabar na vitória', piada: 'Os lendários abriram as portas do Santuário e serviram petisco. Continuam medindo você de cima a baixo, mas agora com cortesia.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'No Roguelike, vencer os lendários não encerra mais a run na marra: a vitória fica garantida na hora (o mapa seguinte libera do mesmo jeito) e você escolhe entre encerrar ou continuar explorando o Santuário que acabou de abrir.',
+        'Se você seguir e desmaiar lá, a run termina em derrota — mas a Gen vencida continua fechada e liberada pras próximas runs. Dá pra encerrar em vitória quando quiser, pelo botão na tela da rota.',
+        'Lendários e míticos encontrados no Santuário aceitam petisco e podem virar aliados, mas confiam bem mais devagar que um Pokémon comum: espere mais de uma dezena de ofertas.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O Disco Técnico não fazia nada para quem já tinha o Pokémon guardado no aparelho: os dados salvos antes da atualização não traziam a lista de golpes de MT, tutor e herança, e o jogo nunca ia buscá-la de novo. Agora esse registro é atualizado sozinho na primeira vez que você usa o item com internet.'
+      ] }
+    ] },
   { versao: '2.0', data: '2026-09-23', titulo: 'O Santuário: a Gen inteira, depois da vitória', piada: 'Os iniciais aceitaram sair do sindicato e voltar a aparecer — mas só no bairro nobre, e só para quem já venceu os lendários.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -1,4 +1,4 @@
-/* ============ mapas por Gen ============ */
+﻿/* ============ mapas por Gen ============ */
 // Cada Gen é um mapa com 10 rotas (dados em dados-mapas.js, gerados da PokéAPI por ferramentas/gerar-mapas.ps1).
 // As 9 primeiras têm um Alfa; a 10ª é a final: lutar contra os lendários da Gen fecha o mapa.
 //   Roguelike: vencer a Gen encerra a run (vitória) e libera o mapa da Gen seguinte pras próximas runs.
@@ -183,6 +183,8 @@ export function entrarNaGen(S, g) {
 // Roguelike: mapas liberados = Gen 1 + a seguinte de cada Gen vencida (sempre em sequência) — pela carreira
 export function gensLiberadasRoguelike(jornadas) {
   let max = 0;
-  for (const j of jornadas || []) if (j.dificuldade === 'roguelike' && j.motivo === 'venceu') max = Math.max(max, j.genVencida || 0);
+  // genVencida conta mesmo que a run tenha acabado em derrota DEPOIS da vitória: quem fecha a Gen e escolhe seguir
+  // no Santuário não perde o mapa seguinte se morrer lá (batalha.vencerGen grava S.genVencida na hora da vitória).
+  for (const j of jornadas || []) if (j.dificuldade === 'roguelike' && (j.motivo === 'venceu' || j.genVencida)) max = Math.max(max, j.genVencida || 0);
   return Array.from({ length: Math.min(TOTAL_GENS, max + 1) }, (_, i) => i + 1);
 }

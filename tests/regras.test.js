@@ -9,7 +9,7 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -269,6 +269,11 @@ test('amizade: petisco certo enche rápido, errado quase nada; limite de nível'
   assert.equal(Math.ceil(AMIZADE_MAX / 20), 5);
   assert.equal(podeFazerAmizade(15, 10), true);
   assert.equal(podeFazerAmizade(16, 10), false);
+  // lendário/mítico (só aparecem soltos no Santuário): aceitam petisco, mas confiam ~4× mais devagar
+  assert.equal(ganhoAmizade(['fire'], ['fire'], 0, true), Math.floor(20 / DIVISOR_AMIZADE_LENDARIO));
+  assert.equal(ganhoAmizade(['fire'], ['water'], 0.3, true), 1);  // ganho pequeno nunca vira 0: pareceria não funcionar
+  assert.equal(ganhoAmizade(['fire'], ['water'], 0, true), 0);    // mas o que já era 0 continua 0
+  assert.ok(Math.ceil(AMIZADE_MAX / ganhoAmizade(['fire'], ['fire'], 0.999, true)) >= 12); // mais de uma dezena de ofertas
   assert.equal(MAX_ALIADOS, 2);
 });
 

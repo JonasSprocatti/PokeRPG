@@ -155,6 +155,13 @@ document.addEventListener('click', async e => {
       log(v ? `🎯 Caçando <b>${esc(fmt(v))}</b> em ${esc(z.name)}: só ele vai aparecer por aqui.` : `🎯 Caça encerrada em ${esc(z.name)}.`, 'muted');
       save(); return render();
     }
+    // Roguelike: venceu a Gen e escolheu seguir no Santuário — este botão fecha a run em vitória quando quiser
+    case 'encerrar-vitoria': {
+      if (G.busy || G.mode === 'battle' || !G.S?.aposVitoria) return;
+      const ok = await ask('Encerrar a jornada agora, <b>em vitória</b>? O que você conquistou no Santuário fica guardado na carreira.',
+        [{ label: 'Encerrar em vitória', value: true }, { label: 'Continuar explorando', value: false, ghost: true }]);
+      return ok ? encerrarJornada('venceu', { genVencida: G.S.genVencida }) : undefined;
+    }
     case 'panel': G.panel = v; return render();
     case 'heal': {
       // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)

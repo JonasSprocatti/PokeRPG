@@ -351,9 +351,14 @@ export function golpeDoAliado(ordem, moves, tiposA, tiposAlvo, sorte = Math.rand
 export const MAX_ALIADOS = 2;
 export const AMIZADE_MAX = 100;
 // Item que o tipo gosta: +20–35 por oferta (3–5 ofertas pra encher). Item errado: 0–5 (quase nada).
-export function ganhoAmizade(tiposDoItem, tiposDoAlvo, sorte = Math.random()) {
+export const DIVISOR_AMIZADE_LENDARIO = 4; // lendário/mítico: a amizade sobe ~4× mais devagar (ver ganhoAmizade)
+export function ganhoAmizade(tiposDoItem, tiposDoAlvo, sorte = Math.random(), lendario = false) {
   const gosta = tiposDoAlvo.some(t => tiposDoItem.includes(t));
-  return gosta ? 20 + Math.floor(sorte * 16) : Math.floor(sorte * 6);
+  const base = gosta ? 20 + Math.floor(sorte * 16) : Math.floor(sorte * 6);
+  // Lendário e mítico aceitam petisco (é o que torna possível desbloquear eles pela amizade), mas confiam bem
+  // devagar: onde um Pokémon comum vira aliado em 3–5 ofertas, eles levam mais de uma dezena. Nunca zera um ganho
+  // que existia — ficar em 0 pra sempre pareceria que o petisco não funciona neles.
+  return lendario && base > 0 ? Math.max(1, Math.floor(base / DIVISOR_AMIZADE_LENDARIO)) : base;
 }
 // só confia em quem não é muito mais fraco que ele — impede levar um Nv. 55 da Caverna Cerúlea sendo Nv. 5
 export const podeFazerAmizade = (nivelAlvo, nivelJogador) => nivelAlvo <= nivelJogador + 5;

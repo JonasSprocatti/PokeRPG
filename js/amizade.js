@@ -23,9 +23,12 @@ export async function oferecer(id, E) {
     await say(`${nm(E)} (Nv. ${E.level}) é forte demais pra confiar em você. Suba de nível antes (até Nv. ${P.level + 5} aceita).`, 'muted');
     return 'ok';
   }
-  const ganho = ganhoAmizade(it.afinidade, E.data.types);
+  // `E.lendario` só existe em encontro do Santuário (batalha.startBattle marca pelo `l`/`m` do pool): aceita, mas
+  // confia muito mais devagar que um Pokémon comum
+  const ganho = ganhoAmizade(it.afinidade, E.data.types, Math.random(), !!E.lendario);
   E.amizade = Math.min(AMIZADE_MAX, (E.amizade || 0) + ganho); render();
-  if (ganho >= 20) await say(`${nm(E)} adorou! Amizade ${E.amizade}/${AMIZADE_MAX}.`, 'good');
+  if (E.lendario && ganho > 0) await say(`${nm(E)} aceita, mas mede você de cima a baixo. Amizade ${E.amizade}/${AMIZADE_MAX} — lendários custam a confiar.`, ganho >= 5 ? 'good' : '');
+  else if (ganho >= 20) await say(`${nm(E)} adorou! Amizade ${E.amizade}/${AMIZADE_MAX}.`, 'good');
   else if (ganho > 0) await say(`${nm(E)} cheira, desconfiado, e come um pouco. Amizade ${E.amizade}/${AMIZADE_MAX}.`);
   else await say(`${nm(E)} ignora. Pokémon ${E.data.types.map(t => TYPE_PT[t]).join('/')} não gosta disso.`, 'muted');
   if (E.amizade >= AMIZADE_MAX) { await recrutar(E); return 'fim'; }
