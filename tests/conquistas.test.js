@@ -1,8 +1,9 @@
-// Conquistas da conta (js/conquistas.js): os contadores que desbloqueiam as gimmicks. A regra que atravessa tudo
+﻿// Conquistas da conta (js/conquistas.js): os contadores que desbloqueiam as gimmicks. A regra que atravessa tudo
 // é "só conta o que VOCÊ fez" — golpe final do aliado não vale.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { registrarAbate, somarAbates, runsDeNivel, progressoConquistas, teraLiberada, megaLiberada, zLiberado, gmaxLiberado, ALVOS } from '../js/conquistas.js';
+import { estatisticasDaJornada } from '../js/regras.js';
 
 const golpe = (name, type) => ({ name, type });
 
@@ -57,6 +58,21 @@ test('progresso diz o que já liberou e o quanto falta', () => {
   // a lista vem ordenada do mais perto pro mais longe, com a fração pra barra de progresso
   assert.deepEqual(p.tera.map(x => x.chave), ['fire', 'water']);
   assert.equal(p.tera[1].fracao, 10 / ALVOS.tera);
+});
+
+test('o resumo da jornada LEVA os abates pra carreira (senão o contador zera ao terminar)', () => {
+  // a cópia do registro em estatisticasDaJornada é uma lista branca: campo que não estiver lá some no fim da run.
+  // Foi um bug real: os contadores subiam jogando e a carreira nunca recebia nada.
+  const S = {
+    player: { data: { speciesName: 'pikachu' }, level: 30, shiny: false }, registro: {}, wins: 1,
+    chefes: {}, missoesFeitas: [], money: 0
+  };
+  registrarAbate(S, { porMim: true, tiposDoAlvo: ['fire'], minhaEspecie: 'pikachu', golpe: golpe('thunderbolt', 'electric') });
+  const resumo = estatisticasDaJornada(S);
+  assert.deepEqual(resumo.registro.abates.especie, { pikachu: 1 });
+  assert.deepEqual(resumo.registro.abates.tipoAlvo, { fire: 1 });
+  // e o progresso da carreira enxerga isso
+  assert.equal(progressoConquistas([{ dificuldade: 'hard', ...resumo }], null).mega[0].n, 1);
 });
 
 test('a run em andamento entra no progresso (não espera a jornada acabar)', () => {

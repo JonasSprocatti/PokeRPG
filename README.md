@@ -199,6 +199,10 @@ limit 50;
 
 O campo `status` começa em `'novo'` e é seu para usar (`'lido'`, `'resolvido'`…): o jogo nunca deixa alguém mudar isso de fora. Não existe tela de administração dentro do jogo — é de propósito, para não haver caminho pelo navegador que leia relato de outra pessoa.
 
+### 📖 Pokédex
+As 1025 espécies do jogo: as que você já encontrou aparecem com sprite e nome, as outras ficam como "?". Toque em quem você conhece para abrir a ficha completa — tipos, todos os atributos base, habilidades com descrição, e quantas vezes você já viu, derrotou e recrutou aquela espécie.
+
+A ficha também responde **onde achar**: em quais rotas de quais mapas ele aparece, com a chance de encontro, e se ele é Alfa de alguma rota ou participa de uma luta final. Conta a carreira inteira e a jornada em andamento.
 ### 🏅 Conquistas da conta
 Tudo o que você acumula **ao longo da carreira inteira**, jornada após jornada — e a que está em andamento conta junto. A cada vitória o jogo registra os tipos do Pokémon derrotado, a espécie que você estava usando, o golpe que finalizou e o elemento dele.
 

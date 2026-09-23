@@ -17,6 +17,7 @@ import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem,
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
 import { telaConquistas } from './tela-conquistas.js';
+import { telaPokedex, verNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
@@ -36,7 +37,7 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
@@ -76,6 +77,8 @@ document.addEventListener('click', async e => {
     case 'mp-sync': return sincronizarSala();   // pedir o estado da sala de novo (rede engoliu alguma mensagem)
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
+    case 'pokedex': if (G.busy || G.mode === 'battle') return; return telaPokedex();
+    case 'dex-ver': return verNaPokedex(v);
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
     // bugs e sugestões
     case 'relatos': if (G.busy || G.mode === 'battle') return; return telaRelatos();

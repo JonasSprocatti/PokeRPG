@@ -447,8 +447,12 @@ export function estatisticasDaJornada(S) {
     gen: S.gen || 1, gens: (S.gensVencidas || []).length, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
     maxDinheiro: Math.max(S.maxDinheiro || 0, S.money || 0), gasto: S.gasto || 0,
     shiniesVistos: soma(r.shinies), shiniesAmigos: soma(r.shiniesAmigos),
-    // cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui
-    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {} }))
+    /* Cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui — e, desde as
+       conquistas de conta, também os `abates` (conquistas.js), que alimentam as gimmicks.
+       ATENÇÃO: esta cópia é uma LISTA BRANCA. Campo novo em `S.registro` que não for citado aqui existe durante a
+       run e some quando a jornada termina. Foi exatamente o que aconteceu com `abates` na primeira versão: o
+       contador subia jogando e zerava ao encerrar, porque a carreira nunca recebia o campo. */
+    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {}, abates: r.abates || {} }))
   };
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)

@@ -507,3 +507,24 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 .mcard{margin-top:10px;padding:10px 12px;background:var(--panel2);border-radius:10px;font-size:14px;color:var(--muted)}
 
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ---- Pokédex da conta (tela-pokedex.js) ----
+   Mesma linguagem visual da Pokédex de rota (.dexr), mas em escala nacional: 1025 células, as conhecidas com
+   sprite e nome, as outras como "?" tracejado. As imagens são `loading="lazy"` — sem isso o navegador tentaria
+   baixar mil sprites de uma vez ao abrir a tela. */
+.dex-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin-top:14px}
+.dexc{position:relative;display:grid;justify-items:center;align-content:start;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:3px 2px 5px;min-height:96px;font:600 11px var(--body);color:var(--text);text-align:center;cursor:pointer}
+.dexc img{width:60px;height:60px;image-rendering:pixelated}
+.dexc b{font-size:11px;line-height:1.15;overflow-wrap:anywhere}
+.dexc small{color:var(--muted)}
+.dexc.nunca{place-content:center;border-style:dashed;color:var(--muted);cursor:default}
+.dexc.nunca span{font:700 22px var(--display)}
+.dexc.derrotado{border-color:var(--yellow)}
+.dexc.amigo{border-color:#5FB36A}
+.dexc:not(.nunca):hover{background:var(--panel);border-color:var(--yellow)}
+.dex-ficha{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+.dex-ficha-topo{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.dex-ficha-topo img{width:96px;height:96px;image-rendering:pixelated}
+.dex-ficha h3{margin:0 0 6px;font:700 22px var(--display)}
+.dex-ficha h4{margin:14px 0 6px;font:700 15px var(--display)}
+.dex-onde{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:13px;color:var(--muted)}

@@ -1,7 +1,20 @@
-/* GERADO A MÃO: notas de atualização mostradas na tela 📜 Novidades (tela-patchnotes.js).
+﻿/* GERADO A MÃO: notas de atualização mostradas na tela 📜 Novidades (tela-patchnotes.js).
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.5', data: '2026-09-23', titulo: 'Pokédex de verdade', piada: 'O Professor finalmente entregou a Pokédex. Levou 1025 fichas, todas em branco, e um "boa sorte".',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Nova tela 📖 Pokédex: as 1025 espécies do jogo, as que você já encontrou com sprite e nome, as outras ainda como "?".',
+        'Toque em quem você conhece pra abrir a ficha completa: tipos, todos os atributos base, habilidades com a descrição de cada uma, e quantas vezes você já viu, derrotou e recrutou aquela espécie.',
+        'A ficha também mostra ONDE aquele Pokémon aparece: em quais rotas de quais mapas, com a chance de encontro, além de avisar quando ele é Alfa de alguma rota ou participa de uma luta final.',
+        'Conta a carreira inteira e a jornada em andamento — espécie que você encontrar agora já entra na Pokédex.'
+      ] },
+      { nome: 'Correções', itens: [
+        'As conquistas da conta estavam sendo perdidas no fim de cada jornada: o contador subia enquanto você jogava e a carreira nunca recebia nada. Agora o progresso fica guardado quando a run termina.',
+        'A tela de criação passou a avisar, nos modos que não são Roguelike, que derrotar espécies ali não desbloqueia nenhuma delas como opção inicial — isso sempre foi assim, mas o jogo nunca tinha dito, e dava pra jogar uma jornada inteira esperando o contrário.'
+      ] }
+    ] },
   { versao: '2.4', data: '2026-09-23', titulo: 'A conta começou a contar', piada: 'Instalamos um contador na sua conta. Ele já estava lá antes, mas só fazia contato visual com os Pokémon derrotados e anotava mentalmente.',
     secoes: [
       { nome: 'Novidades', itens: [

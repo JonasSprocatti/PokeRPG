@@ -10,6 +10,7 @@ export const TELAS = [
   { id: 'create', act: 'inicio', rotulo: '🏠 Início', dica: 'Tela inicial (começar uma jornada)' },
   { id: 'saves', act: 'saves', rotulo: '💾 Jornadas', dica: 'Suas jornadas salvas' },
   { id: 'carreira', act: 'carreira', rotulo: '📊 Carreira', dica: 'Tudo o que você já fez' },
+  { id: 'pokedex', act: 'pokedex', rotulo: '📖 Pokédex', dica: 'Tudo o que a sua conta já encontrou' },
   { id: 'conquistas', act: 'conquistas', rotulo: '🏅 Conquistas', dica: 'Progresso das gimmicks e marcos da conta' },
   { id: 'ranking', act: 'ranking', rotulo: '🏆 Ranking', dica: 'Ranking global' },
   { id: 'mp', act: 'mp', rotulo: '👥 Multiplayer', dica: 'Jogar com amigos' },

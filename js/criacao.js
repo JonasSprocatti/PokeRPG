@@ -50,7 +50,7 @@ function renderEscolha() {
     $('#escolha').innerHTML = `<p class="small muted">Os iniciais de cada região, mais Pikachu e Eevee.</p>
       <div class="regioes">${REGIOES_INICIAIS.map(r => `<div class="regiao"><h4>${r.nome}</h4><div class="picks">${r.ids.map((id, i) =>
         `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">${r.nomes[i]}</button>`).join('')}</div></div>`).join('')}</div>
-      ${DIFICULDADES[G.dif].desbloqueios ? secaoDesbloqueios() : ''}
+      ${DIFICULDADES[G.dif].desbloqueios ? secaoDesbloqueios() : avisoSemDesbloqueio()}
       <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear ${DIFICULDADES[G.dif].desbloqueios ? 'entre os disponíveis' : 'um inicial'}</button></div>`;
     return;
   }
@@ -62,6 +62,13 @@ function renderEscolha() {
   loadList().then(list => { if ($('#dex')) $('#dex').innerHTML = list.map(n => `<option value="${n}">`).join(''); })
     .catch(e => { $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`; });
 }
+/* Fora do Roguelike, derrotar espécies NÃO desbloqueia ninguém — e o jogo nunca dizia isso. Um jogador terminou uma
+   jornada inteira no Difícil esperando ter liberado o que derrotou, e a decepção só apareceu no fim. O aviso é curto
+   e fica exatamente onde a dúvida nasce: embaixo da lista de quem dá pra escolher. */
+const avisoSemDesbloqueio = () => `<p class="small muted" style="margin-top:10px">🔒 Neste modo dá pra escolher os
+  iniciais, Pikachu e Eevee. <b>Derrotar espécies aqui não desbloqueia nenhuma delas</b> como opção inicial — isso só
+  conta em jornadas <b>Roguelike</b>. As conquistas da conta (🏅), essas sim, contam em todos os modos menos o Fácil.</p>`;
+
 // Roguelike: espécies desbloqueadas (escolhíveis) + as mais perto de desbloquear
 function secaoDesbloqueios() {
   const prog = progressoRoguelike(carregarCarreira().jornadas);

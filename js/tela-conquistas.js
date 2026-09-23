@@ -51,6 +51,9 @@ export function telaConquistas() {
     <p class="lead">Tudo aqui soma a <b>carreira inteira</b>, jornada após jornada — e a que está em andamento conta junto.
       O modo Fácil não entra: ele é treino. As gimmicks ainda <b>não são jogáveis</b>; o que já funciona é a medição,
       então o progresso que você fizer a partir de agora fica guardado.</p>
+    <p class="small muted">Não confunda com o <b>desbloqueio de espécies</b> do Roguelike (aquele que libera Pokémon
+      novos pra escolher no começo): ele é outro sistema, e só conta jornadas Roguelike. O que está nesta tela conta
+      em todos os modos, menos o Fácil.</p>
 
     <h3 class="passo">🗡 Caçada</h3>
     <p class="muted small">Todo Pokémon que a sua equipe derrota conta, aliado incluído.</p>
