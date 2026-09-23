@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.9', data: '2026-09-23', titulo: 'Badges que valem alguma coisa', piada: 'As medalhas antigas ficavam só bonitas na parede. Estas aqui vêm com uma Potion dentro.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Badges da conta: conquistas de longo prazo que aparecem na tela 🏅 Conquistas — marcos de caçada, um especialista por tipo, Pokédex regional e nacional, 100 aliados recrutados, recrutar um lendário, recrutar um shiny, fechar uma Gen no Hardcore, terminar uma jornada sem usar o Centro Pokémon, e mais.',
+        'Cada badge conquistada vira vantagem na PRÓXIMA jornada: itens ou dinheiro no começo. Derrotar 1.000 Pokémon do tipo Planta, por exemplo, faz você começar com uma Pedra da Folha na mochila.',
+        'Na criação dá pra desligar as vantagens e jogar do zero — quem faz isso ganha 10% a mais de pontos no ranking.',
+        'As duas conquistas do Rayquaza entraram: recrutar um shiny e conquistar a Mega dele contam separadas, em qualquer ordem. Quem tiver as duas ganha a loja de graça para sempre.'
+      ] }
+    ] },
   { versao: '2.8', data: '2026-09-23', titulo: 'Cada mapa, uma história', piada: 'Seu Pokémon pendurou as chuteiras como campeão da região. Recusou a aposentadoria três vezes antes, mas os pontos do ranking o convenceram.',
     secoes: [
       { nome: 'Novidades', itens: [

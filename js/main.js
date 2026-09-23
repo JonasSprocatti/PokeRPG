@@ -135,6 +135,7 @@ document.addEventListener('click', async e => {
     case 'pick': return previewSearch(v);
     case 'ability': G.PV.ability = v; return renderPreview();
     case 'dificuldade': G.dif = v; return renderDificuldade();
+    case 'sem-vantagens': G.semVantagens = !G.semVantagens; return renderDificuldade();   // jogar sem os itens das badges
     case 'randomizer': return fullRandomizer(b);
     case 'recomecar': G.S = null; G.B = null; G.PV = null; return showCreate();
     case 'start': return startGame(b);
@@ -172,7 +173,7 @@ document.addEventListener('click', async e => {
       // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
       const { precisa, custo } = centroPokemon();
       if (G.busy || !precisa || G.S.money < custo) return;
-      G.S.money -= custo; G.S.gasto = (G.S.gasto || 0) + custo; healFull(); zerarDescontoCentro();
+      G.S.money -= custo; G.S.gasto = (G.S.gasto || 0) + custo; G.S.usouCentro = true; healFull(); zerarDescontoCentro();
       log(`${custo ? `Você pagou ₽${custo} e descansou` : 'Você descansou'} no Centro Pokémon. HP, PP e status ${G.S.aliados?.length ? 'da equipe ' : ''}restaurados.`, 'good');
       await verificarMissoes(); save(); return render();
     }

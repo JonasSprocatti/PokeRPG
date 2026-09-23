@@ -43,4 +43,7 @@ test('a penalidade de continuar a jornada existe no SQL, igual à do jogo (regra
   assert.match(sql, /\* mult \* penal\)/);
   assert.equal(multContinuacao(1), 0.8);
   assert.equal(multContinuacao(3), 0.8 ** 3);
+  // e o bônus de jogar sem as vantagens das badges (regras.BONUS_SEM_VANTAGENS)
+  assert.match(sql, /bonus numeric := case when coalesce\(\(r->>'semVantagens'\)::boolean, false\) then 1\.1 else 1 end/);
+  assert.match(sql, /\* mult \* penal \* bonus\)/);
 });

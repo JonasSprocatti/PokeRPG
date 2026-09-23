@@ -144,6 +144,8 @@ declare
     when 'hardcore' then 2 when 'randomizer' then 1.5 when 'roguelike' then 1.5 else null end;
   -- seguir com o mesmo Pokémon pro mapa seguinte tira 20% por vez, com piso de metade (regras.multContinuacao)
   penal numeric := greatest(0.5, power(0.8, coalesce((r->>'continuacoes')::int, 0)));
+  -- jogar sem as vantagens das badges rende 10% a mais (regras.BONUS_SEM_VANTAGENS)
+  bonus numeric := case when coalesce((r->>'semVantagens')::boolean, false) then 1.1 else 1 end;
 begin
   if mult is null then raise exception 'dificuldade desconhecida: %', new.dificuldade; end if;
   if n < 1 or n > 100 then raise exception 'nível impossível: %', n; end if;
@@ -160,7 +162,7 @@ begin
     + coalesce((r->>'vitorias')::int, 0) * 10 + coalesce((r->>'treinadores')::int, 0) * 50
     + coalesce((r->>'alfas')::int, 0) * 300 + coalesce((r->>'amigos')::int, 0) * 100
     + coalesce((r->>'evolucoes')::int, 0) * 150 + coalesce((r->>'missoes')::int, 0) * 120
-    + coalesce((r->>'gens')::int, 0) * 2000) * mult * penal);
+    + coalesce((r->>'gens')::int, 0) * 2000) * mult * penal * bonus);
   new.resumo := jsonb_set(r, '{pontuacao}', to_jsonb(new.pontuacao));
   return new;
 end $$;

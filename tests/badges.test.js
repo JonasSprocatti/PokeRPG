@@ -1,0 +1,95 @@
+// Badges da conta (js/badges.js): conquistas de longo prazo que pagam vantagem na próxima jornada.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { BADGES, badgesDaConta, contextoBadges, vantagensDe, ALVO_TIPO, ALVO_AMIGOS } from '../js/badges.js';
+import { ALVOS, MARCOS_ABATES } from '../js/conquistas.js';
+import { ITEMS, TYPE_PT } from '../js/dados.js';
+
+const ctxVazio = () => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {}, golpe: {}, elemento: {} }, progresso: null, dex: null, conquistas: null });
+const acha = (lista, id) => lista.find(b => b.id === id);
+
+test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () => {
+  const ids = BADGES.map(b => b.id);
+  assert.equal(new Set(ids).size, ids.length, 'id repetido');
+  for (const b of BADGES) {
+    assert.ok(b.nome?.length > 3 && b.desc?.length > 10 && b.grupo && b.icone, `${b.id}: faltando texto`);
+    const r = b.recompensa || {};
+    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis, `${b.id}: não dá nada`);
+    for (const k of Object.keys(r.itens || {})) assert.ok(ITEMS[k], `${b.id}: item "${k}" não existe`);
+  }
+});
+
+test('nada está conquistado numa conta zerada', () => {
+  const lista = badgesDaConta(ctxVazio());
+  assert.equal(lista.some(b => b.completo), false);
+  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, titulos: [] });
+});
+
+test('marcos de caçada acendem na ordem', () => {
+  const ctx = contextoBadges({ abates: { total: MARCOS_ABATES[1], tipoAlvo: {}, especie: {} }, progresso: null, dex: null, conquistas: null });
+  const lista = badgesDaConta(ctx);
+  assert.equal(acha(lista, `caca${MARCOS_ABATES[0]}`).completo, true);
+  assert.equal(acha(lista, `caca${MARCOS_ABATES[1]}`).completo, true);
+  assert.equal(acha(lista, `caca${MARCOS_ABATES[2]}`).completo, false);
+  // e o prêmio do primeiro marco entra na mochila da próxima jornada
+  assert.equal(vantagensDe(lista).itens.potion, 3);
+});
+
+test('há uma badge por tipo, e cada uma dá um item que existe', () => {
+  for (const t of Object.keys(TYPE_PT)) {
+    const b = BADGES.find(x => x.id === `tipo-${t}`);
+    assert.ok(b, `falta a badge do tipo ${t}`);
+    const ctx = contextoBadges({ abates: { total: 0, tipoAlvo: { [t]: ALVO_TIPO }, especie: {} }, progresso: null, dex: null, conquistas: null });
+    assert.equal(b.mede(ctx).completo, true);
+  }
+  // o exemplo que o usuário deu: 1.000 do tipo Planta começa com a Pedra da Folha
+  const planta = BADGES.find(x => x.id === 'tipo-grass');
+  assert.equal(Object.keys(planta.recompensa.itens)[0], 'leaf-stone');
+});
+
+test('Rayquaza: as duas missões contam SEPARADAS, em qualquer ordem', () => {
+  const comShiny = contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, progresso: null, dex: { rayquazaShiny: 1 }, conquistas: null });
+  const comMega = contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: { rayquaza: ALVOS.mega } }, progresso: null, dex: null, conquistas: null });
+  const so1 = badgesDaConta(comShiny), so2 = badgesDaConta(comMega);
+  assert.equal(acha(so1, 'rayquaza-shiny').completo, true);
+  assert.equal(acha(so1, 'rayquaza-mega').completo, false);
+  assert.equal(acha(so1, 'rayquaza-lenda').completo, false, 'uma só não fecha o prêmio grande');
+  assert.equal(acha(so2, 'rayquaza-mega').completo, true);
+  assert.equal(acha(so2, 'rayquaza-shiny').completo, false);
+  // com as duas, sai a loja de graça
+  const ambas = contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: { rayquaza: ALVOS.mega } }, progresso: null, dex: { rayquazaShiny: 1 }, conquistas: null });
+  const lista = badgesDaConta(ambas);
+  assert.equal(acha(lista, 'rayquaza-lenda').completo, true);
+  assert.equal(vantagensDe(lista).lojaGratis, true);
+});
+
+test('badges que leem o progresso permanente (jornadas bancadas)', () => {
+  const progresso = { porJornada: {
+    a: { dificuldade: 'hardcore', genVencida: 1, amigos: 60, semCentro: false },
+    b: { dificuldade: 'roguelike', genVencida: 2, amigos: 50, semCentro: true },
+    c: { dificuldade: 'roguelike', genVencida: 2, amigos: 0, semCentro: false }   // mesma Gen: não conta duas vezes
+  }, especies: {} };
+  const ctx = contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, progresso, dex: null, conquistas: null });
+  assert.equal(ctx.amigos, 110);
+  assert.equal(ctx.gensHardcore, 1);
+  assert.equal(ctx.gensRoguelike, 1, 'Gens distintas, não jornadas');
+  assert.equal(ctx.runsSemCentro, 1);
+  const lista = badgesDaConta(ctx);
+  assert.equal(acha(lista, 'amigos').completo, true, `${ALVO_AMIGOS} aliados`);
+  assert.equal(acha(lista, 'hardcore').completo, true);
+  assert.equal(acha(lista, 'sem-centro').completo, true);
+  assert.equal(acha(lista, 'roguelike9').completo, false);
+});
+
+test('vantagens somam itens repetidos e nunca contam badge incompleta', () => {
+  const lista = [
+    { completo: true, recompensa: { itens: { potion: 3 }, dinheiro: 1000 } },
+    { completo: true, recompensa: { itens: { potion: 2 }, titulo: 'Lenda' } },
+    { completo: false, recompensa: { itens: { revive: 9 }, dinheiro: 99999 } }
+  ];
+  const v = vantagensDe(lista);
+  assert.equal(v.itens.potion, 5);
+  assert.equal(v.itens.revive, undefined);
+  assert.equal(v.dinheiro, 1000);
+  assert.deepEqual(v.titulos, ['Lenda']);
+});

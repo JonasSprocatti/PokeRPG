@@ -6,11 +6,12 @@ import { $, limparTopo, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
-import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
+import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS } from './dados.js';
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
-import { carregarCarreira, desbloqueadasDaConta } from './carreira.js';
+import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta } from './carreira.js';
+import { vantagensDe } from './badges.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
@@ -36,6 +37,7 @@ export function showCreate() {
     <div id="difs" class="difs"></div>
     <h3 class="passo"><span>2</span> Mapa (Gen)</h3>
     <div id="gens"></div>
+    <div id="vantagens"></div>
     <label class="check caca-opcao"><input type="checkbox" id="pv-caca" ${G.cacaShiny ? 'checked' : ''}> 🎯 Modo Caça Shiny
       <small class="muted">Quando você revelar todas as espécies de uma rota (10 derrotados de cada), pode escolher UMA delas pra ser a única que aparece ali. Serve pra caçar shiny — ou o que você quiser — sem depender da sorte do sorteio. Só dá pra ligar agora, no começo da jornada.</small></label>
     <h3 class="passo"><span>3</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
@@ -78,6 +80,21 @@ function secaoDesbloqueios() {
       ${quase.length ? `<h4>Quase lá</h4><ul class="quase">${quase.map(p => `<li>${p.id ? `<img src="${SPR(p.id)}" alt="">` : ''}<b>${esc(fmt(p.especie))}</b><div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div><small>${esc(textoProgresso(p))}</small></li>`).join('')}</ul>` : ''}
     </div>`;
 }
+/* Vantagens da conta (badges.js): o que as suas conquistas dão nesta jornada, e o interruptor pra jogar sem elas.
+   Quem desliga ganha bônus de pontuação no ranking — a ideia é que o desafio puro continue valendo a pena. */
+function renderVantagens() {
+  const el = $('#vantagens'); if (!el) return;
+  const ganhas = badgesDaCarreira().filter(b => b.completo);
+  const v = vantagensDe(ganhas);
+  const itens = Object.entries(v.itens).map(([k, n]) => `${esc(ITEMS[k]?.name || k)} ×${n}`);
+  const linhas = [...itens, v.dinheiro ? `₽${v.dinheiro.toLocaleString('pt-BR')} a mais` : '', v.lojaGratis ? 'loja de graça' : ''].filter(Boolean);
+  el.innerHTML = `<label class="check caca-opcao"><input type="checkbox" id="pv-sem-vantagens" data-act="sem-vantagens" ${G.semVantagens ? 'checked' : ''}>
+      🎖 Jogar sem as vantagens da conta
+      <small class="muted">${ganhas.length
+        ? `Você conquistou <b>${ganhas.length}</b> badge${ganhas.length > 1 ? 's' : ''} e começaria com: ${esc(linhas.join(' · '))}.
+           Desligar deixa a jornada mais dura e <b>rende mais pontos</b> no ranking.`
+        : 'Você ainda não tem badges. Quando tiver, elas dão itens e dinheiro no começo de cada jornada — e aqui dá pra abrir mão deles por mais pontos.'}</small></label>`;
+}
 // mapas que dá pra escolher neste modo: no Roguelike (fimNaGen), só os liberados vencendo a Gen anterior; nos outros, todos
 const gensLiberadas = () => DIFICULDADES[G.dif].fimNaGen ? gensLiberadasRoguelike(carregarCarreira().jornadas) : GENS.map(x => x.gen);
 // passo 2: mapa (Gen). Full Randomizer sorteia o mapa também (não mostra escolha)
@@ -95,6 +112,7 @@ function renderGens() {
 export function renderDificuldade() {
   $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
   renderGens();
+  renderVantagens();
   const rnd = G.dif === 'randomizer';
   $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
   $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';
@@ -163,7 +181,12 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   const rotas = rotasDaGen(gen), startZone = [...rotas].reverse().find(z => !z.final && zonaLiberada(z, mon.level) && z.min <= mon.level) || rotas[0];
   // começar outra com uma jornada aberta (veio pelo 🏠 Início): a de antes vai pras guardadas, não some (saves.js)
   const anterior = G.S?.player ? (save(), guardar(G.S) ? G.S : null) : null;
-  G.S = { player: mon, bag: { potion: 3, 'full-heal': 1 }, money: 500, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+  /* Vantagens das badges (badges.js): itens e dinheiro a mais no começo. G.semVantagens desliga tudo — quem
+     joga sem elas ganha bônus de pontuação no ranking (regras.pontuacao). */
+  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false } : vantagensDaConta();
+  const bag = { potion: 3, 'full-heal': 1 };
+  for (const [k, n] of Object.entries(v.itens)) bag[k] = (bag[k] || 0) + n;
+  G.S = { player: mon, bag, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem

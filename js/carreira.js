@@ -6,6 +6,9 @@
 import { store } from './util.js';
 import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, especiesDesbloqueadas } from './progresso-conta.js';
 import { desbloqueadas } from './roguelike.js';
+import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
+import { pokedexDaConta } from './pokedex-conta.js';
+import { progressoConquistas } from './conquistas.js';
 
 export const TOTAL_ESPECIES = 1025;
 export const CARREIRA_KEY = 'pokerpg-carreira-v1';
@@ -110,3 +113,19 @@ export const abatesDaConta = (registroAtual = null, jornadas = carregarCarreira(
   totaisDe(atualizarProgresso(jornadas), registroAtual?.abates);
 // fusão com a nuvem: nunca perde o que um dos lados tem
 export const mesclarProgressoLocal = remoto => salvarProgresso(mesclarProgresso(carregarProgresso(), remoto));
+/* ---- badges (badges.js) ----
+   Montadas do progresso permanente + Pokédex da conta + progresso das gimmicks. Ficam aqui pra tela e a criação
+   pedirem por uma porta só, sem cada uma remontar o contexto. */
+export function badgesDaCarreira(registroAtual = null) {
+  const jornadas = carregarCarreira().jornadas;
+  const progresso = atualizarProgresso(jornadas);
+  const ctx = contextoBadges({
+    abates: totaisDe(progresso, registroAtual?.abates),
+    progresso,
+    dex: pokedexDaConta(jornadas, registroAtual),
+    conquistas: progressoConquistas(jornadas, registroAtual, { abates: totaisDe(progresso, registroAtual?.abates), runs: {} })
+  });
+  return badgesDaConta(ctx);
+}
+// o que a próxima jornada ganha das badges já conquistadas
+export const vantagensDaConta = () => vantagensDe(badgesDaCarreira());

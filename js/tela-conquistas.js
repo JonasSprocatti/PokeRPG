@@ -6,7 +6,9 @@
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
 import { barraTelas } from './navegacao.js';
-import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta } from './carreira.js';
+import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta, badgesDaCarreira } from './carreira.js';
+import { vantagensDe } from './badges.js';
+import { ITEMS } from './dados.js';
 import { runsDeNivelDe } from './progresso-conta.js';
 import { progressoConquistas, ALVOS, MARCOS_ABATES, MODO_NAO_CONTA } from './conquistas.js';
 import { SPR, TYPE_PT, DESBLOQUEIO } from './dados.js';
@@ -79,6 +81,8 @@ export function telaConquistas() {
     ${bloco('🔴 Gigantamax', `Chegar ao <b>nível ${ALVOS.gmaxNivel}</b> com a espécie em <b>${ALVOS.gmaxRuns} jornadas</b> diferentes.`,
       gmax, 'Nenhuma jornada chegou ao nível 50 ainda.')}
 
+    ${secaoBadges()}
+
     ${secaoEspecies()}
 
     <p class="small muted" style="margin-top:18px">Jornadas que contam: <b>${n(jornadas.filter(j => j.dificuldade !== MODO_NAO_CONTA).length)}</b>
@@ -86,6 +90,32 @@ export function telaConquistas() {
   </main>`;
 }
 
+
+/* Badges: conquistas de longo prazo que PAGAM alguma coisa na próxima jornada (badges.js). Mostra as conquistadas
+   primeiro, depois as que já começaram; as que nem começaram ficam escondidas pra tela não virar lista de spoiler. */
+function secaoBadges() {
+  const todas = badgesDaCarreira(G.S?.registro);
+  const ganhas = todas.filter(b => b.completo);
+  const emCurso = todas.filter(b => !b.completo && (b.n > 0 || !b.oculta)).sort((a, b) => b.fracao - a.fracao);
+  const v = vantagensDe(ganhas);
+  const premio = r => {
+    const p = [...Object.entries(r.itens || {}).map(([k, n]) => `${esc(ITEMS[k]?.name || k)}${n > 1 ? ` ×${n}` : ''}`)];
+    if (r.dinheiro) p.push(`₽${r.dinheiro.toLocaleString('pt-BR')}`);
+    if (r.lojaGratis) p.push('loja de graça pra sempre');
+    return p.join(' · ') || '—';
+  };
+  const linha = b => `<li class="${b.completo ? 'feito' : ''}">
+    <span class="sem-sprite badge-ic" aria-hidden="true">${b.icone}</span>
+    <b>${b.completo ? '🏅 ' : ''}${esc(b.nome)}</b>
+    ${b.completo ? '' : barra(b.n, b.alvo)}
+    <small>${esc(b.desc)}<br><i>Dá: ${premio(b.recompensa || {})}</i>${b.completo ? '' : ` · ${n(b.n)}/${n(b.alvo)}`}</small></li>`;
+  return `<h3 class="passo">🏅 Badges</h3>
+    <p class="muted small">Cada badge conquistada vira <b>vantagem na próxima jornada</b>: item ou dinheiro no começo.
+      Dá pra abrir mão delas na criação — quem joga sem ganha <b>10% a mais de pontos</b> no ranking.</p>
+    ${ganhas.length ? `<p class="small">Conquistadas: <b>${n(ganhas.length)}</b> de ${n(todas.length)} · começa cada jornada com
+      ${esc([...Object.entries(v.itens).map(([k, q]) => `${ITEMS[k]?.name || k} ×${q}`), v.dinheiro ? `₽${v.dinheiro}` : ''].filter(Boolean).join(' · ') || '—')}</p>` : ''}
+    <ul class="quase conquistas">${[...ganhas, ...emCurso].map(linha).join('')}</ul>`;
+}
 /* Espécies jogáveis: quantas você já desbloqueou e quanto falta pras próximas. Esta lista já existia na tela de
    criação, mas é aqui que se procura "o que falta pra eu conseguir X" — e é a conquista de conta mais antiga do
    jogo. **Desbloquear só conta em jornada Roguelike**; usar a espécie desbloqueada vale em qualquer modo. */

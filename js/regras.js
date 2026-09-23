@@ -274,7 +274,7 @@ export function jogadorAgePrimeiro(pm, em, velP, velE, sorte = Math.random()) {
    vez, montando o moveset perfeito de graça. Conta pelo que foi USADO (S.discosUsados), não pelo que foi comprado:
    Disco parado na mochila não encarece nada. */
 export const PRECO_DISCO = 8000, AUMENTO_DISCO = 4000;
-export const precoItem = (id, S) => id === 'tm-normal'
+export const precoItem = (id, S) => S?.lojaGratis ? 0 : id === 'tm-normal'
   ? PRECO_DISCO + AUMENTO_DISCO * (S?.discosUsados || 0)
   : (ITEMS[id]?.price || 0);
 
@@ -447,6 +447,8 @@ export function estatisticasDaJornada(S) {
     gen: S.gen || 1, gens: (S.gensVencidas || []).length, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
     // quantas vezes esta jornada seguiu pro mapa seguinte com o MESMO Pokémon (cada uma tira 20% da pontuação)
     continuacoes: S.continuacoes || 0, campeaoDe: S.gensVencidas || [],
+    // badges: jogou sem as vantagens da conta? passou a jornada inteira sem Centro Pokémon?
+    semVantagens: !!S.semVantagens, semCentro: !S.usouCentro,
     maxDinheiro: Math.max(S.maxDinheiro || 0, S.money || 0), gasto: S.gasto || 0,
     shiniesVistos: soma(r.shinies), shiniesAmigos: soma(r.shiniesAmigos),
     /* Cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui — e, desde as
@@ -465,10 +467,12 @@ export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 
    **Mudou aqui, muda no SQL**: `validar_jornada` (supabase/schema.sql) recalcula a pontuação e recusa a jornada
    se o número não bater. */
 export const PENAL_CONTINUACAO = 0.8, PENAL_MINIMO = 0.5;
+// jogar sem as vantagens das badges (itens e dinheiro iniciais) rende 10% a mais: o desafio puro tem de valer algo
+export const BONUS_SEM_VANTAGENS = 1.1;
 export const multContinuacao = n => Math.max(PENAL_MINIMO, PENAL_CONTINUACAO ** (n || 0));
 export const pontuacao = (est, multDificuldade = 1) =>
   Math.round(Object.entries(PESOS_PONTOS).reduce((a, [k, p]) => a + (est[k] || 0) * p, 0)
-    * multDificuldade * multContinuacao(est.continuacoes));
+    * multDificuldade * multContinuacao(est.continuacoes) * (est.semVantagens ? BONUS_SEM_VANTAGENS : 1));
 
 export function formatarTempo(ms) {
   const min = Math.floor(ms / 60000);

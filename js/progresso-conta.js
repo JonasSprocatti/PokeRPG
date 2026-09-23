@@ -27,7 +27,14 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
     const a = j.registro?.abates;
     // `especie`/`nivel` vão junto porque a missão do Gigantamax (nível 50 em N jornadas) também não pode
     // depender de a jornada continuar no histórico
-    const base = { especie: j.especie || null, nivel: j.nivel || 0, dificuldade: j.dificuldade || null };
+    /* Além dos abates, o progresso guarda os números da jornada que alguma conquista precisa. É o "livro-caixa"
+       permanente: a carreira pode perder a jornada, isto não perde. Campo novo aqui = badge novo pode medir sem
+       depender do histórico. */
+    const base = {
+      especie: j.especie || null, nivel: j.nivel || 0, dificuldade: j.dificuldade || null,
+      amigos: j.amigos || 0, alfas: j.alfas || 0, gens: j.gens || 0, genVencida: j.genVencida || 0,
+      semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null
+    };
     p.porJornada[j.id] = a
       ? { ...base, total: a.total || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a[l] || {}) }])) }
       : { ...base, total: 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, {}])) };

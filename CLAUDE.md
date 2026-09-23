@@ -220,6 +220,9 @@ Toda missão de conta paga em **vantagem na próxima run** (ex.: 1.000 do tipo P
 ### 4. Mega Evolução
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 
+### Anti-grind: rota esgotada (só no Roguelike)
+Quando o seu nível passa do **dobro do teto da rota**, aquela rota deixa de dar caçada — nada de farmar em rota de nível baixo. Você continua **entrando e vendo a Pokédex dela** (quem vive ali, taxas, Alfa); o que some é o encontro. **Só no Roguelike**: nos outros modos a rota velha continua valendo.
+
 ### Outras decisões
 - **XP por Gen fica canônico** (Paldea dá ~20% mais XP por ponto de força que Kanto): é dado da franquia, não erro nosso.
 - **Formas de Hisui ficam no Santuário de Galar** (Gen 8, como a PokéAPI classifica), não em Sinnoh.
