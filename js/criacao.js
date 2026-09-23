@@ -1,4 +1,4 @@
-/* ============ render: criação ============ */
+﻿/* ============ render: criação ============ */
 // Tela inicial: passo 1 dificuldade, passo 2 espécie (só os iniciais — REGIOES_INICIAIS — salvo modo com
 // `especiesLivres`), prévia (habilidade, natureza, nível, apelido) e início do jogo.
 import { G, save, nm } from './estado.js';
@@ -7,7 +7,7 @@ import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
 import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO } from './dados.js';
-import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
+import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
 import { carregarCarreira } from './carreira.js';
@@ -80,9 +80,10 @@ function renderGens() {
   const ok = gensLiberadas();
   if (!ok.includes(G.gen)) G.gen = ok[ok.length - 1];
   if (G.dif === 'randomizer') { $('#gens').innerHTML = '<p class="small muted">🎲 O mapa também é sorteado.</p>'; return; }
-  $('#gens').innerHTML = `<div class="gens">${GENS.map(x => { const lib = ok.includes(x.gen), lend = x.rotas[x.rotas.length - 1].lendarios;
+  // o rosto do mapa é o lendário principal — pega da rota FINAL (mapas.lendariosDaGen), nunca da última do array
+  $('#gens').innerHTML = `<div class="gens">${GENS.map(x => { const lib = ok.includes(x.gen), lend = lendariosDaGen(x.gen);
     return `<button class="gen-card ${G.gen === x.gen ? 'on' : ''} ${lib ? '' : 'trancada'}" data-act="gen" data-v="${x.gen}" ${lib ? '' : 'disabled'} aria-pressed="${G.gen === x.gen}" title="${lib ? '' : `Vença a Gen ${x.gen - 1} no Roguelike pra liberar`}">
-      <img src="${SPR(lend[lend.length - 1].id)}" alt="" loading="lazy"><b>${lib ? '' : '🔒 '}Gen ${x.gen}</b><span>${x.regiao}</span></button>`; }).join('')}</div>
+      ${lend.length ? `<img src="${SPR(lend.at(-1).id)}" alt="" loading="lazy">` : ''}<b>${lib ? '' : '🔒 '}Gen ${x.gen}</b><span>${x.regiao}</span></button>`; }).join('')}</div>
     <p class="small muted">${DIFICULDADES[G.dif].fimNaGen ? 'No Roguelike, vencer os lendários de um mapa encerra a run em vitória e libera o mapa da Gen seguinte.' : 'Cada mapa tem 10 rotas; vencer os lendários da última deixa você escolher o próximo mapa, com a mesma equipe.'} Os Pokémon selvagens são os daquela Gen.</p>`;
 }
 // cartões de dificuldade + monta os passos 2 e 3 conforme o modo (Randomizer não escolhe Pokémon nem mapa)

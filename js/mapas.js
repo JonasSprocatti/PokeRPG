@@ -66,6 +66,12 @@ export const genDe = S => S?.gen || 1;
 export const dadosDaGen = g => GENS.find(x => x.gen === g) || GENS[0];
 export const rotasDaGen = g => dadosDaGen(g).rotas;
 export const primeiraRota = g => rotasDaGen(g)[0];
+/* A rota FINAL (a dos lendários) é a marcada com `final`, NÃO a última do array — desde o Santuário, a última é ele,
+   e ele não tem `lendarios`. Ler `rotas.at(-1).lendarios` passou a devolver undefined e quebrava a tela de escolher
+   a próxima Gen no meio da vitória ("Cannot read properties of undefined"), deixando o jogador sem conseguir abrir
+   o save de novo — bug real, relatado por um testador ao fechar a Gen 2. Quem precisa dos lendários usa isto. */
+export const rotaFinalDaGen = g => rotasDaGen(g).find(z => z.final) || rotasDaGen(g).at(-1);
+export const lendariosDaGen = g => rotaFinalDaGen(g)?.lendarios || [];
 
 // Nível de um mapa quando você entra nele já forte (fora do Roguelike): o que ia de 2 a 75 passa a ir do seu nível
 // até 100, mantendo a proporção. base ≤ 5 (começo de jornada) = níveis originais.

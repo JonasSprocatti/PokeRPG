@@ -11,7 +11,7 @@ import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
 import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES } from './carreira.js';
 import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
 import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
-import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike } from './mapas.js';
+import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, fmt, store, novoId } from './util.js';
 
@@ -134,7 +134,7 @@ export function telaEscolherGen() {
   $('#app').innerHTML = `<main class="create fim">
     <h1>🏆 Gen ${g} fechada!</h1>
     <p class="lead">Você venceu os lendários de ${dadosDaGen(g).regiao}. Pra qual mapa agora? Você leva a equipe, a mochila e o dinheiro; os níveis do mapa novo começam no seu (${S.player.level}) e sobem até o 100. <b>${feitas.length} de ${TOTAL_GENS}</b> Gens fechadas nesta jornada.</p>
-    <div class="gens">${GENS.map(x => { const lend = x.rotas[x.rotas.length - 1].lendarios, fechada = feitas.includes(x.gen);
-      return `<button class="gen-card ${fechada ? 'feita' : ''}" data-act="proxima-gen" data-v="${x.gen}"><img src="${SPR(lend[lend.length - 1].id)}" alt="" loading="lazy"><b>Gen ${x.gen}</b><span>${x.regiao}</span><small>${fechada ? '✓ fechada (dá pra jogar de novo)' : `${x.rotas.length} rotas`}</small></button>`; }).join('')}</div>
+    <div class="gens">${GENS.map(x => { const lend = lendariosDaGen(x.gen), fechada = feitas.includes(x.gen);
+      return `<button class="gen-card ${fechada ? 'feita' : ''}" data-act="proxima-gen" data-v="${x.gen}">${lend.length ? `<img src="${SPR(lend.at(-1).id)}" alt="" loading="lazy">` : ''}<b>Gen ${x.gen}</b><span>${x.regiao}</span><small>${fechada ? '✓ fechada (dá pra jogar de novo)' : `${x.rotas.filter(z => !z.posVitoria).length} rotas`}</small></button>`; }).join('')}</div>
     <div class="subrow" style="margin-top:18px"><button class="btn ghost" data-act="carreira">📊 Ver carreira</button><button class="btn ghost" data-act="new">Encerrar a jornada aqui</button></div></main>`;
 }

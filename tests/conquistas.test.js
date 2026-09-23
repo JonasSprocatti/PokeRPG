@@ -1,0 +1,65 @@
+// Conquistas da conta (js/conquistas.js): os contadores que desbloqueiam as gimmicks. A regra que atravessa tudo
+// é "só conta o que VOCÊ fez" — golpe final do aliado não vale.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { registrarAbate, somarAbates, runsDeNivel, progressoConquistas, teraLiberada, megaLiberada, zLiberado, gmaxLiberado, ALVOS } from '../js/conquistas.js';
+
+const golpe = (name, type) => ({ name, type });
+
+test('abate registra tipo do alvo, minha espécie, golpe e elemento', () => {
+  const S = {};
+  registrarAbate(S, { porMim: true, tiposDoAlvo: ['fire', 'flying'], minhaEspecie: 'pikachu', golpe: golpe('thunderbolt', 'electric') });
+  const a = S.registro.abates;
+  assert.deepEqual(a.tipoAlvo, { fire: 1, flying: 1 });   // dual-type conta pros dois
+  assert.deepEqual(a.especie, { pikachu: 1 });
+  assert.deepEqual(a.golpe, { thunderbolt: 1 });
+  assert.deepEqual(a.elemento, { electric: 1 });
+});
+
+test('golpe final do aliado NÃO conta', () => {
+  const S = {};
+  assert.equal(registrarAbate(S, { porMim: false, tiposDoAlvo: ['fire'], minhaEspecie: 'pikachu', golpe: golpe('ember', 'fire') }), null);
+  assert.equal(S.registro, undefined);
+});
+
+test('somarAbates junta a carreira com a run em andamento', () => {
+  const j1 = { abates: { tipoAlvo: { fire: 120 }, especie: { pikachu: 5 }, golpe: {}, elemento: {} } };
+  const j2 = { abates: { tipoAlvo: { fire: 70, water: 3 }, especie: { pikachu: 2 }, golpe: {}, elemento: {} } };
+  const atual = { abates: { tipoAlvo: { fire: 10 }, especie: {}, golpe: {}, elemento: {} } };
+  const s = somarAbates([j1, j2, atual, undefined, {}]);
+  assert.deepEqual(s.tipoAlvo, { fire: 200, water: 3 });
+  assert.deepEqual(s.especie, { pikachu: 7 });
+});
+
+test('Gigantamax sai do histórico: jornadas em que a espécie chegou ao nível 50', () => {
+  const j = (especie, nivel) => ({ especie, nivel });
+  const r = runsDeNivel([j('charmander', 50), j('charmander', 49), j('charmander', 72), j('pikachu', 60), j('pikachu', 10)]);
+  assert.deepEqual(r, { charmander: 2, pikachu: 1 });
+  assert.equal(ALVOS.gmaxNivel, 50);
+  assert.equal(ALVOS.gmaxRuns, 25);
+});
+
+test('progresso diz o que já liberou e o quanto falta', () => {
+  const jornadas = [{ especie: 'pikachu', nivel: 50, registro: { abates: {
+    tipoAlvo: { fire: ALVOS.tera, water: 10 },
+    especie: { pikachu: ALVOS.mega },
+    golpe: { thunderbolt: ALVOS.zGolpe, 'quick-attack': 3 },
+    elemento: { electric: 5 }
+  } } }];
+  const p = progressoConquistas(jornadas, null);
+  assert.equal(teraLiberada(p, 'fire'), true);
+  assert.equal(teraLiberada(p, 'water'), false);
+  assert.equal(teraLiberada(p, 'grass'), false);              // nunca derrotou nenhum: nem aparece na lista
+  assert.equal(megaLiberada(p, 'pikachu'), true);
+  assert.equal(zLiberado(p, golpe('thunderbolt', 'electric')), true);
+  assert.equal(zLiberado(p, golpe('quick-attack', 'normal')), false);
+  assert.equal(gmaxLiberado(p, 'pikachu'), false);            // 1 run de 25
+  // a lista vem ordenada do mais perto pro mais longe, com a fração pra barra de progresso
+  assert.deepEqual(p.tera.map(x => x.chave), ['fire', 'water']);
+  assert.equal(p.tera[1].fracao, 10 / ALVOS.tera);
+});
+
+test('a run em andamento entra no progresso (não espera a jornada acabar)', () => {
+  const emAndamento = { abates: { tipoAlvo: { fire: ALVOS.tera }, especie: {}, golpe: {}, elemento: {} } };
+  assert.equal(teraLiberada(progressoConquistas([], emAndamento), 'fire'), true);
+});

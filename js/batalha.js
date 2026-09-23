@@ -23,6 +23,7 @@ import {
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
+import { registrarAbate } from './conquistas.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
@@ -235,7 +236,11 @@ export async function turn(action) {
         // recuo (flinch) só vale em quem ainda não agiu neste turno
         await vez('e'); await useMove(E, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo));
       } else {
+        const hpAntes = E.hp;
         await vez(idVez(a.quem)); await useMove(a.quem, E, a.golpe, i < posicao(E));
+        // quem deu o golpe final (e com qual golpe): é o que as conquistas de conta contam — e elas só contam o
+        // que VOCÊ fez, não o que o aliado fez (conquistas.js / registrarAbate)
+        if (hpAntes > 0 && E.hp <= 0) B.abate = { porMim: a.quem === P, golpe: a.golpe };
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
     }
@@ -268,6 +273,10 @@ async function win() {
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
   registrar(S, 'derrotados', E.data.speciesName, E.id);
+  // conquistas da conta (conquistas.js): só conta o que VOCÊ finalizou, com qual golpe e sendo qual espécie.
+  // `B.abate` é preenchido no laço do turno; sem ele (queda por veneno, armadilha, recuo) ninguém leva o crédito.
+  if (B.abate?.porMim) registrarAbate(S, { porMim: true, tiposDoAlvo: E.data.types, minhaEspecie: P.data.speciesName, golpe: B.abate.golpe });
+  B.abate = null;
   await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
   await gainExp(xp);
   // aliados em pé ganham o mesmo XP e EVs (como o Exp. Share dos jogos novos)
