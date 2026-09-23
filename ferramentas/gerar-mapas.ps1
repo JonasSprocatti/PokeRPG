@@ -33,15 +33,20 @@ foreach ($s in $r.data.s) {
 # original. `n` continua sendo a ESPÉCIE (é a chave do registro/Pokédex) e `f` guarda o nome da forma pra mostrar.
 # Fora: formas "totem", que são só versões grandes de encontro especial.
 $qf = @'
-{ f: pokemon_v2_pokemon(where:{is_default:{_eq:false}, name:{_regex:"-(alola|galar|hisui|paldea)$"}}, order_by:{id:asc})
+{ f: pokemon_v2_pokemon(where:{is_default:{_eq:false}, name:{_regex:"-(alola|galar|hisui|paldea)"}}, order_by:{id:asc})
   { id name pokemon_v2_pokemonspecy { name capture_rate is_legendary is_mythical } } }
 '@
 $rf = Invoke-RestMethod -Uri 'https://beta.pokeapi.co/graphql/v1beta' -Method Post -Body (@{ query = $qf } | ConvertTo-Json -Compress) -ContentType 'application/json' -TimeoutSec 180
 $GEN_DA_FORMA = @{ alola = 7; galar = 8; hisui = 8; paldea = 9 }
 $formas = @()
 foreach ($f in $rf.data.f) {
-  if ($f.name -like '*totem*') { continue }
-  $sufixo = ($f.name -split '-')[-1]
+  # o nome nem sempre TERMINA na região: as três raças de Tauros de Paldea (tauros-paldea-combat-breed) e o
+  # Darmanitan de Galar (darmanitan-galar-standard) vêm com sufixo depois. Fora da lista:
+  #   totem  = versão gigante de encontro especial, não é forma regional
+  #   -cap   = Pikachu de boné (fantasia, não região)
+  #   -zen   = o estado transformado do Darmanitan, que só existe em batalha (a forma dele é a -standard)
+  if ($f.name -like '*totem*' -or $f.name -like '*-cap' -or $f.name -like '*-zen') { continue }
+  $sufixo = @('alola', 'galar', 'hisui', 'paldea') | Where-Object { $f.name -like "*-$_*" } | Select-Object -First 1
   $formas += [pscustomobject]@{
     id = [int]$f.id; nome = $f.name; especie = $f.pokemon_v2_pokemonspecy.name; gen = $GEN_DA_FORMA[$sufixo]
     captura = [int]$f.pokemon_v2_pokemonspecy.capture_rate

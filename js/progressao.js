@@ -15,6 +15,8 @@ import { loadMove, loadSpecies, loadPokemon, loadEvo, loadGrowth } from './api.j
 import { esc, fmt, offline } from './util.js';
 
 const ehJogador = M => M === G.S.player;
+// chance de um aliado simplesmente não querer o golpe novo quando já sabe 4 (ver `aprender`)
+export const CHANCE_ALIADO_RECUSA = 0.5;
 
 export async function gainExp(xp) {
   const P = G.S.player, GR = G.S.meta.growth;
@@ -52,9 +54,11 @@ export async function aprender(M, ref, escolher = ehJogador(M)) {
   const mv = await loadMove(ref.url);
   if (M.moves.length < 4) { M.moves.push({ ...mv, ppLeft: mv.pp }); render(); await say(`${nm(M)} aprendeu ${esc(fmt(mv.name))}!`, 'good'); return true; }
   if (!escolher) {
-    // aliado: troca sozinho o golpe de menor poder, e só se o novo for melhor
-    const i = M.moves.reduce((mi, m, j, arr) => (m.power || 0) < (arr[mi].power || 0) ? j : mi, 0);
-    if ((mv.power || 0) <= (M.moves[i].power || 0)) return false;
+    /* Aliado aprendendo sozinho: ele decide na hora, como um bicho decidiria — metade das vezes topa e troca um
+       golpe QUALQUER, metade das vezes prefere ficar com o que já sabe. Antes ele sempre trocava o de menor poder
+       pelo novo (se o novo fosse mais forte): dava um moveset ótimo, previsível, e sem nenhum "jeito" próprio. */
+    if (Math.random() < CHANCE_ALIADO_RECUSA) { await say(`${nm(M)} pensou um pouco e preferiu continuar com os golpes que já sabe.`, 'muted'); return false; }
+    const i = Math.floor(Math.random() * M.moves.length);
     const velho = M.moves[i]; M.moves[i] = { ...mv, ppLeft: mv.pp }; render();
     await say(`${nm(M)} esqueceu ${esc(fmt(velho.name))} e aprendeu ${esc(fmt(mv.name))}!`, 'good');
     return true;

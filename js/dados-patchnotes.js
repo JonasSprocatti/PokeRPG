@@ -2,6 +2,18 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.2', data: '2026-09-23', titulo: 'Golpes no lugar certo', piada: 'O Flame Charge passou anos dando carona de velocidade para o adversário. Pedimos desculpas a todos os Rapidash que perderam corridas por isso.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Flame Charge (e todo golpe que dá bônus a quem usa: Power-Up Punch, Ancient Power, Charge Beam…) estava aumentando o atributo do OPONENTE. Agora o bônus vai para quem usou o golpe — e os golpes que cobram um preço de quem usa, como Close Combat e Draco Meteor, continuam baixando os atributos do próprio usuário.',
+        'Evoluir não reescreve mais o moveset inteiro: a evolução entrega o golpe que ela realmente concede (o Stomp do Exeggutor, o King\'s Shield do Aegislash), e não toda a lista de golpes que a forma nova saberia se tivesse acabado de nascer.',
+        'O Disco Técnico não funcionava em jornadas começadas antes da atualização: a ficha do Pokémon guarda uma cópia dos dados da espécie, e essa cópia não tinha a lista de golpes de MT. Agora ela é atualizada na hora, com internet.'
+      ] },
+      { nome: 'Novidades', itens: [
+        'Aliado que aprende um golpe sozinho agora tem vontade própria: metade das vezes ele prefere ficar com o que já sabe, e quando troca, troca um golpe qualquer — nada de sempre descartar o mais fraco pelo mais forte.',
+        'As três raças do Tauros de Paldea e o Darmanitan de Galar entraram nos Santuários, junto das outras formas regionais (agora são 57).'
+      ] }
+    ] },
   { versao: '2.1', data: '2026-09-23', titulo: 'A run não precisa acabar na vitória', piada: 'Os lendários abriram as portas do Santuário e serviram petisco. Continuam medindo você de cima a baixo, mas agora com cortesia.',
     secoes: [
       { nome: 'Novidades', itens: [

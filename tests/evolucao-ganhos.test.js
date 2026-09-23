@@ -1,4 +1,4 @@
-// O que a EVOLUÇÃO entrega junto: os golpes de evolução (regras.golpesDaEvolucao) e a habilidade no mesmo slot
+﻿// O que a EVOLUÇÃO entrega junto: os golpes de evolução (regras.golpesDaEvolucao) e a habilidade no mesmo slot
 // (habilidades.habilidadeDaEvolucao). Os dois nasceram de bug real: o Aegislash evoluiu sem aprender King's Shield,
 // porque só olhávamos golpe do nível exato — e a habilidade era escolhida por índice cru, misturando oculta com normal.
 import { test } from 'node:test';
@@ -8,11 +8,19 @@ import { habilidadeDaEvolucao } from '../js/habilidades.js';
 
 const g = (name, level) => ({ name, url: `u/${name}`, level });
 
-test('golpe de evolução (nível 0 ou 1 novo) entra mesmo evoluindo lá em cima', () => {
+test('golpe de evolução (nível 0) entra mesmo evoluindo lá em cima', () => {
   const antes = [g('fury-cutter', 1), g('iron-defense', 12)];                      // Doublade
-  const depois = [g('kings-shield', 1), g('fury-cutter', 1), g('iron-defense', 12)]; // Aegislash
+  const depois = [g('kings-shield', 0), g('fury-cutter', 1), g('iron-defense', 12)]; // Aegislash
   const ganhos = golpesDaEvolucao(antes, depois, 37).map(m => m.name);
   assert.deepEqual(ganhos, ['kings-shield']);
+});
+
+test('nível 1 NÃO é golpe de evolução: é a lista de quem nasce agora', () => {
+  // caso real (Exeggcute → Exeggutor): 1 golpe no nível 0 e 17 no nível 1. Pegar os dois reescrevia o moveset
+  // inteiro numa evolução só — foi bug relatado em jogo.
+  const antes = [g('barrage', 1), g('hypnosis', 1)];
+  const depois = [g('stomp', 0), ...['absorb', 'seed-bomb', 'leaf-storm', 'psyshock', 'wood-hammer'].map(n => g(n, 1))];
+  assert.deepEqual(golpesDaEvolucao(antes, depois, 30).map(m => m.name), ['stomp']);
 });
 
 test('golpe que a forma antiga já aprendia não é reoferecido', () => {
@@ -28,8 +36,8 @@ test('o golpe do nível atual continua entrando, e sem repetir', () => {
   assert.equal(golpesDaEvolucao([], [g('nada', 0), g('nada', 0)], 5).length, 1);
 });
 
-test('nível 0 e nível 1 contam os dois como "de evolução"', () => {
-  assert.deepEqual(golpesDaEvolucao([], [g('a', 0), g('b', 1), g('c', 2)], 50).map(m => m.name), ['a', 'b']);
+test('só o nível 0 conta como golpe de evolução', () => {
+  assert.deepEqual(golpesDaEvolucao([], [g('a', 0), g('b', 1), g('c', 2)], 50).map(m => m.name), ['a']);
 });
 
 const hab = (name, hidden = false) => ({ name, hidden });

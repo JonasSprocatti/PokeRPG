@@ -81,6 +81,14 @@ function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.
 export function fimDaRodada(m) { if (!m.vol) return; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; }
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
+/* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
+     'damage-lower' → mexe nos atributos do ALVO (Crunch, Acid Spray);
+     'damage-raise' → mexe nos do USUÁRIO — inclusive quando o golpe baixa os DELE MESMO (Close Combat, Draco
+                      Meteor, Overheat). Por isso a regra não é o sinal da mudança, é a categoria.
+   Já foi bug real, relatado em jogo: o código comparava com 'damage+raise' (com +), string que a API nunca devolve,
+   então Flame Charge, Power-Up Punch, Ancient Power e companhia davam o bônus pro OPONENTE. Aceita as duas grafias
+   pra não depender de qual delas a API usa. */
+export const mudaOUsuario = meta => /[-+]raise$/.test(meta?.cat || '');
 export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
   const h = hab(m);
   for (const c of mudancas) {
@@ -228,7 +236,7 @@ async function golpeDeStatus(u, t, g, selfT, ctx) {
     if (u.hp >= u.stats.hp) await ctx.say(`O HP de ${ctx.nome(u)} já está cheio!`);
     else { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); await ctx.say(`${ctx.nome(u)} recuperou HP.`, 'good'); }
   }
-  if (g.stats.length) { fez = true; const alvo = selfT || meta.cat === 'damage+raise' ? u : t; await mudarEstagios(alvo, g.stats, ctx, u); }
+  if (g.stats.length) { fez = true; const alvo = selfT || mudaOUsuario(meta) ? u : t; await mudarEstagios(alvo, g.stats, ctx, u); }
   if (meta.ailment && meta.ailment !== 'none') {
     fez = true;
     if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(selfT ? u : t, meta.ailment, ctx, true, u);
@@ -367,8 +375,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo
   const chance = p => Math.random() * 100 < p * (hu.chanceSecundaria || 1);
   if (g.stats.length && chance(meta.statChance || 100)) {
-    if (meta.cat === 'damage+raise' && u.hp > 0) await mudarEstagios(u, g.stats, ctx, u);
-    else if (meta.cat !== 'damage+raise' && t.hp > 0 && !ht.semSecundario) await mudarEstagios(t, g.stats, ctx, u);
+    if (mudaOUsuario(meta) && u.hp > 0) await mudarEstagios(u, g.stats, ctx, u);
+    else if (!mudaOUsuario(meta) && t.hp > 0 && !ht.semSecundario) await mudarEstagios(t, g.stats, ctx, u);
   }
   if (t.hp > 0 && !ht.semSecundario) {
     if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx, false, u);

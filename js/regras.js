@@ -61,16 +61,18 @@ export function defaultMoves(list, level) {
   return out.reverse();
 }
 /* Golpes que chegam JUNTO com a evolução. Duas fontes:
-   - os que a espécie nova aprende "de cara" (nível 0 ou 1) e a forma anterior NÃO aprendia: é assim que a PokéAPI
-     guarda golpe de evolução (King's Shield do Aegislash, por exemplo);
+   - NÍVEL 0: é exatamente assim que a PokéAPI marca "aprende ao evoluir" (King's Shield do Aegislash, Stomp do
+     Exeggutor). Só conta se a forma anterior não aprendia;
    - o golpe do nível atual, que já era o comportamento antigo.
+   **Nível 1 NÃO entra**, e isso foi bug real: a primeira versão pegava `level <= 1`, mas nível 1 é a lista do que a
+   espécie saberia se nascesse agora — o Exeggutor tem 17 golpes lá, então uma evolução reescrevia o moveset inteiro
+   (relatado em jogo). O golpe de evolução de verdade é um só, e está no nível 0.
    Sem a primeira fonte, quem evoluía acima do nível 1 (ou seja, todo mundo) nunca aprendia o golpe assinatura da
-   forma nova — foi bug real com o Aegislash. Golpe que a forma antiga já aprendia não conta: seria repetir o que
-   você já viu (ou já escolheu esquecer). */
+   forma nova. Golpe que a forma antiga já aprendia não conta: seria repetir o que você já viu (ou já esqueceu). */
 export function golpesDaEvolucao(antes = [], depois = [], nivel) {
   const tinha = new Set(antes.map(m => m.name)), out = [];
   for (const m of depois) {
-    const vale = m.level <= 1 ? !tinha.has(m.name) : m.level === nivel;
+    const vale = m.level === 0 ? !tinha.has(m.name) : m.level === nivel;
     if (vale && !out.some(x => x.name === m.name)) out.push(m);
   }
   return out;

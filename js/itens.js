@@ -1,4 +1,4 @@
-/* ============ itens ============ */
+﻿/* ============ itens ============ */
 // Mochila (G.S.bag = { idDoItem: qtd }). useItem devolve true se o item foi gasto (em batalha, gasta o turno).
 // Funciona em você e nos aliados: com mais de um alvo possível, pergunta "Usar em quem?" (itemTemEfeito decide quem conta).
 import { G, nm, rotulo, ladoJogador, zone } from './estado.js';
@@ -8,7 +8,8 @@ import { changeStats } from './efeitos.js';
 import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.js';
 import { ITEMS, ST_SHORT } from './dados.js';
 import { heal, itemTemEfeito, golpesParaEnsinar } from './regras.js';
-import { esc, fmt } from './util.js';
+import { loadPokemon } from './api.js';
+import { esc, fmt, offline } from './util.js';
 
 // mensagem quando ninguém da equipe se beneficiaria
 const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
@@ -61,6 +62,19 @@ async function usarRepelente(id) {
    Técnico ensina golpe de MT/tutor/herança, que nunca apareceria subindo de nível. Os dois perguntam em quem e
    qual golpe, e só são gastos se o golpe entrar mesmo no moveset (aprender devolve true).
    O que cada um oferece sai do cache da espécie (api.slimPokemon): `learnset.list` e `learnset.extras`. */
+/* A ficha de cada Pokémon guarda uma CÓPIA dos dados da espécie, tirada quando ele entrou na jornada (S.player.data
+   e A.data) — não é lida do cache a cada uso. Então uma jornada começada antes de `learnset.extras` existir NUNCA
+   teria a lista de MT/tutor/herança, por mais atualizado que o cache estivesse: foi exatamente por isso que o Disco
+   Técnico não fazia nada. Aqui a ficha é atualizada na hora (uma vez, com internet) e o save guarda o resultado. */
+async function garantirPokedex(M) {
+  if (Array.isArray(M.data?.learnset?.extras)) return true;
+  if (offline()) return false;
+  try {
+    const novo = await loadPokemon(M.id);
+    if (Array.isArray(novo?.learnset?.extras)) { M.data = { ...M.data, learnset: novo.learnset }; return true; }
+  } catch (e) { console.error(e); }
+  return false;
+}
 async function ensinarGolpe(id) {
   const S = G.S, it = ITEMS[id];
   const equipe = ladoJogador().filter(M => M.hp > 0);
@@ -70,6 +84,10 @@ async function ensinarGolpe(id) {
       [...equipe.map((A, j) => ({ label: `${esc(rotulo(A))} · Nv. ${A.level} · ${A.moves.map(m => esc(fmt(m.name))).join(', ')}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
     if (i < 0) return false;
     M = equipe[i];
+  }
+  if (it.ensina === 'pokedex' && !await garantirPokedex(M)) {
+    await say(`Não deu pra consultar a Pokédex de ${nm(M)} agora. O Disco Técnico precisa de internet UMA vez pra buscar a lista de golpes de MT, tutor e herança dessa espécie; depois disso funciona offline.`, 'muted');
+    return false;
   }
   const lista = golpesParaEnsinar(it.ensina, M);
   if (!lista) { await say(`Não deu pra consultar a Pokédex de ${nm(M)} agora. Conecte uma vez e tente de novo — depois disso funciona offline.`, 'muted'); return false; }
