@@ -2,6 +2,18 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.9', data: '2026-09-23', titulo: 'Seus golpes, suas regras', piada: 'O tutor de golpes cobra caro, mas atende aliado também. Ele só pede que ninguém pergunte como um Magikarp aprendeu Bounce.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Escama do Coração (₽5.000): faz o Pokémon relembrar um golpe que ele já podia ter aprendido subindo de nível e que você deixou passar. Também aparece, bem raramente, entre os itens achados explorando.',
+        'Disco Técnico (₽8.000, só na loja): ensina um golpe que a Pokédex diz que a espécie aprende por MT, tutor ou herança — golpes que nunca apareceriam subindo de nível. Cada Disco usado deixa o próximo ₽4.000 mais caro.',
+        'Os dois funcionam em você e em qualquer aliado, e é você quem escolhe qual golpe sai pra dar lugar ao novo.'
+      ] },
+      { nome: 'Correções', itens: [
+        'As abas ⚔ Luta / 💬 Registro / 📋 Painéis do celular foram removidas: elas escondiam dois terços da tela, então ver a ficha de um aliado no meio da luta obrigava a perder a batalha de vista. Agora a cena fica presa no topo e o resto da página (golpes, registro, ficha, aliados, mochila) rola normalmente por baixo.',
+        'Os Alfas que eram formas evoluídas de inicial estavam anunciando um nome e aparecendo com o corpo de outro Pokémon. Agora o nome e a espécie do Alfa mudam sempre juntos.'
+      ] }
+    ] },
   { versao: '1.8', data: '2026-09-23', titulo: 'O jogo inteiro no bolso (e os iniciais em greve)', piada: 'Os iniciais se recusaram a continuar aparecendo no mato depois de tudo que passaram. Pikachu e Eevee furaram a greve e seguem trabalhando normalmente.',
     secoes: [
       { nome: 'Novidades', itens: [

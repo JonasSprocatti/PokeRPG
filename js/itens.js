@@ -5,9 +5,9 @@ import { G, nm, rotulo, ladoJogador, zone } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
-import { gainExp, gainExpAliado, evoluirComItem } from './progressao.js';
+import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.js';
 import { ITEMS, ST_SHORT } from './dados.js';
-import { heal, itemTemEfeito } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar } from './regras.js';
 import { esc, fmt } from './util.js';
 
 // mensagem quando ninguém da equipe se beneficiaria
@@ -57,6 +57,38 @@ async function usarRepelente(id) {
     : `Você usa ${it.name}. Por ${it.passos} explorações, nenhum selvagem chega perto.`, 'good');
   return true;
 }
+/* Itens de golpe (dados.ITENS_GOLPE): Escama do Coração relembra golpe de NÍVEL que você deixou passar; Disco
+   Técnico ensina golpe de MT/tutor/herança, que nunca apareceria subindo de nível. Os dois perguntam em quem e
+   qual golpe, e só são gastos se o golpe entrar mesmo no moveset (aprender devolve true).
+   O que cada um oferece sai do cache da espécie (api.slimPokemon): `learnset.list` e `learnset.extras`. */
+async function ensinarGolpe(id) {
+  const S = G.S, it = ITEMS[id];
+  const equipe = ladoJogador().filter(M => M.hp > 0);
+  let M = equipe[0];
+  if (equipe.length > 1) {
+    const i = await ask(`Usar <b>${it.name}</b> em quem?`,
+      [...equipe.map((A, j) => ({ label: `${esc(rotulo(A))} · Nv. ${A.level} · ${A.moves.map(m => esc(fmt(m.name))).join(', ')}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    if (i < 0) return false;
+    M = equipe[i];
+  }
+  const lista = golpesParaEnsinar(it.ensina, M);
+  if (!lista) { await say(`Não deu pra consultar a Pokédex de ${nm(M)} agora. Conecte uma vez e tente de novo — depois disso funciona offline.`, 'muted'); return false; }
+  if (!lista.length) {
+    await say(it.ensina === 'relembrar'
+      ? `${nm(M)} não tem nenhum golpe de nível pra relembrar: você já sabe tudo o que dava pra aprender até o nível ${M.level}.`
+      : `A Pokédex não lista nenhum golpe novo de MT, tutor ou herança pra ${nm(M)} — ele já sabe todos os que poderia.`, 'muted');
+    return false;
+  }
+  const i = await ask(`<b>${it.name}</b> em ${nm(M)}: qual golpe?`,
+    [...lista.map((m, j) => ({ label: `${esc(fmt(m.name))}${m.level ? ` (nível ${m.level})` : m.metodo === 'egg' ? ' (herança)' : m.metodo === 'tutor' ? ' (tutor)' : ' (MT)'}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+  if (i < 0) return false;
+  if (!await aprender(M, lista[i], true)) return false;   // desistiu de esquecer um golpe: o item não é gasto
+  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+  if (it.ensina === 'pokedex') S.discosUsados = (S.discosUsados || 0) + 1; // o próximo Disco custa mais (regras.precoItem)
+  render();
+  return true;
+}
+
 // devolve pra mochila o item que alguém está segurando (botão da ficha)
 export async function tirarItem(M) {
   if (!M?.item) return;
@@ -76,6 +108,7 @@ export async function useItem(id, inBattle) {
   if (it.segurar) { await say(`${it.name} fica na mochila: é gasto sozinho quando a evolução que pede ele acontecer.`, 'muted'); return false; }
   if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
   if (it.repelente) { if (inBattle) { await say('Repelente só funciona explorando.'); return false; } return usarRepelente(id); }
+  if (it.ensina) { if (inBattle) { await say('Dá pra mexer nos golpes só fora da batalha.'); return false; } return ensinarGolpe(id); }
   const equipe = ladoJogador();
   const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
   if (!alvos.length) {

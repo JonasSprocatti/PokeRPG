@@ -70,7 +70,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
   A ficha marca quais estão ativas.
 
 ### No celular
-A batalha vira uma tela fixa: a **cena fica presa no topo** e os **golpes na parte de baixo**, sem rolagem para agir. Embaixo da cena, três abas dizem o que ocupa o meio: **⚔ Luta** (registro curto), **💬 Registro** (o registro inteiro) e **📋 Painéis** (ficha, missões, aliados e mochila).
+Na batalha, a **cena fica presa no topo** (os dois lados, com HP e status de toda a equipe) enquanto você rola o resto da página: golpes, registro, ficha, aliados, missões e mochila continuam todos ali, um embaixo do outro. Nada fica escondido atrás de aba nenhuma — você vê o Pokémon enquanto escolhe o golpe e alcança a ficha de qualquer aliado sem sair da luta.
 
 ### 🎯 Caça Shiny
 Modo opcional, ligado **no começo da jornada**. Quando você revela todas as espécies de uma rota (10 derrotados de cada), pode escolher **uma delas para ser a única que aparece ali** — bom para caçar um shiny ou farmar uma espécie. Dá para trocar ou parar a caça quando quiser, rota por rota. **Muda só o Pokémon selvagem:** treinadores, itens, dinheiro e as frases de ambientação continuam com a mesma chance.
@@ -99,6 +99,14 @@ Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, 
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
 - **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
 - **⚙ Ajustes → Fonte:** escolha entre 6 fontes (padrão, Atkinson Hyperlegible para máxima legibilidade, Lexend, Andika, Nunito e uma monoespaçada). Cada opção é mostrada já na própria fonte, vale para o jogo inteiro e fica salva neste navegador.
+
+### 📀 Mexer nos golpes (Escama do Coração e Disco Técnico)
+Um Pokémon carrega **4 golpes**, e a cada nível você decide o que esquecer. Dois itens deixam você voltar atrás — e valem tanto para você quanto para **qualquer aliado** (você escolhe em quem usar e qual golpe ele esquece):
+
+- **Escama do Coração** (₽5.000): faz relembrar um golpe que a espécie aprende **subindo de nível** até o seu nível atual e que você deixou passar. Além da loja, ela aparece raramente entre os itens achados explorando (3% dos achados).
+- **Disco Técnico** (₽8.000, só na loja): ensina um golpe que a **Pokédex** diz que a espécie aprende por **MT, tutor ou herança** — golpes que nunca apareceriam subindo de nível. Cada Disco **usado** deixa o próximo ₽4.000 mais caro, então montar o moveset perfeito no fim da run custa de verdade.
+
+O jogo só mostra o que aquele Pokémon realmente pode aprender, e nunca repete um golpe que ele já sabe.
 
 ### Evoluções
 Além de subir de nível, os Pokémon evoluem como nos jogos:

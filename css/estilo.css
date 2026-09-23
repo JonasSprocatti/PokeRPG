@@ -1,4 +1,4 @@
-:root{
+﻿:root{
   --ink:#161A33; --panel:#1F2447; --panel2:#282E5A; --line:#394180;
   --text:#EEE8D8; --muted:#A3A6C8; --yellow:#F7C548; --grass:#5FB36A; --red:#E4572E;
   --paper:#F4EFE3; --paper-ink:#1C1F3A;
@@ -143,7 +143,6 @@ table.ranking td.jogador{white-space:nowrap}
    Larguras vêm de --larg-esq/--larg-dir (paineis.js, arrastando a divisória). */
 .game{display:grid;grid-template-columns:var(--larg-esq,340px) 10px minmax(420px,1fr) 10px var(--larg-dir,340px);gap:0 6px;padding:20px;max-width:1800px;margin:0 auto;align-items:start}
 .stage{display:grid;gap:14px;min-width:0}
-.abas-mob{display:none} /* só no celular (bloco "celular" mais abaixo) */
 .zona{display:grid;gap:14px;align-content:start;min-width:0;min-height:60px;border-radius:14px}
 .zona.vazia{border:2px dashed var(--line);display:grid;place-items:center}
 .zona.vazia::before{content:'Arraste um painel pra cá';color:var(--muted);font-size:14px}
@@ -166,9 +165,9 @@ table.ranking td.jogador{white-space:nowrap}
 .painel[data-painel="log"] .log{height:auto;flex:1;min-height:0}
 /* celular: uma coluna, cena primeiro; reordenar pelos botões ▲▼⇄ (arrastar no toque é ruim) */
 /* ==================== celular / tela estreita ====================
-   Uma coluna só. A CENA e as AÇÕES ficam presas na tela (a .stage inteira é sticky no topo), então dá pra ver o
-   Pokémon e escolher o golpe sem rolar; o registro e os painéis rolam por baixo. As abas (paineis.js ABAS_MOB)
-   dizem o que ocupa o meio: registro curto (luta), registro inteiro (registro) ou os painéis. */
+   Uma coluna só. Na batalha, apenas a CENA fica presa no topo (compacta), então dá pra ver o Pokémon enquanto
+   escolhe o golpe; golpes, registro e painéis rolam por baixo, todos alcançáveis. Nada é escondido — as abas que
+   trocavam o que aparecia no meio foram removidas (ver paineis.js). */
 @media(max-width:880px){
   .game{grid-template-columns:1fr;gap:14px}
   .stage{order:-1}
@@ -177,18 +176,17 @@ table.ranking td.jogador{white-space:nowrap}
   .painel-cab .alca{display:none}
   .painel-corpo{resize:none}
   .zona.vazia{display:none}
-  .abas-mob{display:flex;gap:6px}
-  .aba-mob{flex:1;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:8px 6px;color:var(--muted);font:700 13px var(--display)}
-  .aba-mob[aria-pressed="true"]{border-color:var(--yellow);color:var(--text);background:var(--panel)}
   /* fora da batalha: o botão de explorar/centro/loja acompanha a rolagem */
   #actions{position:sticky;bottom:0;z-index:7;background:var(--ink);padding:10px 0 calc(10px + env(safe-area-inset-bottom));margin-top:-4px}
   .dexr-grade{max-height:46vh;overflow:auto}
 
-  /* ---- batalha: cena + ações presas no topo, registro rolando embaixo ---- */
+  /* ---- batalha: só a CENA fica presa no topo; o resto da página rola normalmente por baixo ----
+     Antes a .stage inteira (cena + golpes + ações) era sticky e umas abas escolhiam o que aparecia no meio; isso
+     escondia os painéis (ficha dos aliados, missões, mochila) e comia uma faixa de tela. Hoje nada é escondido:
+     a cena acompanha a rolagem, em no máximo 38vh, e você chega em tudo descendo a página. */
   body.em-batalha .game{padding:10px;gap:10px}
-  body.em-batalha .stage{position:sticky;top:0;z-index:8;background:var(--ink);gap:8px;padding-bottom:6px}
   body.em-batalha #actions{position:static;padding:0;margin:0}
-  body.em-batalha .scene.battle{min-height:0;padding:10px 12px;gap:4px}
+  body.em-batalha .scene.battle{position:sticky;top:0;z-index:8;max-height:38vh;overflow:auto;min-height:0;padding:10px 12px;gap:4px;box-shadow:0 6px 12px -8px #0008}
   body.em-batalha .mon{width:112px;height:92px}
   body.em-batalha .spr{width:92px;height:92px}
   body.em-batalha .spr.back{width:104px;height:104px}
@@ -202,23 +200,13 @@ table.ranking td.jogador{white-space:nowrap}
   body.em-batalha .mv small{display:none}          /* a descrição fica no toque longo (title); aqui o espaço é curto */
   body.em-batalha .bag-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
   body.em-batalha .painel-corpo{height:auto}
-  /* o que ocupa o meio, conforme a aba */
-  body.em-batalha.mob-luta .painel:not([data-painel="log"]),
-  body.em-batalha.mob-registro .painel:not([data-painel="log"]),
-  body.em-batalha.mob-paineis .painel[data-painel="log"]{display:none}
-  body.em-batalha.mob-luta .painel[data-painel="log"] .painel-corpo{max-height:30vh}
-  body.em-batalha.mob-registro .painel[data-painel="log"] .painel-corpo{max-height:70vh}
-  body.em-batalha.mob-luta .painel[data-painel="log"] .painel-cab{display:none}  /* na luta o registro é só o texto */
-  /* 📋 Painéis: a cena deixa de ficar presa no topo e encolhe. Sem isso ela ocupava a tela inteira e os painéis
-     (ficha, missões, aliados, mochila) nasciam embaixo do que dá pra ver — o botão parecia não fazer nada. */
-  body.em-batalha.mob-paineis .stage{position:static}
-  body.em-batalha.mob-paineis .scene.battle{max-height:32vh;overflow:hidden}
+  body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:40vh}
 }
 @media(max-width:420px){
   body.em-batalha .mon{width:96px;height:80px}
   body.em-batalha .spr{width:80px;height:80px}
   body.em-batalha .spr.back{width:92px;height:92px}
-  body.em-batalha.mob-luta .painel[data-painel="log"] .painel-corpo{max-height:24vh}
+  body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:32vh}
 }
 .me{display:flex;gap:12px;align-items:center}
 .me img{width:96px;height:96px;image-rendering:pixelated;background:var(--panel2);border-radius:12px;flex:none}

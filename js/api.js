@@ -104,16 +104,28 @@ export const itensNoCache = () => chavesGuardadas.size;
 export function syncGet(key) { const v = memo.get(key); return v && !(v instanceof Promise) ? v : null; }
 
 const VG_PREF = ['scarlet-violet', 'sword-shield', 'brilliant-diamond-shining-pearl', 'ultra-sun-ultra-moon', 'sun-moon', 'omega-ruby-alpha-sapphire', 'x-y', 'black-2-white-2', 'black-white', 'heartgold-soulsilver', 'platinum', 'diamond-pearl', 'emerald', 'firered-leafgreen', 'ruby-sapphire', 'crystal', 'gold-silver', 'yellow', 'red-blue'];
+// métodos que NÃO são por nível mas que a espécie aprende de verdade: é o que o Disco Técnico (dados.ITENS_GOLPE)
+// oferece. Vão pra `extras`, separados da lista por nível pra nenhum dos dois itens invadir o campo do outro.
+const METODOS_EXTRA = new Set(['machine', 'tutor', 'egg']);
 export function buildLearnset(moves) {
-  const groups = {};
+  const groups = {}, extras = {};
   for (const m of moves) for (const d of m.version_group_details) {
-    if (d.move_learn_method.name !== 'level-up') continue;
-    (groups[d.version_group.name] ||= []).push({ name: m.move.name, url: m.move.url, level: d.level_learned_at });
+    const metodo = d.move_learn_method.name, vgn = d.version_group.name;
+    if (metodo === 'level-up') (groups[vgn] ||= []).push({ name: m.move.name, url: m.move.url, level: d.level_learned_at });
+    else if (METODOS_EXTRA.has(metodo)) (extras[vgn] ||= []).push({ name: m.move.name, url: m.move.url, metodo });
   }
   const vg = VG_PREF.find(g => groups[g]?.length) || Object.keys(groups)[0];
   const seen = new Map();
   for (const e of (groups[vg] || [])) if (!seen.has(e.name) || seen.get(e.name).level > e.level) seen.set(e.name, e);
-  return { vg: vg || '', list: [...seen.values()].sort((a, b) => a.level - b.level) };
+  // os extras saem do MESMO jogo da lista por nível quando ele tem algo; senão, do mais recente que tiver
+  const vgE = (extras[vg]?.length ? vg : VG_PREF.find(g => extras[g]?.length)) || '';
+  const vistos = new Map();
+  for (const e of (extras[vgE] || [])) if (!vistos.has(e.name)) vistos.set(e.name, e);
+  return {
+    vg: vg || '',
+    list: [...seen.values()].sort((a, b) => a.level - b.level),
+    extras: [...vistos.values()].sort((a, b) => a.name.localeCompare(b.name))
+  };
 }
 export function slimPokemon(p) {
   return {

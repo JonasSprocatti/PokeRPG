@@ -144,12 +144,26 @@ export const ITENS_REPELENTE = {
 };
 Object.assign(ITEMS, ITENS_REPELENTE);
 
+/* Itens que mexem no MOVESET (itens.js `ensinarGolpe`). Um Pokémon só carrega 4 golpes, e a cada nível você escolhe
+   o que esquecer — estes dois são a chance de voltar atrás.
+   `ensina: 'relembrar'` = golpes que a espécie aprende SUBINDO DE NÍVEL até o nível atual (learnset.list) e que ele
+   não sabe agora: serve pra recuperar o que você deixou passar.
+   `ensina: 'pokedex'` = golpes que a espécie aprende por MT, tutor ou herança (learnset.extras, api.js) — golpes que
+   NUNCA apareceriam subindo de nível. É o item mais forte do jogo em termos de montagem de equipe, por isso o preço
+   sobe a cada Disco usado (regras.precoItem). */
+export const ITENS_GOLPE = {
+  'heart-scale': { name: 'Escama do Coração', desc: 'Faz o Pokémon relembrar um golpe que ele já poderia ter aprendido subindo de nível e que você deixou passar.', ensina: 'relembrar', price: 5000 },
+  'tm-normal': { name: 'Disco Técnico', desc: 'Ensina um golpe que a Pokédex diz que a espécie aprende por MT, tutor ou herança — mesmo que ele nunca apareça subindo de nível. Cada Disco usado deixa o próximo mais caro.', ensina: 'pokedex', price: 8000 }
+};
+Object.assign(ITEMS, ITENS_GOLPE);
+
 // Divisões da mochila e da loja, na ordem em que aparecem. `de(it)` diz a que divisão o item pertence.
 export const CATEGORIAS_ITEM = [
   { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.cure || it.ether || it.revive },
   { id: 'batalha', nome: '⚔ Em batalha', de: it => it.battle || it.stage },
   { id: 'segurado', nome: '🎒 Para segurar', de: it => it.segurado },
   { id: 'exploracao', nome: '🧭 Exploração', de: it => it.repelente },
+  { id: 'golpes', nome: '📀 Golpes', de: it => it.ensina },
   { id: 'evolucao', nome: '💎 Evolução', de: it => it.evo || it.troca || it.segurar },
   { id: 'petisco', nome: '🍖 Petiscos (amizade)', de: it => it.afinidade },
   { id: 'especial', nome: '✨ Especiais', de: it => it.candy },

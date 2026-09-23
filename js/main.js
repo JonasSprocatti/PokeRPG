@@ -3,7 +3,7 @@
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast } from './ui.js';
-import { render, buildGame, abaMobile } from './render.js';
+import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
@@ -25,7 +25,7 @@ import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS } from './dados.js';
-import { freshVol, zonaLiberada } from './regras.js';
+import { freshVol, zonaLiberada, precoItem } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
@@ -156,7 +156,6 @@ document.addEventListener('click', async e => {
       save(); return render();
     }
     case 'panel': G.panel = v; return render();
-    case 'aba-mob': return abaMobile(v); // celular: o que mostrar no meio (só troca classe no body)
     case 'heal': {
       // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
       const { precisa, custo } = centroPokemon();
@@ -168,8 +167,8 @@ document.addEventListener('click', async e => {
     case 'oferecer': return turn({ type: 'oferecer', id: v });
     case 'despedir': if (G.busy) return; G.busy = true; render(); try { await despedir(+v); } finally { G.busy = false; render(); save(); } return;
     case 'buy': {
-      const it = ITEMS[v]; if (!it || G.S.money < it.price) return;
-      G.S.money -= it.price; G.S.gasto = (G.S.gasto || 0) + it.price; addItem(v, 1); log(`Você comprou ${it.name} por ₽${it.price}.`);
+      const it = ITEMS[v], preco = precoItem(v, G.S); if (!it || !preco || G.S.money < preco) return;
+      G.S.money -= preco; G.S.gasto = (G.S.gasto || 0) + preco; addItem(v, 1); log(`Você comprou ${it.name} por ₽${preco.toLocaleString('pt-BR')}.`);
       await verificarMissoes(); save(); return render(); // missões de gastar dinheiro
     }
     // equipar um item da mochila direto pela ficha (data-quem: 'p' = você, número = aliado)

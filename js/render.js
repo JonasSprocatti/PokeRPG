@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { clamp, esc, fmt } from './util.js';
@@ -301,7 +301,8 @@ function renderActions() {
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila
     const forSale = Object.entries(ITEMS).filter(([, it]) => it.price);
-    const btn = ([k, it]) => `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < it.price ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${it.price}</small></button>`;
+    // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
+    const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
     a.innerHTML = `${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
@@ -315,32 +316,13 @@ function renderActions() {
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>`;
   }
 }
-// Celular: qual seção ocupa o meio da tela (abas de paineis.js). Só muda classes no <body> — o CSS faz o resto,
-// então não precisa redesenhar a tela inteira. 'luta' é o padrão.
-export const ABAS_MOB = ['luta', 'registro', 'paineis'];
-export function abaMobile(v = 'luta') {
-  const aba = ABAS_MOB.includes(v) ? v : 'luta';
-  for (const a of ABAS_MOB) document.body.classList.toggle('mob-' + a, a === aba);
-  document.querySelectorAll('.aba-mob').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === aba)));
-  // Trocar a classe não bastava: os painéis ficam ABAIXO da cena (que é presa no topo em batalha), então quem apertava
-  // 📋 Painéis via a mesma tela de sempre e achava que o botão estava quebrado — foi bug real, relatado no celular.
-  // Agora a tela rola até a seção escolhida; o que já mora dentro da cena (o registro) só volta pro topo.
-  if (!window.matchMedia?.('(max-width:880px)')?.matches) return;
-  requestAnimationFrame(() => {
-    const alvo = aba === 'paineis' ? document.querySelector('.painel:not([data-painel="log"])')
-      : aba === 'registro' ? document.querySelector('.painel[data-painel="log"]') : null;
-    const suave = matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth';
-    if (alvo && !alvo.closest('.stage')) alvo.scrollIntoView({ block: 'start', behavior: suave });
-    else window.scrollTo({ top: 0, behavior: suave });
-  });
-}
+// (As abas de celular ⚔/💬/📋 foram removidas — ver o comentário em paineis.js e o bloco "celular" do CSS.)
 export function render() {
   // só as telas de jogo têm painéis; nas outras (criação, carreira, conta, ranking, sala multiplayer) não desenha —
   // gainExp/useItem chamam render() e podem rodar fora da tela de jogo (ex.: recompensa do co-op)
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
   document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
-  if (!ABAS_MOB.some(a => document.body.classList.contains('mob-' + a))) abaMobile('luta');
   renderSheet(); renderScene(); renderActions();
   $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
   // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),

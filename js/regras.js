@@ -2,7 +2,7 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
-import { API, STATS, STAT_PT, CHART, NATURES } from './dados.js';
+import { API, STATS, STAT_PT, CHART, NATURES, ITEMS } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem } from './segurados.js';
@@ -267,6 +267,28 @@ export function jogadorAgePrimeiro(pm, em, velP, velE, sorte = Math.random()) {
 
 // Centro Pokémon: preço sobe com o nível pra cura não virar reflexo depois de toda luta.
 // ₽50 + ₽15/nível ≈ 1–2 vitórias da faixa em que você está (vitória ≈ ₽11 × nível do inimigo).
+/* Preço de um item AGORA. Quase todo item tem preço fixo (ITEMS[id].price); o Disco Técnico é a exceção — cada Disco
+   USADO deixa o próximo mais caro. Sem isso bastava juntar dinheiro uma vez no fim da run e comprar quatro de uma
+   vez, montando o moveset perfeito de graça. Conta pelo que foi USADO (S.discosUsados), não pelo que foi comprado:
+   Disco parado na mochila não encarece nada. */
+export const PRECO_DISCO = 8000, AUMENTO_DISCO = 4000;
+export const precoItem = (id, S) => id === 'tm-normal'
+  ? PRECO_DISCO + AUMENTO_DISCO * (S?.discosUsados || 0)
+  : (ITEMS[id]?.price || 0);
+
+/* O que um item de golpe (ITENS_GOLPE) oferece pra este Pokémon, sem repetir o que ele já sabe:
+   'relembrar' (Escama do Coração) = golpes da lista POR NÍVEL até o nível atual — o que você deixou passar;
+   'pokedex'   (Disco Técnico)     = golpes de MT/tutor/herança (learnset.extras, montado em api.buildLearnset).
+   `null` = não dá pra saber agora: espécie sem cache, ou cache antigo, de antes dos extras existirem — quem chama
+   avisa pra conectar uma vez, em vez de dizer que o Pokémon não aprende nada (que seria mentira). */
+export function golpesParaEnsinar(tipo, M) {
+  const L = M?.data?.learnset;
+  if (!L) return null;
+  const sabe = n => (M.moves || []).some(m => m.name === n);
+  if (tipo === 'relembrar') return L.list.filter(m => m.level <= M.level && !sabe(m.name));
+  return L.extras ? L.extras.filter(m => !sabe(m.name)) : null;
+}
+
 export const custoCentro = nivel => 50 + 15 * nivel;
 // algo pra curar? (HP, status ou PP) — com tudo cheio o Centro não cobra nem cura
 export const precisaCurar = m => m.hp < m.stats.hp || !!m.status || m.moves.some(mv => mv.ppLeft < mv.pp);

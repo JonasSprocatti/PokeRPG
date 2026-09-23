@@ -1,4 +1,4 @@
-/* ============ progressão ============ */
+﻿/* ============ progressão ============ */
 // XP → nível, golpes aprendidos por nível e evolução — pra você e pros aliados. As condições de evolução (nível,
 // pedra, troca, vínculo, hora do dia, golpe conhecido…) moram em evolucao.js; aqui fica a narração e a troca de espécie.
 // Diferença entre você e o aliado: você escolhe qual golpe esquecer; o aliado troca sozinho o de menor poder.
@@ -44,23 +44,27 @@ export async function gainExpAliado(A, xp) {
   if (leveled) await checkEvolution(A);
 }
 
-async function aprender(M, ref) {
-  if (M.moves.some(m => m.name === ref.name)) return;
+/* Ensina um golpe. Devolve `true` se ele entrou mesmo no moveset (os itens de golpe só são gastos no true).
+   `escolher` = quem decide o golpe a esquecer: por padrão você escolhe pelos SEUS golpes e o aliado troca sozinho o
+   de menor poder ao subir de nível. Usando um item no aliado, porém, quem escolhe é você — foi você que pagou. */
+export async function aprender(M, ref, escolher = ehJogador(M)) {
+  if (M.moves.some(m => m.name === ref.name)) return false;
   const mv = await loadMove(ref.url);
-  if (M.moves.length < 4) { M.moves.push({ ...mv, ppLeft: mv.pp }); render(); await say(`${nm(M)} aprendeu ${esc(fmt(mv.name))}!`, 'good'); return; }
-  if (!ehJogador(M)) {
+  if (M.moves.length < 4) { M.moves.push({ ...mv, ppLeft: mv.pp }); render(); await say(`${nm(M)} aprendeu ${esc(fmt(mv.name))}!`, 'good'); return true; }
+  if (!escolher) {
     // aliado: troca sozinho o golpe de menor poder, e só se o novo for melhor
     const i = M.moves.reduce((mi, m, j, arr) => (m.power || 0) < (arr[mi].power || 0) ? j : mi, 0);
-    if ((mv.power || 0) <= (M.moves[i].power || 0)) return;
+    if ((mv.power || 0) <= (M.moves[i].power || 0)) return false;
     const velho = M.moves[i]; M.moves[i] = { ...mv, ppLeft: mv.pp }; render();
     await say(`${nm(M)} esqueceu ${esc(fmt(velho.name))} e aprendeu ${esc(fmt(mv.name))}!`, 'good');
-    return;
+    return true;
   }
   const card = `<div class="mcard"><b>${esc(fmt(mv.name))}</b>: ${TYPE_PT[mv.type] || mv.type}, ${CLS_PT[mv.cls]}, poder ${mv.power ?? '—'}, precisão ${mv.acc ?? '—'}, PP ${mv.pp}<br>${esc(mv.desc)}</div>`;
   const c = await ask(`${nm(M)} quer aprender <b>${esc(fmt(mv.name))}</b>, mas já sabe 4 golpes. Esquecer qual?`,
     [...M.moves.map((m, i) => ({ label: `Esquecer ${esc(fmt(m.name))} (${m.power ?? '—'} pod.)`, value: i })), { label: `Não aprender ${esc(fmt(mv.name))}`, value: -1, ghost: true }], card);
-  if (c >= 0) { const old = M.moves[c]; M.moves[c] = { ...mv, ppLeft: mv.pp }; render(); await say(`${nm(M)} esqueceu ${esc(fmt(old.name))} e aprendeu ${esc(fmt(mv.name))}!`, 'good'); }
-  else await say(`${nm(M)} não aprendeu ${esc(fmt(mv.name))}.`);
+  if (c >= 0) { const old = M.moves[c]; M.moves[c] = { ...mv, ppLeft: mv.pp }; render(); await say(`${nm(M)} esqueceu ${esc(fmt(old.name))} e aprendeu ${esc(fmt(mv.name))}!`, 'good'); return true; }
+  await say(`${nm(M)} não aprendeu ${esc(fmt(mv.name))}.`);
+  return false;
 }
 
 export function findNode(n, name) { if (n.name === name) return n; for (const c of n.to) { const f = findNode(c, name); if (f) return f; } return null; }

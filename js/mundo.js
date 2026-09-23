@@ -12,6 +12,8 @@ import { ITEMS, FIND_ITEMS, FLAVOR, ITENS_EVO_ACHADOS } from './dados.js';
 import { apiErr } from './api.js';
 import { rand, pick } from './util.js';
 
+export const CHANCE_ESCAMA = 0.03; // fatia dos itens achados que sai Escama do Coração (ver o sorteio de item)
+
 export async function explore() {
   if (G.busy) return;
   G.busy = true; render();
@@ -31,8 +33,10 @@ export async function explore() {
     else if (r < 0.68 && semBicho) await say(pick(FLAVOR[z.id] || FLAVOR.default), 'muted');
     else if (r < 0.68) await startBattle(z);
     else if (r < 0.83) {
-      // da 4ª rota do mapa em diante, 1 em 5 achados é um item de evolução (pedra, Metal Coat…)
-      const it = rotasAtuais().findIndex(x => x.id === z.id) >= 3 && Math.random() < 0.2 ? pick(ITENS_EVO_ACHADOS) : pick(FIND_ITEMS);
+      // 3% dos achados é uma Escama do Coração (relembrar golpe): raríssima de propósito — na loja ela custa ₽5.000,
+      // então achar uma é sorte, não o caminho normal. Da 4ª rota em diante, 1 em 5 achados é um item de evolução.
+      const it = Math.random() < CHANCE_ESCAMA ? 'heart-scale'
+        : rotasAtuais().findIndex(x => x.id === z.id) >= 3 && Math.random() < 0.2 ? pick(ITENS_EVO_ACHADOS) : pick(FIND_ITEMS);
       addItem(it, 1); await say(`Você encontrou <b>${ITEMS[it].name}</b>!${ITEMS[it].evo || ITEMS[it].segurar ? ' (item de evolução)' : ''}`, 'good');
     }
     else if (r < 0.9) { const m = rand(20, 80); G.S.money += m; await say(`Você achou ₽${m} caídos no chão.`, 'good'); }
