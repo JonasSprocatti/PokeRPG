@@ -199,6 +199,13 @@ limit 50;
 
 O campo `status` começa em `'novo'` e é seu para usar (`'lido'`, `'resolvido'`…): o jogo nunca deixa alguém mudar isso de fora. Não existe tela de administração dentro do jogo — é de propósito, para não haver caminho pelo navegador que leia relato de outra pessoa.
 
+### 🏅 Conquistas da conta
+Tudo o que você acumula **ao longo da carreira inteira**, jornada após jornada — e a que está em andamento conta junto. A cada vitória o jogo registra os tipos do Pokémon derrotado, a espécie que você estava usando, o golpe que finalizou e o elemento dele.
+
+É o que vai desbloquear as **gimmicks**: Mega Evolução (1.000 golpes finais sendo aquela espécie), Terastalização (200 derrotados de um tipo), Z-Moves (250 eliminações com o golpe, ou 500 com o elemento) e Gigantamax (nível 50 com a espécie em 25 jornadas). Mais os marcos de caçada: 1.000 · 10.000 · 100.000 · 1.000.000 de derrotados.
+
+O abate do aliado conta para a espécie que você está usando; tipo e golpe só contam quando o golpe final foi **seu**. O modo Fácil não acumula — ele é treino. As gimmicks ainda não são jogáveis: por enquanto o jogo mede o progresso.
+
 ### 🏆 Ranking global
 A melhor jornada de cada jogador, **geral** ou **por espécie**, com a sua posição destacada. Dá para ver sem conta; para aparecer, entre e termine jornadas. A pontuação é **recalculada no servidor** a partir dos números da jornada, e números impossíveis são recusados.
 

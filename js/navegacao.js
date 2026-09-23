@@ -1,4 +1,4 @@
-/* ============ navegação entre as telas ============ */
+﻿/* ============ navegação entre as telas ============ */
 // Toda tela fora do jogo (carreira, ranking, conta, jornadas salvas, bugs, ajustes, multiplayer) começa com a MESMA
 // barra: um botão grande de voltar (pro jogo, se houver jornada; senão pra tela inicial) e atalhos pras outras telas.
 // Assim nunca dá pra ficar preso numa tela nem precisar adivinhar como sair. Esc também volta (main.js).
@@ -10,6 +10,7 @@ export const TELAS = [
   { id: 'create', act: 'inicio', rotulo: '🏠 Início', dica: 'Tela inicial (começar uma jornada)' },
   { id: 'saves', act: 'saves', rotulo: '💾 Jornadas', dica: 'Suas jornadas salvas' },
   { id: 'carreira', act: 'carreira', rotulo: '📊 Carreira', dica: 'Tudo o que você já fez' },
+  { id: 'conquistas', act: 'conquistas', rotulo: '🏅 Conquistas', dica: 'Progresso das gimmicks e marcos da conta' },
   { id: 'ranking', act: 'ranking', rotulo: '🏆 Ranking', dica: 'Ranking global' },
   { id: 'mp', act: 'mp', rotulo: '👥 Multiplayer', dica: 'Jogar com amigos' },
   { id: 'conta', act: 'conta', rotulo: '👤 Conta', dica: 'Login, ícone e amigos' },

@@ -2,6 +2,17 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.4', data: '2026-09-23', titulo: 'A conta começou a contar', piada: 'Instalamos um contador na sua conta. Ele já estava lá antes, mas só fazia contato visual com os Pokémon derrotados e anotava mentalmente.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Nova tela 🏅 Conquistas: tudo o que a sua conta acumulou ao longo da carreira inteira, incluindo a jornada em andamento.',
+        'A partir de agora o jogo registra, a cada vitória, os tipos do Pokémon derrotado, a espécie que você estava usando, o golpe que finalizou e o elemento dele. É o que vai desbloquear as gimmicks — Mega Evolução, Terastalização, Z-Moves e Gigantamax — quando elas chegarem.',
+        'Marcos de caçada: 1.000, 10.000, 100.000 e 1.000.000 de Pokémon derrotados.',
+        'O abate do aliado conta para a espécie que você está usando (ele luta ao seu lado, afinal), mas tipo e golpe só contam quando o golpe final foi seu.',
+        'Os Alfas de rota foram refeitos: nenhum se repete mais dentro do mesmo mapa, cada um combina com o tema da rota (nada de Aggron guardando o Mar de Hoenn) e cada mapa fecha com seu pseudo-lendário — Dragonite, Tyranitar, Salamence, Garchomp, Hydreigon, Goodra, Kommo-o, Dragapult e Archaludon.',
+        'O lendário da luta final agora é sorteado a cada jornada: fechar Kanto não é mais sempre Mewtwo, e completar a Pokédex dos lendários exige voltar ao mapa.'
+      ] }
+    ] },
   { versao: '2.3', data: '2026-09-23', titulo: 'O Aegislash finalmente saca a espada', piada: 'O Aegislash passou o jogo inteiro segurando o escudo na frente e a espada atrás. Agora ele aprendeu que dá pra inverter — e o adversário não gostou nem um pouco.',
     secoes: [
       { nome: 'Novidades', itens: [
