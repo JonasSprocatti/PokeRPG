@@ -2,6 +2,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.8', data: '2026-09-23', titulo: 'Cada mapa, uma história', piada: 'Seu Pokémon pendurou as chuteiras como campeão da região. Recusou a aposentadoria três vezes antes, mas os pontos do ranking o convenceram.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Fechar uma Gen agora ENCERRA a jornada em vitória: o seu Pokémon se aposenta como campeão daquele mapa, a jornada é pontuada e entra na carreira, e a próxima começa do zero na Gen seguinte — outro Pokémon, nível 5, mapa nos níveis normais dele.',
+        'Seguir com o MESMO Pokémon continua sendo possível, escolhendo ali na hora: você leva equipe, mochila e dinheiro, e o mapa novo se ajusta ao seu nível. Só que cada continuação vale 20% menos pontos no ranking (com piso de metade), porque chegar num mapa novo já forte é bem mais fácil.',
+        'A tela de fim já propõe o mapa seguinte quando você começa a jornada nova.'
+      ] }
+    ] },
   { versao: '2.7', data: '2026-09-23', titulo: 'Conquista não se perde mais', piada: 'Descobrimos que a memória do jogo funcionava como a de um Psyduck: apagou a anotação, esqueceu que tinha conquistado. Agora ele anota em caderno separado.',
     secoes: [
       { nome: 'Correções', itens: [

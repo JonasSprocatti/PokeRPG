@@ -1,4 +1,4 @@
-/* ============ regras ============ */
+﻿/* ============ regras ============ */
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
@@ -445,6 +445,8 @@ export function estatisticasDaJornada(S) {
     missoes: (S.missoesFeitas || []).length, capturas: S.capturas || 0,
     // mapa (Gen) em que a jornada estava e quantas Gens fechou (venceu os lendários)
     gen: S.gen || 1, gens: (S.gensVencidas || []).length, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
+    // quantas vezes esta jornada seguiu pro mapa seguinte com o MESMO Pokémon (cada uma tira 20% da pontuação)
+    continuacoes: S.continuacoes || 0, campeaoDe: S.gensVencidas || [],
     maxDinheiro: Math.max(S.maxDinheiro || 0, S.money || 0), gasto: S.gasto || 0,
     shiniesVistos: soma(r.shinies), shiniesAmigos: soma(r.shiniesAmigos),
     /* Cópia do registro por espécie: a Pokédex da carreira (vistos/amigos + sprite pelo id) sai daqui — e, desde as
@@ -457,8 +459,16 @@ export function estatisticasDaJornada(S) {
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)
 export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 300, amigos: 100, evolucoes: 150, missoes: 120, gens: 2000 };
+/* Continuar a mesma jornada no mapa seguinte (em vez de começar outra do zero) é mais fácil: você chega no mapa
+   novo já em nível alto. Cada continuação tira 20% da pontuação, com piso de metade — o suficiente pra escolher
+   recomeçar valer a pena no ranking, sem zerar quem prefere levar o veterano até o fim.
+   **Mudou aqui, muda no SQL**: `validar_jornada` (supabase/schema.sql) recalcula a pontuação e recusa a jornada
+   se o número não bater. */
+export const PENAL_CONTINUACAO = 0.8, PENAL_MINIMO = 0.5;
+export const multContinuacao = n => Math.max(PENAL_MINIMO, PENAL_CONTINUACAO ** (n || 0));
 export const pontuacao = (est, multDificuldade = 1) =>
-  Math.round(Object.entries(PESOS_PONTOS).reduce((a, [k, p]) => a + (est[k] || 0) * p, 0) * multDificuldade);
+  Math.round(Object.entries(PESOS_PONTOS).reduce((a, [k, p]) => a + (est[k] || 0) * p, 0)
+    * multDificuldade * multContinuacao(est.continuacoes));
 
 export function formatarTempo(ms) {
   const min = Math.floor(ms / 60000);

@@ -201,9 +201,12 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 ## Decidido com o usuário, ainda NÃO implementado
 
-Ordem acordada: **1 ✅ contadores + telas** · **2 cada Gen é uma jornada** · **3 badges com vantagem** · **4 Mega** · **5 Tera** · **6 Z-Move** · **7 Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.
+Ordem acordada: **1 ✅ contadores + telas** · **2 ✅ cada Gen é uma jornada** · **3 badges com vantagem** · **4 Mega** · **5 Tera** · **6 Z-Move** · **7 Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.
 
-### 2. Cada Gen é uma jornada (reforma do fim de mapa)
+### 2. ✅ FEITO — Cada Gen é uma jornada
+Implementado em atalha.vencerGen (a pergunta), egras.pontuacao + multContinuacao (a penalidade) e supabase/schema.sql (o servidor recalcula e RECUSA a jornada se a conta não bater — mudou num lado, muda no outro; 	ests/schema.test.js trava isso). S.continuacoes conta quantas vezes a jornada seguiu; estatisticasDaJornada leva isso e campeaoDe pro resumo. A tela de fim já propõe o mapa seguinte (G.gen).
+
+#### O desenho acordado era:
 Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémon** pro mapa seguinte, com os níveis escalados (foi assim que um testador chegou a Hoenn começando no nível 90). Passa a ser:
 - **Padrão**: fechar a Gen **encerra e pontua a jornada**; o Pokémon **se aposenta** (fica registrado na carreira como campeão daquela Gen) e você começa uma **jornada nova** no mapa seguinte, escolhendo outro Pokémon, **no nível 5 e com o mapa nos níveis normais** (2–62). Nada de mochila, dinheiro ou aliados atravessa.
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.

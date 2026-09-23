@@ -3,7 +3,7 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais } from './estado.js';
+import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo } from './estado.js';
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
@@ -346,6 +346,21 @@ async function vencerGen() {
     save(); render();
     return;
   }
+  /* Fora do Roguelike, fechar a Gen ENCERRA a jornada por padrão: o Pokémon se aposenta como campeão daquele mapa,
+     a jornada é pontuada e entra na carreira, e a próxima começa do zero — outro Pokémon, nível 5, mapa nos níveis
+     normais. Seguir com o MESMO Pokémon continua possível (era o comportamento antigo, e é como se chegava a Hoenn
+     começando no nível 90), mas agora é escolha explícita e vale menos pontos: cada continuação tira 20% da
+     pontuação final (regras.multContinuacao), porque chegar num mapa novo já forte é mais fácil. */
+  S.genVencida = g;
+  const prox = g < TOTAL_GENS ? g + 1 : null;
+  const seguir = await ask(
+    `Você fechou a Gen ${g}. O que ${nm(P)} faz agora?`,
+    [{ label: `🏁 Encerrar aqui — ${esc(rotulo(P))} se aposenta campeão${prox ? ` e você começa outra jornada na Gen ${prox}` : ''}`, value: false },
+     { label: `Seguir com ${esc(rotulo(P))} pro próximo mapa (vale ${Math.round((1 - 0.8) * 100)}% menos pontos)`, value: true, ghost: true }],
+    `<div class="mcard">Recomeçar é o caminho normal: você escolhe outro Pokémon, no nível 5, e o mapa novo volta aos níveis dele.
+      Seguir leva sua equipe e sua mochila, mas o mapa novo se ajusta ao seu nível — e a pontuação cai.</div>`);
+  if (!seguir) { encerrarJornada('venceu', { genVencida: g }); return; }
+  S.continuacoes = (S.continuacoes || 0) + 1;
   S.escolhendoGen = true; // se fechar o jogo agora, a escolha volta ao abrir (main.js abrirJornada)
   save(); telaEscolherGen();
 }

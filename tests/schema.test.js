@@ -1,9 +1,9 @@
-// O servidor recalcula a pontuação (validar_jornada em supabase/schema.sql). Se os pesos/multiplicadores/limites
+﻿// O servidor recalcula a pontuação (validar_jornada em supabase/schema.sql). Se os pesos/multiplicadores/limites
 // do jogo mudarem e o SQL não, jornadas legítimas passam a ser recusadas ou pontuadas diferente — este teste pega.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { PESOS_PONTOS } from '../js/regras.js';
+import { PESOS_PONTOS, multContinuacao } from '../js/regras.js';
 import { DIFICULDADES, ZONES, MISSOES } from '../js/dados.js';
 import { TOTAL_GENS } from '../js/mapas.js';
 
@@ -34,4 +34,13 @@ test('limites do SQL acompanham o conteúdo (Alfas e missões que existem)', () 
   assert.equal(alfas, ZONES.filter(z => z.chefe || z.lendarios).length, 'limite de Alfas');
   assert.equal(missoes, MISSOES.length, 'limite de missões');
   assert.equal(gens, TOTAL_GENS, 'limite de Gens vencidas');
+});
+
+test('a penalidade de continuar a jornada existe no SQL, igual à do jogo (regras.multContinuacao)', () => {
+  // o servidor recalcula a pontuação e RECUSA a jornada se o número não bater: se a fórmula mudar num lado só,
+  // ninguém consegue mais enviar jornada continuada pro ranking.
+  assert.match(sql, /penal numeric := greatest\(0\.5, power\(0\.8, coalesce\(\(r->>'continuacoes'\)::int, 0\)\)\)/);
+  assert.match(sql, /\* mult \* penal\)/);
+  assert.equal(multContinuacao(1), 0.8);
+  assert.equal(multContinuacao(3), 0.8 ** 3);
 });

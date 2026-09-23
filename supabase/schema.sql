@@ -1,4 +1,4 @@
--- PokéRPG — banco no Supabase. Rodar UMA vez no SQL Editor do projeto (é idempotente: pode rodar de novo).
+﻿-- PokéRPG — banco no Supabase. Rodar UMA vez no SQL Editor do projeto (é idempotente: pode rodar de novo).
 -- Toda tabela tem RLS: cada conta só lê/grava o que é dela. O ranking público sai por uma função que devolve
 -- só apelido + números (nada de e-mail).
 
@@ -142,6 +142,8 @@ declare
   n int := coalesce((r->>'nivel')::int, 0);
   mult numeric := case new.dificuldade when 'easy' then 1 when 'medium' then 1.2 when 'hard' then 1.5
     when 'hardcore' then 2 when 'randomizer' then 1.5 when 'roguelike' then 1.5 else null end;
+  -- seguir com o mesmo Pokémon pro mapa seguinte tira 20% por vez, com piso de metade (regras.multContinuacao)
+  penal numeric := greatest(0.5, power(0.8, coalesce((r->>'continuacoes')::int, 0)));
 begin
   if mult is null then raise exception 'dificuldade desconhecida: %', new.dificuldade; end if;
   if n < 1 or n > 100 then raise exception 'nível impossível: %', n; end if;
@@ -158,7 +160,7 @@ begin
     + coalesce((r->>'vitorias')::int, 0) * 10 + coalesce((r->>'treinadores')::int, 0) * 50
     + coalesce((r->>'alfas')::int, 0) * 300 + coalesce((r->>'amigos')::int, 0) * 100
     + coalesce((r->>'evolucoes')::int, 0) * 150 + coalesce((r->>'missoes')::int, 0) * 120
-    + coalesce((r->>'gens')::int, 0) * 2000) * mult);
+    + coalesce((r->>'gens')::int, 0) * 2000) * mult * penal);
   new.resumo := jsonb_set(r, '{pontuacao}', to_jsonb(new.pontuacao));
   return new;
 end $$;

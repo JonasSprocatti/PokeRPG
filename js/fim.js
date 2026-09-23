@@ -37,11 +37,14 @@ export function encerrarJornada(motivo, extra = {}) {
   atualizarProgresso(nova.jornadas);   // grava a conquista em lugar próprio: apagar a jornada depois não desfaz
   store.del(SAVE_KEY); G.S = null; G.B = null;
   if (usuario()) apagarSaveNuvem(resumo.id).then(sincronizar).catch(e => console.error(e)); // sobe a jornada e tira o save da nuvem
+  // a próxima jornada já abre no mapa seguinte: fechar a Gen 2 propõe começar na 3 (criacao.renderGens lê G.gen)
+  if (resumo.genVencida && resumo.genVencida < TOTAL_GENS) G.gen = resumo.genVencida + 1;
   const jornadas = nova.jornadas.filter(j => j.especie === resumo.especie).length;
   telaFim(resumo, anterior, !anterior || resumo.pontuacao > anterior.pontuacao, jornadas, novosDesbloqueios(carreira.jornadas, nova.jornadas));
 }
 
 const TITULO = { capturado: 'Game Over', desmaiou: 'Game Over', encerrou: 'Jornada encerrada', venceu: '🏆 Vitória' };
+// quem fecha uma Gen se aposenta campeão: a carreira guarda isso pra sempre (resumo.campeaoDe)
 const frase = r => r.motivo === 'venceu' ? `${esc(r.nome)} venceu os lendários de ${dadosDaGen(r.genVencida).regiao} e fechou a Gen ${r.genVencida}. `
     + (r.genVencida < TOTAL_GENS ? `<b>🗺 O mapa da Gen ${r.genVencida + 1} (${dadosDaGen(r.genVencida + 1).regiao}) está liberado</b> pras próximas runs.` : 'Era a última Gen: você fechou o jogo!')
   : r.motivo === 'capturado' ? `${esc(r.cacador || 'Um treinador')} capturou ${esc(r.nome)}. No ${DIFICULDADES[r.dificuldade].nome} não existe segunda chance.`

@@ -52,7 +52,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 - **Alfas:** cada rota tem um chefe mais forte que o normal (HP ×2, +30% no resto, IVs perfeitos). Prêmio na primeira vitória.
 - **Lendários:** a última rota de cada mapa guarda os lendários da Gen. Você enfrenta até 4 em sequência, e o principal (Mewtwo, Ho-Oh, Rayquaza…) vem por último, turbinado. Vencer **fecha a Gen**:
   - no Roguelike, a run termina em vitória e libera o mapa seguinte;
-  - nos outros modos, você **escolhe o próximo mapa** (qualquer Gen) e segue com a mesma equipe. Os níveis do mapa novo começam no seu e sobem até o 100.
+  - nos outros modos, a jornada **termina em vitória** e o seu Pokémon **se aposenta campeão** daquele mapa: a próxima jornada começa do zero na Gen seguinte, com outro Pokémon no nível 5 e o mapa nos níveis normais dele. Se preferir, dá para **seguir com o mesmo Pokémon** (aí você leva equipe e mochila, e o mapa novo se ajusta ao seu nível) — mas cada continuação vale **20% menos pontos**, com piso de metade.
 - **Treinadores caçadores:** aparecem explorando, com 1 a 3 Pokémon e Pokébolas. A equipe deles **não é só da rota**: cerca de metade pode ser qualquer espécie daquele mapa, sempre no nível da rota — eles viajaram até ali. Com seu HP pela metade, podem tentar te capturar, e a chance depende da taxa de captura da **sua** espécie.
 - **Shiny:** 1 em 4096, para você e para qualquer Pokémon que aparecer.
 - **Centro Pokémon, loja e mochila:** Potion, curas de status, Ether, X-itens, Rare Candy, Revive e petiscos.

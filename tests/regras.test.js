@@ -1,4 +1,4 @@
-// Fórmulas de js/regras.js. Rodar: `node --test` (sem caminho) na raiz do projeto.
+﻿// Fórmulas de js/regras.js. Rodar: `node --test` (sem caminho) na raiz do projeto.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -9,7 +9,7 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -439,4 +439,16 @@ test('ganhoDeEVs: teto de 252 por atributo e 510 no total, sem mutar', () => {
   const quase = { ...zeros(), attack: 252, defense: 252, speed: 5 }; // 509
   assert.deepEqual(ganhoDeEVs(quase, { speed: 3, hp: 3 }), [['speed', 1]]);
   assert.deepEqual(ganhoDeEVs(zeros(), {}), []);
+});
+
+test('pontuação: seguir com o mesmo Pokémon pro mapa seguinte custa 20% por vez', () => {
+  // fechar a Gen ENCERRA a jornada por padrão; continuar é a alternativa, e é mais fácil (você chega forte no mapa
+  // novo), então vale menos no ranking. O SQL de validar_jornada faz a mesma conta.
+  const est = { nivel: 50, vitorias: 100, gens: 1 };
+  const cheia = pontuacao(est, 1);
+  assert.equal(pontuacao({ ...est, continuacoes: 0 }, 1), cheia);
+  assert.equal(pontuacao({ ...est, continuacoes: 1 }, 1), Math.round(cheia * 0.8));
+  assert.equal(pontuacao({ ...est, continuacoes: 2 }, 1), Math.round(cheia * 0.64));
+  assert.equal(multContinuacao(10), PENAL_MINIMO, 'tem piso: nunca zera a pontuação de quem jogou');
+  assert.equal(multContinuacao(undefined), 1);
 });
