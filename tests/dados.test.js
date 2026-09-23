@@ -144,13 +144,15 @@ test('ZONES: ids únicos, faixa de nível coerente, ambientação só de zona qu
     assert.ok(z.min >= 1 && z.min <= z.max && z.max <= 100, `${z.id}: faixa ${z.min}–${z.max}`);
     assert.ok(z.pool.length >= 5, `${z.id}: pouca espécie`);
     for (const p of z.pool) {
-      assert.ok(Number.isInteger(p.id) && p.id >= 1 && p.id <= 1025, `${z.id}: id ${p.id}`);
+      // id acima de 10000 = forma regional (raichu-alola): na PokéAPI ela é variedade de `pokemon`, não espécie
+      assert.ok(Number.isInteger(p.id) && p.id >= 1 && (p.id <= 1025 || (p.f && p.id > 10000)), `${z.id}: id ${p.id}`);
       assert.match(p.n, /^[a-z0-9-]+$/, `${z.id}: nome da espécie (speciesName) "${p.n}"`);
       assert.ok(p.p > 0, `${z.id}: peso de ${p.n}`);
     }
     assert.equal(new Set(z.pool.map(p => p.id)).size, z.pool.length, `${z.id}: espécie repetida na rota`);
-    // míticos: bem raros (< 1% cada) e só nas rotas altas
-    for (const p of z.pool.filter(p => p.m)) assert.ok(p.p / z.pool.reduce((a, x) => a + x.p, 0) < 0.01 && z.min >= 30, `${z.id}: mítico ${p.n}`);
+    // míticos: bem raros (< 1% cada) e só nas rotas altas. O Santuário é a exceção declarada: ele só abre depois de
+    // vencer a Gen e existe justamente pra ter TODA a Gen, mítico e lendário incluídos, na raridade real de cada um.
+    if (!z.posVitoria) for (const p of z.pool.filter(p => p.m)) assert.ok(p.p / z.pool.reduce((a, x) => a + x.p, 0) < 0.01 && z.min >= 30, `${z.id}: mítico ${p.n}`);
   }
   for (const k of Object.keys(FLAVOR)) assert.ok(k === 'default' || ids.includes(k), `FLAVOR.${k} não é uma zona`);
 });

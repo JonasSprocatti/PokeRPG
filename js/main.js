@@ -1,4 +1,4 @@
-/* ============ ponto de entrada ============ */
+﻿/* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';
@@ -136,7 +136,7 @@ document.addEventListener('click', async e => {
     case 'explore': return explore();
     case 'zone': {
       const z = rotasAtuais().find(x => x.id === v); // só rotas do mapa atual
-      if (!z || !zonaLiberada(z, G.S.player.level)) return; // chip trancado já vem desativado; isto é a garantia
+      if (!z || !zonaLiberada(z, G.S.player.level, G.S)) return; // chip trancado já vem desativado; isto é a garantia
       G.S.zone = v; save(); return render();
     }
     // fechou uma Gen (fora do Roguelike): vai pro mapa escolhido

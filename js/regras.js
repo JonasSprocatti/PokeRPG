@@ -378,7 +378,13 @@ export function itemTemEfeito(it, M, podeSubir = true) {
 
 /* ---- mundo e progressão (Etapa 2) ---- */
 
-export const zonaLiberada = (z, nivel) => nivel >= (z.libera || 1);
+/* Rota liberada? Quase todas abrem por nível. O SANTUÁRIO (`posVitoria`, a 11ª de cada mapa) é a exceção: só abre
+   depois que você vence os lendários daquela Gen (S.gensVencidas), porque é lá que vivem os iniciais e os lendários
+   — é a garantia de que dá pra encontrar TODA a Gen, mas só depois de fechar o mapa.
+   Sem o save (`S`), ela fica trancada: é o padrão seguro pra quem chama sem saber da regra (ex.: criação). */
+export const zonaLiberada = (z, nivel, S = null) => z?.posVitoria
+  ? !!(S?.gensVencidas || []).includes(z.gen)
+  : nivel >= (z?.libera || 1);
 
 // Alfa: HP ×2 e demais stats ×1,3 (arredondado pra baixo). Não muta.
 export const MULT_CHEFE = { hp: 2, outros: 1.3 };

@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.0', data: '2026-09-23', titulo: 'O Santuário: a Gen inteira, depois da vitória', piada: 'Os iniciais aceitaram sair do sindicato e voltar a aparecer — mas só no bairro nobre, e só para quem já venceu os lendários.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Cada mapa ganhou uma 11ª área, o 🏛 Santuário, que abre quando você vence os lendários daquela Gen. Nele vive a Gen inteira: todas as espécies, com as linhas evolutivas completas, mais os iniciais, os lendários e os míticos.',
+        'As formas regionais entraram no jogo pela primeira vez: Alolan no Santuário de Alola, Galarian e Hisuian no de Galar, Paldean no de Paldea. São 53 formas que antes não existiam em lugar nenhum.',
+        'A raridade de cada Pokémon no Santuário segue a dificuldade de captura da espécie, igual ao resto do jogo — comum aparece mais, raro aparece menos.',
+        'Com isso, dá para encontrar todo Pokémon de uma Gen depois de fechá-la: nenhuma espécie fica inalcançável.'
+      ] }
+    ] },
   { versao: '1.9', data: '2026-09-23', titulo: 'Seus golpes, suas regras', piada: 'O tutor de golpes cobra caro, mas atende aliado também. Ele só pede que ninguém pergunte como um Magikarp aprendeu Bounce.',
     secoes: [
       { nome: 'Novidades', itens: [

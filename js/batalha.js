@@ -1,4 +1,4 @@
-/* ============ batalha ============ */
+﻿/* ============ batalha ============ */
 // 1×1 contra selvagem ou contra a equipe de um treinador caçador (um Pokémon por vez; o treinador
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
@@ -353,7 +353,7 @@ async function serCapturado() {
   }
   const perdeu = Math.floor(S.money / 2), itens = Object.values(S.bag).reduce((a, n) => a + n, 0);
   S.money -= perdeu; S.bag = {};
-  const rotas = rotasAtuais(), destinos = rotas.filter(z => zonaLiberada(z, P.level) && z.id !== S.zone);
+  const rotas = rotasAtuais(), destinos = rotas.filter(z => zonaLiberada(z, P.level, S) && z.id !== S.zone);
   const z = destinos.length ? pick(destinos) : rotas[0];
   S.zone = z.id; S.capturas = (S.capturas || 0) + 1;
   healFull(); endBattle();

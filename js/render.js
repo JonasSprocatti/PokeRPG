@@ -215,8 +215,11 @@ function renderScene() {
     const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id], g = genDe(G.S);
     sc.className = 'scene';
     // rota bloqueada: chip desativado com 🔒 e o nível pedido; ★ = rota final (lendários)
-    const chip = o => { const ok = zonaLiberada(o, nv);
-      return `<button class="chip ${o.id === z.id ? 'on' : ''} ${ok ? '' : 'trancada'} ${o.final ? 'final' : ''}" data-act="zone" data-v="${o.id}" ${G.busy || !ok ? 'disabled' : ''} title="${ok ? '' : `Liberada no nível ${o.libera}`}">${ok ? '' : '🔒 '}${o.final ? '★ ' : ''}${o.name}<small>${ok ? `${o.min}–${o.max}` : `Nv. ${o.libera}`}</small></button>`; };
+    // O Santuário (posVitoria) não abre por nível: só depois de vencer os lendários da Gen — por isso o rótulo dele
+    // fala da vitória, e não de um nível que nunca destrancaria nada.
+    const chip = o => { const ok = zonaLiberada(o, nv, G.S), porVitoria = !!o.posVitoria;
+      const dica = ok ? '' : porVitoria ? `Abre depois que você vencer os lendários da Gen ${g}` : `Liberada no nível ${o.libera}`;
+      return `<button class="chip ${o.id === z.id ? 'on' : ''} ${ok ? '' : 'trancada'} ${o.final ? 'final' : ''} ${porVitoria ? 'santuario' : ''}" data-act="zone" data-v="${o.id}" ${G.busy || !ok ? 'disabled' : ''} title="${dica}">${ok ? '' : '🔒 '}${o.final ? '★ ' : ''}${porVitoria ? '🏛 ' : ''}${o.name}<small>${ok ? `${o.min}–${o.max}` : porVitoria ? 'vença a Gen' : `Nv. ${o.libera}`}</small></button>`; };
     const lend = z.lendarios, fechada = (G.S.gensVencidas || []).includes(g);
     sc.innerHTML = `
       <div class="zone-head"><h2>${z.name}</h2><p><span class="gen-tag">Gen ${g} · ${dadosDaGen(g).regiao}</span> ${z.desc} Pokémon entre os níveis ${z.min} e ${z.max}.</p></div>
@@ -262,8 +265,8 @@ function pokedexRota(z) {
   const dex = pokedexDaRota(z, conhecimento()), vistos = dex.filter(p => p.estado !== 'oculto').length;
   const item = p => p.estado === 'oculto'
     ? `<div class="dexr oculto ${p.mitico ? 'mitico' : ''}" title="${p.mitico ? 'Algo muito raro vive aqui…' : 'Ainda não encontrado'}"><span>${p.mitico ? '✦' : '?'}</span></div>`
-    : `<div class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" title="${esc(fmt(p.n))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`}">
-        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.n))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</div>`;
+    : `<div class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" title="${esc(fmt(p.nome))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`}">
+        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.nome))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</div>`;
   return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados.</p>
     ${blocoCaca(z, dex)}
     <ul class="dex-legenda small muted">

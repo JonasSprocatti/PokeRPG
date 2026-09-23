@@ -1,4 +1,4 @@
-/* ============ multiplayer: co-op e PvP (sala por código) ============ */
+﻿/* ============ multiplayer: co-op e PvP (sala por código) ============ */
 // Sala de até MAX_JOGADORES. O anfitrião escolhe:
 //   modo        'coop' (todos no lado A contra selvagens / Alfa — "chamar alguém pra sua run") ou 'pvp' (Time A × Time B)
 //   porJogador  quantos Pokémon cada um leva: 1 = só o principal, 2–3 = com aliados (1v1, 2v2, 3v3; 2×1, 3×2…)
@@ -239,7 +239,7 @@ export function configurarSala(campo, valor) {
   if (!sala?.anfitriao || sala.batalha) return;
   if (campo === 'zona') {
     const z = temRun() && rotasAtuais().find(x => x.id === valor); // só rotas do mapa (Gen) da run do anfitrião
-    if (!z || !zonaLiberada(z, G.S.player.level)) return;
+    if (!z || !zonaLiberada(z, G.S.player.level, G.S)) return;
     sala.zona = valor;
   } else if (campo === 'modo' && ['coop', 'pvp'].includes(valor)) {
     if (valor === 'coop' && !temRun()) return renderSala(); // co-op é a run do anfitrião
@@ -556,7 +556,7 @@ function renderLobby(cabecalho, pvp, z) {
   const trocarTime = pvp ? `<div class="subrow">Seu time: ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
   const sair = '<button class="btn ghost" data-act="mp-sair">Sair da sala</button>';
   if (!sala.anfitriao) { $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
-  const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level)) : []; // rotas do mapa (Gen) da run
+  const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level, G.S)) : []; // rotas do mapa (Gen) da run
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
   const naSalaIds = new Set(sala.membros.map(m => m.id));
   const amigosFora = usuario() ? nuvem.amigos.filter(a => a.status === 'aceita' && !naSalaIds.has(a.amigo)) : [];

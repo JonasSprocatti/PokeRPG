@@ -40,6 +40,7 @@ export function tirarIniciais(gens) {
   // justamente o inicial que acabamos de tirar da vizinha.
   const curtas = [];
   for (const g of gens) for (const z of g.rotas) {
+    if (z.posVitoria) continue; // o Santuário é justamente onde os iniciais vivem — ver `rotasDaGen`/zonaLiberada
     const limpo = z.pool.filter(p => !ehInicialDeRegiao(p.id));
     if (limpo.length && limpo.length < z.pool.length) { z.pool = limpo; curtas.push([g, z]); }
     // Alfa da rota também não pode ser inicial: vira o Pokémon mais raro do que sobrou, no mesmo nível de sempre.
@@ -96,7 +97,8 @@ export function sortearDaRota(z, filtro = null, sorte = Math.random) {
    não a lista de espécies. */
 export function especiesDaGen(gen) {
   const vistos = new Map();
-  for (const z of rotasDaGen(gen)) for (const p of z.pool) if (!p.m && !vistos.has(p.id)) vistos.set(p.id, p);
+  // fora o Santuário: lá moram iniciais, lendários e míticos, e treinador de rota não sai por aí com um Mewtwo
+  for (const z of rotasDaGen(gen)) if (!z.posVitoria) for (const p of z.pool) if (!p.m && !vistos.has(p.id)) vistos.set(p.id, p);
   return [...vistos.values()];
 }
 // chance (0–100) de cada encontro selvagem na rota ser esta espécie
@@ -120,7 +122,9 @@ export function pokedexDaRota(z, saber) {
   return z.pool.map(p => {
     const vistos = saber.vistos[p.n] || 0, derrotados = saber.derrotados[p.n] || 0;
     const estado = derrotados >= REVELA_DERROTADOS ? 'revelado' : vistos || derrotados ? 'silhueta' : 'oculto';
-    return { id: p.id, n: p.n, mitico: !!p.m, estado, derrotados, taxa: taxaNaRota(z, p.id) };
+    // `f` = forma regional (raichu-alola): o nome mostrado é o da forma, mas o registro continua na espécie (p.n),
+    // que é a chave que o jogo usa pra contar visto/derrotado desde sempre
+    return { id: p.id, n: p.n, forma: p.f || null, nome: p.f || p.n, mitico: !!p.m, lendario: !!p.l, estado, derrotados, taxa: taxaNaRota(z, p.id) };
   });
 }
 

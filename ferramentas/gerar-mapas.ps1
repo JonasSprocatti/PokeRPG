@@ -27,6 +27,29 @@ foreach ($s in $r.data.s) {
     bst = ($p.st | Measure-Object base_stat -Sum).Sum; tipos = @($p.ty | ForEach-Object { $_.t.name })
   }
 }
+# Formas regionais (Alolan, Galarian, Hisuian, Paldean). Na PokéAPI elas NÃO são espécies: são variedades de
+# `pokemon` com id acima de 10000 (raichu-alola = 10100), então nunca entravam em lugar nenhum do jogo. Cada uma vai
+# pro Santuário da Gen em que a forma foi criada (Alola=7, Galar e Hisui=8, Paldea=9), não da Gen da espécie
+# original. `n` continua sendo a ESPÉCIE (é a chave do registro/Pokédex) e `f` guarda o nome da forma pra mostrar.
+# Fora: formas "totem", que são só versões grandes de encontro especial.
+$qf = @'
+{ f: pokemon_v2_pokemon(where:{is_default:{_eq:false}, name:{_regex:"-(alola|galar|hisui|paldea)$"}}, order_by:{id:asc})
+  { id name pokemon_v2_pokemonspecy { name capture_rate is_legendary is_mythical } } }
+'@
+$rf = Invoke-RestMethod -Uri 'https://beta.pokeapi.co/graphql/v1beta' -Method Post -Body (@{ query = $qf } | ConvertTo-Json -Compress) -ContentType 'application/json' -TimeoutSec 180
+$GEN_DA_FORMA = @{ alola = 7; galar = 8; hisui = 8; paldea = 9 }
+$formas = @()
+foreach ($f in $rf.data.f) {
+  if ($f.name -like '*totem*') { continue }
+  $sufixo = ($f.name -split '-')[-1]
+  $formas += [pscustomobject]@{
+    id = [int]$f.id; nome = $f.name; especie = $f.pokemon_v2_pokemonspecy.name; gen = $GEN_DA_FORMA[$sufixo]
+    captura = [int]$f.pokemon_v2_pokemonspecy.capture_rate
+    mitico = [bool]$f.pokemon_v2_pokemonspecy.is_mythical; lend = [bool]$f.pokemon_v2_pokemonspecy.is_legendary
+  }
+}
+"formas regionais: $($formas.Count)"
+
 $filhos = @{}
 foreach ($e in $esp.Values) { if ($e.pai) { if (-not $filhos[[int]$e.pai]) { $filhos[[int]$e.pai] = @() }; $filhos[[int]$e.pai] += $e } }
 
@@ -219,8 +242,23 @@ foreach ($R in $REGIOES) {
       $seq = @($outros | ForEach-Object { "{ id: $($_.id), nome: '$(NomeBonito $_.nome)', nivel: 68 }" }) + "{ id: $($principal.id), nome: '$(NomeBonito $principal.nome)', nivel: 75 }"
       $txt += ", final: true, lendarios: [$($seq -join ', ')]"
     }
-    $saida.Add($txt + ' }' + $(if ($i -lt 9) { ',' } else { '' }))
+    $saida.Add($txt + ' },')
   }
+  # 11ª rota: o SANTUÁRIO, que só abre depois de vencer os lendários do mapa (js/regras.zonaLiberada usa posVitoria).
+  # Aqui aparece TODA a Gen — inclusive os iniciais (que não vivem nas rotas comuns), os lendários e os míticos —
+  # com o mesmo peso por taxa de captura das outras rotas. É o que garante que dá pra encontrar todo mundo de uma
+  # Gen sem depender de sorte de geração: qualquer espécie que ficasse de fora das 10 rotas cai aqui.
+  $todos = @($esp.Values | Where-Object { $_.gen -eq $g } | Sort-Object id)
+  $poolS = @($todos | ForEach-Object {
+    $peso = [math]::Max(1, [math]::Round($_.captura / 30))
+    "{ id: $($_.id), n: '$($_.nome)', p: $peso$(if ($_.mitico) { ', m: 1' })$(if ($_.lend) { ', l: 1' }) }"
+  })
+  # + as formas regionais criadas nesta Gen (Alolan na 7, Galarian/Hisuian na 8, Paldean na 9)
+  $poolS += @($formas | Where-Object { $_.gen -eq $g } | ForEach-Object {
+    $peso = [math]::Max(1, [math]::Round($_.captura / 30))
+    "{ id: $($_.id), n: '$($_.especie)', f: '$($_.nome)', p: $peso$(if ($_.mitico) { ', m: 1' })$(if ($_.lend) { ', l: 1' }) }"
+  })
+  $saida.Add("    { id: '$($R.regiao.ToLower())-santuario', gen: $g, name: 'Santuário de $($R.regiao)', desc: 'Aberto depois que você vence os lendários: aqui vive toda a Gen $g, dos iniciais aos lendários.', min: 58, max: 70, libera: 1, posVitoria: true, pool: [$($poolS -join ', ')] }")
   $saida.Add('  ] }' + $(if ($g -lt 9) { ',' } else { '' }))
 }
 $saida.Add('];')

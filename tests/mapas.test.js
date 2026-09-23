@@ -4,15 +4,18 @@ import assert from 'node:assert/strict';
 import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, rotaNaJornada, sortearDaRota, taxaNaRota, textoTaxa,
   somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL } from '../js/mapas.js';
 import { REGIOES_INICIAIS } from '../js/dados.js';
+import { zonaLiberada } from '../js/regras.js';
 
-test('9 Gens, 10 rotas cada; só a última é final (com lendários); Alfa acima do teto da rota', () => {
+test('9 Gens, 10 rotas + Santuário; só a 10ª é final (com lendários); Alfa acima do teto da rota', () => {
   assert.equal(TOTAL_GENS, 9);
   assert.deepEqual(GENS.map(g => g.gen), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   for (const g of GENS) {
-    assert.equal(g.rotas.length, 10, `Gen ${g.gen}`);
+    assert.equal(g.rotas.length, 11, `Gen ${g.gen}`); // 10 rotas + o Santuário pós-vitória
     g.rotas.forEach((z, i) => {
       assert.equal(z.gen, g.gen);
-      assert.equal(!!z.final, i === 9, `${z.id}: só a última rota é final`);
+      assert.equal(!!z.final, i === 9, `${z.id}: só a 10ª rota é final`);
+      assert.equal(!!z.posVitoria, i === 10, `${z.id}: só a 11ª é o Santuário`);
+      if (z.posVitoria) { assert.ok(!z.chefe && !z.final, `${z.id}: Santuário não tem Alfa nem lendários`); return; }
       if (z.final) {
         assert.ok(z.lendarios.length >= 1 && !z.chefe, `${z.id}: final = lendários, sem Alfa`);
         for (const l of z.lendarios) assert.ok(Number.isInteger(l.id) && l.nome && l.nivel > z.max);
@@ -100,9 +103,49 @@ test('entrarNaGen: muda o mapa, guarda o nível de entrada e vai pra 1ª rota', 
 });
 
 /* ---- iniciais fora das rotas (menos Pikachu e Eevee) ---- */
-test('nenhum inicial de região (nem evolução dele) aparece no pool de rota nenhuma', () => {
-  for (const g of GENS) for (const z of g.rotas) for (const p of z.pool)
-    assert.equal(ehInicialDeRegiao(p.id), false, `${p.n} (${p.id}) está no pool de ${z.id} da Gen ${g.gen}`);
+test('nenhum inicial de região (nem evolução dele) aparece nas rotas comuns — só no Santuário', () => {
+  for (const g of GENS) for (const z of g.rotas) {
+    if (z.posVitoria) continue;
+    for (const p of z.pool) assert.equal(ehInicialDeRegiao(p.id), false, `${p.n} (${p.id}) está no pool de ${z.id} da Gen ${g.gen}`);
+  }
+  // e eles TÊM de estar lá: o Santuário é o que garante que dá pra encontrar a Gen inteira
+  for (const g of GENS) {
+    const s = g.rotas.at(-1);
+    assert.ok(s.pool.some(p => ehInicialDeRegiao(p.id)), `Santuário da Gen ${g.gen} sem inicial nenhum`);
+  }
+});
+
+test('o Santuário tem TODA a Gen: nenhuma espécie do jogo fica inalcançável', () => {
+  const FAIXAS = [[1, 151], [152, 251], [252, 386], [387, 493], [494, 649], [650, 721], [722, 809], [810, 905], [906, 1025]];
+  for (const g of GENS) {
+    const [de, ate] = FAIXAS[g.gen - 1];
+    const tem = new Set(g.rotas.at(-1).pool.map(p => p.id));
+    const faltam = [];
+    for (let id = de; id <= ate; id++) if (!tem.has(id)) faltam.push(id);
+    assert.deepEqual(faltam, [], `Gen ${g.gen}: espécies fora do Santuário`);
+  }
+});
+
+test('Santuário só abre depois de vencer a Gen; as outras rotas continuam por nível', () => {
+  const s = GENS[0].rotas.at(-1), comum = GENS[0].rotas[0];
+  assert.equal(zonaLiberada(s, 100, { gensVencidas: [] }), false);
+  assert.equal(zonaLiberada(s, 5, { gensVencidas: [1] }), true);   // nível não importa aqui
+  assert.equal(zonaLiberada(s, 100, null), false);                 // sem save: trancado (padrão seguro)
+  assert.equal(zonaLiberada(s, 100, { gensVencidas: [2] }), false); // vencer OUTRA Gen não abre esta
+  assert.equal(zonaLiberada(comum, 100, { gensVencidas: [] }), true);
+});
+
+test('formas regionais existem e guardam a espécie separada do nome da forma', () => {
+  const formas = GENS.flatMap(g => g.rotas.at(-1).pool).filter(p => p.f);
+  assert.ok(formas.length >= 50, `só ${formas.length} formas regionais`);
+  for (const p of formas) {
+    assert.ok(p.id > 10000, `${p.f}: id de forma`);
+    assert.ok(p.f.startsWith(p.n + '-'), `${p.f}: devia derivar da espécie ${p.n}`); // registro conta na espécie
+    assert.match(p.f, /-(alola|galar|hisui|paldea)$/);
+  }
+  // a Pokédex da rota mostra o nome da FORMA, mas conta o visto/derrotado na espécie
+  const dex = pokedexDaRota({ pool: [{ id: 10100, n: 'raichu', f: 'raichu-alola', p: 3 }] }, { vistos: { raichu: 1 }, derrotados: {} });
+  assert.deepEqual([dex[0].nome, dex[0].n, dex[0].estado], ['raichu-alola', 'raichu', 'silhueta']);
 });
 
 test('Pikachu e Eevee continuam liberados; os 27 iniciais e as evoluções, não', () => {
