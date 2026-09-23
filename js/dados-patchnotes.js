@@ -2,6 +2,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.5', data: '2026-09-22', titulo: 'O inimigo aprendeu a mirar', piada: 'Os Pokémon selvagens fizeram um curso rápido. O Magikarp assistiu, mas continua no Splash.',
+    secoes: [
+      { nome: 'Equilíbrio', itens: [
+        'O inimigo não sorteia mais qualquer golpe: agora ele tende a escolher o que dá mais dano em você, olhando tipo e eficácia.',
+        'O quanto ele acerta a escolha depende de quem é: selvagem erra bastante (metade das vezes), treinador pensa melhor, e Alfa e lendário quase sempre escolhem o melhor golpe. Vale também nas batalhas multiplayer.'
+      ] }
+    ] },
+
   { versao: '1.4', data: '2026-09-22', titulo: 'O chão também entrou na briga', piada: 'O Campo de Grama foi aparado. O jardineiro de Paldea agradece as mensagens de carinho.',
     secoes: [
       { nome: 'Novidades', itens: [

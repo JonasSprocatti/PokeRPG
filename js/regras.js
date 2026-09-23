@@ -232,6 +232,19 @@ export function melhorGolpe(moves, tiposAtacante, tiposAlvo) {
   return melhor;
 }
 
+/* ---- IA do inimigo ----
+   Antes o inimigo sorteava qualquer golpe com PP — dava pra ganhar de Pokémon muito mais forte na sorte. Agora ele
+   acerta a escolha com a chance `esperteza`: selvagem erra bastante, treinador pensa melhor, Alfa e lendário quase
+   sempre acertam. Quando "pensa", usa o golpe de maior dano esperado (melhorGolpe: poder × eficácia × STAB).
+   `sorte` injetável = testável. Devolve o golpe (ou null = Struggle). */
+export const ESPERTEZA = { selvagem: 0.5, treinador: 0.75, chefe: 0.9 };
+export function escolhaIA(moves, tiposAtacante, tiposAlvo, esperteza = ESPERTEZA.selvagem, sorte = Math.random) {
+  const comPP = moves.filter(m => m.ppLeft > 0);
+  if (!comPP.length) return null;
+  if (sorte() < esperteza) return melhorGolpe(comPP, tiposAtacante, tiposAlvo) || comPP[0];
+  return comPP[Math.floor(sorte() * comPP.length)];
+}
+
 // O que o aliado faz neste turno, pela ordem dele (ORDENS em dados.js):
 //   { golpe }        → usa esse golpe (golpe null = sem PP em nada → Struggle, só no 'livre')
 //   { parado: txt }  → não age neste turno (txt vai pro log)

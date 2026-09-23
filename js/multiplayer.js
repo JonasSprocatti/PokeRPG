@@ -16,7 +16,7 @@ import { spriteFrente } from './render.js';
 import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
 import { sortearDaRota } from './mapas.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe } from './regras.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal } from './mp-motor.js';
 import { carregarCarreira } from './carreira.js';
 import { desbloqueadas } from './roguelike.js';
@@ -340,7 +340,9 @@ async function resolver() {
   sala.resolvendo = true;
   const b = sala.batalha, acoes = Object.values(sala.acoes);
   clearTimeout(sala.timer);
-  const ia = [...b.lados.A, ...b.lados.B].filter(m => m.hp > 0 && m.dono === 'ia').map(m => acaoDaIA(b, m));
+  // Alfa pensa melhor que selvagem (regras.ESPERTEZA)
+  const esperteza = sala.tipo === 'alfa' ? ESPERTEZA.chefe : ESPERTEZA.selvagem;
+  const ia = [...b.lados.A, ...b.lados.B].filter(m => m.hp > 0 && m.dono === 'ia').map(m => acaoDaIA(b, m, Math.random, esperteza));
   let res;
   try { res = await resolverTurnoMP(b, [...acoes, ...ia]); } finally { if (sala) sala.resolvendo = false; }
   if (!sala) return;

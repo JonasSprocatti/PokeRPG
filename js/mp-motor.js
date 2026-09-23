@@ -8,7 +8,7 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE } from './dados.js';
-import { effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe } from './regras.js';
+import { effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA } from './regras.js';
 import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno } from './golpe.js';
 import { hab } from './habilidades.js';
 import { rand, clamp, fmt } from './util.js';
@@ -69,11 +69,13 @@ const outro = l => (l === 'A' ? 'B' : 'A');
 const vivosMP = l => l.filter(m => m.hp > 0);
 export const monMP = (e, ref) => todosMP(e).find(m => m.ref === ref);
 
-// IA do lado B (selvagem/Alfa): golpe aleatório com PP (senão Struggle) num alvo vivo aleatório do outro lado
-export function acaoDaIA(e, m, sorte = Math.random) {
-  const ok = m.moves.map((g, i) => [g, i]).filter(([g]) => g.ppLeft > 0);
+// IA do lado B (selvagem/Alfa): escolhe o golpe por regras.escolhaIA (acerta conforme a `esperteza`; sem PP = Struggle)
+// num alvo vivo aleatório do outro lado
+export function acaoDaIA(e, m, sorte = Math.random, esperteza = ESPERTEZA.selvagem) {
   const alvos = vivosMP(e.lados[outro(ladoDe(e, m.ref))]);
-  return { ref: m.ref, tipo: 'golpe', golpe: ok.length ? ok[Math.floor(sorte() * ok.length)][1] : -1, alvo: alvos[Math.floor(sorte() * alvos.length)]?.ref };
+  const alvo = alvos[Math.floor(sorte() * alvos.length)];
+  const g = escolhaIA(m.moves, m.data.types, alvo?.data.types || [], esperteza, sorte); // pensa como no single player
+  return { ref: m.ref, tipo: 'golpe', golpe: g ? m.moves.indexOf(g) : -1, alvo: alvo?.ref };
 }
 
 // async: a narração do motor único (golpe.js) é async (o single player espera entre mensagens); aqui ela só coleta texto.

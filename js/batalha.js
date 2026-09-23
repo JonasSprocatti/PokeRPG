@@ -20,7 +20,7 @@ import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINA
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
@@ -28,9 +28,13 @@ import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
 // golpes e fim de turno vêm do motor único (golpe.js), narrados pelo CTX do single player (efeitos.js)
 const useMove = (user, target, move, movedFirst) => usarGolpe(user, target, move, movedFirst, CTX);
+// O inimigo pensa conforme quem ele é: selvagem chuta bastante, treinador pensa melhor, Alfa e lendário quase sempre
+// acertam o golpe (regras.escolhaIA). O alvo é sempre o seu lado — pega o primeiro em pé pra medir a eficácia.
 function chooseEnemyMove(E) {
-  const ok = E.moves.filter(m => m.ppLeft > 0);
-  return ok.length ? pick(ok) : STRUGGLE;
+  const B = G.B;
+  const esperteza = B?.chefe || B?.lendarios ? ESPERTEZA.chefe : B?.trainer ? ESPERTEZA.treinador : ESPERTEZA.selvagem;
+  const alvo = vivos(emCampo())[0] || G.S.player;
+  return escolhaIA(E.moves, E.data.types, alvo.data.types, esperteza) || STRUGGLE;
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 

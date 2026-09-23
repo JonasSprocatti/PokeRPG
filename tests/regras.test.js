@@ -9,7 +9,7 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado
+  golpeDoAliado, escolhaIA, ESPERTEZA
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -400,6 +400,18 @@ test('situacaoMissoes: missão de outro mapa (gen) nem aparece', () => {
   const ids = S => situacaoMissoes(M, { wins: 0, player: { level: 5 }, ...S }).ativas.map(x => x.m.id);
   assert.deepEqual(ids({}), ['k', 'todas']);          // save sem gen = Gen 1
   assert.deepEqual(ids({ gen: 2 }), ['todas']);
+});
+
+test('escolhaIA: pensa conforme a esperteza, e sem PP devolve null (Struggle)', () => {
+  const g = (name, type, power, ppLeft = 5) => ({ name, type, power, cls: 'physical', ppLeft });
+  const moves = [g('tackle', 'normal', 40), g('ember', 'fire', 40), g('flamethrower', 'fire', 90)];
+  // sorte baixa = "pensou": pega o de maior dano esperado contra Planta
+  assert.equal(escolhaIA(moves, ['fire'], ['grass'], 0.9, () => 0).name, 'flamethrower');
+  // sorte alta = chutou: cai no sorteio (o índice sai do mesmo `sorte`)
+  assert.equal(escolhaIA(moves, ['fire'], ['grass'], 0.5, () => 0.99).name, 'flamethrower'); // 0.99×3 = índice 2
+  assert.equal(escolhaIA(moves, ['fire'], ['grass'], 0, () => 0).name, 'tackle');            // nunca pensa: índice 0
+  assert.equal(escolhaIA([g('tackle', 'normal', 40, 0)], ['normal'], ['normal']), null);     // sem PP
+  assert.ok(ESPERTEZA.selvagem < ESPERTEZA.treinador && ESPERTEZA.treinador < ESPERTEZA.chefe);
 });
 
 test('formatarTempo', () => {
