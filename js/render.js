@@ -7,7 +7,7 @@ import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DER
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { clamp, esc, fmt } from './util.js';
@@ -56,9 +56,10 @@ function turnoBar(B, P, E) {
   const bolas = T && !T.lendarios ? ` <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}` : '';
   const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : 'Pokémon e bolas do treinador'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span>${bolas}</span>` : '';
   // clima do campo (regras.CLIMAS): ícone + quantos turnos faltam
-  const cl = climaDe(B.campo);
+  const cl = climaDe(B.campo), te = terrenoDe(B.campo);
   const clima = cl ? `<span class="clima-selo" title="${esc(CLIMAS[cl].nome)}">${CLIMAS[cl].icone} ${esc(CLIMAS[cl].nome)} · ${B.campo.turnos}</span>` : '';
-  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${clima}${info}<span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
+  const terreno = te ? `<span class="clima-selo terreno" title="${esc(TERRENOS[te].nome)} (só vale pra quem está no chão)">${TERRENOS[te].icone} ${esc(TERRENOS[te].nome)} · ${B.campo.terrenoTurnos}</span>` : '';
+  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${clima}${terreno}${info}<span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
 }
 // contador de desmaios do Médio pra cima: "2/3 livres", depois "precisa de Revive (tem N)"
 function desmaiosTxt(S) {

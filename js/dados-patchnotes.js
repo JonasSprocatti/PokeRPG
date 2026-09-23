@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '1.4', data: '2026-09-22', titulo: 'O chão também entrou na briga', piada: 'O Campo de Grama foi aparado. O jardineiro de Paldea agradece as mensagens de carinho.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Chegaram os terrenos: Campo Elétrico, Campo de Grama, Campo Psíquico e Campo de Névoa, que duram 5 turnos e aparecem no topo da luta junto do clima.',
+        'Campo Elétrico deixa os golpes Elétricos 30% mais fortes e ninguém dorme; Campo de Grama fortalece golpes de Planta e cura um pouquinho todo turno; Campo Psíquico fortalece os Psíquicos e barra golpes de prioridade; Campo de Névoa corta o dano de Dragão pela metade e bloqueia qualquer status.',
+        'Tudo isso só vale pra quem está NO CHÃO: Pokémon do tipo Voador e quem tem Levitate flutuam e ficam de fora — inclusive da cura e da proteção.',
+        'Os golpes Electric Terrain, Grassy Terrain, Psychic Terrain e Misty Terrain funcionam, e as habilidades Electric Surge, Grassy Surge, Psychic Surge e Misty Surge ligam o campo assim que o Pokémon aparece. Surge Surfer dobra a velocidade no Campo Elétrico.'
+      ] }
+    ] },
   { versao: '1.3', data: '2026-09-22', titulo: 'Offline de verdade e itens mais fáceis de achar', piada: 'O Porygon foi baixado com sucesso. Ele pediu pra avisar que agora mora no seu aparelho.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -22,7 +22,9 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     'contato', 'contatoDano', 'aguenta', 'semDanoRecuo', 'maxAcertos', 'chanceSecundaria', 'semSecundario', 'sonoRapido', 'fimTurno',
     'curaStatusFimTurno', 'intimida', 'fuga',
     // clima (regras.CLIMAS)
-    'climaAoEntrar', 'multStatClima', 'curaClima', 'danoClimaProprio', 'imuneClima', 'escondeNoClima', 'curaStatusClima', 'semStatusClima']);
+    'climaAoEntrar', 'multStatClima', 'curaClima', 'danoClimaProprio', 'imuneClima', 'escondeNoClima', 'curaStatusClima', 'semStatusClima',
+    // terrenos (regras.TERRENOS)
+    'terrenoAoEntrar', 'multStatTerreno']);
   const tipos = Object.keys(TYPE_PT);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
     for (const k of Object.keys(h)) assert.ok(ganchos.has(k), `${nome}: gancho desconhecido "${k}" (não faz nada no motor)`);

@@ -21,6 +21,7 @@
 //   danoIgualHp      o alvo fica com o HP de quem usou (Endeavor)
 //   soPrimeiroTurno  só funciona no primeiro golpe que você dá na batalha (Fake Out, First Impression)
 //   clima: tipo      muda o tempo da batalha por CLIMA_TURNOS (Rain Dance, Sunny Day, Sandstorm, Hail, Snowscape)
+//   terreno: tipo    muda o chão por TERRENO_TURNOS (Electric/Grassy/Psychic/Misty Terrain)
 export const GOLPES_ESPECIAIS = {
   protect: { protege: true }, detect: { protege: true }, 'spiky-shield': { protege: true }, 'kings-shield': { protege: true },
   'baneful-bunker': { protege: true }, obstruct: { protege: true }, 'silk-trap': { protege: true }, 'burning-bulwark': { protege: true },
@@ -50,6 +51,9 @@ export const GOLPES_ESPECIAIS = {
   'fake-out': { soPrimeiroTurno: true }, 'first-impression': { soPrimeiroTurno: true },
   // clima (regras.CLIMAS): duram CLIMA_TURNOS e valem pros dois lados
   'rain-dance': { clima: 'chuva' }, 'sunny-day': { clima: 'sol' }, sandstorm: { clima: 'areia' },
-  hail: { clima: 'granizo' }, snowscape: { clima: 'neve' }, chillyreception: { clima: 'neve' }
+  hail: { clima: 'granizo' }, snowscape: { clima: 'neve' }, chillyreception: { clima: 'neve' },
+  // terrenos (regras.TERRENOS): duram TERRENO_TURNOS e só valem pra quem está no chão
+  'electric-terrain': { terreno: 'eletrico' }, 'grassy-terrain': { terreno: 'grama' },
+  'psychic-terrain': { terreno: 'psiquico' }, 'misty-terrain': { terreno: 'fada' }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

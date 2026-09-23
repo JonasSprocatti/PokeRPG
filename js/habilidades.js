@@ -41,6 +41,8 @@
 //   escondeNoClima: [clima]  quem ataca você erra mais naquele clima (chanceAcerto) — Sand Veil, Snow Cloak
 //   curaStatusClima: clima   cura o próprio status por turno naquele clima (Hydration)
 //   semStatusClima: clima    não pega status naquele clima (Leaf Guard)
+//   terrenoAoEntrar: terreno ao entrar em campo, muda o chão (batalha.js / mp-motor) — Electric Surge…
+//   multStatTerreno: {terreno:{stat:n}}  atributo × n naquele terreno, se estiver no chão (effStat) — Surge Surfer
 export const HABILIDADES = {
   // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
   drizzle: { climaAoEntrar: 'chuva' }, drought: { climaAoEntrar: 'sol' }, 'sand-stream': { climaAoEntrar: 'areia' }, 'snow-warning': { climaAoEntrar: 'neve' },
@@ -53,6 +55,10 @@ export const HABILIDADES = {
   'sand-veil': { escondeNoClima: ['areia'], imuneClima: ['areia'] }, 'snow-cloak': { escondeNoClima: ['granizo', 'neve'], imuneClima: ['granizo'] },
   'magic-guard': { imuneClima: ['areia', 'granizo'] },
   hydration: { curaStatusClima: 'chuva' }, 'leaf-guard': { semStatusClima: 'sol' },
+  // terrenos: ligam o campo ao entrar, ou se aproveitam dele
+  'electric-surge': { terrenoAoEntrar: 'eletrico' }, 'grassy-surge': { terrenoAoEntrar: 'grama' },
+  'psychic-surge': { terrenoAoEntrar: 'psiquico' }, 'misty-surge': { terrenoAoEntrar: 'fada' },
+  'surge-surfer': { multStatTerreno: { eletrico: { speed: 2 } } },
   overcoat: { imuneClima: ['areia', 'granizo'], semSecundario: true },
   // força em apuros
   overgrow: { pinch: 'grass' }, blaze: { pinch: 'fire' }, torrent: { pinch: 'water' }, swarm: { pinch: 'bug' },

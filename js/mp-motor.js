@@ -8,8 +8,8 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE } from './dados.js';
-import { effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe } from './regras.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima } from './golpe.js';
+import { effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe } from './regras.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno } from './golpe.js';
 import { hab } from './habilidades.js';
 import { rand, clamp, fmt } from './util.js';
 
@@ -30,7 +30,7 @@ export function fotoDoMon(M, ref, dono, nome, slot = 0) {
 }
 // pvp: ninguém foge (só dá pra desistir)
 // `campo` = o que vale pros dois lados (hoje só o clima — regras.CLIMAS)
-export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: { clima: null, turnos: 0 } });
+export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0 } });
 
 /* ---- balancear ---- */
 // mesmo Pokémon em outro nível: recalcula os stats (base/IVs/EVs/natureza) e mantém a FRAÇÃO de HP
@@ -80,10 +80,10 @@ export function acaoDaIA(e, m, sorte = Math.random) {
 export async function resolverTurnoMP(estado, acoes) {
   const s = structuredClone(estado), ev = [];
   const say = (txt, cls = '') => ev.push({ txt, cls });
-  s.campo ||= { clima: null, turnos: 0 }; // batalha de uma versão anterior, sem campo
+  s.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0 }; // batalha de uma versão anterior, sem campo
   const ctx = { nome: m => m.nome, golpe: g => fmt(g.name), say, refDe: m => m.ref, monPorRef: r => monMP(s, r), campo: s.campo };
   // habilidades que mudam o tempo ao entrar em campo, no 1º turno (Drizzle, Drought…)
-  if (s.turno === 1) for (const m of vivosMP(todosMP(s))) { const c = hab(m).climaAoEntrar; if (c) await mudarClima(c, ctx, m); }
+  if (s.turno === 1) for (const m of vivosMP(todosMP(s))) { const c = hab(m).climaAoEntrar, tr = hab(m).terrenoAoEntrar; if (c) await mudarClima(c, ctx, m); if (tr) await mudarTerreno(tr, ctx, m); }
   if (s.fim) return { estado: s, eventos: ev };
   const valida = a => { const m = monMP(s, a.ref); return m && m.hp > 0; };
 
@@ -111,7 +111,7 @@ export async function resolverTurnoMP(estado, acoes) {
   // 2) golpes na ordem de prioridade e velocidade
   const golpes = acoes.filter(a => a.tipo === 'golpe' && valida(a)).map(a => {
     const m = monMP(s, a.ref), g = a.golpe === -1 || !m.moves[a.golpe] ? STRUGGLE : m.moves[a.golpe];
-    return { ...a, m, g, prio: g.priority || 0, vel: effStat(m, 'speed', false, true, climaDe(s.campo)) }; // clima entra aqui (Swift Swim…)
+    return { ...a, m, g, prio: g.priority || 0, vel: effStat(m, 'speed', false, true, climaDe(s.campo), terrenoDe(s.campo)) }; // clima entra aqui (Swift Swim…)
   });
   const ordem = ordenarAcoes(golpes), pos = ref => ordem.findIndex(o => o.ref === ref);
   for (let i = 0; i < ordem.length; i++) {
@@ -129,7 +129,7 @@ export async function resolverTurnoMP(estado, acoes) {
   }
 
   // 3) fim de turno: queimadura/veneno, desmaios, quem venceu
-  if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { for (const m of vivosMP(todosMP(s))) await fimDeTurno(m, ctx); await passarClima(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
+  if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { for (const m of vivosMP(todosMP(s))) await fimDeTurno(m, ctx); await passarClima(s.campo, ctx); await passarTerreno(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
   for (const m of todosMP(s)) { fimDaRodada(m); if (m.hp <= 0 && !m.caido) { m.caido = true; say(`${m.nome} desmaiou!`, 'hit'); } }
   if (!vivosMP(s.lados.B).length) s.fim = 'A';
   else if (!vivosMP(s.lados.A).length) s.fim = 'B';

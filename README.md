@@ -118,6 +118,14 @@ As batalhas têm tempo, mostrado no topo com os turnos restantes:
 - Ligam com **Rain Dance, Sunny Day, Sandstorm, Hail e Snowscape** (5 turnos) ou com habilidades como **Drizzle** e **Drought**, assim que o Pokémon entra em campo.
 - **Habilidades que aproveitam o tempo:** Swift Swim, Chlorophyll, Sand Rush, Slush Rush, Rain Dish, Ice Body, Dry Skin, Solar Power, Sand Veil, Snow Cloak, Hydration, Leaf Guard, Magic Guard e Overcoat.
 
+### Terrenos
+Duram 5 turnos e **só valem para quem está no chão** (Voador e Levitate flutuam e ficam de fora de tudo, inclusive da cura):
+- **⚡ Campo Elétrico:** golpes Elétricos ×1,3 e ninguém dorme.
+- **🌿 Campo de Grama:** golpes de Planta ×1,3 e cura 1/16 por turno.
+- **🔮 Campo Psíquico:** golpes Psíquicos ×1,3 e golpes de prioridade não passam.
+- **🌫 Campo de Névoa:** dano de Dragão pela metade e nenhum status pega.
+- Ligam com os golpes **Electric/Grassy/Psychic/Misty Terrain** ou com as habilidades **Electric Surge, Grassy Surge, Psychic Surge e Misty Surge**. **Surge Surfer** dobra a velocidade no Campo Elétrico.
+
 ### Amizade e aliados
 - Em batalha contra um selvagem, ofereça um **petisco** que o tipo dele goste. Com a amizade cheia, ele passa a te seguir (até **2 aliados**). São 6 petiscos que cobrem os 18 tipos.
 - Aliados lutam **junto com você** no mesmo turno, ganham XP, aprendem golpes e evoluem.
@@ -223,7 +231,7 @@ Depois abra http://localhost:3000.
 - [ ] **Batalha mais completa**, nesta ordem:
   1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela).
   2. ~~Clima~~ ✔ (sol, chuva, areia, granizo e neve, com as habilidades ligadas a eles).
-  3. **Terrenos:** elétrico, grama, psíquico e névoa.
+  3. ~~Terrenos~~ ✔ (elétrico, grama, psíquico e névoa, com as habilidades Surge).
   4. ~~Itens segurados~~ ✔ (13 itens; faltam os Choice, que travam o golpe, e frutas de aperto por tipo).
   5. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
   6. **Mecânicas especiais:** Mega Evolução, Z-Moves, Dynamax/Gigantamax e Terastalização.

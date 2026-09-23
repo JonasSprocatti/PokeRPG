@@ -40,12 +40,15 @@ export function multStatClima(m, stat, clima) {
   const bonus = m.data.types.reduce((a, t) => a * (porTipo[t]?.[stat] || 1), 1);
   return (hab(m).multStatClima?.[clima]?.[stat] || 1) * bonus;
 }
-export function effStat(m, stat, crit = false, attacking = true, clima = null) {
+// quanto o terreno mexe num atributo (só pra quem está no chão) — Surge Surfer no Campo Elétrico
+export const multStatTerreno = (m, stat, terreno) =>
+  terreno && noChao(m) ? (hab(m).multStatTerreno?.[terreno]?.[stat] || 1) : 1;
+export function effStat(m, stat, crit = false, attacking = true, clima = null, terreno = null) {
   let st = m.vol?.stages[stat] || 0;
   if (crit) { if (attacking && st < 0) st = 0; if (!attacking && st > 0) st = 0; }
   const h = hab(m);
   let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
-  v *= multStatClima(m, stat, clima);                                             // Swift Swim/Chlorophyll, Pedra na areia, Gelo na neve
+  v *= multStatClima(m, stat, clima) * multStatTerreno(m, stat, terreno);         // clima e terreno
   if (m.status && h.comStatus?.[stat]) v *= h.comStatus[stat];                     // Guts, Quick Feet, Marvel Scale
   else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
   return Math.max(1, Math.floor(v));
@@ -90,6 +93,30 @@ export const CLIMAS = {
   neve: { nome: 'Neve', icone: '❄', comeca: 'Começou a nevar!', acaba: 'A neve parou.', poupa: ['ice'], defesaDe: { ice: { defense: 1.5 } } }
 };
 export const CLIMA_TURNOS = 5;
+
+/* ---- terrenos ----
+   Também vivem no campo (`campo.terreno` / `campo.terrenoTurnos`) e duram 5 turnos, mas só valem pra quem está NO
+   CHÃO: Pokémon do tipo Voador e quem tem Levitate flutuam e ficam de fora de tudo (bônus, cura e proteção). */
+export const TERRENOS = {
+  eletrico: { nome: 'Campo Elétrico', icone: '⚡', comeca: 'O chão fica eletrizado!', acaba: 'A eletricidade do chão sumiu.', sobe: { electric: 1.3 }, semStatus: ['sleep'] },
+  grama: { nome: 'Campo de Grama', icone: '🌿', comeca: 'Cresce grama alta pelo campo!', acaba: 'A grama do campo murchou.', sobe: { grass: 1.3 }, cura: 1 / 16 },
+  psiquico: { nome: 'Campo Psíquico', icone: '🔮', comeca: 'O chão fica estranho, quase vivo!', acaba: 'A estranheza do chão passou.', sobe: { psychic: 1.3 }, semPrioridade: true },
+  fada: { nome: 'Campo de Névoa', icone: '🌫', comeca: 'Uma névoa cobre o chão!', acaba: 'A névoa do chão se dissipou.', desce: { dragon: 0.5 }, semStatus: 'todos' }
+};
+export const TERRENO_TURNOS = 5;
+export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
+// quem está no chão sente o terreno; Voador e Levitate flutuam
+export const noChao = m => !m.data.types.includes('flying') && hab(m).imuneTipo !== 'ground';
+export function multTerreno(terreno, tipo, atacante) {
+  const t = TERRENOS[terreno]; if (!t || !atacante || !noChao(atacante)) return 1;
+  return t.sobe?.[tipo] || t.desce?.[tipo] || 1;
+}
+// o terreno impede este status neste Pokémon? (Campo Elétrico tira o sono; Campo de Névoa tira todos)
+export function terrenoBloqueiaStatus(terreno, m, ail) {
+  const t = TERRENOS[terreno];
+  if (!t?.semStatus || !noChao(m)) return false;
+  return t.semStatus === 'todos' || t.semStatus.includes(ail);
+}
 export const climaDe = campo => (campo?.turnos > 0 && CLIMAS[campo.clima]) ? campo.clima : null;
 // multiplicador de dano do clima pro tipo do golpe
 export function multClima(clima, tipo) {
@@ -106,7 +133,7 @@ export function danoClima(clima, m) {
 // precisão que muda com o clima: Thunder/Hurricane acertam sempre na chuva e ficam ruins no sol; Blizzard, no gelo
 export const PRECISAO_CLIMA = { thunder: { chuva: 100, sol: 50 }, hurricane: { chuva: 100, sol: 50 }, blizzard: { granizo: 100, neve: 100 } };
 
-export function calcDamage(u, t, move, clima = null) {
+export function calcDamage(u, t, move, clima = null, terreno = null) {
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
   const hu = hab(u), ht = hab(t);
   let power = poderEspecial(u, t, move) ?? (move.power || 60);
@@ -114,8 +141,8 @@ export function calcDamage(u, t, move, clima = null) {
   const phys = move.cls === 'physical';
   // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)
   const crit = Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0))];
-  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima);
-  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima);
+  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno);
+  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * rand(85, 100) / 100;
   if (u.data.types.includes(move.type)) mod *= hu.stab || 1.5;                        // STAB (Adaptability = ×2)
@@ -130,6 +157,7 @@ export function calcDamage(u, t, move, clima = null) {
   if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
   mod *= multDanoDoItem(u, { ef, fisico: phys });                                    // item segurado (Orbe da Vida…)
   mod *= multClima(clima, move.type);                                                // sol/chuva (regras.CLIMAS)
+  mod *= multTerreno(terreno, move.type, u);                                         // terreno, pra quem está no chão
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
 export function confDamage(u) {

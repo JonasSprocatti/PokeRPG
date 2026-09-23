@@ -16,13 +16,31 @@ import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
 import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko,
-  CLIMAS, CLIMA_TURNOS, climaDe, danoClima } from './regras.js';
+  CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
 const up = ctx => (ctx.atualizar || nada)();
 const nomeDoItem = m => ITEMS[m.item]?.name || 'o item';
 const climaDoCtx = ctx => climaDe(ctx.campo);
+const terrenoDoCtx = ctx => terrenoDe(ctx.campo);
+// liga um terreno novo (golpe ou habilidade) e narra
+export async function mudarTerreno(terreno, ctx, quem = null) {
+  if (!TERRENOS[terreno] || !ctx.campo) return false;
+  const repetido = terrenoDoCtx(ctx) === terreno;
+  ctx.campo.terreno = terreno; ctx.campo.terrenoTurnos = TERRENO_TURNOS;
+  await ctx.say(`${TERRENOS[terreno].icone} ${repetido ? `O campo continua: ${TERRENOS[terreno].nome.toLowerCase()}.` : TERRENOS[terreno].comeca}${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
+  return true;
+}
+// fim da rodada: o terreno anda um turno (chamado junto de passarClima)
+export async function passarTerreno(campo, ctx) {
+  if (!campo?.terrenoTurnos) return;
+  campo.terrenoTurnos--;
+  if (campo.terrenoTurnos > 0) return;
+  const t = TERRENOS[campo.terreno];
+  campo.terreno = null;
+  if (t) await ctx.say(t.acaba, 'muted');
+}
 // liga um clima novo (golpe ou habilidade) e narra; o mesmo clima de novo só renova o tempo
 export async function mudarClima(clima, ctx, quem = null) {
   if (!CLIMAS[clima] || !ctx.campo) return false;
@@ -72,6 +90,11 @@ export async function aplicarStatus(t, ail, ctx, avisar = false) {
     if (avisar) await ctx.say(`A habilidade ${fmt(t.ability)} de ${ctx.nome(t)} protege ${ctx.nome(t)} no ${CLIMAS[climaDe(ctx.campo)].nome.toLowerCase()}!`);
     return;
   }
+  // terreno: Campo Elétrico não deixa dormir, Campo de Névoa não deixa pegar status nenhum (só quem está no chão)
+  if (terrenoBloqueiaStatus(terrenoDe(ctx.campo), t, ail)) {
+    if (avisar) await ctx.say(`${TERRENOS[terrenoDe(ctx.campo)].nome} protege ${ctx.nome(t)}!`);
+    return;
+  }
   if (imuneAoStatusMon(t, ail)) {
     if (avisar) await ctx.say(hab(t).imuneStatus?.includes(ail) ? `A habilidade ${fmt(t.ability)} de ${ctx.nome(t)} impede isso!` : `Não afeta ${ctx.nome(t)}...`);
     return;
@@ -91,6 +114,7 @@ export async function aplicarStatus(t, ail, ctx, avisar = false) {
 async function statusEspecial(u, t, g, esp, ctx) {
   const U = ctx.nome(u), T = ctx.nome(t);
   if (esp.clima) { if (!await mudarClima(esp.clima, ctx)) await ctx.say('Mas falhou!'); return true; }
+  if (esp.terreno) { if (!await mudarTerreno(esp.terreno, ctx)) await ctx.say('Mas falhou!'); return true; }
   if (esp.protege) {
     // repetir seguido: 1/3, 1/9… de chance
     const n = u.vol.protSeguidas || 0;
@@ -169,6 +193,12 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
     }
   }
   if (g.cls === 'status' && seg(u).semStatus) { await ctx.say(`${U} não consegue usar golpe de status segurando o Colete de Assalto!`); return; }
+  // Campo Psíquico: golpe de prioridade não passa em quem está no chão
+  const terr = terrenoDoCtx(ctx);
+  if (TERRENOS[terr]?.semPrioridade && (g.priority || 0) > 0 && u !== t && noChao(t)) {
+    await ctx.say(`${TERRENOS[terr].nome} protege ${ctx.nome(t)} de golpes rápidos!`);
+    return;
+  }
   const esp = especial(g);
   if (!esp.protege && !esp.aguentaTurno) u.vol.protSeguidas = 0;
   // no sol forte, Solar Beam e Solar Blade saem na hora (não precisam carregar)
@@ -235,7 +265,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   const cheio = t.hp >= t.stats.hp;
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
-    const r = calcDamage(u, t, g, climaDoCtx(ctx));
+    const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx));
     let dano = r.dmg;
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
@@ -310,6 +340,12 @@ export async function fimDeTurno(m, ctx) {
     m.hp -= s; up(ctx); await ctx.say(`A semente drenou ${ctx.nome(m)}. (−${s})`, 'hit');
     const quem = ctx.monPorRef?.(m.vol.semente);
     if (quem && quem.hp > 0 && quem.hp < quem.stats.hp) { heal(quem, s); up(ctx); await ctx.say(`${ctx.nome(quem)} recuperou ${s} HP.`, 'good'); }
+  }
+  // Campo de Grama: cura quem está no chão
+  const terr = terrenoDoCtx(ctx), tCura = TERRENOS[terr]?.cura;
+  if (tCura && m.hp > 0 && noChao(m) && m.hp < m.stats.hp) {
+    const n = Math.max(1, Math.floor(m.stats.hp * tCura)); heal(m, n); up(ctx);
+    await ctx.say(`${ctx.nome(m)} se recupera na grama alta. (+${n})`, 'good');
   }
   // item segurado: Restos curam, Lodo Negro cura Venenoso e machuca o resto (segurados.js)
   const di = fimDeTurnoDoItem(m);
