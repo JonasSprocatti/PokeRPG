@@ -116,11 +116,24 @@ test('Pikachu e Eevee continuam liberados; os 27 iniciais e as evoluções, não
 });
 
 test('Alfa que era inicial vira o mais raro do pool, no mesmo nível', () => {
-  const fake = [{ gen: 1, rotas: [{ id: 'r', min: 2, max: 5, pool: [{ id: 4, n: 'charmander', p: 30 }, { id: 16, n: 'pidgey', p: 50 }, { id: 10, n: 'caterpie', p: 1 }], chefe: { id: 6, n: 'charizard', nivel: 12 } }] }];
+  const fake = [{ gen: 1, rotas: [{ id: 'r', min: 2, max: 5, pool: [{ id: 4, n: 'charmander', p: 30 }, { id: 16, n: 'pidgey', p: 50 }, { id: 10, n: 'caterpie', p: 1 }], chefe: { id: 6, nome: 'Charizard', nivel: 12 } }] }];
   tirarIniciais(fake);
   const z = fake[0].rotas[0];
   assert.deepEqual(z.pool.map(p => p.n), ['pidgey', 'caterpie']);
-  assert.deepEqual([z.chefe.n, z.chefe.nivel], ['caterpie', 12]);
+  // id E nome mudam juntos: trocar só o id dava um Alfa chamado "Charizard" com o corpo do Caterpie (bug real)
+  assert.deepEqual([z.chefe.id, z.chefe.nome, z.chefe.nivel], [10, 'Caterpie', 12]);
+});
+
+test('nome do Alfa combina com o id dele (quando o Alfa é alguém do pool da rota)', () => {
+  for (const g of GENS) for (const z of g.rotas) {
+    const noPool = z.chefe && z.pool.find(p => p.id === z.chefe.id);
+    if (noPool) assert.equal(z.chefe.nome.toLowerCase().replace(/ /g, '-'), noPool.n, `${z.id}: Alfa "${z.chefe.nome}" é o #${z.chefe.id} (${noPool.n})`);
+  }
+});
+
+test('nenhum Alfa de rota é inicial de região', () => {
+  for (const g of GENS) for (const z of g.rotas)
+    if (z.chefe) assert.equal(ehInicialDeRegiao(z.chefe.id), false, `${z.id}: Alfa ${z.chefe.nome}`);
 });
 
 test('rota que perdeu inicial é completada com vizinha do mesmo mapa (nunca fica magra)', () => {

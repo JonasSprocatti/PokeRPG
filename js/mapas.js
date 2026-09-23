@@ -9,7 +9,7 @@
 // Puro (sem DOM): testado em tests/mapas.test.js.
 import { GENS } from './dados-mapas.js';
 import { REGIOES_INICIAIS } from './dados.js';
-import { clamp } from './util.js';
+import { clamp, fmt } from './util.js';
 
 /* ---- iniciais não aparecem nas rotas ----
    O inicial é a escolha que abre a jornada; achar um solto no mato tira o peso dela. Então os 27 iniciais das 9
@@ -42,10 +42,12 @@ export function tirarIniciais(gens) {
   for (const g of gens) for (const z of g.rotas) {
     const limpo = z.pool.filter(p => !ehInicialDeRegiao(p.id));
     if (limpo.length && limpo.length < z.pool.length) { z.pool = limpo; curtas.push([g, z]); }
-    // Alfa da rota também não pode ser inicial: vira o Pokémon mais raro do que sobrou, no mesmo nível de sempre
+    // Alfa da rota também não pode ser inicial: vira o Pokémon mais raro do que sobrou, no mesmo nível de sempre.
+    // O chefe é `{ id, nome, nivel }` — o `nome` é só o rótulo e o `id` é quem o jogo carrega de verdade (sprite,
+    // tipos, golpes). Trocar um sem o outro cria um Alfa de nome "Delphox" com o corpo de outro bicho: foi bug real.
     if (z.chefe && ehInicialDeRegiao(z.chefe.id) && z.pool.length) {
       const raro = z.pool.reduce((a, p) => p.p < a.p ? p : a);
-      z.chefe = { ...z.chefe, id: raro.id, n: raro.n };
+      z.chefe = { ...z.chefe, id: raro.id, nome: fmt(raro.n) };
     }
   }
   for (const [g, z] of curtas) if (z.pool.length < MIN_POOL) completarPool(g, z);
