@@ -26,8 +26,18 @@
 //   soNoGelo         esse golpe só funciona com granizo ou neve (Aurora Veil)
 //   armadilha: tipo  põe Stealth Rock / Spikes / Toxic Spikes no lado do inimigo (pega quem entrar depois)
 export const GOLPES_ESPECIAIS = {
-  protect: { protege: true }, detect: { protege: true }, 'spiky-shield': { protege: true }, 'kings-shield': { protege: true },
-  'baneful-bunker': { protege: true }, obstruct: { protege: true }, 'silk-trap': { protege: true }, 'burning-bulwark': { protege: true },
+  /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
+     FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
+       estagio: [atributo, quanto]  baixa o atributo de quem atacou   dano: fração do HP máx.   status: envenena/queima
+     Sem isso, King's Shield era um Protect comum — e o King's Shield existe justamente pra tirar o Ataque de quem
+     tenta encostar no Aegislash. */
+  protect: { protege: true }, detect: { protege: true },
+  'spiky-shield': { protege: true, puneContato: { dano: 1 / 8 } },
+  'kings-shield': { protege: true, puneContato: { estagio: ['attack', -2] }, voltaPostura: true },
+  'baneful-bunker': { protege: true, puneContato: { status: 'poison' } },
+  obstruct: { protege: true, puneContato: { estagio: ['defense', -2] } },
+  'silk-trap': { protege: true, puneContato: { estagio: ['speed', -1] } },
+  'burning-bulwark': { protege: true, puneContato: { status: 'burn' } },
   endure: { aguentaTurno: true },
   'focus-energy': { foco: 2 },
   rest: { descanso: true },

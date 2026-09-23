@@ -18,7 +18,7 @@ import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas } from './regras.js';
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
@@ -78,7 +78,7 @@ export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || nul
 // Algo impediu de agir: carga e fúria se perdem (como nos jogos)
 function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.vol.furia; }
 // Fim da rodada (depois de todos agirem): proteções de um turno só acabam
-export function fimDaRodada(m) { if (!m.vol) return; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; }
+export function fimDaRodada(m) { if (!m.vol) return; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; }
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
 /* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
@@ -89,6 +89,24 @@ export function fimDaRodada(m) { if (!m.vol) return; m.vol.flinch = false; m.vol
    então Flame Charge, Power-Up Punch, Ancient Power e companhia davam o bônus pro OPONENTE. Aceita as duas grafias
    pra não depender de qual delas a API usa. */
 export const mudaOUsuario = meta => /[-+]raise$/.test(meta?.cat || '');
+
+/* Mudança de Postura (Aegislash). Golpe de dano vira a Forma Lâmina (ataque altíssimo, defesa de papel); King's
+   Shield volta pra Forma Escudo. As duas formas têm os MESMOS números trocados de lado (Ataque ↔ Defesa e
+   At. Esp. ↔ Def. Esp.), então a troca é espelhar os atributos base — sem buscar a outra forma na rede, o que
+   deixaria a batalha esperando por uma requisição no meio do turno.
+   Cuidado: `m.data` é o objeto do CACHE, compartilhado por todo Aegislash que aparecer. Por isso a troca cria uma
+   cópia (`{ ...m.data, base }`) em vez de mexer no original — senão o primeiro Aegislash do jogo contaminaria os
+   próximos, e o cache guardaria a forma errada. */
+export async function trocarPostura(m, paraLamina, ctx) {
+  const h = hab(m); if (!h.postura || !!m.lamina === paraLamina) return false;
+  const base = { ...m.data.base };
+  for (const [a, b] of [h.postura.ataque, h.postura.especial]) { const t = base[a]; base[a] = base[b]; base[b] = t; }
+  m.data = { ...m.data, base };
+  m.lamina = paraLamina;
+  recalc(m); (ctx.atualizar || nada)();
+  await ctx.say(`${ctx.nome(m)} mudou para a Forma ${paraLamina ? 'Lâmina' : 'Escudo'}!`, 'good');
+  return true;
+}
 export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
   const h = hab(m);
   for (const c of mudancas) {
@@ -193,10 +211,16 @@ async function statusEspecial(u, t, g, esp, ctx) {
     return true;
   }
   if (esp.protege) {
+    // King's Shield devolve o Aegislash pra Forma Escudo — e isso acontece mesmo se a proteção falhar
+    if (esp.voltaPostura) await trocarPostura(u, false, ctx);
     // repetir seguido: 1/3, 1/9… de chance
     const n = u.vol.protSeguidas || 0;
-    if (Math.random() < 1 / 3 ** n) { u.vol.protegido = true; u.vol.protSeguidas = n + 1; await ctx.say(`${U} se protegeu!`, 'good'); }
-    else { u.vol.protSeguidas = 0; await ctx.say('Mas falhou!'); }
+    if (Math.random() < 1 / 3 ** n) {
+      u.vol.protegido = true; u.vol.protSeguidas = n + 1;
+      // a barreira lembra o que faz com quem encostar nela (King's Shield, Spiky Shield, Obstruct…)
+      if (esp.puneContato) u.vol.punicao = esp.puneContato; else delete u.vol.punicao;
+      await ctx.say(`${U} se protegeu!`, 'good');
+    } else { u.vol.protSeguidas = 0; delete u.vol.punicao; await ctx.say('Mas falhou!'); }
     return true;
   }
   if (esp.aguentaTurno) {
@@ -308,7 +332,17 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
 async function executar(u, t, g, primeiro, ctx, esp) {
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
-  if (!selfT && t.vol.protegido) { await ctx.say(`${T} se protegeu do golpe!`); return; }
+  if (!selfT && t.vol.protegido) {
+    await ctx.say(`${T} se protegeu do golpe!`);
+    // barreira que pune contato: só golpe físico encosta (mesma regra de Static/Elmo Rochoso)
+    const pun = t.vol.punicao;
+    if (pun && g.cls === 'physical' && u.hp > 0) {
+      if (pun.estagio) await mudarEstagios(u, [{ stat: pun.estagio[0], change: pun.estagio[1] }], ctx, t);
+      if (pun.dano) { const d = Math.max(1, Math.floor(u.stats.hp * pun.dano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na barreira! (−${d})`, 'hit'); }
+      if (pun.status && !u.status) await aplicarStatus(u, pun.status, ctx, true, t);
+    }
+    return;
+  }
   if (!selfT && t.vol.invul) { await ctx.say('Mas errou!'); return; }                 // alvo no ar / debaixo da terra
   if (esp.soDormindo && t.status !== 'sleep') { await ctx.say(`Não afeta ${T}... (só funciona em quem está dormindo)`); return; }
   if (esp.ohko) {
@@ -338,6 +372,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     const d = t.hp - u.hp; t.hp = u.hp; up(ctx); (ctx.tremer || nada)(t); await ctx.say(`${T} perdeu ${d} HP.`, 'hit'); return 'acertou';
   }
 
+  // Aegislash: atacar vira a Forma Lâmina ANTES de calcular o dano (é com o Ataque da Lâmina que o golpe sai)
+  if (hu.postura) await trocarPostura(u, true, ctx);
   const hits = meta.minHits ? (hu.maxAcertos ? meta.maxHits || meta.minHits : rand(meta.minHits, meta.maxHits || meta.minHits)) : 1;
   const cheio = t.hp >= t.stats.hp;
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;

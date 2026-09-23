@@ -94,7 +94,11 @@ export const HABILIDADES = {
   'poison-point': { contato: { status: 'poison', chance: 30 } },
   'rough-skin': { contatoDano: 1 / 8 }, 'iron-barbs': { contatoDano: 1 / 8 },
   // outros
-  'speed-boost': { fimTurno: 'speed' }, intimidate: { intimida: true }, 'run-away': { fuga: true }
+  'speed-boost': { fimTurno: 'speed' }, intimidate: { intimida: true }, 'run-away': { fuga: true },
+  // Aegislash: golpe de dano vira a Forma Lâmina, King's Shield volta pra Forma Escudo (golpe.trocarPostura).
+  // As duas formas são o MESMO Pokémon com Ataque/Defesa e At.Esp./Def.Esp. trocados entre si — por isso dá pra
+  // fazer sem buscar a outra forma na API: é só espelhar os atributos base.
+  'stance-change': { postura: { ataque: ['attack', 'defense'], especial: ['special-attack', 'special-defense'] } }
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
 /* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).

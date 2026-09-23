@@ -2,6 +2,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.3', data: '2026-09-23', titulo: 'O Aegislash finalmente saca a espada', piada: 'O Aegislash passou o jogo inteiro segurando o escudo na frente e a espada atrás. Agora ele aprendeu que dá pra inverter — e o adversário não gostou nem um pouco.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Mudança de Postura entrou no jogo: o Aegislash vira a Forma Lâmina quando ataca (ataque altíssimo, defesa de papel) e volta para a Forma Escudo quando usa King\'s Shield. É a primeira habilidade do jogo que troca a forma do Pokémon no meio da batalha.',
+        'As barreiras deixaram de ser todas iguais: King\'s Shield tira 2 de Ataque de quem tenta encostar, Obstruct tira 2 de Defesa, Spiky Shield machuca, Baneful Bunker envenena, Silk Trap tira Velocidade e Burning Bulwark queima. Só vale para golpes físicos — quem ataca de longe é bloqueado sem se machucar.'
+      ] }
+    ] },
   { versao: '2.2', data: '2026-09-23', titulo: 'Golpes no lugar certo', piada: 'O Flame Charge passou anos dando carona de velocidade para o adversário. Pedimos desculpas a todos os Rapidash que perderam corridas por isso.',
     secoes: [
       { nome: 'Correções', itens: [
