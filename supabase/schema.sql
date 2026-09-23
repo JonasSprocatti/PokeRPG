@@ -190,3 +190,18 @@ language sql stable security definer set search_path = public as $$
   select especie, count(distinct user_id) from public.jornadas group by especie order by 2 desc, 1
 $$;
 grant execute on function public.especies_ranqueadas() to anon, authenticated;
+
+-- ============ Progresso permanente da conta ============
+-- O que o jogador CONQUISTOU (espécies desbloqueadas e os contadores das gimmicks) não pode depender de o histórico
+-- continuar existindo: apagar uma jornada da carreira apagava junto o que ela tinha liberado. Esta tabela guarda o
+-- progresso em lugar próprio, e o jogo só junta (união) — nunca remove.
+-- Uma linha por conta. `dados` = { v, especies: { nome: { id, em, razoes } }, porJornada: { idDaJornada: {...} } }.
+create table if not exists public.progresso (
+  user_id uuid primary key references auth.users on delete cascade,
+  dados jsonb not null default '{}'::jsonb,
+  atualizado_em timestamptz not null default now()
+);
+alter table public.progresso enable row level security;
+drop policy if exists "progresso: tudo no próprio" on public.progresso;
+create policy "progresso: tudo no próprio" on public.progresso for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);

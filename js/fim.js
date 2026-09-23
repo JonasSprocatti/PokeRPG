@@ -8,7 +8,7 @@ import { $, limparTopo } from './ui.js';
 import { spriteFrente } from './render.js';
 import { DIFICULDADES, SPR } from './dados.js';
 import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
-import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES } from './carreira.js';
+import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, atualizarProgresso } from './carreira.js';
 import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
 import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
 import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
@@ -34,6 +34,7 @@ export function encerrarJornada(motivo, extra = {}) {
   const anterior = melhorDaEspecie(carreira.jornadas, resumo.especie, resumo.id);
   const nova = adicionarJornada(carreira, resumo);
   salvarCarreira(nova);
+  atualizarProgresso(nova.jornadas);   // grava a conquista em lugar próprio: apagar a jornada depois não desfaz
   store.del(SAVE_KEY); G.S = null; G.B = null;
   if (usuario()) apagarSaveNuvem(resumo.id).then(sincronizar).catch(e => console.error(e)); // sobe a jornada e tira o save da nuvem
   const jornadas = nova.jornadas.filter(j => j.especie === resumo.especie).length;

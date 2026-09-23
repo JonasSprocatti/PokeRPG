@@ -6,7 +6,8 @@
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
 import { barraTelas } from './navegacao.js';
-import { carregarCarreira } from './carreira.js';
+import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta } from './carreira.js';
+import { runsDeNivelDe } from './progresso-conta.js';
 import { progressoConquistas, ALVOS, MARCOS_ABATES, MODO_NAO_CONTA } from './conquistas.js';
 import { SPR, TYPE_PT, DESBLOQUEIO } from './dados.js';
 import { progressoRoguelike, textoProgresso } from './roguelike.js';
@@ -19,8 +20,10 @@ const barra = (feito, alvo) => `<div class="bar"><div class="fill" style="width:
 /* Uma missão da lista. `rotulo` já vem pronto (nome do tipo em português, nome do golpe formatado…), porque cada
    categoria fala de uma coisa diferente: tipo do derrotado, sua espécie, nome do golpe. */
 function linhaMissao(x, rotulo, sprite = null) {
+  // a vaga do sprite existe SEMPRE: a lista é uma grade de `40px 1fr` e, sem nada na 1ª coluna, o texto caía
+  // dentro dos 40px e montava em cima da barra de progresso (bug relatado na tela de Conquistas)
   return `<li class="${x.liberado ? 'feito' : ''}">
-    ${sprite ? `<img src="${sprite}" alt="" loading="lazy">` : ''}
+    ${sprite ? `<img src="${sprite}" alt="" loading="lazy">` : '<span class="sem-sprite" aria-hidden="true"></span>'}
     <b>${x.liberado ? '🔓 ' : ''}${rotulo}</b>
     ${barra(x.n, x.alvo)}
     <small>${n(x.n)} / ${n(x.alvo)}${x.liberado ? ' · conquistado' : ` · faltam ${n(x.alvo - x.n)}`}</small>
@@ -37,7 +40,9 @@ export function telaConquistas() {
   G.mode = 'fim'; limparTopo();
   const jornadas = carregarCarreira().jornadas;
   // o registro da run em andamento entra junto: ver o contador subir no meio da jornada é metade da graça
-  const p = progressoConquistas(jornadas, G.S?.registro);
+  // do progresso PERMANENTE: apagar uma jornada do histórico não pode tirar conquista de ninguém
+  const p = progressoConquistas(jornadas, G.S?.registro,
+    { abates: abatesDaConta(G.S?.registro, jornadas), runs: runsDeNivelDe(carregarProgresso(), ALVOS.gmaxNivel) });
   const m = p.abates;
 
   const tera = p.tera.slice(0, 18).map(x => linhaMissao(x, esc(TYPE_PT[x.chave] || fmt(x.chave))));
@@ -86,9 +91,10 @@ export function telaConquistas() {
    jogo. **Desbloquear só conta em jornada Roguelike**; usar a espécie desbloqueada vale em qualquer modo. */
 function secaoEspecies() {
   const prog = progressoRoguelike(carregarCarreira().jornadas);
-  const ja = prog.filter(p => p.desbloqueada), faltam = prog.filter(p => !p.desbloqueada).slice(0, 15);
+  const ja = desbloqueadasDaConta();   // permanentes: não somem se você apagar a jornada que as conquistou
+  const faltam = prog.filter(p => !p.desbloqueada).slice(0, 15);
   const linha = p => `<li class="${p.desbloqueada ? 'feito' : ''}">
-    ${p.id ? `<img src="${SPR(p.id)}" alt="" loading="lazy">` : ''}
+    ${p.id ? `<img src="${SPR(p.id)}" alt="" loading="lazy">` : '<span class="sem-sprite" aria-hidden="true"></span>'}
     <b>${p.desbloqueada ? '🔓 ' : ''}${esc(fmt(p.especie))}</b>
     <div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div>
     <small>${esc(textoProgresso(p))}</small></li>`;
@@ -96,7 +102,8 @@ function secaoEspecies() {
     <p class="muted small">Desbloqueie derrotando <b>${DESBLOQUEIO.derrotados}</b>, fazendo amizade com <b>${DESBLOQUEIO.amigos}</b>,
       ou evoluindo pra ela <b>${DESBLOQUEIO.evolucaoMeio}×</b> (forma do meio) / <b>${DESBLOQUEIO.evolucaoFinal}×</b> (forma final).
       Só <b>jornadas Roguelike</b> contam pra desbloquear — mas, uma vez desbloqueada, a espécie vale em <b>qualquer modo</b>.</p>
-    <p class="small muted">Desbloqueadas até agora: <b>${n(ja.length)}</b> (além dos iniciais, Pikachu e Eevee).</p>
+    <p class="small muted">Desbloqueadas até agora: <b>${n(ja.length)}</b> (além dos iniciais, Pikachu e Eevee).
+      Elas ficam gravadas na conta: apagar a jornada que conquistou uma <b>não tira</b> a espécie.</p>
     ${faltam.length ? `<ul class="quase conquistas">${faltam.map(linha).join('')}</ul>`
       : '<p class="small muted">Nenhuma espécie em progresso ainda: jogue uma jornada Roguelike pra começar.</p>'}`;
 }

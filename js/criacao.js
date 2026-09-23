@@ -10,7 +10,7 @@ import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS,
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
-import { carregarCarreira } from './carreira.js';
+import { carregarCarreira, desbloqueadasDaConta } from './carreira.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
@@ -22,7 +22,7 @@ const livres = () => DIFICULDADES[G.dif].especiesLivres;
    em QUALQUER modo — conquista de conta que só serve num modo é conquista pela metade (decisão do usuário). */
 function permitidos() {
   if (livres()) return null;
-  return [...new Set([...INICIAIS, ...desbloqueadas(carregarCarreira().jornadas).map(p => p.id)])];
+  return [...new Set([...INICIAIS, ...desbloqueadasDaConta().map(p => p.id)])];
 }
 
 // Passo 1 = dificuldade (sempre visível no topo), passo 2 = escolher o Pokémon — ou, no Randomizer, um botão só.
@@ -69,7 +69,8 @@ function renderEscolha() {
    o que derrotava, e a decepção só apareceu no fim. */
 function secaoDesbloqueios() {
   const prog = progressoRoguelike(carregarCarreira().jornadas);
-  const livresJa = prog.filter(p => p.desbloqueada && p.id), quase = prog.filter(p => !p.desbloqueada).slice(0, 6);
+  // os desbloqueados vêm do progresso permanente (nunca somem); o `quase lá` continua vindo do histórico
+  const livresJa = desbloqueadasDaConta(), quase = prog.filter(p => !p.desbloqueada).slice(0, 6);
   const regra = `Pra desbloquear uma espécie, somando suas jornadas <b>Roguelike</b>: derrote ${DESBLOQUEIO.derrotados}, faça amizade com ${DESBLOQUEIO.amigos}, ou evolua pra ela ${DESBLOQUEIO.evolucaoMeio}× (forma do meio) / ${DESBLOQUEIO.evolucaoFinal}× (forma final). Depois de desbloqueada, ela vale em <b>qualquer modo</b>${DIFICULDADES[G.dif].desbloqueios ? '' : ' — inclusive neste, embora jogar aqui não conte pra desbloquear novas'}.`;
   return `<div class="regiao desbloq"><h4>🔓 Desbloqueados (${livresJa.length})</h4>
       ${livresJa.length ? `<div class="picks">${livresJa.map(p => `<button class="pick" data-act="pick" data-v="${p.id}" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="" loading="lazy">${esc(fmt(p.especie))}</button>`).join('')}</div>` : ''}

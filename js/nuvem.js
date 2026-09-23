@@ -1,4 +1,4 @@
-/* ============ nuvem (Supabase: login + carreira + save da jornada) ============ */
+﻿/* ============ nuvem (Supabase: login + carreira + save da jornada) ============ */
 // Login com Google ou link por e-mail. Com conta:
 //   • carreira: jornadas terminadas sobem/descem (tabela `jornadas`), juntadas sem duplicar (mesclarJornadas)
 //   • jornadas em andamento (tabela `saves`, uma linha por jornada: a atual e as guardadas de saves.js): a atual
@@ -7,7 +7,7 @@
 // Sem config (js/config.js com marcadores) tudo aqui vira no-op e o jogo segue só local.
 // O cliente do Supabase é carregado sob demanda (import dinâmico) — nada disso roda nos testes.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-import { carregarCarreira, salvarCarreira, mesclarJornadas } from './carreira.js';
+import { carregarCarreira, salvarCarreira, mesclarJornadas, carregarProgresso, mesclarProgressoLocal, atualizarProgresso } from './carreira.js';
 import { reconciliarSaves, guardadas, excluidos, guardar, excluir, esquecerExcluido, GUARDADOS_KEY, MAX_GUARDADAS } from './saves.js';
 import { offline, store } from './util.js';
 
@@ -189,6 +189,17 @@ export async function sincronizar() {
     }
     salvarCarreira({ jornadas: todas });
     nuvem.naNuvem = remotas.length + subiram;
+
+    /* Progresso permanente (progresso-conta.js): o que foi CONQUISTADO não pode sumir porque uma jornada saiu do
+       histórico. Desce, junta (união — nunca remove) e sobe de volta. Se a tabela ainda não existir no projeto,
+       o jogo segue com o progresso local: é conteúdo novo, não pode quebrar quem não rodou a migração. */
+    try {
+      const { data: prog, error: ep } = await c.from('progresso').select('dados').eq('user_id', u.id).maybeSingle();
+      if (ep) throw ep;
+      atualizarProgresso(todas);                       // banca o que acabou de chegar da nuvem
+      const junto = mesclarProgressoLocal(prog?.dados || null);
+      await c.from('progresso').upsert({ user_id: u.id, dados: junto, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id' });
+    } catch (e) { console.warn('progresso', e); }
 
     // jornadas em andamento (a atual + as guardadas — saves.js): uma linha por jornada na nuvem
     await sincronizarSaves(c, u, new Set(todas.map(j => j.id)));

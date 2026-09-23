@@ -2,6 +2,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.7', data: '2026-09-23', titulo: 'Conquista não se perde mais', piada: 'Descobrimos que a memória do jogo funcionava como a de um Psyduck: apagou a anotação, esqueceu que tinha conquistado. Agora ele anota em caderno separado.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Suas espécies desbloqueadas e o progresso das gimmicks agora ficam gravados na conta, em lugar próprio. Antes eram recalculados a partir do histórico de jornadas: apagar uma jornada da carreira apagava junto o que ela tinha liberado. Agora o progresso só cresce — nada do que você conquistou se perde.',
+        'Com conta, esse progresso sobe pra nuvem e volta em qualquer aparelho. Sem internet, tudo continua funcionando e sincroniza quando a conexão voltar.',
+        'A tela de Conquistas estava com texto montado em cima das barras de progresso nas linhas sem sprite (tipos e golpes). Corrigido.'
+      ] }
+    ] },
   { versao: '2.6', data: '2026-09-23', titulo: '20 GB que nunca existiram', piada: 'O navegador olhou 1082 figurinhas de 600 bytes e anunciou, com toda a confiança, que elas pesavam 20 gigabytes. Pedimos uma segunda opinião.',
     secoes: [
       { nome: 'Correções', itens: [

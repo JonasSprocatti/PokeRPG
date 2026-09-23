@@ -66,11 +66,14 @@ export function runsDeNivel(jornadas, nivel = ALVOS.gmaxNivel) {
 
 /* O que já está liberado e o que falta, pronto pra tela. `jornadas` = carreira; `registroAtual` = a run em
    andamento (conta junto: o progresso aparece na hora, não só quando a jornada termina). */
-export function progressoConquistas(jornadas, registroAtual) {
+/* `prontos` (opcional) = { abates, runs } já somados do PROGRESSO PERMANENTE (carreira.abatesDaConta). É o caminho
+   normal no jogo: conquista não pode encolher porque alguém apagou uma jornada do histórico. Sem `prontos`, soma
+   direto das jornadas — é o que os testes usam, e o que sobra se o progresso ainda não existir. */
+export function progressoConquistas(jornadas, registroAtual, prontos = null) {
   // o Fácil não entra: quem jogou nele nem gravou abates, mas jornadas antigas (de antes desta regra) podem ter
   const contam = (jornadas || []).filter(j => j?.dificuldade !== MODO_NAO_CONTA);
-  const abates = somarAbates([...contam.map(j => j.registro), registroAtual]);
-  const runs = runsDeNivel(contam);
+  const abates = prontos?.abates || somarAbates([...contam.map(j => j.registro), registroAtual]);
+  const runs = prontos?.runs || runsDeNivel(contam);
   const lista = (mapa, alvo, tipo) => Object.entries(mapa)
     .map(([chave, n]) => ({ tipo, chave, n, alvo, liberado: n >= alvo, fracao: Math.min(1, n / alvo) }))
     .sort((a, b) => b.n - a.n);

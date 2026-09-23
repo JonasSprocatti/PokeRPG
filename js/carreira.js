@@ -1,9 +1,11 @@
-/* ============ carreira (todas as jornadas terminadas) ============ */
+﻿/* ============ carreira (todas as jornadas terminadas) ============ */
 // A carreira é a LISTA de jornadas terminadas (resumos com `id` único); tudo o que a tela mostra — recorde por
 // espécie, Pokédex, shinies, máximos, favorito — é calculado dela por calcularCarreira(). Guardar a lista (e não
 // contadores) é o que deixa juntar local + nuvem de vários aparelhos sem contar nada em dobro (mesclarJornadas).
 // Puro + localStorage via `store` (que é no-op no Node) — testado em tests/carreira.test.js.
 import { store } from './util.js';
+import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, especiesDesbloqueadas } from './progresso-conta.js';
+import { desbloqueadas } from './roguelike.js';
 
 export const TOTAL_ESPECIES = 1025;
 export const CARREIRA_KEY = 'pokerpg-carreira-v1';
@@ -84,3 +86,27 @@ export function calcularCarreira(jornadas) {
   const favorito = Object.entries(porEspecie).sort((a, b) => (b[1].jornadas - a[1].jornadas) || (b[1].melhor.pontuacao - a[1].melhor.pontuacao))[0]?.[0] || null;
   return { ...c, vistos: [...vistos].sort(), amigos: [...amigos].sort(), faltam: TOTAL_ESPECIES - amigos.size, ids, porEspecie, favorito };
 }
+
+/* ---- progresso permanente (progresso-conta.js) ----
+   A carreira é histórico: dá pra apagar uma jornada dela. O progresso é CONQUISTA: nunca encolhe. Por isso os
+   desbloqueios e os contadores das gimmicks passam por aqui, e não são mais lidos direto das jornadas.
+   `atualizarProgresso()` é idempotente (banca por ID de jornada), então pode ser chamada sempre que a carreira
+   muda: ao terminar uma jornada, ao sincronizar com a nuvem e ao abrir uma tela que mostra progresso. */
+let versaoProg = 0;
+export const versaoProgresso = () => versaoProg;
+export const carregarProgresso = () => store.get(PROGRESSO_KEY) || progressoVazio();
+export const salvarProgresso = p => { versaoProg++; store.set(PROGRESSO_KEY, p); return p; };
+
+export function atualizarProgresso(jornadas = carregarCarreira().jornadas) {
+  const antes = carregarProgresso();
+  const depois = bancar(antes, jornadas, desbloqueadas(jornadas));
+  return salvarProgresso(depois);
+}
+// o que vale de verdade: o que está gravado + o que a regra de hoje reconhece no histórico que ainda existe
+export const desbloqueadasDaConta = (jornadas = carregarCarreira().jornadas) =>
+  especiesDesbloqueadas(atualizarProgresso(jornadas), desbloqueadas(jornadas));
+// abates somados: os das jornadas já bancadas + os da run em andamento (que ainda não é jornada)
+export const abatesDaConta = (registroAtual = null, jornadas = carregarCarreira().jornadas) =>
+  totaisDe(atualizarProgresso(jornadas), registroAtual?.abates);
+// fusão com a nuvem: nunca perde o que um dos lados tem
+export const mesclarProgressoLocal = remoto => salvarProgresso(mesclarProgresso(carregarProgresso(), remoto));
