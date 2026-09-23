@@ -146,16 +146,17 @@ export function renderPreview() {
         <label>Nível inicial${dif.nivelLivre ? `<select id="pv-level">${[5, 15, 30, 50].map(l => `<option ${l === PV.level ? 'selected' : ''}>${l}</option>`).join('')}</select>` : `<select disabled title="${dif.nome}: começa no nível 5"><option>5</option></select>`}</label>
         <label>Apelido<input id="pv-nick" maxlength="12" placeholder="${esc(fmt(d.name))}" value="${esc(PV.nick)}"></label>
       </div>
+      ${opcaoShiny(d)}
       <p class="small muted" style="margin-top:14px">Golpes iniciais: ${defaultMoves(d.learnset.list, nivel).map(m => esc(fmt(m.name))).join(', ')}. Lista de golpes por nível vinda de ${esc(fmt(d.learnset.vg) || '—')}.</p>
       <button class="btn big" data-act="start">Começar como ${esc(fmt(d.name))}</button>
     </div></section>`;
 }
 // Monta o save e entra no jogo. `nature`/`ability` undefined = sorteadas pelo makeMon.
-async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen }) {
+async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen, shiny }) {
   const sp = await loadSpecies(data.speciesUrl);
   const growth = await loadGrowth(sp.growthUrl);
   const evo = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
-  const mon = await makeMon(data, level, { nature, ability, nick });
+  const mon = await makeMon(data, level, { nature, ability, nick, shiny });
   mon.exp = growth[mon.level];
   // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
   const rotas = rotasDaGen(gen), startZone = [...rotas].reverse().find(z => !z.final && zonaLiberada(z, mon.level) && z.min <= mon.level) || rotas[0];

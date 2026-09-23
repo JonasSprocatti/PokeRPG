@@ -1,4 +1,4 @@
-/* ============ roguelike: desbloqueios entre jornadas ============ */
+﻿/* ============ roguelike: desbloqueios entre jornadas ============ */
 // No modo Roguelike você começa só com os iniciais (+ Pikachu e Eevee). Cada espécie vira opção inicial pras
 // próximas jornadas quando, SOMANDO as jornadas Roguelike terminadas (a carreira), você:
 //   derrotou 10 · fez amizade com 5 · evoluiu pra ela 5× (forma do meio) ou 10× (forma final)   — DESBLOQUEIO em dados.js
@@ -11,7 +11,7 @@ export const MODO_ROGUELIKE = 'roguelike';
 // Progresso de cada espécie que já apareceu em alguma jornada Roguelike (iniciais ficam de fora: já estão liberados).
 // Ordem: desbloqueadas primeiro, depois as mais perto de desbloquear.
 export function progressoRoguelike(jornadas) {
-  const soma = { derrotados: {}, amigos: {}, evolucoes: {} }, formas = {}, ids = {};
+  const soma = { derrotados: {}, amigos: {}, evolucoes: {}, shiniesAmigos: {} }, formas = {}, ids = {};
   for (const j of jornadas || []) {
     if (j.dificuldade !== MODO_ROGUELIKE) continue;
     const r = j.registro || {};
@@ -25,14 +25,17 @@ export function progressoRoguelike(jornadas) {
     const id = ids[especie] || null;
     if (id && INICIAIS.includes(id)) continue;
     const derrotados = soma.derrotados[especie] || 0, amigos = soma.amigos[especie] || 0, evolucoes = soma.evolucoes[especie] || 0;
+    const shinies = soma.shiniesAmigos[especie] || 0;   // recrutou um shiny daquela espécie
     const alvoEvolucao = formas[especie] === 'final' ? DESBLOQUEIO.evolucaoFinal : DESBLOQUEIO.evolucaoMeio;
     const razoes = [];
     if (derrotados >= DESBLOQUEIO.derrotados) razoes.push('derrotados');
     if (amigos >= DESBLOQUEIO.amigos) razoes.push('amigos');
     if (evolucoes && evolucoes >= alvoEvolucao) razoes.push('evolucoes');
+    // UM shiny recrutado basta: encontrar um é 1 em 4096, e quem passou por isso merece poder jogar de shiny depois
+    if (shinies >= 1) razoes.push('shiny');
     // quanto falta, pelo caminho mais adiantado (0–1)
-    const fracao = Math.min(1, Math.max(derrotados / DESBLOQUEIO.derrotados, amigos / DESBLOQUEIO.amigos, evolucoes ? evolucoes / alvoEvolucao : 0));
-    out.push({ especie, id, derrotados, amigos, evolucoes, alvoEvolucao: evolucoes ? alvoEvolucao : null, desbloqueada: razoes.length > 0, razoes, fracao });
+    const fracao = shinies ? 1 : Math.min(1, Math.max(derrotados / DESBLOQUEIO.derrotados, amigos / DESBLOQUEIO.amigos, evolucoes ? evolucoes / alvoEvolucao : 0));
+    out.push({ especie, id, derrotados, amigos, evolucoes, shinies, alvoEvolucao: evolucoes ? alvoEvolucao : null, desbloqueada: razoes.length > 0, razoes, fracao });
   }
   return out.sort((a, b) => (b.desbloqueada - a.desbloqueada) || (b.fracao - a.fracao) || a.especie.localeCompare(b.especie));
 }
@@ -48,7 +51,7 @@ export function novosDesbloqueios(antes, depois) {
 
 // frase de por que/quanto falta, pra tela
 export function textoProgresso(p) {
-  if (p.desbloqueada) return 'desbloqueado por ' + p.razoes.map(r => ({ derrotados: `${p.derrotados} derrotas`, amigos: `${p.amigos} amizades`, evolucoes: `${p.evolucoes} evoluções` }[r])).join(' · ');
+  if (p.desbloqueada) return 'desbloqueado por ' + p.razoes.map(r => ({ derrotados: `${p.derrotados} derrotas`, amigos: `${p.amigos} amizades`, evolucoes: `${p.evolucoes} evoluções`, shiny: `✨ ${p.shinies} shiny recrutado${p.shinies > 1 ? 's' : ''}` }[r])).join(' · ');
   const partes = [`${p.derrotados}/${DESBLOQUEIO.derrotados} derrotas`, `${p.amigos}/${DESBLOQUEIO.amigos} amizades`];
   if (p.alvoEvolucao) partes.push(`${p.evolucoes}/${p.alvoEvolucao} evoluções`);
   return partes.join(' · ');

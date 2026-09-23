@@ -1,4 +1,4 @@
-/* ============ tela: ⚙ ajustes ============ */
+﻿/* ============ tela: ⚙ ajustes ============ */
 // Hoje só a fonte do jogo (ajustes.js). Cada opção é mostrada JÁ com a própria fonte, pra dar pra comparar antes de
 // escolher; a escolha vale na hora e fica guardada neste navegador. O clique (data-act="fonte") está em main.js.
 import { G } from './estado.js';
@@ -49,7 +49,7 @@ function htmlOffline() {
     <div class="subrow" style="margin-top:10px"><button class="btn" data-act="baixar-tudo">⬇⬇ Baixar o jogo inteiro (${TOTAL_GENS} mapas)</button>
       <span class="small muted">${quantoFaltaTudo() ? `faltam ${quantoFaltaTudo()} de ${totalDoJogo()} Pokémon` : '✅ tudo guardado'}</span></div>
     <div id="offline-progresso" class="small muted" style="margin-top:8px"></div>
-    <p class="small muted">São cerca de ${total} Pokémon por mapa e ${totalDoJogo()} no jogo inteiro. Use uma rede boa e deixe a tela aberta: o download do jogo todo pode passar de 100 MB (com os sprites) e leva alguns minutos.<span id="offline-espaco"></span></p>`;
+    <p class="small muted">São cerca de ${total} Pokémon por mapa e ${totalDoJogo()} no jogo inteiro. O jogo inteiro ocupa cerca de <b>20 MB</b> — são dados e sprites pequenos —, mas leva alguns minutos porque são milhares de pedidos: use uma rede boa e deixe a tela aberta.<span id="offline-espaco"></span></p>`;
 }
 // chamado por main.js no clique; mostra o progresso sem redesenhar a tela toda. `gen` null = o jogo inteiro.
 export async function baixarMapaOffline(gen) {

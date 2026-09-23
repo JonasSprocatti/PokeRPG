@@ -1,4 +1,4 @@
-// Conversão do JSON cru da PokéAPI (js/api.js) — com JSON de exemplo, sem rede.
+﻿// Conversão do JSON cru da PokéAPI (js/api.js) — com JSON de exemplo, sem rede.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLearnset, slimPokemon, slimMove, apiErr } from '../js/api.js';
@@ -36,7 +36,10 @@ test('buildLearnset: golpe repetido no mesmo jogo fica com o menor nível', () =
 });
 
 test('buildLearnset: sem nenhum golpe por nível', () => {
-  assert.deepEqual(buildLearnset([mv('dig', ['x-y', 0, 'machine'])]), { vg: '', list: [] });
+  // sem nenhum golpe POR NÍVEL, mas o de MT vai pros extras (é o que o Disco Técnico oferece)
+  const r = buildLearnset([mv('dig', ['x-y', 0, 'machine'])]);
+  assert.deepEqual([r.vg, r.list], ['', []]);
+  assert.deepEqual(r.extras.map(m => m.name), ['dig']);
 });
 
 test('slimPokemon: tipos por slot, EVs só >0, fallbacks de XP e sprite', () => {

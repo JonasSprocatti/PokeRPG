@@ -1,4 +1,4 @@
-/* ============ baixar pra jogar offline ============ */
+﻿/* ============ baixar pra jogar offline ============ */
 // O jogo já guarda sozinho o que você encontra (api.js: cache em memória + localStorage; o service worker guarda os
 // sprites). O problema é que, offline, só dá pra encontrar o que você JÁ tinha visto — e Pokémon novo aparece sem
 // sprite. Aqui a pessoa baixa de uma vez tudo o que um mapa (Gen) precisa: os Pokémon das rotas, os Alfas, os
@@ -25,8 +25,14 @@ export function alvosDaGen(gen) {
 export const jaBaixado = gen => alvosDaGen(gen).every(pokemonEmCache);
 export const quantoFalta = gen => alvosDaGen(gen).filter(id => !pokemonEmCache(id)).length;
 
-// pede a imagem só pra ela entrar no cache do service worker (não desenha nada na tela)
-const guardarSprite = url => fetch(url, { mode: 'no-cors' }).catch(() => {});
+/* Pede a imagem só pra ela entrar no cache do service worker (não desenha nada na tela).
+   **Sem mode:'no-cors', de propósito**: o servidor de sprites manda Access-Control-Allow-Origin: *, então a
+   resposta vem normal. Com 
+o-cors ela viria OPACA, e navegador nenhum sabe o tamanho de uma resposta opaca —
+   o Chrome então soma uma estimativa inflada (vários MB por arquivo) na cota do site. Foi isso que fez o jogo
+   dizer que ocupava 20 GB quando os sprites somam menos de 1 MB (cada um tem ~600 bytes), e pior: esse número
+   inflado conta contra a cota e podia fazer o download do jogo inteiro falhar sem motivo. */
+const guardarSprite = url => fetch(url).catch(() => {});
 
 /* Baixa o mapa inteiro. `aoAndar(feitos, total, oQue)` recebe o progresso; devolve { ok, falhas }.
    Vai de poucos em poucos (LOTE) pra não afogar a rede nem a PokéAPI. */

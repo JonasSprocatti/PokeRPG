@@ -1,4 +1,4 @@
-// Habilidades (js/habilidades.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
+﻿// Habilidades (js/habilidades.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -24,7 +24,9 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     // clima (regras.CLIMAS)
     'climaAoEntrar', 'multStatClima', 'curaClima', 'danoClimaProprio', 'imuneClima', 'escondeNoClima', 'curaStatusClima', 'semStatusClima',
     // terrenos (regras.TERRENOS)
-    'terrenoAoEntrar', 'multStatTerreno']);
+    'terrenoAoEntrar', 'multStatTerreno',
+    // troca de forma no meio da batalha (golpe.trocarPostura): Aegislash
+    'postura']);
   const tipos = Object.keys(TYPE_PT);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
     for (const k of Object.keys(h)) assert.ok(ganchos.has(k), `${nome}: gancho desconhecido "${k}" (não faz nada no motor)`);

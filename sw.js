@@ -5,7 +5,9 @@
    - Supabase (login/banco) NUNCA passa pelo cache: offline falha e o jogo guarda pra enviar quando voltar.
    Todo arquivo novo em js/ precisa entrar em PRECACHE (tests/sw.test.js confere). */
 const CACHE_JOGO = 'pokerpg-jogo-v1';
-const CACHE_EXTERNO = 'pokerpg-externo-v1';
+// v2: o v1 guardou sprites como resposta OPACA (fetch com no-cors), que o Chrome contabiliza inflada na cota do
+// site — chegou a reportar 20 GB pra menos de 1 MB de imagem. Trocar o nome faz o activate apagar o cache antigo.
+const CACHE_EXTERNO = 'pokerpg-externo-v2';
 const PRECACHE = [
   './', './index.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
   './js/ajustes.js', './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',

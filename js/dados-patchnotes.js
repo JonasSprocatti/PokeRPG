@@ -2,6 +2,16 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.6', data: '2026-09-23', titulo: '20 GB que nunca existiram', piada: 'O navegador olhou 1082 figurinhas de 600 bytes e anunciou, com toda a confiança, que elas pesavam 20 gigabytes. Pedimos uma segunda opinião.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A tela de "Jogar offline" dizia que o jogo ocupava mais de 20 GB no aparelho. Não ocupava: os sprites são minúsculos (cerca de 600 bytes cada) e o jogo inteiro cabe em uns 20 MB. O número inflado vinha de como as imagens eram pedidas, e isso também podia fazer o download do jogo inteiro falhar por "falta de espaço" sem motivo nenhum. Corrigido, e o espaço antigo é liberado sozinho na próxima vez que você abrir o jogo.',
+        'A estimativa de tamanho na tela também foi corrigida: agora fala em ~20 MB, e explica que a demora vem da quantidade de pedidos, não do tamanho.'
+      ] },
+      { nome: 'Novidades', itens: [
+        'Recrutou um Pokémon shiny? A espécie dele fica desbloqueada na hora — e você pode começar jornadas novas jogando com ele ✨ shiny, quantas vezes quiser. Encontrar um é 1 em 4096; o direito é seu pra sempre.'
+      ] }
+    ] },
   { versao: '2.5', data: '2026-09-23', titulo: 'Pokédex de verdade', piada: 'O Professor finalmente entregou a Pokédex. Levou 1025 fichas, todas em branco, e um "boa sorte".',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, rotaNaJornada, sortearDaRota, taxaNaRota, textoTaxa,
-  somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL } from '../js/mapas.js';
+  somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL, lendariosDaGen } from '../js/mapas.js';
 import { REGIOES_INICIAIS } from '../js/dados.js';
 import { zonaLiberada } from '../js/regras.js';
 
@@ -26,7 +26,8 @@ test('9 Gens, 10 rotas + Santuário; só a 10ª é final (com lendários); Alfa 
   }
   // Kanto mantém os ids antigos (saves e missões)
   assert.deepEqual(['rota1', 'floresta', 'montelua', 'rota24', 'torre', 'safari', 'caverna'].filter(id => !rotasDaGen(1).some(z => z.id === id)), []);
-  assert.equal(rotasDaGen(1).at(-1).lendarios.at(-1).nome, 'Mewtwo');
+  // a última rota do array é o Santuário: os lendários vêm da rota FINAL (lendariosDaGen)
+  assert.equal(lendariosDaGen(1).at(-1).nome, 'Mewtwo');
 });
 
 test('genDe: save antigo sem gen = 1; Gen inexistente cai na 1', () => {
@@ -48,7 +49,7 @@ test('escalaNivel: começo de jornada não muda; depois comprime até 100', () =
   assert.ok(r.min >= 60 && r.chefe.nivel > r.max);
   assert.equal(z.min, 2);                      // não muta a original
   assert.equal(rotaNaJornada(z, {}), z);
-  const f = rotaNaJornada(rotasDaGen(2).at(-1), S);
+  const f = rotaNaJornada(rotasDaGen(2).find(z => z.final), S);
   assert.equal(f.lendarios.at(-1).nivel, 100);
 });
 
@@ -98,7 +99,8 @@ test('Roguelike: mapa seguinte libera ao vencer a Gen (em sequência); outros mo
   const j = (dificuldade, motivo, genVencida) => ({ dificuldade, motivo, genVencida });
   assert.deepEqual(gensLiberadasRoguelike([j('roguelike', 'venceu', 1)]), [1, 2]);
   assert.deepEqual(gensLiberadasRoguelike([j('roguelike', 'venceu', 1), j('roguelike', 'venceu', 2)]), [1, 2, 3]);
-  assert.deepEqual(gensLiberadasRoguelike([j('easy', 'venceu', 3), j('roguelike', 'desmaiou', 3)]), [1]);
+  // jornada de outro modo nunca conta; Roguelike que nem chegou a vencer (sem genVencida) também não
+  assert.deepEqual(gensLiberadasRoguelike([j('easy', 'venceu', 3), j('roguelike', 'desmaiou', undefined)]), [1]);
   // venceu a Gen e escolheu seguir no Santuário; morreu lá. A run terminou em derrota, mas a Gen vencida CONTA
   assert.deepEqual(gensLiberadasRoguelike([j('roguelike', 'desmaiou', 1)]), [1, 2]);
   assert.equal(gensLiberadasRoguelike([j('roguelike', 'venceu', 9)]).length, 9); // não passa do total
@@ -144,12 +146,13 @@ test('Santuário só abre depois de vencer a Gen; as outras rotas continuam por 
 });
 
 test('formas regionais existem e guardam a espécie separada do nome da forma', () => {
-  const formas = GENS.flatMap(g => g.rotas.at(-1).pool).filter(p => p.f);
+  const formas = GENS.flatMap(g => g.rotas.find(z => z.posVitoria).pool).filter(p => p.f);
   assert.ok(formas.length >= 50, `só ${formas.length} formas regionais`);
   for (const p of formas) {
     assert.ok(p.id > 10000, `${p.f}: id de forma`);
     assert.ok(p.f.startsWith(p.n + '-'), `${p.f}: devia derivar da espécie ${p.n}`); // registro conta na espécie
-    assert.match(p.f, /-(alola|galar|hisui|paldea)$/);
+    // o nome nem sempre TERMINA na região: tauros-paldea-combat-breed, darmanitan-galar-standard
+    assert.match(p.f, /-(alola|galar|hisui|paldea)(-|$)/);
   }
   // a Pokédex da rota mostra o nome da FORMA, mas conta o visto/derrotado na espécie
   const dex = pokedexDaRota({ pool: [{ id: 10100, n: 'raichu', f: 'raichu-alola', p: 3 }] }, { vistos: { raichu: 1 }, derrotados: {} });

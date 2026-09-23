@@ -14,7 +14,9 @@ export async function makeMon(data, level, opt = {}) {
   const ability = opt.ability || (pick(normal.length ? normal : data.abilities) || { name: 'none' }).name;
   const refs = defaultMoves(data.learnset.list, level);
   const moves = (await Promise.all(refs.map(r => loadMove(r.url).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
-  const mon = { id: data.id, name: data.name, nick: opt.nick || '', data, level, ivs, evs, nature, ability, moves, status: null, sleep: 0, exp: 0, vol: freshVol(), shiny: ehShiny() };
+  // `opt.shiny` força o brilho: hoje só quem recrutou um shiny daquela espécie pode começar a jornada com ela
+  // shiny (criacao.js). Sem a opção, continua no sorteio de sempre — 1 em 4096, pra você e pra todo selvagem.
+  const mon = { id: data.id, name: data.name, nick: opt.nick || '', data, level, ivs, evs, nature, ability, moves, status: null, sleep: 0, exp: 0, vol: freshVol(), shiny: opt.shiny ?? ehShiny() };
   mon.stats = calcStats(mon); mon.hp = mon.stats.hp;
   return mon;
 }

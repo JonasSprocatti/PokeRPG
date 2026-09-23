@@ -1,4 +1,4 @@
-// Golpes especiais (js/especiais.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
+﻿// Golpes especiais (js/especiais.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';
@@ -20,7 +20,8 @@ test('tabela: só comportamentos que o motor conhece', () => {
   const ok = new Set(['protege', 'aguentaTurno', 'foco', 'descanso', 'autoDesmaio', 'ohko', 'soDormindo', 'toxico', 'semente', 'carga', 'invulneravel', 'recarga', 'furia', 'poder', 'danoIgualHp',
     'soPrimeiroTurno',                        // Fake Out, First Impression
     'clima', 'terreno',                       // Rain Dance / Electric Terrain e cia.
-    'lado', 'soNoGelo', 'armadilha']);        // telas e armadilhas de entrada (Aurora Veil só no granizo/neve)
+    'lado', 'soNoGelo', 'armadilha',          // telas e armadilhas de entrada (Aurora Veil só no granizo/neve)
+    'puneContato', 'voltaPostura']);          // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade']);
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {
     for (const k of Object.keys(e)) assert.ok(ok.has(k), `${n}: comportamento desconhecido "${k}"`);

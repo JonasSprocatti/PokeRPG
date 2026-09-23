@@ -17,9 +17,21 @@ test('abate registra tipo do alvo, minha espécie, golpe e elemento', () => {
   assert.deepEqual(a.elemento, { electric: 1 });
 });
 
-test('golpe final do aliado NÃO conta', () => {
+test('golpe final do aliado conta pra ESPÉCIE, mas não pra tipo nem golpe', () => {
+  // o usuário voltou atrás do `só o seu golpe`: o aliado luta ao seu lado e ajuda a construir a sua Pedra Mega.
+  // Tera e Z-Move continuam exigindo o SEU golpe final.
   const S = {};
-  assert.equal(registrarAbate(S, { porMim: false, tiposDoAlvo: ['fire'], minhaEspecie: 'pikachu', golpe: golpe('ember', 'fire') }), null);
+  const a = registrarAbate(S, { porMim: false, tiposDoAlvo: ['fire'], minhaEspecie: 'pikachu', golpe: golpe('ember', 'fire') });
+  assert.deepEqual(a.especie, { pikachu: 1 });
+  assert.equal(a.total, 1);
+  assert.deepEqual(a.tipoAlvo, {});
+  assert.deepEqual(a.golpe, {});
+  assert.deepEqual(a.elemento, {});
+});
+
+test('o modo Fácil não acumula nada: é treino', () => {
+  const S = {};
+  assert.equal(registrarAbate(S, { porMim: true, tiposDoAlvo: ['fire'], minhaEspecie: 'pikachu', golpe: golpe('ember', 'fire'), modo: 'easy' }), null);
   assert.equal(S.registro, undefined);
 });
 
