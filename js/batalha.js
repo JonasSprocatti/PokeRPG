@@ -273,9 +273,10 @@ async function win() {
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
   registrar(S, 'derrotados', E.data.speciesName, E.id);
-  // conquistas da conta (conquistas.js): só conta o que VOCÊ finalizou, com qual golpe e sendo qual espécie.
-  // `B.abate` é preenchido no laço do turno; sem ele (queda por veneno, armadilha, recuo) ninguém leva o crédito.
-  if (B.abate?.porMim) registrarAbate(S, { porMim: true, tiposDoAlvo: E.data.types, minhaEspecie: P.data.speciesName, golpe: B.abate.golpe });
+  /* Conquistas da conta (conquistas.js). A espécie conta sempre — o aliado lutando com você também constrói a sua
+     Pedra Mega. Tipo e golpe só quando o golpe final foi SEU (`B.abate.porMim`, preenchido no laço do turno).
+     Sem `B.abate` o inimigo caiu de veneno/armadilha/recuo: a equipe venceu, mas não há golpe pra creditar. */
+  registrarAbate(S, { porMim: !!B.abate?.porMim, tiposDoAlvo: E.data.types, minhaEspecie: P.data.speciesName, golpe: B.abate?.golpe, modo: dificuldadeDe(S) });
   B.abate = null;
   await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
   await gainExp(xp);
