@@ -12,7 +12,9 @@ export const PATCH_NOTES = [
       ] },
       { nome: 'Correções', itens: [
         'As conquistas da conta estavam sendo perdidas no fim de cada jornada: o contador subia enquanto você jogava e a carreira nunca recebia nada. Agora o progresso fica guardado quando a run termina.',
-        'A tela de criação passou a avisar, nos modos que não são Roguelike, que derrotar espécies ali não desbloqueia nenhuma delas como opção inicial — isso sempre foi assim, mas o jogo nunca tinha dito, e dava pra jogar uma jornada inteira esperando o contrário.'
+        'A tela de criação passou a avisar, nos modos que não são Roguelike, que derrotar espécies ali não desbloqueia nenhuma delas como opção inicial — isso sempre foi assim, mas o jogo nunca tinha dito, e dava pra jogar uma jornada inteira esperando o contrário.',
+        'As espécies desbloqueadas passaram a valer em TODOS os modos, não só no Roguelike. Conquistar o desbloqueio continua sendo coisa de jornada Roguelike; usar o que você já conquistou, não.',
+        'A lista de quanto falta pra desbloquear cada espécie agora também aparece na tela 🏅 Conquistas, junto do resto do progresso da conta.'
       ] }
     ] },
   { versao: '2.4', data: '2026-09-23', titulo: 'A conta começou a contar', piada: 'Instalamos um contador na sua conta. Ele já estava lá antes, mas só fazia contato visual com os Pokémon derrotados e anotava mentalmente.',

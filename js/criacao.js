@@ -17,11 +17,12 @@ import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resol
 import { rand, pick, esc, fmt, novoId } from './util.js';
 
 const livres = () => DIFICULDADES[G.dif].especiesLivres;
-// ids que dá pra escolher neste modo: iniciais + (Roguelike) os desbloqueados na carreira. null = qualquer um
+/* Ids que dá pra escolher: iniciais + TODOS os desbloqueados na carreira. null = qualquer um (modo livre).
+   O desbloqueio continua sendo conquistado só jogando Roguelike (roguelike.js), mas a espécie desbloqueada vale
+   em QUALQUER modo — conquista de conta que só serve num modo é conquista pela metade (decisão do usuário). */
 function permitidos() {
   if (livres()) return null;
-  const extra = DIFICULDADES[G.dif].desbloqueios ? desbloqueadas(carregarCarreira().jornadas).map(p => p.id) : [];
-  return [...new Set([...INICIAIS, ...extra])];
+  return [...new Set([...INICIAIS, ...desbloqueadas(carregarCarreira().jornadas).map(p => p.id)])];
 }
 
 // Passo 1 = dificuldade (sempre visível no topo), passo 2 = escolher o Pokémon — ou, no Randomizer, um botão só.
@@ -50,8 +51,8 @@ function renderEscolha() {
     $('#escolha').innerHTML = `<p class="small muted">Os iniciais de cada região, mais Pikachu e Eevee.</p>
       <div class="regioes">${REGIOES_INICIAIS.map(r => `<div class="regiao"><h4>${r.nome}</h4><div class="picks">${r.ids.map((id, i) =>
         `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">${r.nomes[i]}</button>`).join('')}</div></div>`).join('')}</div>
-      ${DIFICULDADES[G.dif].desbloqueios ? secaoDesbloqueios() : avisoSemDesbloqueio()}
-      <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear ${DIFICULDADES[G.dif].desbloqueios ? 'entre os disponíveis' : 'um inicial'}</button></div>`;
+      ${secaoDesbloqueios()}
+      <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear entre os disponíveis</button></div>`;
     return;
   }
   $('#escolha').innerHTML = `<div class="search">
@@ -62,18 +63,14 @@ function renderEscolha() {
   loadList().then(list => { if ($('#dex')) $('#dex').innerHTML = list.map(n => `<option value="${n}">`).join(''); })
     .catch(e => { $('#netwarn').innerHTML = `<div class="notice">${apiErr(e)}</div>`; });
 }
-/* Fora do Roguelike, derrotar espécies NÃO desbloqueia ninguém — e o jogo nunca dizia isso. Um jogador terminou uma
-   jornada inteira no Difícil esperando ter liberado o que derrotou, e a decepção só apareceu no fim. O aviso é curto
-   e fica exatamente onde a dúvida nasce: embaixo da lista de quem dá pra escolher. */
-const avisoSemDesbloqueio = () => `<p class="small muted" style="margin-top:10px">🔒 Neste modo dá pra escolher os
-  iniciais, Pikachu e Eevee. <b>Derrotar espécies aqui não desbloqueia nenhuma delas</b> como opção inicial — isso só
-  conta em jornadas <b>Roguelike</b>. As conquistas da conta (🏅), essas sim, contam em todos os modos menos o Fácil.</p>`;
-
-// Roguelike: espécies desbloqueadas (escolhíveis) + as mais perto de desbloquear
+/* Espécies desbloqueadas: valem em TODOS os modos (decisão do usuário — conquista de conta que só serve num modo
+   é conquista pela metade). O que continua sendo só do Roguelike é CONQUISTAR o desbloqueio, e o texto diz isso
+   quando você está em outro modo: um jogador terminou uma jornada inteira no Difícil achando que estava liberando
+   o que derrotava, e a decepção só apareceu no fim. */
 function secaoDesbloqueios() {
   const prog = progressoRoguelike(carregarCarreira().jornadas);
   const livresJa = prog.filter(p => p.desbloqueada && p.id), quase = prog.filter(p => !p.desbloqueada).slice(0, 6);
-  const regra = `Pra desbloquear uma espécie, somando suas jornadas Roguelike: derrote ${DESBLOQUEIO.derrotados}, faça amizade com ${DESBLOQUEIO.amigos}, ou evolua pra ela ${DESBLOQUEIO.evolucaoMeio}× (forma do meio) / ${DESBLOQUEIO.evolucaoFinal}× (forma final).`;
+  const regra = `Pra desbloquear uma espécie, somando suas jornadas <b>Roguelike</b>: derrote ${DESBLOQUEIO.derrotados}, faça amizade com ${DESBLOQUEIO.amigos}, ou evolua pra ela ${DESBLOQUEIO.evolucaoMeio}× (forma do meio) / ${DESBLOQUEIO.evolucaoFinal}× (forma final). Depois de desbloqueada, ela vale em <b>qualquer modo</b>${DIFICULDADES[G.dif].desbloqueios ? '' : ' — inclusive neste, embora jogar aqui não conte pra desbloquear novas'}.`;
   return `<div class="regiao desbloq"><h4>🔓 Desbloqueados (${livresJa.length})</h4>
       ${livresJa.length ? `<div class="picks">${livresJa.map(p => `<button class="pick" data-act="pick" data-v="${p.id}" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="" loading="lazy">${esc(fmt(p.especie))}</button>`).join('')}</div>` : ''}
       <p class="small muted">${regra}</p>

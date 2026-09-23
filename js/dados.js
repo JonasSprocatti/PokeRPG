@@ -1,4 +1,4 @@
-/* ============ dados fixos ============ */
+﻿/* ============ dados fixos ============ */
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 import { GENS } from './dados-mapas.js';
 export const API = 'https://pokeapi.co/api/v2';
@@ -273,7 +273,8 @@ export const NOMES_TREINADOR = ['Rui', 'Bia', 'Otávio', 'Lúcia', 'Caio', 'Mart
 //   descontoPorVitoria = fração do preço do Centro que cada vitória desde a última visita tira (S.vitoriasDesdeCentro)
 //   nivelLivre   = escolher o nível inicial (senão começa no 5)
 //   escolhaLivre = escolher natureza e habilidade (senão são sorteadas ao começar)
-//   desbloqueios = além dos iniciais, oferece as espécies desbloqueadas em jornadas deste modo (roguelike.js)
+//   desbloqueios = jornadas DESTE modo contam pra desbloquear espécies novas (roguelike.js). Usar o que já foi
+//                  desbloqueado vale em TODOS os modos — o portão é só pra conquistar, não pra jogar
 //   especiesLivres = começar com QUALQUER Pokémon (busca livre); false = só REGIOES_INICIAIS. Hoje false em todos — decisão do usuário, pode mudar por modo
 //   multPontos   = multiplicador da pontuação final da jornada (recordes / ranking)
 //   permadeath   = desmaiou, acabou (sem Revive); aliado que desmaia é perdido na hora (o Centro não traz de volta)

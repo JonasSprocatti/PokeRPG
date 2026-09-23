@@ -15,7 +15,7 @@ Feito em JavaScript puro (ES modules), sem build e sem dependências. Funciona o
 ### Começando
 1. **Escolha o modo**. O principal é o **Roguelike** (abaixo).
 2. **Escolha o mapa (Gen)**. No Roguelike, só os já liberados; nos outros modos, qualquer um. No Full Randomizer, o mapa também é sorteado.
-3. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea) ou Pikachu e Eevee. No Roguelike, também aparecem as espécies que você já desbloqueou.
+3. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea), Pikachu e Eevee, **mais todas as espécies que você já desbloqueou**. O desbloqueio só é conquistado jogando Roguelike, mas a espécie desbloqueada vale em qualquer modo.
 4. Explore. O jogo salva sozinho.
 
 ### Roguelike (modo principal)
@@ -24,7 +24,7 @@ Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloq
 - fazer amizade com **5** dela, **ou**
 - evoluir para ela **5 vezes** (forma do meio, como Charmeleon) ou **10 vezes** (forma final, como Charizard).
 
-A tela inicial mostra os desbloqueados e os que estão **quase lá**, a tela de fim mostra o que aquela run liberou, e a Carreira mostra todo o progresso. Só jornadas Roguelike contam.
+A tela inicial e a tela 🏅 Conquistas mostram os desbloqueados e os que estão **quase lá**, e a tela de fim mostra o que aquela run liberou. **Só jornadas Roguelike contam para desbloquear** — mas a espécie desbloqueada pode ser usada em todos os modos.
 
 **Sem segunda chance:** no Roguelike, se você desmaiar, a run acaba (nem Revive salva). Se um **aliado** desmaiar, ele é **perdido para sempre**, e o Centro não traz de volta. Ser capturado também encerra a run. O Centro é pago (com desconto por vitória) e você começa no nível 5.
 
