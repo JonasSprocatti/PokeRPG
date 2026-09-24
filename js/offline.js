@@ -65,6 +65,41 @@ async function guardarSprite(url) {
   return false;
 }
 
+/* Só as IMAGENS de um mapa, sem tocar nos dados. Existe porque as duas metades são guardadas em lugares
+   diferentes e por mecanismos diferentes: os dados vão pro IndexedDB pelo próprio jogo, e as imagens dependem do
+   service worker interceptar o pedido. Dá pra ter uma metade sem a outra — foi o que aconteceu de verdade com um
+   download feito enquanto a página estava fora do controle do sw: 1083 Pokémon guardados e quase nenhuma figura.
+   Rebaixar tudo nesse caso seria jogar fora ~2.800 buscas de dados que já estão perfeitas. */
+export async function baixarImagens(gen, aoAndar = () => {}, sinal = null) {
+  const ids = alvosDaGen(gen);
+  let feitos = 0, falhas = 0;
+  for (let i = 0; i < ids.length && !sinal?.cancelado; i += LOTE) {
+    await Promise.all(ids.slice(i, i + LOTE).map(async id => {
+      // `back` mora nos dados do Pokémon; se eles não estiverem aqui, baixa só frente e shiny (o resto vem depois)
+      let back = null;
+      try { back = (await loadPokemon(id)).back; } catch {}
+      const r = await Promise.all([guardarSprite(SPR(id)), guardarSprite(SPR_SHINY(id)), back ? guardarSprite(back) : true]);
+      falhas += r.filter(x => !x).length;
+      aoAndar(++feitos, ids.length, 'imagens');
+    }));
+  }
+  return { ok: !falhas && !sinal?.cancelado, falhas, total: ids.length };
+}
+
+/* Quantas imagens deste mapa já estão guardadas de verdade (pergunta ao cache do service worker, que é quem
+   guarda). É assíncrono e por isso não entra em `jaBaixado` — a tela mostra o número à parte. */
+export async function imagensGuardadas(gen) {
+  try {
+    // acha o cache pelo nome, sem fixar a versão (sw.js troca 'pokerpg-externo-vN' quando o formato muda)
+    const nome = (await caches.keys()).find(k => k.includes('externo'));
+    if (!nome) return 0;
+    const c = await caches.open(nome);
+    let n = 0;
+    for (const id of alvosDaGen(gen)) if (await c.match(SPR(id), { ignoreVary: true })) n++;
+    return n;
+  } catch { return null; }
+}
+
 /* Baixa o mapa inteiro. `aoAndar(feitos, total, oQue)` recebe o progresso; devolve { ok, falhas, imagens }.
    Vai de poucos em poucos (LOTE) pra não afogar a rede nem a PokéAPI.
 

@@ -12,6 +12,8 @@ export const API = 'https://pokeapi.co/api/v2';
 const SPRITES = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites';
 const ORIGEM_ANTIGA = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites';
 export const espelhar = url => typeof url === 'string' ? url.replace(ORIGEM_ANTIGA, SPRITES) : url;
+// caminho inverso: o MESMO arquivo no servidor antigo, pra <img> tentar o outro servidor antes de desistir
+export const outroServidor = url => typeof url === 'string' ? url.replace(SPRITES, ORIGEM_ANTIGA) : url;
 export const SPR = id => `${SPRITES}/pokemon/${id}.png`;
 // shiny: montado pelo id (não fica no cache da API — save antigo funciona sem migrar). Gen 8+ não tem sprite de costas.
 export const SPR_SHINY = id => `${SPRITES}/pokemon/shiny/${id}.png`;

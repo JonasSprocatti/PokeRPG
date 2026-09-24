@@ -2,7 +2,7 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, espelhar, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { TELAS } from './navegacao.js';
@@ -19,7 +19,11 @@ import { clamp, esc, fmt } from './util.js';
 // `espelhar` em tudo que vem de `m.data`: save e cache antigos guardam o endereço velho das imagens (dados.js)
 export const spriteFrente = m => m.shiny ? SPR_SHINY(m.id) : espelhar(m.data.sprite);
 const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.id) : espelhar(m.data.back)) : null;
-const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="this.onerror=null;this.src='${espelhar(m.data.sprite)}'">`;
+/* Dois planos B, nesta ordem: (1) o MESMO arquivo no outro servidor de imagens — cobre CDN fora do ar ou
+   bloqueado na rede de quem joga; (2) a sprite normal — cobre shiny que não existe pra aquela forma. Sem o
+   primeiro, uma falha do servidor deixava o Pokémon como ícone quebrado mesmo com a imagem disponível ali ao
+   lado, no outro endereço. `dataset.f` marca que a primeira tentativa já foi feita. */
+const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${outroServidor(src)}'}else{this.onerror=null;this.src='${espelhar(m.data.sprite)}'}">`;
 const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
 
 export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;

@@ -6,7 +6,7 @@ import { $, limparTopo } from './ui.js';
 import { FONTES, fonteEscolhida, urlDaFonte } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
-import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
+import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache, limparCache } from './api.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
@@ -34,6 +34,7 @@ export function telaAjustes() {
     <div id="offline-box">${htmlOffline()}</div>
   </main>`;
   mostrarEspaco();
+  mostrarImagens();   // conta as imagens guardadas (assíncrono: a linha se preenche sozinha)
 }
 
 // Baixar um mapa inteiro pra jogar sem internet (offline.js). Sem isso, offline só aparece quem você já encontrou —
@@ -50,6 +51,8 @@ function htmlOffline() {
     <div class="subrow" style="margin-top:10px"><button class="btn" data-act="baixar-tudo">⬇⬇ Baixar o jogo inteiro (${TOTAL_GENS} mapas)</button>
       <span class="small muted">${quantoFaltaTudo() ? `faltam ${quantoFaltaTudo()} de ${totalDoJogo()} Pokémon`
         : GENS.every(g => jaBaixado(g.gen)) ? '✅ tudo guardado' : '⚠ os Pokémon estão todos aqui, mas há mapas baixados por uma versão antiga'}</span></div>
+    <div class="subrow" style="margin-top:10px"><button class="btn ghost sm" data-act="baixar-imagens">🖼 Baixar só as imagens (Gen ${gen})</button>
+      <span class="small muted" id="offline-imagens">conferindo imagens guardadas…</span></div>
     <div class="subrow" style="margin-top:10px"><button class="btn ghost sm" data-act="limpar-baixar">🗑 Limpar tudo e baixar de novo (Gen ${gen})</button>
       <span class="small muted">apaga o que está guardado da PokéAPI e baixa do zero — use se algo ficou pela metade. Não mexe nos seus saves nem na carreira.</span></div>
     <div id="offline-progresso" class="small muted" style="margin-top:8px"></div>
@@ -77,7 +80,30 @@ export async function baixarMapaOffline(gen, limpar = false) {
   p.innerHTML = r.dadosOk && !r.imagens ? `✅ Pronto! ${oQue} guardado neste aparelho (${r.total} Pokémon e ${r.golpes} golpes).`
     : r.dadosOk ? `✅ ${oQue} dá pra jogar offline (${r.total} Pokémon e ${r.golpes} golpes) — mas ${r.imagens} imagem(ns) não desceram. Dá pra baixar de novo pra tentar só elas; o jogo funciona mesmo assim.`
     : `Terminou com ${r.falhas} falha(s) nos dados${r.imagens ? ` e ${r.imagens} em imagens` : ''} — dá pra tentar de novo, o que já baixou fica guardado.`;
-  const box = document.getElementById('offline-box'); if (box) { box.innerHTML = htmlOffline(); mostrarEspaco(); }
+  const box = document.getElementById('offline-box'); if (box) { box.innerHTML = htmlOffline(); mostrarEspaco(); mostrarImagens(); }
+}
+
+/* Só as imagens (botão 🖼). Serve pro caso em que os dados estão inteiros e as figuras não — que acontece quando
+   o download roda sem service worker no comando (ver offline.baixarImagens). Não rebaixa dado nenhum. */
+export async function baixarImagensOffline(gen) {
+  const el = () => document.getElementById('offline-progresso');
+  if (!el()) return;
+  if (offline()) { el().innerHTML = '📴 Sem internet agora: conecte pra poder baixar.'; return; }
+  if (semServiceWorker()) { el().innerHTML = '⚠ <b>Recarregue a página primeiro</b> (F5): sem o service worker no comando, imagem baixada não fica guardada em lugar nenhum.'; return; }
+  el().innerHTML = 'Baixando imagens…';
+  const r = await baixarImagens(+gen, (f, t) => { const p = el(); if (p) p.innerHTML = `Baixando imagens… <b>${f}/${t}</b>`; });
+  const p = el(); if (!p) return;
+  p.innerHTML = r.ok ? `✅ Imagens da Gen ${gen} guardadas (${r.total} Pokémon).`
+    : `Terminou com ${r.falhas} imagem(ns) que não desceram — dá pra rodar de novo, o que já veio fica guardado.`;
+  mostrarImagens();
+}
+// quantas imagens do mapa atual estão guardadas de verdade (pergunta ao cache do service worker)
+async function mostrarImagens() {
+  const el = document.getElementById('offline-imagens'); if (!el) return;
+  const gen = genDe(G.S), total = alvosDaGen(gen).length, n = await imagensGuardadas(gen);
+  if (!document.getElementById('offline-imagens')) return;   // trocou de tela enquanto contava
+  el.innerHTML = n === null ? '' : n >= total ? `✅ ${n}/${total} imagens guardadas.`
+    : `⚠ só <b>${n}/${total}</b> imagens guardadas — sem internet, o resto aparece como figura quebrada.`;
 }
 // espaço que o jogo ocupa neste aparelho (dados + sprites), quando o navegador deixa consultar
 async function mostrarEspaco() {

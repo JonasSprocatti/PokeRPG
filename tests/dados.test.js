@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, ITEM_SPR, espelhar } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, ITEM_SPR, espelhar, outroServidor } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -19,6 +19,9 @@ test('as imagens vêm do CDN, e endereço antigo guardado é traduzido', () => {
   assert.equal(espelhar(SPR(4)), SPR(4), 'endereço já novo não muda');
   // a API devolve `back`/`art` como null pra muita espécie: não pode virar a string "null"
   for (const vazio of [null, undefined, '']) assert.equal(espelhar(vazio), vazio);
+  // o caminho de volta (plano B da <img>) tem que dar no MESMO arquivo, só no outro servidor
+  assert.equal(outroServidor(SPR(4)), velho);
+  assert.equal(espelhar(outroServidor(SPR(4))), SPR(4), 'ida e volta tem que fechar');
 });
 
 test('os 18 tipos estão em todas as tabelas de tipo', () => {
