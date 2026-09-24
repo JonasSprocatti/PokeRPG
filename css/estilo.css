@@ -505,6 +505,22 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 .mv small{color:var(--muted);font-size:13px}
 .mv .pp{font:500 13px var(--display);color:var(--yellow)}
 .mv:hover:not(:disabled){border-color:var(--c)}
+/* Vantagem de tipo no botão do golpe: a informação que decide o turno e que, sem ela, só existe na cabeça de
+   quem decorou a tabela de 18 tipos. Cor + seta + texto, os três juntos — cor sozinha exclui quem não a
+   distingue, e seta sozinha não diz o quanto. */
+.mv .vant{font:600 12px var(--display);letter-spacing:.2px}
+.mv.v-otimo{border-color:#2fbf5f}.mv.v-otimo .vant{color:#5ee08a}
+.mv.v-bom .vant{color:#9fe3b0}
+.mv.v-neutro .vant{color:var(--muted)}
+.mv.v-ruim .vant{color:#ffb36b}
+.mv.v-pessimo{border-color:#a33}.mv.v-pessimo .vant{color:#ff8a8a}
+.mv.v-nulo{opacity:.65}.mv.v-nulo .vant{color:#ff6b6b;font-weight:700}
+/* tipos na plaquinha de batalha: menores, pra não competir com o nome e o HP */
+.pl-tipos{margin:2px 0 4px}
+.pl-tipos .ty{font-size:11px;padding:1px 6px}
+/* a Pokédex da rota virou botão (abre a ficha): precisa parecer clicável */
+button.dexr{cursor:pointer;font:inherit;text-align:center}
+button.dexr:hover{border-color:var(--yellow);transform:translateY(-1px)}
 .subrow{display:flex;gap:10px;width:100%;flex-wrap:wrap}
 /* Mega Evolução: o botão precisa se destacar dos golpes sem virar a coisa mais chamativa da tela — é uma vez por
    batalha, e não gasta o turno. Pulsa devagar; quem pede menos movimento (a11y) vê o botão parado. */

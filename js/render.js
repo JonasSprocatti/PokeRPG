@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada, vantagemDoGolpe } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -77,7 +77,11 @@ function chipsFor(m) {
 const amizadeBar = m => m.amizade ? `<div class="hp amz" title="Amizade"><span>♥</span><div class="bar"><div class="fill" style="width:${clamp(m.amizade, 0, 100)}%"></div></div><span>${m.amizade}/100</span></div>` : '';
 function plate(m) {
   const label = m === G.S.player || G.S.aliados?.includes(m) ? (m.nick || fmt(m.name)) : fmt(m.name);
-  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>${hpbar(m)}${amizadeBar(m)}${chipsFor(m)}`;
+  /* O TIPO de quem está em campo fica visível na plaquinha. Estava só na ficha, a um clique de distância — e é
+     justamente o dado que explica por que o seu golpe acertou fraco. Usa `badgesDeTipo`, então mostra o tipo
+     Tera de quem terastalizou, que é o que vale pra defesa. */
+  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>
+    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m)}${amizadeBar(m)}${chipsFor(m)}`;
 }
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
 function turnoBar(B, P, E) {
@@ -312,8 +316,10 @@ function pokedexRota(z) {
   const dex = pokedexDaRota(z, conhecimento()), vistos = dex.filter(p => p.estado !== 'oculto').length;
   const item = p => p.estado === 'oculto'
     ? `<div class="dexr oculto ${p.mitico ? 'mitico' : ''}" title="${p.mitico ? 'Algo muito raro vive aqui…' : 'Ainda não encontrado'}"><span>${p.mitico ? '✦' : '?'}</span></div>`
-    : `<div class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" title="${esc(fmt(p.nome))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`}">
-        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.nome))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</div>`;
+    /* Quem você já encontrou vira BOTÃO: abre a ficha dele na Pokédex (tela-pokedex.abrirNaPokedex).
+       Se ele já está registrado, a ficha já é sua — e era estranho ver o bicho ali e não poder olhar. */
+    : `<button class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" data-act="dex-rota" data-v="${p.id}" title="${esc(fmt(p.nome))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`} · clique pra ver na Pokédex">
+        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.nome))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</button>`;
   return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados.</p>
     ${blocoCaca(z, dex)}
     <ul class="dex-legenda small muted">
@@ -346,7 +352,12 @@ function renderActions() {
     }
     const noPP = P.moves.every(m => m.ppLeft <= 0);
     a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Sem PP: ataque desesperado com recuo.</small></button>`
-      : P.moves.map((m, i) => `<button class="mv" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small><span class="pp">PP ${m.ppLeft}/${m.pp}</span></button>`).join('')}</div>
+      : P.moves.map((m, i) => {
+        /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
+           turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
+        const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;
+        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp">PP ${m.ppLeft}/${m.pp}</span></button>`;
+      }).join('')}</div>
       ${botaoMega(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
   } else if (G.panel === 'shop') {

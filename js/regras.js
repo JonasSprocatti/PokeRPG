@@ -59,6 +59,27 @@ export function poderMax(poder) {
 export const MULT_HP_DYNAMAX = 2;
 export const TURNOS_DYNAMAX = 3;
 
+/* ---- leitura de vantagem (a seta nos botões de golpe) ----
+   Saber que Água é forte contra Fogo é óbvio pra quem jogou a vida toda e opaco pra quem está começando — e a
+   tabela tem 18 tipos, dois tipos por Pokémon e multiplicadores que se multiplicam. Aqui a conta vira uma
+   etiqueta e uma seta, que é o que dá pra ler no meio da luta.
+   `nivel` vai de -3 a +2 e serve pra CSS/ordenação; `mult` é a conta de verdade, pra quem quiser o número.
+   Golpe de status não tem vantagem: ele não usa a tabela de tipos pra nada, e inventar uma seta ali seria
+   ensinar errado. */
+export const VANTAGENS = [
+  { min: 4, nivel: 2, seta: '⏫', rotulo: 'extremamente efetivo', classe: 'v-otimo' },
+  { min: 2, nivel: 1, seta: '🔼', rotulo: 'super efetivo', classe: 'v-bom' },
+  { min: 1, nivel: 0, seta: '▪', rotulo: 'dano normal', classe: 'v-neutro' },
+  { min: 0.5, nivel: -1, seta: '🔽', rotulo: 'pouco efetivo', classe: 'v-ruim' },
+  { min: 0.01, nivel: -2, seta: '⏬', rotulo: 'quase sem efeito', classe: 'v-pessimo' },
+  { min: 0, nivel: -3, seta: '✖', rotulo: 'não afeta', classe: 'v-nulo' }
+];
+export function vantagemDoGolpe(golpe, alvo) {
+  if (!golpe || !alvo || golpe.cls === 'status') return null;
+  const mult = typeEff(golpe.type, tiposDefensivos(alvo));
+  return { mult, ...VANTAGENS.find(v => mult >= v.min) };
+}
+
 export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
 export function multStab(m, tipoGolpe, base = 1.5) {
   const originais = m?.data?.types || [];

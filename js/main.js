@@ -17,7 +17,7 @@ import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem,
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
-import { telaPokedex, verNaPokedex } from './tela-pokedex.js';
+import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
@@ -90,6 +90,7 @@ document.addEventListener('click', async e => {
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
     case 'pokedex': if (G.busy || G.mode === 'battle') return; return telaPokedex();
+    case 'dex-rota': if (G.busy || G.mode === 'battle') return; return abrirNaPokedex(v);   // da Pokedex da rota pra ficha
     case 'dex-ver': return verNaPokedex(v);
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
     // bugs e sugestões

@@ -2,6 +2,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.21', data: '2026-09-24', titulo: 'Para quem não decorou a tabela', piada: 'Descobrimos que nem todo mundo nasce sabendo que Planta é fraco contra Inseto. Corrigimos o jogo, não as pessoas.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Cada golpe seu agora mostra, no próprio botão, <b>o quanto ele é vantajoso</b> contra quem está na sua frente: extremamente efetivo (⏫), super efetivo (🔼), dano normal, pouco efetivo (🔽), quase sem efeito (⏬) ou não afeta (✖). Vem com cor, seta e texto ao mesmo tempo — cor sozinha não serve para quem não a distingue.',
+        'O <b>tipo</b> de quem está em campo aparece na plaquinha de batalha, dos dois lados. Era o dado que explicava por que o seu golpe bateu fraco e ele estava escondido na ficha, a um clique de distância. Quem terastalizou mostra o tipo Tera, que é o que vale.',
+        'Na Pokédex da rota, os Pokémon que você já encontrou viraram <b>clicáveis</b>: abrem a ficha completa na Pokédex. Se ele já está registrado, a ficha já é sua.'
+      ] }
+    ] },
   { versao: '2.20', data: '2026-09-24', titulo: 'Gigantamax — a última das quatro', piada: 'Seu Pokémon cresceu tanto que agora precisa se abaixar para entrar na batalha. Valeu a pena.',
     secoes: [
       { nome: 'Novidades', itens: [

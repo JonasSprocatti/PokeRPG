@@ -47,6 +47,14 @@ export function telaPokedex() {
   </main>`;
 }
 
+/* Abrir a Pokédex JÁ na ficha de uma espécie — é o que o clique na Pokédex da rota faz (render.js).
+   Precisa passar por `telaPokedex()` antes: é ela que monta o `#dex-ficha` onde a ficha é escrita e que carrega
+   o `dex` do módulo. Chamar `verNaPokedex` direto de outra tela não acharia nem um nem outro. */
+export function abrirNaPokedex(id) {
+  telaPokedex();
+  return verNaPokedex(id);
+}
+
 // clique numa espécie conhecida (main.js: data-act="dex-ver")
 export async function verNaPokedex(id) {
   const alvo = $('#dex-ficha'); if (!alvo) return;
