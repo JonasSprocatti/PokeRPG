@@ -4,6 +4,7 @@
 // Diferença entre você e o aliado: você escolhe qual golpe esquecer; o aliado troca sozinho o de menor poder.
 // A evolução pergunta nos dois casos (é decisão sua deixar o aliado evoluir ou não).
 import { G, nm, registrar, rotulo, ladoJogador } from './estado.js';
+import { formaRegionalDaGen, genDe, dadosDaGen } from './mapas.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { API, STATS, STAT_PT, TYPE_PT, CLS_PT, ITEMS } from './dados.js';
@@ -206,7 +207,14 @@ async function evolve(M, speciesName, arvore) {
   // forma do meio (ainda evolui) ou final (não evolui mais): o Roguelike pede 5 ou 10 evoluções pra desbloquear
   const forma = findNode(arvore, speciesName)?.to.length ? 'meio' : 'final';
   const sp = await loadSpecies(`${API}/pokemon-species/${speciesName}/`);
-  const data = await loadPokemon(sp.defaultPokemon);
+  /* Evoluiu NA REGIÃO da forma regional? Sai na forma de lá. É a regra dos jogos (Exeggcute + Pedra da Folha em
+     Alola = Exeggutor de Alola) e vale pra qualquer região: a fonte é o próprio mapa (mapas.formaRegionalDaGen),
+     então região nova entra sozinha. Antes a evolução ia SEMPRE pra forma padrão (`sp.defaultPokemon`), e a
+     única maneira de ter uma forma regional era encontrar uma pronta no Santuário.
+     `data.speciesName` continua sendo a espécie base ('exeggutor'), que é a chave que o registro, a Pokédex e os
+     desbloqueios usam desde sempre — só `id`/`name` mudam. */
+  const regional = formaRegionalDaGen(speciesName, genDe(G.S));
+  const data = await loadPokemon(regional ? regional.forma : sp.defaultPokemon);
   const oldName = ehJogador(M) ? fmt(M.name) : (M.nick || fmt(M.name));
   const habVelha = M.ability, habVelhas = M.data.abilities, golpesVelhos = M.data.learnset.list;
   M.id = data.id; M.name = data.name; M.data = data;
@@ -215,6 +223,8 @@ async function evolve(M, speciesName, arvore) {
   registrar(G.S, 'evolucoes', data.speciesName, data.id); // conta pro Roguelike (5× forma do meio / 10× final)
   (G.S.registro.formas ||= {})[data.speciesName] = forma;
   await say(`Parabéns! ${esc(oldName)} evoluiu para <b>${esc(fmt(data.name))}</b>!`, 'level');
+  // dizer POR QUE saiu diferente: senão parece bug ("evoluí e veio outro Pokémon")
+  if (regional) await say(`Foi a região que decidiu a forma: evoluindo em ${esc(dadosDaGen(genDe(G.S)).regiao)}, ${esc(fmt(speciesName))} vira <b>${esc(fmt(data.name))}</b>.`, 'status');
   // a habilidade acompanha a evolução (mesmo slot): avisa quando ela troca de nome, senão some sem ninguém ver
   if (M.ability !== habVelha) await say(`A habilidade de ${nm(M)} virou <b>${esc(fmt(M.ability))}</b> (era ${esc(fmt(habVelha))}).`, 'status');
   for (const mv of golpesDaEvolucao(golpesVelhos, data.learnset.list, M.level)) await aprender(M, mv);

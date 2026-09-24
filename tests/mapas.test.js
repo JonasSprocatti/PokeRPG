@@ -2,7 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, rotaNaJornada, sortearDaRota, taxaNaRota, textoTaxa,
-  somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL, lendariosDaGen } from '../js/mapas.js';
+  somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL, lendariosDaGen,
+  formaRegionalDaGen } from '../js/mapas.js';
 import { REGIOES_INICIAIS } from '../js/dados.js';
 import { zonaLiberada } from '../js/regras.js';
 
@@ -157,6 +158,30 @@ test('formas regionais existem e guardam a espécie separada do nome da forma', 
   // a Pokédex da rota mostra o nome da FORMA, mas conta o visto/derrotado na espécie
   const dex = pokedexDaRota({ pool: [{ id: 10100, n: 'raichu', f: 'raichu-alola', p: 3 }] }, { vistos: { raichu: 1 }, derrotados: {} });
   assert.deepEqual([dex[0].nome, dex[0].n, dex[0].estado], ['raichu-alola', 'raichu', 'silhueta']);
+});
+
+/* Evoluir NA REGIÃO dá a forma de lá (progressao.evolve). Antes a evolução ia sempre pra forma padrão e a única
+   maneira de ter uma forma regional era encontrar uma pronta no Santuário — o jogador perguntou "como evoluo o
+   Exeggcute pro Exeggutor de Alola?" e a resposta era "não dá". */
+test('formaRegionalDaGen: a região decide a forma da evolução', () => {
+  const alola = GENS.find(g => g.regiao === 'Alola').gen;
+  const r = formaRegionalDaGen('exeggutor', alola);
+  assert.ok(r, 'Alola tem Exeggutor regional');
+  assert.equal(r.forma, 'exeggutor-alola');
+  assert.ok(r.id > 10000, 'id de forma, não o da espécie');
+  // em Kanto o mesmo Exeggutor não tem forma regional: evolui pro padrão, como sempre
+  assert.equal(formaRegionalDaGen('exeggutor', 1), null);
+  // espécie que não tem forma regional em lugar nenhum
+  assert.equal(formaRegionalDaGen('bulbasaur', alola), null);
+
+  // a regra vale pra TODAS as regiões, não só Alola: toda forma do mapa tem que ser achável por ela
+  for (const g of GENS) {
+    for (const p of g.rotas.flatMap(z => z.pool).filter(x => x.f)) {
+      const achado = formaRegionalDaGen(p.n, g.gen);
+      assert.ok(achado, `Gen ${g.gen}: ${p.f} não foi achada por formaRegionalDaGen`);
+      assert.match(achado.forma, /-(alola|galar|hisui|paldea)(-|$)/);
+    }
+  }
 });
 
 test('Pikachu e Eevee continuam liberados; os 27 iniciais e as evoluções, não', () => {

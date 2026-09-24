@@ -73,6 +73,19 @@ export const primeiraRota = g => rotasDaGen(g)[0];
 export const rotaFinalDaGen = g => rotasDaGen(g).find(z => z.final) || rotasDaGen(g).at(-1);
 export const lendariosDaGen = g => rotaFinalDaGen(g)?.lendarios || [];
 
+/* Forma regional desta espécie NESTE mapa, se existir: { id, forma } (ex.: em Alola, 'exeggutor' → exeggutor-alola).
+   Quem evolui em Alola vira a forma de Alola — é a regra dos jogos, e é o que faz a Exeggutor de lá (e a Raichu,
+   a Marowak, a Muk…) existir de outro jeito que não "encontrar uma pronta no Santuário". Vale pra toda região:
+   a fonte é o `f` do próprio mapa gerado, então região nova entra sozinha quando o mapa dela tiver formas.
+   Procura no mapa INTEIRO (inclusive o Santuário), porque é lá que a maioria das formas regionais vive. */
+export function formaRegionalDaGen(especie, gen) {
+  for (const z of rotasDaGen(gen)) {
+    const p = z.pool.find(x => x.n === especie && x.f);
+    if (p) return { id: p.id, forma: p.f };
+  }
+  return null;
+}
+
 // Nível de um mapa quando você entra nele já forte (fora do Roguelike): o que ia de 2 a 75 passa a ir do seu nível
 // até 100, mantendo a proporção. base ≤ 5 (começo de jornada) = níveis originais.
 export function escalaNivel(n, base) {

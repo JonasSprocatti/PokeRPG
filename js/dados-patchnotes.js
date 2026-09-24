@@ -2,6 +2,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.15', data: '2026-09-24', titulo: 'A região decide a forma', piada: 'O Exeggcute foi passar férias em Alola e voltou com um sotaque de Dragão. Coisas que acontecem.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Evoluir <b>dentro da região</b> agora dá a forma regional: use a Pedra da Folha num Exeggcute em Alola e vem o Exeggutor de Alola, não o de Kanto. Vale pra todas as regiões e todas as formas que existem no mapa — Alola, Galar, Hisui e Paldea. Antes a evolução saía sempre na forma padrão, e a única maneira de ter uma forma regional era encontrar uma pronta no Santuário.',
+        'O registro continua contando na espécie (Exeggutor), então Pokédex, desbloqueios e conquistas não mudam — o que muda é o Pokémon que fica com você, com os tipos, os status e os golpes da forma de lá.'
+      ] }
+    ] },
   { versao: '2.14', data: '2026-09-24', titulo: 'A rota não acaba antes da missão', piada: 'A Rota 1 se aposentava antes de você terminar de contar os Pidgey. Conversamos com ela.',
     secoes: [
       { nome: 'Equilíbrio', itens: [
