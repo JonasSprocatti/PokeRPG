@@ -148,6 +148,21 @@ export const ITENS_SEGURADOS = {
 };
 Object.assign(ITEMS, ITENS_SEGURADOS);
 
+/* Pedra Mega: conquistar a Mega da espécie NÃO basta — é preciso carregar a pedra, como nos jogos (pedido do
+   usuário). Ela é um item SEGURADO: compra na loja e equipa no seu Pokémon.
+   É um item só, e não 89: a pedra vale pra espécie que você está jogando, e a loja só a oferece quando aquela
+   espécie já tem a Mega conquistada na conta (`soComMega`, ver render.js) — então não há como comprar a pedra
+   "errada". Rayquaza é a exceção e não usa pedra nenhuma: ele megaevolui sabendo Dragon Ascent (mega.js). */
+export const PRECO_PEDRA_MEGA = 15000;
+export const ITEM_PEDRA_MEGA = 'pedra-mega';
+export const ITENS_MEGA = {
+  [ITEM_PEDRA_MEGA]: {
+    name: 'Pedra Mega', segurado: true, soComMega: true, price: PRECO_PEDRA_MEGA, categoria: 'segurado',
+    desc: 'A pedra que responde à sua. Segure-a para poder megaevoluir na batalha (uma vez por luta, sem gastar o turno).'
+  }
+};
+Object.assign(ITEMS, ITENS_MEGA);
+
 // Repelentes (mapas.js): mexem SÓ no encontro selvagem — treinador, item, dinheiro e ambientação continuam iguais.
 // `passos` = quantas explorações duram.
 export const ITENS_REPELENTE = {

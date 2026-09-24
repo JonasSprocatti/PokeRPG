@@ -245,7 +245,7 @@ async function megaDoInimigo() {
   const B = G.B, E = B?.enemy;
   if (!B || !E || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
-  const f = megasDisponiveis(E, { jaUsou: false, liberada: () => true })[0];
+  const f = megasDisponiveis(E, { jaUsou: false, liberada: () => true, ignorarPedra: true })[0];
   if (!f) { B.megaInimigoUsada = true; return; }   // não tem forma: não checa de novo a cada golpe
   B.megaInimigoUsada = true;
   const nome = await megaevoluir(E, f);

@@ -13,6 +13,7 @@
    sem rede; aqui os dados vêm da API, então são PRÉ-CARREGADOS no começo da batalha — esperar requisição no meio
    do turno é justamente o que o Aegislash evitou. */
 import { megasDe, temMega } from './dados-megas.js';
+import { ITEM_PEDRA_MEGA } from './dados.js';
 import { loadPokemon } from './api.js';
 import { recalc } from './regras.js';
 import { G } from './estado.js';
@@ -40,12 +41,39 @@ export const megasDoJogador = () => !G.B ? [] : megasDisponiveis(G.S.player, {
   jaUsou: !!G.B.megaUsada,
   liberada: e => megaDaContaLiberada(e, G.S.registro)
 });
+// o aviso do que falta (pedra / Dragon Ascent) pra tela mostrar em vez de simplesmente esconder o botão
+export const avisoDaMegaDoJogador = () => !G.B || G.B.megaUsada ? ''
+  : avisoDaMega(G.S.player, { liberada: e => megaDaContaLiberada(e, G.S.registro) });
 
-export function megasDisponiveis(M, { jaUsou, liberada }) {
+/* Rayquaza não usa pedra: ele megaevolui por saber **Dragon Ascent** — é a regra dos jogos, e o usuário pediu
+   que fosse respeitada. Qualquer outra espécie precisa da Pedra Mega SEGURADA (dados.ITEM_PEDRA_MEGA): ter a
+   conquista libera a compra da pedra, não a Mega em si. */
+export const GOLPE_RAYQUAZA = 'dragon-ascent';
+export const ehRayquaza = especie => especie === 'rayquaza';
+export function faltaPraMegaevoluir(M) {
+  const especie = M?.data?.speciesName;
+  if (ehRayquaza(especie)) {
+    return (M.moves || []).some(g => g.name === GOLPE_RAYQUAZA) ? null : 'precisa saber Dragon Ascent';
+  }
+  return M?.item === ITEM_PEDRA_MEGA ? null : 'precisa segurar a Pedra Mega';
+}
+
+/* `ignorarPedra` existe pro lado INIMIGO: um Alfa não anda com uma Pedra Mega no inventário (ele nem tem
+   inventário), e exigir isso dele faria a segunda fase da luta simplesmente nunca acontecer. A pedra é uma
+   regra do SEU lado — é o custo de usar a mecânica, e é o que a loja vende. */
+export function megasDisponiveis(M, { jaUsou, liberada, ignorarPedra = false }) {
   if (jaUsou || M?.mega || !M?.data?.speciesName) return [];
   const especie = M.data.speciesName;
   if (!temMega(especie) || !liberada(especie)) return [];
+  if (!ignorarPedra && faltaPraMegaevoluir(M)) return [];
   return megasDe(especie);
+}
+/* O que dizer pra quem conquistou a Mega e ainda não consegue usar. Sem isto, o botão simplesmente não aparece
+   e a pessoa fica sem saber que falta a pedra — o pior tipo de "não funciona". */
+export function avisoDaMega(M, { liberada }) {
+  const especie = M?.data?.speciesName;
+  if (!especie || !temMega(especie) || !liberada(especie)) return '';
+  return faltaPraMegaevoluir(M) || '';
 }
 
 /* A troca em si. Guarda o que estava antes em `M.mega.antes` — é isso que `desfazerMega` usa pra devolver o

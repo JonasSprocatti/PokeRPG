@@ -5,8 +5,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MEGAS, megasDe, temMega, ehPrimal } from '../js/dados-megas.js';
-import { megasDisponiveis, desfazerMega, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
+import { megasDisponiveis, avisoDaMega, desfazerMega, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
 import { progressoConquistas } from '../js/conquistas.js';
+import { ITEM_PEDRA_MEGA } from '../js/dados.js';
 
 test('tabela de Megas: formas com id de forma, nome e espécie coerente', () => {
   const especies = Object.keys(MEGAS);
@@ -63,15 +64,38 @@ const mon = (especie, extra = {}) => ({
   stats: { hp: 100 }, data: { speciesName: especie, base: {} }, ability: 'blaze', ...extra
 });
 
+/* Conquistar a Mega libera a COMPRA da pedra, não a Mega em si: sem a Pedra Mega segurada, não megaevolui
+   (pedido do usuário, e é a regra dos jogos). Rayquaza é a exceção — ele não usa pedra, usa Dragon Ascent. */
+test('sem a Pedra Mega segurada, não megaevolui', () => {
+  const liberada = () => true;
+  assert.deepEqual(megasDisponiveis(mon('charizard', { item: null }), { jaUsou: false, liberada }), []);
+  assert.match(avisoDaMega(mon('charizard'), { liberada }), /Pedra Mega/);
+  assert.equal(megasDisponiveis(mon('charizard', { item: ITEM_PEDRA_MEGA }), { jaUsou: false, liberada }).length, 2);
+  assert.equal(avisoDaMega(mon('charizard', { item: ITEM_PEDRA_MEGA }), { liberada }), '');
+  // quem não conquistou não recebe aviso nenhum: não é hora de contar que a mecânica existe
+  assert.equal(avisoDaMega(mon('charizard'), { liberada: () => false }), '');
+  assert.equal(avisoDaMega(mon('pidgey'), { liberada }), '', 'espécie sem Mega');
+});
+
+test('Rayquaza megaevolui com Dragon Ascent, sem pedra nenhuma', () => {
+  const liberada = () => true;
+  const semGolpe = mon('rayquaza', { moves: [{ name: 'fly' }] });
+  assert.deepEqual(megasDisponiveis(semGolpe, { jaUsou: false, liberada }), []);
+  assert.match(avisoDaMega(semGolpe, { liberada }), /Dragon Ascent/);
+  const comGolpe = mon('rayquaza', { moves: [{ name: 'dragon-ascent' }] });
+  assert.equal(megasDisponiveis(comGolpe, { jaUsou: false, liberada }).length, 1, 'sabe o golpe: pode, sem pedra');
+  assert.equal(comGolpe.item, undefined, 'e de fato não está segurando nada');
+});
+
 test('quem pode megaevoluir: conquistada, uma por batalha, e não duas vezes', () => {
   const liberada = () => true;
-  assert.equal(megasDisponiveis(mon('charizard'), { jaUsou: false, liberada }).length, 2);
+  assert.equal(megasDisponiveis(mon('charizard', { item: ITEM_PEDRA_MEGA }), { jaUsou: false, liberada }).length, 2);
   assert.deepEqual(megasDisponiveis(mon('charizard'), { jaUsou: true, liberada }), [], 'uma por batalha');
   assert.deepEqual(megasDisponiveis(mon('pidgey'), { jaUsou: false, liberada }), [], 'espécie sem Mega');
   assert.deepEqual(megasDisponiveis(mon('charizard'), { jaUsou: false, liberada: () => false }), [],
     'sem a conquista, não aparece');
   // já está Mega: não megaevolui de novo
-  assert.deepEqual(megasDisponiveis(mon('charizard', { mega: {} }), { jaUsou: false, liberada }), []);
+  assert.deepEqual(megasDisponiveis(mon('charizard', { mega: {}, item: ITEM_PEDRA_MEGA }), { jaUsou: false, liberada }), []);
 });
 
 test('desfazerMega devolve o Pokémon exatamente como estava', () => {
@@ -89,6 +113,13 @@ test('desfazerMega devolve o Pokémon exatamente como estava', () => {
   assert.equal(M.mega, undefined, 'a marca de Mega sai junto');
   assert.equal(desfazerMega(M), null, 'desfazer de novo não faz nada');
   assert.equal(desfazerMega(mon('pidgey')), null, 'quem nunca megaevoluiu é ignorado');
+});
+
+// o inimigo não tem inventário: exigir a pedra dele faria a segunda fase da luta nunca acontecer
+test('o lado inimigo megaevolui sem pedra', () => {
+  const alfa = mon('charizard');
+  assert.deepEqual(megasDisponiveis(alfa, { jaUsou: false, liberada: () => true }), [], 'a regra da pedra vale pro jogador');
+  assert.equal(megasDisponiveis(alfa, { jaUsou: false, liberada: () => true, ignorarPedra: true }).length, 2);
 });
 
 test('só Alfa, lendário e treinador megaevoluem do lado inimigo', () => {

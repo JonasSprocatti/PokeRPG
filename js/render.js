@@ -12,7 +12,8 @@ import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
-import { megasDoJogador, nomeDaMecanica } from './mega.js';
+import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
+import { megaDaContaLiberada } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
 import { clamp, esc, fmt } from './util.js';
 
@@ -31,7 +32,9 @@ const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
    `megasDoJogador()` não vai à rede: lê a tabela e o progresso da conta. */
 function botaoMega(dis) {
-  const formas = megasDoJogador(), tipos = terasDisponiveis();
+  const formas = megasDoJogador(), tipos = terasDisponiveis(), falta = avisoDaMegaDoJogador();
+  // conquistou a Mega mas falta a pedra (ou o Dragon Ascent): dizer o que falta é melhor que esconder o botão
+  if (!formas.length && falta) return `<p class="small muted">⚡ A Mega da sua espécie está conquistada, mas ${esc(falta)}.</p>`;
   if (!formas.length && !tipos.length) return '';
   const f = formas[0], varias = formas.length > 1;
   return `<div class="subrow">
@@ -330,7 +333,11 @@ function renderActions() {
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila
-    const forSale = Object.entries(ITEMS).filter(([, it]) => it.price);
+    /* `soComMega` (a Pedra Mega) só entra na prateleira quando a SUA espécie já tem a Mega conquistada na conta.
+       Assim não há como comprar uma pedra que não serve pra ninguém — e quem ainda não conquistou não vê um
+       item caro e inútil na loja. */
+    const podeMega = megaDaContaLiberada(P?.data?.speciesName, S?.registro);
+    const forSale = Object.entries(ITEMS).filter(([, it]) => it.price && (!it.soComMega || podeMega));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
