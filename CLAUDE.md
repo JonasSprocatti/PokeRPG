@@ -211,6 +211,16 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 ## Supabase: schema sobe sozinho (integração nativa)
 
+> ⚠️ **AINDA NÃO COMPROVADO neste projeto (24/09/2026).** Duas migrations de teste (`teste_integracao`,
+> `teste_integracao_2`) foram commitadas no `main` e **nenhuma das duas chegou no banco** — confirmado consultando
+> as tabelas pelo cliente do jogo, com uma tabela inexistente de controle. O schema que existe hoje lá foi aplicado
+> À MÃO pelo SQL Editor. Enquanto isso não for resolvido: **toda mudança de schema é colada à mão no SQL Editor**,
+> e a migration existe no repositório como registro. Não presuma que um `git push` atualizou o banco.
+>
+> **Cuidado ao verificar se uma tabela existe pelo cliente**: `select('*', { count: 'exact', head: true })` devolve
+> `error` nulo mesmo pra tabela que não existe (a resposta não tem corpo). Use `select('*').limit(1)` — e sempre
+> com uma tabela inexistente de controle, senão o teste mente e parece que está tudo certo.
+
 O banco é atualizado pela **integração do GitHub no painel do Supabase** (Settings → Integrations → GitHub): repositório conectado, *working directory* `/supabase`, *Deploy to production* ligado na branch `main`. Nada de secret no GitHub — a conexão é do lado do Supabase.
 
 Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI:
