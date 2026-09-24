@@ -2,6 +2,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.13', data: '2026-09-24', titulo: 'Não era a sua internet', piada: 'O jogo passou dias jurando que a culpa era da sua conexão. A culpa era de uma função que nunca foi escrita. Pedimos desculpas à sua operadora.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Clicar num Pokémon na tela de criação dava "A conexão falhou ao buscar um dado da PokéAPI" e não deixava começar jornada nenhuma. Não era a conexão: a prévia chamava uma função que nunca tinha sido escrita, e o erro caía no mesmo tratamento da busca de rede, que anunciava problema de internet. Por isso limpar cache, trocar de rede e baixar tudo de novo não adiantavam — e por isso o Full Randomizer continuava funcionando, já que ele não desenha a prévia.',
+        'A função que faltava é a opção <b>✨ Começar shiny</b>: ela aparece na prévia quando você já recrutou um shiny daquela espécie, exatamente como combinado. Agora existe de verdade, e a escolha é respeitada ao começar.',
+        'Erro de código não se disfarça mais de erro de rede: a tela de criação separa "não consegui buscar o dado" de "não consegui montar a prévia", e a segunda mostra o que realmente aconteceu.'
+      ] }
+    ] },
   { versao: '2.12', data: '2026-09-24', titulo: 'As figurinhas mudaram de endereço', piada: 'Descobrimos que o jogo buscava as imagens num prédio que metade dos porteiros do país não deixa entrar. Mudamos pro prédio ao lado, que tem os mesmos móveis.',
     secoes: [
       { nome: 'Correções', itens: [

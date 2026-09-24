@@ -11,6 +11,7 @@ import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen }
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
 import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta } from './carreira.js';
+import { pokedexDaConta } from './pokedex-conta.js';
 import { vantagensDe } from './badges.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
@@ -128,8 +129,19 @@ export const sortearEspecie = () => { const ok = permitidos(); return previewSea
 export async function previewSearch(q) {
   q = String(q).trim().toLowerCase().replace(/\s+/g, '-'); if (!q) return;
   const box = $('#preview'); box.innerHTML = '<p class="loading">Consultando a PokéAPI…</p>';
+  /* DUAS metades, com tratamentos DIFERENTES de propósito. Antes era um `try` só em volta de tudo, e qualquer
+     erro virava a mensagem de rede — foi assim que um `ReferenceError` numa função que faltava (opcaoShiny) se
+     disfarçou de "A conexão falhou ao buscar um dado da PokéAPI" e travou a criação de jornada inteira, com o
+     jogador limpando cache e trocando de rede atrás de um problema que não estava lá.
+     Regra: só o que fala com a rede pode reportar erro de rede. */
+  let data;
   try {
-    const data = await resolvePokemon(q);
+    data = await resolvePokemon(q);
+  } catch (e) {
+    box.innerHTML = `<p class="err">${e.code === 404 ? `Nenhum Pokémon chamado “${esc(q)}”. Use o nome em inglês (ex.: mr-mime) ou o número da Pokédex.` : apiErr(e)}</p>`;
+    return;
+  }
+  try {
     // garantia (a UI só oferece iniciais, mas `pick`/`search` vêm de atributo do HTML)
     const ok = permitidos();
     if (ok && !ok.includes(data.id)) { box.innerHTML = '<p class="err">Neste modo só dá pra começar com um inicial, Pikachu, Eevee ou uma espécie desbloqueada.</p>'; return; }
@@ -139,11 +151,31 @@ export async function previewSearch(q) {
     data.abilities.forEach(a => loadAbility(a).then(() => { if (G.PV?.data === data) renderPreview(); }).catch(() => {}));
     box.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
   } catch (e) {
-    box.innerHTML = `<p class="err">${e.code === 404 ? `Nenhum Pokémon chamado “${esc(q)}”. Use o nome em inglês (ex.: mr-mime) ou o número da Pokédex.` : apiErr(e)}</p>`;
+    console.error('prévia:', e);
+    box.innerHTML = `<p class="err">Não consegui montar a prévia de ${esc(fmt(data.name))}: ${esc(e.message)}.<br>
+      <small>Isto é um problema do jogo, não da sua conexão — os dados chegaram normalmente.</small></p>`;
   }
 }
 // nível que vale de fato: a escolha do jogador só conta se a dificuldade deixar (senão 5)
 const nivelInicial = PV => DIFICULDADES[G.dif].nivelLivre ? PV.level : 5;
+
+/* Começar shiny: liberado pra espécie de que você JÁ recrutou um shiny em alguma jornada (decisão do usuário —
+   "se você capturar um Shiny, desbloqueia ele e tem a opção de usar ele Shiny na Run"). Quem nunca recrutou não
+   vê nada, e continua no sorteio normal de 1 em 4096.
+   A conta sai da Pokédex da conta (`shiniesAmigos` por espécie), que soma a carreira inteira e não encolhe.
+   ATENÇÃO — esta função ESTAVA FALTANDO: era chamada aqui e não existia em lugar nenhum do projeto, então
+   `renderPreview()` lançava ReferenceError a cada clique numa espécie. Como a chamada mora dentro do `try` de
+   `previewSearch`, o erro saía traduzido como "A conexão falhou ao buscar um dado da PokéAPI" e ninguém
+   conseguia começar jornada nenhuma pela tela de criação (o Full Randomizer escapava por não desenhar a prévia).
+   Se for mexer aqui, lembre: o que quebrar nesta função vira "erro de rede" na cara de quem joga. */
+function opcaoShiny(d) {
+  const dex = pokedexDaConta(carregarCarreira().jornadas, G.S?.registro);
+  const tem = dex.porNome?.[d.speciesName]?.shiniesAmigos || 0;
+  if (!tem) return '';
+  return `<label class="check caca-opcao" style="margin-top:12px"><input type="checkbox" id="pv-shiny" ${G.PV?.shiny ? 'checked' : ''}>
+    ✨ Começar shiny
+    <small class="muted">Você já recrutou ${tem === 1 ? 'um' : tem} ${esc(fmt(d.name))} shiny, então pode ser um também. Só muda as cores — nada de status.</small></label>`;
+}
 export function renderPreview() {
   const PV = G.PV, d = PV.data, total = STATS.reduce((a, s) => a + d.base[s], 0);
   const nickVal = $('#pv-nick')?.value ?? PV.nick; PV.nick = nickVal;
@@ -214,8 +246,11 @@ export async function startGame(btn) {
   const PV = G.PV, livre = DIFICULDADES[G.dif].escolhaLivre;
   try {
     PV.nick = ($('#pv-nick')?.value || '').trim();
+    // ✨ começar shiny (opcaoShiny): só existe pra espécie de que você já recrutou um shiny. `undefined` quando
+    // não marcado, pra `makeMon` cair no sorteio normal de 1 em 4096 em vez de forçar "não shiny".
+    PV.shiny = !!$('#pv-shiny')?.checked;
     const gen = gensLiberadas().includes(G.gen) ? G.gen : 1; // garantia (o cartão trancado já vem desativado)
-    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif, gen });
+    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif, gen, shiny: PV.shiny || undefined });
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Tentar de novo';
     $('#preview').insertAdjacentHTML('beforeend', `<p class="err">${apiErr(e)}</p>`);
