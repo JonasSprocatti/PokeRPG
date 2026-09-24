@@ -8,6 +8,7 @@ import { $, limparTopo } from './ui.js';
 import { barraTelas } from './navegacao.js';
 import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta, badgesDaCarreira } from './carreira.js';
 import { vantagensDe } from './badges.js';
+import { MEGAS, megasDe } from './dados-megas.js';
 import { ITEMS } from './dados.js';
 import { runsDeNivelDe } from './progresso-conta.js';
 import { progressoConquistas, ALVOS, MARCOS_ABATES, MODO_NAO_CONTA } from './conquistas.js';
@@ -38,6 +39,22 @@ function bloco(titulo, explicacao, itens, vazio) {
     ${itens.length ? `<ul class="quase conquistas">${itens.join('')}</ul>` : `<p class="small muted">${vazio}</p>`}`;
 }
 
+/* Catálogo das Megas: TODAS as espécies que têm Mega no jogo, conquistadas ou não.
+   A lista de barras acima só mostra espécie com a qual você já lutou — quem nunca jogou de Gengar não vê Gengar
+   em lugar nenhum, e a pergunta "quais Megas existem?" ficava sem resposta na tela. A figura é a da FORMA Mega
+   (o id da forma), que é justamente o que dá vontade de ir atrás. */
+function catalogoMegas(p) {
+  const liberadas = new Set(p.mega.filter(x => x.liberado).map(x => x.chave));
+  const especies = Object.keys(MEGAS).sort();
+  return `<details class="cat-megas"><summary>Ver as ${especies.length} espécies que têm Mega no jogo
+      (${liberadas.size} conquistada${liberadas.size === 1 ? '' : 's'})</summary>
+    <div class="picks">${especies.map(e => megasDe(e).map(f =>
+      `<span class="pick ${liberadas.has(e) ? 'on' : ''}" title="${esc(f.nome)}${liberadas.has(e) ? ' — conquistada' : ''}">
+        <img src="${SPR(f.id)}" alt="" loading="lazy">${esc(f.nome)}${liberadas.has(e) ? ' ✓' : ''}</span>`).join('')).join('')}</div>
+    <p class="small muted">São ${especies.length} espécies e ${especies.reduce((a, e) => a + megasDe(e).length, 0)} formas, de todas as Gens —
+      Charizard e Mewtwo têm duas, e Groudon e Kyogre entram como Reversão Primitiva.</p></details>`;
+}
+
 export function telaConquistas() {
   G.mode = 'fim'; limparTopo();
   const jornadas = carregarCarreira().jornadas;
@@ -48,7 +65,7 @@ export function telaConquistas() {
   const m = p.abates;
 
   const tera = p.tera.slice(0, 18).map(x => linhaMissao(x, esc(TYPE_PT[x.chave] || fmt(x.chave))));
-  const mega = p.mega.slice(0, 12).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
+  const mega = p.mega.slice(0, 24).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
   const zGolpe = p.zGolpe.slice(0, 10).map(x => linhaMissao(x, esc(fmt(x.chave))));
   const zElemento = p.zElemento.slice(0, 10).map(x => linhaMissao(x, esc(TYPE_PT[x.chave] || fmt(x.chave))));
   const gmax = p.gigantamax.slice(0, 10).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
@@ -57,8 +74,8 @@ export function telaConquistas() {
     ${barraTelas('conquistas')}
     <h1>Conquistas da conta.</h1>
     <p class="lead">Tudo aqui soma a <b>carreira inteira</b>, jornada após jornada — e a que está em andamento conta junto.
-      O modo Fácil não entra: ele é treino. As gimmicks ainda <b>não são jogáveis</b>; o que já funciona é a medição,
-      então o progresso que você fizer a partir de agora fica guardado.</p>
+      O modo Fácil não entra: ele é treino. <b>Mega Evolução e Terastalização já são jogáveis</b> — conquistadas,
+      viram botão na batalha. Z-Move e Gigantamax ainda estão só medindo o progresso.</p>
     <p class="small muted">O <b>desbloqueio de espécies</b> (que libera Pokémon novos pra escolher no começo da jornada)
       é outro sistema, com outra regra: só conta jornada Roguelike. Ele está aqui embaixo, em 🔓 Espécies pra jogar.</p>
 
@@ -71,7 +88,7 @@ export function telaConquistas() {
 
     ${bloco('⚡ Mega Evolução', `Uma Pedra Mega por espécie: <b>${n(ALVOS.mega)} golpes finais</b> dados sendo a espécie que megaevolui.
       Só aparece aqui quem <b>tem Mega</b> — derrotar sendo uma espécie que não megaevolui não enche barra nenhuma.
-      O abate do aliado conta pra espécie que você está usando.`, mega, 'Nenhum abate com uma espécie que megaevolui ainda.')}
+      O abate do aliado conta pra espécie que você está usando.${catalogoMegas(p)}`, mega, 'Nenhum abate com uma espécie que megaevolui ainda — as barras aparecem conforme você joga com elas.')}
 
     ${bloco('💎 Terastalização', `<b>${n(ALVOS.tera)} derrotados</b> de um tipo liberam a Tera daquele tipo. Aqui só conta o que
       <b>você</b> finalizou — um Pokémon de dois tipos conta para os dois.`, tera, 'Nenhum tipo registrado ainda.')}
