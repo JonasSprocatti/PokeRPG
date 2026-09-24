@@ -10,7 +10,7 @@
    Este arquivo é puro (recebe dado, devolve dado): testado em tests/conquistas.test.js. Quem chama é batalha.win()
    (registrarAbate) e a carreira (progressoConquistas). */
 
-import { ehEvolucaoFinal } from './dados-familias.js';
+import { temMega } from './dados-megas.js';
 
 // quanto falta pra cada desbloqueio
 export const ALVOS = { tera: 200, mega: 1000, zGolpe: 250, zElemento: 500, gmaxRuns: 25, gmaxNivel: 50 };
@@ -79,15 +79,17 @@ export function progressoConquistas(jornadas, registroAtual, prontos = null) {
   const lista = (mapa, alvo, tipo) => Object.entries(mapa)
     .map(([chave, n]) => ({ tipo, chave, n, alvo, liberado: n >= alvo, fracao: Math.min(1, n / alvo) }))
     .sort((a, b) => b.n - a.n);
-  /* A MEGA é a única que filtra por evolução final (decisão do usuário — "o resto segue normal"): quem
-     megaevolui é a forma final, então derrotar sendo Marshtomp não enche a barra do Swampert nem a dele.
-     Antes cada estágio tinha o próprio contador, e evoluir parecia zerar o progresso da Mega.
+  /* A MEGA é a única filtrada (decisão do usuário — "o resto segue normal"): só acumula quem PODE megaevoluir.
+     Nasceu de "derrotar como Marshtomp enche uma barra que não leva a Mega nenhuma, e evoluir parece zerar o
+     progresso". A primeira versão filtrava por "evolução final", que resolvia o Marshtomp mas errava dos dois
+     lados: deixava passar espécie final SEM Mega (uma barra que chega a 1.000 e não entrega nada) e barrava a
+     Floette, que tem Mega sem ser final. Perguntar direto à tabela de Megas acerta os dois casos.
      Tera (por tipo), Z-Move (por golpe/elemento) e Gigantamax (por jornada) continuam contando tudo. */
-  const soFinais = mapa => Object.fromEntries(Object.entries(mapa).filter(([especie]) => ehEvolucaoFinal(especie)));
+  const soQuemMegaevolui = mapa => Object.fromEntries(Object.entries(mapa).filter(([especie]) => temMega(especie)));
   return {
     abates: marcoDeAbates(abates.total || 0),
     tera: lista(abates.tipoAlvo, ALVOS.tera, 'tera'),
-    mega: lista(soFinais(abates.especie), ALVOS.mega, 'mega'),
+    mega: lista(soQuemMegaevolui(abates.especie), ALVOS.mega, 'mega'),
     zGolpe: lista(abates.golpe, ALVOS.zGolpe, 'zGolpe'),
     zElemento: lista(abates.elemento, ALVOS.zElemento, 'zElemento'),
     gigantamax: lista(runs, ALVOS.gmaxRuns, 'gigantamax')

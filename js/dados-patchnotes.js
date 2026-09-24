@@ -24,7 +24,7 @@ export const PATCH_NOTES = [
       { nome: 'Equilíbrio', itens: [
         'Tivemos que nerfar o jogador Berga, só o diabo para parar ele.',
         'Rota de nível baixo agora tem folga mínima de 15 níveis antes de esgotar. Na Rota 1 (teto 6) o limite era o dobro, 12 — e como a jornada começa no nível 5, a rota parava de dar caçada antes de dar pra terminar as missões dela. Rota de teto alto não muda: o dobro continua valendo.',
-        'A Mega Evolução conta só o que você derrota estando na <b>evolução final</b>. Antes cada estágio tinha a própria barra, então evoluir parecia zerar o progresso — e derrotar como Marshtomp enchia um contador que não levava a Mega nenhuma. Tera, Z-Move e Gigantamax seguem contando tudo.',
+        'A Mega Evolução só acumula para espécies que <b>têm Mega</b>. Antes cada estágio tinha a própria barra, então evoluir parecia zerar o progresso — e derrotar como Marshtomp enchia um contador que não levava a Mega nenhuma. Tera, Z-Move e Gigantamax seguem contando tudo.',
         'A conquista "Nunca precisei de médico" agora pede <b>fechar uma Gen</b> sem usar o Centro Pokémon. Antes bastava terminar uma jornada de qualquer jeito: dava pra entrar e sair na hora seguinte e levar a medalha. Quem tinha pego assim perde — ela é recalculada, não guardada.'
       ] },
       { nome: 'Correções', itens: [

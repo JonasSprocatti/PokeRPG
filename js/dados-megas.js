@@ -1,5 +1,5 @@
 /* GERADO por ferramentas/gerar-megas.ps1 a partir da PokeAPI - nao editar a mao (rode o script de novo).
-   Formas de Mega Evolucao e de Reversao Primitiva, por especie (93 especies, 96 formas).
+   Formas de Mega Evolucao e de Reversao Primitiva, por especie (89 especies, 96 formas).
    Charizard e Mewtwo tem duas (X e Y): por isso o valor e sempre uma LISTA.
    So o indice mora aqui; status, tipos, habilidade e sprite da forma vem da API pelo nome (orma), como
    qualquer outro Pokemon - e sao pre-carregados no comeco da batalha pra nao esperar rede no meio do turno. */
@@ -84,19 +84,15 @@ export const MEGAS = {
   'heatran': [{ forma: 'heatran-mega', id: 10311, nome: 'Mega Heatran' }],
   'darkrai': [{ forma: 'darkrai-mega', id: 10312, nome: 'Mega Darkrai' }],
   'golurk': [{ forma: 'golurk-mega', id: 10313, nome: 'Mega Golurk' }],
-  'meowstic-male': [{ forma: 'meowstic-male-mega', id: 10314, nome: 'Mega Meowstic Male' }],
+  'meowstic': [{ forma: 'meowstic-male-mega', id: 10314, nome: 'Mega Meowstic' }],
   'crabominable': [{ forma: 'crabominable-mega', id: 10315, nome: 'Mega Crabominable' }],
   'golisopod': [{ forma: 'golisopod-mega', id: 10316, nome: 'Mega Golisopod' }],
   'magearna': [{ forma: 'magearna-mega', id: 10317, nome: 'Mega Magearna' }],
-  'magearna-original': [{ forma: 'magearna-original-mega', id: 10318, nome: 'Mega Magearna Original' }],
   'zeraora': [{ forma: 'zeraora-mega', id: 10319, nome: 'Mega Zeraora' }],
   'scovillain': [{ forma: 'scovillain-mega', id: 10320, nome: 'Mega Scovillain' }],
   'glimmora': [{ forma: 'glimmora-mega', id: 10321, nome: 'Mega Glimmora' }],
-  'tatsugiri-curly': [{ forma: 'tatsugiri-curly-mega', id: 10322, nome: 'Mega Tatsugiri Curly' }],
-  'tatsugiri-droopy': [{ forma: 'tatsugiri-droopy-mega', id: 10323, nome: 'Mega Tatsugiri Droopy' }],
-  'tatsugiri-stretchy': [{ forma: 'tatsugiri-stretchy-mega', id: 10324, nome: 'Mega Tatsugiri Stretchy' }],
-  'baxcalibur': [{ forma: 'baxcalibur-mega', id: 10325, nome: 'Mega Baxcalibur' }],
-  'meowstic-female': [{ forma: 'meowstic-female-mega', id: 10326, nome: 'Mega Meowstic Female' }]
+  'tatsugiri': [{ forma: 'tatsugiri-curly-mega', id: 10322, nome: 'Mega Tatsugiri' }],
+  'baxcalibur': [{ forma: 'baxcalibur-mega', id: 10325, nome: 'Mega Baxcalibur' }]
 };
 export const megasDe = especie => MEGAS[especie] || [];
 export const temMega = especie => !!MEGAS[especie];

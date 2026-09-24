@@ -211,7 +211,7 @@ Tudo o que você acumula **ao longo da carreira inteira**, jornada após jornada
 
 É o que vai desbloquear as **gimmicks**: Mega Evolução (1.000 golpes finais sendo aquela espécie), Terastalização (200 derrotados de um tipo), Z-Moves (250 eliminações com o golpe, ou 500 com o elemento) e Gigantamax (nível 50 com a espécie em 25 jornadas). Mais os marcos de caçada: 1.000 · 10.000 · 100.000 · 1.000.000 de derrotados.
 
-O abate do aliado conta para a espécie que você está usando; tipo e golpe só contam quando o golpe final foi **seu**. O modo Fácil não acumula — ele é treino. A Mega conta só o que você derrota estando na **evolução final** (quem megaevolui é ela); as outras contam tudo.
+O abate do aliado conta para a espécie que você está usando; tipo e golpe só contam quando o golpe final foi **seu**. O modo Fácil não acumula — ele é treino. A Mega só acumula para espécies que **têm Mega** — derrotar sendo uma que não megaevolui não enche barra nenhuma; as outras gimmicks contam tudo.
 
 **A Mega Evolução já é jogável.** Com a Pedra Mega daquela espécie conquistada, aparece um botão ⚡ na batalha que **não gasta o turno** — você megaevolui e ataca na mesma rodada. A forma muda status, tipos, habilidade e aparência, e dura até o fim da batalha; Charizard e Mewtwo perguntam X ou Y, e Groudon e Kyogre usam o nome certo, **Reversão Primitiva**. Do outro lado, **Alfa, lendários e treinadores** também megaevoluem — quando caem à metade do HP, o que dá uma segunda fase à luta. Só você megaevolui do seu lado: aliado não. As outras gimmicks (Tera, Z-Move, Gigantamax) ainda estão só medindo progresso.
 

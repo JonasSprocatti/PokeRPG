@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MEGAS, megasDe, temMega, ehPrimal } from '../js/dados-megas.js';
 import { megasDisponiveis, desfazerMega, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
-import { ehEvolucaoFinal } from '../js/dados-familias.js';
+import { progressoConquistas } from '../js/conquistas.js';
 
 test('tabela de Megas: formas com id de forma, nome e espécie coerente', () => {
   const especies = Object.keys(MEGAS);
@@ -42,11 +42,20 @@ test('Groudon e Kyogre são Reversão Primitiva, não Mega', () => {
   assert.equal(verboDaForma(mega), 'MEGAEVOLUIU');
 });
 
-/* Toda espécie com Mega tem que ser evolução final — senão a conquista dela (que só conta abates na forma
-   final, ver conquistas.js) seria impossível de completar, e a Pedra Mega ficaria inalcançável em silêncio. */
-test('toda espécie com Mega é evolução final: a conquista precisa ser alcançável', () => {
-  const fora = Object.keys(MEGAS).filter(e => !ehEvolucaoFinal(e));
-  assert.deepEqual(fora, [], 'espécie com Mega que não é evolução final');
+/* A tabela é a MESMA fonte que a conquista consulta (conquistas.js filtra por `temMega`), então toda espécie com
+   Mega tem uma barra alcançável e nenhuma barra leva a lugar nenhum. A primeira versão do filtro perguntava
+   "é evolução final?", o que errava dos dois lados: deixava passar espécie final sem Mega e barrava a Floette,
+   que tem Mega sem ser final (as Megas novas de Legends Z-A trouxeram esse caso). */
+test('a barra da Mega existe pra quem megaevolui, e só pra quem megaevolui', () => {
+  const abates = { total: 0, tipoAlvo: {}, golpe: {}, elemento: {},
+    especie: { swampert: 700, marshtomp: 200, raticate: 500, floette: 300 } };
+  const p = progressoConquistas([], { abates });
+  const nomes = p.mega.map(x => x.chave).sort();
+  assert.deepEqual(nomes, ['floette', 'swampert'], 'só quem tem Mega aparece');
+  assert.ok(!nomes.includes('marshtomp'), 'forma do meio sem Mega: barra que não levaria a nada');
+  assert.ok(!nomes.includes('raticate'), 'evolução final SEM Mega também não ganha barra');
+  // e toda chave possível dessa lista tem forma na tabela — nenhuma barra chega a 1.000 sem entregar nada
+  for (const e of nomes) assert.ok(megasDe(e).length, `${e} na lista da Mega sem forma na tabela`);
 });
 
 const mon = (especie, extra = {}) => ({

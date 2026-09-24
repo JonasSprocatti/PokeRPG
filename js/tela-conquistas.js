@@ -70,8 +70,8 @@ export function telaConquistas() {
     </div>
 
     ${bloco('⚡ Mega Evolução', `Uma Pedra Mega por espécie: <b>${n(ALVOS.mega)} golpes finais</b> dados sendo a espécie que megaevolui.
-      Só conta <b>estando na evolução final</b> — quem megaevolui é ela, então derrotar numa forma do meio não enche esta barra.
-      O abate do aliado conta pra espécie que você está usando.`, mega, 'Nenhum abate na evolução final ainda.')}
+      Só aparece aqui quem <b>tem Mega</b> — derrotar sendo uma espécie que não megaevolui não enche barra nenhuma.
+      O abate do aliado conta pra espécie que você está usando.`, mega, 'Nenhum abate com uma espécie que megaevolui ainda.')}
 
     ${bloco('💎 Terastalização', `<b>${n(ALVOS.tera)} derrotados</b> de um tipo liberam a Tera daquele tipo. Aqui só conta o que
       <b>você</b> finalizou — um Pokémon de dois tipos conta para os dois.`, tera, 'Nenhum tipo registrado ainda.')}

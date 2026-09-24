@@ -24,14 +24,29 @@ function Rotulo($especie, $forma) {
   return "Mega $base"
 }
 
-$porEspecie = [ordered]@{}
+# A ESPÉCIE vem da API, não de cortar o sufixo do nome. Cortar erra em forma de forma: 'meowstic-male-mega' daria
+# 'meowstic-male', que não é espécie nenhuma — e o jogo casa pelo `speciesName` ('meowstic'). O GraphQL da PokéAPI
+# está com um retrato antigo (não tem as Megas novas), então é o REST mesmo, uma requisição por forma.
+$dados = @()
 foreach ($f in $formas) {
-  $especie = $f.name -replace '-(mega(-[xy])?|primal)$', ''
-  $id = [int]($f.url.TrimEnd('/') -split '/')[-1]
-  $primal = if ($f.name -match '-primal$') { ', primal: true' } else { '' }
-  $item = "{ forma: '$($f.name)', id: $id, nome: '$(Rotulo $especie $f.name)'$primal }"
-  if (-not $porEspecie.Contains($especie)) { $porEspecie[$especie] = @() }
-  $porEspecie[$especie] += $item
+  $p = Invoke-RestMethod $f.url -TimeoutSec 60
+  $dados += [pscustomobject]@{ nome = $p.name; id = $p.id; especie = $p.species.name; base = ($p.name -replace '-(mega(-[xy])?|primal)$', '') }
+  Start-Sleep -Milliseconds 60   # não afogar a PokéAPI
+}
+
+$porEspecie = [ordered]@{}
+foreach ($g in ($dados | Group-Object especie)) {
+  # Preferir as formas CANÔNICAS (base == espécie): é o X/Y do Charizard e do Mewtwo, escolha de verdade pra quem
+  # joga. Quando a espécie só tem Mega de uma forma específica (Meowstic macho/fêmea, Tatsugiri curly/droopy/
+  # stretchy), fica só a primeira: o jogo não guarda gênero nem forma cosmética, então oferecer três "Mega
+  # Tatsugiri" idênticas na tela seria escolha falsa.
+  $canonicas = @($g.Group | Where-Object { $_.base -eq $g.Name })
+  $usar = if ($canonicas.Count) { $canonicas } else { @($g.Group | Select-Object -First 1) }
+  $itens = foreach ($d in $usar) {
+    $primal = if ($d.nome -match '-primal$') { ', primal: true' } else { '' }
+    "{ forma: '$($d.nome)', id: $($d.id), nome: '$(Rotulo $g.Name $d.nome)'$primal }"
+  }
+  $porEspecie[$g.Name] = @($itens)
 }
 
 $linhas = foreach ($e in $porEspecie.Keys) { "  '$e': [" + ($porEspecie[$e] -join ', ') + "]," }
