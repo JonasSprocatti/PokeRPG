@@ -8,7 +8,7 @@ import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEsp
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
 import { telaSaves } from './tela-saves.js';
-import { telaAjustes, baixarMapaOffline, baixarImagensOffline } from './tela-ajustes.js';
+import { telaAjustes, baixarMapaOffline, baixarImagensOffline, acaoDev } from './tela-ajustes.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
 import { aplicarFonte } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
@@ -55,6 +55,11 @@ document.addEventListener('click', async e => {
       return ok ? baixarMapaOffline(null) : undefined;
     }
     case 'baixar-imagens': return baixarImagensOffline(genDe(G.S));   // só as figuras; os dados ficam como estão
+    // painel de testes (só conta admin; dev.js barra de novo do lado de lá)
+    case 'dev-megas': return acaoDev('megas');
+    case 'dev-especies': return acaoDev('especies');
+    case 'dev-gimmicks': return acaoDev('gimmicks');
+    case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
       const ok = await ask('Apagar tudo o que está guardado da PokéAPI neste aparelho e baixar este mapa <b>do zero</b>?<br><br>Serve pra quando algo ficou pela metade e baixar por cima não resolve. <b>Seus saves, a carreira e as conquistas não são tocados.</b>',
         [{ label: 'Limpar e baixar', value: true }, { label: 'Agora não', value: false, ghost: true }]);

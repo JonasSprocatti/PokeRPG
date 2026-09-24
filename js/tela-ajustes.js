@@ -8,6 +8,7 @@ import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
 import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache, limparCache } from './api.js';
+import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, limparTeste, temProgressoDeTeste } from './dev.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
 
@@ -32,6 +33,7 @@ export function telaAjustes() {
     <p class="small muted" style="margin-top:14px">As fontes vêm do Google Fonts e ficam guardadas para o modo offline depois do primeiro uso.</p>
     <h3 class="passo"><span>B</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
+    ${htmlDev()}
   </main>`;
   mostrarEspaco();
   mostrarImagens();   // conta as imagens guardadas (assíncrono: a linha se preenche sozinha)
@@ -105,6 +107,33 @@ async function mostrarImagens() {
   el.innerHTML = n === null ? '' : n >= total ? `✅ ${n}/${total} imagens guardadas.`
     : `⚠ só <b>${n}/${total}</b> imagens guardadas — sem internet, o resto aparece como figura quebrada.`;
 }
+/* 🧪 Painel de testes — só pra conta admin (dev.js explica o porquê e como virar admin).
+   Existe pra validar mecânica sem jogar 1.000 batalhas: a Mega pede 1.000 golpes finais com a espécie, o que
+   é inviável de checar à mão toda vez que o código muda. Tudo o que ele concede é marcado e reversível. */
+function htmlDev() {
+  if (!devLigado()) return '';
+  return `<h3 class="passo"><span>🧪</span> Testes (conta de manutenção)</h3>
+    <p class="small muted">Concede na marra o que normalmente leva muitas batalhas, pra dar pra validar as mecânicas.
+      Tudo entra marcado como teste e sai junto no botão de limpar — o que você conquistou jogando não é tocado.</p>
+    <div class="subrow">
+      <button class="btn" data-act="dev-megas">⚡ Liberar todas as Megas</button>
+      <button class="btn" data-act="dev-especies">🔓 Desbloquear todas as espécies</button>
+      <button class="btn ghost" data-act="dev-gimmicks">💎 Encher Tera / Z-Move</button>
+      <button class="btn ghost" data-act="dev-limpar" ${temProgressoDeTeste() ? '' : 'disabled'}>🧹 Limpar o que foi de teste</button>
+    </div>
+    <div id="dev-msg" class="small muted" style="margin-top:8px">${temProgressoDeTeste() ? '⚠ Há progresso de teste ativo nesta conta.' : ''}</div>`;
+}
+// as concessões do painel de testes; `render` de novo pra tela refletir na hora
+export function acaoDev(qual) {
+  if (!devLigado()) return;
+  const msg = t => { const el = document.getElementById('dev-msg'); if (el) el.innerHTML = t; };
+  if (qual === 'megas') msg(`✅ ${liberarMegas()} espécies com a Pedra Mega liberada. Entre numa batalha com uma delas e o botão ⚡ aparece.`);
+  else if (qual === 'especies') msg(`✅ ${liberarEspecies()} espécies desbloqueadas pra escolher na criação.`);
+  else if (qual === 'gimmicks') { liberarOutrasGimmicks(); msg('✅ Contadores de Tera e Z-Move no alvo (essas gimmicks ainda não são jogáveis).'); }
+  else if (qual === 'limpar') { const n = limparTeste(); msg(`🧹 Progresso de teste removido (${n} espécie(s)). O que veio de jogo continua.`); }
+  telaAjustes();
+}
+
 // espaço que o jogo ocupa neste aparelho (dados + sprites), quando o navegador deixa consultar
 async function mostrarEspaco() {
   const e = await espacoUsado(); const el = document.getElementById('offline-espaco');

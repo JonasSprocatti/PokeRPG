@@ -25,7 +25,9 @@ async function sb() {
 export const usuario = () => sessao?.user || null;
 
 // estado mostrado na tela de conta / no chip do topo
-export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [] };
+export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false };
+// conta de manutenção: libera o painel de testes em ⚙ Ajustes (dev.js). Sai de `perfis.admin`, nunca do navegador.
+export const ehAdmin = () => !!nuvem.admin && !!usuario();
 
 /* ---- ícone do jogador: qualquer Pokémon, normal ou shiny. Sem conta fica só neste navegador. ---- */
 const ICONE_KEY = 'pokerpg-icone';
@@ -160,7 +162,7 @@ export async function sincronizar() {
   nuvem.status = 'sincronizando'; nuvem.erro = null; avisar();
   try {
     // perfil (apelido padrão = começo do e-mail; ícone = o escolhido neste navegador antes de entrar)
-    let { data: perfil, error: ep } = await c.from('perfis').select('apelido, icone_id, icone_shiny, codigo_amigo').eq('id', u.id).maybeSingle();
+    let { data: perfil, error: ep } = await c.from('perfis').select('apelido, icone_id, icone_shiny, codigo_amigo, admin').eq('id', u.id).maybeSingle();
     if (ep?.code === '42703') ({ data: perfil, error: ep } = await c.from('perfis').select('apelido').eq('id', u.id).maybeSingle()); // schema.sql antigo
     if (ep) throw ep;
     if (!perfil) {
@@ -173,6 +175,10 @@ export async function sincronizar() {
     nuvem.apelido = perfil?.apelido || nuvem.apelido || '';
     if (perfil?.icone_id) { nuvem.icone = { id: perfil.icone_id, shiny: !!perfil.icone_shiny }; store.set(ICONE_KEY, nuvem.icone); }
     nuvem.codigoAmigo = perfil?.codigo_amigo || '';
+    /* `admin` é o que libera o painel de testes (dev.js). Vem do banco e SÓ do banco: um gatilho impede a API
+       de mudar essa coluna (supabase/migrations), então ninguém se promove pelo jogo — a promoção é feita à mão
+       no SQL Editor. Aqui do lado do cliente isso é só a chave do painel; o que protege dado é a RLS. */
+    nuvem.admin = !!perfil?.admin;
     await carregarAmigos().catch(e => console.warn('amigos', e)); // sem a tabela ainda: segue sem amigos
 
     // carreira: sobe o que só existe aqui, baixa o que só existe lá

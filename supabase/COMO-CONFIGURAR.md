@@ -12,6 +12,17 @@ A Vercel continua hospedando o site. O login e o banco ficam no **Supabase** (te
    - O `supabase/config.toml` precisa declarar a mesma versão do Postgres do projeto (veja com `select version();` no SQL Editor).
 4. Se preferir fazer o primeiro schema na mão, cole o conteúdo de `supabase/migrations/20260923120000_base.sql` no SQL Editor e rode. É seguro: só cria o que falta e atualiza as funções, sem apagar dados.
 
+## 1b. Virar admin (opcional — libera o painel de testes)
+
+O painel **⚙ Ajustes → 🧪 Testes** concede Megas e espécies sem precisar jogar centenas de batalhas. Ele só aparece para contas marcadas como admin. Depois de entrar no jogo com a sua conta pelo menos uma vez, rode no **SQL Editor** (trocando o e-mail):
+
+```sql
+update public.perfis set admin = true
+where id = (select id from auth.users where email = 'voce@exemplo.com');
+```
+
+Um gatilho impede que essa coluna seja alterada pela API do jogo, então ninguém consegue se promover jogando — a promoção só acontece aqui.
+
 ## 2. Ligar as chaves no jogo
 1. No Supabase: **Project Settings → API**.
 2. Copie a **Project URL** e a chave **anon public** para `js/config.js`:
