@@ -7,7 +7,7 @@ import { FONTES, fonteEscolhida, urlDaFonte } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
 import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
-import { espacoUsado, itensNoCache } from './api.js';
+import { espacoUsado, itensNoCache, limparCache } from './api.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
 
@@ -50,21 +50,28 @@ function htmlOffline() {
     <div class="subrow" style="margin-top:10px"><button class="btn" data-act="baixar-tudo">⬇⬇ Baixar o jogo inteiro (${TOTAL_GENS} mapas)</button>
       <span class="small muted">${quantoFaltaTudo() ? `faltam ${quantoFaltaTudo()} de ${totalDoJogo()} Pokémon`
         : GENS.every(g => jaBaixado(g.gen)) ? '✅ tudo guardado' : '⚠ os Pokémon estão todos aqui, mas há mapas baixados por uma versão antiga'}</span></div>
+    <div class="subrow" style="margin-top:10px"><button class="btn ghost sm" data-act="limpar-baixar">🗑 Limpar tudo e baixar de novo (Gen ${gen})</button>
+      <span class="small muted">apaga o que está guardado da PokéAPI e baixa do zero — use se algo ficou pela metade. Não mexe nos seus saves nem na carreira.</span></div>
     <div id="offline-progresso" class="small muted" style="margin-top:8px"></div>
     <p class="small muted">São cerca de ${total} Pokémon por mapa e ${totalDoJogo()} no jogo inteiro. O jogo inteiro ocupa cerca de <b>20 MB</b> — são dados e sprites pequenos —, mas leva alguns minutos porque são milhares de pedidos: use uma rede boa e deixe a tela aberta.<span id="offline-espaco"></span></p>`;
 }
-// chamado por main.js no clique; mostra o progresso sem redesenhar a tela toda. `gen` null = o jogo inteiro.
-export async function baixarMapaOffline(gen) {
+/* chamado por main.js no clique; mostra o progresso sem redesenhar a tela toda. `gen` null = o jogo inteiro.
+   `limpar` = apaga o que já está guardado antes de baixar (botão 🗑): baixar por cima só busca o que FALTA, então
+   registro guardado pela metade continuaria lá pra sempre. */
+export async function baixarMapaOffline(gen, limpar = false) {
   const el = () => document.getElementById('offline-progresso');
   if (!el()) return;
   if (offline()) { el().innerHTML = '📴 Sem internet agora: conecte pra poder baixar.'; return; }
+  if (limpar) { el().innerHTML = 'Limpando o que estava guardado…'; await limparCache(); }
   el().innerHTML = 'Baixando…';
   const andar = (feitos, total, oQue) => { const p = el(); if (p) p.innerHTML = `Baixando ${esc(oQue)}… <b>${feitos}/${total}</b>`; };
   const r = gen ? await baixarGen(+gen, andar) : await baixarTudo(andar);
   const p = el(); if (!p) return;
   const oQue = gen ? `Gen ${gen}` : 'O jogo inteiro';
-  p.innerHTML = r.ok ? `✅ Pronto! ${oQue} guardado neste aparelho (${r.total} Pokémon e ${r.golpes} golpes).`
-    : `Terminou com ${r.falhas} falha(s) — dá pra tentar de novo, o que já baixou fica guardado.`;
+  // dado e imagem são pendências diferentes (offline.baixarGen): sem o dado não dá pra jogar, sem a imagem dá
+  p.innerHTML = r.dadosOk && !r.imagens ? `✅ Pronto! ${oQue} guardado neste aparelho (${r.total} Pokémon e ${r.golpes} golpes).`
+    : r.dadosOk ? `✅ ${oQue} dá pra jogar offline (${r.total} Pokémon e ${r.golpes} golpes) — mas ${r.imagens} imagem(ns) não desceram. Dá pra baixar de novo pra tentar só elas; o jogo funciona mesmo assim.`
+    : `Terminou com ${r.falhas} falha(s) nos dados${r.imagens ? ` e ${r.imagens} em imagens` : ''} — dá pra tentar de novo, o que já baixou fica guardado.`;
   const box = document.getElementById('offline-box'); if (box) { box.innerHTML = htmlOffline(); mostrarEspaco(); }
 }
 // espaço que o jogo ocupa neste aparelho (dados + sprites), quando o navegador deixa consultar

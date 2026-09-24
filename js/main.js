@@ -11,7 +11,7 @@ import { telaSaves } from './tela-saves.js';
 import { telaAjustes, baixarMapaOffline } from './tela-ajustes.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
 import { aplicarFonte } from './ajustes.js';
-import { GENS, dadosDaGen, entrarNaGen } from './mapas.js';
+import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
   nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
@@ -53,6 +53,11 @@ document.addEventListener('click', async e => {
       const ok = await ask('Baixar <b>todos os mapas</b> (Pokémon, golpes e sprites das 9 Gens)? Pode passar de 100 MB e levar alguns minutos. Deixe esta tela aberta.',
         [{ label: 'Baixar tudo', value: true }, { label: 'Agora não', value: false, ghost: true }]);
       return ok ? baixarMapaOffline(null) : undefined;
+    }
+    case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
+      const ok = await ask('Apagar tudo o que está guardado da PokéAPI neste aparelho e baixar este mapa <b>do zero</b>?<br><br>Serve pra quando algo ficou pela metade e baixar por cima não resolve. <b>Seus saves, a carreira e as conquistas não são tocados.</b>',
+        [{ label: 'Limpar e baixar', value: true }, { label: 'Agora não', value: false, ghost: true }]);
+      return ok ? baixarMapaOffline(genDe(G.S), true) : undefined;
     }
     case 'voltar': if (naSala()) await sairSala(); return voltar();
     // multiplayer (co-op)

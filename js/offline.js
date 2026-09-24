@@ -57,13 +57,19 @@ async function guardarSprite(url) {
   return false;
 }
 
-/* Baixa o mapa inteiro. `aoAndar(feitos, total, oQue)` recebe o progresso; devolve { ok, falhas }.
-   Vai de poucos em poucos (LOTE) pra não afogar a rede nem a PokéAPI. */
+/* Baixa o mapa inteiro. `aoAndar(feitos, total, oQue)` recebe o progresso; devolve { ok, falhas, imagens }.
+   Vai de poucos em poucos (LOTE) pra não afogar a rede nem a PokéAPI.
+
+   **Falha de DADO e falha de IMAGEM são contadas separadas, de propósito.** Sem o dado (Pokémon, espécie, curva
+   de XP, golpe) o jogo não funciona offline; sem uma imagem, aparece um ícone quebrado e o resto continua de pé.
+   Misturar as duas numa conta só já deu problema: bastava UMA figura não descer, entre centenas de pedidos, pra
+   o mapa nunca ser marcado como pronto — e aí a tela pedia "baixe de novo" pra sempre, sem nada mudar, por mais
+   vezes que a pessoa baixasse. A marca da versão olha só o dado. */
 const LOTE = 6;
 export async function baixarGen(gen, aoAndar = () => {}, sinal = null) {
   const ids = alvosDaGen(gen);
   const nome = dadosDaGen(gen).regiao;
-  let feitos = 0, falhas = 0;
+  let feitos = 0, falhas = 0, imagens = 0;
   const golpes = new Set(), curvas = new Set(), arvores = new Set();
   for (let i = 0; i < ids.length; i += LOTE) {
     if (sinal?.cancelado) break;
@@ -81,10 +87,9 @@ export async function baixarGen(gen, aoAndar = () => {}, sinal = null) {
         const sp = await loadSpecies(data.speciesUrl);
         curvas.add(sp.growthUrl);
         if (sp.evoUrl) arvores.add(sp.evoUrl);
-        // sprite que não desce é falha de download como qualquer outra: sem isto o mapa se dizia completo com
-        // imagem faltando, e só no avião é que aparecia (ícone quebrado em uns Pokémon e não em outros)
+        // imagem que não desce é contada à parte (ver o comentário de baixarGen): atrapalha, mas não impede jogar
         const imgs = await Promise.all([guardarSprite(SPR(id)), guardarSprite(SPR_SHINY(id)), data.back ? guardarSprite(data.back) : true]);
-        if (imgs.some(x => !x)) falhas++;
+        imagens += imgs.filter(x => !x).length;
       } catch (e) { falhas++; console.warn('offline: falhou', id, e.message); }
       aoAndar(++feitos, ids.length, `Pokémon de ${nome}`);
     }));
@@ -101,21 +106,23 @@ export async function baixarGen(gen, aoAndar = () => {}, sinal = null) {
     await Promise.all(lista.slice(i, i + LOTE).map(u => loadMove(u).catch(() => { falhas++; })));
     aoAndar(Math.min(feitos + i + LOTE, feitos + lista.length), feitos + lista.length, 'golpes');
   }
-  const ok = !falhas && !sinal?.cancelado;
-  if (ok) marcarNoCache(marcaDaGen(gen));   // só com TUDO no lugar: marca pela metade mentiria no avião
-  return { ok, falhas, total: ids.length, golpes: lista.length };
+  // a marca é sobre os DADOS: é o que decide se dá pra jogar este mapa sem internet
+  const dadosOk = !falhas && !sinal?.cancelado;
+  if (dadosOk) marcarNoCache(marcaDaGen(gen));
+  return { ok: dadosOk && !imagens, dadosOk, falhas, imagens, total: ids.length, golpes: lista.length };
 }
 
 // Todos os mapas de uma vez: é o "jogo inteiro offline". Só faz sentido desde que os dados foram pro IndexedDB
 // (api.js) — no localStorage isso estourava a cota e falhava calado.
 export async function baixarTudo(aoAndar = () => {}, sinal = null) {
-  let falhas = 0, total = 0, golpes = 0;
+  let falhas = 0, imagens = 0, total = 0, golpes = 0;
   for (const g of GENS) {
     if (sinal?.cancelado) break;
     const r = await baixarGen(g.gen, (feitos, quantos, oQue) => aoAndar(feitos, quantos, `${oQue} — Gen ${g.gen} de ${GENS.length}`), sinal);
-    falhas += r.falhas; total += r.total; golpes += r.golpes;
+    falhas += r.falhas; imagens += r.imagens; total += r.total; golpes += r.golpes;
   }
-  return { ok: !falhas && !sinal?.cancelado, falhas, total, golpes };
+  const dadosOk = !falhas && !sinal?.cancelado;
+  return { ok: dadosOk && !imagens, dadosOk, falhas, imagens, total, golpes };
 }
 // quanto falta no jogo inteiro
 export const quantoFaltaTudo = () => GENS.reduce((a, g) => a + quantoFalta(g.gen), 0);

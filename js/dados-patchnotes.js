@@ -2,6 +2,16 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.11', data: '2026-09-24', titulo: 'Wi-fi que mente', piada: 'O navegador jurava que estava online. O navegador estava conectado a um roteador que não levava a lugar nenhum. São coisas diferentes.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Não dava pra começar uma jornada quando a conexão estava ruim, mesmo com o mapa todo baixado. O jogo tinha o dado guardado, mas só aceitava usar a versão guardada quando o aparelho se declarava SEM internet — e wi-fi de metrô, portal cativo de hotel e 4G fraco contam como "com internet" pro navegador. Agora, se a rede falhar, o jogo segue com o que já está guardado.',
+        'A árvore de evolução deixou de ser obrigatória pra começar: ela só é consultada quando você sobe de nível, e o jogo já sabia buscá-la depois. Antes, ela sozinha derrubava a criação da jornada inteira.',
+        'As mensagens de erro de rede agora dizem QUAL dado faltou (a curva de XP, a árvore de evolução, um golpe…) em vez de só "a conexão falhou".',
+        'A tela de "Jogar offline" pedia pra baixar de novo e nada mudava, por mais vezes que você baixasse: uma única imagem que não descia, entre centenas de pedidos, impedia o mapa de ser marcado como pronto. Agora falha de dado e falha de imagem são contadas separadas — sem o dado não dá pra jogar, sem a imagem dá.',
+        'Novo botão <b>🗑 Limpar tudo e baixar de novo</b>: apaga o que está guardado da PokéAPI e baixa do zero, pra quando algo ficou pela metade (baixar por cima só busca o que falta). Saves, carreira e conquistas não são tocados.'
+      ] }
+    ] },
   { versao: '2.10', data: '2026-09-24', titulo: 'O avião agora funciona de verdade', piada: 'O jogo dizia "mapa baixado, pode desligar a internet". O mapa estava baixado. Faltava o resto do mapa.',
     secoes: [
       { nome: 'Correções', itens: [

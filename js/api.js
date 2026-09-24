@@ -66,8 +66,12 @@ export async function espacoUsado() {
 // quando a PokéAPI pede calma) — 404 e outros erros do servidor não adianta insistir.
 const TENTATIVAS = 3;
 const esperar = ms => new Promise(r => setTimeout(r, ms));
+/* O erro carrega a URL que falhou (`e.url`) pra mensagem poder dizer O QUE não veio.
+   Sem isso, todo problema de rede vira a MESMA frase ("a conexão falhou"), e não dá pra saber se faltou o
+   Pokémon, a curva de XP ou um golpe — nem pra quem joga, nem pra quem vai consertar. */
 async function getJSON(url) {
   let ultimo;
+  const marcar = e => { if (e && !e.url) e.url = url; return e; };
   for (let i = 1; i <= TENTATIVAS; i++) {
     try {
       const r = await fetch(url);
@@ -76,13 +80,13 @@ async function getJSON(url) {
       if (r.status !== 429 || i === TENTATIVAS) throw e;
       ultimo = e;
     } catch (e) {
-      if (e.code && e.code !== 429) throw e;          // erro do servidor: não insiste
+      if (e.code && e.code !== 429) throw marcar(e);   // erro do servidor: não insiste
       ultimo = e;
       if (i === TENTATIVAS) break;
     }
     await esperar(400 * i);                            // 400ms, 800ms
   }
-  throw ultimo;
+  throw marcar(ultimo || new Error('falhou'));
 }
 /* `valido(v)` (opcional) diz se o que está guardado ainda serve. É como um campo NOVO chega a quem já tinha a
    espécie no cache: o cache não expira, então sem isso um registro velho ficaria pra sempre sem o campo e a
@@ -91,20 +95,35 @@ async function getJSON(url) {
    foi baixado pra jogar offline; aqui o registro velho é trocado pelo novo na primeira vez que alguém pede a
    espécie ESTANDO ONLINE. Sem internet, o velho continua valendo — é melhor que falhar. */
 const semRede = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+/* **Se a rede falhar, o registro velho é usado em vez de o pedido morrer.** `navigator.onLine` só diz que existe
+   uma interface de rede, não que ela leva a algum lugar: wifi de metrô, portal cativo de hotel e 4G ruim são
+   todos "online" pro navegador. Antes, nesses casos, o jogo DESCARTAVA um registro guardado perfeitamente
+   utilizável (por faltar um campo novo) e então falhava no fetch — resultado: "A conexão falhou ao buscar um dado
+   da PokéAPI" e nem dava pra começar uma jornada, com o mapa inteiro baixado no aparelho. Um registro um pouco
+   velho é melhor do que jogo nenhum; ele é trocado pelo novo na primeira vez que a rede realmente responder. */
 function cached(key, loader, valido = null) {
+  let velho = null;                           // guardado que não passou no `valido`: rede de segurança
   if (memo.has(key)) {
     const v = memo.get(key);
     if (v instanceof Promise || !valido || valido(v) || semRede()) return Promise.resolve(v);
-    memo.delete(key);                         // guardado velho demais: busca de novo logo abaixo
+    velho = v; memo.delete(key);              // guardado velho demais: busca de novo logo abaixo
   }
   const p = (async () => {
     if (chavesGuardadas.has(key)) {
       const guardado = await ler(key);
       if (guardado && (!valido || valido(guardado) || semRede())) { memo.set(key, guardado); return guardado; }
+      velho ||= guardado || null;
     }
-    const v = await loader();
-    memo.set(key, v); guardar(key, v);        // grava em segundo plano: quem pediu não espera o disco
-    return v;
+    try {
+      const v = await loader();
+      memo.set(key, v); guardar(key, v);      // grava em segundo plano: quem pediu não espera o disco
+      return v;
+    } catch (e) {
+      if (!velho) throw e;
+      console.warn('cache: a rede falhou, seguindo com o registro guardado', key, e.message);
+      memo.set(key, velho);
+      return velho;
+    }
   })().catch(e => { memo.delete(key); throw e; });
   memo.set(key, p);
   return p;
@@ -115,6 +134,22 @@ export const pokemonEmCache = q => { const v = memo.get('mon:' + q); return (v &
 export const idsEmCache = () => [...chavesGuardadas].filter(k => k.startsWith('mon:')).map(k => +k.slice(4)).filter(Number.isInteger);
 // quantos dados estão guardados (Ajustes mostra)
 export const itensNoCache = () => chavesGuardadas.size;
+
+/* Apaga TUDO o que foi guardado da PokéAPI neste aparelho (IndexedDB + localStorage antigo + memória) e, junto,
+   o cache de imagens do service worker. Existe porque "baixar de novo" por cima não resolve registro guardado
+   pela metade ou velho: o cache não expira, então um registro ruim fica pra sempre e o download só passa por
+   cima do que FALTA, nunca do que está lá e está errado. Isto é o botão de recomeçar do zero.
+   Não encosta em save, carreira nem progresso da conta — só no que dá pra baixar de novo. */
+export async function limparCache() {
+  memo.clear(); chavesGuardadas.clear();
+  const db = await abrirBd();
+  if (db) { try { await pedido(db.transaction(LOJA, 'readwrite').objectStore(LOJA).clear()); } catch (e) { console.warn('limpar: IndexedDB', e); } }
+  for (const k of store.chaves('pk:')) store.del(k);
+  // as imagens moram no cache do service worker (sw.js: CACHE_EXTERNO), fora do IndexedDB
+  try {
+    for (const nome of await caches.keys()) if (nome.includes('externo')) await caches.delete(nome);
+  } catch (e) { console.warn('limpar: cache de imagens', e); }
+}
 export function syncGet(key) { const v = memo.get(key); return v && !(v instanceof Promise) ? v : null; }
 /* Marcador solto no cache, pra quem precisa anotar "isto aqui já foi feito" sem inventar outro armazenamento.
    Usado por offline.js pra registrar que um mapa foi baixado COM a leva de dados da versão atual: quando a lista
@@ -220,15 +255,23 @@ export async function resolvePokemon(q) {
 // Mensagem de erro de rede escrita PRA QUEM JOGA: o caso comum é sinal ruim, não configuração errada.
 // A dica de servidor local só aparece pra quem está mesmo rodando fora de um servidor (file://).
 const BAIXE = 'Dica: em <b>⚙ Ajustes → Jogar offline</b> dá pra baixar o mapa inteiro e não depender mais da rede aqui.';
+/* Traduz a URL que falhou pro nome do dado, em português. Uma falha de rede sozinha não diz nada; saber que o
+   que faltou foi "a curva de XP" ou "a árvore de evolução" aponta direto pro que o download precisa trazer. */
+const QUE_DADO = [[/\/pokemon-species\//, 'os dados da espécie'], [/\/growth-rate\//, 'a curva de XP'],
+  [/\/evolution-chain\//, 'a árvore de evolução'], [/\/move\//, 'um golpe'], [/\/ability\//, 'uma habilidade'],
+  [/\/pokemon\//, 'os dados do Pokémon']];
+export const dadoQueFaltou = url => (QUE_DADO.find(([re]) => re.test(url || '')) || [, ''])[1];
 export function apiErr(e) {
+  const oque = dadoQueFaltou(e?.url);
+  const falta = oque ? ` Faltou ${oque}.` : '';
   if (typeof location !== 'undefined' && location.protocol === 'file:') {
     return 'Este jogo precisa ser aberto por um servidor pra falar com a PokéAPI. Rode <code>python -m http.server</code> na pasta do projeto, ou publique.';
   }
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    return `📴 Sem internet: isto precisa de um dado da PokéAPI que ainda não está salvo neste aparelho. ${BAIXE}`;
+    return `📴 Sem internet:${falta || ' isto precisa de um dado da PokéAPI que'} ainda não está salvo neste aparelho. ${BAIXE}`;
   }
-  if (e?.code === 429) return `A PokéAPI pediu calma (muitos pedidos seguidos). Espere alguns segundos e tente de novo. ${BAIXE}`;
-  if (e?.code) return `A PokéAPI respondeu com erro (${esc(String(e.code))}). Tente de novo daqui a pouco.`;
+  if (e?.code === 429) return `A PokéAPI pediu calma (muitos pedidos seguidos). Espere alguns segundos e tente de novo.${falta} ${BAIXE}`;
+  if (e?.code) return `A PokéAPI respondeu com erro (${esc(String(e.code))}).${falta} Tente de novo daqui a pouco.`;
   // sem `code` = falha de rede: tentamos 3 vezes e nenhuma passou
-  return `A conexão falhou ao buscar um dado da PokéAPI (sinal instável?). Tente de novo. ${BAIXE}`;
+  return `A conexão falhou ao buscar um dado da PokéAPI (sinal instável?).${falta} Tente de novo. ${BAIXE}`;
 }

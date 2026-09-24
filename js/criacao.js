@@ -174,7 +174,15 @@ export function renderPreview() {
 async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen, shiny }) {
   const sp = await loadSpecies(data.speciesUrl);
   const growth = await loadGrowth(sp.growthUrl);
-  const evo = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
+  /* A árvore de evolução NÃO pode impedir você de começar a jogar. Ela só é consultada quando você sobe de
+     nível, e `progressao.arvoreDe` já sabe buscá-la mais tarde (e `checkEvolution` marca `evoPendente` e tenta
+     de novo sozinho quando a rede voltar). Deixá-la obrigatória aqui fazia a criação inteira morrer com
+     "A conexão falhou ao buscar um dado da PokéAPI" — sem jornada nenhuma, por causa de um dado que o jogo só
+     precisa daqui a vários minutos. `undefined` (não `null`) é o que faz `arvoreDe` tentar de novo depois;
+     `null` significa "esta espécie não evolui" e encerraria o assunto. */
+  let evo;
+  if (sp.evoUrl) { try { evo = await loadEvo(sp.evoUrl); } catch (e) { console.warn('evolução vem depois:', e.message); } }
+  else evo = null;
   const mon = await makeMon(data, level, { nature, ability, nick, shiny });
   mon.exp = growth[mon.level];
   // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
