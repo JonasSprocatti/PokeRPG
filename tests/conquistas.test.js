@@ -1,4 +1,4 @@
-﻿// Conquistas da conta (js/conquistas.js): os contadores que desbloqueiam as gimmicks. A regra que atravessa tudo
+// Conquistas da conta (js/conquistas.js): os contadores que desbloqueiam as gimmicks. A regra que atravessa tudo
 // é "só conta o que VOCÊ fez" — golpe final do aliado não vale.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

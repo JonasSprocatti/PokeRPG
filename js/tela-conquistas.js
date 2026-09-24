@@ -1,4 +1,4 @@
-﻿/* ============ tela: 🏅 Conquistas ============ */
+/* ============ tela: 🏅 Conquistas ============ */
 // O que a sua CONTA já conquistou, somando a carreira inteira (conquistas.js mede; aqui só mostra). É por esta tela
 // que se enxerga o progresso das gimmicks — Mega, Terastalização, Z-Move e Gigantamax —, cada uma com a missão que
 // a libera. A jornada em andamento entra na conta: o número sobe enquanto você joga, não só quando a run termina.

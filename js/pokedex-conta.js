@@ -1,4 +1,4 @@
-﻿/* ============ Pokédex da conta (dados puros) ============
+/* ============ Pokédex da conta (dados puros) ============
    Tudo o que a conta já conhece de cada espécie, somando a carreira inteira mais a jornada em andamento.
    O jogo já registrava isso por jornada (estado.registrar → S.registro): `vistos` (apareceu na sua frente),
    `derrotados`, `amigos` (recrutou) e `ids` (id da espécie, pro sprite). Aqui só se junta tudo por espécie.

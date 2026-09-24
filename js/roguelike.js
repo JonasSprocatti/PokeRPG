@@ -1,4 +1,4 @@
-﻿/* ============ roguelike: desbloqueios entre jornadas ============ */
+/* ============ roguelike: desbloqueios entre jornadas ============ */
 // No modo Roguelike você começa só com os iniciais (+ Pikachu e Eevee). Cada espécie vira opção inicial pras
 // próximas jornadas quando, SOMANDO as jornadas Roguelike terminadas (a carreira), você:
 //   derrotou 10 · fez amizade com 5 · evoluiu pra ela 5× (forma do meio) ou 10× (forma final)   — DESBLOQUEIO em dados.js

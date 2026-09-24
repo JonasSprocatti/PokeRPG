@@ -1,4 +1,4 @@
-﻿/* ============ itens ============ */
+/* ============ itens ============ */
 // Mochila (G.S.bag = { idDoItem: qtd }). useItem devolve true se o item foi gasto (em batalha, gasta o turno).
 // Funciona em você e nos aliados: com mais de um alvo possível, pergunta "Usar em quem?" (itemTemEfeito decide quem conta).
 import { G, nm, rotulo, ladoJogador, zone } from './estado.js';

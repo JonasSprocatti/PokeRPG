@@ -1,4 +1,4 @@
-﻿/* ============ multiplayer: co-op e PvP (sala por código) ============ */
+/* ============ multiplayer: co-op e PvP (sala por código) ============ */
 // Sala de até MAX_JOGADORES. O anfitrião escolhe:
 //   modo        'coop' (todos no lado A contra selvagens / Alfa — "chamar alguém pra sua run") ou 'pvp' (Time A × Time B)
 //   porJogador  quantos Pokémon cada um leva: 1 = só o principal, 2–3 = com aliados (1v1, 2v2, 3v3; 2×1, 3×2…)

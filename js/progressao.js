@@ -1,4 +1,4 @@
-﻿/* ============ progressão ============ */
+/* ============ progressão ============ */
 // XP → nível, golpes aprendidos por nível e evolução — pra você e pros aliados. As condições de evolução (nível,
 // pedra, troca, vínculo, hora do dia, golpe conhecido…) moram em evolucao.js; aqui fica a narração e a troca de espécie.
 // Diferença entre você e o aliado: você escolhe qual golpe esquecer; o aliado troca sozinho o de menor poder.

@@ -1,4 +1,4 @@
-﻿/* ============ carreira (todas as jornadas terminadas) ============ */
+/* ============ carreira (todas as jornadas terminadas) ============ */
 // A carreira é a LISTA de jornadas terminadas (resumos com `id` único); tudo o que a tela mostra — recorde por
 // espécie, Pokédex, shinies, máximos, favorito — é calculado dela por calcularCarreira(). Guardar a lista (e não
 // contadores) é o que deixa juntar local + nuvem de vários aparelhos sem contar nada em dobro (mesclarJornadas).

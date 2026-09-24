@@ -1,4 +1,4 @@
-﻿// Golpes especiais (js/especiais.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
+// Golpes especiais (js/especiais.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';

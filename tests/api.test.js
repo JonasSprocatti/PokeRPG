@@ -1,4 +1,4 @@
-﻿// Conversão do JSON cru da PokéAPI (js/api.js) — com JSON de exemplo, sem rede.
+// Conversão do JSON cru da PokéAPI (js/api.js) — com JSON de exemplo, sem rede.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLearnset, slimPokemon, slimMove, apiErr } from '../js/api.js';

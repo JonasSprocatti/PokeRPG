@@ -1,4 +1,4 @@
-﻿# PokéRPG
+# PokéRPG
 
 RPG de texto no navegador em que **você é o Pokémon** (sem treinador, sem captura). **Não é mais protótipo** (pedido do usuário): nada de "protótipo" em texto de UI; efeito que ainda não existe (golpe/habilidade sem efeito) diz "será ajustado em atualizações futuras". Dados ao vivo da PokéAPI; fórmulas dos jogos (stats, IV/EV, natureza, dano, tipos, estágios, status, XP, evolução). JavaScript puro em ES modules, sem build, sem dependências. Save no `localStorage` (`pokerpg-save-v1`). PT-BR na UI, comentários e nomes novos (identificadores herdados do protótipo seguem em inglês).
 
@@ -197,6 +197,7 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 ## Convenções
 
+- **Nunca gravar arquivo com BOM.** `Set-Content`/`Out-File -Encoding utf8` no Windows PowerShell 5.1 escreve UTF-8 **com BOM**, e isso já quebrou o deploy do banco: o Supabase recusou o `config.toml` com `toml: invalid character at start of key: U+00EF 'ï'` — o BOM lido como caractere. Em .sql, .toml, .json e .yml o BOM é veneno. Para gravar sem: `[System.IO.File]::WriteAllText($caminho, $texto, (New-Object System.Text.UTF8Encoding $false))`. As ferramentas de edição do Claude Code já gravam sem BOM; o risco está nos scripts de `ferramentas/` e em qualquer arquivo escrito via PowerShell.
 - **Toda funcionalidade nova atualiza o `README.md`** (o que o jogo tem + a lista de próximos passos/já feito) — pedido explícito do usuário, vale sempre.
 - Regra nova (conta, fórmula, probabilidade) vai em `regras.js` como função pura, com teste; o módulo de narração só chama e escreve a mensagem.
 - Tudo que só `regras.js`/`dados.js`/`util.js`/`api.js` importa precisa continuar sem DOM (importável no Node).

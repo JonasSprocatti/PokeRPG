@@ -1,4 +1,4 @@
-﻿/* PokéRPG — service worker: deixa o jogo abrir e jogar SEM internet depois do primeiro acesso online.
+/* PokéRPG — service worker: deixa o jogo abrir e jogar SEM internet depois do primeiro acesso online.
    - Arquivos do próprio jogo: pré-carregados na instalação (PRECACHE) e servidos "rede primeiro" — online
      sempre pega a versão nova (sem precisar trocar versão a cada deploy); offline cai no cache.
    - PokéAPI (dados), sprites, a biblioteca do Supabase (esm.sh) e fontes: "cache primeiro" — não mudam.

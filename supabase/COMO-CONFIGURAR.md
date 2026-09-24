@@ -1,4 +1,4 @@
-﻿# Login e nuvem do PokéRPG: como configurar
+# Login e nuvem do PokéRPG: como configurar
 
 O jogo funciona sem isto (tudo fica só no navegador). Com isto, entra login com Google ou por link no e-mail, e a carreira e a jornada em andamento passam a ficar salvas na conta.
 

@@ -1,4 +1,4 @@
-﻿/* ============ ponto de entrada ============ */
+/* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';

@@ -1,4 +1,4 @@
-﻿/* ============ tela: ⚙ ajustes ============ */
+/* ============ tela: ⚙ ajustes ============ */
 // Hoje só a fonte do jogo (ajustes.js). Cada opção é mostrada JÁ com a própria fonte, pra dar pra comparar antes de
 // escolher; a escolha vale na hora e fica guardada neste navegador. O clique (data-act="fonte") está em main.js.
 import { G } from './estado.js';

@@ -1,4 +1,4 @@
-﻿/* ============ exploração ============ */
+/* ============ exploração ============ */
 // Um clique em "Explorar": 10% treinador caçador, 58% selvagem, 15% item, 7% dinheiro, 10% só ambientação.
 import { G, zone, save, emCampo, rotasAtuais, dificuldadeDe } from './estado.js';
 import { gastarRepelente, semSelvagens } from './mapas.js';

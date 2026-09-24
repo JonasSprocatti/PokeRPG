@@ -1,4 +1,4 @@
-﻿// O que a EVOLUÇÃO entrega junto: os golpes de evolução (regras.golpesDaEvolucao) e a habilidade no mesmo slot
+// O que a EVOLUÇÃO entrega junto: os golpes de evolução (regras.golpesDaEvolucao) e a habilidade no mesmo slot
 // (habilidades.habilidadeDaEvolucao). Os dois nasceram de bug real: o Aegislash evoluiu sem aprender King's Shield,
 // porque só olhávamos golpe do nível exato — e a habilidade era escolhida por índice cru, misturando oculta com normal.
 import { test } from 'node:test';

@@ -1,4 +1,4 @@
-﻿/* ============ batalha ============ */
+/* ============ batalha ============ */
 // 1×1 contra selvagem ou contra a equipe de um treinador caçador (um Pokémon por vez; o treinador
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.

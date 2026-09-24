@@ -1,4 +1,4 @@
-﻿/* ============ regras ============ */
+/* ============ regras ============ */
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.

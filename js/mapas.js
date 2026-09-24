@@ -1,4 +1,4 @@
-﻿/* ============ mapas por Gen ============ */
+/* ============ mapas por Gen ============ */
 // Cada Gen é um mapa com 10 rotas (dados em dados-mapas.js, gerados da PokéAPI por ferramentas/gerar-mapas.ps1).
 // As 9 primeiras têm um Alfa; a 10ª é a final: lutar contra os lendários da Gen fecha o mapa.
 //   Roguelike: vencer a Gen encerra a run (vitória) e libera o mapa da Gen seguinte pras próximas runs.

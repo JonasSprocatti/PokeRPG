@@ -1,4 +1,4 @@
-﻿# Gera js/dados-mapas.js: os mapas por Gen (10 rotas cada), com Pokémon, pesos de aparição, Alfas e lendários.
+# Gera js/dados-mapas.js: os mapas por Gen (10 rotas cada), com Pokémon, pesos de aparição, Alfas e lendários.
 # Uso (PowerShell, precisa de internet — baixa da PokéAPI):  powershell -File ferramentas/gerar-mapas.ps1
 # Os nomes/temas das rotas estão aqui embaixo (REGIOES); o resto sai dos dados da PokéAPI:
 #   - "nível natural" de cada espécie: base = pelo total de atributos; evoluída = nível em que evolui (ou o da forma

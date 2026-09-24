@@ -1,4 +1,4 @@
-﻿/* GERADO por ferramentas/gerar-familias.ps1 a partir da PokeAPI - nao editar a mao (rode o script de novo).
+/* GERADO por ferramentas/gerar-familias.ps1 a partir da PokeAPI - nao editar a mao (rode o script de novo).
    Especies que sao EVOLUCAO FINAL da linha delas (568 de 1025).
    Quem megaevolui e a forma final, entao so ela acumula golpe final pra Mega (conquistas.js). Antes cada
    estagio tinha contador proprio: derrotar como Marshtomp enchia uma barra que nao levava a Mega nenhuma, e

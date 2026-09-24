@@ -1,4 +1,4 @@
-﻿# Configuração do Supabase CLI. A integração do GitHub (Settings → Integrations → GitHub) lê esta pasta.
+# Configuração do Supabase CLI. A integração do GitHub (Settings → Integrations → GitHub) lê esta pasta.
 #
 # **`working directory` no painel = `/` (a raiz do repositório), NÃO `/supabase`.** O campo pede o diretório que
 # CONTÉM a pasta `supabase/`, e aqui ela está na raiz. Apontar pra `/supabase` faz o Supabase procurar por

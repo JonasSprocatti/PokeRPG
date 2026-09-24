@@ -1,4 +1,4 @@
-﻿// Baixar um mapa pra jogar offline (js/offline.js): a LISTA do que precisa ser guardado é pura e testável;
+// Baixar um mapa pra jogar offline (js/offline.js): a LISTA do que precisa ser guardado é pura e testável;
 // o download em si precisa de rede e fica de fora.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

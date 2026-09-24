@@ -38,6 +38,8 @@ $corpo
 export const ehEvolucaoFinal = especie => EVOLUCAO_FINAL.has(especie);
 "@
 
+# Grava SEM BOM: `Set-Content -Encoding utf8` no PowerShell 5.1 escreve UTF-8 COM BOM, e BOM em arquivo de
+# configuração quebra parser (foi assim que o deploy do Supabase caiu com `invalid character U+00EF`).
 $destino = Join-Path $PSScriptRoot '..\js\dados-familias.js'
-Set-Content -Path $destino -Value $saida -Encoding utf8
+[System.IO.File]::WriteAllText($destino, $saida, (New-Object System.Text.UTF8Encoding $false))
 Write-Host "ok: $($finais.Count) evolucoes finais de $($sp.Count) especies -> js/dados-familias.js"

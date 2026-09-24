@@ -1,4 +1,4 @@
-﻿/* ============ fim de jornada e carreira ============ */
+/* ============ fim de jornada e carreira ============ */
 // Toda jornada termina aqui: capturado no Hardcore, desmaio sem Revive (Médio+), ou "Novo jogo" (encerrar).
 // Monta o resumo (estatisticasDaJornada + pontuacao, em regras.js), adiciona na CARREIRA (carreira.js — lista de
 // jornadas terminadas, local e na nuvem), apaga o save da jornada (aqui e na nuvem) e mostra a tela de fim.

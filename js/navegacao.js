@@ -1,4 +1,4 @@
-﻿/* ============ navegação entre as telas ============ */
+/* ============ navegação entre as telas ============ */
 // Toda tela fora do jogo (carreira, ranking, conta, jornadas salvas, bugs, ajustes, multiplayer) começa com a MESMA
 // barra: um botão grande de voltar (pro jogo, se houver jornada; senão pra tela inicial) e atalhos pras outras telas.
 // Assim nunca dá pra ficar preso numa tela nem precisar adivinhar como sair. Esc também volta (main.js).

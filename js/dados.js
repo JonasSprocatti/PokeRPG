@@ -1,4 +1,4 @@
-﻿/* ============ dados fixos ============ */
+/* ============ dados fixos ============ */
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 import { GENS } from './dados-mapas.js';
 export const API = 'https://pokeapi.co/api/v2';

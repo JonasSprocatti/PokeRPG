@@ -1,4 +1,4 @@
-﻿// Habilidades (js/habilidades.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
+// Habilidades (js/habilidades.js) no motor único (js/golpe.js) e nas contas (js/regras.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

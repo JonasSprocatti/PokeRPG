@@ -1,4 +1,4 @@
-﻿// Fórmulas de js/regras.js. Rodar: `node --test` (sem caminho) na raiz do projeto.
+// Fórmulas de js/regras.js. Rodar: `node --test` (sem caminho) na raiz do projeto.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {

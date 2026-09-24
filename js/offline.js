@@ -1,4 +1,4 @@
-﻿/* ============ baixar pra jogar offline ============ */
+/* ============ baixar pra jogar offline ============ */
 // O jogo já guarda sozinho o que você encontra (api.js: cache em memória + localStorage; o service worker guarda os
 // sprites). O problema é que, offline, só dá pra encontrar o que você JÁ tinha visto — e Pokémon novo aparece sem
 // sprite. Aqui a pessoa baixa de uma vez tudo o que um mapa (Gen) precisa: os Pokémon das rotas, os Alfas, os

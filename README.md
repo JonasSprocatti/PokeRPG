@@ -1,4 +1,4 @@
-﻿<p align="center"><img src="img/logo.png" alt="PokéRPG" width="240"></p>
+<p align="center"><img src="img/logo.png" alt="PokéRPG" width="240"></p>
 
 # PokéRPG
 

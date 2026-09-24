@@ -1,4 +1,4 @@
-﻿-- ============================================================================
+-- ============================================================================
 -- 20260923120000_base — base do PokéRPG
 -- Este arquivo é o schema INTEIRO como ele está hoje. É idempotente de ponta a ponta
 -- (`create table if not exists`, `create or replace function`, `drop policy if exists` antes de cada policy),

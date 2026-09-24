@@ -1,4 +1,4 @@
-﻿/* ============ nuvem (Supabase: login + carreira + save da jornada) ============ */
+/* ============ nuvem (Supabase: login + carreira + save da jornada) ============ */
 // Login com Google ou link por e-mail. Com conta:
 //   • carreira: jornadas terminadas sobem/descem (tabela `jornadas`), juntadas sem duplicar (mesclarJornadas)
 //   • jornadas em andamento (tabela `saves`, uma linha por jornada: a atual e as guardadas de saves.js): a atual

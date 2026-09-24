@@ -1,4 +1,4 @@
-﻿/* GERADO A MÃO: notas de atualização mostradas na tela 📜 Novidades (tela-patchnotes.js).
+/* GERADO A MÃO: notas de atualização mostradas na tela 📜 Novidades (tela-patchnotes.js).
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [

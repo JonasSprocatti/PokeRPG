@@ -1,4 +1,4 @@
-﻿/* ============ render: criação ============ */
+/* ============ render: criação ============ */
 // Tela inicial: passo 1 dificuldade, passo 2 espécie (só os iniciais — REGIOES_INICIAIS — salvo modo com
 // `especiesLivres`), prévia (habilidade, natureza, nível, apelido) e início do jogo.
 import { G, save, nm } from './estado.js';

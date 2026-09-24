@@ -1,4 +1,4 @@
-﻿/* ============ render: jogo ============ */
+/* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';

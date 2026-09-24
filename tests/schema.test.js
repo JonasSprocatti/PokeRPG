@@ -1,4 +1,4 @@
-﻿// O servidor recalcula a pontuação (validar_jornada em supabase/migrations/). Se os pesos/multiplicadores/limites
+// O servidor recalcula a pontuação (validar_jornada em supabase/migrations/). Se os pesos/multiplicadores/limites
 // do jogo mudarem e o SQL não, jornadas legítimas passam a ser recusadas ou pontuadas diferente — este teste pega.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -1,4 +1,4 @@
-﻿// Mapas por Gen (js/mapas.js + dados gerados em js/dados-mapas.js).
+// Mapas por Gen (js/mapas.js + dados gerados em js/dados-mapas.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, rotaNaJornada, sortearDaRota, taxaNaRota, textoTaxa,
