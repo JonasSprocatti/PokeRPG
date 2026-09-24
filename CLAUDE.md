@@ -260,6 +260,13 @@ do turno é o que a Mudança de Postura do Aegislash evitou. `desfazerMega` roda
 sem isso o Pokémon fica Mega pra sempre, porque `M.data` vai junto no save. `megasDoJogador()` mora em `mega.js`
 (não em `batalha.js`) porque `render.js` também precisa dela e não pode importar `batalha.js` — daria ciclo.
 
+### 5. ✅ FEITO — Terastalização
+`js/tera.js` (gatilho) + `regras.tiposDefensivos`/`regras.multStab` (a conta, pura e testada). A conquista é por
+TIPO, não por espécie: você escolhe na hora entre os tipos já liberados. Mesma economia da Mega — uma por batalha,
+não gasta o turno, desfaz em `endBattle`. Diferente da Mega, **não troca `M.data`**: guarda só `M.tera`, e quem lê
+são as regras — por isso desfazer é uma linha. `render.badgesDeTipo` mostra o tipo Tera no lugar dos originais
+(mostrar os antigos faria a pessoa calcular a fraqueza errada). Inimigo ainda NÃO terastaliza — decisão em aberto.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

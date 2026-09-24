@@ -22,7 +22,7 @@ import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js'
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
-import { turn, usarMega, serializarBatalha, restaurarBatalha } from './batalha.js';
+import { turn, usarMega, usarTera, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
@@ -211,7 +211,9 @@ document.addEventListener('click', async e => {
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
     case 'move': return turn({ type: 'move', idx: +v });
-    case 'mega': return usarMega();   // não passa por `turn`: megaevoluir não gasta o turno
+    // nenhum dos dois passa por `turn`: megaevoluir e terastalizar não gastam o turno
+    case 'mega': return usarMega();
+    case 'tera': return usarTera();
     case 'run': return turn({ type: 'run' });
     case 'new': {
       if (G.busy || G.mode === 'battle') return;

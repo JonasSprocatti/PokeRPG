@@ -2,6 +2,18 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.17', data: '2026-09-24', titulo: 'Terastalização', piada: 'Seu Charizard finalmente pode olhar para uma pedra sem suar frio.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A <b>Terastalização</b> chegou. Cada tipo é conquistado à parte (200 derrotados daquele tipo), e na batalha você escolhe entre os que já tem: o botão 💎 <b>não gasta o turno</b>, igual à Mega.',
+        'Terastalizado, você passa a ter <b>um tipo só</b> para receber golpe — é o que muda a luta: um Charizard Tera Água deixa de tomar 4× de Pedra. A ficha mostra o tipo Tera no lugar dos antigos, porque calcular fraqueza pelo tipo velho seria justamente o erro.',
+        'No ataque, a regra é a dos jogos: golpe do tipo Tera que você <b>já tinha</b> bate ×2; um tipo Tera novo bate ×1,5; e o STAB que você já tinha continua valendo.',
+        'Dá para usar Tera e Mega na mesma batalha — são conquistas diferentes, cada uma com o seu custo.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Stealth Rock agora acerta pelo tipo Tera de quem entra, não pelo tipo antigo.'
+      ] }
+    ] },
   { versao: '2.16', data: '2026-09-24', titulo: 'Mega Evolução', piada: 'Mil vitórias depois, a pedra finalmente reagiu. Dava pra ter reagido na quingentésima, mas pedra é assim.',
     secoes: [
       { nome: 'Novidades', itens: [

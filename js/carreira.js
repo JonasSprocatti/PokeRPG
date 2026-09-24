@@ -113,11 +113,12 @@ export const abatesDaConta = (registroAtual = null, jornadas = carregarCarreira(
   totaisDe(atualizarProgresso(jornadas), registroAtual?.abates);
 // fusão com a nuvem: nunca perde o que um dos lados tem
 export const mesclarProgressoLocal = remoto => salvarProgresso(mesclarProgresso(carregarProgresso(), remoto));
-/* Esta espécie já conquistou a Mega? Porta única pra batalha perguntar sem remontar o contexto de conquistas.
-   Sai do progresso PERMANENTE (não do histórico), então apagar jornada não tira Mega conquistada. */
-export const megaDaContaLiberada = (especie, registroAtual = null) =>
-  megaLiberada(progressoConquistas(carregarCarreira().jornadas, registroAtual,
-    { abates: abatesDaConta(registroAtual), runs: {} }), especie);
+/* O progresso das gimmicks somado da conta. Porta única pra batalha e render perguntarem sem remontar o
+   contexto. Sai do progresso PERMANENTE (não do histórico), então apagar jornada não tira gimmick conquistada. */
+export const conquistasDaConta = (registroAtual = null) =>
+  progressoConquistas(carregarCarreira().jornadas, registroAtual, { abates: abatesDaConta(registroAtual), runs: {} });
+// esta espécie já conquistou a Mega?
+export const megaDaContaLiberada = (especie, registroAtual = null) => megaLiberada(conquistasDaConta(registroAtual), especie);
 /* ---- badges (badges.js) ----
    Montadas do progresso permanente + Pokédex da conta + progresso das gimmicks. Ficam aqui pra tela e a criação
    pedirem por uma porta só, sem cada uma remontar o contexto. */

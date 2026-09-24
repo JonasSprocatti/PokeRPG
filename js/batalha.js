@@ -16,7 +16,7 @@ import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
-import { STATS, STAT_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
+import { STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
@@ -25,6 +25,7 @@ import {
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
 import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
+import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
@@ -217,6 +218,26 @@ export async function usarMega() {
   } catch (e) { console.error(e); log('Não deu pra megaevoluir: ' + esc(e.message), 'hit'); }
   finally { G.busy = false; render(); save(); }
 }
+/* Botão 💎: mesma economia da Mega — uma por batalha e NÃO gasta o turno. A escolha do tipo é sua, entre os
+   que você já conquistou (200 derrotados de cada). Dá pra usar Tera e Mega na mesma luta: são conquistas
+   diferentes, cada uma com o seu custo de longo prazo. */
+export async function usarTera() {
+  const B = G.B; if (G.busy || !B) return;
+  const tipos = terasDisponiveis(); if (!tipos.length) return;
+  G.busy = true; render();
+  try {
+    const i = await ask('Terastalizar em qual tipo?', [
+      ...tipos.map((t, j) => ({ label: TYPE_PT[t] || t, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    if (i < 0) return;
+    const P = G.S.player, tipo = tipos[i];
+    teracristalizar(P, tipo);
+    B.teraUsada = true;
+    render();
+    await say(`<b>${esc(rotulo(P))} TERASTALIZOU!</b> Agora é do tipo ${esc(TYPE_PT[tipo] || tipo)} — e só dele.`, 'level');
+  } catch (e) { console.error(e); log('Não deu pra terastalizar: ' + esc(e.message), 'hit'); }
+  finally { G.busy = false; render(); save(); }
+}
+
 /* O inimigo vira quando cai a METADE do HP — é a segunda fase da luta, não um susto no primeiro turno. Só Alfa,
    lendário e treinador (decisão do usuário: selvagem de rota continua sendo selvagem de rota).
    Não precisa de conquista nenhuma: a conquista é o que libera a SUA Mega, não a do adversário. */
@@ -460,7 +481,7 @@ async function serCapturado() {
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
   G.B = null; G.mode = 'explore'; G.panel = 'main';
-  for (const m of ladoJogador()) { desfazerMega(m); m.vol = freshVol(); }
+  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); m.vol = freshVol(); }
 }
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----

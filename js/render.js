@@ -13,6 +13,7 @@ import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMA
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, nomeDaMecanica } from './mega.js';
+import { terasDisponiveis } from './tera.js';
 import { clamp, esc, fmt } from './util.js';
 
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
@@ -30,14 +31,21 @@ const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
    `megasDoJogador()` não vai à rede: lê a tabela e o progresso da conta. */
 function botaoMega(dis) {
-  const formas = megasDoJogador();
-  if (!formas.length) return '';
+  const formas = megasDoJogador(), tipos = terasDisponiveis();
+  if (!formas.length && !tipos.length) return '';
   const f = formas[0], varias = formas.length > 1;
-  return `<div class="subrow"><button class="btn mega-btn" data-act="mega" ${dis}>⚡ ${esc(nomeDaMecanica(f))}${varias ? '' : `: ${esc(f.nome)}`}</button>
-    <span class="small muted">não gasta o seu turno${varias ? ` · ${formas.length} formas` : ''}</span></div>`;
+  return `<div class="subrow">
+    ${formas.length ? `<button class="btn mega-btn" data-act="mega" ${dis}>⚡ ${esc(nomeDaMecanica(f))}${varias ? '' : `: ${esc(f.nome)}`}</button>` : ''}
+    ${tipos.length ? `<button class="btn tera-btn" data-act="tera" ${dis}>💎 Terastalizar</button>` : ''}
+    <span class="small muted">não gasta o seu turno${varias ? ` · ${formas.length} formas` : ''}${tipos.length ? ` · ${tipos.length} tipo(s) Tera` : ''}</span></div>`;
 }
 
 export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;
+/* Os tipos que a tela mostra. Quem terastalizou tem UM tipo só (regras.tiposDefensivos) — mostrar os antigos
+   faria a pessoa calcular a fraqueza errada, que é justamente o que a Tera veio mudar. O 💎 marca a diferença. */
+export const badgesDeTipo = m => m?.tera
+  ? `<span class="ty tera-ty" style="--c:${TC[m.tera] || '#888'};--tc:${DARK_TEXT.has(m.tera) ? '#1c1f3a' : '#fff'}">💎 ${TYPE_PT[m.tera] || fmt(m.tera)}</span>`
+  : (m?.data?.types || []).map(badge).join('');
 function hpbar(m) {
   const pct = clamp(m.hp / m.stats.hp * 100, 0, 100), col = pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E';
   return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${col}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`;
@@ -124,7 +132,7 @@ const listaGolpes = M => `<div class="sec mlist"><h3>Golpes</h3>
 function cartaoAliado(A, i) {
   const ordem = A.ordem || 'livre';
   return `<div class="aliado ${ordem === 'fora' ? 'descansando' : ''}">
-    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${A.data.types.map(badge).join('')}</div>${hpbar(A)}${barraXp(A, A.growth)}${chipsFor(A)}</div></div>
+    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A)}${barraXp(A, A.growth)}${chipsFor(A)}</div></div>
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
@@ -143,7 +151,7 @@ function renderFicha() {
       <div>
         <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}</h2>
         <p class="sub">${P.nick ? esc(fmt(P.name)) + ', ' : ''}nível ${P.level}</p>
-        <div class="types">${P.data.types.map(badge).join('')}</div>
+        <div class="types">${badgesDeTipo(P)}</div>
       </div>
     </div>
     <div class="bars">

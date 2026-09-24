@@ -13,6 +13,23 @@ export function typeEff(atk, defs) {
   return defs.reduce((f, d) => f * ((c.im || []).includes(d) ? 0 : c.se.includes(d) ? 2 : c.nv.includes(d) ? 0.5 : 1), 1);
 }
 
+/* ---- Terastalização (tera.js) ----
+   Quem terastaliza passa a ter UM tipo só — o Tera — para RECEBER golpe. É a parte que muda a luta: um
+   Charizard Tera Água deixa de morrer para Pedra.
+   No ataque o STAB segue a regra dos jogos, que é generosa de propósito:
+     golpe do tipo Tera que TAMBÉM era um tipo original → 2.0  (o prêmio por casar o Tera com o que você já é)
+     golpe do tipo Tera que não era original            → 1.5
+     golpe de um tipo original que não é o Tera         → 1.5  (você não perde o STAB que já tinha)
+     qualquer outro                                     → 1
+   `base` é o STAB da habilidade (Adaptability = 2), pra Adaptability continuar valendo em cima disso. */
+export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
+export function multStab(m, tipoGolpe, base = 1.5) {
+  const originais = m?.data?.types || [];
+  if (!m?.tera) return originais.includes(tipoGolpe) ? base : 1;
+  if (tipoGolpe === m.tera) return originais.includes(tipoGolpe) ? 2 : base;
+  return originais.includes(tipoGolpe) ? base : 1;
+}
+
 export const natureMod = (n, s) => (NATURES[n] || [])[0] === s ? 1.1 : (NATURES[n] || [])[1] === s ? 0.9 : 1;
 export const natureLabel = n => { const [u, d] = NATURES[n] || []; return fmt(n) + (u ? ` (+${STAT_PT[u]} −${STAT_PT[d]})` : ' (neutra)'); };
 
@@ -136,7 +153,7 @@ export const temSalvaguarda = lado => !!lado && lado.salvaguarda > 0;
 export const temNeblina = lado => !!lado && lado.neblina > 0;
 export const multVento = lado => (lado?.vento > 0 ? 2 : 1);
 // Stealth Rock: 1/8 do HP máximo, corrigido pela eficácia de Pedra contra o tipo de quem entrou
-export const danoPedras = m => Math.max(1, Math.floor(m.stats.hp / 8 * typeEff('rock', m.data.types)));
+export const danoPedras = m => Math.max(1, Math.floor(m.stats.hp / 8 * typeEff('rock', tiposDefensivos(m))));
 // Spikes: só pega quem está no chão; 1/8, 1/6 ou 1/4 conforme as camadas
 export const danoEspinhos = (m, camadas) => (!camadas || !noChao(m) ? 0 : Math.max(1, Math.floor(m.stats.hp * [0, 1 / 8, 1 / 6, 1 / 4][Math.min(camadas, MAX_ESPINHOS)])));
 // Toxic Spikes: Venenoso no chão limpa o campo; Aço e quem voa não ligam; 2 camadas = veneno grave
@@ -208,8 +225,8 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * rand(85, 100) / 100;
-  if (u.data.types.includes(move.type)) mod *= hu.stab || 1.5;                        // STAB (Adaptability = ×2)
-  const ef = typeEff(move.type, t.data.types);
+  mod *= multStab(u, move.type, hu.stab || 1.5);                                      // STAB (Adaptability = ×2; Tera muda a conta)
+  const ef = typeEff(move.type, tiposDefensivos(t));                                  // terastalizado defende pelo tipo Tera
   mod *= ef;
   if (ef > 1 && ht.superEfetivo) mod *= ht.superEfetivo;                            // Filter, Solid Rock
   if (ef < 1 && hu.poucoEfetivo) mod *= hu.poucoEfetivo;                            // Tinted Lens
