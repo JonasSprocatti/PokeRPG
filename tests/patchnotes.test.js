@@ -22,10 +22,19 @@ test('toda versão tem rótulo, data, título, piada e pelo menos uma seção co
   }
 });
 
+/* Compara versão por PARTES, não como número decimal: `parseFloat('2.10')` dá 2.1, que é menor que 2.9 — ou seja,
+   a décima correção de uma mesma linha apareceria como "mais velha" que a nona. Comparar [maior, menor] resolve
+   e não obriga a pular de 2.9 direto pra 3.0 só pra fugir da conta. */
+const maior = (a, b) => {
+  const [am, an] = a.split('.').map(Number), [bm, bn] = b.split('.').map(Number);
+  return am !== bm ? am > bm : an > bn;
+};
+
 test('ordem: da mais nova para a mais antiga (versão e data)', () => {
+  assert.ok(maior('2.10', '2.9'), 'a comparação precisa ser por partes, não por parseFloat');
   for (let i = 1; i < PATCH_NOTES.length; i++) {
     const nova = PATCH_NOTES[i - 1], velha = PATCH_NOTES[i];
-    assert.ok(parseFloat(nova.versao) > parseFloat(velha.versao), `v${nova.versao} deveria vir depois de v${velha.versao}`);
+    assert.ok(maior(nova.versao, velha.versao), `v${nova.versao} deveria vir depois de v${velha.versao}`);
     assert.ok(Date.parse(nova.data) >= Date.parse(velha.data), `data de v${nova.versao} anterior à de v${velha.versao}`);
   }
 });

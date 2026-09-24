@@ -46,9 +46,14 @@ async function redePrimeiro(req) {
     return (await cache.match(req, { ignoreSearch: true })) || (req.mode === 'navigate' ? cache.match('./index.html') : Response.error());
   }
 }
+/* `ignoreVary`: o mesmo sprite é pedido de dois jeitos — o download pra jogar offline (offline.js) usa `fetch()`,
+   a tela usa `<img src>` — e o servidor de sprites responde com `Vary: Authorization,Accept-Encoding`. Quando os
+   cabeçalhos das duas formas de pedir não batem, a Cache API responde "não tenho" com o arquivo guardado ali do
+   lado, e offline isso vira ícone de imagem quebrada. O conteúdo é o mesmo PNG nos dois casos, então comparar
+   cabeçalho aqui não protege de nada: ignorar o Vary só faz a entrada guardada servir os dois. */
 async function cachePrimeiro(req) {
   const cache = await caches.open(CACHE_EXTERNO);
-  const hit = await cache.match(req);
+  const hit = await cache.match(req, { ignoreVary: true });
   if (hit) return hit;
   try {
     const resp = await fetch(req);

@@ -30,7 +30,10 @@ export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z
 // rota atual (save sem rota válida nesse mapa — ex.: a Fenda Dimensional, que saiu — cai na 1ª rota do mapa)
 export const zone = () => { const rs = rotasAtuais(); return rs.find(z => z.id === G.S.zone) || rs[0]; };
 // nome de exibição: seu apelido / nome do aliado, "Pidgey de Caçador Rui" (batalha de treinador) ou "Pidgey selvagem"
-export const rotulo = m => m === G.S?.player || G.S?.aliados?.includes(m) ? (m.nick || fmt(m.name))
+// `m` nulo devolve string vazia em vez de quebrar: quem chama está no meio de um turno, e uma exceção aqui
+// derruba a rodada toda (o dano e o turno somem sem ninguém ver). Já aconteceu — ver B.vez em batalha.anunciarQuedas.
+export const rotulo = m => !m ? ''
+  : m === G.S?.player || G.S?.aliados?.includes(m) ? (m.nick || fmt(m.name))
   : m.lendario ? fmt(m.name) + ' lendário'
   : m.chefe ? fmt(m.name) + ' Alfa'
   : G.B?.trainer ? `${fmt(m.name)} de ${G.B.trainer.nome}` : fmt(m.name) + ' selvagem';

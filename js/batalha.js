@@ -175,6 +175,11 @@ async function anunciarQuedas() {
     // Roguelike: aliado que cai é perdido na hora (sai da equipe; nem Revive nem Centro trazem de volta)
     const nome = nm(A);
     G.S.aliados.splice(G.S.aliados.indexOf(A), 1); G.abertos.clear();
+    /* `B.vez` guarda quem está agindo como 'a<índice em G.S.aliados>' — e o render lê esse índice de volta.
+       Tirar o aliado da equipe aqui faz o índice apontar pro vazio, e o render seguinte quebrava a rodada
+       inteira (`Cannot read properties of undefined`, com o turno já perdido). Acontecia de verdade com
+       Self-Destruct no Roguelike: o aliado se explode, é perdido na hora, e o índice morre junto. */
+    G.B.vez = null;
     render();
     await say(`${nome} desmaiou... e não vai voltar. Aliado perdido pra sempre.`, 'hit');
   }

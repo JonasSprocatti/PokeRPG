@@ -116,6 +116,12 @@ export const idsEmCache = () => [...chavesGuardadas].filter(k => k.startsWith('m
 // quantos dados estão guardados (Ajustes mostra)
 export const itensNoCache = () => chavesGuardadas.size;
 export function syncGet(key) { const v = memo.get(key); return v && !(v instanceof Promise) ? v : null; }
+/* Marcador solto no cache, pra quem precisa anotar "isto aqui já foi feito" sem inventar outro armazenamento.
+   Usado por offline.js pra registrar que um mapa foi baixado COM a leva de dados da versão atual: quando a lista
+   do que o download traz cresce (foi o caso das curvas de XP e árvores de evolução), quem baixou antes precisa
+   aparecer como incompleto de novo — senão o jogo diz "já baixado" e falha no avião. */
+export const temNoCache = chave => chavesGuardadas.has(chave) || !!syncGet(chave);
+export const marcarNoCache = (chave, valor = true) => { memo.set(chave, valor); chavesGuardadas.add(chave); guardar(chave, valor); };
 
 const VG_PREF = ['scarlet-violet', 'sword-shield', 'brilliant-diamond-shining-pearl', 'ultra-sun-ultra-moon', 'sun-moon', 'omega-ruby-alpha-sapphire', 'x-y', 'black-2-white-2', 'black-white', 'heartgold-soulsilver', 'platinum', 'diamond-pearl', 'emerald', 'firered-leafgreen', 'ruby-sapphire', 'crystal', 'gold-silver', 'yellow', 'red-blue'];
 // métodos que NÃO são por nível mas que a espécie aprende de verdade: é o que o Disco Técnico (dados.ITENS_GOLPE)

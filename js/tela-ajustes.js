@@ -6,7 +6,7 @@ import { $, limparTopo } from './ui.js';
 import { FONTES, fonteEscolhida, urlDaFonte } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
-import { alvosDaGen, quantoFalta, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
+import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache } from './api.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
@@ -40,14 +40,16 @@ export function telaAjustes() {
 // e Pokémon novo fica sem sprite.
 function htmlOffline() {
   const gen = genDe(G.S), r = dadosDaGen(gen), falta = quantoFalta(gen), total = alvosDaGen(gen).length;
-  const pronto = falta === 0;
+  const velho = precisaRebaixar(gen), pronto = !falta && !velho;
   return `<p class="lead">Baixe os Pokémon de um mapa (dados, golpes e sprites) pra jogar sem internet sem faltar nada.
       O jogo já guarda sozinho o que você encontra; isto adianta o resto de uma vez.</p>
     <p class="small ${pronto ? 'ok-offline' : 'muted'}">${pronto ? `✅ Gen ${gen} (${esc(r.regiao)}) já está inteira neste aparelho.`
+      : velho ? `⚠ Gen ${gen} (${esc(r.regiao)}) foi baixada por uma versão antiga: os Pokémon estão aqui, mas faltam as curvas de XP e as árvores de evolução — sem elas não dá pra <b>começar uma jornada</b> nem evoluir offline. Baixe de novo (o que já está guardado não desce outra vez).`
       : `Gen ${gen} (${esc(r.regiao)}): <b>${total - falta}/${total}</b> Pokémon guardados — faltam ${falta}.`}</p>
-    <div class="subrow">${GENS.map(g => `<button class="btn ${g.gen === gen ? '' : 'ghost'} sm" data-act="baixar-gen" data-v="${g.gen}">⬇ Gen ${g.gen} · ${esc(g.regiao)}${quantoFalta(g.gen) ? '' : ' ✅'}</button>`).join('')}</div>
+    <div class="subrow">${GENS.map(g => `<button class="btn ${g.gen === gen ? '' : 'ghost'} sm" data-act="baixar-gen" data-v="${g.gen}">⬇ Gen ${g.gen} · ${esc(g.regiao)}${jaBaixado(g.gen) ? ' ✅' : ''}</button>`).join('')}</div>
     <div class="subrow" style="margin-top:10px"><button class="btn" data-act="baixar-tudo">⬇⬇ Baixar o jogo inteiro (${TOTAL_GENS} mapas)</button>
-      <span class="small muted">${quantoFaltaTudo() ? `faltam ${quantoFaltaTudo()} de ${totalDoJogo()} Pokémon` : '✅ tudo guardado'}</span></div>
+      <span class="small muted">${quantoFaltaTudo() ? `faltam ${quantoFaltaTudo()} de ${totalDoJogo()} Pokémon`
+        : GENS.every(g => jaBaixado(g.gen)) ? '✅ tudo guardado' : '⚠ os Pokémon estão todos aqui, mas há mapas baixados por uma versão antiga'}</span></div>
     <div id="offline-progresso" class="small muted" style="margin-top:8px"></div>
     <p class="small muted">São cerca de ${total} Pokémon por mapa e ${totalDoJogo()} no jogo inteiro. O jogo inteiro ocupa cerca de <b>20 MB</b> — são dados e sprites pequenos —, mas leva alguns minutos porque são milhares de pedidos: use uma rede boa e deixe a tela aberta.<span id="offline-espaco"></span></p>`;
 }

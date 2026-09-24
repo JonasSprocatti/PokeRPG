@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.10', data: '2026-09-24', titulo: 'O avião agora funciona de verdade', piada: 'O jogo dizia "mapa baixado, pode desligar a internet". O mapa estava baixado. Faltava o resto do mapa.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Baixar um mapa em "Jogar offline" agora traz também as curvas de XP e as árvores de evolução das espécies. Sem elas, dava pra explorar offline mas NÃO dava pra começar uma jornada nem evoluir — aparecia "A conexão falhou ao buscar um dado da PokéAPI" mesmo com tudo baixado.',
+        'Sprite que não conseguia descer no download era ignorada em silêncio: o jogo contava o mapa como completo e, sem internet, alguns Pokémon apareciam com o ícone de imagem quebrada. Agora ela é tentada de novo e, se ainda falhar, entra na conta de falhas — o download avisa em vez de mentir.',
+        'Quem já tinha baixado um mapa antes desta correção vê o aviso de baixar de novo na tela de Ajustes. O que já está guardado não desce outra vez.',
+        'Aliado que usava Self-Destruct no Roguelike quebrava o turno inteiro ("Algo deu errado neste turno"): ele é perdido na hora, e a tela ainda tentava mostrar quem estava agindo usando a posição dele na equipe, que já não existia. O dano e o turno chegavam a sumir.'
+      ] }
+    ] },
   { versao: '2.9', data: '2026-09-23', titulo: 'Badges que valem alguma coisa', piada: 'As medalhas antigas ficavam só bonitas na parede. Estas aqui vêm com uma Potion dentro.',
     secoes: [
       { nome: 'Novidades', itens: [

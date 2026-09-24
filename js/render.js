@@ -51,7 +51,8 @@ function turnoBar(B, P, E) {
     : B.vez === 'p' ? `${esc(rotulo(P))} está agindo`
     : B.vez === 'e' ? `${esc(rotulo(E))} está agindo`
     : B.vez === 't' ? `${esc(T.nome)} está mirando uma bola`
-    : B.vez?.[0] === 'a' ? `${esc(rotulo(G.S.aliados[+B.vez.slice(1)]))} está agindo`
+    // o aliado pode ter saído da equipe entre o `vez` e o render (Roguelike perde quem cai): índice vago não quebra
+    : B.vez?.[0] === 'a' ? `${esc(rotulo(G.S.aliados[+B.vez.slice(1)]) || 'Seu aliado')} está agindo`
     : B.vez === 'fim' ? 'Fim do turno' : '…';
   // treinador: equipe (● em pé / ○ derrotado) e bolas que ainda restam
   // lendários (luta final do mapa) usam a mesma sequência do treinador, mas sem bolas
