@@ -7,7 +7,9 @@ A Vercel continua hospedando o site. O login e o banco ficam no **Supabase** (te
 ## 1. Criar o projeto no Supabase
 1. Em https://supabase.com crie uma conta e um projeto novo (guarde a senha do banco).
 2. No projeto, abra **SQL Editor → New query**, cole o conteúdo de `supabase/LIGAR-MIGRATIONS.sql` e clique em **Run**. Isso cria só a tabela de controle que a integração com o GitHub usa pra saber quais migrations já rodaram (sem ela, ela falha com `relation "supabase_migrations.schema_migrations" does not exist`).
-3. Ligue a integração: **Settings → Integrations → GitHub**, conecte o repositório, *working directory* `/supabase`, *Deploy to production* na branch `main`. A partir daí **o banco se atualiza sozinho** a cada merge no `main` — nunca mais precisa colar SQL à mão.
+3. Ligue a integração: **Settings → Integrations → GitHub**, conecte o repositório, *Deploy to production* na branch `main`, e **working directory `/`**. A partir daí **o banco se atualiza sozinho** a cada merge no `main` — nunca mais precisa colar SQL à mão.
+   - ⚠️ O campo *working directory* pede o diretório que **contém** a pasta `supabase/`, não a pasta em si. Como ela está na raiz do repositório, o valor é `/`. Preenchendo `/supabase`, o Supabase procura `/supabase/supabase/migrations`, não acha nada e **não aplica nem avisa** — o painel fica com cara de que está tudo certo.
+   - O `supabase/config.toml` precisa declarar a mesma versão do Postgres do projeto (veja com `select version();` no SQL Editor).
 4. Se preferir fazer o primeiro schema na mão, cole o conteúdo de `supabase/migrations/20260923120000_base.sql` no SQL Editor e rode. É seguro: só cria o que falta e atualiza as funções, sem apagar dados.
 
 ## 2. Ligar as chaves no jogo

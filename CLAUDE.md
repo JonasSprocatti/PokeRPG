@@ -211,17 +211,18 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 ## Supabase: schema sobe sozinho (integração nativa)
 
-> ⚠️ **AINDA NÃO COMPROVADO neste projeto (24/09/2026).** Duas migrations de teste (`teste_integracao`,
-> `teste_integracao_2`) foram commitadas no `main` e **nenhuma das duas chegou no banco** — confirmado consultando
-> as tabelas pelo cliente do jogo, com uma tabela inexistente de controle. O schema que existe hoje lá foi aplicado
-> À MÃO pelo SQL Editor. Enquanto isso não for resolvido: **toda mudança de schema é colada à mão no SQL Editor**,
-> e a migration existe no repositório como registro. Não presuma que um `git push` atualizou o banco.
+> ⚠️ **Ficou mudo por dias por causa de um campo mal preenchido (24/09/2026).** Duas migrations de teste foram
+> commitadas no `main` e nenhuma chegou no banco, sem nenhum erro no painel. Causa: o **working directory** estava
+> como `/supabase`. Esse campo pede o diretório que **CONTÉM** a pasta `supabase/` — aqui ela está na raiz, então
+> o valor certo é **`/`**. Com `/supabase`, ele procurava `/supabase/supabase/migrations` e não achava nada.
+> O `supabase/config.toml` também precisa declarar o Postgres do projeto (`select version()` → 17 aqui).
 >
-> **Cuidado ao verificar se uma tabela existe pelo cliente**: `select('*', { count: 'exact', head: true })` devolve
-> `error` nulo mesmo pra tabela que não existe (a resposta não tem corpo). Use `select('*').limit(1)` — e sempre
-> com uma tabela inexistente de controle, senão o teste mente e parece que está tudo certo.
+> **Como verificar que uma migration chegou** (não confie no painel): consulte a tabela pelo cliente do jogo com
+> `select('*').limit(1)` **e uma tabela inexistente de controle**. `select('*', { count: 'exact', head: true })`
+> devolve `error` nulo mesmo pra tabela que não existe — esse detalhe fez um diagnóstico dar "tudo OK" e escondeu
+> o problema por uma rodada inteira.
 
-O banco é atualizado pela **integração do GitHub no painel do Supabase** (Settings → Integrations → GitHub): repositório conectado, *working directory* `/supabase`, *Deploy to production* ligado na branch `main`. Nada de secret no GitHub — a conexão é do lado do Supabase.
+O banco é atualizado pela **integração do GitHub no painel do Supabase** (Settings → Integrations → GitHub): repositório conectado, *working directory* **`/`** (a raiz — o campo pede o diretório que CONTÉM a pasta `supabase/`, e não ela mesma), *Deploy to production* ligado na branch `main`. Nada de secret no GitHub — a conexão é do lado do Supabase.
 
 Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI:
 

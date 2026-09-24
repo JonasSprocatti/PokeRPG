@@ -1,7 +1,13 @@
-﻿# Configuração do Supabase CLI. A integração do GitHub (Settings → Integrations → GitHub) lê esta pasta:
-# `working directory` no painel deve apontar pra /supabase, e as migrations ficam em supabase/migrations/.
+﻿# Configuração do Supabase CLI. A integração do GitHub (Settings → Integrations → GitHub) lê esta pasta.
+#
+# **`working directory` no painel = `/` (a raiz do repositório), NÃO `/supabase`.** O campo pede o diretório que
+# CONTÉM a pasta `supabase/`, e aqui ela está na raiz. Apontar pra `/supabase` faz o Supabase procurar por
+# `/supabase/supabase/migrations`, que não existe — e ele não aplica nada, sem erro nenhum no painel. Foi
+# exatamente o que aconteceu: duas migrations de teste no `main` e nenhuma chegou no banco.
+#
+# `major_version` tem que bater com o Postgres do projeto (`select version()` no SQL Editor) — 17 aqui.
 # `project_id` é só um rótulo local — o projeto de verdade é o que está conectado no painel.
 project_id = "pokerpg"
 
 [db]
-major_version = 15
+major_version = 17
