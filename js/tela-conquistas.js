@@ -9,6 +9,18 @@ import { barraTelas } from './navegacao.js';
 import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta, badgesDaCarreira } from './carreira.js';
 import { vantagensDe } from './badges.js';
 import { MEGAS, megasDe } from './dados-megas.js';
+import { rastreada, rastrear, pararDeRastrear } from './rastreio.js';
+
+/* Clique no 📌 (main.js). Fixar de novo o que já está fixado desfixa — é UMA por jornada, então o botão é um
+   interruptor e não uma lista que cresce. */
+export function fixarConquista(valor) {
+  const [tipo, ...resto] = String(valor).split('|');
+  const chave = resto.join('|');
+  const r = rastreada();
+  if (r?.tipo === tipo && r?.chave === chave) pararDeRastrear();
+  else rastrear(tipo, chave);
+  telaConquistas();
+}
 import { ITEMS } from './dados.js';
 import { runsDeNivelDe } from './progresso-conta.js';
 import { progressoConquistas, ALVOS, MARCOS_ABATES, MODO_NAO_CONTA } from './conquistas.js';
@@ -22,6 +34,16 @@ const barra = (feito, alvo) => `<div class="bar"><div class="fill" style="width:
 
 /* Uma missão da lista. `rotulo` já vem pronto (nome do tipo em português, nome do golpe formatado…), porque cada
    categoria fala de uma coisa diferente: tipo do derrotado, sua espécie, nome do golpe. */
+/* 📌 Fixar: acompanha esta conquista durante a jornada (rastreio.js) — ela vai pro painel de Missões e a
+   recompensa cai NESTA run quando completar. Só aparece com jornada em andamento e no que ainda falta:
+   fixar algo já conquistado não teria o que acompanhar. */
+function botaoFixar(tipo, chave, liberado) {
+  if (!G.S || liberado || !tipo || !chave) return '';
+  const r = rastreada(), fixada = r?.tipo === tipo && r?.chave === chave;
+  return `<button class="btn ghost sm fixar ${fixada ? 'on' : ''}" data-act="fixar" data-v="${esc(tipo)}|${esc(chave)}"
+    aria-pressed="${fixada}" title="${fixada ? 'Parar de acompanhar' : 'Acompanhar nesta jornada'}">${fixada ? '📌 acompanhando' : '📌 acompanhar'}</button>`;
+}
+
 function linhaMissao(x, rotulo, sprite = null) {
   // a vaga do sprite existe SEMPRE: a lista é uma grade de `40px 1fr` e, sem nada na 1ª coluna, o texto caía
   // dentro dos 40px e montava em cima da barra de progresso (bug relatado na tela de Conquistas)
@@ -30,6 +52,7 @@ function linhaMissao(x, rotulo, sprite = null) {
     <b>${x.liberado ? '🔓 ' : ''}${rotulo}</b>
     ${barra(x.n, x.alvo)}
     <small>${n(x.n)} / ${n(x.alvo)}${x.liberado ? ' · conquistado' : ` · faltam ${n(x.alvo - x.n)}`}</small>
+    ${botaoFixar(x.tipo, x.chave, x.liberado)}
   </li>`;
 }
 // bloco de uma gimmick: explicação + as missões mais adiantadas
@@ -126,7 +149,8 @@ function secaoBadges() {
     <span class="sem-sprite badge-ic" aria-hidden="true">${b.icone}</span>
     <b>${b.completo ? '🏅 ' : ''}${esc(b.nome)}</b>
     ${b.completo ? '' : barra(b.n, b.alvo)}
-    <small>${esc(b.desc)}<br><i>Dá: ${premio(b.recompensa || {})}</i>${b.completo ? '' : ` · ${n(b.n)}/${n(b.alvo)}`}</small></li>`;
+    <small>${esc(b.desc)}<br><i>Dá: ${premio(b.recompensa || {})}</i>${b.completo ? '' : ` · ${n(b.n)}/${n(b.alvo)}`}</small>
+    ${botaoFixar('badge', b.id, b.completo)}</li>`;
   return `<h3 class="passo">🏅 Badges</h3>
     <p class="muted small">Cada badge conquistada vira <b>vantagem na próxima jornada</b>: item ou dinheiro no começo.
       Dá pra abrir mão delas na criação — quem joga sem ganha <b>10% a mais de pontos</b> no ranking.</p>

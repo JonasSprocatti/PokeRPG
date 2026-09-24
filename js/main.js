@@ -16,7 +16,7 @@ import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem,
   nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
-import { telaConquistas } from './tela-conquistas.js';
+import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
@@ -56,6 +56,7 @@ document.addEventListener('click', async e => {
     }
     case 'baixar-imagens': return baixarImagensOffline(genDe(G.S));   // só as figuras; os dados ficam como estão
     // painel de testes (só conta admin; dev.js barra de novo do lado de lá)
+    case 'fixar': return fixarConquista(v);   // 📌 acompanhar uma conquista da conta nesta jornada
     case 'dev-megas': return acaoDev('megas');
     case 'dev-especies': return acaoDev('especies');
     case 'dev-gimmicks': return acaoDev('gimmicks');

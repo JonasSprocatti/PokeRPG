@@ -15,6 +15,7 @@ import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
 import { megaDaContaLiberada } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
+import { progressoRastreado } from './rastreio.js';
 import { clamp, esc, fmt } from './util.js';
 
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
@@ -194,7 +195,12 @@ function blocoEvolucao(M, arvore) {
 function renderMissoes() {
   const MS = situacaoMissoes(MISSOES, G.S);
   tituloPainel('missoes', `Missões <span class="muted small">(${MS.feitas} concluída${MS.feitas === 1 ? '' : 's'})</span>`);
+  /* A conquista de CONTA fixada (rastreio.js) fica no topo do painel de missões: é onde quem joga já olha pra
+     saber "o que falta". Sem isso, acompanhar uma conquista longa exigia sair do jogo e abrir outra tela. */
+  const R = progressoRastreado();
   $('#p-missoes').innerHTML = `
+      ${R ? `<div class="missao rastreada"><b>📌 ${esc(R.nome)}</b><small>Conquista da conta — a recompensa cai nesta jornada.</small>
+        <div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${Math.min(100, (R.fracao || 0) * 100)}%"></div></div><span>${R.alvo ? `${R.n}/${R.alvo}` : R.n}</span></div></div>` : ''}
       ${[...MS.ativas, ...MS.prontas].map(({ m, atual, alvo }) => `<div class="missao"><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small><div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${atual / alvo * 100}%"></div></div><span>${atual}/${alvo}</span></div></div>`).join('') || '<p class="small muted">Nenhuma missão ativa agora.</p>'}
       ${MS.escondidas ? `<p class="small muted">🔒 ${MS.escondidas} ainda escondida${MS.escondidas === 1 ? '' : 's'}: aparecem conforme você derrota, faz amigos e vence Alfas.</p>` : ''}`;
 }
