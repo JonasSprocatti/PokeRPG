@@ -8,7 +8,7 @@ import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, espe
 import { desbloqueadas } from './roguelike.js';
 import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
 import { pokedexDaConta } from './pokedex-conta.js';
-import { progressoConquistas } from './conquistas.js';
+import { progressoConquistas, megaLiberada } from './conquistas.js';
 
 export const TOTAL_ESPECIES = 1025;
 export const CARREIRA_KEY = 'pokerpg-carreira-v1';
@@ -113,6 +113,11 @@ export const abatesDaConta = (registroAtual = null, jornadas = carregarCarreira(
   totaisDe(atualizarProgresso(jornadas), registroAtual?.abates);
 // fusão com a nuvem: nunca perde o que um dos lados tem
 export const mesclarProgressoLocal = remoto => salvarProgresso(mesclarProgresso(carregarProgresso(), remoto));
+/* Esta espécie já conquistou a Mega? Porta única pra batalha perguntar sem remontar o contexto de conquistas.
+   Sai do progresso PERMANENTE (não do histórico), então apagar jornada não tira Mega conquistada. */
+export const megaDaContaLiberada = (especie, registroAtual = null) =>
+  megaLiberada(progressoConquistas(carregarCarreira().jornadas, registroAtual,
+    { abates: abatesDaConta(registroAtual), runs: {} }), especie);
 /* ---- badges (badges.js) ----
    Montadas do progresso permanente + Pokédex da conta + progresso das gimmicks. Ficam aqui pra tela e a criação
    pedirem por uma porta só, sem cada uma remontar o contexto. */

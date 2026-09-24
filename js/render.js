@@ -12,6 +12,7 @@ import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
+import { megasDoJogador, nomeDaMecanica } from './mega.js';
 import { clamp, esc, fmt } from './util.js';
 
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
@@ -25,6 +26,16 @@ const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.id) : espelha
    lado, no outro endereço. `dataset.f` marca que a primeira tentativa já foi feita. */
 const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${outroServidor(src)}'}else{this.onerror=null;this.src='${espelhar(m.data.sprite)}'}">`;
 const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
+/* Botão ⚡ da Mega Evolução: só aparece pra quem já conquistou a Pedra Mega daquela espécie (conquistas.js) e
+   ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
+   `megasDoJogador()` não vai à rede: lê a tabela e o progresso da conta. */
+function botaoMega(dis) {
+  const formas = megasDoJogador();
+  if (!formas.length) return '';
+  const f = formas[0], varias = formas.length > 1;
+  return `<div class="subrow"><button class="btn mega-btn" data-act="mega" ${dis}>⚡ ${esc(nomeDaMecanica(f))}${varias ? '' : `: ${esc(f.nome)}`}</button>
+    <span class="small muted">não gasta o seu turno${varias ? ` · ${formas.length} formas` : ''}</span></div>`;
+}
 
 export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;
 function hpbar(m) {
@@ -307,6 +318,7 @@ function renderActions() {
     const noPP = P.moves.every(m => m.ppLeft <= 0);
     a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Sem PP: ataque desesperado com recuo.</small></button>`
       : P.moves.map((m, i) => `<button class="mv" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small><span class="pp">PP ${m.ppLeft}/${m.pp}</span></button>`).join('')}</div>
+      ${botaoMega(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila

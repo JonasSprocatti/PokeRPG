@@ -494,6 +494,12 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 .mv .pp{font:500 13px var(--display);color:var(--yellow)}
 .mv:hover:not(:disabled){border-color:var(--c)}
 .subrow{display:flex;gap:10px;width:100%;flex-wrap:wrap}
+/* Mega Evolução: o botão precisa se destacar dos golpes sem virar a coisa mais chamativa da tela — é uma vez por
+   batalha, e não gasta o turno. Pulsa devagar; quem pede menos movimento (a11y) vê o botão parado. */
+.mega-btn{background:linear-gradient(135deg,#7b2ff7,#f107a3);color:#fff;border:none;animation:mega-pulso 2.2s ease-in-out infinite}
+.mega-btn:hover:not(:disabled){filter:brightness(1.12)}
+@keyframes mega-pulso{0%,100%{box-shadow:0 0 0 0 rgba(241,7,163,.5)}50%{box-shadow:0 0 14px 4px rgba(241,7,163,.25)}}
+@media(prefers-reduced-motion:reduce){.mega-btn{animation:none}}
 .bag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;width:100%}
 .item-btn{display:grid;grid-template-columns:30px 1fr;align-items:center;gap:2px 8px;text-align:left;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:8px}
 .item-btn img{grid-row:span 2;width:30px;height:30px;image-rendering:pixelated}

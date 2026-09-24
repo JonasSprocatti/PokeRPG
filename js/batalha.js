@@ -24,6 +24,7 @@ import {
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
+import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
@@ -67,7 +68,15 @@ function sortearDoTreinador(z) {
   return sortearOponente(z); // (offline sem nada guardado: o erro daqui é o mesmo do encontro selvagem)
 }
 async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinador(z); return makeMon(await loadPokemon(id), level); }
-function iniciar(B) { for (const m of ladoJogador()) m.vol = freshVol(); G.B = { caidos: new Set(), campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }, ...B }; G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render(); }
+function iniciar(B) {
+  for (const m of ladoJogador()) m.vol = freshVol();
+  G.B = { caidos: new Set(), campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }, ...B };
+  G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render();
+  /* Baixa as formas Mega que podem entrar em campo AGORA, em segundo plano. A batalha não espera: se a rede
+     falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
+     a Mudança de Postura do Aegislash documentou (golpe.trocarPostura). */
+  preCarregarMegas([G.S.player, G.B.enemy]).catch(e => console.warn('mega: pré-carga', e));
+}
 // Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
 // Na troca de Pokémon do treinador só o que acabou de entrar dispara.
 async function intimidar(E, soInimigo = false) {
@@ -184,6 +193,46 @@ async function anunciarQuedas() {
     await say(`${nome} desmaiou... e não vai voltar. Aliado perdido pra sempre.`, 'hit');
   }
 }
+/* ---- Mega Evolução (mega.js) ----
+   Só VOCÊ megaevolui — aliado nunca, mesmo com a espécie liberada (decisão do usuário).
+   Botão ⚡: não gasta o turno (você megaevolui e ataca no mesmo turno), como nos jogos. Com duas formas
+   (Charizard, Mewtwo), pergunta qual. */
+export async function usarMega() {
+  const B = G.B; if (G.busy || !B) return;
+  const formas = megasDoJogador(); if (!formas.length) return;
+  G.busy = true; render();
+  try {
+    let f = formas[0];
+    if (formas.length > 1) {
+      const i = await ask(`Qual forma?`, [...formas.map((x, j) => ({ label: x.nome, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+      if (i < 0) return;
+      f = formas[i];
+    }
+    const P = G.S.player, nome = await megaevoluir(P, f);
+    if (!nome) { await say('A energia não respondeu agora (faltou um dado da PokéAPI). Tente de novo.', 'muted'); return; }
+    B.megaUsada = true;
+    render();
+    await say(`<b>${esc(rotulo(P))} ${verboDaForma(f)}!</b> ${esc(f.nome)} entra em campo.`, 'level');
+    await say(`Habilidade agora: <b>${esc(fmt(P.ability))}</b>.`, 'status');
+  } catch (e) { console.error(e); log('Não deu pra megaevoluir: ' + esc(e.message), 'hit'); }
+  finally { G.busy = false; render(); save(); }
+}
+/* O inimigo vira quando cai a METADE do HP — é a segunda fase da luta, não um susto no primeiro turno. Só Alfa,
+   lendário e treinador (decisão do usuário: selvagem de rota continua sendo selvagem de rota).
+   Não precisa de conquista nenhuma: a conquista é o que libera a SUA Mega, não a do adversário. */
+async function megaDoInimigo() {
+  const B = G.B, E = B?.enemy;
+  if (!B || !E || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
+  if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
+  const f = megasDisponiveis(E, { jaUsou: false, liberada: () => true })[0];
+  if (!f) { B.megaInimigoUsada = true; return; }   // não tem forma: não checa de novo a cada golpe
+  B.megaInimigoUsada = true;
+  const nome = await megaevoluir(E, f);
+  if (!nome) return;
+  render();
+  await say(`<b>${esc(rotulo(E))} ${verboDaForma(f)}!</b> ${esc(f.nome)} — a luta mudou de patamar.`, 'hit');
+}
+
 export async function turn(action) {
   if (G.busy || !G.B) return;
   G.busy = true;
@@ -248,6 +297,8 @@ export async function turn(action) {
         if (hpAntes > 0 && E.hp <= 0) B.abate = { porMim: a.quem === P, golpe: a.golpe };
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
+      // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra
+      try { await megaDoInimigo(); } catch (e) { console.error('mega do inimigo', e); }
     }
     if (B.capturado) { await serCapturado(); return; }
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
@@ -404,7 +455,13 @@ async function serCapturado() {
   await say(`${esc(T.nome)} levou você embora... Dias depois, você força a bola a abrir e foge.`, 'status');
   await say(`Você perdeu ₽${perdeu}${itens ? ` e os ${itens} itens da mochila` : ''}, e acordou em ${z.name}.`, 'hit');
 }
-export function endBattle() { G.B = null; G.mode = 'explore'; G.panel = 'main'; for (const m of ladoJogador()) m.vol = freshVol(); }
+/* A Mega dura até o fim da batalha. `desfazerMega` é chamado pra TODO mundo do seu lado (quem não megaevoluiu
+   é ignorado): é mais seguro varrer a equipe do que lembrar quem virou. Sem isto o Pokémon ficaria Mega pra
+   sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
+export function endBattle() {
+  G.B = null; G.mode = 'explore'; G.panel = 'main';
+  for (const m of ladoJogador()) { desfazerMega(m); m.vol = freshVol(); }
+}
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----
    Recarregar a página apagava a batalha: dava pra escapar de treinador, Alfa ou lendário — e de uma derrota no

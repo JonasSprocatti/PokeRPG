@@ -2,6 +2,16 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.16', data: '2026-09-24', titulo: 'Mega Evolução', piada: 'Mil vitórias depois, a pedra finalmente reagiu. Dava pra ter reagido na quingentésima, mas pedra é assim.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A <b>Mega Evolução</b> chegou. Conquistada a Pedra Mega de uma espécie (1.000 golpes finais dados sendo ela, na evolução final), aparece um botão ⚡ na batalha — e ele <b>não gasta o seu turno</b>: você megaevolui e ataca na mesma rodada.',
+        'A forma Mega muda status, tipos, habilidade e aparência de verdade, e dura até o fim da batalha. Charizard e Mewtwo perguntam qual forma você quer (X ou Y).',
+        'Groudon e Kyogre entram pela mesma porta, com o nome certo: <b>Reversão Primitiva</b>.',
+        'O outro lado também joga esse jogo: <b>Alfa, lendários e treinadores</b> podem megaevoluir — e fazem isso quando caem à metade do HP. A luta tem segunda fase agora. Selvagem de rota continua selvagem de rota.',
+        'São 96 formas cobrindo 93 espécies. Só você megaevolui: aliado não, mesmo que a espécie dele esteja liberada.'
+      ] }
+    ] },
   { versao: '2.15', data: '2026-09-24', titulo: 'A região decide a forma', piada: 'O Exeggcute foi passar férias em Alola e voltou com um sotaque de Dragão. Coisas que acontecem.',
     secoes: [
       { nome: 'Novidades', itens: [

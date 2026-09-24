@@ -251,7 +251,16 @@ Toda missão de conta paga em **vantagem na próxima run** (ex.: 1.000 do tipo P
 - **Interruptor na criação**: quem desliga as vantagens ganha bônus de pontuação no ranking.
 - **Rayquaza — DUAS missões separadas, nunca uma só** (pedido explícito, pra não bugar): (a) encontrar/recrutar um Rayquaza **shiny** e (b) conquistar a **Mega** dele (os 1.000 golpes finais, regra igual à das outras Megas). As duas contam de forma independente e em qualquer ordem — dá pra ter o shiny muito antes da Mega. O prêmio (**todos os itens grátis na loja**) só sai quando as duas estiverem completas. A versão original pedia também 6 IVs perfeitos; foi descartada porque a chance combinada era de 1 em 4 bilhões e não existe item que melhore IV.
 
-### 4. Mega Evolução
+### 4. ✅ FEITO — Mega Evolução
+Tabela gerada em `js/dados-megas.js` (96 formas, 93 espécies — `ferramentas/gerar-megas.ps1`), mecânica em `js/mega.js`.
+Decisões fechadas com o usuário: **só o jogador** megaevolui (aliado nunca); **uma por batalha** e **não gasta o turno**;
+**Alfa, lendários e treinadores** também megaevoluem, ao cair a **metade do HP** (`HP_MEGA_INIMIGO`); **Primal**
+(Groudon/Kyogre) entra na mesma mecânica com outro nome. As formas são PRÉ-CARREGADAS em `iniciar()` — buscar no meio
+do turno é o que a Mudança de Postura do Aegislash evitou. `desfazerMega` roda pra toda a equipe em `endBattle`:
+sem isso o Pokémon fica Mega pra sempre, porque `M.data` vai junto no save. `megasDoJogador()` mora em `mega.js`
+(não em `batalha.js`) porque `render.js` também precisa dela e não pode importar `batalha.js` — daria ciclo.
+
+### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 
 ### Anti-grind: rota esgotada (só no Roguelike)
