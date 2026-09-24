@@ -267,6 +267,18 @@ não gasta o turno, desfaz em `endBattle`. Diferente da Mega, **não troca `M.da
 são as regras — por isso desfazer é uma linha. `render.badgesDeTipo` mostra o tipo Tera no lugar dos originais
 (mostrar os antigos faria a pessoa calcular a fraqueza errada). Inimigo ainda NÃO terastaliza — decisão em aberto.
 
+### Pedra Mega, rastreio de conquista e cenário (24/09/2026)
+- **Pedra Mega** (`dados.ITEM_PEDRA_MEGA`, ₽15.000 — preço escolhido pelo usuário): conquistar a Mega libera a
+  COMPRA da pedra, não a Mega. É item segurado; a loja só a mostra se a espécie do jogador tem a Mega conquistada
+  (`soComMega`). **Rayquaza não usa pedra** — precisa saber `dragon-ascent`. O lado inimigo passa `ignorarPedra`
+  (Alfa não tem inventário). Quando falta a pedra, a tela DIZ o que falta em vez de esconder o botão.
+- **`js/rastreio.js`**: fixar UMA conquista de conta por jornada (`G.S.rastreada`), com HUD no painel de Missões
+  e recompensa paga NA RUN (`G.S.rastreadaPaga` evita pagar duas vezes). A checagem mora em `verificarMissoes`
+  porque é o único ponto que roda depois de todo turno e de todo item.
+- **`js/cenario.js`**: clima da cena de batalha deduzido do TEXTO da rota (nome+descrição) contra uma lista de
+  palavras, com `z.tema` tendo prioridade. Sem tabela por rota, então rota nova entra sozinha. Puro e testado —
+  o teste falha se tudo cair no `padrao`, que é como essa lista morreria em silêncio.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

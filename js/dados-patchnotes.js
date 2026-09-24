@@ -2,6 +2,16 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.18', data: '2026-09-24', titulo: 'A pedra, o mapa e a luz', piada: 'Descobrimos que megaevoluir sem a pedra é como abrir a porta sem a chave: funciona nos sonhos e em nenhum outro lugar.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A <b>Pedra Mega</b> agora existe de verdade: conquistar a Mega de uma espécie libera a <b>compra</b> da pedra (₽15.000 na loja, só para a sua espécie), e é preciso <b>segurá-la</b> para megaevoluir. Rayquaza é a exceção, como nos jogos: ele megaevolui por saber <b>Dragon Ascent</b>, sem pedra nenhuma.',
+        'Dá para <b>acompanhar uma conquista da conta</b> durante a jornada: o botão 📌 na tela de Conquistas fixa uma, ela aparece no painel de Missões com o quanto falta, e ao completar você é avisado e <b>ganha a recompensa nesta run</b> — além de valer nas próximas.',
+        'A tela de batalha agora tem a <b>cara da rota</b>: caverna, mar, usina, vulcão, floresta, gelo e mais, cada uma com céu, chão e luz próprios.',
+        'A lista de espécies desbloqueadas ganhou <b>busca</b> (por nome ou número) e vem sempre em <b>ordem de Pokédex</b>, com o número visível.',
+        'A tela de Conquistas ganhou o <b>catálogo das Megas</b>: dá para ver as 89 espécies que têm Mega no jogo, de todas as Gens, e quais você já conquistou.'
+      ] }
+    ] },
   { versao: '2.17', data: '2026-09-24', titulo: 'Terastalização', piada: 'Seu Charizard finalmente pode olhar para uma pedra sem suar frio.',
     secoes: [
       { nome: 'Novidades', itens: [
