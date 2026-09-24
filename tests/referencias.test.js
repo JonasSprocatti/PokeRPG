@@ -35,6 +35,11 @@ function declarados(src) {
     }
   }
   for (const m of src.matchAll(/([A-Za-z_$][\w$]*)\s*=>/g)) nomes.add(m[1]);                  // arrow de 1 arg
+  /* Qualquer identificador que RECEBE valor também existe. Cobre a lista de declaradores separados por vírgula
+     (`const r = x, desc = s => ...`), onde a regra de `const` acima só enxerga o primeiro nome — foi exatamente
+     o falso positivo que este teste deu na estreia, acusando `desc()` em main.js. O `(?![=>])` evita confundir
+     com comparação (`x ==`) e com arrow (`x =>`). */
+  for (const m of src.matchAll(/([A-Za-z_$][\w$]*)\s*=(?![=>])/g)) nomes.add(m[1]);
   return nomes;
 }
 
