@@ -333,7 +333,19 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .gen-card.trancada{opacity:.5}
 .gen-card.trancada img{filter:brightness(0) invert(.6)}
 
-.scene.battle{display:grid;grid-template-rows:auto 1fr 1fr;gap:6px;background:linear-gradient(#34428a 0 52%,#3d6a4b 52%);padding:14px 18px}
+/* A cena da luta veste a cara da rota (js/cenario.js): as cores vêm por variáveis inline, e o degradê é o mesmo
+   desenho em qualquer clima — céu em cima, chão embaixo, com uma luz de ambiente por cima de tudo.
+   Os valores de reserva mantêm a cena de sempre se o estilo não vier (rota sem clima, teste, cena fora da rota). */
+.scene.battle{display:grid;grid-template-rows:auto 1fr 1fr;gap:6px;padding:14px 18px;position:relative;overflow:hidden;
+  background:linear-gradient(var(--ceu1,#34428a) 0 42%,var(--ceu2,#34428a) 52%,var(--chao,#3d6a4b) 52%)}
+/* brilho do ambiente: fica ATRÁS dos Pokémon (z-index 0 + os filhos em 1) e não captura clique */
+.scene.battle::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(60% 45% at 50% 58%,color-mix(in srgb,var(--luz,#b8e986) 22%,transparent),transparent 70%)}
+.scene.battle > *{position:relative;z-index:1}
+/* caverna e noite pedem um respingo de estrelas/cristais; nos outros climas isso não aparece */
+.scene.battle.clima-caverna::after,.scene.battle.clima-fantasma::after{content:'';position:absolute;inset:0 0 48% 0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:radial-gradient(1.5px 1.5px at 20% 30%,#fff9 99%,transparent),radial-gradient(1.5px 1.5px at 70% 18%,#fff7 99%,transparent),radial-gradient(1.5px 1.5px at 45% 55%,#fff6 99%,transparent),radial-gradient(1.5px 1.5px at 88% 42%,#fff8 99%,transparent)}
+@media(prefers-reduced-motion:reduce){.scene.battle::before{background:none}}
 .side{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .side.foe .mon{order:2}
 .mon{position:relative;width:170px;height:130px;display:grid;place-items:end center;flex:none}

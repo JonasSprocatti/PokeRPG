@@ -16,6 +16,7 @@ import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js'
 import { megaDaContaLiberada } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
 import { progressoRastreado } from './rastreio.js';
+import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
 
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
@@ -230,7 +231,12 @@ function renderScene() {
   const sc = $('#scene');
   if (G.mode === 'battle' && G.B) {
     const E = G.B.enemy, P = G.S.player;
-    sc.className = 'scene battle';
+    /* A cena veste a cara da ROTA (cenario.js): céu, chão e luz de ambiente mudam entre caverna, mar, usina…
+       É só aparência — nenhuma regra olha pra isso. A classe do clima existe pro CSS poder acrescentar detalhe
+       (estrelas, brilho) sem precisar de mais variáveis. */
+    const z = zone();
+    sc.className = `scene battle clima-${nomeDoClima(z)}`;
+    sc.setAttribute('style', estiloDaCena(z));
     // aliado descansando (ordem "fora") não aparece em campo; o índice `i` continua sendo o de S.aliados (ids mon-a{i})
     const B = G.B, AL = (G.S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.ordem !== 'fora');
     sc.innerHTML = `${turnoBar(B, P, E)}
