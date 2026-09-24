@@ -20,12 +20,13 @@ import { STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOM
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
 import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
+import { zDisponiveis } from './zmove.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
@@ -238,6 +239,19 @@ export async function usarTera() {
   finally { G.busy = false; render(); save(); }
 }
 
+/* Botão 🌀: diferente da Mega e da Tera, o Z-Move **é** o seu turno — ele não transforma, converte um golpe
+   seu num golpe muito mais forte, uma vez por batalha. Por isso ele termina chamando `turn` com o golpe
+   escolhido, e não resolve nada por conta própria. */
+export async function usarZ() {
+  const B = G.B; if (G.busy || !B) return;
+  const opcoes = zDisponiveis(); if (!opcoes.length) return;
+  const i = await ask('Qual golpe vira Z-Move? <small>Gasta o seu turno e o PP do golpe.</small>', [
+    ...opcoes.map(({ g }, j) => ({ label: `${fmt(g.name)} — poder ${g.power ?? '—'} → ${poderZ(g.power)}`, value: j })),
+    { label: 'Cancelar', value: -1, ghost: true }]);
+  if (i < 0) return;
+  return turn({ type: 'move', idx: opcoes[i].i, z: true });
+}
+
 /* O inimigo vira quando cai a METADE do HP — é a segunda fase da luta, não um susto no primeiro turno. Só Alfa,
    lendário e treinador (decisão do usuário: selvagem de rota continua sendo selvagem de rota).
    Não precisa de conquista nenhuma: a conquista é o que libera a SUA Mega, não a do adversário. */
@@ -252,6 +266,24 @@ async function megaDoInimigo() {
   if (!nome) return;
   render();
   await say(`<b>${esc(rotulo(E))} ${verboDaForma(f)}!</b> ${esc(f.nome)} — a luta mudou de patamar.`, 'hit');
+}
+
+/* Tera do inimigo: mesmas lutas da Mega (Alfa, lendário e treinador) e o mesmo gatilho de metade do HP —
+   decisão do usuário, por coerência entre as duas.
+   **Uma virada por luta**: se ele já megaevoluiu, não terastaliza também. Duas transformações no mesmo momento
+   viraria o combate de cabeça pra baixo de uma vez só, e quem joga não teria como reagir a nenhuma das duas.
+   O tipo escolhido é um dos DELE: é o que dá o STAB de 2.0 e mantém a leitura possível — a fraqueza nova é
+   adivinhável a partir do que ele já era. */
+async function teraDoInimigo() {
+  const B = G.B, E = B?.enemy;
+  if (!B || !E || B.teraInimigoUsada || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
+  if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
+  const tipo = (E.data?.types || [])[0];
+  B.teraInimigoUsada = true;
+  if (!tipo) return;
+  teracristalizar(E, tipo);
+  render();
+  await say(`<b>${esc(rotulo(E))} TERASTALIZOU!</b> Agora é ${esc(TYPE_PT[tipo] || tipo)} puro.`, 'hit');
 }
 
 export async function turn(action) {
@@ -282,6 +314,9 @@ export async function turn(action) {
       if (r === 'fim') { endBattle(); return; }
       G.panel = 'moves';
     } else pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
+    /* Z-Move: liga a marca no `vol` (regras.calcDamage converte o poder) e gasta a vez da batalha. O flag é
+       desligado no `finally` deste turno — um Z que "vazasse" pro turno seguinte dobraria o dano de graça. */
+    if (action.z && pm) { P.vol.zAtivo = true; B.zUsado = true; await say(`<b>${esc(rotulo(P))} concentra a energia Z!</b>`, 'level'); }
 
     // 2) golpes do turno: você (se escolheu golpe), cada aliado em pé e o lado inimigo, por prioridade e velocidade.
     //    Bola do treinador é item: prioridade máxima, sai antes de qualquer golpe.
@@ -319,7 +354,7 @@ export async function turn(action) {
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
       // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra
-      try { await megaDoInimigo(); } catch (e) { console.error('mega do inimigo', e); }
+      try { await megaDoInimigo(); await teraDoInimigo(); } catch (e) { console.error('virada do inimigo', e); }
     }
     if (B.capturado) { await serCapturado(); return; }
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
@@ -331,6 +366,7 @@ export async function turn(action) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
   } finally {
     B.vez = null;
+    delete P.vol.zAtivo;   // vale só pelo turno em que foi acionado (ver o `action.z` acima)
     // missões no fim de TODO turno (inclusive fuga/amizade que saem cedo com `return`); G.S some no fim de jogo do Hardcore
     try { await verificarMissoes(); } catch (e) { console.error(e); }
     if (!G.B && G.S) await retomarEvolucoes(); // batalha acabou: evolução pendente por falta de rede tenta de novo

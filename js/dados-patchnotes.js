@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.19', data: '2026-09-24', titulo: 'Z-Move, e o chefe revida', piada: 'O Alfa leu as notas da atualização passada, achou injusto e foi atrás do próprio cristal.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'O <b>Z-Move</b> chegou. Conquistado um Z (250 eliminações com o golpe, ou 500 com golpes do mesmo elemento), a loja passa a vender o <b>Cristal Z</b> por ₽12.000 — e, segurando o cristal, o botão 🌀 converte um golpe seu num golpe muito mais forte, uma vez por batalha.',
+        'Ao contrário da Mega e da Tera, o <b>Z-Move é o seu turno</b>: ele não transforma nada, ele é o ataque da rodada (e gasta o PP do golpe). O botão é laranja justamente para não ser clicado achando que é de graça.',
+        'A conversão segue a tabela dos jogos, achatada no topo: um golpe de 60 vira 120, um de 120 vira 190. Usar o Z no golpe fraco rende mais — a escolha importa.',
+        'O <b>inimigo agora terastaliza</b>: Alfa, lendários e treinadores, ao cair à metade do HP, como já acontecia com a Mega. Mas só uma virada por luta — quem já megaevoluiu não terastaliza também, senão o combate viraria de cabeça para baixo de uma vez só.'
+      ] }
+    ] },
   { versao: '2.18', data: '2026-09-24', titulo: 'A pedra, o mapa e a luz', piada: 'Descobrimos que megaevoluir sem a pedra é como abrir a porta sem a chave: funciona nos sonhos e em nenhum outro lugar.',
     secoes: [
       { nome: 'Novidades', itens: [

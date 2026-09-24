@@ -15,6 +15,7 @@ import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
 import { megaDaContaLiberada } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
+import { zDisponiveis, avisoDoZ, temZConquistado } from './zmove.js';
 import { progressoRastreado } from './rastreio.js';
 import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
@@ -34,15 +35,18 @@ const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
    `megasDoJogador()` não vai à rede: lê a tabela e o progresso da conta. */
 function botaoMega(dis) {
-  const formas = megasDoJogador(), tipos = terasDisponiveis(), falta = avisoDaMegaDoJogador();
-  // conquistou a Mega mas falta a pedra (ou o Dragon Ascent): dizer o que falta é melhor que esconder o botão
-  if (!formas.length && falta) return `<p class="small muted">⚡ A Mega da sua espécie está conquistada, mas ${esc(falta)}.</p>`;
-  if (!formas.length && !tipos.length) return '';
+  const formas = megasDoJogador(), tipos = terasDisponiveis(), zs = zDisponiveis();
+  const falta = [avisoDaMegaDoJogador() && `a Mega da sua espécie está conquistada, mas ${avisoDaMegaDoJogador()}`,
+    avisoDoZ() && `você tem Z-Move conquistado, mas ${avisoDoZ()}`].filter(Boolean);
+  // conquistou mas falta o item: dizer o que falta é melhor que esconder o botão (esconder vira "não funciona")
+  const aviso = falta.length ? `<p class="small muted">⚡ ${esc(falta.join(' · '))}.</p>` : '';
+  if (!formas.length && !tipos.length && !zs.length) return aviso;
   const f = formas[0], varias = formas.length > 1;
-  return `<div class="subrow">
+  return `${aviso}<div class="subrow">
     ${formas.length ? `<button class="btn mega-btn" data-act="mega" ${dis}>⚡ ${esc(nomeDaMecanica(f))}${varias ? '' : `: ${esc(f.nome)}`}</button>` : ''}
     ${tipos.length ? `<button class="btn tera-btn" data-act="tera" ${dis}>💎 Terastalizar</button>` : ''}
-    <span class="small muted">não gasta o seu turno${varias ? ` · ${formas.length} formas` : ''}${tipos.length ? ` · ${tipos.length} tipo(s) Tera` : ''}</span></div>`;
+    ${zs.length ? `<button class="btn z-btn" data-act="zmove" ${dis}>🌀 Z-Move</button>` : ''}
+    <span class="small muted">${formas.length || tipos.length ? 'Mega e Tera não gastam o turno' : ''}${zs.length ? `${formas.length || tipos.length ? ' · ' : ''}o Z-Move É o seu turno` : ''}</span></div>`;
 }
 
 export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;
@@ -349,7 +353,9 @@ function renderActions() {
        Assim não há como comprar uma pedra que não serve pra ninguém — e quem ainda não conquistou não vê um
        item caro e inútil na loja. */
     const podeMega = megaDaContaLiberada(P?.data?.speciesName, S?.registro);
-    const forSale = Object.entries(ITEMS).filter(([, it]) => it.price && (!it.soComMega || podeMega));
+    const temZ = temZConquistado(P);   // sem depender de batalha: a loja acontece fora do combate
+    const forSale = Object.entries(ITEMS).filter(([, it]) =>
+      it.price && (!it.soComMega || podeMega) && (!it.soComZ || temZ));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };

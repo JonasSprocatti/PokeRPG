@@ -10,6 +10,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { carregarCarreira, salvarCarreira, mesclarJornadas, carregarProgresso, mesclarProgressoLocal, atualizarProgresso } from './carreira.js';
 import { reconciliarSaves, guardadas, excluidos, guardar, excluir, esquecerExcluido, GUARDADOS_KEY, MAX_GUARDADAS } from './saves.js';
 import { offline, store } from './util.js';
+import { semTeste } from './progresso-conta.js';
 
 export const nuvemConfigurada = () => !!SUPABASE_URL && !SUPABASE_URL.includes('SEU-PROJETO') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('SUA-CHAVE');
 
@@ -204,7 +205,10 @@ export async function sincronizar() {
       if (ep) throw ep;
       atualizarProgresso(todas);                       // banca o que acabou de chegar da nuvem
       const junto = mesclarProgressoLocal(prog?.dados || null);
-      await c.from('progresso').upsert({ user_id: u.id, dados: junto, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id' });
+      /* `semTeste`: o que o painel de manutenção concedeu NÃO sobe. Como a fusão é união e nunca remove,
+         progresso de teste que subisse voltaria em toda sincronização — e o botão "limpar o que foi de teste"
+         viraria mentira, em todos os aparelhos. */
+      await c.from('progresso').upsert({ user_id: u.id, dados: semTeste(junto), atualizado_em: new Date().toISOString() }, { onConflict: 'user_id' });
     } catch (e) { console.warn('progresso', e); }
 
     // jornadas em andamento (a atual + as guardadas — saves.js): uma linha por jornada na nuvem

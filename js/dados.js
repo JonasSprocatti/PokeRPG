@@ -163,6 +163,18 @@ export const ITENS_MEGA = {
 };
 Object.assign(ITEMS, ITENS_MEGA);
 
+/* Cristal Z: mesma ideia da Pedra Mega — a conquista libera a COMPRA, e é preciso segurar pra usar. Um item só
+   serve pra todos os tipos: o cristal responde ao golpe que você escolher, entre os que a conta já conquistou
+   (zmove.js). A loja só o mostra se você já tem alguma conquista de Z (`soComZ`, ver render.js). */
+export const PRECO_CRISTAL_Z = 12000;
+export const ITEM_CRISTAL_Z = 'cristal-z';
+Object.assign(ITEMS, {
+  [ITEM_CRISTAL_Z]: {
+    name: 'Cristal Z', segurado: true, soComZ: true, price: PRECO_CRISTAL_Z, categoria: 'segurado',
+    desc: 'Guarda a energia de um golpe seu. Segure-o para desferir um Z-Move uma vez por batalha — o golpe sai muito mais forte.'
+  }
+});
+
 // Repelentes (mapas.js): mexem SÓ no encontro selvagem — treinador, item, dinheiro e ambientação continuam iguais.
 // `passos` = quantas explorações duram.
 export const ITENS_REPELENTE = {

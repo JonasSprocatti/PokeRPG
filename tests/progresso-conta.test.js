@@ -3,7 +3,8 @@
 // o risco, e é o tipo de perda que ninguém consegue desfazer depois.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { progressoVazio, bancar, totaisDe, runsDeNivelDe, mesclarProgresso, especiesDesbloqueadas } from '../js/progresso-conta.js';
+import { progressoVazio, bancar, totaisDe, runsDeNivelDe, mesclarProgresso, especiesDesbloqueadas,
+  semTeste, temTeste, ID_JORNADA_TESTE, RAZAO_TESTE } from '../js/progresso-conta.js';
 
 const jornada = (id, o = {}) => ({ id, especie: 'pikachu', nivel: 30, dificuldade: 'hard', registro: { abates: {
   total: 10, tipoAlvo: { fire: 4 }, especie: { pikachu: 10 }, golpe: { thunderbolt: 6 }, elemento: { electric: 6 }
@@ -67,6 +68,26 @@ test('progresso no formato antigo (abates na raiz) continua valendo', () => {
   assert.equal(totaisDe(antigo).total, 7);
   assert.deepEqual(totaisDe(antigo).especie, { pikachu: 7 });
   assert.deepEqual(runsDeNivelDe(antigo, 50), {}, 'sem espécie legível, não inventa chave');
+});
+
+/* O painel de manutenção (dev.js) concede Megas e espécies pra testar. Como a fusão com a nuvem é UNIÃO e
+   nunca remove, o que subisse voltaria em toda sincronização — e o botão "limpar o que foi de teste" seria
+   mentira, em todos os aparelhos. Por isso `semTeste` é o que sobe. */
+test('o que veio do painel de teste não sobe pra nuvem', () => {
+  const p = {
+    v: 1,
+    porJornada: { j1: { especie: 'pikachu', abates: { total: 10 } }, [ID_JORNADA_TESTE]: { abates: { total: 999 } } },
+    especies: { gengar: { id: 94, razoes: ['derrotados'] }, onix: { id: 95, razoes: [RAZAO_TESTE] } }
+  };
+  assert.equal(temTeste(p), true);
+  const limpo = semTeste(p);
+  assert.deepEqual(Object.keys(limpo.porJornada), ['j1'], 'a jornada de teste não sobe');
+  assert.deepEqual(Object.keys(limpo.especies), ['gengar'], 'a espécie concedida não sobe');
+  assert.equal(temTeste(limpo), false);
+  // o que veio de jogo fica intacto, e o original não é mutado
+  assert.equal(limpo.porJornada.j1.abates.total, 10);
+  assert.equal(Object.keys(p.porJornada).length, 2, 'não muta o progresso de quem chamou');
+  assert.equal(semTeste(null), null);
 });
 
 test('mesclar com a nuvem é união: nada do que um lado tem se perde', () => {

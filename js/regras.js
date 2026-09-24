@@ -22,6 +22,25 @@ export function typeEff(atk, defs) {
      golpe de um tipo original que não é o Tera         → 1.5  (você não perde o STAB que já tinha)
      qualquer outro                                     → 1
    `base` é o STAB da habilidade (Adaptability = 2), pra Adaptability continuar valendo em cima disso. */
+/* ---- Z-Move (zmove.js) ----
+   O Z-Move é o MESMO golpe com o poder convertido: uma vez por batalha, sem efeito secundário novo. A tabela é
+   a dos jogos, achatada no topo de propósito — golpe fraco ganha muito, golpe que já é forte ganha pouco. É o
+   que faz a escolha ser interessante: usar o Z no golpe de 60 rende mais do que no de 140.
+   Fica aqui, e não em zmove.js, porque quem aplica é `calcDamage` — e é aqui que dá pra testar sem batalha. */
+export function poderZ(poder) {
+  const p = poder || 0;
+  if (p <= 55) return 100;
+  if (p <= 65) return 120;
+  if (p <= 75) return 140;
+  if (p <= 85) return 160;
+  if (p <= 95) return 175;
+  if (p <= 100) return 180;
+  if (p <= 110) return 185;
+  if (p <= 125) return 190;
+  if (p <= 130) return 195;
+  return 200;
+}
+
 export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
 export function multStab(m, tipoGolpe, base = 1.5) {
   const originais = m?.data?.types || [];
@@ -217,6 +236,10 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
   const hu = hab(u), ht = hab(t);
   let power = poderEspecial(u, t, move) ?? (move.power || 60);
+  /* Z-Move: converte o poder ANTES de tudo (zmove.js liga `vol.zAtivo` só no turno do Z). Entra aqui, e não
+     numa cópia do golpe, pra não haver dois objetos de golpe em jogo — a cópia quebraria o gasto de PP, que é
+     feito no golpe de verdade. */
+  if (u.vol?.zAtivo) power = poderZ(power);
   if (hu.tecnico && power <= 60) power = Math.floor(power * 1.5);                   // Technician
   const phys = move.cls === 'physical';
   // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)

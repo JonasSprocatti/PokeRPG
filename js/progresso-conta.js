@@ -16,6 +16,25 @@ export const LISTAS_ABATE = ['tipoAlvo', 'especie', 'golpe', 'elemento'];
 
 export const progressoVazio = () => ({ v: 1, especies: {}, porJornada: {} });
 
+/* ---- marca do que veio do painel de manutenção (dev.js) ----
+   Mora aqui, e não em dev.js, por dois motivos: é uma característica do FORMATO do progresso, e porque
+   `nuvem.js` precisa de `semTeste` — importar dev.js de lá faria ciclo (dev.js lê o admin de nuvem.js).
+   O que o painel concede nasce e morre no navegador: `semTeste` é o que sobe pra nuvem. Sem isso o botão de
+   limpar seria mentira, porque a fusão com a nuvem é união e nunca remove — o teste voltaria em toda
+   sincronização, em todos os aparelhos. */
+export const ID_JORNADA_TESTE = '__teste__';
+export const RAZAO_TESTE = 'teste';
+export function semTeste(p) {
+  if (!p) return p;
+  const porJornada = { ...(p.porJornada || {}) };
+  delete porJornada[ID_JORNADA_TESTE];
+  const especies = {};
+  for (const [nome, d] of Object.entries(p.especies || {})) if (!(d.razoes || []).includes(RAZAO_TESTE)) especies[nome] = d;
+  return { ...p, porJornada, especies };
+}
+export const temTeste = p => !!p?.porJornada?.[ID_JORNADA_TESTE]
+  || Object.values(p?.especies || {}).some(d => (d.razoes || []).includes(RAZAO_TESTE));
+
 /* Guarda no progresso as jornadas que ainda não foram contadas e as espécies que elas desbloquearam.
    Idempotente pelo ID da jornada: rodar de novo com as mesmas jornadas não muda nada, o que deixa chamar isso a
    cada vez que o jogo abre sem medo de contar em dobro.

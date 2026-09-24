@@ -267,6 +267,15 @@ não gasta o turno, desfaz em `endBattle`. Diferente da Mega, **não troca `M.da
 são as regras — por isso desfazer é uma linha. `render.badgesDeTipo` mostra o tipo Tera no lugar dos originais
 (mostrar os antigos faria a pessoa calcular a fraqueza errada). Inimigo ainda NÃO terastaliza — decisão em aberto.
 
+### 6. ✅ FEITO — Z-Move
+`js/zmove.js` (elegibilidade) + `regras.poderZ` (a conversão, pura e testada, aplicada em `calcDamage` quando
+`vol.zAtivo`). **Não é transformação: É o turno** — `usarZ` termina chamando `turn({..., z:true})`, o flag é ligado
+ali e apagado no `finally` do mesmo turno (um Z que vazasse dobraria dano de graça). Precisa do **Cristal Z**
+segurado (₽12.000, preço do usuário); a loja o mostra via `temZConquistado`, que **não depende de batalha** — a
+primeira versão usava `zDisponiveis` e o cristal nunca aparecia à venda, porque loja é fora de combate.
+Inimigo **terastaliza** igual à Mega (Alfa/lendário/treinador, metade do HP), mas só **uma virada por luta**:
+quem megaevoluiu não terastaliza também.
+
 ### Pedra Mega, rastreio de conquista e cenário (24/09/2026)
 - **Pedra Mega** (`dados.ITEM_PEDRA_MEGA`, ₽15.000 — preço escolhido pelo usuário): conquistar a Mega libera a
   COMPRA da pedra, não a Mega. É item segurado; a loja só a mostra se a espécie do jogador tem a Mega conquistada

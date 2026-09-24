@@ -12,12 +12,12 @@
    de abates como outro qualquer. */
 import { ehAdmin } from './nuvem.js';
 import { carregarProgresso, salvarProgresso } from './carreira.js';
+import { ID_JORNADA_TESTE, RAZAO_TESTE, semTeste, temTeste } from './progresso-conta.js';
 import { MEGAS } from './dados-megas.js';
 import { ALVOS } from './conquistas.js';
 import { GENS } from './mapas.js';
 
-const ID_TESTE = '__teste__';
-const RAZAO = 'teste';
+const ID_TESTE = ID_JORNADA_TESTE, RAZAO = RAZAO_TESTE;   // ver progresso-conta.js: a marca mora no formato
 
 // o painel existe pra quem está logado numa conta marcada como admin no banco; pra todo o resto, nem aparece
 export const devLigado = () => ehAdmin();
@@ -85,7 +85,5 @@ export function limparTeste() {
   salvarProgresso(p);
   return n;
 }
-export const temProgressoDeTeste = () => {
-  const p = carregarProgresso();
-  return !!p.porJornada?.[ID_TESTE] || Object.values(p.especies || {}).some(d => (d.razoes || []).includes(RAZAO));
-};
+// `semTeste`/`temTeste` moram em progresso-conta.js (o formato é deles, e nuvem.js precisa sem criar ciclo)
+export const temProgressoDeTeste = () => temTeste(carregarProgresso());
