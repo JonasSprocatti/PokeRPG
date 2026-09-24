@@ -26,12 +26,10 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
   for (const j of jornadas) {
     if (!j?.id || p.porJornada[j.id]) continue;          // sem id (save antiquíssimo) ou já contada
     const a = j.registro?.abates;
-    // `especie`/`nivel` vão junto porque a missão do Gigantamax (nível 50 em N jornadas) também não pode
-    // depender de a jornada continuar no histórico
-    /* Além dos abates, o progresso guarda os números da jornada que alguma conquista precisa. É o "livro-caixa"
-       permanente: a carreira pode perder a jornada, isto não perde. Campo novo aqui = badge novo pode medir sem
-       depender do histórico. */
-    /* Os abates ficam NUM CAMPO PRÓPRIO (`abates`), não espalhados na raiz da entrada. Já foi bug: a lista de
+    /* Além dos abates, a entrada guarda os números da jornada que alguma conquista precisa (`especie`/`nivel` são
+       a missão do Gigantamax: nível 50 em N jornadas). É o "livro-caixa" permanente: a carreira pode perder a
+       jornada, isto não perde. Campo novo aqui = badge novo pode medir sem depender do histórico.
+       Os abates ficam NUM CAMPO PRÓPRIO (`abates`), não espalhados na raiz da entrada. Já foi bug: a lista de
        abates tem uma chave chamada `especie` (quantos você matou sendo cada espécie) e ela sobrescrevia a espécie
        DA JORNADA, quebrando a contagem do Gigantamax. Aninhar elimina a classe inteira de colisão. */
     p.porJornada[j.id] = {
