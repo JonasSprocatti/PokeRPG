@@ -2,6 +2,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.12', data: '2026-09-24', titulo: 'As figurinhas mudaram de endereço', piada: 'Descobrimos que o jogo buscava as imagens num prédio que metade dos porteiros do país não deixa entrar. Mudamos pro prédio ao lado, que tem os mesmos móveis.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'As imagens agora vêm de um CDN (o jsDelivr, que espelha o mesmo repositório de sprites). O endereço antigo é bloqueado em várias redes — provedor, DNS de celular, rede corporativa — e quando isso acontece TODA imagem do jogo some de uma vez, online inclusive.',
+        'O jogo passou a se atualizar sozinho quando sai uma versão nova: antes, uma aba deixada aberta continuava rodando a versão velha até você fechar o navegador, então correção publicada não chegava em quem estava jogando.',
+        'A tela de "Jogar offline" agora avisa quando a página está fora do controle do service worker (acontece logo depois de uma recarga forçada). Nessa situação os dados seriam guardados mas as imagens não, e você só descobriria sem internet — com o download inteiro já jogado fora.'
+      ] }
+    ] },
   { versao: '2.11', data: '2026-09-24', titulo: 'Wi-fi que mente', piada: 'O navegador jurava que estava online. O navegador estava conectado a um roteador que não levava a lugar nenhum. São coisas diferentes.',
     secoes: [
       { nome: 'Correções', itens: [

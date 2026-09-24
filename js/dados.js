@@ -2,11 +2,21 @@
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 import { GENS } from './dados-mapas.js';
 export const API = 'https://pokeapi.co/api/v2';
-export const SPR = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+/* As imagens vêm do jsDelivr, que espelha o MESMO repositório de sprites da PokéAPI (mesmos arquivos, byte a
+   byte — é o repositório do GitHub servido por uma CDN). O endereço original, `raw.githubusercontent.com`, é
+   bloqueado em várias redes (provedor, DNS de celular, rede corporativa) — foi diagnosticado em jogo: os dados
+   de `pokeapi.co` passavam e TODA imagem falhava com net::ERR_FAILED, tanto online quanto no download offline.
+   `ORIGEM_ANTIGA`/`espelhar` existem porque a própria PokéAPI devolve URLs do raw.githubusercontent dentro dos
+   dados do Pokémon (`sprite`, `back`, `art`): quem já tem esses dados guardados no aparelho continuaria com o
+   endereço bloqueado, então a troca é feita também na hora de desenhar. */
+const SPRITES = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites';
+const ORIGEM_ANTIGA = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites';
+export const espelhar = url => typeof url === 'string' ? url.replace(ORIGEM_ANTIGA, SPRITES) : url;
+export const SPR = id => `${SPRITES}/pokemon/${id}.png`;
 // shiny: montado pelo id (não fica no cache da API — save antigo funciona sem migrar). Gen 8+ não tem sprite de costas.
-export const SPR_SHINY = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
-export const SPR_SHINY_COSTAS = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/${id}.png`;
-export const ITEM_SPR = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
+export const SPR_SHINY = id => `${SPRITES}/pokemon/shiny/${id}.png`;
+export const SPR_SHINY_COSTAS = id => `${SPRITES}/pokemon/back/shiny/${id}.png`;
+export const ITEM_SPR = n => `${SPRITES}/items/${n}.png`;
 /* Alguns itens novos (Gen 8/9) simplesmente NÃO têm imagem no repositório de sprites da PokéAPI — Coroa Galárica,
    Armadura Auspiciosa, Pote Rachado... Antes a figura quebrada era escondida (visibility:hidden) e sobrava um buraco:
    parecia bug de renderização. Agora cai neste ícone de caixinha (SVG embutido, não depende de rede).

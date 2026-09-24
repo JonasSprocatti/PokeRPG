@@ -16,7 +16,9 @@ const PRECACHE = [
   './js/pokemon.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)
-const EXTERNOS = ['pokeapi.co', 'raw.githubusercontent.com', 'esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+// cdn.jsdelivr.net é de onde vêm as imagens (espelho do repositório de sprites da PokéAPI — ver dados.js);
+// raw.githubusercontent.com fica na lista porque dados antigos guardados no aparelho ainda apontam pra lá
+const EXTERNOS = ['pokeapi.co', 'cdn.jsdelivr.net', 'raw.githubusercontent.com', 'esm.sh', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_JOGO).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

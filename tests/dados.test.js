@@ -2,10 +2,24 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, ITEM_SPR, espelhar } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
+
+/* As imagens saem do CDN (jsDelivr), não do raw.githubusercontent — que é bloqueado em várias redes e derrubou
+   TODA imagem do jogo num aparelho de verdade. `espelhar` cobre o caminho de volta: dado guardado no aparelho
+   (e a resposta da própria PokéAPI) ainda traz o endereço antigo, e é traduzido na hora de desenhar. */
+test('as imagens vêm do CDN, e endereço antigo guardado é traduzido', () => {
+  for (const url of [SPR(4), SPR_SHINY(4), ITEM_SPR('poke-ball')]) {
+    assert.match(url, /^https:\/\/cdn\.jsdelivr\.net\/gh\/PokeAPI\/sprites@master\/sprites\//, url);
+  }
+  const velho = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png';
+  assert.equal(espelhar(velho), SPR(4), 'endereço antigo tem que virar exatamente o novo');
+  assert.equal(espelhar(SPR(4)), SPR(4), 'endereço já novo não muda');
+  // a API devolve `back`/`art` como null pra muita espécie: não pode virar a string "null"
+  for (const vazio of [null, undefined, '']) assert.equal(espelhar(vazio), vazio);
+});
 
 test('os 18 tipos estão em todas as tabelas de tipo', () => {
   assert.equal(TIPOS.length, 18);

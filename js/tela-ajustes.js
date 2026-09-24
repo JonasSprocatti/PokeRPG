@@ -6,7 +6,7 @@ import { $, limparTopo } from './ui.js';
 import { FONTES, fonteEscolhida, urlDaFonte } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
-import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
+import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache, limparCache } from './api.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
@@ -62,6 +62,11 @@ export async function baixarMapaOffline(gen, limpar = false) {
   const el = () => document.getElementById('offline-progresso');
   if (!el()) return;
   if (offline()) { el().innerHTML = '📴 Sem internet agora: conecte pra poder baixar.'; return; }
+  // sem service worker no comando, as imagens não ficam guardadas (offline.semServiceWorker explica)
+  if (semServiceWorker()) {
+    el().innerHTML = '⚠ <b>Recarregue a página antes de baixar</b> (F5). Agora ela está fora do controle do service worker — os dados seriam guardados, mas <b>as imagens não</b>, e você só descobriria sem internet.';
+    return;
+  }
   if (limpar) { el().innerHTML = 'Limpando o que estava guardado…'; await limparCache(); }
   el().innerHTML = 'Baixando…';
   const andar = (feitos, total, oQue) => { const p = el(); if (p) p.innerHTML = `Baixando ${esc(oQue)}… <b>${feitos}/${total}</b>`; };

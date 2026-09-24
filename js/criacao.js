@@ -6,7 +6,7 @@ import { $, limparTopo, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
-import { SPR, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS } from './dados.js';
+import { SPR, espelhar, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS } from './dados.js';
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
@@ -150,7 +150,7 @@ export function renderPreview() {
   const dif = DIFICULDADES[G.dif], livre = dif.escolhaLivre, nivel = nivelInicial(PV);
   const sorteada = '<small class="muted"> · sorteada ao começar</small>';
   $('#preview').innerHTML = `<section class="pv">
-    <div class="pv-art"><img src="${d.art || d.sprite}" alt="${esc(fmt(d.name))}"></div>
+    <div class="pv-art"><img src="${espelhar(d.art || d.sprite)}" alt="${esc(fmt(d.name))}"></div>
     <div>
       <p class="dexno">Nº ${String(d.id).padStart(4, '0')}</p>
       <h2>${esc(fmt(d.name))}</h2>

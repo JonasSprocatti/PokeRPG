@@ -34,7 +34,17 @@
 <script type="module" src="js/main.js"></script>
 <script>
   // modo offline: service worker guarda o jogo, a PokéAPI e os sprites depois do primeiro acesso online (sw.js)
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
+    /* Versão nova assumiu o controle? Recarrega a aba UMA vez. O sw.js já ativa sozinho (skipWaiting +
+       clients.claim), mas isso troca só o service worker: a aba aberta continua com os arquivos .js que carregou
+       quando abriu, porque módulo ES é carregado uma vez por sessão. Sem isto, quem deixa o jogo aberto fica
+       testando a versão velha sem saber — aconteceu de verdade, com correção publicada e o erro antigo na tela. */
+    let recarregando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recarregando) return; recarregando = true; location.reload();
+    });
+  }
 </script>
 </body>
 </html>

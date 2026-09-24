@@ -18,6 +18,14 @@ import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache
 export const VERSAO_DOWNLOAD = 2;
 const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}:gen${gen}`;
 
+/* Quem guarda as IMAGENS é o service worker (sw.js): `guardarSprite` só pede a imagem, e é o sw que a intercepta
+   e põe no cache. Sem um sw no comando da página, esse pedido vai pra rede e não fica em lugar nenhum — o
+   download termina "com sucesso" e, no avião, nenhuma imagem aparece. Isso acontece de verdade logo depois de um
+   Ctrl+Shift+R (recarga forçada abre a página FORA do controle do sw) e na primeiríssima visita. Barato de
+   detectar, e o aviso poupa um download inteiro jogado fora. */
+export const semServiceWorker = () => typeof navigator !== 'undefined'
+  && 'serviceWorker' in navigator && !navigator.serviceWorker.controller;
+
 // tudo o que um mapa precisa: { ids: [id de Pokémon], nomes: quantos são }
 export function alvosDaGen(gen) {
   const ids = new Set();

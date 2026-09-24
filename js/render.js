@@ -2,7 +2,7 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, espelhar, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { TELAS } from './navegacao.js';
@@ -16,9 +16,10 @@ import { clamp, esc, fmt } from './util.js';
 
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
 // Costas: Gen 8+ não tem sprite de costas — aí usa a frente espelhada (classe .flip).
-export const spriteFrente = m => m.shiny ? SPR_SHINY(m.id) : m.data.sprite;
-const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.id) : m.data.back) : null;
-const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="this.onerror=null;this.src='${m.data.sprite}'">`;
+// `espelhar` em tudo que vem de `m.data`: save e cache antigos guardam o endereço velho das imagens (dados.js)
+export const spriteFrente = m => m.shiny ? SPR_SHINY(m.id) : espelhar(m.data.sprite);
+const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.id) : espelhar(m.data.back)) : null;
+const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="this.onerror=null;this.src='${espelhar(m.data.sprite)}'">`;
 const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
 
 export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;

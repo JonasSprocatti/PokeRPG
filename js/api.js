@@ -7,7 +7,7 @@
 // (a batalha precisa saber SE dá pra montar aquele Pokémon offline, sem esperar leitura nenhuma).
 // Só `fetch` na hora da chamada — importável no Node (lá não há IndexedDB nem localStorage: tudo vira no-op).
 // buildLearnset/slimPokemon/slimMove são puras (JSON cru da API → objeto enxuto) e têm teste.
-import { API, SPR } from './dados.js';
+import { API, SPR, espelhar } from './dados.js';
 import { esc, lastSeg, store } from './util.js';
 
 const memo = new Map();
@@ -190,8 +190,9 @@ export function slimPokemon(p) {
     effort: Object.fromEntries(p.stats.filter(s => s.effort > 0).map(s => [s.stat.name, s.effort])),
     baseExp: p.base_experience || 60,
     abilities: p.abilities.map(a => ({ name: a.ability.name, url: a.ability.url, hidden: a.is_hidden })),
-    sprite: p.sprites.front_default || SPR(p.id), back: p.sprites.back_default,
-    art: p.sprites.other?.['official-artwork']?.front_default || p.sprites.front_default,
+    // a API devolve endereços do raw.githubusercontent; `espelhar` troca pelo CDN (dados.js explica o porquê)
+    sprite: espelhar(p.sprites.front_default) || SPR(p.id), back: espelhar(p.sprites.back_default),
+    art: espelhar(p.sprites.other?.['official-artwork']?.front_default || p.sprites.front_default),
     learnset: buildLearnset(p.moves)
   };
 }
