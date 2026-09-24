@@ -56,6 +56,7 @@ function renderEscolha() {
         `<button class="pick" data-act="pick" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">${r.nomes[i]}</button>`).join('')}</div></div>`).join('')}</div>
       ${secaoDesbloqueios()}
       <div class="subrow" style="margin-top:12px"><button class="btn ghost" data-act="random">Sortear entre os disponíveis</button></div>`;
+    ligarBuscaDesbloqueados();
     return;
   }
   $('#escolha').innerHTML = `<div class="search">
@@ -70,13 +71,39 @@ function renderEscolha() {
    é conquista pela metade). O que continua sendo só do Roguelike é CONQUISTAR o desbloqueio, e o texto diz isso
    quando você está em outro modo: um jogador terminou uma jornada inteira no Difícil achando que estava liberando
    o que derrotava, e a decepção só apareceu no fim. */
+// a partir de quantos desbloqueados vale a pena mostrar a busca (com poucos, o campo só atrapalha)
+const MIN_PRA_BUSCAR = 12;
+
+/* Filtra a grade de desbloqueados sem redesenhar nada: só liga/desliga `hidden` em cada botão. Redesenhar a
+   cada tecla apagaria o que foi digitado e perderia o foco do campo.
+   Casa por NOME e por NÚMERO da Pokédex — quem decorou o número procura por ele. */
+function ligarBuscaDesbloqueados() {
+  const campo = $('#busca-desbloq'), lista = $('#lista-desbloq');
+  if (!campo || !lista) return;
+  campo.oninput = () => {
+    const q = campo.value.trim().toLowerCase();
+    let achou = 0;
+    for (const b of lista.children) {
+      const bate = !q || (b.dataset.nome || '').includes(q) || (b.dataset.num || '').startsWith(q);
+      b.hidden = !bate;
+      if (bate) achou++;
+    }
+    const vazio = $('#busca-vazia'); if (vazio) vazio.hidden = !!achou;
+  };
+}
+
 function secaoDesbloqueios() {
   const prog = progressoRoguelike(carregarCarreira().jornadas);
-  // os desbloqueados vêm do progresso permanente (nunca somem); o `quase lá` continua vindo do histórico
-  const livresJa = desbloqueadasDaConta(), quase = prog.filter(p => !p.desbloqueada).slice(0, 6);
+  /* Os desbloqueados vêm do progresso permanente (nunca somem); o `quase lá` continua vindo do histórico.
+     **Ordem da Pokédex** (pedido do usuário): a lista vinha na ordem em que cada espécie foi desbloqueada, que
+     não é ordem nenhuma pra quem procura um Pokémon específico. */
+  const livresJa = [...desbloqueadasDaConta()].sort((a, b) => (a.id || 0) - (b.id || 0));
+  const quase = prog.filter(p => !p.desbloqueada).slice(0, 6);
   const regra = `Pra desbloquear uma espécie, somando suas jornadas <b>Roguelike</b>: derrote ${DESBLOQUEIO.derrotados}, faça amizade com ${DESBLOQUEIO.amigos}, ou evolua pra ela ${DESBLOQUEIO.evolucaoMeio}× (forma do meio) / ${DESBLOQUEIO.evolucaoFinal}× (forma final). Depois de desbloqueada, ela vale em <b>qualquer modo</b>${DIFICULDADES[G.dif].desbloqueios ? '' : ' — inclusive neste, embora jogar aqui não conte pra desbloquear novas'}.`;
   return `<div class="regiao desbloq"><h4>🔓 Desbloqueados (${livresJa.length})</h4>
-      ${livresJa.length ? `<div class="picks">${livresJa.map(p => `<button class="pick" data-act="pick" data-v="${p.id}" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="" loading="lazy">${esc(fmt(p.especie))}</button>`).join('')}</div>` : ''}
+      ${livresJa.length ? `${livresJa.length >= MIN_PRA_BUSCAR ? `<label class="campo busca-desbloq">Procurar<input id="busca-desbloq" type="search" placeholder="Nome em inglês ou número (ex.: gengar, 94)" autocomplete="off"></label>` : ''}
+      <div class="picks" id="lista-desbloq">${livresJa.map(p => `<button class="pick" data-act="pick" data-v="${p.id}" data-nome="${esc(p.especie)}" data-num="${p.id}" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="" loading="lazy">${esc(fmt(p.especie))} <small class="muted">#${p.id}</small></button>`).join('')}</div>
+      <p class="small muted" id="busca-vazia" hidden>Nenhum desbloqueado com esse nome.</p>` : ''}
       <p class="small muted">${regra}</p>
       ${quase.length ? `<h4>Quase lá</h4><ul class="quase">${quase.map(p => `<li>${p.id ? `<img src="${SPR(p.id)}" alt="">` : ''}<b>${esc(fmt(p.especie))}</b><div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div><small>${esc(textoProgresso(p))}</small></li>`).join('')}</ul>` : ''}
     </div>`;
