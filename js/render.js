@@ -17,6 +17,7 @@ import { megaDaContaLiberada } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
 import { zDisponiveis, avisoDoZ, temZConquistado } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
+import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
 import { progressoRastreado } from './rastreio.js';
 import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
@@ -218,8 +219,27 @@ function renderMissoes() {
 function renderAliados() {
   const AL = G.S.aliados || [];
   tituloPainel('aliados', `Aliados <span class="muted small">(${AL.length}/${MAX_ALIADOS})</span>`);
-  $('#p-aliados').innerHTML = AL.length ? `<div class="aliados">${AL.map(cartaoAliado).join('')}</div>`
-    : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>';
+  const guardados = escondidos(G.S);
+  $('#p-aliados').innerHTML = `${AL.length ? `<div class="aliados">${AL.map(cartaoAliado).join('')}</div>`
+    : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>'}
+    ${blocoEsconderijo(AL, guardados)}`;
+}
+/* 📦 Esconderijo (esconderijo.js): quem não está em campo espera aqui em vez de se despedir pra sempre.
+   Só fora de batalha — trocar de time no meio da luta seria outra mecânica inteira. */
+function blocoEsconderijo(AL, guardados) {
+  const fora = G.mode === 'explore' && !G.busy;
+  if (!guardados.length && AL.length < MAX_ALIADOS) return '';   // nada guardado e com vaga: não há o que mostrar
+  return `<h4 class="bag-sec">📦 Esconderijo <span class="muted small">(${guardados.length}/${MAX_ESCONDIDOS})</span></h4>
+    ${guardados.length ? `<div class="aliados esconderijo">${guardados.map((A, i) => `<div class="ali-card guardado">
+      <img src="${espelhar(A.data.sprite)}" alt="" loading="lazy">
+      <div><b>${brilho(A)}${esc(A.nick || fmt(A.name))}</b><small class="muted">Nv. ${A.level}</small>
+      <div class="types">${badgesDeTipo(A)}</div></div>
+      <button class="btn sm ${AL.length >= MAX_ALIADOS ? 'ghost' : ''}" data-act="esconderijo-trazer" data-v="${i}" ${fora && AL.length < MAX_ALIADOS ? '' : 'disabled'}
+        title="${AL.length >= MAX_ALIADOS ? 'Equipe cheia: guarde alguém antes' : fora ? '' : 'Só fora de batalha'}">↩ Trazer</button>
+    </div>`).join('')}</div>`
+    : '<p class="small muted">Vazio. Aliados que não couberem na equipe podem esperar aqui, em vez de se despedir.</p>'}
+    ${AL.length ? `<div class="subrow" style="margin-top:8px">${AL.map((A, i) =>
+      `<button class="btn ghost sm" data-act="esconderijo-guardar" data-v="${i}" ${fora ? '' : 'disabled'}>📦 Guardar ${esc(A.nick || fmt(A.name))}</button>`).join('')}</div>` : ''}`;
 }
 // Mochila em divisões (dados.js CATEGORIAS_ITEM): cura, em batalha, para segurar, evolução, petiscos, especiais.
 function renderMochila() {

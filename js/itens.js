@@ -1,7 +1,7 @@
 /* ============ itens ============ */
 // Mochila (G.S.bag = { idDoItem: qtd }). useItem devolve true se o item foi gasto (em batalha, gasta o turno).
 // Funciona em você e nos aliados: com mais de um alvo possível, pergunta "Usar em quem?" (itemTemEfeito decide quem conta).
-import { G, nm, rotulo, ladoJogador, zone } from './estado.js';
+import { G, nm, rotulo, ladoJogador, zone, save } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
@@ -9,7 +9,8 @@ import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.j
 import { ITEMS, ST_SHORT } from './dados.js';
 import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol } from './regras.js';
+import { guardar, trazer } from './esconderijo.js';
 import { loadPokemon } from './api.js';
 import { esc, fmt, offline } from './util.js';
 
@@ -41,6 +42,23 @@ export async function equiparItem(id, inBattle = false, quem = null) {
   render(); await say(`${nm(M)} está segurando <b>${it.name}</b>.`, 'good');
   return true;
 }
+/* 📦 Esconderijo (esconderijo.js): guardar e trazer aliado fora de batalha. Mora aqui, junto das outras ações
+   de equipe, e não em batalha.js — trocar de time no meio da luta seria outra mecânica. */
+export async function mexerEsconderijo(qual, i) {
+  const S = G.S; if (!S || G.busy || G.mode !== 'explore') return;
+  if (qual === 'guardar') {
+    const A = guardar(S, i, freshVol);
+    if (!A) { await say('O esconderijo está cheio.', 'muted'); return; }
+    G.abertos.clear(); render(); save();
+    await say(`📦 ${esc(A.nick || fmt(A.name))} vai esperar no esconderijo. Dá pra trazer de volta quando quiser.`);
+    return;
+  }
+  const A = trazer(S, i, freshVol);
+  if (!A) { await say('Sua equipe está cheia: guarde alguém antes de trazer.', 'muted'); return; }
+  G.abertos.clear(); render(); save();
+  await say(`↩ ${esc(A.nick || fmt(A.name))} volta pra equipe!`, 'good');
+}
+
 // Repelentes (mapas.js): o total espanta todo selvagem; o seletivo deixa passar só a espécie que você escolher,
 // entre as que vivem na rota atual. Nenhum dos dois mexe em treinador, item, dinheiro ou ambientação.
 async function usarRepelente(id) {

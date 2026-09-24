@@ -1,7 +1,22 @@
 /* GERADO A MÃO: notas de atualização mostradas na tela 📜 Novidades (tela-patchnotes.js).
+   O texto de cada ITEM aceita HTML simples (<b>, <br>) e é mostrado sem escapar — o conteúdo é escrito aqui,
+   versionado junto com o código, e não vem de fora. Título, versão, seção e piada são escapados e devem ser
+   texto puro.
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.22', data: '2026-09-24', titulo: 'Ninguém mais se despede à força', piada: 'O Pokémon que você deixou para trás na Rota 4 mandou dizer que agora tem um sofá e está confortável.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Chegou o <b>esconderijo</b>: aliados que não cabem na equipe esperam lá, em vez de se despedir para sempre. Encontrar alguém interessante no fim da jornada deixou de ser má notícia.',
+        'Dá para <b>guardar e trazer</b> quando quiser, fora de batalha, pelo painel de Aliados. Quem volta entra descansado — o estado de batalha (atributos baixados, recuo) é zerado ao guardar.',
+        'O tamanho da equipe <b>não mudou</b>: a decisão de quem leva para a próxima rota continua existindo. O que acabou foi a perda permanente.',
+        'Mais 16 habilidades ativas em batalha, entre elas <b>Battle Armor</b> e <b>Shell Armor</b> (o golpe nunca sai crítico contra você, nem quando seria garantido), Earth Eater, Purifying Salt, Victory Star e No Guard.'
+      ] },
+      { nome: 'Correções', itens: [
+        'As marcações de <b>negrito</b> destas notas apareciam como código na tela, em vez de deixar o texto em negrito.'
+      ] }
+    ] },
   { versao: '2.21', data: '2026-09-24', titulo: 'Para quem não decorou a tabela', piada: 'Descobrimos que nem todo mundo nasce sabendo que Planta é fraco contra Inseto. Corrigimos o jogo, não as pessoas.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -90,6 +90,8 @@ document.addEventListener('click', async e => {
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
     case 'pokedex': if (G.busy || G.mode === 'battle') return; return telaPokedex();
+    case 'esconderijo-guardar': return mexerEsconderijo('guardar', +v);
+    case 'esconderijo-trazer': return mexerEsconderijo('trazer', +v);
     case 'dex-rota': if (G.busy || G.mode === 'battle') return; return abrirNaPokedex(v);   // da Pokedex da rota pra ficha
     case 'dex-ver': return verNaPokedex(v);
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();

@@ -24,6 +24,7 @@
 //   contato: {status, chance}   quem acerta com golpe físico pode pegar o status (golpe.js)
 //   contatoDano: fração    quem acerta com golpe físico perde essa fração do HP máx. (golpe.js)
 //   aguenta                com HP cheio, sobrevive com 1 a um golpe que derrubaria (Sturdy) (golpe.js)
+//   semCritico             golpe contra você nunca sai crítico (Battle Armor, Shell Armor) (calcDamage)
 //   semDanoRecuo           não sofre dano de recuo dos próprios golpes (golpe.js)
 //   maxAcertos             golpe de vários acertos sempre acerta o máximo (golpe.js)
 //   chanceSecundaria: n    chance de efeito secundário dos próprios golpes × n (golpe.js)
@@ -70,7 +71,8 @@ export const HABILIDADES = {
   'compound-eyes': { precisao: 1.3 }, 'tinted-lens': { poucoEfetivo: 2 },
   'skill-link': { maxAcertos: true }, 'serene-grace': { chanceSecundaria: 2 }, 'rock-head': { semDanoRecuo: true },
   // defesa
-  'thick-fat': { resiste: { fire: 0.5, ice: 0.5 } }, heatproof: { resiste: { fire: 0.5 } }, 'water-bubble': { resiste: { fire: 0.5 } },
+  'thick-fat': { resiste: { fire: 0.5, ice: 0.5 } }, heatproof: { resiste: { fire: 0.5 } },
+  'water-bubble': { resiste: { fire: 0.5 }, imuneStatus: ['burn'] },   // resiste a Fogo E não queima
   filter: { superEfetivo: 0.75 }, 'solid-rock': { superEfetivo: 0.75 }, 'prism-armor': { superEfetivo: 0.75 },
   multiscale: { hpCheio: 0.5 }, 'shadow-shield': { hpCheio: 0.5 }, sturdy: { aguenta: true },
   'wonder-guard': { soSuperEfetivo: true }, 'shield-dust': { semSecundario: true }, 'inner-focus': { semRecuo: true },
@@ -98,7 +100,33 @@ export const HABILIDADES = {
   // Aegislash: golpe de dano vira a Forma Lâmina, King's Shield volta pra Forma Escudo (golpe.trocarPostura).
   // As duas formas são o MESMO Pokémon com Ataque/Defesa e At.Esp./Def.Esp. trocados entre si — por isso dá pra
   // fazer sem buscar a outra forma na API: é só espelhar os atributos base.
-  'stance-change': { postura: { ataque: ['attack', 'defense'], especial: ['special-attack', 'special-defense'] } }
+  'stance-change': { postura: { ataque: ['attack', 'defense'], especial: ['special-attack', 'special-defense'] } },
+
+  /* ---- leva nova: tudo aqui reusa gancho que já existia (uma linha cada), menos `semCritico`, que é o único
+     gancho novo desta leva (calcDamage). Ampliar a lista assim é barato e seguro; comportamento novo é que
+     custa caro. Quando algo é uma SIMPLIFICAÇÃO do efeito real, está dito na linha — a ficha diz "✓ ativa em
+     batalha", e prometer o que não se cumpre é pior do que não implementar. ---- */
+  // absorções de tipo que faltavam
+  'earth-eater': { absorve: 'ground', cura: 0.25 },
+  'well-baked-body': { absorve: 'fire', estagio: ['defense', 2] },
+  // crítico não passa (gancho novo)
+  'battle-armor': { semCritico: true }, 'shell-armor': { semCritico: true },
+  // status
+  'thermal-exchange': { imuneStatus: ['burn'] }, 'pastel-veil': { imuneStatus: ['poison'] },
+  // Purifying Salt não pega status NENHUM e ainda resiste a Fantasma
+  'purifying-salt': { imuneStatus: ['poison', 'burn', 'paralysis', 'sleep', 'freeze', 'confusion'], resiste: { ghost: 0.5 } },
+  // precisão
+  'victory-star': { precisao: 1.1 },
+  // No Guard faz o golpe acertar sempre; aqui isso vira precisão altíssima — a diferença só apareceria num golpe
+  // que errasse de propósito, e o efeito prático é o mesmo. Vale só pros SEUS golpes (o gancho é de quem ataca).
+  'no-guard': { precisao: 5 },
+  // atributos que não caem
+  illuminate: { semQueda: ['accuracy'] },
+  // clima: as versões "extremas" entram como o clima normal — o jogo não modela tempo que não pode ser trocado
+  'desolate-land': { climaAoEntrar: 'sol' }, 'primordial-sea': { climaAoEntrar: 'chuva' },
+  // força com status: no jogo original cada uma pede um status específico (veneno / queimadura); aqui vale pra
+  // qualquer status, como o Guts, porque o gancho é esse. A direção do efeito é a mesma.
+  'toxic-boost': { comStatus: { attack: 1.5 } }, 'flare-boost': { comStatus: { 'special-attack': 1.5 } }
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
 /* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).

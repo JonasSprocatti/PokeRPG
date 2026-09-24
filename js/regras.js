@@ -283,7 +283,10 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (hu.tecnico && power <= 60) power = Math.floor(power * 1.5);                   // Technician
   const phys = move.cls === 'physical';
   // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)
-  const crit = Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0))];
+  // `semCritico` (Battle Armor, Shell Armor): o golpe nunca sai crítico contra quem tem. Vale inclusive sobre
+  // Focus Energy e golpe de crítico garantido — é exatamente pra isso que a habilidade existe.
+  const crit = !ht.semCritico
+    && Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0))];
   const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno);
   const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;

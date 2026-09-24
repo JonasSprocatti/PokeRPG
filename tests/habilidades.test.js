@@ -16,11 +16,25 @@ const mon = (o = {}) => ({
 // narração que só coleta texto (igual à do multiplayer)
 const ctx = () => { const msgs = []; return { msgs, nome: m => m.nome || 'X', golpe: g => g.name, say: t => { msgs.push(t); } }; };
 
+/* Battle Armor / Shell Armor: o golpe NUNCA sai crítico contra quem tem. Vale inclusive sobre golpe de crítico
+   garantido — é exatamente pra isso que a habilidade existe, e testar com `crit: 3` (garantido) é o único jeito
+   de provar que o gancho corta o caminho todo, e não só melhora a média. */
+test('semCritico corta o crítico até quando ele seria garantido', t => {
+  t.mock.method(Math, 'random', () => 0);            // sempre crítico, se deixassem
+  const golpeCrit = golpe({ meta: { crit: 3 } });
+  assert.equal(calcDamage(mon(), mon(), golpeCrit).crit, true, 'sem a habilidade, sai crítico');
+  for (const h of ['battle-armor', 'shell-armor']) {
+    assert.equal(calcDamage(mon(), mon({ ability: h }), golpeCrit).crit, false, h);
+  }
+  // é de quem RECEBE: ter a habilidade não impede você de dar crítico
+  assert.equal(calcDamage(mon({ ability: 'battle-armor' }), mon(), golpeCrit).crit, true);
+});
+
 test('tabela: ganchos conhecidos, tipos e status válidos', () => {
   const ganchos = new Set(['pinch', 'stab', 'tecnico', 'critico', 'multStat', 'comStatus', 'precisao', 'precisaoFisica', 'resiste', 'superEfetivo',
     'poucoEfetivo', 'hpCheio', 'imuneTipo', 'absorve', 'cura', 'estagio', 'flashFire', 'soSuperEfetivo', 'imuneStatus', 'semQueda', 'semRecuo',
     'contato', 'contatoDano', 'aguenta', 'semDanoRecuo', 'maxAcertos', 'chanceSecundaria', 'semSecundario', 'sonoRapido', 'fimTurno',
-    'curaStatusFimTurno', 'intimida', 'fuga',
+    'curaStatusFimTurno', 'intimida', 'fuga', 'semCritico',
     // clima (regras.CLIMAS)
     'climaAoEntrar', 'multStatClima', 'curaClima', 'danoClimaProprio', 'imuneClima', 'escondeNoClima', 'curaStatusClima', 'semStatusClima',
     // terrenos (regras.TERRENOS)

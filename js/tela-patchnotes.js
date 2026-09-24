@@ -21,7 +21,12 @@ export function telaPatchNotes() {
     <div class="patches">${PATCH_NOTES.map((p, i) => `
       <details class="patch" ${i === 0 ? 'open' : ''}>
         <summary><b class="patch-v">v${esc(p.versao)}</b> <span class="patch-t">${esc(p.titulo)}</span> <small class="muted">${dataBr(p.data)}</small></summary>
-        ${p.secoes.map(s => `<h4 class="patch-sec">${esc(s.nome)}</h4><ul class="patch-itens">${s.itens.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`).join('')}
+        ${/* O TEXTO do item vai como HTML, sem `esc`: as notas são escritas à mão neste repositório e usam
+              <b> pra destacar o que mudou. Escapando, o leitor via "&lt;b&gt;" na tela (foi o que acontecia).
+              Isto NÃO é exceção à regra do `esc()`: a regra vale pro que vem de fora (apelido, dados da API),
+              e aqui não entra nada de fora — o conteúdo é versionado junto com o código.
+              Título, versão, seção e piada seguem escapados: não precisam de marcação nenhuma. */ ''}
+        ${p.secoes.map(s => `<h4 class="patch-sec">${esc(s.nome)}</h4><ul class="patch-itens">${s.itens.map(t => `<li>${t}</li>`).join('')}</ul>`).join('')}
         ${p.piada ? `<p class="patch-piada">🎈 ${esc(p.piada)}</p>` : ''}
       </details>`).join('')}</div>
     <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
