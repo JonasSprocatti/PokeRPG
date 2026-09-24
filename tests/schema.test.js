@@ -42,10 +42,11 @@ test('a penalidade de continuar a jornada existe no SQL, igual à do jogo (regra
   // o servidor recalcula a pontuação e RECUSA a jornada se o número não bater: se a fórmula mudar num lado só,
   // ninguém consegue mais enviar jornada continuada pro ranking.
   assert.match(sql, /penal numeric := greatest\(0\.5, power\(0\.8, coalesce\(\(r->>'continuacoes'\)::int, 0\)\)\)/);
-  assert.match(sql, /\* mult \* penal\)/);
   assert.equal(multContinuacao(1), 0.8);
   assert.equal(multContinuacao(3), 0.8 ** 3);
   // e o bônus de jogar sem as vantagens das badges (regras.BONUS_SEM_VANTAGENS)
   assert.match(sql, /bonus numeric := case when coalesce\(\(r->>'semVantagens'\)::boolean, false\) then 1\.1 else 1 end/);
+  // a cauda da conta, inteira e numa asserção só: multiplicador novo entra AQUI, senão o teste passa achando que
+  // a fórmula do servidor ainda bate com a do jogo (foi o que aconteceu quando o `bonus` entrou)
   assert.match(sql, /\* mult \* penal \* bonus\)/);
 });
