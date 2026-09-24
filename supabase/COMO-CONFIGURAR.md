@@ -6,8 +6,9 @@ A Vercel continua hospedando o site. O login e o banco ficam no **Supabase** (te
 
 ## 1. Criar o projeto no Supabase
 1. Em https://supabase.com crie uma conta e um projeto novo (guarde a senha do banco).
-2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/` e clique em **Run**.
-3. **Sempre que o `schema.sql` mudar** (ex.: quando entrou o ranking), rode ele de novo do mesmo jeito. É seguro: ele só cria o que falta e atualiza as funções, sem apagar dados.
+2. No projeto, abra **SQL Editor → New query**, cole o conteúdo de `supabase/LIGAR-MIGRATIONS.sql` e clique em **Run**. Isso cria só a tabela de controle que a integração com o GitHub usa pra saber quais migrations já rodaram (sem ela, ela falha com `relation "supabase_migrations.schema_migrations" does not exist`).
+3. Ligue a integração: **Settings → Integrations → GitHub**, conecte o repositório, *working directory* `/supabase`, *Deploy to production* na branch `main`. A partir daí **o banco se atualiza sozinho** a cada merge no `main` — nunca mais precisa colar SQL à mão.
+4. Se preferir fazer o primeiro schema na mão, cole o conteúdo de `supabase/migrations/20260923120000_base.sql` no SQL Editor e rode. É seguro: só cria o que falta e atualiza as funções, sem apagar dados.
 
 ## 2. Ligar as chaves no jogo
 1. No Supabase: **Project Settings → API**.

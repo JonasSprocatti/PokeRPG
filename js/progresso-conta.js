@@ -4,7 +4,8 @@
    liberado — perigoso, e foi o próprio jogador que apontou.
    Aqui o progresso vira um registro próprio que **só cresce**:
      especies    → espécie desbloqueada, com quando e por quê. Uma vez dentro, nunca sai.
-     porJornada  → os abates de cada jornada, guardados pelo ID dela.
+     porJornada  → uma entrada por jornada (pelo ID dela): os números dela na raiz (espécie, nível, dificuldade…)
+                   e os abates em `abates`.
    Por que `porJornada` em vez de um total só: assim a fusão entre aparelhos (e com a nuvem) é sempre correta —
    mesma jornada dos dois lados é a mesma chave, então nada conta em dobro, e jornada que só um aparelho viu entra
    sem conflito. Um total único não teria como saber o que já foi somado.
@@ -30,14 +31,15 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
     /* Além dos abates, o progresso guarda os números da jornada que alguma conquista precisa. É o "livro-caixa"
        permanente: a carreira pode perder a jornada, isto não perde. Campo novo aqui = badge novo pode medir sem
        depender do histórico. */
-    const base = {
+    /* Os abates ficam NUM CAMPO PRÓPRIO (`abates`), não espalhados na raiz da entrada. Já foi bug: a lista de
+       abates tem uma chave chamada `especie` (quantos você matou sendo cada espécie) e ela sobrescrevia a espécie
+       DA JORNADA, quebrando a contagem do Gigantamax. Aninhar elimina a classe inteira de colisão. */
+    p.porJornada[j.id] = {
       especie: j.especie || null, nivel: j.nivel || 0, dificuldade: j.dificuldade || null,
       amigos: j.amigos || 0, alfas: j.alfas || 0, gens: j.gens || 0, genVencida: j.genVencida || 0,
-      semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null
+      semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null,
+      abates: { total: a?.total || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a?.[l] || {}) }])) }
     };
-    p.porJornada[j.id] = a
-      ? { ...base, total: a.total || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a[l] || {}) }])) }
-      : { ...base, total: 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, {}])) };
   }
   for (const d of desbloqueadasAgora) {
     if (!d?.especie || p.especies[d.especie]) continue;  // já estava: não sobrescreve a data original
@@ -54,7 +56,8 @@ export function totaisDe(progresso, extra = null) {
     out.total += a.total || 0;
     for (const l of LISTAS_ABATE) for (const [k, n] of Object.entries(a[l] || {})) out[l][k] = (out[l][k] || 0) + n;
   };
-  for (const a of Object.values(progresso?.porJornada || {})) somar(a);
+  // `j.abates` é o formato de hoje; `j` cru é o de quem já tinha progresso gravado antes de os abates virarem campo próprio
+  for (const j of Object.values(progresso?.porJornada || {})) somar(j.abates || j);
   somar(extra);
   return out;
 }
@@ -65,7 +68,8 @@ export function totaisDe(progresso, extra = null) {
 export function runsDeNivelDe(progresso, nivel, modoQueNaoConta = 'easy') {
   const out = {};
   for (const j of Object.values(progresso?.porJornada || {})) {
-    if (!j.especie || (j.nivel || 0) < nivel || j.dificuldade === modoQueNaoConta) continue;
+    // typeof string: progresso do formato antigo guardava o MAPA de abates por espécie nesta mesma chave
+    if (typeof j.especie !== 'string' || !j.especie || (j.nivel || 0) < nivel || j.dificuldade === modoQueNaoConta) continue;
     out[j.especie] = (out[j.especie] || 0) + 1;
   }
   return out;

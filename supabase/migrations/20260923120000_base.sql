@@ -1,10 +1,11 @@
 ﻿-- ============================================================================
--- 0001 — base do PokéRPG
+-- 20260923120000_base — base do PokéRPG
 -- Este arquivo é o schema INTEIRO como ele está hoje. É idempotente de ponta a ponta
 -- (`create table if not exists`, `create or replace function`, `drop policy if exists` antes de cada policy),
 -- então aplicar num banco que já tem tudo não muda nada e não apaga dado.
 --
--- Daqui pra frente, MUDANÇA NOVA = ARQUIVO NOVO nesta pasta (ex.: 0002_mega.sql). A integração do GitHub com o
+-- Daqui pra frente, MUDANÇA NOVA = ARQUIVO NOVO nesta pasta, com nome AAAAMMDDHHMMSS_assunto.sql (a convenção do
+-- Supabase CLI; é por esse número que ele ordena e sabe o que já rodou). A integração do GitHub com o
 -- Supabase aplica os que ainda não rodaram quando você faz merge no main. Não edite uma migration já aplicada:
 -- o Supabase guarda quais rodaram e não roda de novo.
 -- ============================================================================

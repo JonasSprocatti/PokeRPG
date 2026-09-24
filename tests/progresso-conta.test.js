@@ -50,6 +50,25 @@ test('Gigantamax sai do progresso, não do histórico (e o Fácil não conta)', 
   assert.deepEqual(runsDeNivelDe(p, 50), { pikachu: 2, gengar: 1 });
 });
 
+// Bug real: a lista de abates tem uma chave chamada `especie` (quantos você derrotou sendo cada espécie) e ela era
+// espalhada na raiz da entrada, por cima da espécie DA JORNADA — a chave do Gigantamax virava "[object Object]".
+test('o mapa de abates por espécie não sobrescreve a espécie da jornada', () => {
+  const p = bancar(progressoVazio(), [jornada('j1', { nivel: 60 })], []);
+  assert.equal(p.porJornada.j1.especie, 'pikachu');
+  assert.deepEqual(p.porJornada.j1.abates.especie, { pikachu: 10 });
+  assert.deepEqual(Object.keys(runsDeNivelDe(p, 50)), ['pikachu']);
+});
+
+// progresso gravado antes de `abates` virar campo próprio continua somando (e não vira chave inválida)
+test('progresso no formato antigo (abates na raiz) continua valendo', () => {
+  const antigo = { v: 1, especies: {}, porJornada: { velha: {
+    nivel: 60, dificuldade: 'hard', total: 7, tipoAlvo: { fire: 7 }, especie: { pikachu: 7 }, golpe: {}, elemento: {}
+  } } };
+  assert.equal(totaisDe(antigo).total, 7);
+  assert.deepEqual(totaisDe(antigo).especie, { pikachu: 7 });
+  assert.deepEqual(runsDeNivelDe(antigo, 50), {}, 'sem espécie legível, não inventa chave');
+});
+
 test('mesclar com a nuvem é união: nada do que um lado tem se perde', () => {
   const aqui = bancar(progressoVazio(), [jornada('j1')], [{ especie: 'gengar', id: 94 }], '2026-05-05T00:00:00Z');
   const la = bancar(progressoVazio(), [jornada('j2')], [{ especie: 'gengar', id: 94 }, { especie: 'onix', id: 95 }], '2026-02-02T00:00:00Z');

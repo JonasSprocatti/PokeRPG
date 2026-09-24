@@ -205,9 +205,10 @@ O banco é atualizado pela **integração do GitHub no painel do Supabase** (Set
 
 Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI:
 
-- **Mudança nova = ARQUIVO NOVO** (`0002_mega.sql`, `0003_....sql`), nunca editar uma migration já aplicada: o Supabase guarda quais já rodaram e não roda de novo.
-- Os arquivos são aplicados em ordem alfabética no merge para `main`.
-- `0001_base.sql` é o schema inteiro como estava quando adotamos migrations — idempotente, então aplicar num banco que já tem tudo não muda nada.
+- **Mudança nova = ARQUIVO NOVO**, nunca editar uma migration já aplicada: o Supabase guarda quais já rodaram e não roda de novo.
+- **Nome no padrão do CLI**: `<AAAAMMDDHHMMSS>_nome.sql` (ex. `20261001093000_mega.sql`). A integração ordena por esse carimbo; nome fora do padrão ela ignora.
+- `20260923120000_base.sql` é o schema inteiro como estava quando adotamos migrations — idempotente, então aplicar num banco que já tem tudo não muda nada.
+- **Uma vez só, à mão: `supabase/LIGAR-MIGRATIONS.sql`.** Projeto criado direto pelo SQL Editor (o nosso) não tem a tabela de controle `supabase_migrations.schema_migrations`, e a integração falha com `relation "supabase_migrations.schema_migrations" does not exist` — ela precisa da tabela pra saber o que aplicar, mas não a cria sozinha. Rodar esse arquivo no SQL Editor resolve de vez; depois é só merge no `main`.
 - `tests/schema.test.js` lê a pasta inteira (soma das migrations) pra conferir que os pesos de pontuação do SQL batem com os de `regras.js`. **Mudou a fórmula num lado, muda no outro**, senão o servidor recusa jornadas legítimas.
 - Nada destrutivo aqui: `drop`/`alter` que possa perder dado de jogador vai num arquivo rodado à mão, porque este fluxo roda sozinho.
 ## Decidido com o usuário, ainda NÃO implementado
