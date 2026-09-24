@@ -2,6 +2,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.20', data: '2026-09-24', titulo: 'Gigantamax — a última das quatro', piada: 'Seu Pokémon cresceu tanto que agora precisa se abaixar para entrar na batalha. Valeu a pena.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'O <b>Gigantamax</b> chegou, e com ele as quatro gimmicks estão jogáveis. Conquistado (nível 50 com a espécie em 25 jornadas), o botão 🔴 <b>dobra o seu HP</b> por 3 turnos e transforma todo golpe num golpe Max — e o seu Pokémon fica <b>gigante na tela</b>.',
+        'É a única das quatro que <b>não pede item</b>: Mega precisa da pedra, Z precisa do cristal, mas quem levou 25 jornadas para chegar aqui já pagou o preço. (Nos jogos o Dynamax também não depende de item.)',
+        'O HP volta na mesma proporção ao encolher: se você estava com metade da vida gigante, volta com metade da vida normal — ninguém ganha nem perde vida por causa do tamanho.',
+        'A tabela do golpe Max é mais modesta que a do Z de propósito: o Z é um tiro único, o Max vale três turnos. No mesmo patamar, a escolha entre eles perderia a graça.'
+      ] }
+    ] },
   { versao: '2.19', data: '2026-09-24', titulo: 'Z-Move, e o chefe revida', piada: 'O Alfa leu as notas da atualização passada, achou injusto e foi atrás do próprio cristal.',
     secoes: [
       { nome: 'Novidades', itens: [

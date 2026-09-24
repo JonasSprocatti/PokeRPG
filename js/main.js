@@ -22,7 +22,7 @@ import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js'
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
-import { turn, usarMega, usarTera, usarZ, serializarBatalha, restaurarBatalha } from './batalha.js';
+import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
@@ -215,7 +215,8 @@ document.addEventListener('click', async e => {
     // nenhum dos dois passa por `turn`: megaevoluir e terastalizar não gastam o turno
     case 'mega': return usarMega();
     case 'tera': return usarTera();
-    case 'zmove': return usarZ();   // este SIM gasta o turno: o Z-Move e o ataque da rodada
+    case 'zmove': return usarZ();
+    case 'gmax': return usarGigantamax();   // nao gasta o turno; dura 3 turnos e encolhe sozinho   // este SIM gasta o turno: o Z-Move e o ataque da rodada
     case 'run': return turn({ type: 'run' });
     case 'new': {
       if (G.busy || G.mode === 'battle') return;

@@ -41,6 +41,24 @@ export function poderZ(poder) {
   return 200;
 }
 
+/* ---- Gigantamax (dynamax.js) ----
+   Enquanto está gigante, TODO golpe vira um golpe Max. A tabela é mais modesta que a do Z de propósito: o Z é
+   um tiro único e pode ser absurdo; o Max vale por três turnos, e no mesmo patamar do Z deixaria a luta sem
+   graça. A outra metade da força vem do HP dobrado (dynamax.js), não daqui. */
+export function poderMax(poder) {
+  const p = poder || 0;
+  if (p <= 40) return 90;
+  if (p <= 50) return 100;
+  if (p <= 60) return 110;
+  if (p <= 70) return 120;
+  if (p <= 100) return 130;
+  if (p <= 140) return 140;
+  return 150;
+}
+// quanto o HP máximo cresce ao gigantamaxar (e por quantos turnos dura)
+export const MULT_HP_DYNAMAX = 2;
+export const TURNOS_DYNAMAX = 3;
+
 export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
 export function multStab(m, tipoGolpe, base = 1.5) {
   const originais = m?.data?.types || [];
@@ -240,6 +258,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
      numa cópia do golpe, pra não haver dois objetos de golpe em jogo — a cópia quebraria o gasto de PP, que é
      feito no golpe de verdade. */
   if (u.vol?.zAtivo) power = poderZ(power);
+  else if (u.dyna) power = poderMax(power);   // gigante: todo golpe é Max (o Z tem prioridade — é um tiro só)
   if (hu.tecnico && power <= 60) power = Math.floor(power * 1.5);                   // Technician
   const phys = move.cls === 'physical';
   // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)

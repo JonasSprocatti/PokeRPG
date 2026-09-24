@@ -20,13 +20,14 @@ import { STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOM
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
 import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { zDisponiveis } from './zmove.js';
+import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax } from './dynamax.js';
 import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
@@ -239,6 +240,21 @@ export async function usarTera() {
   finally { G.busy = false; render(); save(); }
 }
 
+/* Botão 🔴: como a Mega e a Tera, não gasta o turno. Dura TURNOS_DYNAMAX turnos e encolhe sozinho.
+   É a única gimmick sem item — ver o cabeçalho de dynamax.js pro porquê. */
+export async function usarGigantamax() {
+  const B = G.B; if (G.busy || !B || !podeGigantamax()) return;
+  G.busy = true; render();
+  try {
+    const P = G.S.player;
+    gigantamaxar(P);
+    B.gmaxUsado = true;
+    render();
+    await say(`<b>${esc(rotulo(P))} GIGANTAMAXOU!</b> O HP dobrou e os golpes viram Max por ${TURNOS_DYNAMAX} turnos.`, 'level');
+  } catch (e) { console.error(e); log('Não deu pra gigantamaxar: ' + esc(e.message), 'hit'); }
+  finally { G.busy = false; render(); save(); }
+}
+
 /* Botão 🌀: diferente da Mega e da Tera, o Z-Move **é** o seu turno — ele não transforma, converte um golpe
    seu num golpe muito mais forte, uma vez por batalha. Por isso ele termina chamando `turn` com o golpe
    escolhido, e não resolve nada por conta própria. */
@@ -359,6 +375,8 @@ export async function turn(action) {
     if (B.capturado) { await serCapturado(); return; }
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
+    // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
+    for (const m of ladoJogador()) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (E.hp <= 0) await win();
@@ -517,7 +535,7 @@ async function serCapturado() {
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
   G.B = null; G.mode = 'explore'; G.panel = 'main';
-  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); m.vol = freshVol(); }
+  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); m.vol = freshVol(); }
 }
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----

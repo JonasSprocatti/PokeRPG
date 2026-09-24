@@ -16,6 +16,7 @@ import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js'
 import { megaDaContaLiberada } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
 import { zDisponiveis, avisoDoZ, temZConquistado } from './zmove.js';
+import { podeGigantamax } from './dynamax.js';
 import { progressoRastreado } from './rastreio.js';
 import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
@@ -35,17 +36,18 @@ const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
    `megasDoJogador()` não vai à rede: lê a tabela e o progresso da conta. */
 function botaoMega(dis) {
-  const formas = megasDoJogador(), tipos = terasDisponiveis(), zs = zDisponiveis();
+  const formas = megasDoJogador(), tipos = terasDisponiveis(), zs = zDisponiveis(), gmax = podeGigantamax();
   const falta = [avisoDaMegaDoJogador() && `a Mega da sua espécie está conquistada, mas ${avisoDaMegaDoJogador()}`,
     avisoDoZ() && `você tem Z-Move conquistado, mas ${avisoDoZ()}`].filter(Boolean);
   // conquistou mas falta o item: dizer o que falta é melhor que esconder o botão (esconder vira "não funciona")
   const aviso = falta.length ? `<p class="small muted">⚡ ${esc(falta.join(' · '))}.</p>` : '';
-  if (!formas.length && !tipos.length && !zs.length) return aviso;
+  if (!formas.length && !tipos.length && !zs.length && !gmax) return aviso;
   const f = formas[0], varias = formas.length > 1;
   return `${aviso}<div class="subrow">
     ${formas.length ? `<button class="btn mega-btn" data-act="mega" ${dis}>⚡ ${esc(nomeDaMecanica(f))}${varias ? '' : `: ${esc(f.nome)}`}</button>` : ''}
     ${tipos.length ? `<button class="btn tera-btn" data-act="tera" ${dis}>💎 Terastalizar</button>` : ''}
     ${zs.length ? `<button class="btn z-btn" data-act="zmove" ${dis}>🌀 Z-Move</button>` : ''}
+    ${podeGigantamax() ? `<button class="btn gmax-btn" data-act="gmax" ${dis}>🔴 Gigantamax</button>` : ''}
     <span class="small muted">${formas.length || tipos.length ? 'Mega e Tera não gastam o turno' : ''}${zs.length ? `${formas.length || tipos.length ? ' · ' : ''}o Z-Move É o seu turno` : ''}</span></div>`;
 }
 
@@ -248,7 +250,7 @@ function renderScene() {
         <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
       <div class="side me">
         <div class="mons-lado">
-          <div class="mon ${P.hp <= 0 ? 'fainted' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
+          <div class="mon ${P.hp <= 0 ? 'fainted' : ''} ${P.dyna ? 'gigante' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
           ${AL.map(([A, i]) => `<div class="mon mini ${A.hp <= 0 ? 'fainted' : ''}" id="mon-a${i}"><div class="pad"></div>${imgMon(A, `spr ${sprCostas(A) ? '' : 'flip'}`, sprCostas(A) || spriteFrente(A))}</div>`).join('')}
         </div>
         <div class="plates">

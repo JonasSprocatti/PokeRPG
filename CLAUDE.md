@@ -267,6 +267,13 @@ não gasta o turno, desfaz em `endBattle`. Diferente da Mega, **não troca `M.da
 são as regras — por isso desfazer é uma linha. `render.badgesDeTipo` mostra o tipo Tera no lugar dos originais
 (mostrar os antigos faria a pessoa calcular a fraqueza errada). Inimigo ainda NÃO terastaliza — decisão em aberto.
 
+### 7. ✅ FEITO — Gigantamax
+`js/dynamax.js` + `regras.poderMax`/`MULT_HP_DYNAMAX`/`TURNOS_DYNAMAX`. **Única gimmick sem item** (25 jornadas já
+é o preço). Dobra o teto de HP e o HP atual por 3 turnos; `passarDynamax` roda na virada da rodada e
+`desfazerDynamax` também em `endBattle` — sem isso o teto dobrado ia junto no save, pra sempre. A volta guarda
+`hpMaxAntes` e reaplica a PROPORÇÃO: recalcular pela base perderia o dano sofrido enquanto gigante. Tabela do Max
+mais modesta que a do Z de propósito (o Z é um tiro; o Max vale 3 turnos). Inimigo não gigantamaxa.
+
 ### 6. ✅ FEITO — Z-Move
 `js/zmove.js` (elegibilidade) + `regras.poderZ` (a conversão, pura e testada, aplicada em `calcDamage` quando
 `vol.zAtivo`). **Não é transformação: É o turno** — `usarZ` termina chamando `turn({..., z:true})`, o flag é ligado
