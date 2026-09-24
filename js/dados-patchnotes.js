@@ -2,6 +2,19 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.14', data: '2026-09-24', titulo: 'A rota não acaba antes da missão', piada: 'A Rota 1 se aposentava antes de você terminar de contar os Pidgey. Conversamos com ela.',
+    secoes: [
+      { nome: 'Equilíbrio', itens: [
+        'Tivemos que nerfar o jogador Berga, só o diabo para parar ele.',
+        'Rota de nível baixo agora tem folga mínima de 15 níveis antes de esgotar. Na Rota 1 (teto 6) o limite era o dobro, 12 — e como a jornada começa no nível 5, a rota parava de dar caçada antes de dar pra terminar as missões dela. Rota de teto alto não muda: o dobro continua valendo.',
+        'A Mega Evolução conta só o que você derrota estando na <b>evolução final</b>. Antes cada estágio tinha a própria barra, então evoluir parecia zerar o progresso — e derrotar como Marshtomp enchia um contador que não levava a Mega nenhuma. Tera, Z-Move e Gigantamax seguem contando tudo.',
+        'A conquista "Nunca precisei de médico" agora pede <b>fechar uma Gen</b> sem usar o Centro Pokémon. Antes bastava terminar uma jornada de qualquer jeito: dava pra entrar e sair na hora seguinte e levar a medalha. Quem tinha pego assim perde — ela é recalculada, não guardada.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O Repelente Seletivo listava TODAS as espécies da rota pelo nome, inclusive as que você ainda não tinha descoberto: a Pokédex da rota mostrava "?" e o repelente entregava a resposta. Agora só aparecem as que você já encontrou.',
+        'A tela de Bugs e sugestões dizia "sem conexão" para qualquer falha de envio — inclusive quando o servidor recusava o relato. Agora ela diz o motivo de verdade e tenta reenviar a fila toda vez que você abre a tela, em vez de esperar um aviso de "internet voltou" que podia nunca chegar.'
+      ] }
+    ] },
   { versao: '2.13', data: '2026-09-24', titulo: 'Não era a sua internet', piada: 'O jogo passou dias jurando que a culpa era da sua conexão. A culpa era de uma função que nunca foi escrita. Pedimos desculpas à sua operadora.',
     secoes: [
       { nome: 'Correções', itens: [

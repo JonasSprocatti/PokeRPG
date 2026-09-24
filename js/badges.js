@@ -69,7 +69,10 @@ export const BADGES = [
     mede: c => feito(c.gensHardcore, 1), recompensa: { itens: { 'heart-scale': 1 } } },
   { id: 'roguelike9', grupo: 'Coragem', icone: '🗺', nome: 'A volta ao mundo', desc: 'Feche as 9 Gens no Roguelike.',
     mede: c => feito(c.gensRoguelike, 9), recompensa: { dinheiro: 5000, titulo: 'Mestre das nove regiões' } },
-  { id: 'sem-centro', grupo: 'Coragem', icone: '🚑', nome: 'Nunca precisei de médico', desc: 'Termine uma jornada sem usar o Centro Pokémon nenhuma vez.',
+  /* VENCER, não "terminar": entrar numa jornada e sair dela na hora seguinte também era "terminar sem usar o
+     Centro", e a conquista caía no colo sem nenhum mérito. Como as badges são CALCULADAS a cada vez (nada fica
+     gravado como "conquistado"), apertar a regra aqui também tira a medalha de quem já a tinha pego assim. */
+  { id: 'sem-centro', grupo: 'Coragem', icone: '🚑', nome: 'Nunca precisei de médico', desc: 'Feche uma Gen sem usar o Centro Pokémon nenhuma vez.',
     mede: c => feito(c.runsSemCentro, 1), recompensa: { itens: { 'sitrus-berry': 1 } } },
   // ---- gimmicks ----
   { id: 'teras', grupo: 'Gimmicks', icone: '💎', nome: 'Todas as formas', desc: 'Libere a Terastalização dos 18 tipos.',
@@ -90,6 +93,11 @@ export const BADGES = [
 
 /* Monta o `ctx` que as badges medem, a partir do progresso permanente + o que as telas já calculam.
    Tudo que entra aqui tem de vir de fonte que NÃO encolhe (progresso-conta), senão a badge pode ser "desconquistada". */
+/* Jornada VENCIDA = fechou uma Gen. `genVencida` é o número da Gen fechada e `motivo` é como a jornada acabou
+   ('venceu' | 'desmaiou' | 'capturado' | 'encerrou'): os dois são checados porque entrada antiga do livro-caixa
+   pode ter só um deles. Desistir, desmaiar ou ser capturado não é vitória. */
+const venceu = j => !!j.genVencida || j.motivo === 'venceu';
+
 export function contextoBadges({ abates, progresso, dex, conquistas }) {
   const jornadas = Object.values(progresso?.porJornada || {});
   const especies = progresso?.especies || {};
@@ -103,7 +111,8 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
     shiniesAmigos: dex?.shiniesAmigos || 0,
     gensHardcore: jornadas.filter(j => j.dificuldade === 'hardcore' && j.genVencida).length,
     gensRoguelike: new Set(jornadas.filter(j => j.dificuldade === 'roguelike' && j.genVencida).map(j => j.genVencida)).size,
-    runsSemCentro: jornadas.filter(j => j.semCentro).length,
+    // só jornada VENCIDA conta (ver a badge 'sem-centro'): sair de uma run recém-criada também é "terminar"
+    runsSemCentro: jornadas.filter(j => j.semCentro && venceu(j)).length,
     terasLiberadas: (conquistas?.tera || []).filter(x => x.liberado).length,
     megasLiberadas: (conquistas?.mega || []).filter(x => x.liberado).length,
     rayquazaShiny: dex?.rayquazaShiny || 0,

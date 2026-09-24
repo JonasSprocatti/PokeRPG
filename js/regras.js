@@ -392,9 +392,16 @@ export function itemTemEfeito(it, M, podeSubir = true) {
 /* Rota ESGOTADA (só no Roguelike): passou do DOBRO do teto de nível da rota, ela para de dar caçada. É anti-grind —
    farmar numa rota de nível 6 sendo nível 60 rendia XP fácil e sem risco. Você continua entrando na rota e vendo a
    Pokédex dela (quem vive ali, as taxas, o Alfa); o que some é o encontro selvagem. Fora do Roguelike, nada muda. */
+/* `MARGEM_ESGOTADA` conserta um problema que só existia nas rotas do COMEÇO: dobrar um teto pequeno dá uma folga
+   pequena. A Rota 1 tem teto 6, então o limite era 12 — e como se começa no nível 5, a rota se esgotava antes de
+   dar pra completar as missões dela ("derrote 10 Pidgey", "derrote 10 Rattata"…), travando o progresso da run.
+   Numa rota de teto 50 a folga era de 50 níveis; na de teto 6, de 6. O piso iguala isso: a folga nunca é menor
+   que 15 níveis. Só muda rotas com teto abaixo de 15 — do meio do mapa pra frente, o dobro continua mandando. */
 export const FATOR_ESGOTADA = 2;
+export const MARGEM_ESGOTADA = 15;
+export const limiteDaRota = z => Math.max((z?.max || 0) * FATOR_ESGOTADA, (z?.max || 0) + MARGEM_ESGOTADA);
 export const rotaEsgotada = (z, nivel, dificuldade) =>
-  dificuldade === 'roguelike' && !!z && nivel > (z.max || 0) * FATOR_ESGOTADA;
+  dificuldade === 'roguelike' && !!z && nivel > limiteDaRota(z);
 
 export const zonaLiberada = (z, nivel, S = null) => z?.posVitoria
   ? !!(S?.gensVencidas || []).includes(z.gen)

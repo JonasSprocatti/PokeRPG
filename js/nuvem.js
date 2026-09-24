@@ -231,23 +231,40 @@ export async function especiesRanqueadas() {
 // sozinho depois (enviarFilaRelatos no sync e ao voltar a internet). Devolve 'enviado' ou 'na-fila'.
 const FILA_RELATOS = 'pokerpg-relatos-fila';
 export const relatosNaFila = () => (store.get(FILA_RELATOS) || []).length;
+/* Devolve `{ estado, motivo }`. **`motivo` existe porque "foi pra fila" tem mais de uma causa** e dizer sempre
+   "sem conexão" já enganou: com a tabela `relatos` ainda não criada no Supabase, o relato ia pra fila e a tela
+   anunciava falta de internet — a pessoa ficava esperando a conexão "voltar" pra algo que nunca ia subir. */
 export async function enviarRelato(relato) {
   const c = await sb().catch(() => null);
-  if (c && !offline()) {
+  let motivo = 'sem-conexao';
+  if (!c) motivo = 'sem-config';
+  else if (!offline()) {
     const { error } = await c.from('relatos').insert({ ...relato, user_id: usuario()?.id ?? null });
-    if (!error) return 'enviado';
+    if (!error) return { estado: 'enviado' };
     if (error.code === '23514') throw new Error('Título (3 a 120 letras) e descrição (5 a 4000) precisam estar preenchidos.'); // check do banco
     console.warn('relato: vai pra fila', error);
+    motivo = error.message || 'erro no servidor';
   }
   store.set(FILA_RELATOS, [...(store.get(FILA_RELATOS) || []), relato]);
-  return 'na-fila';
+  return { estado: 'na-fila', motivo };
 }
+/* Tenta esvaziar a fila. Devolve `{ enviados, sobraram, motivo }` pra tela poder dizer o que aconteceu.
+   Chamada ao abrir a tela de relatos, além do `online` e do início — o evento `online` não dispara quando o
+   navegador já se considera conectado, então a fila podia ficar parada pra sempre sem ninguém saber por quê. */
 export async function enviarFilaRelatos() {
-  const fila = store.get(FILA_RELATOS) || []; if (!fila.length || offline()) return;
-  const c = await sb(); if (!c) return;
+  const fila = store.get(FILA_RELATOS) || [];
+  if (!fila.length) return { enviados: 0, sobraram: 0 };
+  if (offline()) return { enviados: 0, sobraram: fila.length, motivo: 'sem-conexao' };
+  const c = await sb().catch(() => null);
+  if (!c) return { enviados: 0, sobraram: fila.length, motivo: 'sem-config' };
   const sobra = [];
-  for (const r of fila) { const { error } = await c.from('relatos').insert({ ...r, user_id: usuario()?.id ?? null }); if (error && error.code !== '23514') sobra.push(r); }
+  let motivo;
+  for (const r of fila) {
+    const { error } = await c.from('relatos').insert({ ...r, user_id: usuario()?.id ?? null });
+    if (error && error.code !== '23514') { sobra.push(r); motivo = error.message || 'erro no servidor'; }
+  }
   store.set(FILA_RELATOS, sobra);
+  return { enviados: fila.length - sobra.length, sobraram: sobra.length, motivo };
 }
 export async function meusRelatos() {
   const c = await sb(); if (!c || !usuario()) return [];

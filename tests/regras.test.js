@@ -9,7 +9,7 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -455,11 +455,25 @@ test('pontuação: seguir com o mesmo Pokémon pro mapa seguinte custa 20% por v
 });
 
 test('rota esgotada: anti-grind, e SÓ no Roguelike', () => {
-  const z = { max: 10 };
-  assert.equal(rotaEsgotada(z, 20, 'roguelike'), false, 'no limite ainda dá');
-  assert.equal(rotaEsgotada(z, 21, 'roguelike'), true, 'passou do dobro: acabou a caçada');
+  const z = { max: 30 };                                   // rota alta: manda o DOBRO (60), maior que 30+15
+  assert.equal(rotaEsgotada(z, 60, 'roguelike'), false, 'no limite ainda dá');
+  assert.equal(rotaEsgotada(z, 61, 'roguelike'), true, 'passou do dobro: acabou a caçada');
   assert.equal(rotaEsgotada(z, 99, 'hard'), false, 'fora do Roguelike a rota velha continua valendo');
   assert.equal(rotaEsgotada(z, 99, 'easy'), false);
   assert.equal(rotaEsgotada(null, 99, 'roguelike'), false);
   assert.equal(FATOR_ESGOTADA, 2);
+});
+
+/* Bug real: na Rota 1 (teto 6) o dobro dava 12, e como a jornada começa no nível 5, a rota se esgotava antes de
+   dar pra completar as missões dela — "derrote 10 Pidgey" ficava impossível e a run travava. O piso de folga
+   existe pra isso, e só muda rota de teto baixo. */
+test('rota de nível baixo tem folga mínima pras missões dela', () => {
+  const rota1 = { max: 6 };
+  assert.equal(limiteDaRota(rota1), 6 + MARGEM_ESGOTADA, 'teto pequeno: manda a margem, não o dobro');
+  assert.equal(rotaEsgotada(rota1, 12, 'roguelike'), false, 'o dobro sozinho travava a run aqui');
+  assert.equal(rotaEsgotada(rota1, 21, 'roguelike'), false);
+  assert.equal(rotaEsgotada(rota1, 22, 'roguelike'), true, 'passou da folga: aí sim esgota');
+  // o ponto em que os dois critérios se encontram: daí pra cima, quem manda é o dobro
+  assert.equal(limiteDaRota({ max: MARGEM_ESGOTADA }), MARGEM_ESGOTADA * FATOR_ESGOTADA);
+  assert.equal(limiteDaRota({ max: 40 }), 80, 'rota alta não ganha folga extra');
 });

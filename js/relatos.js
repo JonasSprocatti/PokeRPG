@@ -4,7 +4,7 @@
 // pessoais; o jogador vê exatamente o que vai junto e pode desligar.
 import { G, dificuldadeDe } from './estado.js';
 import { $, limparTopo } from './ui.js';
-import { enviarRelato, relatosNaFila, meusRelatos, usuario, nuvemConfigurada } from './nuvem.js';
+import { enviarRelato, enviarFilaRelatos, relatosNaFila, meusRelatos, usuario, nuvemConfigurada } from './nuvem.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, offline } from './util.js';
 
@@ -22,6 +22,14 @@ export function contextoTecnico() {
       emBatalha: !!G.B, ultimasLinhas: (S.log || []).slice(-8).map(l => semHtml(l.html)) } : null
   };
 }
+
+/* Por que o relato ficou na fila. Cada caso pede uma atitude diferente de quem joga, então dizer "sem conexão"
+   pra tudo é pior do que não dizer nada: com a tabela `relatos` faltando no servidor, a pessoa ficaria esperando
+   a internet "voltar" pra algo que não depende dela. */
+const textoDaFila = motivo =>
+  motivo === 'sem-conexao' ? '📴 Sem conexão agora: guardei aqui e envio sozinho quando a internet voltar.'
+  : motivo === 'sem-config' ? '💾 O envio online não está configurado neste site: guardei aqui neste navegador.'
+  : `💾 Guardei aqui: o servidor recusou o envio (${esc(motivo)}). Tento de novo sozinho quando você abrir esta tela.`;
 
 export const escolherTipoRelato = t => { if (['bug', 'sugestao'].includes(t)) { guardar(); tipo = t; telaRelatos(); } };
 const guardar = () => { // mantém o que foi digitado ao trocar de tipo / re-renderizar
@@ -53,6 +61,14 @@ export async function telaRelatos(msg = '') {
     </section>
     <div id="rel-meus"></div>
     <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
+  /* Tenta esvaziar a fila SEMPRE que esta tela abre. Antes isso só acontecia no evento `online` e no início do
+     jogo — e o `online` não dispara quando o navegador já se considera conectado, então um relato guardado podia
+     ficar preso indefinidamente com a tela dizendo que estava "esperando internet". */
+  if (fila && !offline()) enviarFilaRelatos().then(r => {
+    if (!r.enviados || G.mode !== 'relatos') return;
+    telaRelatos(`📤 ${r.enviados} relato(s) que estavam guardados foram enviados agora. 💛`);
+  }).catch(e => console.warn('relatos', e));
+
   // os seus relatos já enviados (com conta)
   if (usuario() && !offline()) meusRelatos().then(lista => {
     if (!lista.length || G.mode !== 'relatos') return;
@@ -70,6 +86,6 @@ export async function enviarRelatoTela() {
   try {
     const r = await enviarRelato(relato);
     rascunho = { titulo: '', texto: '', passos: '', anexar: true };
-    telaRelatos(r === 'enviado' ? `Obrigado! ${bug ? 'Bug' : 'Sugestão'} enviado(a). 💛` : '📴 Sem conexão agora: guardei aqui e envio sozinho quando a internet voltar.');
+    telaRelatos(r.estado === 'enviado' ? `Obrigado! ${bug ? 'Bug' : 'Sugestão'} enviado(a). 💛` : textoDaFila(r.motivo));
   } catch (e) { telaRelatos(`Não deu pra enviar: ${esc(e.message)}`); }
 }

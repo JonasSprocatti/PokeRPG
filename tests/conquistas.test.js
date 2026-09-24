@@ -44,6 +44,24 @@ test('somarAbates junta a carreira com a run em andamento', () => {
   assert.deepEqual(s.especie, { pikachu: 7 });
 });
 
+/* Bug real: a barra da Mega existia por ESTÁGIO. Quem jogava via "Marshtomp 177/1000" e "Swampert 264/1000"
+   lado a lado, e evoluir parecia zerar o progresso. Quem megaevolui é a forma final, então só ela acumula —
+   e isto vale SÓ pra Mega: Tera, Z-Move e Gigantamax continuam contando tudo. */
+test('Mega conta só na evolução final; as outras gimmicks não filtram', () => {
+  const registro = { abates: {
+    total: 900, especie: { swampert: 700, marshtomp: 200, mudkip: 50, absol: 30 },
+    tipoAlvo: { water: 400 }, golpe: { surf: 300 }, elemento: { water: 300 }
+  } };
+  const p = progressoConquistas([], registro);
+  const nomes = p.mega.map(x => x.chave);
+  assert.deepEqual(nomes.sort(), ['absol', 'swampert'], 'forma do meio não entra na lista da Mega');
+  assert.equal(p.mega.find(x => x.chave === 'swampert').n, 700, 'a final não herda o que veio das formas do meio');
+  // as outras continuam iguais — o filtro é exclusivo da Mega
+  assert.equal(p.tera[0].chave, 'water');
+  assert.equal(p.zGolpe[0].n, 300);
+  assert.equal(p.abates.total, 900, 'o marco de caçada conta TODO abate, em qualquer forma');
+});
+
 test('Gigantamax sai do histórico: jornadas em que a espécie chegou ao nível 50', () => {
   const j = (especie, nivel) => ({ especie, nivel });
   const r = runsDeNivel([j('charmander', 50), j('charmander', 49), j('charmander', 72), j('pikachu', 60), j('pikachu', 10)]);
@@ -55,7 +73,7 @@ test('Gigantamax sai do histórico: jornadas em que a espécie chegou ao nível 
 test('progresso diz o que já liberou e o quanto falta', () => {
   const jornadas = [{ especie: 'pikachu', nivel: 50, registro: { abates: {
     tipoAlvo: { fire: ALVOS.tera, water: 10 },
-    especie: { pikachu: ALVOS.mega },
+    especie: { raichu: ALVOS.mega },        // evolução final: é quem pode megaevoluir
     golpe: { thunderbolt: ALVOS.zGolpe, 'quick-attack': 3 },
     elemento: { electric: 5 }
   } } }];
@@ -63,7 +81,8 @@ test('progresso diz o que já liberou e o quanto falta', () => {
   assert.equal(teraLiberada(p, 'fire'), true);
   assert.equal(teraLiberada(p, 'water'), false);
   assert.equal(teraLiberada(p, 'grass'), false);              // nunca derrotou nenhum: nem aparece na lista
-  assert.equal(megaLiberada(p, 'pikachu'), true);
+  assert.equal(megaLiberada(p, 'raichu'), true);
+  assert.equal(megaLiberada(p, 'pikachu'), false, 'forma do meio não libera Mega');
   assert.equal(zLiberado(p, golpe('thunderbolt', 'electric')), true);
   assert.equal(zLiberado(p, golpe('quick-attack', 'normal')), false);
   assert.equal(gmaxLiberado(p, 'pikachu'), false);            // 1 run de 25
@@ -84,7 +103,11 @@ test('o resumo da jornada LEVA os abates pra carreira (senão o contador zera ao
   assert.deepEqual(resumo.registro.abates.especie, { pikachu: 1 });
   assert.deepEqual(resumo.registro.abates.tipoAlvo, { fire: 1 });
   // e o progresso da carreira enxerga isso
-  assert.equal(progressoConquistas([{ dificuldade: 'hard', ...resumo }], null).mega[0].n, 1);
+  const p = progressoConquistas([{ dificuldade: 'hard', ...resumo }], null);
+  assert.equal(p.abates.total, 1);
+  assert.equal(p.tera[0].n, 1);
+  // Pikachu não aparece na Mega de propósito: ele evolui pra Raichu, e quem megaevolui é a forma final
+  assert.deepEqual(p.mega, []);
 });
 
 test('a run em andamento entra no progresso (não espera a jornada acabar)', () => {

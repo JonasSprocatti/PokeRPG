@@ -7,6 +7,8 @@ import { render } from './render.js';
 import { changeStats } from './efeitos.js';
 import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.js';
 import { ITEMS, ST_SHORT } from './dados.js';
+import { pokedexDaRota, somarRegistros } from './mapas.js';
+import { carregarCarreira } from './carreira.js';
 import { heal, itemTemEfeito, golpesParaEnsinar } from './regras.js';
 import { loadPokemon } from './api.js';
 import { esc, fmt, offline } from './util.js';
@@ -45,9 +47,18 @@ async function usarRepelente(id) {
   const S = G.S, it = ITEMS[id], z = zone();
   let especie = null;
   if (it.repelente === 'seletivo') {
-    const lista = z.pool.filter(p => !p.m);
-    const i = await ask(`<b>${it.name}</b>: qual espécie de ${esc(z.name)} NÃO vai ser repelida?`,
-      [...lista.map((p, j) => ({ label: esc(fmt(p.n)), value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+    /* Só espécies que você JÁ ENCONTROU nesta rota. Antes a lista trazia o pool inteiro pelo nome, e virava um
+       índice do que ainda faltava descobrir: a Pokédex da rota mostrava "?" e o repelente entregava os nomes —
+       estragava a descoberta, que é metade da graça de uma rota nova. Mesmo estado que a Pokédex usa
+       (mapas.pokedexDaRota): 'oculto' = nunca enfrentou, e é o que fica de fora daqui. */
+    const saber = somarRegistros([...carregarCarreira().jornadas.map(j => j.registro), S.registro]);
+    const lista = pokedexDaRota(z, saber).filter(p => !p.mitico && p.estado !== 'oculto');
+    if (!lista.length) {
+      await say(`Você ainda não conhece ninguém de ${esc(z.name)}. Explore um pouco antes de usar ${it.name} — dá pra escolher só quem você já encontrou.`, 'muted');
+      return false;
+    }
+    const i = await ask(`<b>${it.name}</b>: qual espécie de ${esc(z.name)} NÃO vai ser repelida?<br><small>Só aparecem aqui as que você já encontrou.</small>`,
+      [...lista.map((p, j) => ({ label: esc(fmt(p.nome)), value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
     if (i < 0) return false;
     especie = lista[i].n;
   }

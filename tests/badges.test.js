@@ -81,6 +81,25 @@ test('badges que leem o progresso permanente (jornadas bancadas)', () => {
   assert.equal(acha(lista, 'roguelike9').completo, false);
 });
 
+/* Bug real: bastava entrar numa jornada e sair dela pra ganhar "Nunca precisei de médico" — sem Centro Pokémon,
+   afinal, porque não houve tempo de precisar de um. A badge pede VITÓRIA (fechar uma Gen). Como badge não fica
+   gravada em lugar nenhum (é recalculada), apertar a regra tira a medalha de quem pegou pelo caminho fácil. */
+test('sem-centro exige VENCER, não só terminar a jornada', () => {
+  const ctx = p => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, progresso: { porJornada: p, especies: {} }, dex: null, conquistas: null });
+  const desistiu = ctx({ a: { dificuldade: 'roguelike', semCentro: true, motivo: 'encerrou' } });
+  assert.equal(desistiu.runsSemCentro, 0, 'desistir não é vitória');
+  assert.equal(acha(badgesDaConta(desistiu), 'sem-centro').completo, false);
+
+  for (const fim of ['desmaiou', 'capturado']) {
+    assert.equal(ctx({ a: { dificuldade: 'roguelike', semCentro: true, motivo: fim } }).runsSemCentro, 0, fim);
+  }
+  // vitória conta pelos dois campos: entrada nova traz `genVencida`, entrada antiga pode ter só o `motivo`
+  assert.equal(ctx({ a: { semCentro: true, genVencida: 3 } }).runsSemCentro, 1);
+  assert.equal(ctx({ a: { semCentro: true, motivo: 'venceu' } }).runsSemCentro, 1);
+  // e usar o Centro continua invalidando, mesmo vencendo
+  assert.equal(ctx({ a: { semCentro: false, genVencida: 3 } }).runsSemCentro, 0);
+});
+
 test('vantagens somam itens repetidos e nunca contam badge incompleta', () => {
   const lista = [
     { completo: true, recompensa: { itens: { potion: 3 }, dinheiro: 1000 } },
