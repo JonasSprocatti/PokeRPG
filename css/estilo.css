@@ -19,6 +19,10 @@ img{max-width:100%}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:2px solid var(--line)}
 .brand{display:flex;align-items:center;gap:10px}
+/* a logo é um botão (data-act="inicio"): leva pra tela inicial. Sem borda/fundo de botão, com foco visível pra teclado */
+.brand-logo{background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;border-radius:8px;transition:transform .15s}
+.brand-logo:hover{transform:scale(1.04)}
+.brand-logo:focus-visible{outline:3px solid var(--accent,#f6c744);outline-offset:3px}
 .brand .logo{height:46px;width:auto;display:block} /* img/logo.png (o favicon sai de img/favicon-32.png) */
 .brand small{font:500 13px var(--display);color:var(--muted);margin-left:10px}
 .top-r{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;justify-content:flex-end;font:700 16px var(--display)}
