@@ -238,6 +238,11 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 **As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
 O que sobrou e o que ficou combinado:
 
+- **Clima das rotas é OPCIONAL por jornada**: `S.climaRotas` (escolhido na criação, caixa `#pv-clima`, `G.climaRotas`), ou forçado por
+  `DIFICULDADES[x].climaRotasFixo` (Roguelike e Hardcore: caixa marcada e travada). Sempre perguntar via **`regras.climaDasRotasAtivo(S)`**
+  (cobre save antigo sem o campo) — `batalha.iniciar` e `multiplayer` (co-op, run do anfitrião) só passam a rota a `novoCampo` se ativo.
+  **Mega do inimigo**: `mega.inimigoMegaLiberada(E)` = nível ≥ `NIVEL_MEGA_INIMIGO` (40), checado em `batalha.megaDoInimigo` SEM marcar
+  `megaInimigoUsada` (o Tera do inimigo, que só usa `inimigoPodeMega`, segue livre em qualquer nível). O 40 é o NÍVEL do Pokémon inimigo.
 - **Clima/terreno padrão de rota**: `regras.CLIMA_DA_ROTA` (id da rota → `{clima}` ou `{terreno}`; testado contra `dados-mapas.js`
   em `tests/clima-rota.test.js`; Santuário e luta final ficam de fora) e `novoCampo(rotaId)`, usado por `batalha.iniciar`
   (`G.S.zone`) e `mp-motor.novaBatalhaMP` (`opcoes.zona`, só co-op; PvP = campo limpo). O campo ganhou `climaFixo`/`terrenoFixo`

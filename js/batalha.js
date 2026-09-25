@@ -18,12 +18,12 @@ import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
-  novoCampo, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
+  novoCampo, climaDasRotasAtivo, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
-import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
+import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, inimigoMegaLiberada, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { zDisponiveis } from './zmove.js';
 import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax } from './dynamax.js';
@@ -73,7 +73,7 @@ async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinad
 function iniciar(B) {
   for (const m of ladoJogador()) m.vol = freshVol();
   // o campo já nasce com o clima/terreno da rota (regras.CLIMA_DA_ROTA); habilidades de entrada e golpes ainda trocam
-  G.B = { caidos: new Set(), campo: novoCampo(G.S?.zone), ...B };
+  G.B = { caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), ...B };
   G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render();
   /* Baixa as formas Mega que podem entrar em campo AGORA, em segundo plano. A batalha não espera: se a rede
      falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
@@ -265,6 +265,7 @@ export async function usarZ() {
 async function megaDoInimigo() {
   const B = G.B, E = B?.enemy;
   if (!B || !E || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
+  if (!inimigoMegaLiberada(E)) return;   // Mega de inimigo só de nível 40 em diante (não marca "usada": o Tera ainda pode virar)
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
   const f = megasDisponiveis(E, { jaUsou: false, liberada: () => true, ignorarPedra: true })[0];
   if (!f) { B.megaInimigoUsada = true; return; }   // não tem forma: não checa de novo a cada golpe

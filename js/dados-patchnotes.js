@@ -5,6 +5,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.27', data: '2026-09-25', titulo: 'Escolha o seu tempo', piada: 'O treinador da Rota 3 pediu desculpas por ter chegado de Mega tão cedo. Disse que estava ansioso.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Nova opção na tela inicial: <b>🌦 Clima e terreno das rotas</b>. No <b>Roguelike</b> e no <b>Hardcore</b> ela é sempre ligada; nos outros modos vem <b>desligada</b> e você liga se quiser. Só dá pra escolher no começo da jornada.'
+      ] },
+      { nome: 'Equilíbrio', itens: [
+        'A <b>Mega Evolução do inimigo</b> (treinadores, Alfas e lendários) agora só acontece de <b>nível 40 em diante</b>. Antes, treinadores das primeiras rotas já megaevoluíam. Tera, Z-Move e Gigantamax não mudaram.'
+      ] }
+    ] },
   { versao: '2.26', data: '2026-09-25', titulo: 'O tempo das rotas', piada: 'A Caverna Gelada avisa que o granizo é cortesia da casa. O guarda-chuva do Psyduck continua sendo cobrado à parte.',
     secoes: [
       { nome: 'Novidades', itens: [

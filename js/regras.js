@@ -2,7 +2,7 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
-import { API, STATS, STAT_PT, CHART, NATURES, ITEMS } from './dados.js';
+import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem } from './segurados.js';
@@ -286,6 +286,9 @@ export const CLIMA_DA_ROTA = {
   'g-hammerlocke': { terreno: 'eletrico' }, 'g-glimwood': { terreno: 'fada' },
   'p-tagtree': { terreno: 'grama' }, 'p-zero': { terreno: 'psiquico' }
 };
+// Esta jornada usa o clima/terreno das rotas? Roguelike e Hardcore: sempre (`climaRotasFixo`). Os outros modos: só se
+// o jogador ligou na criação (`S.climaRotas`). Save antigo sem o campo cai na regra do modo.
+export const climaDasRotasAtivo = S => !!(DIFICULDADES[S?.dificuldade]?.climaRotasFixo || S?.climaRotas);
 // o campo de uma batalha nova naquela rota (sem rota, ou rota sem padrão, = campo limpo)
 export function novoCampo(rotaId) {
   const p = CLIMA_DA_ROTA[rotaId] || {};

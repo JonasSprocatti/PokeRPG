@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MEGAS, megasDe, temMega, ehPrimal } from '../js/dados-megas.js';
-import { megasDisponiveis, avisoDaMega, desfazerMega, inimigoPodeMega, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
+import { megasDisponiveis, avisoDaMega, desfazerMega, inimigoPodeMega, inimigoMegaLiberada, NIVEL_MEGA_INIMIGO, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
 import { progressoConquistas } from '../js/conquistas.js';
 import { ITEM_PEDRA_MEGA } from '../js/dados.js';
 
@@ -128,5 +128,11 @@ test('só Alfa, lendário e treinador megaevoluem do lado inimigo', () => {
   assert.equal(inimigoPodeMega({ trainer: { nome: 'Rui' } }), true);
   assert.equal(inimigoPodeMega({}), false, 'selvagem de rota não');
   assert.equal(inimigoPodeMega(null), false);
+  // e a Mega dele só de nível 40 em diante (o Tera do inimigo não tem esse piso)
+  assert.equal(NIVEL_MEGA_INIMIGO, 40);
+  assert.equal(inimigoMegaLiberada({ level: 39 }), false);
+  assert.equal(inimigoMegaLiberada({ level: 40 }), true);
+  assert.equal(inimigoMegaLiberada({ level: 62 }), true);
+  assert.equal(inimigoMegaLiberada(null), false);
   assert.ok(HP_MEGA_INIMIGO > 0 && HP_MEGA_INIMIGO < 1, 'vira no meio da luta, não no começo nem no fim');
 });

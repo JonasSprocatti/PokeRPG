@@ -21,6 +21,10 @@ import { megaDaContaLiberada } from './carreira.js';
 
 // quem pode megaevoluir do lado inimigo: as lutas que já são o pico da dificuldade (decisão do usuário)
 export const inimigoPodeMega = B => !!(B?.chefe || B?.lendarios || B?.trainer);
+/* A Mega do inimigo só aparece de nível 40 em diante: um treinador das primeiras rotas megaevoluindo era forte demais
+   (decisão do usuário). As outras viradas do inimigo (Tera…) NÃO têm esse piso — são `inimigoPodeMega` e mais nada. */
+export const NIVEL_MEGA_INIMIGO = 40;
+export const inimigoMegaLiberada = E => (E?.level || 0) >= NIVEL_MEGA_INIMIGO;
 // o inimigo vira quando cai a metade do HP: é a "segunda fase" da luta, não um susto no primeiro turno
 export const HP_MEGA_INIMIGO = 0.5;
 

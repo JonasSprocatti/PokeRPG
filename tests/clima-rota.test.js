@@ -1,7 +1,8 @@
 // Clima e terreno padrão das rotas (regras.CLIMA_DA_ROTA), a permanência deles, Weather Ball e a forma do Castform.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLIMA_DA_ROTA, novoCampo, golpeDoClima, climaDe, terrenoDe, CLIMAS, TERRENOS, CLIMA_TURNOS, TERRENO_TURNOS, calcDamage, freshVol } from '../js/regras.js';
+import { DIFICULDADES } from '../js/dados.js';
+import { CLIMA_DA_ROTA, novoCampo, climaDasRotasAtivo, golpeDoClima, climaDe, terrenoDe, CLIMAS, TERRENOS, CLIMA_TURNOS, TERRENO_TURNOS, calcDamage, freshVol } from '../js/regras.js';
 import { mudarClima, passarClima, mudarTerreno, passarTerreno, usarGolpe, ajustarForma, desfazerForma } from '../js/golpe.js';
 import { GENS } from '../js/mapas.js';
 
@@ -23,6 +24,20 @@ test('a tabela de rotas só cita rotas que existem, com clima e terreno válidos
   }
   // Santuário e luta final ficam de fora de propósito
   for (const g of GENS) for (const r of g.rotas) if (r.posVitoria) assert.ok(!CLIMA_DA_ROTA[r.id], `${r.id}: Santuário não tem padrão`);
+});
+
+test('clima das rotas: sempre no Roguelike e no Hardcore, opção (desligada) nos outros', () => {
+  for (const k of ['roguelike', 'hardcore']) {
+    assert.equal(DIFICULDADES[k].climaRotasFixo, true, k);
+    assert.equal(climaDasRotasAtivo({ dificuldade: k }), true, `${k}: liga mesmo em save antigo sem o campo`);
+    assert.equal(climaDasRotasAtivo({ dificuldade: k, climaRotas: false }), true, `${k}: não dá pra desligar`);
+  }
+  for (const k of ['easy', 'medium', 'hard', 'randomizer']) {
+    assert.ok(!DIFICULDADES[k].climaRotasFixo, k);
+    assert.equal(climaDasRotasAtivo({ dificuldade: k }), false, `${k}: desligado por padrão`);
+    assert.equal(climaDasRotasAtivo({ dificuldade: k, climaRotas: true }), true, `${k}: ligado se o jogador quis`);
+  }
+  assert.equal(climaDasRotasAtivo(null), false);
 });
 
 test('a batalha nasce com o clima/terreno da rota, e rota sem padrão nasce limpa', () => {

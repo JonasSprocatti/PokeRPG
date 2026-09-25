@@ -23,7 +23,7 @@ export const SAVE_KEY = 'pokerpg-save-v1';
 //   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
 //   gen   = mapa (Gen) escolhido na tela inicial; vira S.gen ao começar
 //   cacaShiny = 🎯 modo Caça Shiny marcado na tela inicial; vira S.cacaShiny (só dá pra ligar ao começar)
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, abertos: new Set() };
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set() };
 
 // rotas do mapa (Gen) atual, já com os níveis desta jornada (mapas.js: escalaNivel depois de trocar de Gen)
 export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z, G.S));

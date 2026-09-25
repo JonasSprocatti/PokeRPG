@@ -260,6 +260,7 @@ document.addEventListener('change', e => {
     const A = G.S.aliados[+io]; A.ordem = e.target.value;
     log(`${nm(A)}: ${ORDENS[A.ordem].nome}.`, 'muted'); save(); return render();
   }
+  if (e.target.id === 'pv-clima') { G.climaRotas = e.target.checked; return; } // 🌦 clima/terreno das rotas (só opcional fora do Roguelike/Hardcore)
   if (e.target.id === 'pv-caca') { G.cacaShiny = e.target.checked; return; } // vale mesmo sem prévia de Pokémon
   if (!G.PV) return;
   if (e.target.id === 'pv-nature') G.PV.nature = e.target.value;

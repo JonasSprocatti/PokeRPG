@@ -16,7 +16,7 @@ import { spriteFrente } from './render.js';
 import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
 import { sortearDaRota } from './mapas.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe } from './regras.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal } from './mp-motor.js';
 import { carregarCarreira } from './carreira.js';
 import { desbloqueadas } from './roguelike.js';
@@ -282,7 +282,7 @@ export async function iniciarBatalhaMP(tipo) {
       if (!temRun()) throw new Error('Co-op é jogar a run de alguém: o anfitrião precisa de uma run em andamento.');
       const rs = rotasAtuais(), z = rs.find(x => x.id === sala.zona) || rs[0]; // níveis da run do anfitrião
       if (tipo === 'alfa' && !z.chefe) return; // a luta dos lendários (rota final) é só no single player
-      opcoes.zona = z.id; // o campo nasce com o clima/terreno padrão da rota (PvP não tem rota: campo limpo)
+      if (climaDasRotasAtivo(G.S)) opcoes.zona = z.id; // o campo nasce com o clima/terreno da rota, se a run do anfitrião usa (PvP não tem rota: campo limpo)
       A = montarLado(membros, 'A');
       const meuNivel = G.S.player.level;
       if (cfg.balancear) { A = balancearCoop(A, meuNivel); abertura = `Balanceado: o time todo no nível ${meuNivel} (o do anfitrião). Quem teve o nível ajustado não leva XP nem itens pra própria run.`; }

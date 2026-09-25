@@ -41,6 +41,7 @@ export function showCreate() {
     <div id="vantagens"></div>
     <label class="check caca-opcao"><input type="checkbox" id="pv-caca" ${G.cacaShiny ? 'checked' : ''}> 🎯 Modo Caça Shiny
       <small class="muted">Quando você revelar todas as espécies de uma rota (10 derrotados de cada), pode escolher UMA delas pra ser a única que aparece ali. Serve pra caçar shiny — ou o que você quiser — sem depender da sorte do sorteio. Só dá pra ligar agora, no começo da jornada.</small></label>
+    <div id="clima-opcao"></div>
     <h3 class="passo"><span>3</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
     <div id="escolha"></div>
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
@@ -123,6 +124,15 @@ function renderVantagens() {
            Desligar deixa a jornada mais dura e <b>rende mais pontos</b> no ranking.`
         : 'Você ainda não tem badges. Quando tiver, elas dão itens e dinheiro no começo de cada jornada — e aqui dá pra abrir mão deles por mais pontos.'}</small></label>`;
 }
+/* 🌦 Clima e terreno das rotas: no Roguelike e no Hardcore são SEMPRE ligados (a caixa aparece marcada e travada);
+   nos outros modos é opção, desligada por padrão. Como a caixa é redesenhada a cada troca de dificuldade, ela sempre
+   reflete o modo atual. */
+function renderClimaOpcao() {
+  const el = $('#clima-opcao'); if (!el) return;
+  const fixo = !!DIFICULDADES[G.dif].climaRotasFixo;
+  el.innerHTML = `<label class="check caca-opcao"><input type="checkbox" id="pv-clima" ${fixo || G.climaRotas ? 'checked' : ''} ${fixo ? 'disabled' : ''}> 🌦 Clima e terreno das rotas
+      <small class="muted">Várias rotas começam a luta com o tempo da paisagem (neve, areia, chuva, sol) ou com um terreno (grama, elétrico…), valendo para os dois lados. Um golpe ou habilidade troca por 5 turnos e depois a rota volta ao padrão. ${fixo ? '<b>Neste modo é sempre ligado.</b>' : 'Desligado por padrão. Só dá pra ligar agora, no começo da jornada.'}</small></label>`;
+}
 // mapas que dá pra escolher neste modo: no Roguelike (fimNaGen), só os liberados vencendo a Gen anterior; nos outros, todos
 const gensLiberadas = () => DIFICULDADES[G.dif].fimNaGen ? gensLiberadasRoguelike(carregarCarreira().jornadas) : GENS.map(x => x.gen);
 // passo 2: mapa (Gen). Full Randomizer sorteia o mapa também (não mostra escolha)
@@ -141,6 +151,7 @@ export function renderDificuldade() {
   $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
   renderGens();
   renderVantagens();
+  renderClimaOpcao();
   const rnd = G.dif === 'randomizer';
   $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
   $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';
@@ -254,6 +265,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   const bag = { potion: 3, 'full-heal': 1 };
   for (const [k, n] of Object.entries(v.itens)) bag[k] = (bag[k] || 0) + n;
   G.S = { player: mon, bag, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+    climaRotas: !!(DIFICULDADES[dificuldade].climaRotasFixo || G.climaRotas), // 🌦 clima/terreno das rotas: fixo no Roguelike/Hardcore, opção nos outros (regras.climaDasRotasAtivo)
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
@@ -262,6 +274,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
   if (anterior) log(`💾 A jornada de ${esc(anterior.player.nick || fmt(anterior.player.name))} foi guardada: dá pra voltar nela em Jornadas salvas.`, 'muted');
   if (G.S.cacaShiny) log('🎯 Modo Caça Shiny ligado: revele todas as espécies de uma rota pra escolher qual vai aparecer nela.', 'muted');
+  if (G.S.climaRotas) log('🌦 Clima e terreno das rotas ligados: várias rotas começam a luta com o tempo da paisagem.', 'muted');
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');
