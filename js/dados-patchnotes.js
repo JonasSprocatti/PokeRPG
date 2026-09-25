@@ -11,7 +11,7 @@ export const PATCH_NOTES = [
         '<b>O evento semanal começa na segunda 28/09/2026</b> (e vira toda segunda-feira à meia-noite, horário de Brasília). Até lá há só o aviso do primeiro chefe — <b>Eternatus Eternamax</b> — na tela inicial e na rota final da Gen 8. A tela inicial mostra a <b>agenda dos próximos 3 chefes</b> com as datas.',
         'Segundo chefe: a <b>Mega Rayquaza</b> (Gen 3, a partir de 05/10). Ela não tem couraça: tem um <b>ponto fraco que muda a cada duas ações</b> (só o tipo da vez machuca de verdade, os outros são reduzidos) e o <b>Dragon Ascent</b> carregado, que atinge o grupo inteiro. Vencer dá a insígnia <b>Guardião do Pilar Celeste</b> e libera a Rayquaza pra começar jornadas.',
         '<b>Chefe no co-op:</b> na sala, o botão ☄ desafia o chefe da semana com o grupo. O HP dele cresce com o número de jogadores, mas menos que proporcional — jogar junto compensa. O golpe carregado atinge <b>o time todo</b>. Quem ficar sem nenhum Pokémon de pé pode <b>usar um Revive</b> (até 3 por luta) enquanto os outros seguram, e volta com metade do HP.',
-        'A insígnia de evento que você escolheu mostrar aparece ao lado do seu nome também <b>na sala do multiplayer</b>.'
+        'A insígnia de evento que você escolheu mostrar aparece ao lado do seu nome também <b>na sala do multiplayer</b>, na <b>lista de amigos</b> e no <b>ranking</b>. O servidor só mostra a insígnia de quem realmente venceu aquele chefe.'
       ] }
     ] },
   { versao: '2.30', data: '2026-09-25', titulo: 'O céu racha: chefe da semana', piada: 'O Eternatus pediu para avisar que não é ele que está atrasado: é o resto do universo que chegou cedo.',

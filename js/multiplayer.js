@@ -17,14 +17,13 @@ import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIO
 import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe } from './boss.js';
-import { BADGES } from './badges.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento } from './carreira.js';
 import { desbloqueadas } from './roguelike.js';
 import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizar } from './nuvem.js';
-import { htmlIcone } from './conta.js';
+import { htmlIcone, htmlInsigniaDe } from './conta.js';
 import { loadPokemon, loadMove } from './api.js';
 import { makeMon } from './pokemon.js';
 import { gainExp, gainExpAliado } from './progressao.js';
@@ -71,7 +70,7 @@ function minhasFotos() {
 }
 // a insígnia de evento que a pessoa escolheu mostrar ao lado do nome (só o ID vai pela rede; o ícone sai de BADGES)
 const meuPayload = () => ({ id: meuId(), nome: meuNome(), icone: meuIcone(), anfitriao: sala.anfitriao, time: sala.time, entrouEm: sala.entrouEm, mons: minhasFotos(), badge: nuvem.badgeExibida || null });
-const iconeDaBadge = id => { const b = id && BADGES.find(x => x.id === id && x.grupo === 'Eventos'); return b ? `<span class="badge-nome" title="${esc(b.nome)}">${b.icone}</span>` : ''; };
+const iconeDaBadge = htmlInsigniaDe;   // (conta.js) o mesmo ícone do topo, da lista de amigos e do ranking
 // anfitrião chama um amigo: aviso aparece pra ele em qualquer tela (nuvem.convidarAmigo → canal pessoal do amigo)
 export async function convidarAmigoMP(amigoId) {
   if (!sala) return;
@@ -645,7 +644,7 @@ function renderLobby(cabecalho, pvp, z) {
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
   const naSalaIds = new Set(sala.membros.map(m => m.id));
   const amigosFora = usuario() ? nuvem.amigos.filter(a => a.status === 'aceita' && !naSalaIds.has(a.amigo)) : [];
-  const convites = amigosFora.length ? `<div class="mp-convites"><b>Chamar amigos:</b> ${amigosFora.map(a => `<button class="btn ghost sm" data-act="mp-convidar" data-v="${a.amigo}">${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')} ${esc(a.apelido)}</button>`).join('')}</div>`
+  const convites = amigosFora.length ? `<div class="mp-convites"><b>Chamar amigos:</b> ${amigosFora.map(a => `<button class="btn ghost sm" data-act="mp-convidar" data-v="${a.amigo}">${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')} ${esc(a.apelido)}${htmlInsigniaDe(a.badge_exibida)}</button>`).join('')}</div>`
     : usuario() ? '' : '<p class="small muted">Entre na conta pra chamar amigos direto (sem precisar passar o código).</p>';
   const podePvp = time('A').length && time('B').length;
   $('#mp-acoes').innerHTML = `<div class="mp-config">

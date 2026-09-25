@@ -258,7 +258,10 @@ O que sobrou e o que ficou combinado:
   `u.boss.soltouTodos` e o `mp-motor` chama `usarGolpe(..., {extra:true})` nos outros alvos (sem nova ação, sem recarga). **Revive**: ação `revive` → `registrarRevive` (anfitrião) →
   `mp-motor.reviverNoEvento` muta o estado NA HORA (o Pokémon já escolhe no turno); `b.revivesUsados[dono]` viaja no estado e cada cliente desconta o Revive da PRÓPRIA mochila em
   `consumirRevives` (o anfitrião não sabe a mochila dos outros). Sem fuga no evento (`s.evento`). Cada participante registra a tentativa de 8 h ao ver o 1º estado (`sala.tentativaEvento`)
-  e recebe o prêmio em `premiarEventoMP` só se a SUA run é Roguelike/Hardcore. A insígnia exibida vai no payload de presença (`meuPayload().badge`). **Falta**: os outros chefes e os itens.
+  e recebe o prêmio em `premiarEventoMP` só se a SUA run é Roguelike/Hardcore. A insígnia exibida vai no payload de presença (`meuPayload().badge`) e, nas listas persistentes, pelas RPCs `meus_amigos()` e `ranking()` (coluna `badge_exibida`, migração
+  `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
+  (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
+  `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. **Falta**: os outros chefes e os itens.
 - **Sucker Punch** (`soSeAlvoAtaca` em `especiais.js`): `vol.golpeEscolhido` é preenchido por `batalha.turn`/`mp-motor` antes de resolver o turno e apagado em `fimDaRodada`;
   falha se o alvo escolheu status, não escolheu golpe (item/fuga) ou já agiu (`primeiro` falso).
 - **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),

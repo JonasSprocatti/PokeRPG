@@ -6,7 +6,7 @@ import { $, limparTopo } from './ui.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { DIFICULDADES } from './dados.js';
 import { buscarRanking, especiesRanqueadas, nuvemConfigurada, usuario } from './nuvem.js';
-import { htmlIcone } from './conta.js';
+import { htmlIcone, htmlInsigniaDe } from './conta.js';
 import { esc, fmt, offline } from './util.js';
 
 let especieAtual = null; // null = geral; sobrevive a sair e voltar da tela
@@ -39,7 +39,7 @@ export async function telaRanking(especie = especieAtual) {
       <thead><tr><th>#</th><th>Jogador</th>${especieAtual ? '' : '<th>Pokémon</th>'}<th>Nível</th><th>Modo</th><th>Pontos</th></tr></thead>
       <tbody>${linhas.map(l => `<tr class="${l.eu ? 'eu' : ''}">
         <td class="pos">${l.posicao <= 3 ? ['🥇', '🥈', '🥉'][l.posicao - 1] : l.posicao + 'º'}</td>
-        <td class="jogador">${htmlIcone({ id: l.icone_id, shiny: l.icone_shiny }, 'icone-mini')}${esc(l.apelido)}${l.eu ? ' <small>(você)</small>' : ''}</td>
+        <td class="jogador">${htmlIcone({ id: l.icone_id, shiny: l.icone_shiny }, 'icone-mini')}${esc(l.apelido)}${htmlInsigniaDe(l.badge_exibida)}${l.eu ? ' <small>(você)</small>' : ''}</td>
         ${especieAtual ? '' : `<td>${esc(fmt(l.especie))}</td>`}
         <td>${l.nivel}</td><td>${DIFICULDADES[l.dificuldade]?.nome || esc(l.dificuldade)}</td>
         <td class="pts">${l.pontuacao.toLocaleString('pt-BR')}</td></tr>`).join('')}</tbody></table>`

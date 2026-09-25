@@ -108,7 +108,7 @@ No **Roguelike** e no **Hardcore**, um chefe especial ocupa a rota final da Gen 
 - **Prêmio:** o Pokémon na Pokédex e para começar jornadas, a insígnia de evento com título e um prêmio por semana vencida. Na tela 👤 Conta dá para escolher **uma** insígnia para aparecer ao lado do nome.
 - **Calendário:** o chefe muda **toda segunda-feira à meia-noite (Brasília)**, a partir de **28/09/2026**. Antes disso a tela inicial e a rota final mostram o aviso do primeiro chefe, e a tela inicial traz a **agenda dos próximos 3 chefes**. Semana 1 = Eternatus Eternamax (Gen 8), semana 2 = Mega Rayquaza (Gen 3), e a lista gira.
 - **Mega Rayquaza:** sem couraça; o **ponto fraco muda a cada 2 ações** (só o tipo da vez machuca de verdade) e o **Dragon Ascent** carregado atinge o grupo todo.
-- **Co-op:** na sala, ☄ desafia o chefe da semana em grupo. O HP cresce com o número de jogadores, mas **menos que proporcional**; o golpe carregado atinge o time inteiro; e quem ficar sem Pokémon de pé pode **usar um Revive** (até 3 por luta) enquanto os outros seguram. A insígnia escolhida aparece ao lado do nome na sala.
+- **Co-op:** na sala, ☄ desafia o chefe da semana em grupo. O HP cresce com o número de jogadores, mas **menos que proporcional**; o golpe carregado atinge o time inteiro; e quem ficar sem Pokémon de pé pode **usar um Revive** (até 3 por luta) enquanto os outros seguram. A insígnia escolhida aparece ao lado do nome na sala, na lista de amigos e no ranking (precisa rodar as duas migrações do Supabase de 25/09).
 - **Ainda não:** os outros chefes da lista (formas alternativas e Megas de lendários) e os itens exclusivos de prêmio.
 
 ### 🤝 Badges de parceiros

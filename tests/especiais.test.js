@@ -19,6 +19,7 @@ test('tabela: só comportamentos que o motor conhece', () => {
   // `poder` é o único que não é tratado em golpe.js: ele vira fórmula em regras.poderEspecial (checado logo abaixo).
   const ok = new Set(['protege', 'aguentaTurno', 'foco', 'descanso', 'autoDesmaio', 'ohko', 'soDormindo', 'toxico', 'semente', 'carga', 'invulneravel', 'recarga', 'furia', 'poder', 'danoIgualHp',
     'soPrimeiroTurno',                        // Fake Out, First Impression
+    'soSeAlvoAtaca',                          // Sucker Punch, Thunderclap: só funcionam contra quem vai usar golpe de dano
     'clima', 'terreno',                       // Rain Dance / Electric Terrain e cia.
     'lado', 'soNoGelo', 'armadilha',          // telas e armadilhas de entrada (Aurora Veil só no granizo/neve)
     'puneContato', 'voltaPostura']);          // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo

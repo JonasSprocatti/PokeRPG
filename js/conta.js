@@ -33,11 +33,13 @@ export function renderChipConta() {
   if (G.mode === 'conta' && !$('#conta-editando')?.contains(document.activeElement)) telaConta(); // atualiza sem roubar o foco de quem digita
 }
 
-// a insígnia de evento que a pessoa escolheu mostrar ao lado do nome (só o ícone; o nome e o título vão no tooltip)
-function insigniaExibida() {
-  const b = nuvem.badgeExibida && BADGES.find(x => x.id === nuvem.badgeExibida && x.grupo === 'Eventos');
+// a insígnia de evento que uma pessoa escolheu mostrar ao lado do nome (só o ícone; o nome e o título vão no tooltip).
+// Serve pra qualquer um: o topo (a minha), a lista de amigos, o ranking e a sala. ID desconhecido/vazio = nada (versões antigas do jogo).
+export function htmlInsigniaDe(id) {
+  const b = id && BADGES.find(x => x.id === id && x.grupo === 'Eventos');
   return b ? `<span class="badge-nome" title="${esc(b.nome)} — título: ${esc(b.recompensa?.titulo || b.nome)}" aria-label="Insígnia ${esc(b.nome)}">${b.icone}</span>` : '';
 }
+const insigniaExibida = () => htmlInsigniaDe(nuvem.badgeExibida);
 /* Insígnias dos eventos semanais: todas aparecem aqui (conquistadas e por conquistar). Uma só pode ficar ao lado do nome. */
 function secaoInsigniasEvento() {
   const lista = badgesDaCarreira().filter(b => b.grupo === 'Eventos'); if (!lista.length) return '';
@@ -87,7 +89,7 @@ function secaoIcone(logado) {
 function secaoAmigos() {
   const lista = nuvem.amigos, recebidos = lista.filter(a => a.status === 'pendente' && a.recebido);
   const enviados = lista.filter(a => a.status === 'pendente' && !a.recebido), amigos = lista.filter(a => a.status === 'aceita');
-  const linha = (a, botoes) => `<li>${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')}<b>${esc(a.apelido)}</b><span class="subrow">${botoes}</span></li>`;
+  const linha = (a, botoes) => `<li>${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')}<b>${esc(a.apelido)}</b>${htmlInsigniaDe(a.badge_exibida)}<span class="subrow">${botoes}</span></li>`;
   return `<section class="pv conta"><div>
       <h3>Amigos</h3>
       <p>Seu código de amigo: <b class="codigo">${esc(nuvem.codigoAmigo || '—')}</b> <span class="small muted">(passe pra quem quiser te adicionar)</span></p>
