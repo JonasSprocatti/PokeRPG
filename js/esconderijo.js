@@ -15,7 +15,13 @@ import { MAX_ALIADOS } from './regras.js';
 // quantos cabem esperando. Alto de propósito: o limite que importa é o da EQUIPE, não o do depósito.
 export const MAX_ESCONDIDOS = 30;
 
-export const escondidos = S => (S?.escondidos ||= []);
+/* `S.escondidos ||= []` com S garantido: **`S?.escondidos ||= []` é erro de SINTAXE** — optional chaining não
+   pode ser alvo de atribuição. O arquivo inteiro deixa de parsear, e com ele todo mundo que o importa: a tela
+   fica branca e o console acusa num arquivo só, sem dizer que o culpado é este. */
+export function escondidos(S) {
+  if (!S) return [];
+  return (S.escondidos ||= []);
+}
 export const equipeCheia = S => (S?.aliados || []).length >= MAX_ALIADOS;
 export const esconderijoCheio = S => escondidos(S).length >= MAX_ESCONDIDOS;
 
