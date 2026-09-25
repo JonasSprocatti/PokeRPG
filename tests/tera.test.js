@@ -8,7 +8,9 @@ import { TYPE_PT } from '../js/dados.js';
 
 const mon = (types, extra = {}) => {
   const data = { types, base: { hp: 80, attack: 100, defense: 80, 'special-attack': 100, 'special-defense': 80, speed: 80 } };
-  const m = { level: 50, data, ivs: {}, evs: {}, nature: 'hardy', ability: '', status: null, vol: freshVol(), ...extra };
+  // IVs/EVs completos: com `{}` o calcStats soma undefined e todos os atributos viram NaN
+  const cheio = v => Object.fromEntries(Object.keys(data.base).map(s => [s, v]));
+  const m = { level: 50, data, ivs: cheio(31), evs: cheio(0), nature: 'hardy', ability: '', status: null, vol: freshVol(), ...extra };
   m.stats = calcStats(m); m.hp = m.stats.hp;
   return m;
 };
@@ -26,7 +28,7 @@ test('terastalizado defende por UM tipo só', () => {
   assert.deepEqual(tiposDefensivos(charizard), ['water']);
   // é o ponto da mecânica: Charizard morre pra Pedra (4×) e, Tera Água, deixa de morrer
   assert.equal(typeEff('rock', ['fire', 'flying']), 4);
-  assert.equal(typeEff('rock', tiposDefensivos(charizard)), 2);
+  assert.equal(typeEff('rock', tiposDefensivos(charizard)), 1, 'Pedra contra Água é neutro');
 });
 
 test('STAB do Tera: 2.0 só quando o Tera casa com um tipo que você já tinha', () => {
