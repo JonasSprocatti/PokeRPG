@@ -14,8 +14,8 @@
 export const CLIMAS = [
   { id: 'vulcao', palavras: ['vulc', 'magma', 'lava', 'forno', 'cratera', 'chamas'], ceu: ['#3a1206', '#8c2a10'], chao: '#4a1a0c', luz: '#ff7a3d' },
   { id: 'caverna', palavras: ['caverna', 'túnel', 'tunel', 'mina', 'subterr', 'gruta', 'monte lua'], ceu: ['#141428', '#2b2b4d'], chao: '#3a3550', luz: '#8e8ad6' },
+  { id: 'gelo', palavras: ['gelo', 'gelad', 'neve', 'glaci', 'inverno', 'espuma'], ceu: ['#20405e', '#8fc4e8'], chao: '#b9d9ee', luz: '#cfefff' },   // antes do mar: "ilhas de gelo" é gelo
   { id: 'mar', palavras: ['mar', 'praia', 'costa', 'oceano', 'ilha', 'lago', 'rio', 'água', 'agua', 'aqu'], ceu: ['#0b3a5c', '#1f7fa8'], chao: '#1d5f77', luz: '#4fd0e0' },
-  { id: 'gelo', palavras: ['gelo', 'gelad', 'neve', 'glaci', 'inverno', 'espuma'], ceu: ['#20405e', '#8fc4e8'], chao: '#b9d9ee', luz: '#cfefff' },
   { id: 'floresta', palavras: ['floresta', 'bosque', 'mata', 'selva', 'arvor', 'árvor', 'ilex', 'jardim'], ceu: ['#12301a', '#2f6b34'], chao: '#2a5327', luz: '#7fd48a' },
   { id: 'usina', palavras: ['usina', 'elétr', 'eletr', 'fábrica', 'fabrica', 'reator', 'máquina', 'maquina', 'laborat'], ceu: ['#1a1a2e', '#3d3a6b'], chao: '#2e2c45', luz: '#ffd94a' },
   { id: 'fantasma', palavras: ['torre', 'cemit', 'assombr', 'mansão', 'mansao', 'ruína', 'ruina', 'queimada', 'sombra'], ceu: ['#17111f', '#3b2550'], chao: '#2a1f38', luz: '#c07ef0' },

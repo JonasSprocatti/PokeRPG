@@ -65,7 +65,9 @@ test('a loja mostra os itens pra segurar (é por onde o jogador conhece a mecân
   const divisoes = porCategoria(aVenda);
   const seg = divisoes.find(c => c.id === 'segurado');
   assert.ok(seg, 'a divisão 🎒 Para segurar não aparece na loja');
-  assert.equal(seg.itens.length, Object.keys(ITENS_SEGURADOS).length);
+  // toda a tabela de segurados está à venda, mais a Pedra Mega e o Cristal Z (que também são `segurado` e entram na divisão)
+  assert.ok(seg.itens.length >= Object.keys(ITENS_SEGURADOS).length, 'faltou item da tabela na loja');
+  assert.equal(seg.itens.length, aVenda.filter(([, it]) => it.segurado).length);
   for (const [k] of seg.itens) assert.ok(ITEMS[k].segurado && ITEMS[k].price > 0, k);
   // uma fruta pra segurar também é achada explorando: a mecânica aparece sem precisar de dinheiro
   assert.ok(FIND_ITEMS.some(k => ITEMS[k]?.segurado), 'nenhum item pra segurar aparece explorando');
