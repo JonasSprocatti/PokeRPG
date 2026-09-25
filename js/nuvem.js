@@ -157,7 +157,21 @@ const linhaJornada = j => ({ id: j.id, user_id: j.dono, especie: j.especie, difi
 
 // Junta carreira local + nuvem e reconcilia o save da jornada em andamento. Chamada ao entrar, ao abrir o jogo
 // logado e depois de toda jornada terminada.
-export async function sincronizar() {
+/* UMA sincronização por vez. Ao abrir o jogo logado ela era chamada duas vezes juntas (o evento SIGNED_IN do Supabase
+   e o `if (sessao)` de iniciarNuvem), e cada uma lia o mesmo estado: você respondia "Guardar"/"Excluir" e a segunda
+   perguntava DE NOVO a mesma jornada — e, com o estado velho na mão, ainda sobrescrevia a lista de guardadas que a
+   primeira acabara de gravar. Chamada durante uma em andamento não roda em paralelo: pede UMA repetição no fim (que
+   já enxerga o que acabou de mudar, como uma jornada que terminou agora). */
+let sincronizando = null, sincronizarDeNovo = false;
+export function sincronizar() {
+  if (sincronizando) { sincronizarDeNovo = true; return sincronizando; }
+  sincronizando = (async () => {
+    try { do { sincronizarDeNovo = false; await sincronizarAgora(); } while (sincronizarDeNovo); }
+    finally { sincronizando = null; }
+  })();
+  return sincronizando;
+}
+async function sincronizarAgora() {
   const c = await sb(), u = usuario(); if (!c || !u) return;
   if (offline()) { nuvem.status = 'offline'; avisar(); return; } // o listener 'online' chama de novo
   nuvem.status = 'sincronizando'; nuvem.erro = null; avisar();
@@ -306,6 +320,7 @@ async function sincronizarSaves(c, u, terminadas) {
   if (r.novoAtivo) ganchos.carregarSave(r.novoAtivo);
   for (const S of r.subir) await subirSave(c, u, S);
   for (const d of r.perguntar) {
+    if (guardadas()[d.id] || excluidos().has(d.id)) continue; // já respondida (por outra pergunta ainda aberta): não pergunta de novo
     const escolha = await ganchos.oferecerSave(d, ganchos.saveLocal());
     if (escolha === 'continuar') ganchos.carregarSave(d, { guardarAtual: true });
     else if (escolha === 'excluir') { excluir(d.id); if (await apagarSaveNuvem(d.id)) esquecerExcluido(d.id); }

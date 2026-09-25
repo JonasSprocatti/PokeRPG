@@ -23,6 +23,18 @@ test('jornada da nuvem desconhecida: pergunta (não descarta a daqui)', () => {
   assert.equal(r.novoAtivo, null);
 });
 
+test('save antigo sem id (ou com id diferente) usa o id da linha: guardar/excluir mexem na jornada certa', () => {
+  const semId = { jornada_id: 'x', dados: { salvoEm: 5, player: { name: 'pikachu', level: 5 } } };
+  const outroId = { jornada_id: 'y', dados: { id: 'errado', salvoEm: 5, player: { name: 'pikachu', level: 5 } } };
+  const r = rec({ remotos: [semId, outroId] });
+  assert.deepEqual(r.perguntar.map(x => x.id), ['x', 'y']);
+  // depois de guardada com o id da linha, não pergunta de novo
+  const r2 = rec({ guardadas: { x: r.perguntar[0], y: r.perguntar[1] }, remotos: [semId, outroId] });
+  assert.deepEqual(r2.perguntar, []);
+  // e excluída: apaga da nuvem pelo id da linha
+  assert.deepEqual(rec({ excluidos: new Set(['x']), remotos: [semId] }).apagarRemotos, ['x']);
+});
+
 test('guardada já conhecida não pergunta de novo; só local sobe', () => {
   const r = rec({ guardadas: { g: S('g', 5), h: S('h', 1) }, remotos: [rem(S('g', 5))] });
   assert.deepEqual(r.perguntar, []);

@@ -56,7 +56,9 @@ export function reconciliarSaves({ ativo, guardadas: gs, remotos, terminadas, ex
   for (const id of Object.keys(out.guardadas)) if (fora(id)) delete out.guardadas[id];
   const naNuvem = new Set();
   for (const r of remotos) {
-    const id = r.jornada_id, d = r.dados; naNuvem.add(id);
+    // o id da LINHA é a chave de verdade: um save antigo pode ter `dados.id` faltando ou diferente, e aí guardar/excluir
+    // (que usam `d.id`) mexeriam na jornada errada e a pergunta voltaria a cada abertura
+    const id = r.jornada_id, d = r.dados?.id === r.jornada_id ? r.dados : { ...r.dados, id: r.jornada_id }; naNuvem.add(id);
     if (fora(id)) { out.apagarRemotos.push(id); continue; }
     if (ativo?.id === id) { if ((d.salvoEm || 0) > (ativo.salvoEm || 0)) out.novoAtivo = d; else out.subir.push(ativo); continue; }
     const g = out.guardadas[id];
