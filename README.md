@@ -102,6 +102,9 @@ Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para
 ### Comprar em quantidade
 Tocar num item da loja abre um pequeno HUD: **−10 / − / campo / + / +10 / Máx**, com o **total e o troco** atualizando na hora (limite de 99 ou o que o dinheiro alcança). Ao confirmar, aparece um aviso 🛒 "Comprou N× item" com quantos você tem na mochila. `Enter` confirma, `Esc` ou tocar fora cancela.
 
+### 🏅 Insígnia Alpha
+Quem criou a conta durante o Alpha ganha, para sempre, uma **Poké Ball dourada com o α** na tela 👤 Conta (e ao lado do nome no topo). A regra é a data de criação da conta, que vem do servidor (`ALPHA_ATE` em `js/alpha.js`); quem entra depois não consegue.
+
 ### 📜 Novidades (notas de atualização)
 Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, com as correções e uma piadinha por versão. Quando sai uma atualização nova, o botão fica marcado até você ler.
 

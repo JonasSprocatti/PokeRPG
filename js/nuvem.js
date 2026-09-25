@@ -26,7 +26,7 @@ async function sb() {
 export const usuario = () => sessao?.user || null;
 
 // estado mostrado na tela de conta / no chip do topo
-export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false };
+export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false, criadoEm: null };
 // conta de manutenção: libera o painel de testes em ⚙ Ajustes (dev.js). Sai de `perfis.admin`, nunca do navegador.
 export const ehAdmin = () => !!nuvem.admin && !!usuario();
 
@@ -121,7 +121,7 @@ export async function iniciarNuvem() {
     sessao = s; avisar();
     if (evento === 'SIGNED_IN') { sincronizar(); ouvirConvites(); }
     if (evento === 'SIGNED_OUT') {
-      nuvem.apelido = ''; nuvem.naNuvem = 0; nuvem.status = 'ocioso'; nuvem.icone = null; nuvem.codigoAmigo = ''; nuvem.amigos = [];
+      nuvem.apelido = ''; nuvem.criadoEm = null; nuvem.naNuvem = 0; nuvem.status = 'ocioso'; nuvem.icone = null; nuvem.codigoAmigo = ''; nuvem.amigos = [];
       if (canalConvites) { c.removeChannel(canalConvites); canalConvites = null; }
       avisar();
     }
@@ -177,7 +177,7 @@ async function sincronizarAgora() {
   nuvem.status = 'sincronizando'; nuvem.erro = null; avisar();
   try {
     // perfil (apelido padrão = começo do e-mail; ícone = o escolhido neste navegador antes de entrar)
-    let { data: perfil, error: ep } = await c.from('perfis').select('apelido, icone_id, icone_shiny, codigo_amigo, admin').eq('id', u.id).maybeSingle();
+    let { data: perfil, error: ep } = await c.from('perfis').select('apelido, icone_id, icone_shiny, codigo_amigo, admin, criado_em').eq('id', u.id).maybeSingle();
     if (ep?.code === '42703') ({ data: perfil, error: ep } = await c.from('perfis').select('apelido').eq('id', u.id).maybeSingle()); // schema.sql antigo
     if (ep) throw ep;
     if (!perfil) {
@@ -194,6 +194,7 @@ async function sincronizarAgora() {
        de mudar essa coluna (supabase/migrations), então ninguém se promove pelo jogo — a promoção é feita à mão
        no SQL Editor. Aqui do lado do cliente isso é só a chave do painel; o que protege dado é a RLS. */
     nuvem.admin = !!perfil?.admin;
+    nuvem.criadoEm = perfil?.criado_em || null; // insígnia Alpha (alpha.js): a data de criação da conta vem do servidor
     await carregarAmigos().catch(e => console.warn('amigos', e)); // sem a tabela ainda: segue sem amigos
 
     // carreira: sobe o que só existe aqui, baixa o que só existe lá

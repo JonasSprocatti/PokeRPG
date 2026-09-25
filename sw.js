@@ -10,7 +10,7 @@ const CACHE_JOGO = 'pokerpg-jogo-v1';
 const CACHE_EXTERNO = 'pokerpg-externo-v2';
 const PRECACHE = [
   './', './index.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
-  './js/ajustes.js', './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',
+  './js/ajustes.js', './js/alpha.js', './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',
   './js/criacao.js', './js/dados.js', './js/dados-mapas.js', './js/dados-megas.js', './js/dev.js', './js/mega.js', './js/tera.js', './js/zmove.js', './js/dynamax.js', './js/esconderijo.js', './js/rastreio.js', './js/cenario.js', './js/dados-patchnotes.js', './js/efeitos.js', './js/especiais.js', './js/estado.js', './js/evolucao.js', './js/fim.js', './js/golpe.js', './js/habilidades.js', './js/itens.js',
   './js/layout.js', './js/main.js', './js/mapas.js', './js/missoes.js', './js/mp-motor.js', './js/multiplayer.js', './js/mundo.js', './js/navegacao.js', './js/novidades.js', './js/offline.js', './js/nuvem.js', './js/paineis.js', './js/segurados.js', './js/tela-ajustes.js', './js/tela-patchnotes.js', './js/tela-conquistas.js', './js/conquistas.js', './js/tela-pokedex.js', './js/pokedex-conta.js', './js/progresso-conta.js', './js/badges.js',
   './js/pokemon.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js'

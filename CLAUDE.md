@@ -238,6 +238,10 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 **As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
 O que sobrou e o que ficou combinado:
 
+- **Insígnia Alpha** (`js/alpha.js`, testada em `tests/alpha.test.js`): sem tabela nem contador — é a data de criação da conta
+  (`perfis.criado_em` → `nuvem.criadoEm`, lida em `sincronizar`) antes de `ALPHA_ATE`. `htmlCartaoAlpha` na tela Conta e `htmlInsigniaAlpha({compacto})`
+  no chip do topo (`conta.js`); ids do SVG únicos por desenho (`seq`). **Depois de anunciar o Beta, NÃO mexer em `ALPHA_ATE`** (é o que faz a insígnia valer).
+  Não aparece no ranking/salas: esses dados de OUTROS jogadores não trazem `criado_em`.
 - **Clima das rotas é OPCIONAL por jornada**: `S.climaRotas` (escolhido na criação, caixa `#pv-clima`, `G.climaRotas`), ou forçado por
   `DIFICULDADES[x].climaRotasFixo` (Roguelike e Hardcore: caixa marcada e travada). Sempre perguntar via **`regras.climaDasRotasAtivo(S)`**
   (cobre save antigo sem o campo) — `batalha.iniciar` e `multiplayer` (co-op, run do anfitrião) só passam a rota a `novoCampo` se ativo.

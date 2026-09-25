@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.28', data: '2026-09-25', titulo: 'Insígnia do Alpha', piada: 'A Poké Ball dourada garante que é de ouro maciço. O Meowth já pediu para avaliar, por precaução.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Quem criou a conta durante o Alpha ganha a <b>Insígnia Alpha</b>: uma Poké Ball dourada com o α, num cartão na tela 👤 Conta e uma versão pequena ao lado do seu nome no topo. Ela é sua para sempre — quem entrar depois que o Beta abrir não consegue.',
+        'Corrigido o aviso de <b>jornadas de outro aparelho</b> que voltava depois de guardar ou excluir: a sincronização rodava duas vezes ao mesmo tempo e perguntava de novo.'
+      ] }
+    ] },
   { versao: '2.27', data: '2026-09-25', titulo: 'Escolha o seu tempo', piada: 'O treinador da Rota 3 pediu desculpas por ter chegado de Mega tão cedo. Disse que estava ansioso.',
     secoes: [
       { nome: 'Novidades', itens: [
