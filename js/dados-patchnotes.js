@@ -15,7 +15,9 @@ export const PATCH_NOTES = [
         'Mais 8 habilidades ativas em batalha: <b>Fur Coat</b> e <b>Ice Scales</b> (metade do dano físico / especial), <b>Super Luck</b> (crítico mais fácil), <b>Intrepid Sword</b> e <b>Dauntless Shield</b> (sobem um atributo ao entrar em campo), Download, Grass Pelt e Flower Gift.'
       ] },
       { nome: 'Correções', itens: [
-        'O jogo abria em branco por causa de um erro de sintaxe no arquivo do esconderijo, que derrubava tudo o que dependia dele. Corrigido.'
+        'O jogo abria em branco por causa de um erro de sintaxe no arquivo do esconderijo, que derrubava tudo o que dependia dele. Corrigido.',
+        'A <b>loja não abria</b>. O filtro que decide se a Pedra Mega e o Cristal Z aparecem na prateleira podia derrubar a tela inteira — agora ele nunca impede a loja de abrir: se a conta de conquistas falhar, a loja abre sem esses dois itens e o erro fica registrado. Ele também passou a ser calculado uma vez, e não duas.',
+        'Mais 3 habilidades: Guard Dog, Sand Force e Effect Spore.'
       ] }
     ] },
   { versao: '2.22', data: '2026-09-24', titulo: 'Ninguém mais se despede à força', piada: 'O Pokémon que você deixou para trás na Rota 4 mandou dizer que agora tem um sofá e está confortável.',

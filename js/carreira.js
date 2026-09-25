@@ -8,7 +8,7 @@ import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, espe
 import { desbloqueadas } from './roguelike.js';
 import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
 import { pokedexDaConta } from './pokedex-conta.js';
-import { progressoConquistas, megaLiberada } from './conquistas.js';
+import { progressoConquistas, megaLiberada, zLiberado } from './conquistas.js';
 
 export const TOTAL_ESPECIES = 1025;
 export const CARREIRA_KEY = 'pokerpg-carreira-v1';
@@ -119,6 +119,18 @@ export const conquistasDaConta = (registroAtual = null) =>
   progressoConquistas(carregarCarreira().jornadas, registroAtual, { abates: abatesDaConta(registroAtual), runs: {} });
 // esta espécie já conquistou a Mega?
 export const megaDaContaLiberada = (especie, registroAtual = null) => megaLiberada(conquistasDaConta(registroAtual), especie);
+
+/* O que a LOJA precisa saber pra decidir se mostra a Pedra Mega e o Cristal Z, numa consulta só.
+   Existe porque a tela perguntava duas vezes — e cada pergunta recalcula a carreira inteira e ainda GRAVA o
+   progresso. Duas vezes por render de loja é desperdício puro, e dobrava a chance de um erro ali derrubar uma
+   tela que não tem nada a ver com gimmick. */
+export function gimmicksNaLoja(especie, golpes = [], registroAtual = null) {
+  const p = conquistasDaConta(registroAtual);
+  return {
+    mega: megaLiberada(p, especie),
+    z: golpes.some(g => g && g.cls !== 'status' && zLiberado(p, g))
+  };
+}
 /* ---- badges (badges.js) ----
    Montadas do progresso permanente + Pokédex da conta + progresso das gimmicks. Ficam aqui pra tela e a criação
    pedirem por uma porta só, sem cada uma remontar o contexto. */

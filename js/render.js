@@ -13,9 +13,9 @@ import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMA
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
-import { megaDaContaLiberada } from './carreira.js';
+import { gimmicksNaLoja } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
-import { zDisponiveis, avisoDoZ, temZConquistado } from './zmove.js';
+import { zDisponiveis, avisoDoZ } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
 import { progressoRastreado } from './rastreio.js';
@@ -385,10 +385,15 @@ function renderActions() {
     /* `soComMega` (a Pedra Mega) só entra na prateleira quando a SUA espécie já tem a Mega conquistada na conta.
        Assim não há como comprar uma pedra que não serve pra ninguém — e quem ainda não conquistou não vê um
        item caro e inútil na loja. */
-    const podeMega = megaDaContaLiberada(P?.data?.speciesName, S?.registro);
-    const temZ = temZConquistado(P);   // sem depender de batalha: a loja acontece fora do combate
+    /* O filtro NUNCA pode impedir a loja de abrir. Ele decide se dois itens aparecem na prateleira; se a conta
+       de conquistas falhar por qualquer motivo, o certo é abrir a loja sem eles e registrar o erro — e não
+       deixar a pessoa sem loja. Uma exceção aqui não faz o clique "não funcionar" em silêncio, que é o pior
+       jeito de quebrar. Uma consulta só (gimmicksNaLoja): antes eram duas, e cada uma recalcula a carreira. */
+    let gimmicks = { mega: false, z: false };
+    try { gimmicks = gimmicksNaLoja(P?.data?.speciesName, P?.moves, S?.registro); }
+    catch (e) { console.warn('loja: não consegui checar as gimmicks; abrindo sem a Pedra Mega e o Cristal Z', e); }
     const forSale = Object.entries(ITEMS).filter(([, it]) =>
-      it.price && (!it.soComMega || podeMega) && (!it.soComZ || temZ));
+      it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };

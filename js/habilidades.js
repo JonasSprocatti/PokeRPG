@@ -145,7 +145,21 @@ export const HABILIDADES = {
   /* Download no original olha a defesa do oponente e escolhe qual atributo subir. Aqui sobe sempre o Ataque
      Especial — a metade que depende de ler o adversário não está implementada, e está dito pra ninguém contar
      com o que não acontece. */
-  download: { estagioAoEntrar: ['special-attack', 1] }
+  download: { estagioAoEntrar: ['special-attack', 1] },
+
+  /* ---- terceira leva ----
+     Daqui pra frente o poço secou: o que falta de habilidade famosa precisa de GANCHO NOVO no motor (dano por
+     tipo do golpe, reação ao sofrer dano, bloqueio de prioridade…), e não de mais uma linha aqui. Estas três
+     são as últimas que cabem no que já existe, e as três estão marcadas como PARCIAIS onde são. */
+  // Guard Dog: a parte "ninguém baixa o seu Ataque" (é o que anula a Intimidação) está fiel; a outra metade
+  // dele, subir o Ataque quando alguém tenta intimidar, ficou de fora
+  'guard-dog': { semQueda: ['attack'] },
+  // Sand Force: aqui só a imunidade à tempestade de areia. O bônus de dano em golpes de Pedra/Solo/Aço precisa
+  // de um gancho por tipo de golpe, que o motor não tem
+  'sand-force': { imuneClima: ['areia'] },
+  // Effect Spore: no original são três status (veneno, paralisia, sono) com 9% cada. O gancho de contato aceita
+  // um status só, então ficou o veneno, na mesma chance — um terço do efeito, nunca mais que o original
+  'effect-spore': { contato: { status: 'poison', chance: 9 } }
   /* FICARAM DE FORA de propósito, por não ter gancho fiel: Steam Engine e Water Compaction sobem atributo ao
      SOFRER um golpe (o gancho `absorve` daria imunidade, que elas não têm — seria mais forte que o original);
      Wonder Skin mexe na precisão de golpe de status alheio; Sticky Hold protege o item segurado. Habilidade sem
