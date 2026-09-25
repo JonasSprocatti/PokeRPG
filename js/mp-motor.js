@@ -8,7 +8,7 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE } from './dados.js';
-import { effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento } from './regras.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento } from './regras.js';
 import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
 import { rand, clamp, fmt } from './util.js';
 
@@ -29,7 +29,7 @@ export function fotoDoMon(M, ref, dono, nome, slot = 0) {
 }
 // pvp: ninguém foge (só dá pra desistir)
 // `campo` = o que vale pros dois lados (hoje só o clima — regras.CLIMAS)
-export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} } });
+export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: novoCampo(opcoes.zona) });
 
 /* ---- balancear ---- */
 // mesmo Pokémon em outro nível: recalcula os stats (base/IVs/EVs/natureza) e mantém a FRAÇÃO de HP

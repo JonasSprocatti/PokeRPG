@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada, vantagemDoGolpe } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada, vantagemDoGolpe, golpeDoClima } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -100,8 +100,8 @@ function turnoBar(B, P, E) {
   const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : 'Pokémon e bolas do treinador'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span>${bolas}</span>` : '';
   // clima do campo (regras.CLIMAS): ícone + quantos turnos faltam
   const cl = climaDe(B.campo), te = terrenoDe(B.campo);
-  const clima = cl ? `<span class="clima-selo" title="${esc(CLIMAS[cl].nome)}">${CLIMAS[cl].icone} ${esc(CLIMAS[cl].nome)} · ${B.campo.turnos}</span>` : '';
-  const terreno = te ? `<span class="clima-selo terreno" title="${esc(TERRENOS[te].nome)} (só vale pra quem está no chão)">${TERRENOS[te].icone} ${esc(TERRENOS[te].nome)} · ${B.campo.terrenoTurnos}</span>` : '';
+  const clima = cl ? `<span class="clima-selo" title="${esc(CLIMAS[cl].nome)}">${CLIMAS[cl].icone} ${esc(CLIMAS[cl].nome)} · ${B.campo.climaFixo ? 'da rota' : B.campo.turnos}</span>` : '';
+  const terreno = te ? `<span class="clima-selo terreno" title="${esc(TERRENOS[te].nome)} (só vale pra quem está no chão)">${TERRENOS[te].icone} ${esc(TERRENOS[te].nome)} · ${B.campo.terrenoFixo ? 'da rota' : B.campo.terrenoTurnos}</span>` : '';
   // telas e armadilhas de cada lado (regras.LADO_VAZIO): 🛡 no seu, ⚔ no do inimigo
   const selosLado = ['jogador', 'inimigo'].map(k => {
     const l = B.campo?.lados?.[k]; if (!l) return '';
@@ -372,7 +372,8 @@ function renderActions() {
     }
     const noPP = P.moves.every(m => m.ppLeft <= 0);
     a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Sem PP: ataque desesperado com recuo.</small></button>`
-      : P.moves.map((m, i) => {
+      : P.moves.map((golpeBase, i) => {
+        const m = golpeDoClima(golpeBase, climaDe(G.B?.campo));   // Weather Ball mostra o tipo e o poder do tempo de agora
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;

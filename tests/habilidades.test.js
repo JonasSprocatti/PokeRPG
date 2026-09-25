@@ -68,7 +68,7 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     // quarta leva (documentados no topo de habilidades.js)
     'danoTipo', 'danoTipoClima', 'golpesFamilia', 'recuo', 'superEfetivoCausado', 'critContraStatus', 'abaixoDeMetade', 'soStatus',
     'ignoraEstagios', 'inverteEstagios', 'dobraEstagios', 'espelhaQueda', 'aoSerBaixado', 'aoNocautear', 'aoSerAtingido', 'limitaStatus',
-    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade']);
+    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {

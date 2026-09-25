@@ -18,7 +18,7 @@ import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc } from './regras.js';
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima } from './regras.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
@@ -48,35 +48,47 @@ export async function passarLados(campo, ctx) {
 export async function mudarTerreno(terreno, ctx, quem = null) {
   if (!TERRENOS[terreno] || !ctx.campo) return false;
   const repetido = terrenoDoCtx(ctx) === terreno;
-  ctx.campo.terreno = terreno; ctx.campo.terrenoTurnos = TERRENO_TURNOS;
+  if (repetido && ctx.campo.terrenoFixo) {          // o chão da rota já é este: continua permanente, não vira um de 5 turnos
+    await ctx.say(`${TERRENOS[terreno].icone} O campo continua: ${TERRENOS[terreno].nome.toLowerCase()}.${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
+    return true;
+  }
+  ctx.campo.terreno = terreno; ctx.campo.terrenoTurnos = TERRENO_TURNOS; ctx.campo.terrenoFixo = false;
   await ctx.say(`${TERRENOS[terreno].icone} ${repetido ? `O campo continua: ${TERRENOS[terreno].nome.toLowerCase()}.` : TERRENOS[terreno].comeca}${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
   return true;
 }
 // fim da rodada: o terreno anda um turno (chamado junto de passarClima)
 export async function passarTerreno(campo, ctx) {
-  if (!campo?.terrenoTurnos) return;
+  if (!campo?.terrenoTurnos || campo.terrenoFixo) return;   // o chão da rota não gasta turno
   campo.terrenoTurnos--;
   if (campo.terrenoTurnos > 0) return;
   const t = TERRENOS[campo.terreno];
   campo.terreno = null;
   if (t) await ctx.say(t.acaba, 'muted');
+  const p = campo.padrao?.terreno;                          // acabou o que foi trocado: a rota volta ao chão dela
+  if (p && TERRENOS[p]) { campo.terreno = p; campo.terrenoTurnos = TERRENO_TURNOS; campo.terrenoFixo = true; await ctx.say(`${TERRENOS[p].icone} ${TERRENOS[p].comeca}`, 'status'); }
 }
 // liga um clima novo (golpe ou habilidade) e narra; o mesmo clima de novo só renova o tempo
 export async function mudarClima(clima, ctx, quem = null) {
   if (!CLIMAS[clima] || !ctx.campo) return false;
   const repetido = climaDoCtx(ctx) === clima;
-  ctx.campo.clima = clima; ctx.campo.turnos = CLIMA_TURNOS;
+  if (repetido && ctx.campo.climaFixo) {            // o tempo da rota já é este: continua permanente, não vira um de 5 turnos
+    await ctx.say(`${CLIMAS[clima].icone} O tempo continua: ${CLIMAS[clima].nome.toLowerCase()}.${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
+    return true;
+  }
+  ctx.campo.clima = clima; ctx.campo.turnos = CLIMA_TURNOS; ctx.campo.climaFixo = false;
   await ctx.say(`${CLIMAS[clima].icone} ${repetido ? `O tempo continua: ${CLIMAS[clima].nome.toLowerCase()}.` : CLIMAS[clima].comeca}${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
   return true;
 }
 // fim da rodada: o clima anda um turno e acaba quando o tempo esgota (chamado por batalha.js e mp-motor.js)
 export async function passarClima(campo, ctx) {
-  if (!campo?.turnos) return;
+  if (!campo?.turnos || campo.climaFixo) return;           // o tempo da rota não gasta turno
   campo.turnos--;
   if (campo.turnos > 0) return;
   const c = CLIMAS[campo.clima];
   campo.clima = null;
   if (c) await ctx.say(c.acaba, 'muted');
+  const p = campo.padrao?.clima;                            // acabou o que foi trocado: a rota volta ao tempo dela
+  if (p && CLIMAS[p]) { campo.clima = p; campo.turnos = CLIMA_TURNOS; campo.climaFixo = true; await ctx.say(`${CLIMAS[p].icone} ${CLIMAS[p].comeca}`, 'status'); }
 }
 
 // Golpe em que o Pokémon está travado (carregando, em fúria) — a escolha do jogador/IA é ignorada neste turno
@@ -147,6 +159,35 @@ export async function mudarEstagios(m, mudancas, ctx, fonte = null, refletido = 
   up(ctx);
 }
 
+/* Forecast (Castform): a forma acompanha o tempo — Sol vira Fogo, Chuva vira Água, Granizo/Neve viram Gelo, o resto
+   (inclusive areia) fica Normal. Muda os TIPOS (é o que pesa na luta) e o sprite. Chamado quando entra em campo, ao
+   fim de cada turno e no começo de cada golpe (do usuário E do alvo), então uma troca de tempo no meio da rodada
+   já vale no golpe seguinte. `m.data` é o objeto do CACHE (compartilhado): a troca cria uma CÓPIA, como a postura do
+   Aegislash. Os ids das formas são os da PokéAPI (Sunny 10013, Rainy 10014, Snowy 10015). */
+export const FORMA_CASTFORM = { sol: { tipo: 'fire', id: 10013 }, chuva: { tipo: 'water', id: 10014 }, granizo: { tipo: 'ice', id: 10015 }, neve: { tipo: 'ice', id: 10015 } };
+const spriteDaForma = (url, id) => (url ? url.replace(/\/\d+\.(png|gif|webp)/, `/${id}.$1`) : url);
+export async function ajustarForma(m, ctx) {
+  if (!hab(m).formaDoClima || m.hp <= 0) return false;
+  const alvo = FORMA_CASTFORM[climaDoCtx(ctx)] || null, chave = alvo ? alvo.tipo : null;
+  if ((m.formaClima || null) === chave) return false;
+  m.formaBase ||= { types: [...m.data.types], sprite: m.data.sprite, back: m.data.back, art: m.data.art };
+  const b = m.formaBase;
+  m.data = { ...m.data,
+    types: alvo ? [alvo.tipo] : [...b.types],
+    sprite: alvo ? spriteDaForma(b.sprite, alvo.id) : b.sprite, back: alvo ? spriteDaForma(b.back, alvo.id) : b.back, art: alvo ? spriteDaForma(b.art, alvo.id) : b.art };
+  m.formaClima = chave;
+  up(ctx);
+  await ctx.say(`${ctx.nome(m)} mudou de forma com o tempo!`, 'status');
+  return true;
+}
+// fim da batalha: volta à forma normal (a forma é do tempo daquela luta, não da espécie)
+export function desfazerForma(m) {
+  if (!m?.formaBase) return false;
+  m.data = { ...m.data, types: [...m.formaBase.types], sprite: m.formaBase.sprite, back: m.formaBase.back, art: m.formaBase.art };
+  delete m.formaBase; delete m.formaClima;
+  return true;
+}
+
 /* Habilidades que agem ao ENTRAR em campo (o mesmo código no single player e no multiplayer):
    Intimidate baixa o Ataque do oponente — salvo quem é imune a ela (Inner Focus, Own Tempo, Oblivious) ou reage (Guard Dog
    sobe o Ataque em vez de cair); depois vêm o clima, o terreno e os degraus de entrada (Intrepid Sword…). Download lê os
@@ -179,6 +220,7 @@ export async function aoEntrarEmCampo(entrantes, oponentesDe, ctx) {
     // passa por mudarEstagios, então Clear Body e Névoa continuam valendo — é o mesmo caminho da Intimidação
     if (est) await mudarEstagios(m, [{ stat: est[0], change: est[1] }], ctx, m);
   }
+  for (const m of entrantes) await ajustarForma(m, ctx);   // Castform já entra na forma do tempo (o da rota ou o que acabou de ser ligado)
 }
 
 // Reação a levar um golpe de dano (Steam Engine, Stamina, Weak Armor, Sand Spit…). Dispara UMA vez por golpe, mesmo
@@ -344,6 +386,7 @@ async function golpeDeStatus(u, t, g, selfT, ctx) {
 
 // `primeiro` = u agiu antes de t neste turno (recuo só vale assim)
 export async function usarGolpe(u, t, g, primeiro, ctx) {
+  await ajustarForma(u, ctx); if (t !== u) await ajustarForma(t, ctx);   // Castform: a forma do tempo de agora, antes de qualquer conta
   const U = ctx.nome(u), hu = hab(u);
   if (u.vol.recarga) { delete u.vol.recarga; await ctx.say(`${U} precisa recarregar!`); return; }  // Hyper Beam & cia.
   if (hu.preguica && u.vol.folga) { u.vol.folga = false; interromper(u); await ctx.say(`${U} está com preguiça...`); return; } // Truant: folga no turno seguinte a um golpe
@@ -411,6 +454,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
 
 // O golpe em si, depois de "X usou Y!". Devolve 'acertou' quando o golpe de dano conectou (Hyper Beam só recarrega assim).
 async function executar(u, t, g, primeiro, ctx, esp) {
+  g = golpeDoClima(g, climaDoCtx(ctx));   // Weather Ball: tipo e poder do tempo (o PP já foi gasto no golpe original)
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
   if (!selfT && t.vol.protegido) {
@@ -570,6 +614,7 @@ export async function fimDeTurno(m, ctx) {
   else if (di < 0 && m.hp > 0 && !indireto(m)) { m.hp = Math.max(0, m.hp + di); up(ctx); await ctx.say(`${nomeDoItem(m)} machucou ${ctx.nome(m)}. (${di})`, 'hit'); }
   if (m.hp > 0 && h.fimTurno) await mudarEstagios(m, [{ stat: h.fimTurno, change: 1 }], ctx);
   await comerFruta(m, ctx);
+  await ajustarForma(m, ctx);
 }
 // Frutas que o Pokémon come sozinho (Oran, Sitrus, Lum): checadas no fim do turno e logo depois de levar dano.
 export async function comerFruta(m, ctx) {

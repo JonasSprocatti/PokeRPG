@@ -261,6 +261,48 @@ export const TERRENOS = {
   fada: { nome: 'Campo de Névoa', icone: '🌫', comeca: 'Uma névoa cobre o chão!', acaba: 'A névoa do chão se dissipou.', desce: { dragon: 0.5 }, semStatus: 'todos' }
 };
 export const TERRENO_TURNOS = 5;
+
+/* ---- clima e terreno PADRÃO da rota ----
+   Algumas rotas nascem com o tempo/chão da paisagem: neve em Caverna Gelada, areia no deserto, grama nos bosques.
+   Vale pros dois lados e desde o 1º turno. É PERMANENTE (`climaFixo`/`terrenoFixo`: o contador não anda) até algum
+   golpe ou habilidade trocar; a troca dura os 5 turnos de sempre e, quando acaba, a rota volta ao padrão dela
+   (`campo.padrao`). Chave = id da rota (dados-mapas.js). Rota fora da tabela = campo limpo, como sempre foi. */
+export const CLIMA_DA_ROTA = {
+  // clima
+  'k-ilhas': { clima: 'chuva' }, caverna: { clima: 'chuva' }, 'j-olivine': { clima: 'chuva' }, 'j-furia': { clima: 'chuva' }, 'j-gelo': { clima: 'granizo' },
+  'h-deserto': { clima: 'areia' }, 'h-chimney': { clima: 'sol' }, 'h-mar': { clima: 'chuva' },
+  's-eolico': { clima: 'sol' }, 's-pantano': { clima: 'chuva' }, 's-neve': { clima: 'neve' },
+  'u-deserto': { clima: 'areia' }, 'u-gelada': { clima: 'neve' }, 'u-humilau': { clima: 'chuva' },
+  'ka-frost': { clima: 'neve' }, 'ka-pantano': { clima: 'chuva' }, 'ka-azure': { clima: 'sol' },
+  'a-wela': { clima: 'sol' }, 'a-hano': { clima: 'sol' }, 'a-lanakila': { clima: 'neve' }, 'a-poni': { clima: 'areia' },
+  'g-rota8': { clima: 'neve' }, 'g-coroa': { clima: 'neve' }, 'g-miloc': { clima: 'chuva' },
+  'p-glaseado': { clima: 'neve' }, 'p-asado': { clima: 'areia' }, 'p-casseroya': { clima: 'chuva' },
+  // terreno
+  'k-usina': { terreno: 'eletrico' }, floresta: { terreno: 'grama' }, 'j-ilex': { terreno: 'grama' }, 'j-ruinas': { terreno: 'psiquico' },
+  'h-petalburgo': { terreno: 'grama' }, 'h-pilar': { terreno: 'psiquico' }, 's-eterna': { terreno: 'grama' },
+  'u-chargestone': { terreno: 'eletrico' }, 'u-pinwheel': { terreno: 'grama' }, 'u-sonhos': { terreno: 'grama' }, 'u-celestial': { terreno: 'psiquico' },
+  'ka-santalune': { terreno: 'grama' }, 'ka-usina': { terreno: 'eletrico' }, 'ka-riviere': { terreno: 'fada' },
+  'a-selva': { terreno: 'grama' }, 'a-altar': { terreno: 'psiquico' },
+  'g-hammerlocke': { terreno: 'eletrico' }, 'g-glimwood': { terreno: 'fada' },
+  'p-tagtree': { terreno: 'grama' }, 'p-zero': { terreno: 'psiquico' }
+};
+// o campo de uma batalha nova naquela rota (sem rota, ou rota sem padrão, = campo limpo)
+export function novoCampo(rotaId) {
+  const p = CLIMA_DA_ROTA[rotaId] || {};
+  return {
+    clima: p.clima || null, turnos: p.clima ? CLIMA_TURNOS : 0, climaFixo: !!p.clima,
+    terreno: p.terreno || null, terrenoTurnos: p.terreno ? TERRENO_TURNOS : 0, terrenoFixo: !!p.terreno,
+    padrao: { clima: p.clima || null, terreno: p.terreno || null }, lados: {}
+  };
+}
+
+/* Weather Ball: o tipo e o poder seguem o tempo (sol Fogo, chuva Água, areia Pedra, granizo/neve Gelo; poder ×2).
+   Devolve uma CÓPIA do golpe — o gasto de PP e a lista de golpes seguem no original. Sem tempo, é o Normal de 50. */
+export const TIPO_BOLA_DO_TEMPO = { sol: 'fire', chuva: 'water', areia: 'rock', granizo: 'ice', neve: 'ice' };
+export function golpeDoClima(g, clima) {
+  if (g?.name !== 'weather-ball' || !TIPO_BOLA_DO_TEMPO[clima]) return g;
+  return { ...g, type: TIPO_BOLA_DO_TEMPO[clima], power: (g.power || 50) * 2 };
+}
 export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
 // quem está no chão sente o terreno; Voador e Levitate flutuam
 export const noChao = m => !m.data.types.includes('flying') && hab(m).imuneTipo !== 'ground';

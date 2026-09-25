@@ -72,6 +72,7 @@
 //   curaComVeneno: fração  o veneno CURA essa fração do HP máx. por turno em vez de machucar (golpe.fimDeTurno) — Poison Heal
 //   pressao                quem usa golpe contra você gasta 1 PP a mais (golpe.usarGolpe) — Pressure
 //   preguica               só age em turnos alternados (golpe.usarGolpe) — Truant
+//   formaDoClima           os tipos e o sprite acompanham o tempo (golpe.ajustarForma) — Forecast, do Castform
 //   bloqueiaPrioridade     golpe de prioridade contra você não passa (golpe.usarGolpe) — Dazzling, Queenly Majesty, Armor Tail
 export const HABILIDADES = {
   // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
@@ -219,7 +220,9 @@ export const HABILIDADES = {
   dazzling: { bloqueiaPrioridade: true }, 'queenly-majesty': { bloqueiaPrioridade: true }, 'armor-tail': { bloqueiaPrioridade: true },
   // entram em campo ligando o clima/terreno E dando o bônus junto (o bônus é de 1,33 no jogo: 5461/4096)
   'hadron-engine': { terrenoAoEntrar: 'eletrico', multStatTerreno: { eletrico: { 'special-attack': 1.33 } } },
-  'orichalcum-pulse': { climaAoEntrar: 'sol', multStatClima: { sol: { attack: 1.33 } } }
+  'orichalcum-pulse': { climaAoEntrar: 'sol', multStatClima: { sol: { attack: 1.33 } } },
+  // Castform: a forma (tipos e sprite) acompanha o tempo — inclusive o padrão da rota (golpe.ajustarForma)
+  forecast: { formaDoClima: true }
   /* FICARAM DE FORA de propósito, por não ter como ser fiel: Sticky Hold protege o item segurado, mas nenhum golpe do
      jogo rouba ou derruba item; Regenerator e Natural Cure agem ao TROCAR de Pokémon, e você nunca troca; Beast Boost
      e Analytic precisam de leitura (maior atributo, ordem do turno) que o motor não expõe; Mold Breaker & cia. pedem

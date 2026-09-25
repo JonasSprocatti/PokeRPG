@@ -135,6 +135,7 @@ As batalhas têm tempo, mostrado no topo com os turnos restantes:
 - **🏜 Areia** e **🧊 Granizo:** machucam 1/16 por turno quem não é Pedra/Terra/Aço (areia) ou Gelo (granizo). Pedra ganha Defesa Especial na areia.
 - **❄ Neve:** dá +50% de Defesa aos Pokémon de Gelo; Blizzard não erra.
 - Ligam com **Rain Dance, Sunny Day, Sandstorm, Hail e Snowscape** (5 turnos) ou com habilidades como **Drizzle** e **Drought**, assim que o Pokémon entra em campo.
+- **Cada rota tem o seu tempo:** 27 rotas nascem com um clima permanente (neve nas geladas, areia nos desertos, sol nos vulcões e praias, chuva nos lagos) e 20 com um terreno (grama, elétrico, psíquico, névoa). Vale para os dois lados e no co-op. Um golpe ou habilidade troca por 5 turnos e depois a rota volta ao padrão dela. **Weather Ball** e o **Castform** (Forecast) seguem o tempo.
 - **Habilidades que aproveitam o tempo:** Swift Swim, Chlorophyll, Sand Rush, Slush Rush, Rain Dish, Ice Body, Dry Skin, Solar Power, Sand Veil, Snow Cloak, Hydration, Leaf Guard, Magic Guard e Overcoat.
 
 ### Lado do campo: telas, proteções e armadilhas

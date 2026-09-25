@@ -16,7 +16,7 @@ import { spriteFrente } from './render.js';
 import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
 import { sortearDaRota } from './mapas.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA } from './regras.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal } from './mp-motor.js';
 import { carregarCarreira } from './carreira.js';
 import { desbloqueadas } from './roguelike.js';
@@ -282,6 +282,7 @@ export async function iniciarBatalhaMP(tipo) {
       if (!temRun()) throw new Error('Co-op é jogar a run de alguém: o anfitrião precisa de uma run em andamento.');
       const rs = rotasAtuais(), z = rs.find(x => x.id === sala.zona) || rs[0]; // níveis da run do anfitrião
       if (tipo === 'alfa' && !z.chefe) return; // a luta dos lendários (rota final) é só no single player
+      opcoes.zona = z.id; // o campo nasce com o clima/terreno padrão da rota (PvP não tem rota: campo limpo)
       A = montarLado(membros, 'A');
       const meuNivel = G.S.player.level;
       if (cfg.balancear) { A = balancearCoop(A, meuNivel); abertura = `Balanceado: o time todo no nível ${meuNivel} (o do anfitrião). Quem teve o nível ajustado não leva XP nem itens pra própria run.`; }
@@ -534,7 +535,7 @@ function renderSala() {
   $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` +
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
-      : vez.moves.map((g, i) => `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`).join('')}</div>
+      : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }
 // Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.

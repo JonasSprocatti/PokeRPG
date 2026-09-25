@@ -238,6 +238,16 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 **As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
 O que sobrou e o que ficou combinado:
 
+- **Clima/terreno padrão de rota**: `regras.CLIMA_DA_ROTA` (id da rota → `{clima}` ou `{terreno}`; testado contra `dados-mapas.js`
+  em `tests/clima-rota.test.js`; Santuário e luta final ficam de fora) e `novoCampo(rotaId)`, usado por `batalha.iniciar`
+  (`G.S.zone`) e `mp-motor.novaBatalhaMP` (`opcoes.zona`, só co-op; PvP = campo limpo). O campo ganhou `climaFixo`/`terrenoFixo`
+  (o contador não anda — não usar `Infinity`, que vira `null` no JSON do save) e `padrao {clima, terreno}`. `golpe.mudarClima`/
+  `mudarTerreno` desligam o fixo (troca dura 5 turnos; repetir o mesmo da rota é no-op); `passarClima`/`passarTerreno`, ao
+  esgotar, RESTAURAM o padrão da rota. **Weather Ball**: `regras.golpeDoClima(g, clima)` devolve uma CÓPIA com tipo/poder do
+  tempo — usada em `golpe.executar` (o PP já foi gasto no original) e nos botões (`render.js`, `multiplayer.js`). **Castform**
+  (`forecast` → `formaDoClima`): `golpe.ajustarForma` troca `m.data` por uma CÓPIA (tipos + sprite pelos ids 10013/14/15) ao
+  entrar, no começo de todo `usarGolpe` (usuário e alvo) e no fim do turno; `desfazerForma` roda em `endBattle`. Cherrim
+  (Flower Gift) só tem o bônus de atributo, sem troca de sprite.
 - **Item 8 — habilidades**: quatro levas feitas. A regra que vale: só entra habilidade com gancho FIEL —
   mapear no gancho errado deixaria a habilidade mais forte que o original, e a ficha promete "✓ ativa em batalha".
   A **4ª leva** (41 novas + 13 parciais completadas) criou ~24 ganchos, todos documentados no topo de

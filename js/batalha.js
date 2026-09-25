@@ -8,7 +8,7 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { healFull, CTX } from './efeitos.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo } from './golpe.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
@@ -18,7 +18,7 @@ import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
-  premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
+  novoCampo, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
@@ -72,7 +72,8 @@ function sortearDoTreinador(z) {
 async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinador(z); return makeMon(await loadPokemon(id), level); }
 function iniciar(B) {
   for (const m of ladoJogador()) m.vol = freshVol();
-  G.B = { caidos: new Set(), campo: { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }, ...B };
+  // o campo já nasce com o clima/terreno da rota (regras.CLIMA_DA_ROTA); habilidades de entrada e golpes ainda trocam
+  G.B = { caidos: new Set(), campo: novoCampo(G.S?.zone), ...B };
   G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render();
   /* Baixa as formas Mega que podem entrar em campo AGORA, em segundo plano. A batalha não espera: se a rede
      falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
@@ -525,7 +526,7 @@ async function serCapturado() {
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
   G.B = null; G.mode = 'explore'; G.panel = 'main';
-  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); m.vol = freshVol(); }
+  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); m.vol = freshVol(); }
 }
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----

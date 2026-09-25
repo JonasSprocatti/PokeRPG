@@ -5,6 +5,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.26', data: '2026-09-25', titulo: 'O tempo das rotas', piada: 'A Caverna Gelada avisa que o granizo é cortesia da casa. O guarda-chuva do Psyduck continua sendo cobrado à parte.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Clima e terreno de rota:</b> 27 rotas já começam a luta com o tempo da paisagem — neve nas geladas, <b>tempestade de areia</b> nos desertos, <b>sol forte</b> nos vulcões e praias, chuva nos lagos e pântanos — e 20 com terreno próprio (grama nos bosques, elétrico nas usinas, psíquico nas ruínas, névoa em Rivière e Glimwood). Vale para os dois lados, no single player e no multiplayer co-op.',
+        'O efeito da rota é <b>permanente</b>: só sai quando um golpe ou habilidade troca o tempo ou o chão. A troca dura os 5 turnos de sempre e, quando acaba, a rota volta ao que era. O selo na cena mostra <b>da rota</b> no lugar da contagem de turnos.',
+        '<b>Weather Ball</b> muda de tipo e dobra o poder conforme o tempo (Fogo no sol, Água na chuva, Pedra na areia, Gelo no granizo e na neve), e o botão do golpe mostra o tipo de agora.',
+        '<b>Castform</b> agora muda de forma com o tempo (Forecast): vira Fogo no sol, Água na chuva e Gelo no granizo ou na neve — os tipos e o sprite acompanham, inclusive o tempo da rota, e ele volta ao normal no fim da luta.'
+      ] }
+    ] },
   { versao: '2.25', data: '2026-09-25', titulo: 'Habilidades de verdade', piada: 'O Slakoth pediu para constar que a nova habilidade dele está funcionando perfeitamente. Ele descansou, para provar.',
     secoes: [
       { nome: 'Novidades', itens: [
