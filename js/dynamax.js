@@ -15,6 +15,10 @@ import { MULT_HP_DYNAMAX, TURNOS_DYNAMAX } from './regras.js';
 import { conquistasDaConta } from './carreira.js';
 import { gmaxLiberado } from './conquistas.js';
 
+/* Do lado inimigo, SÓ o Pokémon de treinador gigantamaxa (decisão do usuário): Alfa, lendário e selvagem não. O
+   treinador "Lendários de <região>" (rota final) também usa `B.trainer`, mas não é um treinador de verdade. */
+export const inimigoPodeGmax = B => !!(B?.trainer && !B.lendarios && !B.evento);
+
 // dá pra gigantamaxar agora? (uma vez por batalha, e só o jogador — igual às outras gimmicks)
 export function podeGigantamax(M = G.S?.player) {
   const B = G.B;

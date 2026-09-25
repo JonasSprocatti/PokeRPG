@@ -5,6 +5,20 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.37', data: '2026-09-25', titulo: 'Gimmicks pra todo mundo', piada: 'O treinador gigantamaxou o Pokémon e esqueceu que ele ainda precisava caber na Poké Ball. O Alfa acha que o Z-Move é um cristal de decoração — e às vezes ele é.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Gimmicks no co-op:</b> na luta em grupo (selvagens, Alfa e chefe da semana) o seu Pokémon <b>principal</b> agora pode <b>Mega Evoluir, Terastalizar, Gigantamaxar e usar Z-Move</b>, com as mesmas regras do single player: conquista da sua conta, Pedra Mega e Cristal Z segurados, uma vez de cada por luta. Mega, Tera e Gigantamax não gastam o turno; o Z é o golpe que você escolher. Aliados, Pokémon convidado e PvP ficam de fora. Nada disso muda o Pokémon da sua run depois da luta.',
+        '<b>Gigantamax do inimigo:</b> só Pokémon de <b>treinador</b> gigantamaxam — na metade do HP, como a Mega e a Tera dos inimigos. Ele dobra o HP, os golpes viram Max por 3 turnos e depois encolhe. Ainda vale <b>uma virada por luta</b> (Mega, Tera ou Gigantamax): quem não tem Mega sorteia entre Tera e Gigantamax.',
+        '<b>Z-Move do inimigo:</b> só <b>treinadores e Alfas</b>. O treinador sempre carrega um Z; o Alfa só de vez em quando (chance baixa, sorteada no começo da luta). Uma vez por luta, num golpe de dano. No co-op o Alfa também pode.',
+        'Os Pokémon que derrotam no <b>co-op</b> agora contam para as conquistas da conta (a barra da Mega da espécie que você usa e os marcos de caçada), como no single player. Tera e Z-Move continuam pedindo o golpe final seu, então só andam no single player.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>O botão de Gigantamax nunca aparecia numa batalha de verdade.</b> A tela de Conquistas contava certo as 25 jornadas no nível 50, mas a batalha lia uma lista vazia. Agora os dois leem o mesmo progresso.',
+        'Inimigo Alfa, lendário ou de treinador <b>nível 40+ que não tem Mega</b> (quase todos) nunca terastalizava: a checagem de Mega o marcava como "já virou". Agora ele segue pra Tera (ou Gigantamax) como devia.',
+        'A tela de Conquistas cortava a lista da Mega em 24 espécies, mesmo as já conquistadas. Agora toda Mega conquistada aparece; o corte vale só pras barras em andamento. E o texto do topo parou de dizer que Z-Move e Gigantamax "só medem o progresso".'
+      ] }
+    ] },
   { versao: '2.36', data: '2026-09-25', titulo: 'Tera surpresa', piada: 'Até ontem o inimigo terastalizava no tipo que ele já era. Agora ele abre a cristalização e não tem nem ele ideia do que vai sair.',
     secoes: [
       { nome: 'Equilíbrio', itens: [

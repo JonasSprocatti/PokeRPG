@@ -4,12 +4,12 @@
 // contadores) é o que deixa juntar local + nuvem de vários aparelhos sem contar nada em dobro (mesclarJornadas).
 // Puro + localStorage via `store` (que é no-op no Node) — testado em tests/carreira.test.js.
 import { store } from './util.js';
-import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, especiesDesbloqueadas, registrarEventoVencido } from './progresso-conta.js';
+import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, runsDeNivelDe, especiesDesbloqueadas, registrarEventoVencido } from './progresso-conta.js';
 import { desbloqueadas } from './roguelike.js';
 import { entradaDoHall, registrarNoHall, listaDoHall } from './hall.js';
 import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
 import { pokedexDaConta } from './pokedex-conta.js';
-import { progressoConquistas, megaLiberada, zLiberado } from './conquistas.js';
+import { progressoConquistas, megaLiberada, zLiberado, ALVOS } from './conquistas.js';
 
 export const TOTAL_ESPECIES = 1025;
 export const CARREIRA_KEY = 'pokerpg-carreira-v1';
@@ -127,10 +127,19 @@ export function registrarVitoriaDeEvento(ev, semanaId) {
 }
 // fusão com a nuvem: nunca perde o que um dos lados tem
 export const mesclarProgressoLocal = remoto => salvarProgresso(mesclarProgresso(carregarProgresso(), remoto));
-/* O progresso das gimmicks somado da conta. Porta única pra batalha e render perguntarem sem remontar o
-   contexto. Sai do progresso PERMANENTE (não do histórico), então apagar jornada não tira gimmick conquistada. */
-export const conquistasDaConta = (registroAtual = null) =>
-  progressoConquistas(carregarCarreira().jornadas, registroAtual, { abates: abatesDaConta(registroAtual), runs: {} });
+/* O progresso das gimmicks somado da conta, a partir do progresso PERMANENTE (não do histórico: apagar jornada não tira
+   gimmick conquistada). Pura — `conquistasDaConta` e `badgesDaCarreira` passam por aqui, e tests/conquistas.test.js
+   trava o resultado. `runs` = jornadas com nível 50 por espécie (a missão do Gigantamax). Já foi bug real: `conquistasDaConta`
+   passava `runs: {}` fixo, então a lista do Gigantamax saía sempre vazia e `podeGigantamax` dava `false` pra qualquer
+   espécie — o botão 🔴 nunca aparecia numa batalha de verdade (só a tela de Conquistas lia os runs certos). */
+export const conquistasDoProgresso = (jornadas, registroAtual, progresso) =>
+  progressoConquistas(jornadas, registroAtual,
+    { abates: totaisDe(progresso, registroAtual?.abates), runs: runsDeNivelDe(progresso, ALVOS.gmaxNivel) });
+// porta única pra batalha e render perguntarem sem remontar o contexto
+export function conquistasDaConta(registroAtual = null) {
+  const jornadas = carregarCarreira().jornadas;
+  return conquistasDoProgresso(jornadas, registroAtual, atualizarProgresso(jornadas));
+}
 // esta espécie já conquistou a Mega?
 export const megaDaContaLiberada = (especie, registroAtual = null) => megaLiberada(conquistasDaConta(registroAtual), especie);
 
@@ -155,7 +164,7 @@ export function badgesDaCarreira(registroAtual = null) {
     abates: totaisDe(progresso, registroAtual?.abates),
     progresso,
     dex: pokedexDaConta(jornadas, registroAtual),
-    conquistas: progressoConquistas(jornadas, registroAtual, { abates: totaisDe(progresso, registroAtual?.abates), runs: {} })
+    conquistas: conquistasDoProgresso(jornadas, registroAtual, progresso)
   });
   return badgesDaConta(ctx);
 }

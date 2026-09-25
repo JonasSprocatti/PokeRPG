@@ -19,7 +19,7 @@ import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
@@ -89,6 +89,7 @@ document.addEventListener('click', async e => {
       return ok ? desistirMP() : undefined;
     }
     case 'mp-golpe': return escolherGolpeMP(+v);
+    case 'mp-gimmick': return alternarGimmickMP(v);   // liga/desliga Mega, Tera, Gigantamax ou Z pro golpe deste turno (co-op)
     case 'mp-fugir': return fugirMP();
     case 'mp-mirar': return mirarMP(v);
     case 'mp-sync': return sincronizarSala();   // pedir o estado da sala de novo (rede engoliu alguma mensagem)

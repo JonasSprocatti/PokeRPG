@@ -85,12 +85,19 @@ export function avisoDaMega(M, { liberada }) {
 export async function megaevoluir(M, forma) {
   let data;
   try { data = await loadPokemon(forma.forma); } catch { return null; }
+  aplicarForma(M, forma, data);
+  return data.name;
+}
+/* A troca em si, SEM rede (pura): `megaevoluir` busca os dados e chama isto; o co-op (mp-motor.js) chama direto,
+   porque quem megaevolui lá manda os dados da forma junto da ação (o anfitrião não busca nada no meio do turno).
+   `habilidade` opcional: a foto do co-op já traz a habilidade resolvida em vez da lista `abilities` da API. */
+export function aplicarForma(M, forma, data, habilidade) {
   M.mega = { forma, antes: { id: M.id, name: M.name, data: M.data, ability: M.ability } };
   M.id = data.id; M.name = data.name; M.data = data;
   // toda forma Mega tem uma habilidade só, e ela é parte do que a Mega É (Mega Gengar sem Shadow Tag não é Mega)
-  M.ability = (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name || M.ability;
+  M.ability = habilidade || (data.abilities?.find(a => !a.hidden) || data.abilities?.[0])?.name || M.ability;
   recalc(M);   // preserva o dano já sofrido: só o teto sobe
-  return data.name;
+  return M;
 }
 
 /* Volta ao normal. Chamada pra TODO mundo no fim da batalha — inclusive quem não megaevoluiu (aí não faz nada),

@@ -374,14 +374,18 @@ sem isso o Pokémon fica Mega pra sempre, porque `M.data` vai junto no save. `me
 TIPO, não por espécie: você escolhe na hora entre os tipos já liberados. Mesma economia da Mega — uma por batalha,
 não gasta o turno, desfaz em `endBattle`. Diferente da Mega, **não troca `M.data`**: guarda só `M.tera`, e quem lê
 são as regras — por isso desfazer é uma linha. `render.badgesDeTipo` mostra o tipo Tera no lugar dos originais
-(mostrar os antigos faria a pessoa calcular a fraqueza errada). Inimigo ainda NÃO terastaliza — decisão em aberto.
+(mostrar os antigos faria a pessoa calcular a fraqueza errada). O inimigo terastaliza (Alfa/lendário/treinador, tipo sorteado) — ver "Gimmicks do inimigo e do co-op".
 
 ### 7. ✅ FEITO — Gigantamax
 `js/dynamax.js` + `regras.poderMax`/`MULT_HP_DYNAMAX`/`TURNOS_DYNAMAX`. **Única gimmick sem item** (25 jornadas já
 é o preço). Dobra o teto de HP e o HP atual por 3 turnos; `passarDynamax` roda na virada da rodada e
 `desfazerDynamax` também em `endBattle` — sem isso o teto dobrado ia junto no save, pra sempre. A volta guarda
 `hpMaxAntes` e reaplica a PROPORÇÃO: recalcular pela base perderia o dano sofrido enquanto gigante. Tabela do Max
-mais modesta que a do Z de propósito (o Z é um tiro; o Max vale 3 turnos). Inimigo não gigantamaxa.
+mais modesta que a do Z de propósito (o Z é um tiro; o Max vale 3 turnos). **Inimigo gigantamaxa só se for de
+TREINADOR** (`dynamax.inimigoPodeGmax` — o "treinador" dos Lendários da rota final, Alfa, evento e selvagem não; ver
+"Gimmicks do inimigo e do co-op" abaixo). **Bug real corrigido**: `carreira.conquistasDaConta` passava `runs: {}`, então
+`podeGigantamax` dava `false` pra qualquer espécie e o botão 🔴 nunca aparecia numa batalha (só a tela de Conquistas lia
+`runsDeNivelDe`). Hoje `conquistasDoProgresso(jornadas, registroAtual, progresso)` (pura, em `carreira.js`) é a fonte única.
 
 ### 6. ✅ FEITO — Z-Move
 `js/zmove.js` (elegibilidade) + `regras.poderZ` (a conversão, pura e testada, aplicada em `calcDamage` quando
@@ -391,6 +395,31 @@ segurado (₽12.000, preço do usuário); a loja o mostra via `temZConquistado`,
 primeira versão usava `zDisponiveis` e o cristal nunca aparecia à venda, porque loja é fora de combate.
 Inimigo **terastaliza** igual à Mega (Alfa/lendário/treinador, metade do HP), mas só **uma virada por luta**:
 quem megaevoluiu não terastaliza também.
+
+### Gimmicks do inimigo e do co-op (25/09/2026)
+Decisões do usuário. **Inimigo** (`batalha.js`): só Pokémon de **treinador** gigantamaxa (`gmaxDoInimigo`, mesmo gatilho
+`HP_MEGA_INIMIGO`); só **treinador e Alfa** usam **Z** (`zmove.inimigoTemZ` sorteia UMA vez em `iniciar` → `B.zInimigo`:
+treinador sempre, Alfa `CHANCE_Z_ALFA`=20%; `inimigoUsaZAgora` decide por turno, `CHANCE_Z_TURNO`=35%, uma vez por luta,
+só golpe de dano; a marca `E.vol.zAtivo` é apagada no `finally` logo depois do golpe). **Uma virada por luta**
+(`jaViradou(B)`: Mega, Tera OU Gigantamax); quem não tem Mega sorteia Tera×Gigantamax (`viradaSorteada`, guardado em
+`B.viradaInimigo` — só treinador tem os dois; o resto é sempre Tera). `passarDynamax(E)` roda no fim da rodada junto do
+lado do jogador. **Bug real corrigido**: `megaDoInimigo` marcava `megaInimigoUsada` quando o inimigo (nível ≥ 40) não
+tinha forma Mega, o que bloqueava o Tera de quase todo mundo; agora só marca quando megaevolui de fato.
+**Co-op** (`mp-motor.js` + `multiplayer.js`): a ação de golpe leva `gimmicks: [{tipo:'mega', forma, id, name, types, base,
+sprite, back, ability} | {tipo:'tera', valor} | {tipo:'gmax'} | {tipo:'z'}]`. A tela de quem joga confere conquista +
+item (Pedra Mega/Cristal Z) da PRÓPRIA conta (`gimmicksDisponiveisMP`); o anfitrião confia no que chega e o motor puro só
+aplica as regras da luta (`aplicarGimmicksMP`): só o PRINCIPAL (`slot 0`) de quem tem run (não convidado, não aliado), não
+PvP, uma de cada por luta e por jogador em `estado.gimmicksUsados[dono]`. Mega, Tera e Gigantamax entram antes dos golpes
+(não gastam o turno); Z marca o golpe do turno (`zRefs`). A Mega manda os dados da forma na ação (o motor não tem rede) —
+`mega.aplicarForma(M, forma, data, habilidade?)` é a troca pura, usada por `megaevoluir` e pelo motor; a espécie
+(`data.speciesName`) NÃO muda, é por ela que o resultado volta pra run. As fotos são descartadas no fim, então nada disso
+persiste na run (o resultado volta por FRAÇÃO de HP). O Alfa do co-op pode carregar Z (`opcoes.alfa` → `estado.zIA`,
+`zIAUsado`); Mega/Tera de Alfa no co-op **não existem** (só single player). UI: `alternarGimmickMP` (liga/desliga em
+`sala.gimmicksSel`, resetado a cada turno), com o Z ligado só os golpes elegíveis ficam clicáveis. `aplicarCoop` agora chama
+`registrarAbate({porMim:false})` por derrotado (espécie + total; Tera/Z pedem golpe final seu e ficam só no single player).
+**Auditoria das conquistas da Mega** (`tests/gimmicks-coop-inimigo.test.js`): toda espécie de `MEGAS` libera com 1.000 abates,
+não com 999, e habilita a forma com a pedra (Rayquaza: Dragon Ascent). Lacuna conhecida: as formas **Mega Z** (Absol,
+Garchomp, Lucario) não estão na tabela — o gerador só casa `-mega`, `-mega-x`, `-mega-y` e `-primal`.
 
 ### Pedra Mega, rastreio de conquista e cenário (24/09/2026)
 - **Pedra Mega** (`dados.ITEM_PEDRA_MEGA`, ₽15.000 — preço escolhido pelo usuário): conquistar a Mega libera a

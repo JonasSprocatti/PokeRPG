@@ -11,16 +11,18 @@
 // dele desmaio volta com 1 HP); PvP é amistoso (não mexe em HP/PP, só conta vitórias/derrotas em S.pvp).
 import { G, save, registrar, dificuldadeDe, rotasAtuais, centroPokemon, zerarDescontoCentro } from './estado.js';
 import { healFull } from './efeitos.js';
-import { $, limparTopo, logRaw, say, toast } from './ui.js';
+import { $, limparTopo, logRaw, say, toast, ask } from './ui.js';
 import { spriteFrente } from './render.js';
-import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
+import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR, ITEM_CRISTAL_Z } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo, CLIMA_TURNOS } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
-import { carregarCarreira, registrarVitoriaDeEvento } from './carreira.js';
+import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta } from './carreira.js';
+import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
+import { megasDisponiveis } from './mega.js';
 import { desbloqueadas } from './roguelike.js';
 import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizar } from './nuvem.js';
 import { htmlIcone, htmlInsigniaDe } from './conta.js';
@@ -286,6 +288,7 @@ export async function iniciarBatalhaMP(tipo) {
       if (!temRun()) throw new Error('Co-op é jogar a run de alguém: o anfitrião precisa de uma run em andamento.');
       const rs = rotasAtuais(), z = rs.find(x => x.id === sala.zona) || rs[0]; // níveis da run do anfitrião
       if (tipo === 'alfa' && !z.chefe) return; // a luta dos lendários (rota final) é só no single player
+      if (tipo === 'alfa') opcoes.alfa = true;  // o Alfa pode carregar um Z-Move (mp-motor.novaBatalhaMP)
       if (climaDasRotasAtivo(G.S)) opcoes.zona = z.id; // o campo nasce com o clima/terreno da rota, se a run do anfitrião usa (PvP não tem rota: campo limpo)
       A = montarLado(membros, 'A');
       const meuNivel = G.S.player.level;
@@ -423,7 +426,7 @@ function aoReceberEstado(p) {
   if (!sala) return;
   sala.conexao = 'ok'; sala.ultimoEvento = Date.now();
   const luta = !sala.batalha;   // primeira vez que vejo esta luta
-  if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) { anotar(`← estado (turno ${p.batalha.turno})`); sala.escolhidos = new Set(); } // turno novo: escolhe de novo
+  if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) { anotar(`← estado (turno ${p.batalha.turno})`); sala.escolhidos = new Set(); sala.gimmicksSel = {}; } // turno novo: escolhe de novo
   sala.batalha = p.batalha; sala.prazo = p.prazo; sala.acoesFeitas = p.acoesFeitas || []; sala.tipo = p.tipo; sala.zona = p.zona;
   if (luta) { sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.tentativaEvento = false; }
   // chefe da semana: a tentativa (8 h) conta pra TODOS assim que a luta começa, e cada Revive que o anfitrião aceitou sai da MINHA mochila
@@ -465,7 +468,77 @@ export function reviverMP() {
 }
 // meu próximo Pokémon que ainda não escolheu neste turno
 const minhaVez = () => { const b = sala?.batalha; return b && jogaveis(b).find(m => m.dono === meuId() && !sala.escolhidos.has(m.ref) && !sala.acoesFeitas.includes(m.ref)); };
-export function escolherGolpeMP(i) { escolher({ tipo: 'golpe', golpe: i, alvo: sala?.alvo }); }
+/* ---------- gimmicks no co-op (Mega, Tera, Gigantamax, Z-Move) ----------
+   Os botões só aparecem pro PRINCIPAL de quem tem uma run (convidado, aliado e PvP ficam de fora). A conquista e o item são da
+   MINHA conta e conferidos aqui, na minha tela; o que eu escolho vai junto da ação de golpe (`acao.gimmicks`) e o anfitrião
+   aplica no motor (mp-motor.aplicarGimmicksMP), que também guarda o "já usei nesta luta" em `batalha.gimmicksUsados`. */
+const golpeZ = (p, g) => !!g && !!p && g.cls !== 'status' && g.power > 0 && g.ppLeft > 0 && g.name !== 'struggle' && zLiberado(p, g);
+// o que o meu Pokémon principal pode usar agora; null = não se aplica (PvP, convidado, aliado, sem run)
+function gimmicksDisponiveisMP(b, m) {
+  if (!b || b.pvp || !m || m.slot !== 0 || m.convidado || sala.convidado || !temRun()) return null;
+  const M = G.S.player, usou = b.gimmicksUsados?.[meuId()] || {}, p = conquistasDaConta(G.S.registro);
+  return {
+    p,
+    mega: !usou.mega && !m.mega ? megasDisponiveis(M, { jaUsou: false, liberada: e => megaLiberada(p, e) }) : [],   // a Pedra Mega (ou Dragon Ascent) segue valendo
+    tera: !usou.tera && !m.tera ? Object.keys(TYPE_PT).filter(t => teraLiberada(p, t)) : [],
+    gmax: !usou.gmax && !m.dyna && gmaxLiberado(p, M.data.speciesName),
+    z: !usou.z && M.item === ITEM_CRISTAL_Z && m.moves.some(g => golpeZ(p, g))                                        // o Cristal Z segue valendo
+  };
+}
+export async function alternarGimmickMP(tipo) {
+  const b = sala?.batalha, m = minhaVez(); if (!b || !m) return;
+  const d = gimmicksDisponiveisMP(b, m); if (!d) return;
+  const sel = (sala.gimmicksSel ||= {}), turno = b.turno;
+  if (sel[tipo]) { delete sel[tipo]; return renderSala(); }   // apertar de novo desliga
+  try {
+    if (tipo === 'gmax' && d.gmax) sel.gmax = true;
+    else if (tipo === 'z' && d.z) sel.z = true;
+    else if (tipo === 'tera' && d.tera.length) {
+      const i = await ask('Terastalizar em qual tipo? <small>Vale só nesta luta.</small>', [
+        ...d.tera.map((t, j) => ({ label: TYPE_PT[t] || t, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+      if (i >= 0 && sala?.batalha?.turno === turno) sel.tera = d.tera[i];
+    } else if (tipo === 'mega' && d.mega.length) {
+      let f = d.mega[0];
+      if (d.mega.length > 1) {
+        const i = await ask('Qual forma?', [...d.mega.map((x, j) => ({ label: x.nome, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
+        if (i < 0) return renderSala();
+        f = d.mega[i];
+      }
+      // os dados da forma vão junto da ação: o anfitrião não busca nada na rede no meio do turno
+      const data = await loadPokemon(f.forma);
+      if (sala?.batalha?.turno === turno) sel.mega = { forma: f.forma, nomeForma: f.nome, id: data.id, name: data.name, types: data.types, base: data.base,
+        sprite: data.sprite, back: data.back, ability: (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name };
+    }
+  } catch (e) { console.error(e); toast('Não deu pra preparar isso agora (faltou um dado da PokéAPI). Tente de novo.', 5000); }
+  renderSala();
+}
+function botoesGimmickMP(d) {
+  if (!d) return '';
+  const sel = sala.gimmicksSel || {};
+  const bt = (tipo, ligado, txt, dica) => `<button class="btn ${ligado ? '' : 'ghost'} sm" data-act="mp-gimmick" data-v="${tipo}" aria-pressed="${!!ligado}" title="${esc(dica)}">${txt}</button>`;
+  const l = [];
+  if (d.mega.length) l.push(bt('mega', sel.mega, sel.mega ? `⚡ ${esc(sel.mega.nomeForma)} ✓` : '⚡ Mega Evolução', 'Não gasta o turno. Uma vez por luta.'));
+  if (d.tera.length) l.push(bt('tera', sel.tera, sel.tera ? `💎 Tera ${esc(TYPE_PT[sel.tera] || sel.tera)} ✓` : '💎 Terastalizar', 'Não gasta o turno. Uma vez por luta.'));
+  if (d.gmax) l.push(bt('gmax', sel.gmax, sel.gmax ? '🔴 Gigantamax ✓' : '🔴 Gigantamax', 'HP dobrado e golpes Max por 3 turnos. Não gasta o turno.'));
+  if (d.z) l.push(bt('z', sel.z, sel.z ? '🌀 Z-Move ✓ (escolha o golpe)' : '🌀 Z-Move', 'O golpe que você escolher vira Z. Uma vez por luta.'));
+  return l.length ? `<div class="subrow mp-gimmicks"><span class="small muted">Neste turno:</span> ${l.join('')}</div>` : '';
+}
+// as gimmicks ligadas na tela viram parte da ação de golpe
+function gimmicksSelecionadas() {
+  const s = sala.gimmicksSel || {}, out = [];
+  if (s.mega) out.push({ tipo: 'mega', ...s.mega });
+  if (s.tera) out.push({ tipo: 'tera', valor: s.tera });
+  if (s.gmax) out.push({ tipo: 'gmax' });
+  if (s.z) out.push({ tipo: 'z' });
+  return out;
+}
+export function escolherGolpeMP(i) {
+  const m = minhaVez(); if (!m) return;
+  const gimmicks = gimmicksSelecionadas();
+  if (gimmicks.some(g => g.tipo === 'z') && !golpeZ(gimmicksDisponiveisMP(sala.batalha, m)?.p, m.moves[i])) { toast('Esse golpe não pode virar Z.', 4000); return; }
+  escolher({ tipo: 'golpe', golpe: i, alvo: sala?.alvo, ...(gimmicks.length ? { gimmicks } : {}) });
+  if (sala) sala.gimmicksSel = {};
+}
 export function fugirMP() { escolher({ tipo: 'fugir' }); }
 export function desistirMP() { escolher({ tipo: 'desistir' }); }
 export function mirarMP(ref) { if (sala) { sala.alvo = ref; renderSala(); } }
@@ -540,7 +613,14 @@ async function aplicarCoop(p) {
     if (principal?.real) {
       S.money += r.dinheiro; S.wins = (S.wins || 0) + 1; S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1;
       for (const [s, add] of ganhoDeEVs(S.player.evs, p.effort)) S.player.evs[s] += add;
-      for (const d of p.derrotados) registrar(S, 'derrotados', d.especie, d.id);
+      for (const d of p.derrotados) {
+        registrar(S, 'derrotados', d.especie, d.id);
+        /* Conquistas da conta (conquistas.registrarAbate): o co-op não contava nada — a barra da Mega e os marcos de caçada
+           só andavam no single player. Aqui só entra o que vale sem saber quem deu o golpe final: a ESPÉCIE que você está
+           usando e o total (`porMim: false`, mesma regra do abate de aliado). Tera e Z pedem golpe final SEU e continuam só
+           no single player. */
+        registrarAbate(S, { porMim: false, minhaEspecie: S.player.data.speciesName, modo: dificuldadeDe(S) });
+      }
       await say(`🏆 Vitória do grupo! Você ganhou ${r.xp} de XP e ₽${r.dinheiro}.`, 'good');
       if (r.item && ITEMS[r.item]) { S.bag[r.item] = (S.bag[r.item] || 0) + 1; await say(`Você achou <b>${ITEMS[r.item].name}</b> depois da luta!`, 'good'); }
       if (p.chefe && !S.chefes?.[p.chefe]) {
@@ -604,9 +684,12 @@ export function blocoChefeMP(m) {
     ${r.carregando ? `<div class="boss-carga" role="alert">⚠ Carregando o ${esc(r.rotuloCarga)}! Faltam <b>${r.faltaParaInterromper}</b> de dano neste turno pra interromper.</div>` : ''}
   </div>`;
 }
+// o que o Pokémon "está" agora na luta (Mega, Tera e Gigantamax do co-op) — só aparece enquanto vale
+const marcasMP = m => [m.mega && `⚡ ${m.mega.forma?.nome || 'Mega'}`, m.tera && `💎 Tera ${TYPE_PT[m.tera] || m.tera}`, m.dyna && '🔴 Gigante'].filter(Boolean).join(' · ');
 export function cartao(m, legenda, destaque = false) {
+  const marcas = marcasMP(m);
   return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
-    <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
+    <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${marcas ? ` <span class="small">${esc(marcas)}</span>` : ''}${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
 }
 const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' (você)' : ''}</b>
   <div class="mp-mons">${(m.mons || []).slice(0, sala.config.porJogador).map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : '')).join('')}</div></div>`;
@@ -645,10 +728,11 @@ function renderSala() {
   if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p>${botoesRaide(b)}<div class="subrow">${sair}</div>`; return; }
   const alvos = inimigosDe(vez); if (!alvos.some(e => e.ref === sala.alvo)) sala.alvo = alvos[0]?.ref;
   const semPP = vez.moves.every(g => g.ppLeft <= 0);
-  $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` +
+  const gd = gimmicksDisponiveisMP(b, vez), zLigado = !!(gd && sala.gimmicksSel?.z);   // com o Z ligado, só os golpes que podem virar Z ficam clicáveis
+  $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` + botoesGimmickMP(gd) +
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
-      : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
+      : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
     ${botoesRaide(b)}
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }

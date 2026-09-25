@@ -88,7 +88,9 @@ export function telaConquistas() {
   const m = p.abates;
 
   const tera = p.tera.slice(0, 18).map(x => linhaMissao(x, esc(TYPE_PT[x.chave] || fmt(x.chave))));
-  const mega = p.mega.slice(0, 24).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
+  // toda Mega já conquistada aparece (a lista vem em ordem de progresso, então elas vêm primeiro); o corte de 24 é só
+  // pras barras EM ANDAMENTO — antes cortava tudo, e a 25ª Mega conquistada sumia da tela
+  const mega = p.mega.filter((x, i) => x.liberado || i < 24).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
   const zGolpe = p.zGolpe.slice(0, 10).map(x => linhaMissao(x, esc(fmt(x.chave))));
   const zElemento = p.zElemento.slice(0, 10).map(x => linhaMissao(x, esc(TYPE_PT[x.chave] || fmt(x.chave))));
   const gmax = p.gigantamax.slice(0, 10).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
@@ -97,8 +99,8 @@ export function telaConquistas() {
     ${barraTelas('conquistas')}
     <h1>Conquistas da conta.</h1>
     <p class="lead">Tudo aqui soma a <b>carreira inteira</b>, jornada após jornada — e a que está em andamento conta junto.
-      O modo Fácil não entra: ele é treino. <b>Mega Evolução e Terastalização já são jogáveis</b> — conquistadas,
-      viram botão na batalha. Z-Move e Gigantamax ainda estão só medindo o progresso.</p>
+      O modo Fácil não entra: ele é treino. <b>Mega Evolução, Terastalização, Z-Move e Gigantamax já são jogáveis</b> —
+      conquistadas, viram botão na batalha (no single player e no co-op).</p>
     <p class="small muted">O <b>desbloqueio de espécies</b> (que libera Pokémon novos pra escolher no começo da jornada)
       é outro sistema, com outra regra: só conta jornada Roguelike. Ele está aqui embaixo, em 🔓 Espécies pra jogar.</p>
 

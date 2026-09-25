@@ -14,6 +14,25 @@ import { ITEM_CRISTAL_Z } from './dados.js';
 import { zLiberado } from './conquistas.js';
 import { conquistasDaConta } from './carreira.js';
 
+/* ---- Z-Move do lado inimigo (decisão do usuário) ----
+   Só Pokémon de TREINADOR e ALFA usam Z. O treinador sempre "carrega" um; o Alfa só de vez em quando
+   (CHANCE_Z_ALFA, sorteada UMA vez quando a luta começa — `B.zInimigo`). Quem carrega usa uma vez por luta, num
+   turno sorteado (CHANCE_Z_TURNO), sempre num golpe de dano. Não exige cristal nem conquista: isso é custo do
+   SEU lado. Lendário e chefe de evento ficam de fora (o "treinador" da rota final não é um treinador de verdade). */
+export const CHANCE_Z_ALFA = 0.2;
+export const CHANCE_Z_TURNO = 0.35;
+export function inimigoTemZ(B, sorte = Math.random()) {
+  if (!B || B.lendarios || B.evento) return false;
+  if (B.trainer) return true;
+  return !!B.chefe && sorte < CHANCE_Z_ALFA;
+}
+// este golpe do inimigo vira Z agora? (`B.zInimigo` = carrega um; `B.zInimigoUsado` = já gastou nesta luta)
+export function inimigoUsaZAgora(B, golpe, sorte = Math.random()) {
+  if (!B?.zInimigo || B.zInimigoUsado) return false;
+  if (!golpe || golpe.cls === 'status' || !(golpe.power > 0) || golpe.name === 'struggle') return false;
+  return sorte < CHANCE_Z_TURNO;
+}
+
 /* Golpes que podem virar Z agora. Só golpe de DANO: Z de golpe de status existe nos jogos como um bônus de
    atributo, que seria outra mecânica inteira — e um Z que não bate confundiria mais do que ajudaria.
    Sem PP não entra: o Z gasta o PP do golpe de base, como nos jogos. */

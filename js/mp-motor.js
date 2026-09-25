@@ -7,10 +7,15 @@
 // Estado: { turno, lados: { A: [mon], B: [mon] }, fugas, fim: null | 'A' | 'B' | 'fuga' }
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
-import { STRUGGLE } from './dados.js';
-import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento } from './regras.js';
+import { STRUGGLE, STATS, TYPE_PT } from './dados.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
+import { aplicarForma, verboDaForma } from './mega.js';
+import { megasDe } from './dados-megas.js';
+import { teracristalizar } from './tera.js';
+import { gigantamaxar, passarDynamax } from './dynamax.js';
+import { inimigoTemZ, inimigoUsaZAgora } from './zmove.js';
 import { rand, clamp, fmt } from './util.js';
 
 // Cópia enxuta de um Pokémon do jogo pra batalha multiplayer (sem descrições longas: vai pela rede).
@@ -33,8 +38,54 @@ export function fotoDoMon(M, ref, dono, nome, slot = 0) {
 // pvp: ninguém foge (só dá pra desistir)
 // `campo` = o que vale pros dois lados (hoje só o clima — regras.CLIMAS)
 // `evento` = id do chefe semanal (boss.js) quando a luta é do evento; `revivesUsados` = quantos Revives cada jogador já gastou nela
+// `alfa` = a luta é contra o Alfa da rota: ele pode carregar um Z-Move (zmove.inimigoTemZ, chance baixa, sorteada aqui uma vez)
 export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: novoCampo(opcoes.zona),
-  evento: opcoes.evento || null, revivesUsados: {}, raideUsados: {} });
+  evento: opcoes.evento || null, revivesUsados: {}, raideUsados: {},
+  gimmicksUsados: {}, zIA: inimigoTemZ({ chefe: opcoes.alfa ? 'alfa' : null, evento: opcoes.evento }), zIAUsado: false });
+
+/* ---- gimmicks no co-op (Mega, Tera, Gigantamax e Z-Move) ----
+   Quem joga escolhe na tela e manda junto da ação de golpe: `acao.gimmicks = [{ tipo:'mega', forma, id, name, types, base,
+   sprite, back, ability } | { tipo:'tera', valor } | { tipo:'gmax' } | { tipo:'z' }]`. Este motor é puro e não vê a conta
+   de ninguém: a conquista e o item (Pedra Mega / Cristal Z) são conferidos NA TELA de quem joga, e aqui só entram as regras
+   que dependem do estado da luta — e o anfitrião confia no que chega (é uma sala de amigos, como o resto da rede).
+   Regras (as mesmas do single player): só o Pokémon PRINCIPAL (slot 0) de quem tem uma run (convidado não), só no co-op
+   (PvP fica de fora), UMA de cada por luta e por jogador. Mega, Tera e Gigantamax não gastam o turno — entram antes de
+   qualquer golpe; o Z é o próprio golpe do turno. Nada disso volta pra run: a foto do Pokémon é descartada no fim. */
+const golpeDeDano = g => !!g && g.cls !== 'status' && g.power > 0 && g.name !== 'struggle';
+function aplicarMegaMP(m, g) {
+  const f = megasDe(m.data.speciesName).find(x => x.forma === g.forma);   // a forma tem que ser da espécie dele
+  if (!f || m.mega || !Array.isArray(g.types) || !g.types.length || !STATS.every(s => Number.isFinite(g.base?.[s]))) return null;
+  aplicarForma(m, f, { ...m.data, id: g.id ?? f.id, name: g.name || f.forma, types: g.types.map(String), base: Object.fromEntries(STATS.map(s => [s, g.base[s]])),
+    sprite: g.sprite || m.data.sprite, back: g.back || m.data.back }, g.ability ? String(g.ability) : undefined);
+  return f;
+}
+// devolve os `ref` cujo golpe deste turno é Z
+function aplicarGimmicksMP(s, acoes, say) {
+  const zRefs = new Set();
+  if (s.pvp) return zRefs;
+  for (const a of acoes) {
+    if (a.tipo !== 'golpe' || !Array.isArray(a.gimmicks) || !a.gimmicks.length) continue;
+    const m = monMP(s, a.ref);
+    if (!m || m.hp <= 0 || m.dono === 'ia' || m.slot !== 0 || m.convidado || ladoDe(s, m.ref) !== 'A') continue;
+    const usou = ((s.gimmicksUsados ||= {})[m.dono] ||= {});
+    for (const g of a.gimmicks) {
+      if (g?.tipo === 'mega' && !usou.mega) {
+        const f = aplicarMegaMP(m, g);
+        if (f) { usou.mega = true; say(`${m.nome} ${verboDaForma(f)}! ${f.nome} entra em campo.`, 'level'); }
+      } else if (g?.tipo === 'tera' && !usou.tera && !m.tera && TYPE_PT[g.valor]) {
+        teracristalizar(m, g.valor); usou.tera = true;
+        say(`${m.nome} TERASTALIZOU! Agora é do tipo ${TYPE_PT[g.valor]} — e só dele.`, 'level');
+      } else if (g?.tipo === 'gmax' && !usou.gmax && !m.dyna) {
+        gigantamaxar(m); usou.gmax = true;
+        say(`${m.nome} GIGANTAMAXOU! O HP dobrou e os golpes viram Max por ${TURNOS_DYNAMAX} turnos.`, 'level');
+      } else if (g?.tipo === 'z' && !usou.z && golpeDeDano(m.moves[a.golpe]) && m.moves[a.golpe].ppLeft > 0) {
+        usou.z = true; zRefs.add(m.ref);
+        say(`${m.nome} concentra a energia Z!`, 'level');
+      }
+    }
+  }
+  return zRefs;
+}
 
 /* Item de raide no co-op (boss.usarItemDeRaide): ação LIVRE de um jogador do grupo, um de cada tipo por luta pro GRUPO todo (a marca
    fica no `boss.raide` do chefe). Muta o estado — quem chama é o anfitrião. `raideUsados[dono][tipo]` viaja no estado: é por ele que
@@ -145,6 +196,9 @@ export async function resolverTurnoMP(estado, acoes) {
     say(`${quem.nome} tentou fugir, mas não conseguiu!`);
   }
 
+  // 1b) gimmicks (Mega, Tera, Gigantamax entram antes de qualquer golpe; o Z marca o golpe do turno)
+  const zRefs = aplicarGimmicksMP(s, acoes, say);
+
   // 2) golpes na ordem de prioridade e velocidade
   const golpes = acoes.filter(a => a.tipo === 'golpe' && valida(a)).map(a => {
     const m = monMP(s, a.ref), g = a.golpe === -1 || !m.moves[a.golpe] ? STRUGGLE : m.moves[a.golpe];
@@ -164,7 +218,15 @@ export async function resolverTurnoMP(estado, acoes) {
       if (!vivos.length) break;
       t = vivos[rand(0, vivos.length - 1)];
     }
-    await usarGolpe(a.m, t, a.g, pos(t.ref) === -1 || i < pos(t.ref), ctx);
+    /* Z-Move: a mesma marca do single player (`vol.zAtivo`, lida em regras.calcDamage), apagada logo depois do golpe.
+       O Alfa da rota também pode (chance baixa, `s.zIA`); os demais inimigos nunca. */
+    let ehZ = zRefs.has(a.ref);
+    if (!ehZ && a.m.dono === 'ia' && inimigoUsaZAgora({ zInimigo: s.zIA, zInimigoUsado: s.zIAUsado }, a.g)) {
+      ehZ = true; s.zIAUsado = true; say(`${a.m.nome} concentra a energia Z!`, 'hit');
+    }
+    if (ehZ) a.m.vol.zAtivo = true;
+    try { await usarGolpe(a.m, t, a.g, pos(t.ref) === -1 || i < pos(t.ref), ctx); }
+    finally { delete a.m.vol.zAtivo; }
     // o golpe carregado do chefe atinge o TIME INTEIRO (boss.antesDoChefeAgir → `todos`): os outros alvos levam o mesmo golpe
     if (a.m.boss?.soltouTodos) {
       a.m.boss.soltouTodos = false;
@@ -176,6 +238,7 @@ export async function resolverTurnoMP(estado, acoes) {
 
   // 3) fim de turno: queimadura/veneno, desmaios, quem venceu
   if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { for (const m of vivosMP(todosMP(s))) await fimDeTurno(m, ctx); await passarClima(s.campo, ctx); await passarTerreno(s.campo, ctx); await passarLados(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
+  for (const m of todosMP(s)) if (passarDynamax(m) === 'acabou') say(`${m.nome} voltou ao tamanho normal.`, 'status');   // o gigante encolhe no fim da rodada
   for (const m of todosMP(s)) { fimDaRodada(m); if (m.hp <= 0 && !m.caido) { m.caido = true; say(`${m.nome} desmaiou!`, 'hit'); } }
   if (!vivosMP(s.lados.B).length) s.fim = 'A';
   else if (!vivosMP(s.lados.A).length) s.fim = 'B';

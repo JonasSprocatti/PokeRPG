@@ -302,7 +302,7 @@ function renderScene() {
     const B = G.B, AL = (G.S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.ordem !== 'fora');
     sc.innerHTML = `${turnoBar(B, P, E)}
       <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E)}</div>
-        <div class="mon ${E.hp <= 0 ? 'fainted' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
+        <div class="mon ${E.hp <= 0 ? 'fainted' : ''} ${E.dyna ? 'gigante' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
       <div class="side me">
         <div class="mons-lado">
           <div class="mon ${P.hp <= 0 ? 'fainted' : ''} ${P.dyna ? 'gigante' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>

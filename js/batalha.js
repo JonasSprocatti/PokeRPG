@@ -25,8 +25,8 @@ import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
 import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, inimigoMegaLiberada, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
-import { zDisponiveis } from './zmove.js';
-import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax } from './dynamax.js';
+import { zDisponiveis, inimigoTemZ, inimigoUsaZAgora } from './zmove.js';
+import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax, inimigoPodeGmax } from './dynamax.js';
 import { loadPokemon, loadSpecies, loadMove, pokemonEmCache } from './api.js';
 import { EVENTOS, idDaSemana, registrarTentativa, agoraDoEvento, EVENTO_SEM_PERMADEATH } from './evento.js';
 import { prepararChefe, nivelDoChefe, habilidadeDoChefe, aplicarClimaDoChefe } from './boss.js';
@@ -77,7 +77,8 @@ async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinad
 function iniciar(B) {
   for (const m of ladoJogador()) m.vol = freshVol();
   // o campo já nasce com o clima/terreno da rota (regras.CLIMA_DA_ROTA); habilidades de entrada e golpes ainda trocam
-  G.B = { caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), ...B };
+  // `zInimigo`: o lado inimigo carrega um Z-Move nesta luta? (treinador sempre; Alfa só às vezes — zmove.inimigoTemZ)
+  G.B = { caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), zInimigo: inimigoTemZ(B), ...B };
   G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render();
   /* Baixa as formas Mega que podem entrar em campo AGORA, em segundo plano. A batalha não espera: se a rede
      falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
@@ -306,13 +307,20 @@ export async function usarZ() {
 /* O inimigo vira quando cai a METADE do HP — é a segunda fase da luta, não um susto no primeiro turno. Só Alfa,
    lendário e treinador (decisão do usuário: selvagem de rota continua sendo selvagem de rota).
    Não precisa de conquista nenhuma: a conquista é o que libera a SUA Mega, não a do adversário. */
+/* UMA virada por luta, de qualquer tipo (Mega, Tera ou Gigantamax): duas transformações no mesmo momento virariam o
+   combate de cabeça pra baixo, e quem joga não teria como reagir a nenhuma das duas. */
+const jaViradou = B => !!(B.megaInimigoUsada || B.teraInimigoUsada || B.gmaxInimigoUsado);
+/* Quem não tem Mega (nível baixo ou espécie sem forma) vira Tera — e, se for de TREINADOR, pode virar Gigantamax no
+   lugar. O sorteio é feito uma vez por luta e guardado, senão as duas checagens (Tera e Gigantamax, uma logo depois da
+   outra) decidiriam cada uma por si e a mais "sortuda" sempre ganharia. */
+const viradaSorteada = B => B.viradaInimigo ||= (inimigoPodeGmax(B) && Math.random() < 0.5 ? 'gmax' : 'tera');
 async function megaDoInimigo() {
   const B = G.B, E = B?.enemy;
-  if (!B || !E || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
+  if (!B || !E || jaViradou(B) || !inimigoPodeMega(B) || E.hp <= 0) return;
   if (!inimigoMegaLiberada(E)) return;   // Mega de inimigo só de nível 40 em diante (não marca "usada": o Tera ainda pode virar)
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
   const f = megasDisponiveis(E, { jaUsou: false, liberada: () => true, ignorarPedra: true })[0];
-  if (!f) { B.megaInimigoUsada = true; return; }   // não tem forma: não checa de novo a cada golpe
+  if (!f) return;   // sem forma Mega (a maioria dos Pokémon): não marca "usada" — o Tera/Gigantamax ainda pode virar
   B.megaInimigoUsada = true;
   const nome = await megaevoluir(E, f);
   if (!nome) return;
@@ -328,14 +336,29 @@ async function megaDoInimigo() {
    surpresa — antes era sempre o 1º tipo dele, previsível. */
 async function teraDoInimigo() {
   const B = G.B, E = B?.enemy;
-  if (!B || !E || B.teraInimigoUsada || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
+  if (!B || !E || jaViradou(B) || !inimigoPodeMega(B) || E.hp <= 0) return;
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
+  if (viradaSorteada(B) !== 'tera') return;
   const tipo = sortearTipoTera();
   B.teraInimigoUsada = true;
   if (!tipo) return;
   teracristalizar(E, tipo);
   render();
   await say(`<b>${esc(rotulo(E))} TERASTALIZOU!</b> Agora é ${esc(TYPE_PT[tipo] || tipo)} puro.`, 'hit');
+}
+
+/* Gigantamax do inimigo: só Pokémon de TREINADOR (dynamax.inimigoPodeGmax), no mesmo gatilho de metade do HP. É a
+   mesma mecânica do jogador — HP dobrado e golpes Max por TURNOS_DYNAMAX turnos; `passarDynamax(E)` encolhe no fim
+   da rodada (em `turn`). O HP proporcional volta sozinho, então a luta não "cura" o inimigo ao terminar. */
+async function gmaxDoInimigo() {
+  const B = G.B, E = B?.enemy;
+  if (!B || !E || jaViradou(B) || !inimigoPodeGmax(B) || E.hp <= 0 || E.dyna) return;
+  if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
+  if (viradaSorteada(B) !== 'gmax') return;
+  B.gmaxInimigoUsado = true;
+  gigantamaxar(E);
+  render();
+  await say(`<b>${esc(rotulo(E))} GIGANTAMAXOU!</b> O HP dobrou e os golpes viram Max por ${TURNOS_DYNAMAX} turnos.`, 'hit');
 }
 
 export async function turn(action) {
@@ -402,7 +425,16 @@ export async function turn(action) {
       if (a.quem === E) {
         const alvo = pick(vivos(emCampo()));
         // recuo (flinch) só vale em quem ainda não agiu neste turno
-        await vez('e'); await useMove(E, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo));
+        await vez('e');
+        /* Z-Move do inimigo (zmove.inimigoUsaZAgora): só treinador e Alfa, uma vez por luta. Mesma marca do seu Z
+           (`vol.zAtivo`, lida em calcDamage), apagada logo depois do golpe — um Z que vazasse pro turno seguinte
+           dobraria o dano de graça. */
+        if (inimigoUsaZAgora(B, a.golpe)) {
+          B.zInimigoUsado = true; E.vol.zAtivo = true;
+          await say(`<b>${esc(rotulo(E))} concentra a energia Z!</b>`, 'hit');
+        }
+        try { await useMove(E, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo)); }
+        finally { delete E.vol.zAtivo; }
       } else {
         const hpAntes = E.hp;
         await vez(idVez(a.quem)); await useMove(a.quem, E, a.golpe, i < posicao(E));
@@ -412,13 +444,13 @@ export async function turn(action) {
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
       // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra
-      try { await megaDoInimigo(); await teraDoInimigo(); } catch (e) { console.error('virada do inimigo', e); }
+      try { await megaDoInimigo(); await teraDoInimigo(); await gmaxDoInimigo(); } catch (e) { console.error('virada do inimigo', e); }
     }
     if (B.capturado) { await serCapturado(); return; }
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
     // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
-    for (const m of ladoJogador()) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
+    for (const m of [...ladoJogador(), E]) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (E.hp <= 0) await win();
