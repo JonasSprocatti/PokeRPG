@@ -262,6 +262,11 @@ O que sobrou e o que ficou combinado:
   `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
   (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
   `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. **Falta**: os outros chefes e os itens.
+- **Perfil de amigo** (`perfil-amigo.js` tela, `perfil-dados.js` contas puras; testes em `tests/perfil-amigo.test.js`): botão `data-act="amigo-perfil"` na lista de amigos (e "Ver meu perfil" na Conta) →
+  `nuvem.perfilDoAmigo` → RPC `perfil_do_amigo(uuid)` (migração `20260925150000_perfil_do_amigo.sql`, SECURITY DEFINER): só devolve se a amizade está `aceita` (ou é o próprio) e só o que já é público no jogo
+  (apelido, ícone, `badge_exibivel`, criado_em, ids dos chefes vencidos, contagem de espécies, números agregados das `jornadas` e as 5 últimas) — sem e-mail, código de amigo ou mochila (o teste confere o texto do SQL).
+  **Não** mostra as badges de conta de caçada/coleção/etc.: elas são calculadas NO CLIENTE a partir do progresso+carreira, e mandar isso tudo do servidor seria pesado; ideia futura: um resumo já calculado.
+  Sem a migração a tela mostra o erro e diz qual arquivo rodar. Ordem das migrações do dia 25/09: 120000 (badge_exibida) → 130000 (badge nas listas) → 140000 (relatos) → 150000 (perfil do amigo).
 - **Arena do Chefe + Hall da Fama** (`hall.js` puro, `arena.js` tela/loop, `ajuda-chefes.js` texto; testes em `tests/hall.test.js`): `encerrarJornada` chama `carreira.registrarNoHallDaConta(S, resumo)` ANTES de zerar `G.S`
   (só modos com `eventoSemanal`) e passa os itens de raide da mochila pro inventário da conta (`evento.darItensDeRaide`, localStorage `pokerpg-raide-v1`, NÃO sincroniza). O Hall vive em `progresso.hall[jornadaId]`
   (entrada compacta: espécie/id, nível, IVs, EVs, natureza, habilidade, NOMES dos golpes; `podarHall` mantém `HALL_MAX`=30; `mesclarProgresso` faz união). **A Arena NÃO usa `G.S`**: roda o motor do co-op

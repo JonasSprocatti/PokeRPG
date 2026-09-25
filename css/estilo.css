@@ -59,11 +59,17 @@ img{max-width:100%}
 .gen-card.evento .evento-sprite{filter:drop-shadow(0 0 7px rgba(210,150,255,.95))}
 .gen-card .evento-tag{position:absolute;top:6px;right:6px;font-size:10px;font-weight:700;letter-spacing:.06em;background:#b45cff;color:#fff;padding:1px 7px;border-radius:999px}
 .chefe-box.evento.em-breve{opacity:.92;animation:none}
+button.link{background:none;border:0;padding:0;font:inherit;color:#b45cff;text-decoration:underline;cursor:pointer}
 /* ---- Arena do Chefe (js/arena.js), Hall da Fama e ajuda dos chefes ---- */
 .ajuda-chefes{margin:10px 0;border:2px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 12px}
 .ajuda-chefes summary{cursor:pointer;font-weight:700}
 .ajuda-chefes .ajuda-corpo{margin-top:8px;font-size:.95em}
 .ajuda-chefes h5{margin:12px 0 4px;color:#b45cff}
+.ajuda-tabela-caixa{overflow-x:auto;margin:6px 0}
+.ajuda-tabela{border-collapse:collapse;width:100%;font-size:.92em}
+.ajuda-tabela th,.ajuda-tabela td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
+.ajuda-tabela th{background:var(--panel2)}
+.ajuda-tabela td:first-child{min-width:120px}
 .ajuda-chefes ul{margin:4px 0 8px 18px;padding:0}
 .ajuda-chefes li{margin:3px 0}
 .hall-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
@@ -71,6 +77,12 @@ img{max-width:100%}
 .hall-card img{width:72px;height:72px;image-rendering:pixelated}
 .hall-card.on{border-color:#b45cff;box-shadow:0 0 14px rgba(180,92,255,.6)}
 .hall-card:disabled{opacity:.45;cursor:not-allowed}
+.perfil-cab{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.perfil-cab h2{margin:0}
+.runs-perfil{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.run-perfil{display:grid;grid-template-columns:56px 1fr;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;border:2px solid var(--line);background:var(--panel2)}
+.run-perfil img{width:56px;height:56px;image-rendering:pixelated}
+.run-perfil small{display:block}
 .raide-lista{list-style:none;padding:0;margin:6px 0;display:flex;flex-wrap:wrap;gap:8px}
 .raide-lista li{padding:4px 10px;border-radius:999px;border:2px solid var(--line);background:var(--panel2)}
 .agenda-evento{margin:12px 0;padding:12px 14px;border-radius:12px;border:2px solid #b45cff;background:var(--panel)}

@@ -89,7 +89,8 @@ function secaoIcone(logado) {
 function secaoAmigos() {
   const lista = nuvem.amigos, recebidos = lista.filter(a => a.status === 'pendente' && a.recebido);
   const enviados = lista.filter(a => a.status === 'pendente' && !a.recebido), amigos = lista.filter(a => a.status === 'aceita');
-  const linha = (a, botoes) => `<li>${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')}<b>${esc(a.apelido)}</b>${htmlInsigniaDe(a.badge_exibida)}<span class="subrow">${botoes}</span></li>`;
+  const verPerfil = a => a.status === 'aceita' ? `<button class="btn sm" data-act="amigo-perfil" data-v="${a.amigo}" title="Ícone, insígnias, números e últimas runs">👤 Ver perfil</button>` : '';
+  const linha = (a, botoes) => `<li>${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')}<b>${esc(a.apelido)}</b>${htmlInsigniaDe(a.badge_exibida)}<span class="subrow">${verPerfil(a)}${botoes}</span></li>`;
   return `<section class="pv conta"><div>
       <h3>Amigos</h3>
       <p>Seu código de amigo: <b class="codigo">${esc(nuvem.codigoAmigo || '—')}</b> <span class="small muted">(passe pra quem quiser te adicionar)</span></p>
@@ -113,7 +114,7 @@ export function telaConta(msg = '') {
           <label class="campo">Apelido (aparece no ranking e pros amigos)<span class="subrow"><input id="apelido" maxlength="20" value="${esc(nuvem.apelido)}"><button class="btn" data-act="salvar-apelido">Salvar</button></span></label>
           <p>${esc(statusTxt())}${nuvem.status === 'erro' ? ` <span class="err">${esc(nuvem.erro || '')}</span>` : ''}</p>
           <p class="small muted">${nuvem.naNuvem} jornada(s) terminada(s) na sua conta${nuvem.ultimaSync ? `, última sincronização às ${nuvem.ultimaSync.toLocaleTimeString('pt-BR')}` : ''}. A jornada em andamento também é salva sozinha, e dá pra continuar em outro aparelho entrando com a mesma conta.</p>
-          <div class="subrow"><button class="btn ghost" data-act="sincronizar">⟳ Sincronizar agora</button><button class="btn ghost" data-act="sair">Sair da conta</button></div>
+          <div class="subrow"><button class="btn ghost" data-act="sincronizar">⟳ Sincronizar agora</button><button class="btn ghost" data-act="amigo-perfil" data-v="${u.id}" title="Como seus amigos veem o seu perfil">👁 Ver meu perfil</button><button class="btn ghost" data-act="sair">Sair da conta</button></div>
         </div>
       </section>${ehJogadorAlpha(nuvem.criadoEm) ? htmlCartaoAlpha(nuvem.criadoEm) : ''}${secaoInsigniasEvento()}${secaoIcone(true)}${secaoAmigos()}`
     : `

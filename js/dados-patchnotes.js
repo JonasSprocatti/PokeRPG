@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.34', data: '2026-09-25', titulo: 'Perfil dos amigos e regras dos chefes mais claras', piada: 'O perfil só mostra o que você já mostraria num crachá. A mochila continua sendo assunto seu e do seu Snorlax.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>👤 Ver perfil:</b> na lista de amigos (tela 👤 Conta) cada amigo tem um botão <b>Ver perfil</b>: ícone, insígnia escolhida, se é <b>Treinador do Alpha</b>, desde quando joga, os números das jornadas (vitórias, Gens fechadas, melhor pontuação, maior nível, Pokémon derrotados, shinies, espécies desbloqueadas, mais jogado), todas as <b>insígnias de evento</b> (as que tem e as que faltam) e as <b>últimas 5 runs</b>. Também dá pra ver o seu próprio perfil, como os amigos veem. Só amigos veem o perfil um do outro.',
+        'A explicação dos chefes da semana ganhou uma <b>tabela dos 3 caminhos</b> (Arena, dentro de uma run e em grupo): o que cada um precisa e o que muda em cada um. Na rota final, a caixa do chefe agora aponta pra Arena.'
+      ] }
+    ] },
   { versao: '2.33', data: '2026-09-25', titulo: 'Arena do Chefe e o Hall da Fama', piada: 'A Arena avisa que não aceita Pokémon de fantasia. Nem o Ditto que se passa por Eternatus.',
     secoes: [
       { nome: 'Novidades', itens: [

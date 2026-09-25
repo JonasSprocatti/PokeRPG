@@ -22,6 +22,7 @@ import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js'
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
+import { telaPerfil } from './perfil-amigo.js';
 import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaRaide, arenaDesistir, arenaFim } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
@@ -95,6 +96,7 @@ document.addEventListener('click', async e => {
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
     // 🏟 Arena do Chefe (arena.js): o chefe da semana com os Pokémon do Hall da Fama, sem mexer em nenhuma jornada
     case 'arena': if (G.busy || G.mode === 'battle') return; return telaArena();
+    case 'amigo-perfil': if (G.busy || G.mode === 'battle') return; return telaPerfil(v);   // 👤 Ver perfil (perfil-amigo.js)
     case 'arena-sel': return arenaSelecionar(v);
     case 'arena-iniciar': return arenaIniciar();
     case 'arena-golpe': return arenaGolpe(v);

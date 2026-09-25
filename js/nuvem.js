@@ -59,6 +59,12 @@ export async function carregarAmigos() {
   nuvem.amigos = data || []; avisar();
   return nuvem.amigos;
 }
+// Perfil de um amigo (ou o meu): ícone, insígnias, números e últimas runs — `perfil_do_amigo` no banco só responde pra amigos
+export async function perfilDoAmigo(idAmigo) {
+  const c = await sb(); if (!c || !usuario()) throw new Error('entre na conta primeiro');
+  const { data, error } = await c.rpc('perfil_do_amigo', { p_amigo: idAmigo }); if (error) throw error;
+  return data;
+}
 // devolve 'pedido' (esperando o outro aceitar) ou 'aceita' (o outro já tinha pedido)
 export async function pedirAmizade(codigo) {
   const c = await sb(); if (!c || !usuario()) throw new Error('entre na conta primeiro');
