@@ -97,6 +97,9 @@ Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Pa
 ### Mochila e loja em divisões
 Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para segurar · 💎 Evolução · 🍖 Petiscos · ✨ Especiais, tanto na mochila quanto na loja.
 
+### Comprar em quantidade
+Tocar num item da loja abre um pequeno HUD: **−10 / − / campo / + / +10 / Máx**, com o **total e o troco** atualizando na hora (limite de 99 ou o que o dinheiro alcança). Ao confirmar, aparece um aviso 🛒 "Comprou N× item" com quantos você tem na mochila. `Enter` confirma, `Esc` ou tocar fora cancela.
+
 ### 📜 Novidades (notas de atualização)
 Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, com as correções e uma piadinha por versão. Quando sai uma atualização nova, o botão fica marcado até você ler.
 

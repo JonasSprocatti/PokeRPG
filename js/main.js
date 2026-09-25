@@ -2,7 +2,7 @@
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';
-import { $, log, logRaw, ask, iniciarMenu, toast } from './ui.js';
+import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
@@ -26,7 +26,7 @@ import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, res
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
-import { ITEMS, ORDENS } from './dados.js';
+import { ITEMS, ORDENS, ITEM_SPR, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
@@ -195,8 +195,16 @@ document.addEventListener('click', async e => {
     case 'oferecer': return turn({ type: 'oferecer', id: v });
     case 'despedir': if (G.busy) return; G.busy = true; render(); try { await despedir(+v); } finally { G.busy = false; render(); save(); } return;
     case 'buy': {
-      const it = ITEMS[v], preco = precoItem(v, G.S); if (!it || !preco || G.S.money < preco) return;
-      G.S.money -= preco; G.S.gasto = (G.S.gasto || 0) + preco; addItem(v, 1); log(`Você comprou ${it.name} por ₽${preco.toLocaleString('pt-BR')}.`);
+      const it = ITEMS[v], preco = precoItem(v, G.S); if (G.busy || !it || !preco || G.S.money < preco) return;
+      // HUD de quantidade: até onde o dinheiro alcança (teto 99, como na mochila dos jogos)
+      const max = Math.min(99, Math.floor(G.S.money / preco));
+      const qtd = await pedirQuantidade({ nome: esc(it.name), figuraHtml: `<img src="${ITEM_SPR(v)}" alt="" onerror="${ITEM_ERRO}">`, preco, max, dinheiro: G.S.money });
+      // o modal é assíncrono: reconfere (o dinheiro pode ter mudado enquanto ele estava aberto)
+      if (!qtd || G.busy || G.S.money < qtd * preco) return;
+      const total = qtd * preco;
+      G.S.money -= total; G.S.gasto = (G.S.gasto || 0) + total; addItem(v, qtd);
+      log(`Você comprou ${qtd > 1 ? `${qtd}× ` : ''}${it.name} por ₽${total.toLocaleString('pt-BR')}.`, 'good');
+      toast(`🛒 Comprou <b>${qtd > 1 ? `${qtd}× ` : ''}${esc(it.name)}</b> por ₽${total.toLocaleString('pt-BR')}<br><small class="muted">Na mochila: ${G.S.bag[v]}</small>`, 3500);
       await verificarMissoes(); save(); return render(); // missões de gastar dinheiro
     }
     // equipar um item da mochila direto pela ficha (data-quem: 'p' = você, número = aliado)

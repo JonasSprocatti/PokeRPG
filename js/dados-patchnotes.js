@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.24', data: '2026-09-25', titulo: 'Compras em atacado', piada: 'O lojista jura que nunca viu alguém levar noventa e nove Potions de uma vez. Está com medo.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Comprar na loja agora abre um <b>HUD de quantidade</b>: botões −10, −, +, +10 e <b>Máx</b>, mais um campo para digitar, com o total e o troco atualizando na hora.',
+        'Depois de comprar aparece um <b>aviso 🛒</b> dizendo o que você levou, quanto pagou e quantos tem na mochila.'
+      ] }
+    ] },
   { versao: '2.23', data: '2026-09-25', titulo: 'Jornada mais longa', piada: 'Seu Pokémon reclamou que a aventura estava acabando rápido demais. Atendemos. Ele já se arrependeu.',
     secoes: [
       { nome: 'Equilíbrio', itens: [
