@@ -14,6 +14,7 @@ export const TELAS = [
   { id: 'conquistas', act: 'conquistas', rotulo: '🏅 Conquistas', dica: 'Progresso das gimmicks e marcos da conta' },
   { id: 'ranking', act: 'ranking', rotulo: '🏆 Ranking', dica: 'Ranking global' },
   { id: 'mp', act: 'mp', rotulo: '👥 Multiplayer', dica: 'Jogar com amigos' },
+  { id: 'arena', act: 'arena', rotulo: '🏟 Arena', dica: 'Enfrente o chefe da semana com os Pokémon do seu Hall da Fama' },
   { id: 'conta', act: 'conta', rotulo: '👤 Conta', dica: 'Login, ícone e amigos' },
   { id: 'patch', act: 'patch', rotulo: '📜 Novidades', dica: 'O que mudou no jogo' },
   { id: 'ajustes', act: 'ajustes', rotulo: '⚙ Ajustes', dica: 'Fonte do jogo' },

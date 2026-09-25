@@ -137,7 +137,7 @@ create table if not exists public.relatos (
 alter table public.relatos enable row level security;
 drop policy if exists "relato: enviar" on public.relatos;
 create policy "relato: enviar" on public.relatos for insert to anon, authenticated
-  with check ((user_id is null or user_id = auth.uid()) and status = 'novo' and pg_column_size(contexto) < 20000);
+  with check ((user_id is null or user_id = auth.uid()) and status = 'novo' and coalesce(pg_column_size(contexto), 0) < 20000);   -- coalesce: sugestão não tem contexto (NULL) e sem ele a política recusava
 drop policy if exists "relato: ver os meus" on public.relatos;
 create policy "relato: ver os meus" on public.relatos for select using (user_id = auth.uid());
 

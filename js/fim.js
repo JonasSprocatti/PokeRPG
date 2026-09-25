@@ -6,9 +6,10 @@
 import { G, SAVE_KEY, dificuldadeDe, marcarTempo } from './estado.js';
 import { $, limparTopo } from './ui.js';
 import { spriteFrente } from './render.js';
-import { DIFICULDADES, SPR } from './dados.js';
+import { DIFICULDADES, SPR, ITEMS } from './dados.js';
 import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
-import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, atualizarProgresso } from './carreira.js';
+import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, atualizarProgresso, registrarNoHallDaConta } from './carreira.js';
+import { darItensDeRaide } from './evento.js';
 import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
 import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
 import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
@@ -33,6 +34,11 @@ export function encerrarJornada(motivo, extra = {}) {
   // a Gen vencida acompanha a jornada mesmo quando o fim não é a vitória (seguiu no Santuário e desmaiou lá)
   if (S.genVencida && !extra.genVencida) extra = { ...extra, genVencida: S.genVencida };
   const resumo = montarResumo(S, motivo, extra);
+  // Roguelike/Hardcore: o Pokémon principal entra no Hall da Fama (Arena do Chefe) e os itens de raide da mochila vão pra conta
+  try {
+    registrarNoHallDaConta(S, resumo);
+    darItensDeRaide(Object.fromEntries(Object.entries(S.bag || {}).filter(([k]) => ITEMS[k]?.raide)));
+  } catch (e) { console.error('hall da fama', e); }   // nunca impede a jornada de terminar
   const carreira = carregarCarreira();
   const anterior = melhorDaEspecie(carreira.jornadas, resumo.especie, resumo.id);
   const nova = adicionarJornada(carreira, resumo);

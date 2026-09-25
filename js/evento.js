@@ -123,6 +123,23 @@ export function dataBR(ms) {
   return `${dd}/${mm}`;
 }
 
+/* ---- inventário de itens de raide DA CONTA ----
+   Os itens de raide (dados.ITEMS `raide`) que sobram numa jornada que termina vão pra cá, e o prêmio da Arena do Chefe também: é o que
+   a Arena usa. Fica só neste aparelho (localStorage): contador não se funde com a nuvem como o resto do progresso. */
+export const RAIDE_KEY = 'pokerpg-raide-v1';
+export const IDS_DE_RAIDE = ['cristal-de-ruptura', 'selo-de-interrupcao', 'escudo-astral'];
+export const inventarioRaide = () => store.get(RAIDE_KEY) || {};
+export function darItensDeRaide(itens = {}) {
+  const inv = { ...inventarioRaide() };
+  for (const [k, n] of Object.entries(itens)) if (IDS_DE_RAIDE.includes(k) && n > 0) inv[k] = (inv[k] || 0) + n;
+  store.set(RAIDE_KEY, inv); return inv;
+}
+export function gastarItemDeRaide(id) {
+  const inv = { ...inventarioRaide() }; if (!(inv[id] > 0)) return false;
+  inv[id]--; if (!inv[id]) delete inv[id];
+  store.set(RAIDE_KEY, inv); return true;
+}
+
 /* ---- tentativas: 1 a cada 8 horas ---- */
 export const ultimaTentativa = () => store.get(TENTATIVA_KEY) || 0;
 export const registrarTentativa = (agora = agoraDoEvento()) => store.set(TENTATIVA_KEY, agora);

@@ -5,6 +5,18 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.33', data: '2026-09-25', titulo: 'Arena do Chefe e o Hall da Fama', piada: 'A Arena avisa que não aceita Pokémon de fantasia. Nem o Ditto que se passa por Eternatus.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🏟 Arena do Chefe:</b> enfrente o chefe da semana <b>sem precisar fazer uma run até a Gen dele</b> (chegar ao Eternatus exigia passar pelas 8 Gens). Ela está no menu e na tela inicial.',
+        '<b>Hall da Fama:</b> o Pokémon principal de cada jornada <b>Roguelike ou Hardcore que você termina</b> (venceu, perdeu ou encerrou) entra no Hall com o nível que tinha. Na Arena você leva de 1 a 3 deles contra o chefe. Não usa nenhuma jornada em andamento, e perder não custa nada.',
+        'Nova explicação <b>"Como funcionam os chefes da semana"</b> na tela inicial e na Arena: quando muda, onde enfrentar, as regras, as mecânicas e os prêmios.',
+        'Os itens de raide que sobram numa jornada que termina vão para a sua conta, e o prêmio da Arena também. A Arena usa esses itens.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Enviar uma <b>sugestão</b> na tela de bugs e sugestões dava "violates row-level security policy". A regra do servidor recusava relatos sem contexto técnico (só o bug tem). Corrigido — e o que já estava na fila de envio sai sozinho.'
+      ] }
+    ] },
   { versao: '2.32', data: '2026-09-25', titulo: 'Os 14 chefes da semana', piada: 'O Zygarde pediu para constar que a fila é longa mas ele não tem pressa: ele se regenera enquanto espera.',
     secoes: [
       { nome: 'Novidades', itens: [

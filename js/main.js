@@ -22,6 +22,7 @@ import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js'
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
+import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaRaide, arenaDesistir, arenaFim } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo } from './itens.js';
@@ -37,7 +38,7 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
@@ -92,6 +93,14 @@ document.addEventListener('click', async e => {
     case 'mp-sync': return sincronizarSala();   // pedir o estado da sala de novo (rede engoliu alguma mensagem)
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
+    // 🏟 Arena do Chefe (arena.js): o chefe da semana com os Pokémon do Hall da Fama, sem mexer em nenhuma jornada
+    case 'arena': if (G.busy || G.mode === 'battle') return; return telaArena();
+    case 'arena-sel': return arenaSelecionar(v);
+    case 'arena-iniciar': return arenaIniciar();
+    case 'arena-golpe': return arenaGolpe(v);
+    case 'arena-raide': return arenaRaide(v);
+    case 'arena-desistir': return arenaDesistir();
+    case 'arena-fim': return arenaFim();
     case 'pokedex': if (G.busy || G.mode === 'battle') return; return telaPokedex();
     case 'esconderijo-guardar': return mexerEsconderijo('guardar', +v);
     case 'esconderijo-trazer': return mexerEsconderijo('trazer', +v);

@@ -262,6 +262,12 @@ O que sobrou e o que ficou combinado:
   `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
   (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
   `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. **Falta**: os outros chefes e os itens.
+- **Arena do Chefe + Hall da Fama** (`hall.js` puro, `arena.js` tela/loop, `ajuda-chefes.js` texto; testes em `tests/hall.test.js`): `encerrarJornada` chama `carreira.registrarNoHallDaConta(S, resumo)` ANTES de zerar `G.S`
+  (só modos com `eventoSemanal`) e passa os itens de raide da mochila pro inventário da conta (`evento.darItensDeRaide`, localStorage `pokerpg-raide-v1`, NÃO sincroniza). O Hall vive em `progresso.hall[jornadaId]`
+  (entrada compacta: espécie/id, nível, IVs, EVs, natureza, habilidade, NOMES dos golpes; `podarHall` mantém `HALL_MAX`=30; `mesclarProgresso` faz união). **A Arena NÃO usa `G.S`**: roda o motor do co-op
+  (`mp-motor`) localmente — lado A = Hall reidratado (`makeMon` + `loadMove`), lado B = chefe (`prepararChefe(E, jogadoresEfetivos(1, n))`) — então não pode mexer no save de uma run em andamento. Por isso não tem item
+  segurado, Mega/Tera/Z/Gigantamax nem Revive (o motor do co-op não os tem). Tentativa de 8 h, vitória (`registrarVitoriaDeEvento`) e prêmio de itens de raide iguais ao resto do evento; dinheiro/Rare Candy só dentro de
+  uma run. Entradas antigas (jornadas terminadas antes deste recurso) NÃO estão no Hall: só valem as que terminam depois. Ideia de expansão: chefe na Arena em grupo (a base do co-op já serve).
 - **Os 14 chefes** (`evento.EVENTOS`, fábrica `ev()`; regras em `boss.CHEFES`, mesma `id`): a ordem do array É o calendário (semana N = `N % 14`). Mecânicas novas além de couraça/ponto fraco/canhão/fases:
   `climaFixo` (`aplicarClimaDoChefe` usa o clima fixo de `novoCampo`; Groudon sol, Kyogre chuva), `anula {tipos}` (dano 0 + texto em `golpe.js`), `inverso {acoes}` (Mundo Reverso: `danoNoChefe(t, dano,
   tipo, ef)` divide pelo ef² do motor, com teto ×4), `adapta {reducao}` (guarda `b.ultimoTipo` DENTRO de `danoNoChefe`), `dreno` (`drenoDoChefe` em `executar`), `regenera` (efeito `{cura}` em

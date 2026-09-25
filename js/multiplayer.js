@@ -588,9 +588,9 @@ function telaSala() {
   sala.relogio = setInterval(() => { const el = $('#mp-relogio'); if (el && sala?.prazo) el.textContent = Math.max(0, Math.ceil((sala.prazo - Date.now()) / 1000)) + 's'; }, 1000);
   renderSala();
 }
-const barra = m => { const pct = clamp(m.hp / m.stats.hp * 100, 0, 100); return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E'}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`; };
+export const barra = m => { const pct = clamp(m.hp / m.stats.hp * 100, 0, 100); return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E'}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`; };
 // chefe do evento semanal (boss.js): couraça, ponto fraco, fase e o aviso do golpe carregado — o que o grupo precisa combinar
-function blocoChefeMP(m) {
+export function blocoChefeMP(m) {
   const r = resumoDoChefe(m); if (!r) return '';
   return `<div class="boss-info">
     ${r.temCoura ? `<div class="hp boss-coura ${r.exposto ? 'exposto' : ''}"><span>🛡</span><div class="bar"><div class="fill" style="width:${Math.round(r.couraFracao * 100)}%"></div></div><span>${r.exposto ? 'EXPOSTO' : ''}</span></div>` : r.exposto ? '<div class="boss-fase" style="color:#e4572e">💥 EXPOSTO: dano ×1,5</div>' : ''}
@@ -604,7 +604,7 @@ function blocoChefeMP(m) {
     ${r.carregando ? `<div class="boss-carga" role="alert">⚠ Carregando o ${esc(r.rotuloCarga)}! Faltam <b>${r.faltaParaInterromper}</b> de dano neste turno pra interromper.</div>` : ''}
   </div>`;
 }
-function cartao(m, legenda, destaque = false) {
+export function cartao(m, legenda, destaque = false) {
   return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
     <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
 }

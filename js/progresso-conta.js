@@ -11,6 +11,8 @@
    sem conflito. Um total único não teria como saber o que já foi somado.
    Puro (sem DOM, sem rede): testado em tests/progresso-conta.test.js. Quem guarda é carreira.js/nuvem.js. */
 
+import { mesclarHall } from './hall.js';
+
 export const PROGRESSO_KEY = 'pokerpg-progresso-v1';
 export const LISTAS_ABATE = ['tipoAlvo', 'especie', 'golpe', 'elemento'];
 
@@ -119,6 +121,7 @@ export function mesclarProgresso(a, b) {
       p.especies[especie] = !ja ? d : { ...ja, ...d, em: (ja.em && d.em) ? (ja.em < d.em ? ja.em : d.em) : (ja.em || d.em) };
     }
     for (const [id, abates] of Object.entries(fonte.porJornada || {})) p.porJornada[id] ||= abates;
+    if (fonte.hall) p.hall = mesclarHall(p.hall, fonte.hall);   // Hall da Fama (hall.js): união pela chave da jornada
     // eventos semanais: união das semanas vencidas e da data mais ANTIGA da primeira vitória (nunca perde uma vitória)
     for (const [id, e] of Object.entries(fonte.eventos || {})) {
       const ja = (p.eventos ||= {})[id];

@@ -113,6 +113,9 @@ No **Roguelike** e no **Hardcore**, um chefe especial ocupa a rota final da Gen 
 - **Itens de raide** (prêmio dos chefes, valem só na luta do chefe, um de cada por luta): **Cristal de Ruptura**, **Selo de Interrupção** e **Escudo Astral**.
 - **Ainda não (anotado para depois):** os demais itens da lista — Núcleo Eternamax, Escama do Céu, Cinza Vulcânica, Escama Abissal, Cristal Psíquico, Prisma de Luz, Rédea Espectral, Emblema da Coroa, Cristal Gélido, Espelho Reverso, Relógio de Areia, Fragmento Tera, Presa da Lua e Célula Zygarde — e as duplas de verdade (Zacian+Zamazenta, Dialga+Palkia), hoje representadas por um só dos dois.
 
+### 🏟 Arena do Chefe e Hall da Fama
+Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada jornada Roguelike/Hardcore que você termina** (venceu, perdeu ou encerrou) entra no **Hall da Fama** com o nível que tinha (guarda os 30 melhores, sincroniza com a conta). Na **🏟 Arena** você leva de 1 a 3 deles contra o chefe da semana. Não mexe em nenhuma jornada em andamento, perder não custa nada, vale a mesma tentativa de 8 horas. Prêmio: Pokémon na Pokédex, insígnia e título (1ª vitória) e os itens de raide da semana. Diferenças pra luta dentro de uma run: sem itens segurados, sem Mega/Tera/Z-Move/Gigantamax e sem Revive. A tela inicial e a Arena trazem o texto **"Como funcionam os chefes da semana"**.
+
 ### 🤝 Badges de parceiros
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 
