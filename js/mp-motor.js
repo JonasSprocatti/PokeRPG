@@ -9,8 +9,7 @@
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE } from './dados.js';
 import { effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento } from './regras.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno, passarLados } from './golpe.js';
-import { hab } from './habilidades.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
 import { rand, clamp, fmt } from './util.js';
 
 // Cópia enxuta de um Pokémon do jogo pra batalha multiplayer (sem descrições longas: vai pela rede).
@@ -84,8 +83,8 @@ export async function resolverTurnoMP(estado, acoes) {
   const say = (txt, cls = '') => ev.push({ txt, cls });
   s.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }; // batalha de uma versão anterior, sem campo
   const ctx = { nome: m => m.nome, golpe: g => fmt(g.name), say, refDe: m => m.ref, monPorRef: r => monMP(s, r), campo: s.campo, ladoDe: m => ladoDe(s, m.ref) };
-  // habilidades que mudam o tempo ao entrar em campo, no 1º turno (Drizzle, Drought…)
-  if (s.turno === 1) for (const m of vivosMP(todosMP(s))) { const c = hab(m).climaAoEntrar, tr = hab(m).terrenoAoEntrar; if (c) await mudarClima(c, ctx, m); if (tr) await mudarTerreno(tr, ctx, m); }
+  // habilidades de entrada em campo, no 1º turno (Intimidate, Drizzle, Download…): a MESMA regra do single player
+  if (s.turno === 1) await aoEntrarEmCampo(vivosMP(todosMP(s)), m => vivosMP(s.lados[outro(ladoDe(s, m.ref))]), ctx);
   if (s.fim) return { estado: s, eventos: ev };
   const valida = a => { const m = monMP(s, a.ref); return m && m.hp > 0; };
 

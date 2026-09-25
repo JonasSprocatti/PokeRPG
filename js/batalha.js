@@ -7,9 +7,8 @@ import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, reg
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
-import { changeStats, healFull, CTX } from './efeitos.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, mudarClima, passarClima, mudarTerreno, passarTerreno, passarLados, aplicarArmadilhas } from './golpe.js';
-import { hab } from './habilidades.js';
+import { healFull, CTX } from './efeitos.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
@@ -80,28 +79,12 @@ function iniciar(B) {
      a Mudança de Postura do Aegislash documentou (golpe.trocarPostura). */
   preCarregarMegas([G.S.player, G.B.enemy]).catch(e => console.warn('mega: pré-carga', e));
 }
-// Intimidação ao entrar em campo: cada um do seu lado com Intimidate baixa o inimigo; o do inimigo baixa todo o seu lado.
-// Na troca de Pokémon do treinador só o que acabou de entrar dispara.
+// Habilidades de entrada em campo (Intimidate, Drizzle, Download, Intrepid Sword…): cada um do seu lado age sobre o
+// inimigo e o inimigo age sobre todo o seu lado. Na troca de Pokémon do treinador só o que acabou de entrar dispara.
+// A regra em si é a `golpe.aoEntrarEmCampo`, a MESMA do multiplayer.
 async function intimidar(E, soInimigo = false) {
   const lado = vivos(emCampo());
-  const pares = [...(soInimigo ? [] : lado.map(a => [a, [E]])), [E, lado]];
-  for (const [a, alvos] of pares) if (a.ability === 'intimidate') {
-    await say(`A Intimidação de ${nm(a)} assusta o oponente!`);
-    for (const b of alvos) await changeStats(b, [{ stat: 'attack', change: -1 }], a); // Clear Body & cia. impedem
-  }
-  // habilidades que mudam o tempo ao entrar em campo (Drizzle, Drought, Sand Stream, Snow Warning)
-  for (const m of [...(soInimigo ? [] : lado), E]) {
-    const c = hab(m).climaAoEntrar, tr = hab(m).terrenoAoEntrar;
-    if (c) await mudarClima(c, CTX, m);
-    if (tr) await mudarTerreno(tr, CTX, m);
-    /* `estagioAoEntrar` (Intrepid Sword, Dauntless Shield…): sobe um atributo do PRÓPRIO ao entrar em campo.
-       Passa por `changeStats`, então Clear Body e Névoa continuam valendo — é o mesmo caminho da Intimidação. */
-    const est = hab(m).estagioAoEntrar;
-    if (est) {
-      await say(`${nm(m)} entra decidido!`);
-      await changeStats(m, [{ stat: est[0], change: est[1] }], m);
-    }
-  }
+  await aoEntrarEmCampo(soInimigo ? [E] : [...lado, E], m => (m === E ? lado : [E]), CTX);
 }
 export async function startBattle(z) {
   const E = await novoOponente(z);

@@ -5,6 +5,20 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.25', data: '2026-09-25', titulo: 'Habilidades de verdade', piada: 'O Slakoth pediu para constar que a nova habilidade dele está funcionando perfeitamente. Ele descansou, para provar.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Mais de <b>40 habilidades</b> passam a valer em batalha, entre elas <b>Moxie</b>, <b>Defiant</b>, <b>Competitive</b>, <b>Contrary</b>, <b>Simple</b>, <b>Unaware</b>, <b>Mirror Armor</b>, <b>Poison Heal</b>, <b>Truant</b>, <b>Pressure</b>, <b>Iron Fist</b>, <b>Strong Jaw</b>, <b>Sharpness</b> e <b>Steelworker</b>.',
+        'Habilidades que <b>reagem a levar um golpe</b>: Steam Engine, Water Compaction, Stamina, Weak Armor, Justified, Rattled, Anger Point, Sand Spit e Seed Sower. Também entram Gooey e Tangling Hair (baixam a Velocidade de quem encosta), Poison Touch, Wonder Skin e as três que barram golpe de prioridade (Dazzling, Queenly Majesty, Armor Tail).',
+        'Hadron Engine e Orichalcum Pulse ligam o terreno elétrico / o sol e ainda dão o bônus de atributo junto.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Download</b> agora lê o oponente: sobe o Ataque se a Defesa dele é menor que a Defesa Especial, e o Ataque Especial no caso contrário (antes subia sempre o Ataque Especial).',
+        '<b>Guard Dog</b> sobe o Ataque quando alguém tenta intimidar, em vez de só impedir a queda. <b>Sand Force</b> agora dá +30% em golpes de Pedra, Terra e Aço na tempestade de areia. <b>Effect Spore</b> sorteia entre sono, paralisia e veneno, como no jogo, e não pega em Grama.',
+        '<b>Water Bubble</b> também dobra os seus golpes de Água. <b>Toxic Boost</b> só vale envenenado e <b>Flare Boost</b> só queimado. <b>Magic Guard</b> agora bloqueia todo dano indireto (veneno, queimadura, recuo, armadilhas, Rough Skin…), e não só o clima.',
+        'Inner Focus, Own Tempo e Oblivious agora são imunes à Intimidação. E no <b>multiplayer</b> a Intimidação, o Download e as habilidades de degrau ao entrar em campo finalmente funcionam (antes só valiam no single player).'
+      ] }
+    ] },
   { versao: '2.24', data: '2026-09-25', titulo: 'Compras em atacado', piada: 'O lojista jura que nunca viu alguém levar noventa e nove Potions de uma vez. Está com medo.',
     secoes: [
       { nome: 'Novidades', itens: [

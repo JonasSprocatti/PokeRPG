@@ -62,15 +62,17 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
-- **~60 habilidades com efeito de verdade**, iguais no single player e no multiplayer:
-  - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head.
-  - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard.
+- **Mais de 120 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
+  - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Toxic Boost, Flare Boost, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head, Reckless, Neuroforce, Merciless, Defeatist, Iron Fist, Strong Jaw, Sharpness, Steelworker, Transistor, Dragon's Maw, Rocky Payload, Water Bubble, Sand Force.
+  - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard, Unaware, Wonder Skin, Dazzling/Queenly Majesty/Armor Tail (barram golpe de prioridade), Pressure.
   - **Absorção de tipo:** Levitate, Flash Fire, Volt/Water Absorb, Lightning Rod, Motor Drive, Sap Sipper.
-  - **Status:** Immunity, Limber, Insomnia, Own Tempo.
-  - **Atributos que não caem:** Clear Body, Hyper Cutter.
-  - **Contato:** Static, Flame Body, Rough Skin.
-  - **Fim de turno:** Speed Boost, Shed Skin.
-  - **Outras:** Intimidate, Run Away…
+  - **Status:** Immunity, Limber, Insomnia, Own Tempo, Poison Heal, Magic Guard (nenhum dano indireto).
+  - **Atributos:** Clear Body, Hyper Cutter, Contrary, Simple, Mirror Armor, Defiant, Competitive.
+  - **Reagem a levar golpe:** Steam Engine, Water Compaction, Stamina, Weak Armor, Justified, Rattled, Anger Point, Sand Spit, Seed Sower.
+  - **Contato:** Static, Flame Body, Rough Skin, Effect Spore (sono, paralisia ou veneno), Gooey, Tangling Hair, Poison Touch.
+  - **Ao derrubar:** Moxie, Chilling Neigh, Grim Neigh.
+  - **Ao entrar em campo:** Intimidate (com Guard Dog, Inner Focus, Own Tempo e Oblivious reagindo), Download (lê a defesa do oponente), Hadron Engine, Orichalcum Pulse.
+  - **Fim de turno:** Speed Boost, Shed Skin. **Outras:** Truant, Run Away…
 
   A ficha marca quais estão ativas.
 
@@ -284,7 +286,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 
 - [ ] **Troca de verdade** entre dois jogadores no multiplayer (hoje a troca é simulada pelo Cabo de Conexão).
 - [ ] **Batalha mais completa**, nesta ordem:
-  1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela).
+  1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela). Ficaram de fora as que não têm como ser fiéis: Sticky Hold (nenhum golpe rouba item), Regenerator/Natural Cure (agem ao trocar, e você nunca troca), Beast Boost, Analytic e as que ignoram a habilidade do alvo (Mold Breaker).
   2. ~~Clima~~ ✔ (sol, chuva, areia, granizo e neve, com as habilidades ligadas a eles).
   3. ~~Terrenos~~ ✔ (elétrico, grama, psíquico e névoa, com as habilidades Surge).
   4. ~~Itens segurados~~ ✔ (13 itens; faltam os Choice, que travam o golpe, e frutas de aperto por tipo).
@@ -314,7 +316,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Roguelike sem segunda chance (permadeath de você e dos aliados)
 - [x] Entrar numa sala com um Pokémon convidado; ganhos da run de outra pessoa voltam com você (no nível real)
 - [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
-- [x] Motor de golpes único (single player e multiplayer) com ~60 habilidades
+- [x] Motor de golpes único (single player e multiplayer) com mais de 120 habilidades — as parciais (Download, Guard Dog, Sand Force, Effect Spore, Water Bubble, Toxic/Flare Boost, Magic Guard) foram completadas
 - [x] Tela de bugs e sugestões (funciona sem conta e offline)
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail
 - [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)

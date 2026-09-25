@@ -118,13 +118,33 @@ export function multStatClima(m, stat, clima) {
 // quanto o terreno mexe num atributo (só pra quem está no chão) — Surge Surfer no Campo Elétrico
 export const multStatTerreno = (m, stat, terreno) =>
   terreno && noChao(m) ? (hab(m).multStatTerreno?.[terreno]?.[stat] || 1) : 1;
-export function effStat(m, stat, crit = false, attacking = true, clima = null, terreno = null) {
-  let st = m.vol?.stages[stat] || 0;
+// a habilidade de "força com status" vale pra este status? (Guts: qualquer; Toxic Boost: só veneno; Flare Boost: só queimadura)
+export const statusVale = (h, ail) => !h.soStatus || h.soStatus.includes(ail);
+/* Golpes por família, pras habilidades que reforçam um tipo de golpe pelo NOME (a PokéAPI não traz essa marca no golpe):
+   Iron Fist = soco, Strong Jaw = mordida, Sharpness = corte. */
+export const FAMILIAS_GOLPE = {
+  soco: ['fire-punch', 'ice-punch', 'thunder-punch', 'mach-punch', 'bullet-punch', 'comet-punch', 'dizzy-punch', 'drain-punch', 'dynamic-punch',
+    'focus-punch', 'hammer-arm', 'ice-hammer', 'mega-punch', 'meteor-mash', 'power-up-punch', 'shadow-punch', 'sky-uppercut', 'surging-strikes',
+    'wicked-blow', 'plasma-fists', 'jet-punch', 'double-iron-bash', 'rage-fist', 'headlong-rush'],
+  mordida: ['bite', 'crunch', 'fire-fang', 'ice-fang', 'thunder-fang', 'poison-fang', 'psychic-fangs', 'hyper-fang', 'jaw-lock', 'fishious-rend'],
+  corte: ['slash', 'cut', 'night-slash', 'psycho-cut', 'leaf-blade', 'x-scissor', 'air-slash', 'aerial-ace', 'sacred-sword', 'razor-shell', 'cross-poison',
+    'fury-cutter', 'solar-blade', 'stone-axe', 'ceaseless-edge', 'kowtow-cleave', 'secret-sword', 'behemoth-blade', 'bitter-blade', 'aqua-cutter',
+    'air-cutter', 'razor-leaf', 'mighty-cleave', 'tachyon-cutter', 'psyblade']
+};
+export function multFamilia(h, nomeDoGolpe) {
+  let mult = 1;
+  for (const [fam, m] of Object.entries(h.golpesFamilia || {})) if (FAMILIAS_GOLPE[fam]?.includes(nomeDoGolpe)) mult *= m;
+  return mult;
+}
+// `semEstagio`: ignora os degraus deste atributo (Unaware de QUEM ESTÁ do outro lado)
+export function effStat(m, stat, crit = false, attacking = true, clima = null, terreno = null, semEstagio = false) {
+  let st = semEstagio ? 0 : (m.vol?.stages[stat] || 0);
   if (crit) { if (attacking && st < 0) st = 0; if (!attacking && st > 0) st = 0; }
   const h = hab(m);
   let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
   v *= multStatClima(m, stat, clima) * multStatTerreno(m, stat, terreno);         // clima e terreno
-  if (m.status && h.comStatus?.[stat]) v *= h.comStatus[stat];                     // Guts, Quick Feet, Marvel Scale
+  if (h.abaixoDeMetade?.[stat] && m.hp <= m.stats.hp / 2) v *= h.abaixoDeMetade[stat]; // Defeatist
+  if (m.status && h.comStatus?.[stat] && statusVale(h, m.status)) v *= h.comStatus[stat]; // Guts, Quick Feet, Marvel Scale, Toxic/Flare Boost
   else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
   return Math.max(1, Math.floor(v));
 }
@@ -286,10 +306,13 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   // `semCritico` (Battle Armor, Shell Armor): o golpe nunca sai crítico contra quem tem. Vale inclusive sobre
   // Focus Energy e golpe de crítico garantido — é exatamente pra isso que a habilidade existe.
   // `focoBase` (Super Luck): a habilidade já nasce com um degrau de crítico, somado ao do golpe e ao Focus Energy
+  // `critContraStatus` (Merciless): contra alvo com esse status o crítico é garantido (ainda respeitando o semCritico)
   const crit = !ht.semCritico
-    && Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0))];
-  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno);
-  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno);
+    && ((hu.critContraStatus && t.status === hu.critContraStatus)
+      || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0))]);
+  // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
+  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno, !!ht.ignoraEstagios);
+  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno, !!hu.ignoraEstagios);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * rand(85, 100) / 100;
   mod *= multStab(u, move.type, hu.stab || 1.5);                                      // STAB (Adaptability = ×2; Tera muda a conta)
@@ -297,7 +320,12 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   mod *= ef;
   if (ef > 1 && ht.superEfetivo) mod *= ht.superEfetivo;                            // Filter, Solid Rock
   if (ef < 1 && hu.poucoEfetivo) mod *= hu.poucoEfetivo;                            // Tinted Lens
-  if (phys && u.status === 'burn' && !hu.comStatus?.attack && move.name !== 'facade') mod *= 0.5; // Guts e Facade ignoram a queimadura
+  if (ef > 1 && hu.superEfetivoCausado) mod *= hu.superEfetivoCausado;              // Neuroforce
+  mod *= hu.danoTipo?.[move.type] || 1;                                              // Steelworker, Transistor, Water Bubble…
+  const dc = hu.danoTipoClima?.[clima]; if (dc?.tipos.includes(move.type)) mod *= dc.mult; // Sand Force na areia
+  mod *= multFamilia(hu, move.name);                                                 // Iron Fist, Strong Jaw, Sharpness
+  if (hu.recuo && move.meta?.drain < 0) mod *= hu.recuo;                             // Reckless: golpe com recuo
+  if (phys && u.status === 'burn' && !(hu.comStatus?.attack && statusVale(hu, 'burn')) && move.name !== 'facade') mod *= 0.5; // Guts e Facade ignoram a queimadura
   if (hu.pinch === move.type && u.hp <= u.stats.hp / 3) mod *= 1.5;                 // Overgrow, Blaze, Torrent, Swarm
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
@@ -318,8 +346,11 @@ export const heal = (m, h) => { m.hp = Math.min(m.stats.hp, m.hp + h); };
 
 // probabilidade de acertar: precisão do golpe × estágio de precisão de quem usa contra evasão do alvo
 export function chanceAcerto(move, user, target, clima = null) {
-  const n = clamp((user.vol.stages.accuracy || 0) - (target.vol.stages.evasion || 0), -6, 6), h = hab(user), ht = hab(target);
-  const acc = PRECISAO_CLIMA[move.name]?.[clima] ?? move.acc;                        // Thunder na chuva, Blizzard no gelo…
+  const h = hab(user), ht = hab(target);
+  // Unaware: quem ataca ignora a evasão do alvo; quem é atacado ignora a precisão de quem ataca
+  const n = clamp((ht.ignoraEstagios ? 0 : user.vol.stages.accuracy || 0) - (h.ignoraEstagios ? 0 : target.vol.stages.evasion || 0), -6, 6);
+  let acc = PRECISAO_CLIMA[move.name]?.[clima] ?? move.acc;                          // Thunder na chuva, Blizzard no gelo…
+  if (acc != null && ht.limitaStatus && move.cls === 'status') acc = Math.min(acc, ht.limitaStatus); // Wonder Skin: golpe de status alheio, no máx. 50%
   const esconde = clima && ht.escondeNoClima?.includes(clima) ? 0.8 : 1;             // Sand Veil, Snow Cloak
   return acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n)) * (h.precisao || 1) * (move.cls === 'physical' ? h.precisaoFisica || 1 : 1) * esconde;
 }

@@ -15,7 +15,7 @@ import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
 import { ITEMS } from './dados.js';
-import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko,
+import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc } from './regras.js';
@@ -24,6 +24,12 @@ import { rand, clamp, fmt } from './util.js';
 const nada = () => {};
 const up = ctx => (ctx.atualizar || nada)();
 const nomeDoItem = m => ITEMS[m.item]?.name || 'o item';
+// sorteia um valor de uma lista [[valor, peso], …] (Effect Spore: sono 11, paralisia 9, veneno 10)
+const sortearPeso = lista => {
+  let r = Math.random() * lista.reduce((s, [, p]) => s + p, 0);
+  for (const [v, p] of lista) if ((r -= p) < 0) return v;
+  return lista[lista.length - 1][0];
+};
 const climaDoCtx = ctx => climaDe(ctx.campo);
 const terrenoDoCtx = ctx => terrenoDe(ctx.campo);
 // lado do campo de um Pokémon (telas, salvaguarda, armadilhas). ctx.ladoDe(m) diz em qual lado ele está.
@@ -107,10 +113,19 @@ export async function trocarPostura(m, paraLamina, ctx) {
   await ctx.say(`${ctx.nome(m)} mudou para a Forma ${paraLamina ? 'Lâmina' : 'Escudo'}!`, 'good');
   return true;
 }
-export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
+// `refletido` = esta mudança já é o rebote do Mirror Armor (não reflete de novo, senão dois espelhos se devolvem pra sempre)
+export async function mudarEstagios(m, mudancas, ctx, fonte = null, refletido = false) {
   const h = hab(m);
-  for (const c of mudancas) {
+  for (let c of mudancas) {
     if (!(c.stat in m.vol.stages)) continue;
+    // Contrary inverte o sentido da mudança (queda vira alta) e Simple dobra o tamanho dela — as duas valem pra qualquer origem
+    if (h.inverteEstagios) c = { ...c, change: -c.change };
+    if (h.dobraEstagios) c = { ...c, change: c.change * 2 };
+    // Mirror Armor: a queda causada por OUTRO Pokémon volta pra quem causou
+    if (c.change < 0 && fonte && fonte !== m && h.espelhaQueda && !refletido) {
+      await ctx.say(`A habilidade ${fmt(m.ability)} de ${ctx.nome(m)} devolveu o efeito!`);
+      await mudarEstagios(fonte, [c], ctx, m, true); continue;
+    }
     if (c.change < 0 && fonte && fonte !== m && (h.semQueda === 'todas' || h.semQueda?.includes(c.stat))) {
       await ctx.say(`A habilidade ${fmt(m.ability)} de ${ctx.nome(m)} impede que ${STAT_PT[c.stat]} caia!`); continue;
     }
@@ -122,19 +137,78 @@ export async function mudarEstagios(m, mudancas, ctx, fonte = null) {
     m.vol.stages[c.stat] = nv;
     const d = Math.abs(c.change), subiu = c.change > 0;
     await ctx.say(`${STAT_PT[c.stat]} de ${ctx.nome(m)} ${subiu ? (d >= 3 ? 'subiu drasticamente' : d === 2 ? 'subiu muito' : 'subiu') : (d >= 3 ? 'caiu drasticamente' : d === 2 ? 'caiu muito' : 'caiu')}!`, subiu ? 'good' : 'status');
+    // Defiant / Competitive: uma queda causada por OUTRO Pokémon dispara o contra-ataque (a reação usa fonte = o próprio,
+    // então não dispara de novo)
+    if (!subiu && fonte && fonte !== m && h.aoSerBaixado) {
+      await ctx.say(`A habilidade ${fmt(m.ability)} de ${ctx.nome(m)} reagiu!`, 'status');
+      await mudarEstagios(m, [{ stat: h.aoSerBaixado[0], change: h.aoSerBaixado[1] }], ctx, m);
+    }
   }
   up(ctx);
 }
+
+/* Habilidades que agem ao ENTRAR em campo (o mesmo código no single player e no multiplayer):
+   Intimidate baixa o Ataque do oponente — salvo quem é imune a ela (Inner Focus, Own Tempo, Oblivious) ou reage (Guard Dog
+   sobe o Ataque em vez de cair); depois vêm o clima, o terreno e os degraus de entrada (Intrepid Sword…). Download lê os
+   oponentes: se a Defesa deles é menor que a Def. Esp., sobe o Ataque; senão, o At. Esp.
+   `entrantes` = quem acabou de entrar; `oponentesDe(m)` = quem está do outro lado dele. */
+export async function aoEntrarEmCampo(entrantes, oponentesDe, ctx) {
+  for (const a of entrantes) if (hab(a).intimida) {
+    await ctx.say(`A Intimidação de ${ctx.nome(a)} assusta o oponente!`);
+    for (const b of oponentesDe(a)) {
+      const hb = hab(b);
+      if (hb.imuneIntimidacao) { await ctx.say(`A habilidade ${fmt(b.ability)} de ${ctx.nome(b)} não se abala!`); continue; }
+      if (hb.intimidaSobe) {
+        await ctx.say(`A habilidade ${fmt(b.ability)} de ${ctx.nome(b)} reage à Intimidação!`, 'good');
+        await mudarEstagios(b, [{ stat: 'attack', change: 1 }], ctx, b); continue;
+      }
+      await mudarEstagios(b, [{ stat: 'attack', change: -1 }], ctx, a); // Clear Body & cia. impedem
+    }
+  }
+  for (const m of entrantes) {
+    const h = hab(m);
+    if (h.climaAoEntrar) await mudarClima(h.climaAoEntrar, ctx, m);
+    if (h.terrenoAoEntrar) await mudarTerreno(h.terrenoAoEntrar, ctx, m);
+    let est = h.estagioAoEntrar;
+    if (h.analisa) {
+      const ops = oponentesDe(m);
+      const def = ops.reduce((s, o) => s + effStat(o, 'defense'), 0), esp = ops.reduce((s, o) => s + effStat(o, 'special-defense'), 0);
+      est = [def < esp ? 'attack' : 'special-attack', 1];
+      await ctx.say(`${ctx.nome(m)} analisou o oponente!`);
+    } else if (est) await ctx.say(`${ctx.nome(m)} entra decidido!`);
+    // passa por mudarEstagios, então Clear Body e Névoa continuam valendo — é o mesmo caminho da Intimidação
+    if (est) await mudarEstagios(m, [{ stat: est[0], change: est[1] }], ctx, m);
+  }
+}
+
+// Reação a levar um golpe de dano (Steam Engine, Stamina, Weak Armor, Sand Spit…). Dispara UMA vez por golpe, mesmo
+// que ele acerte várias vezes.
+async function reagirAoGolpe(t, g, crit, ctx) {
+  for (const r of hab(t).aoSerAtingido || []) {
+    if (r.tipos && !r.tipos.includes(g.type)) continue;
+    if (r.cls && r.cls !== g.cls) continue;
+    if (r.soCritico && !crit) continue;
+    await ctx.say(`A habilidade ${fmt(t.ability)} de ${ctx.nome(t)} reagiu!`, 'status');
+    if (r.estagios) await mudarEstagios(t, r.estagios.map(([stat, change]) => ({ stat, change })), ctx, t);
+    if (r.clima) await mudarClima(r.clima, ctx, t);
+    if (r.terreno) await mudarTerreno(r.terreno, ctx, t);
+  }
+}
+// Magic Guard: nenhum dano que não venha direto de um golpe (veneno, queimadura, recuo, armadilha, espinhos…)
+const indireto = m => !!hab(m).semDanoIndireto;
+// Pressure: o oponente gasta 1 PP a mais ao usar um golpe contra quem tem
+const pressao = (u, t, g) => (t !== u && !SELF_TARGETS.has(g.target) && hab(t).pressao ? 1 : 0);
 
 // Aplica status (inclui confusão). `avisar` = narra por que não pegou (golpe de status); secundário falha calado.
 // Armadilhas pegam quem ENTRA em campo (o próximo Pokémon do treinador / da fila de lendários)
 export async function aplicarArmadilhas(m, ctx) {
   const lado = ladoDoCampo(ctx, m); if (!lado || m.hp <= 0) return;
-  if (lado.pedras) {
+  const semDano = indireto(m);   // Magic Guard: pedras e espinhos são dano indireto e não pegam (o veneno das toxinas é status, esse pega)
+  if (lado.pedras && !semDano) {
     const d = danoPedras(m); m.hp = Math.max(0, m.hp - d); up(ctx);
     await ctx.say(`Pedras afiadas acertam ${ctx.nome(m)} ao entrar! (−${d})`, 'hit');
   }
-  if (m.hp > 0 && lado.espinhos) {
+  if (m.hp > 0 && lado.espinhos && !semDano) {
     const d = danoEspinhos(m, lado.espinhos);
     if (d) { m.hp = Math.max(0, m.hp - d); up(ctx); await ctx.say(`${ctx.nome(m)} pisa nos espinhos! (−${d})`, 'hit'); }
   }
@@ -272,6 +346,7 @@ async function golpeDeStatus(u, t, g, selfT, ctx) {
 export async function usarGolpe(u, t, g, primeiro, ctx) {
   const U = ctx.nome(u), hu = hab(u);
   if (u.vol.recarga) { delete u.vol.recarga; await ctx.say(`${U} precisa recarregar!`); return; }  // Hyper Beam & cia.
+  if (hu.preguica && u.vol.folga) { u.vol.folga = false; interromper(u); await ctx.say(`${U} está com preguiça...`); return; } // Truant: folga no turno seguinte a um golpe
   const travado = golpeTravado(u);                                                    // carga / fúria: repete sozinho
   if (travado) g = travado;
   if (u.status === 'sleep') {
@@ -300,20 +375,26 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
     await ctx.say(`${TERRENOS[terr].nome} protege ${ctx.nome(t)} de golpes rápidos!`);
     return;
   }
+  // Dazzling, Queenly Majesty, Armor Tail: golpe de prioridade não passa (mesma regra do Campo Psíquico)
+  if ((g.priority || 0) > 0 && u !== t && !SELF_TARGETS.has(g.target) && hab(t).bloqueiaPrioridade) {
+    await ctx.say(`${fmt(t.ability)} de ${ctx.nome(t)} bloqueia golpes rápidos!`);
+    return;
+  }
   const esp = especial(g);
   if (!esp.protege && !esp.aguentaTurno) u.vol.protSeguidas = 0;
   // no sol forte, Solar Beam e Solar Blade saem na hora (não precisam carregar)
   const cargaPulada = esp.carga && !esp.invulneravel && /^solar-/.test(g.name) && climaDoCtx(ctx) === 'sol';
   // golpe de carga, 1º turno: gasta PP, prepara (e some, se for Fly/Dig…) e ataca só no próximo
   if (esp.carga && !cargaPulada && !u.vol.carregando) {
-    if (g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1);
+    if (g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1 - pressao(u, t, g));
     u.vol.carregando = g; if (esp.invulneravel) u.vol.invul = true;
     await ctx.say(`${U} está se preparando para usar ${ctx.golpe(g)}!`); return;
   }
   if (esp.carga) { delete u.vol.carregando; delete u.vol.invul; }                    // 2º turno: não gasta PP de novo
-  else if (!travado && g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1);  // fúria: só o 1º turno gasta
+  else if (!travado && g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1 - pressao(u, t, g));  // fúria: só o 1º turno gasta
   if (esp.furia && !u.vol.furia) u.vol.furia = { golpe: g, turnos: rand(2, 3) };
   await ctx.say(`${U} usou ${ctx.golpe(g)}!`);
+  if (hu.preguica) u.vol.folga = true;                                                // Truant: o próximo turno é de folga
   // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)
   const primeiroGolpe = !u.vol.golpesDados;
   u.vol.golpesDados = (u.vol.golpesDados || 0) + 1;
@@ -338,7 +419,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     const pun = t.vol.punicao;
     if (pun && g.cls === 'physical' && u.hp > 0) {
       if (pun.estagio) await mudarEstagios(u, [{ stat: pun.estagio[0], change: pun.estagio[1] }], ctx, t);
-      if (pun.dano) { const d = Math.max(1, Math.floor(u.stats.hp * pun.dano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na barreira! (−${d})`, 'hit'); }
+      if (pun.dano && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * pun.dano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na barreira! (−${d})`, 'hit'); }
       if (pun.status && !u.status) await aplicarStatus(u, pun.status, ctx, true, t);
     }
     return;
@@ -398,12 +479,17 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   // itens segurados de quem ataca: Sino-Concha drena, Orbe da Vida cobra HP; Elmo Rochoso machuca quem encostou
   const si = seg(u);
   if (si.drenaDano && total > 0 && u.hp > 0 && u.hp < u.stats.hp) { const h = Math.max(1, Math.floor(total * si.drenaDano)); heal(u, h); up(ctx); await ctx.say(`${U} recuperou ${h} HP com o Sino-Concha.`, 'good'); }
-  if (si.recuoPorGolpe && total > 0 && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
-  if (g.cls === 'physical' && seg(t).espetos && u.hp > 0) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
+  if (si.recuoPorGolpe && total > 0 && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
+  if (g.cls === 'physical' && seg(t).espetos && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
   await comerFruta(t, ctx); await comerFruta(u, ctx);                                        // Frutas Oran/Sitrus na hora do aperto
+  // Moxie, Chilling Neigh, Grim Neigh: derrubar o alvo sobe um atributo de quem derrubou
+  if (t.hp <= 0 && total > 0 && u.hp > 0 && hu.aoNocautear) {
+    await ctx.say(`${U} ganhou moral com ${fmt(u.ability)}!`, 'good');
+    await mudarEstagios(u, [{ stat: hu.aoNocautear[0], change: hu.aoNocautear[1] }], ctx, u);
+  }
 
   if (meta.drain > 0) { const h = Math.max(1, Math.floor(total * meta.drain / 100)); heal(u, h); up(ctx); await ctx.say(`${U} drenou ${h} HP.`, 'good'); }
-  else if (meta.drain < 0 && !hu.semDanoRecuo) { // Rock Head evita; o total de recuo conta pra Basculegion (evolucao.js)
+  else if (meta.drain < 0 && !hu.semDanoRecuo && !indireto(u)) { // Rock Head e Magic Guard evitam; o total de recuo conta pra Basculegion (evolucao.js)
     const d = Math.max(1, Math.floor(total * -meta.drain / 100)); u.hp = Math.max(0, u.hp - d); u.recuoTotal = (u.recuoTotal || 0) + d; up(ctx); await ctx.say(`${U} sofreu ${d} de dano de recuo.`, 'hit');
   }
   if (meta.heal > 0 && u.hp > 0) { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); }
@@ -418,11 +504,24 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx, false, u);
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
   }
-  // contato (golpe físico): Static, Flame Body, Poison Point; Rough Skin, Iron Barbs
+  // reação a ter sido atingido (Steam Engine, Stamina, Weak Armor, Anger Point, Sand Spit…)
+  if (total > 0 && t.hp > 0 && ht.aoSerAtingido) await reagirAoGolpe(t, g, crit, ctx);
+  // contato (golpe físico): Static, Flame Body, Poison Point, Effect Spore, Gooey; Rough Skin, Iron Barbs
   if (g.cls === 'physical' && u.hp > 0) {
-    if (ht.contato && Math.random() * 100 < ht.contato.chance && !u.status) { await ctx.say(`${U} tocou em ${T}...`, 'muted'); await aplicarStatus(u, ht.contato.status, ctx); }
-    if (ht.contatoDano) { const d = Math.max(1, Math.floor(u.stats.hp * ht.contatoDano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na ${fmt(t.ability)} de ${T}! (−${d})`, 'hit'); }
+    const c = ht.contato;
+    if (c && Math.random() * 100 < c.chance) {
+      if (c.estagio) {                                                                // Gooey, Tangling Hair: a Velocidade de quem encosta cai
+        await ctx.say(`${U} tocou em ${T}...`, 'muted');
+        await mudarEstagios(u, [{ stat: c.estagio[0], change: c.estagio[1] }], ctx, t);
+      } else if (!u.status && !(c.po && (u.data.types.includes('grass') || hab(u).imunePo))) {   // pó não pega Grama nem Overcoat
+        const ail = c.sorteio ? sortearPeso(c.sorteio) : c.status;                    // Effect Spore: sono, paralisia ou veneno
+        await ctx.say(`${U} tocou em ${T}...`, 'muted'); await aplicarStatus(u, ail, ctx);
+      }
+    }
+    if (ht.contatoDano && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * ht.contatoDano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na ${fmt(t.ability)} de ${T}! (−${d})`, 'hit'); }
   }
+  // Poison Touch: o golpe físico de quem tem a habilidade pode envenenar o alvo (Shield Dust protege)
+  if (g.cls === 'physical' && hu.toque && t.hp > 0 && !t.status && !ht.semSecundario && Math.random() * 100 < hu.toque.chance) await aplicarStatus(t, hu.toque.status, ctx, false, u);
   return 'acertou';
 }
 
@@ -445,10 +544,15 @@ export async function fimDeTurno(m, ctx) {
   if (h.curaStatusFimTurno && m.status && Math.random() < h.curaStatusFimTurno) {
     m.status = null; m.sleep = 0; delete m.vol.toxico; up(ctx); await ctx.say(`${ctx.nome(m)} trocou de pele e se curou! (${fmt(m.ability)})`, 'good');
   }
-  const d = danoResidual(m);
+  /* Poison Heal: o veneno CURA 1/8 em vez de machucar. Magic Guard: nem veneno nem queimadura tiram HP. */
+  const d = h.curaComVeneno && m.status === 'poison' ? 0 : indireto(m) ? 0 : danoResidual(m);
+  if (h.curaComVeneno && m.status === 'poison' && m.hp < m.stats.hp) {
+    const n = Math.max(1, Math.floor(m.stats.hp * h.curaComVeneno)); heal(m, n); up(ctx);
+    await ctx.say(`${ctx.nome(m)} se recupera com o veneno! (+${n}, ${fmt(m.ability)})`, 'good');
+  }
   if (d) { m.hp = Math.max(0, m.hp - d); up(ctx); await ctx.say(`${ctx.nome(m)} sofreu com ${m.status === 'burn' ? 'a queimadura' : 'o veneno'}. (−${d})`, 'hit'); }
   if (m.status === 'poison' && m.vol.toxico) m.vol.toxico = Math.min(15, m.vol.toxico + 1);
-  if (m.hp > 0 && m.vol.semente != null) {
+  if (m.hp > 0 && m.vol.semente != null && !indireto(m)) {
     const s = Math.min(m.hp, Math.max(1, Math.floor(m.stats.hp / 8)));
     m.hp -= s; up(ctx); await ctx.say(`A semente drenou ${ctx.nome(m)}. (−${s})`, 'hit');
     const quem = ctx.monPorRef?.(m.vol.semente);
@@ -463,7 +567,7 @@ export async function fimDeTurno(m, ctx) {
   // item segurado: Restos curam, Lodo Negro cura Venenoso e machuca o resto (segurados.js)
   const di = fimDeTurnoDoItem(m);
   if (di > 0 && m.hp > 0) { heal(m, di); up(ctx); await ctx.say(`${ctx.nome(m)} recuperou ${di} HP com ${nomeDoItem(m)}.`, 'good'); }
-  else if (di < 0 && m.hp > 0) { m.hp = Math.max(0, m.hp + di); up(ctx); await ctx.say(`${nomeDoItem(m)} machucou ${ctx.nome(m)}. (${di})`, 'hit'); }
+  else if (di < 0 && m.hp > 0 && !indireto(m)) { m.hp = Math.max(0, m.hp + di); up(ctx); await ctx.say(`${nomeDoItem(m)} machucou ${ctx.nome(m)}. (${di})`, 'hit'); }
   if (m.hp > 0 && h.fimTurno) await mudarEstagios(m, [{ stat: h.fimTurno, change: 1 }], ctx);
   await comerFruta(m, ctx);
 }

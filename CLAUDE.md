@@ -238,10 +238,24 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 **As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
 O que sobrou e o que ficou combinado:
 
-- **Item 8 — habilidades**: em andamento. Duas levas feitas (~24 novas). A regra que vale: só entra habilidade
-  com gancho FIEL. Ficaram de fora, documentadas no próprio `habilidades.js`, as que não têm (Steam Engine,
-  Water Compaction, Wonder Skin, Sticky Hold) — mapear no gancho errado deixaria a habilidade mais forte que o
-  original, e a ficha promete "✓ ativa em batalha".
+- **Item 8 — habilidades**: quatro levas feitas. A regra que vale: só entra habilidade com gancho FIEL —
+  mapear no gancho errado deixaria a habilidade mais forte que o original, e a ficha promete "✓ ativa em batalha".
+  A **4ª leva** (41 novas + 13 parciais completadas) criou ~24 ganchos, todos documentados no topo de
+  `habilidades.js` e validados em `tests/habilidades.test.js` (a lista `ganchos` do teste precisa ganhar o nome de
+  todo gancho novo; o teste também confere tipo/status/atributo/família de cada um). Onde mora cada um:
+  `calcDamage`/`effStat`/`chanceAcerto` em `regras.js` (`danoTipo`, `danoTipoClima`, `golpesFamilia` — lista de nomes
+  em `FAMILIAS_GOLPE`, porque a PokéAPI não marca soco/mordida/corte —, `recuo`, `superEfetivoCausado`,
+  `critContraStatus`, `abaixoDeMetade`, `soStatus`, `ignoraEstagios`, `limitaStatus`) e `golpe.js` (`mudarEstagios`:
+  `inverteEstagios`/`dobraEstagios`/`espelhaQueda`/`aoSerBaixado`; `executar`: `aoSerAtingido` via `reagirAoGolpe`
+  — UMA reação por golpe, mesmo com vários acertos —, `aoNocautear`, `toque`, `contato` com `sorteio`/`estagio`/`po`;
+  `usarGolpe`: `pressao`, `preguica` (`vol.folga`), `bloqueiaPrioridade`; `fimDeTurno`: `curaComVeneno`;
+  `semDanoIndireto` é o helper `indireto(m)`, checado em todo dano que não vem de golpe direto).
+  **`golpe.aoEntrarEmCampo(entrantes, oponentesDe, ctx)`** é a regra ÚNICA de entrada em campo (Intimidate com
+  `imuneIntimidacao`/`intimidaSobe`, clima, terreno, `estagioAoEntrar`, Download `analisa`): `batalha.intimidar`
+  (single player) e `mp-motor` (turno 1) só a chamam — antes o multiplayer não tinha Intimidate nem `estagioAoEntrar`.
+  Ficaram de fora, documentadas no fim da tabela: Sticky Hold (nenhum golpe rouba item), Regenerator/Natural Cure
+  (agem ao trocar), Beast Boost, Analytic, Mold Breaker & cia. **Cuidado ao editar a tabela**: o teste que detecta
+  habilidade duplicada varre o bloco com uma regex — não escreva `nome: {` dentro de comentário da tabela.
 - **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
 - **Em aberto, esperando decisão do usuário**: inimigo gigantamaxar (hoje só mega/terastaliza); se o painel de
   manutenção sai quando o jogo estabilizar; e se o teto da equipe (`MAX_ALIADOS`) muda agora que existe o
