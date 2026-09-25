@@ -36,7 +36,12 @@ export function climaDaRota(z) {
   if (porId) return porId;
   if (z.posVitoria) return CLIMAS.find(c => c.id === 'santuario');
   const texto = `${z.name || ''} ${z.desc || ''} ${z.id || ''}`.toLowerCase();
-  return CLIMAS.find(c => c.palavras.some(p => texto.includes(p))) || PADRAO;
+  return CLIMAS.find(c => c.palavras.some(p => temPalavra(texto, p))) || PADRAO;
+}
+// a palavra tem que COMEÇAR uma palavra do texto: sem isso "ilha" casava dentro de "tri-lha-s" e uma rota de campo virava mar
+function temPalavra(texto, p) {
+  for (let i = texto.indexOf(p); i !== -1; i = texto.indexOf(p, i + 1)) if (i === 0 || !/\p{L}/u.test(texto[i - 1])) return true;
+  return false;
 }
 
 // as variáveis de CSS que a cena usa; o estilo em si mora no estilo.css (classe .scene.battle)
