@@ -58,7 +58,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
   - nos outros modos, a jornada **termina em vitória** e o seu Pokémon **se aposenta campeão** daquele mapa: a próxima jornada começa do zero na Gen seguinte, com outro Pokémon no nível 5 e o mapa nos níveis normais dele. Se preferir, dá para **seguir com o mesmo Pokémon** (aí você leva equipe e mochila, e o mapa novo se ajusta ao seu nível) — mas cada continuação vale **20% menos pontos**, com piso de metade.
 - **Treinadores caçadores:** aparecem explorando, com 1 a 3 Pokémon e Pokébolas. A equipe deles **não é só da rota**: cerca de metade pode ser qualquer espécie daquele mapa, sempre no nível da rota — eles viajaram até ali. Com seu HP pela metade, podem tentar te capturar, e a chance depende da taxa de captura da **sua** espécie.
 - **Shiny:** 1 em 4096, para você e para qualquer Pokémon que aparecer.
-- **Centro Pokémon, loja e mochila:** Potion, curas de status, Ether, X-itens, Rare Candy, Revive e petiscos.
+- **Centro Pokémon, loja e mochila:** Potion, Super/Hyper, **Mega Potion (50%), Max Potion e Full Restore** (curam por % do HP máximo, pra acompanhar o nível 100), curas de status, Ether/Max Ether, X-itens, Rare Candy, Revive/Max Revive e petiscos.
 
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.

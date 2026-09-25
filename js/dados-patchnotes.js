@@ -5,6 +5,22 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.36', data: '2026-09-25', titulo: 'Tera surpresa', piada: 'Até ontem o inimigo terastalizava no tipo que ele já era. Agora ele abre a cristalização e não tem nem ele ideia do que vai sair.',
+    secoes: [
+      { nome: 'Equilíbrio', itens: [
+        'A <b>Terastalização do inimigo</b> (treinadores, Alfas e lendários) agora é <b>totalmente aleatória</b>: qualquer um dos 18 tipos, seja um dos dele ou não. Antes ele sempre virava o próprio primeiro tipo, e não havia surpresa nenhuma. Olhe o tipo 💎 na plaquinha dele depois da virada: a fraqueza nova pode ser qualquer uma.'
+      ] }
+    ] },
+  { versao: '2.35', data: '2026-09-25', titulo: 'Potions pro nível 100', piada: 'Uma Potion de 20 HP num Pokémon nível 100 é tipo jogar um copo d\'água num incêndio. O lojista finalmente estocou o balde.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Novas curas que acompanham o seu HP: <b>Mega Potion</b> (50% do HP máximo), <b>Max Potion</b> (todo o HP) e <b>Full Restore</b> (todo o HP e cura qualquer status). Tudo à venda na loja.',
+        'Também chegaram o <b>Max Ether</b> (restaura todos os PP), o <b>Max Revive</b> (reanima um aliado com o HP cheio) e o <b>X Sp. Def</b> (Def. Esp. +2 na batalha).'
+      ] },
+      { nome: 'Equilíbrio', itens: [
+        'Explorando agora dá pra achar mais variedade: Super, Hyper e Mega Potion, Burn Heal, Ice Heal e todos os X-itens.'
+      ] }
+    ] },
   { versao: '2.34', data: '2026-09-25', titulo: 'Perfil dos amigos e regras dos chefes mais claras', piada: 'O perfil só mostra o que você já mostraria num crachá. A mochila continua sendo assunto seu e do seu Snorlax.',
     secoes: [
       { nome: 'Novidades', itens: [

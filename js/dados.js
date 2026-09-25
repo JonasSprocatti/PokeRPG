@@ -77,6 +77,10 @@ export const ITEMS = {
   potion: { name: 'Potion', desc: 'Recupera 20 HP.', heal: 20, price: 200 },
   'super-potion': { name: 'Super Potion', desc: 'Recupera 60 HP.', heal: 60, price: 600 },
   'hyper-potion': { name: 'Hyper Potion', desc: 'Recupera 120 HP.', heal: 120, price: 1200 },
+  // As curas fixas (20/60/120) não acompanham quem chega ao nível 100 com 300+ de HP: as de baixo abaixo curam uma FRAÇÃO do HP máximo.
+  'mega-potion': { name: 'Mega Potion', desc: 'Recupera 50% do HP máximo.', healPct: 50, price: 2000 },
+  'max-potion': { name: 'Max Potion', desc: 'Recupera todo o HP.', healPct: 100, price: 3000 },
+  'full-restore': { name: 'Full Restore', desc: 'Recupera todo o HP e cura qualquer status.', healPct: 100, cure: 'all', price: 4500 },
   antidote: { name: 'Antidote', desc: 'Cura envenenamento.', cure: ['poison'], price: 100 },
   'paralyze-heal': { name: 'Paralyze Heal', desc: 'Cura paralisia.', cure: ['paralysis'], price: 200 },
   awakening: { name: 'Awakening', desc: 'Acorda do sono.', cure: ['sleep'], price: 250 },
@@ -84,9 +88,11 @@ export const ITEMS = {
   'ice-heal': { name: 'Ice Heal', desc: 'Descongela.', cure: ['freeze'], price: 250 },
   'full-heal': { name: 'Full Heal', desc: 'Cura qualquer status.', cure: 'all', price: 600 },
   ether: { name: 'Ether', desc: 'Restaura 10 PP de cada golpe.', ether: 10, price: 800 },
+  'max-ether': { name: 'Max Ether', desc: 'Restaura todos os PP de cada golpe.', ether: 99, price: 2500 },
   'x-attack': { name: 'X Attack', desc: 'Ataque +2 nesta batalha.', stage: 'attack', battle: true, price: 500 },
   'x-defense': { name: 'X Defense', desc: 'Defesa +2 nesta batalha.', stage: 'defense', battle: true, price: 500 },
   'x-sp-atk': { name: 'X Sp. Atk', desc: 'At. Esp. +2 nesta batalha.', stage: 'special-attack', battle: true, price: 500 },
+  'x-sp-def': { name: 'X Sp. Def', desc: 'Def. Esp. +2 nesta batalha.', stage: 'special-defense', battle: true, price: 500 },
   'x-speed': { name: 'X Speed', desc: 'Velocidade +2 nesta batalha.', stage: 'speed', battle: true, price: 500 },
   'rare-candy': { name: 'Rare Candy', desc: 'Sobe um nível na hora.', candy: true },
   // Itens de RAIDE (boss.usarItemDeRaide): só valem na luta contra o chefe da semana, e um de cada tipo por luta. Não se compra:
@@ -96,6 +102,8 @@ export const ITEMS = {
   'escudo-astral': { name: 'Escudo Astral', desc: 'Só na luta do chefe da semana: o PRÓXIMO golpe carregado dele causa só metade do dano no time todo. Um por luta.', battle: true, raide: 'escudo' },
   // Revive: em você é gasto sozinho ao desmaiar (depois dos desmaios livres do modo); num aliado desmaiado, reanima com metade do HP
   revive: { name: 'Revive', desc: 'Reanima um aliado desmaiado com metade do HP. Do Médio pra cima, te salva do Game Over depois do 3º desmaio.', revive: true, price: 1500 },
+  // Max Revive: só num aliado desmaiado, com o HP cheio. (Em você o que é gasto sozinho ao desmaiar continua sendo o Revive comum.)
+  'max-revive': { name: 'Max Revive', desc: 'Reanima um aliado desmaiado com todo o HP.', revive: true, revivePct: 100, price: 3500 },
   // petiscos de afinidade (Etapa 3.2): oferecidos a um selvagem pra ganhar amizade. Chave = nome do sprite na PokéAPI.
   // Os 6 grupos cobrem os 18 tipos exatamente uma vez (teste em dados.test.js).
   charcoal: { name: 'Carvão Doce', desc: 'Petisco que Fogo, Dragão e Lutador adoram.', afinidade: ['fire', 'dragon', 'fighting'], price: 300 },
@@ -203,7 +211,7 @@ Object.assign(ITEMS, ITENS_GOLPE);
 
 // Divisões da mochila e da loja, na ordem em que aparecem. `de(it)` diz a que divisão o item pertence.
 export const CATEGORIAS_ITEM = [
-  { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.cure || it.ether || it.revive },
+  { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.healPct || it.cure || it.ether || it.revive },
   { id: 'batalha', nome: '⚔ Em batalha', de: it => it.battle || it.stage },
   { id: 'segurado', nome: '🎒 Para segurar', de: it => it.segurado },
   { id: 'exploracao', nome: '🧭 Exploração', de: it => it.repelente },
@@ -223,7 +231,7 @@ export function porCategoria(pares) {
 export const ITENS_EVO_ACHADOS = Object.keys(ITENS_EVO).filter(k => k !== 'linking-cord');
 Object.assign(ITEMS, ITENS_EVO); // mochila, loja e sprites tratam igual aos outros itens
 // itens achados explorando — inclui uma fruta pra segurar, pra todo mundo topar com a mecânica cedo
-export const FIND_ITEMS = ['oran-berry','potion', 'potion', 'potion', 'super-potion', 'antidote', 'paralyze-heal', 'awakening', 'ether', 'x-attack', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
+export const FIND_ITEMS = ['oran-berry','potion', 'potion', 'potion', 'super-potion', 'super-potion', 'hyper-potion', 'mega-potion', 'antidote', 'paralyze-heal', 'awakening', 'burn-heal', 'ice-heal', 'ether', 'x-attack', 'x-defense', 'x-sp-atk', 'x-sp-def', 'x-speed', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
 
 // Zonas = as rotas de todos os mapas por Gen (dados-mapas.js; lógica em mapas.js). `libera` = nível mínimo pra
 // entrar (zonaLiberada). `chefe` = o Alfa da rota: versão turbinada (statsDeChefe), desafiado por botão; recompensa

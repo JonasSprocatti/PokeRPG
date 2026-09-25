@@ -81,6 +81,12 @@ export function vantagemDoGolpe(golpe, alvo) {
 }
 
 export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
+/* Tipo Tera SORTEADO do inimigo: qualquer um dos 18, do tipo dele ou não, com a mesma chance. O fator surpresa é
+   não dar pra prever pra onde ele vira. `rnd` injetável pros testes. */
+export function sortearTipoTera(rnd = Math.random) {
+  const tipos = Object.keys(CHART);
+  return tipos[Math.floor(rnd() * tipos.length)];
+}
 export function multStab(m, tipoGolpe, base = 1.5) {
   const originais = m?.data?.types || [];
   if (!m?.tera) return originais.includes(tipoGolpe) ? base : 1;
@@ -542,7 +548,8 @@ export const custoComDesconto = (custo, vitorias, pct) => Math.round(custo * Mat
 export function itemTemEfeito(it, M, podeSubir = true) {
   if (it.revive) return M.hp <= 0; // o único que serve em desmaiado — e só nele
   if (M.hp <= 0) return false;
-  if (it.heal) return M.hp < M.stats.hp;
+  if ((it.heal || it.healPct) && M.hp < M.stats.hp) return true;
+  if (it.heal || (it.healPct && !it.cure)) return false;
   if (it.cure) return !!M.status && (it.cure === 'all' || it.cure.includes(M.status));
   if (it.ether) return M.moves.some(m => m.ppLeft < m.pp);
   if (it.stage) return true;

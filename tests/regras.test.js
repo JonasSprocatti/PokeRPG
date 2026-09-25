@@ -9,8 +9,20 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera
 } from '../js/regras.js';
+import { CHART } from '../js/dados.js';
+
+test('sortearTipoTera: cobre os 18 tipos, sem sair da tabela', () => {
+  const vistos = new Set();
+  for (let i = 0; i < 360; i++) {
+    const t = sortearTipoTera(() => i / 360);
+    assert.ok(t && CHART[t], `sorteou ${t}`);
+    vistos.add(t);
+  }
+  assert.equal(vistos.size, 18);
+  assert.ok(CHART[sortearTipoTera(() => 0.9999)]);
+});
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
 // Pokémon mínimo pra batalha: stats já prontos (100 em tudo), tipo Normal, sem status
@@ -304,6 +316,13 @@ test('itemTemEfeito: só em quem se beneficia, nunca em desmaiado', () => {
   assert.equal(itemTemEfeito({ heal: 20 }, cheio), false);
   assert.equal(itemTemEfeito({ heal: 20 }, ferido), true);
   assert.equal(itemTemEfeito({ heal: 20 }, caido), false); // Potion não revive
+  assert.equal(itemTemEfeito({ healPct: 50 }, caido), false);
+  // cura em % e Full Restore (HP + status)
+  const doente = { ...cheio, status: 'burn' };
+  assert.equal(itemTemEfeito({ healPct: 50 }, cheio), false);
+  assert.equal(itemTemEfeito({ healPct: 50 }, ferido), true);
+  assert.equal(itemTemEfeito({ healPct: 100, cure: 'all' }, doente), true);
+  assert.equal(itemTemEfeito({ healPct: 100, cure: 'all' }, cheio), false);
   assert.equal(itemTemEfeito({ cure: ['poison'] }, mon({ moves: golpes(), status: 'poison' })), true);
   assert.equal(itemTemEfeito({ cure: ['poison'] }, mon({ moves: golpes(), status: 'burn' })), false);
   assert.equal(itemTemEfeito({ cure: 'all' }, mon({ moves: golpes(), status: 'burn' })), true);

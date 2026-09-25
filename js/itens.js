@@ -16,7 +16,7 @@ import { loadPokemon } from './api.js';
 import { esc, fmt, offline } from './util.js';
 
 // mensagem quando ninguém da equipe se beneficiaria
-const SEM_EFEITO = { heal: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
+const SEM_EFEITO = { heal: 'O HP já está cheio.', healPct: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
 
@@ -185,9 +185,12 @@ export async function useItem(id, inBattle) {
   }
   const em = M === P ? '' : ` em ${nm(M)}`;
   S.bag[id]--;
-  if (it.heal) {
-    const h = Math.min(it.heal, M.stats.hp - M.hp); heal(M, h); render();
-    await say(`Você usou ${it.name}${em}. ${nm(M)} recuperou ${h} HP.`, 'good');
+  if (it.heal || it.healPct) {
+    const base = it.healPct ? Math.ceil(M.stats.hp * it.healPct / 100) : it.heal;
+    const h = Math.min(base, M.stats.hp - M.hp); heal(M, h);
+    const curou = it.cure && M.status; if (curou) { M.status = null; M.sleep = 0; }
+    render();
+    await say(`Você usou ${it.name}${em}. ${nm(M)} recuperou ${h} HP${curou ? ' e ficou curado de qualquer status' : ''}.`, 'good');
   } else if (it.cure) {
     M.status = null; M.sleep = 0; render();
     await say(`Você usou ${it.name}${em}. ${nm(M)} está curado!`, 'good');
@@ -195,10 +198,10 @@ export async function useItem(id, inBattle) {
     M.moves.forEach(m => m.ppLeft = Math.min(m.pp, m.ppLeft + it.ether)); render();
     await say(`Você usou ${it.name}${em}. PP restaurados.`, 'good');
   } else if (it.revive) {
-    M.hp = Math.max(1, Math.floor(M.stats.hp / 2)); M.status = null; M.sleep = 0;
+    M.hp = Math.max(1, Math.floor(M.stats.hp * (it.revivePct || 50) / 100)); M.status = null; M.sleep = 0;
     G.B?.caidos?.delete(M); // em batalha: se cair de novo, anuncia de novo
     render();
-    await say(`Você usou ${it.name}${em}. ${nm(M)} se levanta com metade do HP!`, 'good');
+    await say(`Você usou ${it.name}${em}. ${nm(M)} se levanta com ${it.revivePct === 100 ? 'todo o HP' : 'metade do HP'}!`, 'good');
   } else if (it.stage) {
     await say(`Você usou ${it.name}${em}.`);
     await changeStats(M, [{ stat: it.stage, change: 2 }]);

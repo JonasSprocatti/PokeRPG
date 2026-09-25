@@ -19,7 +19,7 @@ import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
@@ -324,13 +324,13 @@ async function megaDoInimigo() {
    decisão do usuário, por coerência entre as duas.
    **Uma virada por luta**: se ele já megaevoluiu, não terastaliza também. Duas transformações no mesmo momento
    viraria o combate de cabeça pra baixo de uma vez só, e quem joga não teria como reagir a nenhuma das duas.
-   O tipo escolhido é um dos DELE: é o que dá o STAB de 2.0 e mantém a leitura possível — a fraqueza nova é
-   adivinhável a partir do que ele já era. */
+   O tipo é SORTEADO entre os 18, podendo ser um dos dele ou não (regras.sortearTipoTera): a graça é o fator
+   surpresa — antes era sempre o 1º tipo dele, previsível. */
 async function teraDoInimigo() {
   const B = G.B, E = B?.enemy;
   if (!B || !E || B.teraInimigoUsada || B.megaInimigoUsada || !inimigoPodeMega(B) || E.hp <= 0) return;
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
-  const tipo = (E.data?.types || [])[0];
+  const tipo = sortearTipoTera();
   B.teraInimigoUsada = true;
   if (!tipo) return;
   teracristalizar(E, tipo);
