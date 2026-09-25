@@ -18,7 +18,7 @@ import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, al
 import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
-import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
+import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
@@ -114,6 +114,7 @@ document.addEventListener('click', async e => {
     case 'relatos': if (G.busy || G.mode === 'battle') return; return telaRelatos();
     case 'rel-tipo': return escolherTipoRelato(v);
     case 'rel-enviar': return enviarRelatoTela();
+    case 'rel-img-del': return removerImagemRelato(v);   // tira uma imagem do relato antes de enviar
     // conta / nuvem
     case 'conta': if (G.busy || G.mode === 'battle') return; return telaConta();
     case 'entrar-google': try { await entrarGoogle(); } catch (err) { telaConta(`Não deu pra entrar com o Google: ${esc(err.message)}`); } return;

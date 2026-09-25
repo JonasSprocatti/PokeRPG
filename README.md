@@ -217,6 +217,8 @@ Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos 
 ### 🐞 Bugs e sugestões
 Na tela inicial e no topo do jogo. Escolha **Bug** ou **Sugestão**, dê um título e descreva. Não precisa de conta. Os bugs podem levar um **anexo técnico** (versão, navegador, tela, Pokémon, últimas linhas do registro, **nada pessoal**), que você vê antes de enviar. Sem internet, fica guardado e é enviado depois.
 
+**Imagens:** dá para anexar até **2 imagens de até 2 MB cada** (o tamanho de 2 prints de celular ou de computador — PNG, JPG ou WebP; no computador, cole com Ctrl+V). O jogo reduz o print antes de enviar. Quem mantém vê os arquivos no painel do Supabase em **Storage → `relatos-imagens`** (bucket privado); a coluna `imagens` da tabela `relatos` guarda os caminhos. Precisa da migração `20260925160000_relatos_imagens.sql` (a integração com o GitHub aplica sozinha ao dar merge no `main`); sem ela, relato com imagem cai na fila e relato sem imagem continua funcionando.
+
 **Para quem mantém o jogo — onde ler os relatos:** eles caem na tabela `relatos` do Supabase. Pela regra de acesso (RLS), cada conta só enxerga os próprios relatos **pelo jogo**; quem mantém lê tudo no painel do Supabase, que trabalha como administrador:
 
 1. [supabase.com](https://supabase.com) → o projeto do jogo → **Table Editor** → tabela **`relatos`** (dá para ordenar por `criado_em` e filtrar por `tipo` ou `status`).
@@ -319,7 +321,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
   5. ~~IA de inimigo~~ ✔ (escolhe o golpe mais eficaz; selvagem erra mais, Alfa quase não erra).
   6. ~~Golpes de lado do campo~~ ✔ (telas, Safeguard, Mist, Tailwind e as armadilhas de entrada).
   7. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
-  8. ~~Mecânicas especiais~~ ✔ (Mega Evolução, Terastalização, Z-Move e Gigantamax: no single player, no inimigo e no co-op). Ficaram de fora: as formas **Mega Z** de Absol, Garchomp e Lucario, e a Mega e a Tera do Alfa **no co-op** (lá só o Alfa com Z).
+  8. ~~Mecânicas especiais~~ ✔ (Mega Evolução, Terastalização, Z-Move e Gigantamax: no single player, no inimigo e no co-op). As formas **Mega Z** de Absol, Garchomp e Lucario já entram. Ficou de fora só a Mega e a Tera do Alfa **no co-op** (lá só o Alfa com Z). A Tera e o Gigantamax do inimigo só aparecem em rotas de **nível 30+**.
 - [ ] **Mapas por Gen, próximos passos:** missões próprias de cada mapa (hoje as de espécie valem em qualquer mapa, e a trilha de Alfas é só de Kanto) e a luta dos lendários no co-op (hoje é só no single player).
 - [ ] Acabamento: sons, animações e instalação como app (PWA).
 
@@ -343,7 +345,8 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Entrar numa sala com um Pokémon convidado; ganhos da run de outra pessoa voltam com você (no nível real)
 - [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
 - [x] Motor de golpes único (single player e multiplayer) com mais de 120 habilidades — as parciais (Download, Guard Dog, Sand Force, Effect Spore, Water Bubble, Toxic/Flare Boost, Magic Guard) foram completadas
-- [x] Tela de bugs e sugestões (funciona sem conta e offline)
+- [x] Tela de bugs e sugestões (funciona sem conta e offline), com até 2 imagens de 2 MB
+- [x] 💰 Carteira: dinheiro em pílula no topo (fora do menu ☰), na barra de turno da batalha e na loja, com aviso de +₽/−₽
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail
 - [x] Mega, Tera, Z-Move e Gigantamax jogáveis; inimigo gigantamaxa (só treinador) e usa Z (treinador e Alfa); as quatro gimmicks no co-op; conquistas da Mega auditadas (`tests/gimmicks-coop-inimigo.test.js`)
 - [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)

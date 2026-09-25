@@ -11,6 +11,7 @@ import { carregarCarreira, salvarCarreira, mesclarJornadas, carregarProgresso, m
 import { reconciliarSaves, guardadas, excluidos, guardar, excluir, esquecerExcluido, GUARDADOS_KEY, MAX_GUARDADAS } from './saves.js';
 import { offline, store } from './util.js';
 import { semTeste } from './progresso-conta.js';
+import { blobParaDataUrl, dataUrlParaBlob, cabeNaFila } from './imagens-relato.js';
 
 export const nuvemConfigurada = () => !!SUPABASE_URL && !SUPABASE_URL.includes('SEU-PROJETO') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('SUA-CHAVE');
 
@@ -280,19 +281,51 @@ export const relatosNaFila = () => (store.get(FILA_RELATOS) || []).length;
 /* Devolve `{ estado, motivo }`. **`motivo` existe porque "foi pra fila" tem mais de uma causa** e dizer sempre
    "sem conexão" já enganou: com a tabela `relatos` ainda não criada no Supabase, o relato ia pra fila e a tela
    anunciava falta de internet — a pessoa ficava esperando a conexão "voltar" pra algo que nunca ia subir. */
-export async function enviarRelato(relato) {
+/* Imagens do relato (até 2, já comprimidas — imagens-relato.js): vão pro bucket `relatos-imagens` do Storage e a linha do
+   relato guarda só os CAMINHOS (`relatos.imagens`, supabase/migrations/20260925160000_relatos_imagens.sql). O campo só entra
+   no insert quando há imagem: relato sem imagem continua funcionando mesmo se a migração ainda não foi aplicada. */
+const BUCKET_RELATOS = 'relatos-imagens';
+async function subirImagensRelato(c, imagens) {
+  const pasta = `${usuario()?.id ?? 'anonimo'}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const caminhos = [];
+  for (const [i, im] of imagens.entries()) {
+    const ext = im.tipo === 'image/png' ? 'png' : im.tipo === 'image/webp' ? 'webp' : 'jpg';
+    const caminho = `${pasta}-${i + 1}.${ext}`;
+    const { error } = await c.storage.from(BUCKET_RELATOS).upload(caminho, im.blob, { contentType: im.tipo, upsert: false });
+    if (error) throw error;
+    caminhos.push(caminho);
+  }
+  return caminhos;
+}
+// o que vai pra fila offline: texto + imagens em data URL (só se couberem no localStorage; senão o relato segue sem elas)
+async function paraFila(relato, imagens) {
+  if (!imagens.length || !cabeNaFila(imagens)) return { ...relato, semImagens: imagens.length || undefined };
+  try { return { ...relato, imagensFila: await Promise.all(imagens.map(async i => ({ tipo: i.tipo, dataUrl: await blobParaDataUrl(i.blob) }))) }; }
+  catch { return { ...relato, semImagens: imagens.length }; }
+}
+/* `imagens` = [{ blob, tipo }]. Devolve `{ estado, motivo, semImagens? }` — `semImagens` = quantas imagens NÃO foram guardadas
+   na fila (offline e grandes demais pro localStorage): a tela avisa pra a pessoa reenviar. */
+export async function enviarRelato(relato, imagens = []) {
   const c = await sb().catch(() => null);
   let motivo = 'sem-conexao';
   if (!c) motivo = 'sem-config';
   else if (!offline()) {
-    const { error } = await c.from('relatos').insert({ ...relato, user_id: usuario()?.id ?? null });
-    if (!error) return { estado: 'enviado' };
-    if (error.code === '23514') throw new Error('Título (3 a 120 letras) e descrição (5 a 4000) precisam estar preenchidos.'); // check do banco
-    console.warn('relato: vai pra fila', error);
-    motivo = error.message || 'erro no servidor';
+    try {
+      const caminhos = imagens.length ? await subirImagensRelato(c, imagens) : [];
+      const { error } = await c.from('relatos').insert({ ...relato, ...(caminhos.length ? { imagens: caminhos } : {}), user_id: usuario()?.id ?? null });
+      if (!error) return { estado: 'enviado' };
+      if (error.code === '23514') throw new Error('Título (3 a 120 letras) e descrição (5 a 4000) precisam estar preenchidos.'); // check do banco
+      console.warn('relato: vai pra fila', error);
+      motivo = error.message || 'erro no servidor';
+    } catch (e) {
+      if (/preenchidos/.test(e.message)) throw e;
+      console.warn('relato: vai pra fila', e);
+      motivo = e.message || 'erro no servidor';
+    }
   }
-  store.set(FILA_RELATOS, [...(store.get(FILA_RELATOS) || []), relato]);
-  return { estado: 'na-fila', motivo };
+  const item = await paraFila(relato, imagens);
+  store.set(FILA_RELATOS, [...(store.get(FILA_RELATOS) || []), item]);
+  return { estado: 'na-fila', motivo, semImagens: item.semImagens || 0 };
 }
 /* Tenta esvaziar a fila. Devolve `{ enviados, sobraram, motivo }` pra tela poder dizer o que aconteceu.
    Chamada ao abrir a tela de relatos, além do `online` e do início — o evento `online` não dispara quando o
@@ -306,8 +339,13 @@ export async function enviarFilaRelatos() {
   const sobra = [];
   let motivo;
   for (const r of fila) {
-    const { error } = await c.from('relatos').insert({ ...r, user_id: usuario()?.id ?? null });
-    if (error && error.code !== '23514') { sobra.push(r); motivo = error.message || 'erro no servidor'; }
+    const { imagensFila, semImagens, ...dados } = r;   // esses dois campos são só da fila, não existem na tabela
+    try {
+      const imagens = imagensFila?.length ? await Promise.all(imagensFila.map(async i => ({ tipo: i.tipo, blob: await dataUrlParaBlob(i.dataUrl) }))) : [];
+      const caminhos = imagens.length ? await subirImagensRelato(c, imagens) : [];
+      const { error } = await c.from('relatos').insert({ ...dados, ...(caminhos.length ? { imagens: caminhos } : {}), user_id: usuario()?.id ?? null });
+      if (error && error.code !== '23514') { sobra.push(r); motivo = error.message || 'erro no servidor'; }
+    } catch (e) { sobra.push(r); motivo = e.message || 'erro no servidor'; }
   }
   store.set(FILA_RELATOS, sobra);
   return { enviados: fila.length - sobra.length, sobraram: sobra.length, motivo };

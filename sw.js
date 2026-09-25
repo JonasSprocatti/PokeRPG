@@ -13,7 +13,7 @@ const PRECACHE = [
   './js/ajuda-chefes.js', './js/ajustes.js', './js/alpha.js', './js/arena.js', './js/boss.js', './js/evento.js', './js/hall.js', './js/perfil-amigo.js', './js/perfil-dados.js', './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',
   './js/criacao.js', './js/dados.js', './js/dados-mapas.js', './js/dados-megas.js', './js/dev.js', './js/mega.js', './js/tera.js', './js/zmove.js', './js/dynamax.js', './js/esconderijo.js', './js/rastreio.js', './js/cenario.js', './js/dados-patchnotes.js', './js/efeitos.js', './js/especiais.js', './js/estado.js', './js/evolucao.js', './js/fim.js', './js/golpe.js', './js/habilidades.js', './js/itens.js',
   './js/layout.js', './js/main.js', './js/mapas.js', './js/missoes.js', './js/mp-motor.js', './js/multiplayer.js', './js/mundo.js', './js/navegacao.js', './js/novidades.js', './js/offline.js', './js/nuvem.js', './js/paineis.js', './js/segurados.js', './js/tela-ajustes.js', './js/tela-patchnotes.js', './js/tela-conquistas.js', './js/conquistas.js', './js/tela-pokedex.js', './js/pokedex-conta.js', './js/progresso-conta.js', './js/badges.js',
-  './js/pokemon.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js'
+  './js/pokemon.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/imagens-relato.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)
 // cdn.jsdelivr.net é de onde vêm as imagens (espelho do repositório de sprites da PokéAPI — ver dados.js);

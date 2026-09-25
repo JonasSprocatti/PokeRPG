@@ -23,7 +23,7 @@ import {
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
-import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, inimigoMegaLiberada, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
+import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, inimigoMegaLiberada, inimigoTeraGmaxLiberado, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { zDisponiveis, inimigoTemZ, inimigoUsaZAgora } from './zmove.js';
 import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax, inimigoPodeGmax } from './dynamax.js';
@@ -337,6 +337,7 @@ async function megaDoInimigo() {
 async function teraDoInimigo() {
   const B = G.B, E = B?.enemy;
   if (!B || !E || jaViradou(B) || !inimigoPodeMega(B) || E.hp <= 0) return;
+  if (!inimigoTeraGmaxLiberado(E)) return;   // só em rotas de nível 30+
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
   if (viradaSorteada(B) !== 'tera') return;
   const tipo = sortearTipoTera();
@@ -353,6 +354,7 @@ async function teraDoInimigo() {
 async function gmaxDoInimigo() {
   const B = G.B, E = B?.enemy;
   if (!B || !E || jaViradou(B) || !inimigoPodeGmax(B) || E.hp <= 0 || E.dyna) return;
+  if (!inimigoTeraGmaxLiberado(E)) return;   // só em rotas de nível 30+
   if (E.hp > E.stats.hp * HP_MEGA_INIMIGO) return;
   if (viradaSorteada(B) !== 'gmax') return;
   B.gmaxInimigoUsado = true;

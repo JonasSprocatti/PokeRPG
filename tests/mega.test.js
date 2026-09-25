@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MEGAS, megasDe, temMega, ehPrimal } from '../js/dados-megas.js';
-import { megasDisponiveis, avisoDaMega, desfazerMega, inimigoPodeMega, inimigoMegaLiberada, NIVEL_MEGA_INIMIGO, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
+import { megasDisponiveis, avisoDaMega, desfazerMega, inimigoPodeMega, inimigoMegaLiberada, inimigoTeraGmaxLiberado, NIVEL_TERA_GMAX_INIMIGO, NIVEL_MEGA_INIMIGO, HP_MEGA_INIMIGO, verboDaForma, nomeDaMecanica } from '../js/mega.js';
 import { progressoConquistas } from '../js/conquistas.js';
 import { ITEM_PEDRA_MEGA } from '../js/dados.js';
 
@@ -16,7 +16,7 @@ test('tabela de Megas: formas com id de forma, nome e espécie coerente', () => 
     assert.ok(formas.length >= 1);
     for (const f of formas) {
       assert.ok(f.forma.startsWith(especie + '-'), `${f.forma} devia derivar de ${especie}`);
-      assert.match(f.forma, /-(mega(-[xy])?|primal)$/, f.forma);
+      assert.match(f.forma, /-(mega(-[xyz])?|primal)$/, f.forma);
       assert.ok(f.id > 10000, `${f.forma}: id de forma, não o da espécie`);
       assert.ok(f.nome && f.nome.length > 3, `${f.forma}: sem nome de exibição`);
     }
@@ -27,6 +27,11 @@ test('tabela de Megas: formas com id de forma, nome e espécie coerente', () => 
   assert.deepEqual(megasDe('charizard').map(f => f.nome), ['Mega Charizard X', 'Mega Charizard Y']);
   assert.equal(temMega('pidgey'), false);
   assert.deepEqual(megasDe('pidgey'), []);
+  // Absol, Garchomp e Lucario têm a Mega comum e a Mega Z (Legends Z-A): duas escolhas, como o X/Y do Charizard
+  for (const e of ['absol', 'garchomp', 'lucario']) {
+    assert.deepEqual(megasDe(e).map(f => f.forma), [`${e}-mega`, `${e}-mega-z`], e);
+    assert.equal(megasDe(e)[1].nome, `Mega ${e[0].toUpperCase()}${e.slice(1)} Z`);
+  }
 });
 
 test('Groudon e Kyogre são Reversão Primitiva, não Mega', () => {
@@ -134,5 +139,10 @@ test('só Alfa, lendário e treinador megaevoluem do lado inimigo', () => {
   assert.equal(inimigoMegaLiberada({ level: 40 }), true);
   assert.equal(inimigoMegaLiberada({ level: 62 }), true);
   assert.equal(inimigoMegaLiberada(null), false);
+  // Tera e Gigantamax do inimigo: só de nível 30 em diante (rotas 30+)
+  assert.equal(NIVEL_TERA_GMAX_INIMIGO, 30);
+  assert.equal(inimigoTeraGmaxLiberado({ level: 29 }), false);
+  assert.equal(inimigoTeraGmaxLiberado({ level: 30 }), true);
+  assert.equal(inimigoTeraGmaxLiberado(null), false);
   assert.ok(HP_MEGA_INIMIGO > 0 && HP_MEGA_INIMIGO < 1, 'vira no meio da luta, não no começo nem no fim');
 });

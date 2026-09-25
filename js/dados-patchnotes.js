@@ -5,6 +5,17 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.38', data: '2026-09-25', titulo: 'Carteira, prints e Mega Z', piada: 'A carteira agora aparece na tela. O Alfa continua sem saber onde guardou o dele.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>💰 Carteira:</b> o dinheiro virou uma pílula grande no topo, sempre fora do menu ☰ (feito pra quem joga no celular). Na <b>batalha</b> ele também aparece na barra de turno, que não sai da tela, e a <b>loja</b> abre com "Você tem ₽X". Quando o valor muda, aparece um <b>+₽ / −₽</b> ao lado.',
+        '<b>📎 Imagens nos bugs e sugestões:</b> dá pra anexar até <b>2 imagens de até 2 MB cada</b> (o tamanho de 2 prints de celular ou de computador), em PNG, JPG ou WebP. No computador dá pra colar com Ctrl+V. O jogo reduz o print antes de enviar. Sem internet, as imagens ficam guardadas junto com o relato (se couberem) e sobem sozinhas depois.',
+        '<b>Mega Z:</b> Absol, Garchomp e Lucario agora têm a <b>Mega comum e a Mega Z</b> (Legends Z-A), e você escolhe qual na hora, como no X/Y do Charizard.'
+      ] },
+      { nome: 'Equilíbrio', itens: [
+        'A <b>Terastalização</b> e o <b>Gigantamax do inimigo</b> só aparecem em rotas de <b>nível 30 ou mais</b> (a Mega dele continua de nível 40 em diante).'
+      ] }
+    ] },
   { versao: '2.37', data: '2026-09-25', titulo: 'Gimmicks pra todo mundo', piada: 'O treinador gigantamaxou o Pokémon e esqueceu que ele ainda precisava caber na Poké Ball. O Alfa acha que o Z-Move é um cristal de decoração — e às vezes ele é.',
     secoes: [
       { nome: 'Novidades', itens: [

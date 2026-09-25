@@ -143,7 +143,7 @@ function turnoBar(B, P, E) {
     if (l.toxinas) p.push(`Toxinas ×${l.toxinas}`);
     return p.length ? `<span class="clima-selo lado-${k}" title="${k === 'jogador' ? 'No seu lado' : 'No lado do inimigo'}">${k === 'jogador' ? '🛡' : '⚔'} ${esc(p.join(' · '))}</span>` : '';
   }).join('');
-  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${clima}${terreno}${selosLado}${info}<span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
+  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${clima}${terreno}${selosLado}${info}<span class="carteira-mini" title="Seu dinheiro" aria-label="Dinheiro: ${brl(G.S.money)}">💰 ${brl(G.S.money)}</span><span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
 }
 // contador de desmaios do Médio pra cima: "2/3 livres", depois "precisa de Revive (tem N)"
 function desmaiosTxt(S) {
@@ -430,7 +430,7 @@ function renderActions() {
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
-    a.innerHTML = `${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
+    a.innerHTML = `<p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
@@ -444,6 +444,21 @@ function renderActions() {
       ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}`;
   }
 }
+/* ---- carteira ----
+   O dinheiro era só um texto amarelo pequeno no topo — no celular, com a cena fixa da batalha, ele ficava fora da tela e
+   era difícil de achar (pedido de quem joga no celular). Agora: (1) uma pílula 💰 no topo, sempre fora do menu ☰;
+   (2) o mesmo valor dentro da barra de turno da batalha, que é a parte que não rola; (3) "Você tem ₽X" no topo da loja;
+   (4) um aviso +₽/−₽ que aparece ao lado quando o valor muda (a animação respeita prefers-reduced-motion, ver CSS). */
+const brl = n => '₽' + (n || 0).toLocaleString('pt-BR');
+let dinheiroVisto = null;   // o valor da última vez que a carteira foi desenhada, pra saber quanto mudou
+function atualizarCarteira() {
+  const el = $('#top-dinheiro'); if (!el || !G.S) return;
+  // elemento vazio = a tela anterior limpou o topo (ui.limparTopo): outra jornada ou outra tela, então não há "ganho" a mostrar
+  const agora = G.S.money, dif = dinheiroVisto == null || !el.textContent.trim() ? 0 : agora - dinheiroVisto;
+  dinheiroVisto = agora;
+  el.setAttribute('aria-label', `Dinheiro: ${brl(agora)}`);
+  el.innerHTML = `<span aria-hidden="true">💰</span> <b>${brl(agora)}</b>${dif ? `<span class="dinheiro-delta ${dif > 0 ? 'ganho' : 'perda'}" aria-hidden="true">${dif > 0 ? '+' : '−'}${brl(Math.abs(dif))}</span>` : ''}`;
+}
 // (As abas de celular ⚔/💬/📋 foram removidas — ver o comentário em paineis.js e o bloco "celular" do CSS.)
 export function render() {
   // só as telas de jogo têm painéis; nas outras (criação, carreira, conta, ranking, sala multiplayer) não desenha —
@@ -452,7 +467,7 @@ export function render() {
   // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
   document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
   renderSheet(); renderScene(); renderActions();
-  $('#top-dinheiro').textContent = '₽' + G.S.money.toLocaleString('pt-BR'); // fora do menu ☰: sempre visível
+  atualizarCarteira();   // fora do menu ☰: sempre visível
   // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),
   // mais o que só existe dentro do jogo: ↺ Layout e Novo jogo. Em batalha, só esses dois (navegar fica pra depois).
   const telas = G.mode === 'explore'

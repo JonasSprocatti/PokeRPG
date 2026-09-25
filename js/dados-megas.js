@@ -1,7 +1,7 @@
 /* GERADO por ferramentas/gerar-megas.ps1 a partir da PokeAPI - nao editar a mao (rode o script de novo).
-   Formas de Mega Evolucao e de Reversao Primitiva, por especie (89 especies, 96 formas).
-   Charizard e Mewtwo tem duas (X e Y): por isso o valor e sempre uma LISTA.
-   So o indice mora aqui; status, tipos, habilidade e sprite da forma vem da API pelo nome (orma), como
+   Formas de Mega Evolucao e de Reversao Primitiva, por especie (89 especies, 99 formas).
+   Charizard, Mewtwo e Raichu tem duas (X e Y), e Absol, Garchomp e Lucario tem a Mega comum e a Z: por isso o valor e sempre uma LISTA.
+   So o indice mora aqui; status, tipos, habilidade e sprite da forma vem da API pelo nome (campo forma), como
    qualquer outro Pokemon - e sao pre-carregados no comeco da batalha pra nao esperar rede no meio do turno. */
 export const MEGAS = {
   'venusaur': [{ forma: 'venusaur-mega', id: 10033, nome: 'Mega Venusaur' }],
@@ -26,9 +26,9 @@ export const MEGAS = {
   'medicham': [{ forma: 'medicham-mega', id: 10054, nome: 'Mega Medicham' }],
   'manectric': [{ forma: 'manectric-mega', id: 10055, nome: 'Mega Manectric' }],
   'banette': [{ forma: 'banette-mega', id: 10056, nome: 'Mega Banette' }],
-  'absol': [{ forma: 'absol-mega', id: 10057, nome: 'Mega Absol' }],
-  'garchomp': [{ forma: 'garchomp-mega', id: 10058, nome: 'Mega Garchomp' }],
-  'lucario': [{ forma: 'lucario-mega', id: 10059, nome: 'Mega Lucario' }],
+  'absol': [{ forma: 'absol-mega', id: 10057, nome: 'Mega Absol' }, { forma: 'absol-mega-z', id: 10307, nome: 'Mega Absol Z' }],
+  'garchomp': [{ forma: 'garchomp-mega', id: 10058, nome: 'Mega Garchomp' }, { forma: 'garchomp-mega-z', id: 10309, nome: 'Mega Garchomp Z' }],
+  'lucario': [{ forma: 'lucario-mega', id: 10059, nome: 'Mega Lucario' }, { forma: 'lucario-mega-z', id: 10310, nome: 'Mega Lucario Z' }],
   'abomasnow': [{ forma: 'abomasnow-mega', id: 10060, nome: 'Mega Abomasnow' }],
   'latias': [{ forma: 'latias-mega', id: 10062, nome: 'Mega Latias' }],
   'latios': [{ forma: 'latios-mega', id: 10063, nome: 'Mega Latios' }],

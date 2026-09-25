@@ -28,8 +28,21 @@ img{max-width:100%}
 .top-r{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;justify-content:flex-end;font:700 16px var(--display)}
 /* topo: dinheiro sempre visível; botões (#topr + conta) no menu ☰ abaixo de 720px */
 .top{position:relative}
-.dinheiro{color:var(--yellow);white-space:nowrap}
+/* carteira: pílula com 💰 no topo (fora do menu ☰), o mesmo valor na barra de turno da batalha e na loja */
+.dinheiro{color:var(--yellow);white-space:nowrap;position:relative;display:inline-flex;align-items:center;gap:6px;
+  background:var(--panel2);border:2px solid var(--line);border-radius:999px;padding:5px 14px;font-size:18px}
+.dinheiro b{font-weight:800;letter-spacing:.01em}
 .dinheiro:empty{display:none}
+/* +₽/−₽ quando o valor muda: some sozinho; sem animação (prefers-reduced-motion) fica invisível — o valor novo já está na pílula */
+.dinheiro-delta{position:absolute;right:8px;top:100%;margin-top:2px;font-size:14px;font-weight:800;opacity:0;pointer-events:none;
+  text-shadow:0 1px 3px #000c;animation:dinheiro-delta 2.2s ease-out}
+.dinheiro-delta.ganho{color:#5FB36A}
+.dinheiro-delta.perda{color:#E4572E}
+@keyframes dinheiro-delta{0%{opacity:0;transform:translateY(-6px)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0;transform:translateY(6px)}}
+.carteira-mini{color:var(--yellow);font:800 15px var(--display);white-space:nowrap}
+.carteira-loja{margin:0 0 10px;padding:8px 14px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;color:var(--yellow);font:600 16px var(--display)}
+.carteira-loja b{font-size:20px}
+@media(max-width:720px){.dinheiro{font-size:17px;padding:6px 12px;min-height:44px}}
 .burger{display:none}
 .menu-links{display:contents} /* no computador some da conta: filhos ficam em linha no .top-r */
 #topr{flex-wrap:wrap;justify-content:flex-end}
@@ -147,6 +160,14 @@ table.ranking td.jogador{white-space:nowrap}
 .relato-card .campo input{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text)}
 .rel-tipos{grid-template-columns:1fr 1fr}
 @media(max-width:520px){.rel-tipos{grid-template-columns:1fr}}
+/* imagens do relato: miniaturas com botão de tirar (visível sempre — nada de "só no hover") */
+.rel-imagens{display:flex;flex-direction:column;gap:8px}
+.rel-thumbs{display:flex;flex-wrap:wrap;gap:10px}
+.rel-thumb{margin:0;display:flex;flex-direction:column;gap:4px;width:150px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:6px}
+.rel-thumb img{width:100%;height:100px;object-fit:cover;border-radius:6px;background:var(--ink)}
+.rel-thumb figcaption{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel-add{align-self:flex-start;cursor:pointer}
+@media(max-width:520px){.rel-thumb{width:calc(50% - 5px)}}
 .rel-ctx{max-height:220px;overflow:auto;background:var(--ink);border-radius:8px;padding:8px;font-size:12px;white-space:pre-wrap}
 /* tela de login */
 .login-card{max-width:460px;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:12px}
@@ -272,6 +293,7 @@ table.ranking td.jogador{white-space:nowrap}
   body.em-batalha .plate{padding:6px 9px}
   body.em-batalha .pl-top{font-size:14px}
   body.em-batalha .turno-bar{padding:4px 8px;font-size:12px}
+  body.em-batalha .carteira-mini{font-size:13px}
   body.em-batalha .mv{padding:7px 10px}
   body.em-batalha .mv b{font-size:15px}
   body.em-batalha .mv small{display:none}          /* a descrição fica no toque longo (title); aqui o espaço é curto */

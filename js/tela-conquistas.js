@@ -75,7 +75,7 @@ function catalogoMegas(p) {
       `<span class="pick ${liberadas.has(e) ? 'on' : ''}" title="${esc(f.nome)}${liberadas.has(e) ? ' — conquistada' : ''}">
         <img src="${SPR(f.id)}" alt="" loading="lazy">${esc(f.nome)}${liberadas.has(e) ? ' ✓' : ''}</span>`).join('')).join('')}</div>
     <p class="small muted">São ${especies.length} espécies e ${especies.reduce((a, e) => a + megasDe(e).length, 0)} formas, de todas as Gens —
-      Charizard e Mewtwo têm duas, e Groudon e Kyogre entram como Reversão Primitiva.</p></details>`;
+      Charizard, Mewtwo e Raichu têm X e Y, Absol, Garchomp e Lucario têm a Mega comum e a Z, e Groudon e Kyogre entram como Reversão Primitiva.</p></details>`;
 }
 
 export function telaConquistas() {

@@ -11,7 +11,8 @@
 
 $ErrorActionPreference = 'Stop'
 $lista = (Invoke-RestMethod "https://pokeapi.co/api/v2/pokemon?limit=20000" -TimeoutSec 120).results
-$formas = $lista | Where-Object { $_.name -match '(-mega(-[xy])?|-primal)$' }
+# -mega-z: as Megas de Legends Z-A de Absol, Garchomp e Lucario (segunda opção ao lado da Mega comum, como o X/Y do Charizard)
+$formas = $lista | Where-Object { $_.name -match '(-mega(-[xyz])?|-primal)$' }
 if ($formas.Count -lt 40) { throw "veio pouca coisa da PokeAPI ($($formas.Count) formas)" }
 
 # nome de exibição: "Mega Charizard X" / "Groudon Primitivo"
@@ -21,6 +22,7 @@ function Rotulo($especie, $forma) {
   if ($forma -match '-primal$') { return "$base Primitivo" }
   if ($forma -match '-mega-x$') { return "Mega $base X" }
   if ($forma -match '-mega-y$') { return "Mega $base Y" }
+  if ($forma -match '-mega-z$') { return "Mega $base Z" }
   return "Mega $base"
 }
 
@@ -30,7 +32,7 @@ function Rotulo($especie, $forma) {
 $dados = @()
 foreach ($f in $formas) {
   $p = Invoke-RestMethod $f.url -TimeoutSec 60
-  $dados += [pscustomobject]@{ nome = $p.name; id = $p.id; especie = $p.species.name; base = ($p.name -replace '-(mega(-[xy])?|primal)$', '') }
+  $dados += [pscustomobject]@{ nome = $p.name; id = $p.id; especie = $p.species.name; base = ($p.name -replace '-(mega(-[xyz])?|primal)$', '') }
   Start-Sleep -Milliseconds 60   # não afogar a PokéAPI
 }
 
@@ -55,8 +57,8 @@ $corpo = ($linhas -join "`n").TrimEnd(',')
 $saida = @"
 /* GERADO por ferramentas/gerar-megas.ps1 a partir da PokeAPI - nao editar a mao (rode o script de novo).
    Formas de Mega Evolucao e de Reversao Primitiva, por especie ($($porEspecie.Count) especies, $($formas.Count) formas).
-   Charizard e Mewtwo tem duas (X e Y): por isso o valor e sempre uma LISTA.
-   So o indice mora aqui; status, tipos, habilidade e sprite da forma vem da API pelo nome (`forma`), como
+   Charizard, Mewtwo e Raichu tem duas (X e Y), e Absol, Garchomp e Lucario tem a Mega comum e a Z: por isso o valor e sempre uma LISTA.
+   So o indice mora aqui; status, tipos, habilidade e sprite da forma vem da API pelo nome (campo forma), como
    qualquer outro Pokemon - e sao pre-carregados no comeco da batalha pra nao esperar rede no meio do turno. */
 export const MEGAS = {
 $corpo

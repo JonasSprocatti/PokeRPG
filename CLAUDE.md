@@ -419,7 +419,17 @@ persiste na run (o resultado volta por FRAÇÃO de HP). O Alfa do co-op pode car
 `registrarAbate({porMim:false})` por derrotado (espécie + total; Tera/Z pedem golpe final seu e ficam só no single player).
 **Auditoria das conquistas da Mega** (`tests/gimmicks-coop-inimigo.test.js`): toda espécie de `MEGAS` libera com 1.000 abates,
 não com 999, e habilita a forma com a pedra (Rayquaza: Dragon Ascent). Lacuna conhecida: as formas **Mega Z** (Absol,
-Garchomp, Lucario) não estão na tabela — o gerador só casa `-mega`, `-mega-x`, `-mega-y` e `-primal`.
+Garchomp, Lucario) — RESOLVIDA: o gerador agora casa `-mega-z` também (Absol, Garchomp e Lucario têm 2 formas: comum + Z).
+**Tera e Gigantamax do inimigo só de nível 30+** (`mega.NIVEL_TERA_GMAX_INIMIGO`/`inimigoTeraGmaxLiberado`, nível do INIMIGO = o da rota);
+a Mega dele segue com o piso próprio de 40.
+**Carteira** (`render.atualizarCarteira`): `#top-dinheiro` é uma pílula 💰 fora do menu ☰ com `+₽/−₽` (`.dinheiro-delta`, some por
+animação; elemento vazio = tela anterior limpou o topo → sem delta falso), `.carteira-mini` dentro do `turnoBar` (a parte que não rola na
+batalha do celular) e `.carteira-loja` no topo da loja.
+**Imagens nos relatos** (`imagens-relato.js` puro + `relatos.js` + `nuvem.enviarRelato(relato, imagens)`): máx. 2 imagens, 2 MB cada (`MAX_IMAGENS`,
+`MAX_BYTES_IMAGEM`, igual ao `file_size_limit` do bucket privado `relatos-imagens` na migração `20260925160000_relatos_imagens.sql`); o navegador
+comprime (lado maior 1600 px, JPEG 85%) antes de subir; a linha do relato guarda só os caminhos em `relatos.imagens` — o campo SÓ entra no insert
+quando há imagem (relato sem imagem funciona sem a migração). Offline: as imagens vão pra fila em data URL se couberem (`MAX_BYTES_FILA` 1,5 MB),
+senão o relato segue sem elas e a tela avisa (`semImagens`). Fila: campos `imagensFila`/`semImagens` são só dela e saem antes do insert.
 
 ### Pedra Mega, rastreio de conquista e cenário (24/09/2026)
 - **Pedra Mega** (`dados.ITEM_PEDRA_MEGA`, ₽15.000 — preço escolhido pelo usuário): conquistar a Mega libera a

@@ -25,6 +25,10 @@ export const inimigoPodeMega = B => !!(B?.chefe || B?.lendarios || B?.trainer);
    (decisão do usuário). As outras viradas do inimigo (Tera…) NÃO têm esse piso — são `inimigoPodeMega` e mais nada. */
 export const NIVEL_MEGA_INIMIGO = 40;
 export const inimigoMegaLiberada = E => (E?.level || 0) >= NIVEL_MEGA_INIMIGO;
+/* Tera e Gigantamax do inimigo só aparecem em rotas de nível 30+ (decisão do usuário): o nível do inimigo é o da rota,
+   então o piso é o nível DELE. Abaixo disso a luta segue sem virada (a Mega tem o piso próprio de 40, acima). */
+export const NIVEL_TERA_GMAX_INIMIGO = 30;
+export const inimigoTeraGmaxLiberado = E => (E?.level || 0) >= NIVEL_TERA_GMAX_INIMIGO;
 // o inimigo vira quando cai a metade do HP: é a "segunda fase" da luta, não um susto no primeiro turno
 export const HP_MEGA_INIMIGO = 0.5;
 

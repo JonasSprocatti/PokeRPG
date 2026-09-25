@@ -7,9 +7,30 @@ import { $, limparTopo } from './ui.js';
 import { enviarRelato, enviarFilaRelatos, relatosNaFila, meusRelatos, usuario, nuvemConfigurada } from './nuvem.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, offline } from './util.js';
+import { MAX_IMAGENS, MAX_BYTES_IMAGEM, TIPOS_IMAGEM, mb, motivoDeRecusa, comprimirImagem } from './imagens-relato.js';
 
 let tipo = 'bug';
 let rascunho = { titulo: '', texto: '', passos: '', anexar: true };
+/* Imagens escolhidas (até MAX_IMAGENS): { blob, tipo, nome, url }. Ficam na memória desta aba — sobrevivem a re-renderizar a
+   tela (trocar bug/sugestão, erro de validação), mas não a recarregar a página. `url` é só a miniatura (objectURL). */
+let imagens = [];
+const limparImagens = () => { for (const i of imagens) URL.revokeObjectURL(i.url); imagens = []; };
+export function removerImagemRelato(i) {
+  const [tirada] = imagens.splice(+i, 1); if (tirada) URL.revokeObjectURL(tirada.url);
+  guardar(); telaRelatos();
+}
+// escolhidas no seletor ou coladas (Ctrl+V): valida cada uma, comprime e junta ao que já tem
+async function adicionarArquivos(arquivos) {
+  guardar();
+  const avisos = [];
+  for (const a of arquivos) {
+    const motivo = motivoDeRecusa(a, imagens.length);
+    if (motivo) { avisos.push(esc(motivo)); if (imagens.length >= MAX_IMAGENS) break; continue; }
+    const { blob, tipo: t } = await comprimirImagem(a);
+    imagens.push({ blob, tipo: t, nome: a.name || 'print', url: URL.createObjectURL(blob) });
+  }
+  telaRelatos(avisos.join('<br>'));
+}
 
 // o que vai junto num bug (nada pessoal: sem e-mail, sem nome da conta)
 export function contextoTecnico() {
@@ -57,10 +78,22 @@ export async function telaRelatos(msg = '') {
       ${bug ? `<label class="campo">Como reproduzir (opcional)<textarea id="rel-passos" rows="3" maxlength="900" placeholder="1. Abri o Multiplayer  2. Criei uma sala  3. …">${esc(rascunho.passos)}</textarea></label>
       <label class="check"><input type="checkbox" id="rel-anexar" ${rascunho.anexar ? 'checked' : ''}> Anexar informações técnicas
         <small class="muted">Ajuda a achar o problema. Nada pessoal (sem e-mail nem nome da conta). <details><summary>Ver o que vai junto</summary><pre class="rel-ctx">${esc(JSON.stringify(contextoTecnico(), null, 2))}</pre></details></small></label>` : ''}
+      <div class="campo rel-imagens">
+        <span>Imagens (opcional)</span>
+        <small class="muted">Até ${MAX_IMAGENS} imagens de até ${mb(MAX_BYTES_IMAGEM)} cada — o tamanho de ${MAX_IMAGENS} prints de celular ou de computador. PNG, JPG ou WebP. No computador dá pra colar com Ctrl+V.${offline() ? ' Sem internet as imagens ficam guardadas aqui e sobem junto com o relato.' : ''}</small>
+        ${imagens.length ? `<div class="rel-thumbs">${imagens.map((im, i) => `<figure class="rel-thumb"><img src="${im.url}" alt="Imagem ${i + 1} do relato"><figcaption>${esc(im.nome.slice(-24))} · ${mb(im.blob.size)}</figcaption>
+          <button type="button" class="btn ghost sm" data-act="rel-img-del" data-v="${i}" aria-label="Tirar a imagem ${i + 1}">✕ Tirar</button></figure>`).join('')}</div>` : ''}
+        ${imagens.length < MAX_IMAGENS ? `<label class="btn ghost sm rel-add">📎 Adicionar imagem<input type="file" id="rel-img" accept="${TIPOS_IMAGEM.join(',')}" multiple hidden></label>` : ''}
+      </div>
       <button class="btn big" data-act="rel-enviar">Enviar ${bug ? 'bug' : 'sugestão'}</button>
     </section>
     <div id="rel-meus"></div>
     <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
+  $('#rel-img')?.addEventListener('change', e => { const l = [...e.target.files]; e.target.value = ''; adicionarArquivos(l); });
+  $('.relatos')?.addEventListener('paste', e => {   // print colado com Ctrl+V (PC) ou "colar" no celular
+    const colados = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+    if (colados.length) { e.preventDefault(); adicionarArquivos(colados); }
+  });
   /* Tenta esvaziar a fila SEMPRE que esta tela abre. Antes isso só acontecia no evento `online` e no início do
      jogo — e o `online` não dispara quando o navegador já se considera conectado, então um relato guardado podia
      ficar preso indefinidamente com a tela dizendo que estava "esperando internet". */
@@ -84,8 +117,10 @@ export async function enviarRelatoTela() {
   const bug = tipo === 'bug', passos = bug ? rascunho.passos.trim() : '';
   const relato = { tipo, titulo, texto: passos ? `${texto}\n\nComo reproduzir:\n${passos}` : texto, contexto: bug && rascunho.anexar ? contextoTecnico() : null };
   try {
-    const r = await enviarRelato(relato);
+    const r = await enviarRelato(relato, imagens.map(({ blob, tipo: t }) => ({ blob, tipo: t })));
     rascunho = { titulo: '', texto: '', passos: '', anexar: true };
-    telaRelatos(r.estado === 'enviado' ? `Obrigado! ${bug ? 'Bug' : 'Sugestão'} enviado(a). 💛` : textoDaFila(r.motivo));
+    limparImagens();
+    const semImg = r.semImagens ? `<br>⚠ ${r.semImagens === 1 ? 'A imagem' : `As ${r.semImagens} imagens`} não coube${r.semImagens === 1 ? '' : 'ram'} na fila offline e ficou${r.semImagens === 1 ? '' : 'ram'} de fora: se puder, envie de novo quando tiver internet.` : '';
+    telaRelatos(r.estado === 'enviado' ? `Obrigado! ${bug ? 'Bug' : 'Sugestão'} enviado(a). 💛` : textoDaFila(r.motivo) + semImg);
   } catch (e) { telaRelatos(`Não deu pra enviar: ${esc(e.message)}`); }
 }
