@@ -30,8 +30,11 @@ test('golpe de status não recebe seta (ele não usa a tabela de tipos)', () => 
 test('quem terastalizou é lido pelo tipo Tera — a seta tem que acompanhar', () => {
   const charizard = { data: { types: ['fire', 'flying'] } };
   assert.equal(vantagemDoGolpe(golpe('rock'), charizard).mult, 4);
-  assert.equal(vantagemDoGolpe(golpe('rock'), { ...charizard, tera: 'water' }).mult, 2,
+  // Pedra contra Água é neutro (1×): sai dos 4× de Fogo/Voador pra um tipo só
+  assert.equal(vantagemDoGolpe(golpe('rock'), { ...charizard, tera: 'water' }).mult, 1,
     'Tera Água deixa de tomar 4× de Pedra, e a seta precisa dizer isso');
+  // e o Tera pode piorar: Tera Fogo toma 2× de Pedra, não os 4× de antes
+  assert.equal(vantagemDoGolpe(golpe('rock'), { ...charizard, tera: 'fire' }).mult, 2);
 });
 
 test('a tabela de faixas cobre todo multiplicador possível, sem buraco', () => {

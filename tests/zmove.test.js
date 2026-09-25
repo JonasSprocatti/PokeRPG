@@ -6,7 +6,9 @@ import { poderZ, calcDamage, calcStats, freshVol } from '../js/regras.js';
 
 const mon = (extra = {}) => {
   const data = { types: ['normal'], base: { hp: 80, attack: 100, defense: 80, 'special-attack': 100, 'special-defense': 80, speed: 80 } };
-  const m = { level: 50, data, ivs: {}, evs: {}, nature: 'hardy', ability: '', status: null, vol: freshVol(), ...extra };
+  // IVs/EVs completos: com `{}` o calcStats soma undefined e todos os atributos viram NaN
+  const cheio = v => Object.fromEntries(Object.keys(data.base).map(s => [s, v]));
+  const m = { level: 50, data, ivs: cheio(31), evs: cheio(0), nature: 'hardy', ability: '', status: null, vol: freshVol(), ...extra };
   m.stats = calcStats(m); m.hp = m.stats.hp;
   return m;
 };
