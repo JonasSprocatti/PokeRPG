@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { progressoVazio, bancar, totaisDe, runsDeNivelDe, mesclarProgresso, especiesDesbloqueadas,
-  semTeste, temTeste, ID_JORNADA_TESTE, RAZAO_TESTE } from '../js/progresso-conta.js';
+  semTeste, temTeste, ID_JORNADA_TESTE, RAZAO_TESTE, registrarEventoVencido } from '../js/progresso-conta.js';
 
 const jornada = (id, o = {}) => ({ id, especie: 'pikachu', nivel: 30, dificuldade: 'hard', registro: { abates: {
   total: 10, tipoAlvo: { fire: 4 }, especie: { pikachu: 10 }, golpe: { thunderbolt: 6 }, elemento: { electric: 6 }
@@ -27,6 +27,35 @@ test('bancar guarda os números de parceiros da jornada (badges Casa cheia, Lobo
   // jornada antiga, sem os campos: valores neutros (não quebra e não concede nada)
   assert.equal(p.porJornada.j2.casaCheia, false);
   assert.equal(p.porJornada.j2.aliadosPerdidos, 0);
+});
+
+test('evento semanal vencido: desbloqueia a espécie, guarda a semana e só paga uma vez por semana', () => {
+  const ev = { id: 'eternatus-eternamax', especie: 'eternatus', especieId: 890 };
+  let r = registrarEventoVencido(progressoVazio(), ev, '2026-S00', '2026-09-25T10:00:00Z');
+  assert.equal(r.primeiraVez, true); assert.equal(r.semanaNova, true);
+  assert.deepEqual(r.progresso.especies.eternatus, { id: 890, em: '2026-09-25T10:00:00Z', razoes: ['evento'] });
+  assert.equal(r.progresso.eventos[ev.id].vitorias, 1);
+  // de novo na MESMA semana: não é novidade em nada
+  r = registrarEventoVencido(r.progresso, ev, '2026-S00', '2026-09-26T10:00:00Z');
+  assert.equal(r.primeiraVez, false); assert.equal(r.semanaNova, false);
+  assert.equal(r.progresso.eventos[ev.id].primeiraEm, '2026-09-25T10:00:00Z', 'a data da primeira vitória nunca muda');
+  assert.equal(r.progresso.especies.eternatus.em, '2026-09-25T10:00:00Z');
+  // semana seguinte: o prêmio volta, a badge não
+  r = registrarEventoVencido(r.progresso, ev, '2026-S01');
+  assert.equal(r.primeiraVez, false); assert.equal(r.semanaNova, true);
+  assert.equal(r.progresso.eventos[ev.id].vitorias, 2);
+});
+
+test('mesclar com a nuvem junta as semanas vencidas e mantém a data mais antiga', () => {
+  const a = { ...progressoVazio(), eventos: { x: { primeiraEm: '2026-10-05', semanas: { s1: true }, vitorias: 1 } } };
+  const b = { ...progressoVazio(), eventos: { x: { primeiraEm: '2026-09-25', semanas: { s0: true }, vitorias: 1 }, y: { primeiraEm: '2026-10-01', semanas: { s0: true }, vitorias: 1 } } };
+  const m = mesclarProgresso(a, b);
+  assert.equal(m.eventos.x.primeiraEm, '2026-09-25');
+  assert.deepEqual(Object.keys(m.eventos.x.semanas).sort(), ['s0', 's1']);
+  assert.equal(m.eventos.x.vitorias, 2);
+  assert.ok(m.eventos.y);
+  // e o progresso sem eventos continua sem a chave (nada muda pra quem nunca jogou evento)
+  assert.equal('eventos' in mesclarProgresso(progressoVazio(), progressoVazio()), false);
 });
 
 test('apagar a jornada do histórico NÃO reduz o progresso', () => {

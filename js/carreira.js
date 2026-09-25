@@ -4,7 +4,7 @@
 // contadores) é o que deixa juntar local + nuvem de vários aparelhos sem contar nada em dobro (mesclarJornadas).
 // Puro + localStorage via `store` (que é no-op no Node) — testado em tests/carreira.test.js.
 import { store } from './util.js';
-import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, especiesDesbloqueadas } from './progresso-conta.js';
+import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, especiesDesbloqueadas, registrarEventoVencido } from './progresso-conta.js';
 import { desbloqueadas } from './roguelike.js';
 import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
 import { pokedexDaConta } from './pokedex-conta.js';
@@ -111,6 +111,12 @@ export const desbloqueadasDaConta = (jornadas = carregarCarreira().jornadas) =>
 // abates somados: os das jornadas já bancadas + os da run em andamento (que ainda não é jornada)
 export const abatesDaConta = (registroAtual = null, jornadas = carregarCarreira().jornadas) =>
   totaisDe(atualizarProgresso(jornadas), registroAtual?.abates);
+// derrotou o chefe do evento semanal: grava no progresso permanente (espécie desbloqueada + badge). Ver progresso-conta.registrarEventoVencido
+export function registrarVitoriaDeEvento(ev, semanaId) {
+  const r = registrarEventoVencido(carregarProgresso(), ev, semanaId);
+  salvarProgresso(r.progresso);
+  return { primeiraVez: r.primeiraVez, semanaNova: r.semanaNova };
+}
 // fusão com a nuvem: nunca perde o que um dos lados tem
 export const mesclarProgressoLocal = remoto => salvarProgresso(mesclarProgresso(carregarProgresso(), remoto));
 /* O progresso das gimmicks somado da conta. Porta única pra batalha e render perguntarem sem remontar o

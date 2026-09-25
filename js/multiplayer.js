@@ -13,16 +13,19 @@ import { G, save, registrar, dificuldadeDe, rotasAtuais, centroPokemon, zerarDes
 import { healFull } from './efeitos.js';
 import { $, limparTopo, logRaw, say, toast } from './ui.js';
 import { spriteFrente } from './render.js';
-import { ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
-import { sortearDaRota } from './mapas.js';
+import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
+import { sortearDaRota, genDe } from './mapas.js';
+import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
+import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe } from './boss.js';
+import { BADGES } from './badges.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo } from './regras.js';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal } from './mp-motor.js';
-import { carregarCarreira } from './carreira.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, MAX_REVIVES } from './mp-motor.js';
+import { carregarCarreira, registrarVitoriaDeEvento } from './carreira.js';
 import { desbloqueadas } from './roguelike.js';
-import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo } from './nuvem.js';
+import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizar } from './nuvem.js';
 import { htmlIcone } from './conta.js';
-import { loadPokemon } from './api.js';
+import { loadPokemon, loadMove } from './api.js';
 import { makeMon } from './pokemon.js';
 import { gainExp, gainExpAliado } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
@@ -66,7 +69,9 @@ function minhasFotos() {
   const aliados = (S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.hp > 0 && A.ordem !== 'fora').slice(0, 2);
   return [fotoDoMon(S.player, '', eu, null, 0), ...aliados.map(([A, i]) => fotoDoMon(A, '', eu, null, i + 1))];
 }
-const meuPayload = () => ({ id: meuId(), nome: meuNome(), icone: meuIcone(), anfitriao: sala.anfitriao, time: sala.time, entrouEm: sala.entrouEm, mons: minhasFotos() });
+// a insígnia de evento que a pessoa escolheu mostrar ao lado do nome (só o ID vai pela rede; o ícone sai de BADGES)
+const meuPayload = () => ({ id: meuId(), nome: meuNome(), icone: meuIcone(), anfitriao: sala.anfitriao, time: sala.time, entrouEm: sala.entrouEm, mons: minhasFotos(), badge: nuvem.badgeExibida || null });
+const iconeDaBadge = id => { const b = id && BADGES.find(x => x.id === id && x.grupo === 'Eventos'); return b ? `<span class="badge-nome" title="${esc(b.nome)}">${b.icone}</span>` : ''; };
 // anfitrião chama um amigo: aviso aparece pra ele em qualquer tela (nuvem.convidarAmigo → canal pessoal do amigo)
 export async function convidarAmigoMP(amigoId) {
   if (!sala) return;
@@ -296,6 +301,18 @@ export async function iniciarBatalhaMP(tipo) {
         const E = await makeMon(await loadPokemon(c.id), cfg.balancear ? c.nivel : Math.max(c.nivel, maisForte + 5), { ivs: max });
         E.stats = statsDeChefe(E.stats); E.stats.hp *= membros.length; E.hp = E.stats.hp; // Alfa aguenta o grupo todo
         B = [fotoDoMon(E, 'B0', 'ia', fmt(E.name) + ' Alfa')];
+      } else if (tipo === 'evento') {
+        // chefe da semana: o mesmo de startEvento (batalha.js), com HP que cresce menos que o número de jogadores (boss.jogadoresEfetivos)
+        const sit = situacaoDoEvento({ dificuldade: dificuldadeDe(G.S), gen: genDe(G.S) });
+        if (!sit.ok) throw new Error('O chefe da semana não está disponível agora.');
+        const ev = sit.evento, maxIv = { hp: 31, attack: 31, defense: 31, 'special-attack': 31, 'special-defense': 31, speed: 31 };
+        const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(cfg.balancear ? meuNivel : maisForte), { ivs: maxIv, shiny: false });
+        const golpes = (await Promise.all((ev.golpes || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
+        if (golpes.length) E.moves = golpes;
+        prepararChefe(E, jogadoresEfetivos(membros.length, cfg.porJogador), ev.chefe);
+        B = [fotoDoMon(E, 'B0', 'ia', ev.nome)];
+        opcoes.evento = ev.id;
+        registrarTentativa();
       } else {
         B = await Promise.all(membros.map(async (_, i) => { // um selvagem por jogador
           let lvl = rand(z.min, z.max);
@@ -304,9 +321,10 @@ export async function iniciarBatalhaMP(tipo) {
           return fotoDoMon(E, 'B' + i, 'ia', fmt(E.name) + ' selvagem');
         }));
       }
-      abertura = `${tipo === 'alfa' ? `⚔ ${B[0].nome} (Nv. ${B[0].level}) desafia o grupo!` : `${B.map(e => `${e.nome} (Nv. ${e.level})`).join(', ')} apareceu!`} ${abertura}`;
+      abertura = `${tipo === 'evento' ? `☄ EVENTO DA SEMANA: ${B[0].nome} (Nv. ${B[0].level}) surge! Imune a status, sem fuga. Quem ficar sem Pokémon em pé pode usar um Revive (até ${MAX_REVIVES}) enquanto o grupo aguenta.`
+        : tipo === 'alfa' ? `⚔ ${B[0].nome} (Nv. ${B[0].level}) desafia o grupo!` : `${B.map(e => `${e.nome} (Nv. ${e.level})`).join(', ')} apareceu!`} ${abertura}`;
     }
-    sala.batalha = novaBatalhaMP(A, B, opcoes); sala.tipo = cfg.modo === 'pvp' ? 'pvp' : tipo; sala.acoes = {};
+    sala.batalha = novaBatalhaMP(A, B, opcoes); sala.tipo = cfg.modo === 'pvp' ? 'pvp' : tipo; sala.acoes = {}; sala.revivesConsumidos = 0; sala.tentativaEvento = tipo === 'evento';
     publicarEstado([{ txt: cfg.modo === 'pvp' ? '— PvP —' : `— ${(ZONES.find(x => x.id === sala.zona) || ZONES[0]).name} —`, cls: 'turno' }, { txt: abertura, cls: 'enc' }], true);
   } catch (e) { console.error(e); logRaw({ html: esc(e.message), cls: 'hit' }); }
   finally { if (sala) { sala.ocupado = false; renderSala(); } }
@@ -320,8 +338,17 @@ function publicarEstado(eventos, novoTurno) {
 }
 const jogaveis = b => [...b.lados.A, ...b.lados.B].filter(m => m.hp > 0 && m.dono !== 'ia');
 const primeiroInimigo = (b, m) => b.lados[ladoDe(b, m.ref) === 'A' ? 'B' : 'A'].find(e => e.hp > 0);
+// Revive no meio da luta do chefe (o anfitrião valida e aplica NA HORA: o Pokémon volta e já escolhe neste turno)
+function registrarRevive(de, acao) {
+  const b = sala?.batalha; if (!b || sala.resolvendo) { anotar('← revive ignorado (luta resolvendo ou fora dela)', true); return; }
+  const m = reviverNoEvento(b, acao.ref, de);
+  if (!m) { anotar(`← revive recusado (${acao.ref})`, true); return; }
+  anotar(`← revive de ${m.nome}`);
+  publicarEstado([{ txt: `💊 ${m.nome} foi revivido com um Revive e volta pra luta com metade do HP!`, cls: 'good' }], false);
+}
 function registrarAcao(de, acao) {
   const b = sala?.batalha; if (!b || !acao) return;
+  if (acao.tipo === 'revive') return registrarRevive(de, acao);
   const m = monMP(b, acao.ref);
   if (!m || m.dono !== de || m.hp <= 0) { anotar(`← escolha ignorada (${acao.ref}): não é dela ou já caiu`, true); return; } // só o dono escolhe pelos próprios
   anotar(`← escolha de ${m.nome} (${acao.tipo})`);
@@ -342,7 +369,7 @@ async function resolver() {
   const b = sala.batalha, acoes = Object.values(sala.acoes);
   clearTimeout(sala.timer);
   // Alfa pensa melhor que selvagem (regras.ESPERTEZA)
-  const esperteza = sala.tipo === 'alfa' ? ESPERTEZA.chefe : ESPERTEZA.selvagem;
+  const esperteza = sala.tipo === 'alfa' || sala.tipo === 'evento' ? ESPERTEZA.chefe : ESPERTEZA.selvagem;
   const ia = [...b.lados.A, ...b.lados.B].filter(m => m.hp > 0 && m.dono === 'ia').map(m => acaoDaIA(b, m, Math.random, esperteza));
   let res;
   try { res = await resolverTurnoMP(b, [...acoes, ...ia]); } finally { if (sala) sala.resolvendo = false; }
@@ -374,7 +401,7 @@ function finalizar(eventos) {
     p = { pvp: false, fim: b.fim, eventos, final, recompensas, effort: venceu ? effort : {},
       derrotados: venceu ? B.map(E => ({ especie: E.data.speciesName, id: E.id })) : [],
       vistos: B.map(E => ({ especie: E.data.speciesName, id: E.id, shiny: E.shiny })),
-      chefe: venceu && sala.tipo === 'alfa' ? sala.zona : null, chefeNivel: B[0]?.level };
+      chefe: venceu && sala.tipo === 'alfa' ? sala.zona : null, chefeNivel: B[0]?.level, evento: b.evento || null };
   }
   enviar('fim', p);
   aoReceberFim(p);
@@ -384,10 +411,33 @@ function finalizar(eventos) {
 function aoReceberEstado(p) {
   if (!sala) return;
   sala.conexao = 'ok'; sala.ultimoEvento = Date.now();
+  const luta = !sala.batalha;   // primeira vez que vejo esta luta
   if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) { anotar(`← estado (turno ${p.batalha.turno})`); sala.escolhidos = new Set(); } // turno novo: escolhe de novo
   sala.batalha = p.batalha; sala.prazo = p.prazo; sala.acoesFeitas = p.acoesFeitas || []; sala.tipo = p.tipo; sala.zona = p.zona;
+  if (luta) { sala.revivesConsumidos = 0; sala.tentativaEvento = false; }
+  // chefe da semana: a tentativa (8 h) conta pra TODOS assim que a luta começa, e cada Revive que o anfitrião aceitou sai da MINHA mochila
+  if (p.tipo === 'evento' && !sala.tentativaEvento) { registrarTentativa(); sala.tentativaEvento = true; }
+  consumirRevives(p.batalha);
   for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
   renderSala();
+}
+// o anfitrião conta os Revives de cada jogador em `b.revivesUsados`; o que passou do que eu já descontei sai da minha mochila
+function consumirRevives(b) {
+  if (!b?.evento || !temRun() || sala?.convidado) return;
+  const usados = b.revivesUsados?.[meuId()] || 0, ja = sala.revivesConsumidos || 0;
+  if (usados <= ja) return;
+  const S = G.S; S.bag.revive = Math.max(0, (S.bag.revive || 0) - (usados - ja)); if (!S.bag.revive) delete S.bag.revive;
+  sala.revivesConsumidos = usados; save();
+}
+// posso usar um Revive agora? (chefe da semana, sem nenhum Pokémon meu de pé, o grupo ainda aguenta, tenho Revive e ainda não gastei o limite)
+const podeReviver = b => !!b?.evento && temRun() && !sala.convidado && (G.S.bag?.revive || 0) > 0
+  && b.lados.A.some(m => m.hp > 0) && !b.lados.A.some(m => m.dono === meuId() && m.hp > 0)
+  && b.lados.A.some(m => m.dono === meuId() && m.hp <= 0) && (b.revivesUsados?.[meuId()] || 0) < MAX_REVIVES;
+export function reviverMP() {
+  const b = sala?.batalha; if (!b || !podeReviver(b)) return;
+  const m = b.lados.A.find(x => x.dono === meuId() && x.hp <= 0); if (!m) return;   // o primeiro caído (o principal, se for ele)
+  const a = { tipo: 'revive', ref: m.ref };
+  if (sala.anfitriao) registrarAcao(meuId(), a); else { enviar('acao', { de: meuId(), acao: a }); }
 }
 // meu próximo Pokémon que ainda não escolheu neste turno
 const minhaVez = () => { const b = sala?.batalha; return b && jogaveis(b).find(m => m.dono === meuId() && !sala.escolhidos.has(m.ref) && !sala.acoesFeitas.includes(m.ref)); };
@@ -441,7 +491,8 @@ async function aplicarPvP(p) {
 // co-op: devolve true se a run acabou (Roguelike, principal desmaiado)
 async function aplicarCoop(p) {
   if (sala.convidado || !temRun()) { await say(p.fim === 'A' ? '🏆 Vitória do grupo! (Pokémon convidado: a luta não mexe na sua run.)' : 'Pokémon convidado: a luta não mexe na sua run.', 'muted'); return false; }
-  const S = G.S, eu = meuId(), permadeath = DIFICULDADES[dificuldadeDe(S)].permadeath;
+  // luta do chefe da semana: perder não é permadeath (evento.EVENTO_SEM_PERMADEATH), como no single player
+  const S = G.S, eu = meuId(), permadeath = DIFICULDADES[dificuldadeDe(S)].permadeath && !(p.evento && EVENTO_SEM_PERMADEATH);
   for (const v of p.vistos || []) { registrar(S, 'vistos', v.especie, v.id); if (v.shiny) registrar(S, 'shinies', v.especie, v.id); }
   const meus = Object.entries(p.final).filter(([k]) => k.startsWith(eu + ':')).map(([k, f]) => [+k.split(':')[1], f]);
   if (!meus.length) { save(); return false; }
@@ -476,11 +527,30 @@ async function aplicarCoop(p) {
       await gainExp(r.xp);
     } else await say(`🏆 Vitória do grupo! Você lutou com o nível ajustado (Nv. ${S.player.level} → ${principal?.nivelLuta}), então XP, itens e prêmios desta luta não vão pra sua run.`, 'muted');
     for (const [slot, f] of meus) if (slot > 0 && f.frac > 0 && f.real && S.aliados?.[slot - 1]) await gainExpAliado(S.aliados[slot - 1], r.xp);
+    if (p.evento) await premiarEventoMP(p.evento);
   } else if (p.fim === 'B') await say('O grupo foi derrotado.', 'hit');
   else await say('O grupo fugiu.', 'muted');
   await verificarMissoes();
   save();
   return false;
+}
+
+// Prêmio do chefe da semana pra quem estava no grupo: só vale se a SUA run é Roguelike/Hardcore (o convidado nem chega aqui)
+async function premiarEventoMP(id) {
+  const S = G.S, ev = EVENTOS.find(e => e.id === id); if (!ev) return;
+  if (!modoComEvento(dificuldadeDe(S))) { await say(`☄ ${esc(ev.nome)} caiu! Mas os prêmios do evento só valem em jornadas Roguelike ou Hardcore.`, 'muted'); return; }
+  const r = registrarVitoriaDeEvento(ev, idDaSemana(agoraDoEvento()));
+  await say(`🏆 <b>${esc(ev.nome)} foi derrotado pelo grupo!</b>`, 'level');
+  if (r.semanaNova) {
+    S.money += ev.recompensa.dinheiro || 0;
+    for (const [k, n] of Object.entries(ev.recompensa.itens || {})) S.bag[k] = (S.bag[k] || 0) + n;
+    await say(`Prêmio da semana: ₽${ev.recompensa.dinheiro || 0}${Object.entries(ev.recompensa.itens || {}).map(([k, n]) => `, ${n}× ${ITEMS[k]?.name || k}`).join('')}.`, 'level');
+  } else await say('Você já tinha vencido este chefe nesta semana: o prêmio só sai uma vez por semana.', 'muted');
+  if (r.primeiraVez) {
+    await say(`🌌 Insígnia <b>${esc(ev.badge.nome)}</b> conquistada — título “${esc(ev.badge.titulo)}”. Escolha qual mostrar ao lado do nome na tela 👤 Conta.`, 'level');
+    await say(`🔓 <b>${esc(fmt(ev.especie))}</b> está liberado na Pokédex e pra começar novas jornadas!`, 'level');
+  }
+  if (usuario()) sincronizar().catch(e => console.warn('sincronizar (evento)', e));
 }
 
 /* ---------- tela ---------- */
@@ -495,11 +565,21 @@ function telaSala() {
   renderSala();
 }
 const barra = m => { const pct = clamp(m.hp / m.stats.hp * 100, 0, 100); return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E'}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`; };
+// chefe do evento semanal (boss.js): couraça, ponto fraco, fase e o aviso do golpe carregado — o que o grupo precisa combinar
+function blocoChefeMP(m) {
+  const r = resumoDoChefe(m); if (!r) return '';
+  return `<div class="boss-info">
+    ${r.temCoura ? `<div class="hp boss-coura ${r.exposto ? 'exposto' : ''}"><span>🛡</span><div class="bar"><div class="fill" style="width:${Math.round(r.couraFracao * 100)}%"></div></div><span>${r.exposto ? 'EXPOSTO' : ''}</span></div>` : r.exposto ? '<div class="boss-fase" style="color:#e4572e">💥 EXPOSTO: dano ×1,5</div>' : ''}
+    ${r.pontoFraco ? `<div class="boss-fraco">🎯 Ponto fraco: <b>${esc(TYPE_PT[r.pontoFraco] || r.pontoFraco)}</b></div>` : ''}
+    <div class="boss-fase">☄ Fase ${r.fase}/3</div>
+    ${r.carregando ? `<div class="boss-carga" role="alert">⚠ Carregando o ${esc(r.rotuloCarga)}! Faltam <b>${r.faltaParaInterromper}</b> de dano neste turno pra interromper.</div>` : ''}
+  </div>`;
+}
 function cartao(m, legenda, destaque = false) {
   return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
-    <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}</div></div>`;
+    <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
 }
-const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${m.id === meuId() ? ' (você)' : ''}</b>
+const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' (você)' : ''}</b>
   <div class="mp-mons">${(m.mons || []).slice(0, sala.config.porJogador).map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : '')).join('')}</div></div>`;
 // Linha de conexão + diagnóstico: some quando está tudo bem? Não — fica sempre, porque saber se a sala está viva
 // é metade do problema num jogo em rede. Mostra o estado, há quanto tempo chegou algo, o 🔄 e o detalhe escondido.
@@ -528,7 +608,11 @@ function renderSala() {
   const esperando = [...new Set(jogaveis(b).filter(m => !sala.acoesFeitas.includes(m.ref)).map(m => membroDe(m.dono)?.nome || '?'))];
   const status = `<p class="muted small">Turno ${b.turno} · ${esperando.length ? `esperando: ${esperando.map(esc).join(', ')}` : 'resolvendo…'} · <span id="mp-relogio">${Math.max(0, Math.ceil((sala.prazo - Date.now()) / 1000))}s</span></p>`;
   const sair = `<button class="btn ghost" data-act="mp-sair">Sair da sala</button>`;
-  if (!jogaveis(b).some(m => m.dono === meuId())) { $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; torça pelo seu time!</p><div class="subrow">${sair}</div>`; return; }
+  if (!jogaveis(b).some(m => m.dono === meuId())) {
+    const reviver = podeReviver(b)
+      ? `<div class="subrow"><button class="btn" data-act="mp-revive" title="Gasta 1 Revive da sua mochila; o Pokémon volta com metade do HP">💊 Usar Revive (${G.S.bag.revive} na mochila · ${MAX_REVIVES - (b.revivesUsados?.[meuId()] || 0)} uso(s) restante(s))</button></div>` : '';
+    $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${reviver}<div class="subrow">${sair}</div>`; return;
+  }
   if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p><div class="subrow">${sair}</div>`; return; }
   const alvos = inimigosDe(vez); if (!alvos.some(e => e.ref === sala.alvo)) sala.alvo = alvos[0]?.ref;
   const semPP = vez.moves.every(g => g.ppLeft <= 0);
@@ -536,7 +620,7 @@ function renderSala() {
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
       : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
-    <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
+    <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }
 // Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.
 // Mesmo preço e mesma regra do jogo sozinho (estado.centroPokemon); só aparece entre as lutas, com uma run em andamento.
@@ -573,5 +657,16 @@ function renderLobby(cabecalho, pvp, z) {
     </div>${trocarTime}${centroNaSala()}${convites}
     <div class="subrow">${pvp
       ? `<button class="btn big" data-act="mp-pvp" ${dis || !podePvp ? 'disabled' : ''} title="${podePvp ? '' : 'Cada time precisa de pelo menos um jogador'}">⚔ Começar PvP</button>`
-      : `<button class="btn big" data-act="mp-explorar" ${dis}>🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${dis}>⚔ Desafiar o Alfa (${z.chefe.nome})</button>` : ''}`}${sair}</div>`;
+      : `<button class="btn big" data-act="mp-explorar" ${dis}>🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${dis}>⚔ Desafiar o Alfa (${z.chefe.nome})</button>` : ''}${botaoEventoMP(dis)}`}${sair}</div>`;
+}
+// ☄ o chefe da semana no co-op: mesma trava do single player (só Roguelike/Hardcore da run do anfitrião, rota final liberada, 8 h entre tentativas)
+function botaoEventoMP(dis) {
+  if (!temRun()) return '';
+  const sit = situacaoDoEvento({ dificuldade: dificuldadeDe(G.S), gen: genDe(G.S) });
+  if (!sit.evento || sit.motivo === 'modo') return '';
+  const final = rotasAtuais().find(r => r.lendarios), liberada = !final || G.S.player.level >= final.libera;
+  if (sit.motivo === 'em-breve') return `<button class="btn ghost" disabled title="O primeiro chefe chega em ${dataBR(sit.inicio)}">☄ ${esc(sit.evento.nome)} — em ${dataBR(sit.inicio)}</button>`;
+  if (!liberada) return `<button class="btn ghost" disabled title="Chegue ao nível de liberação da rota final">☄ ${esc(sit.evento.nome)} (nível ${final.libera})</button>`;
+  if (!sit.ok) return `<button class="btn ghost" disabled title="Uma tentativa a cada 8 horas">☄ ${esc(sit.evento.nome)} — ⏳ ${formatarEspera(sit.esperaMs || 0)}</button>`;
+  return `<button class="btn" data-act="mp-evento" ${dis} title="Muito difícil. Quem ficar sem Pokémon pode usar Revive enquanto o grupo aguenta.">☄ Chefe da semana: ${esc(sit.evento.nome)}</button>`;
 }

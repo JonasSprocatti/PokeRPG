@@ -102,6 +102,15 @@ Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para
 ### Comprar em quantidade
 Tocar num item da loja abre um pequeno HUD: **−10 / − / campo / + / +10 / Máx**, com o **total e o troco** atualizando na hora (limite de 99 ou o que o dinheiro alcança). Ao confirmar, aparece um aviso 🛒 "Comprou N× item" com quantos você tem na mochila. `Enter` confirma, `Esc` ou tocar fora cancela.
 
+### ☄ Evento semanal (chefe da semana)
+No **Roguelike** e no **Hardcore**, um chefe especial ocupa a rota final da Gen dele numa caixa roxa brilhante (e o sprite dele aparece na escolha de mapa). O primeiro é o **Eternatus Eternamax** (Gen 8). **Uma tentativa a cada 8 horas**, sem fuga, imune a status, e perder não encerra a jornada.
+- **Mecânicas:** *couraça de energia* (o dano cai até ela se romper; a **Ruptura** deixa o chefe exposto), *Eternabeam telegrafado* (carrega com aviso; dano suficiente no mesmo turno interrompe e ainda abre a Ruptura) e *três fases* (66% e 33% do HP).
+- **Prêmio:** o Pokémon na Pokédex e para começar jornadas, a insígnia de evento com título e um prêmio por semana vencida. Na tela 👤 Conta dá para escolher **uma** insígnia para aparecer ao lado do nome.
+- **Calendário:** o chefe muda **toda segunda-feira à meia-noite (Brasília)**, a partir de **28/09/2026**. Antes disso a tela inicial e a rota final mostram o aviso do primeiro chefe, e a tela inicial traz a **agenda dos próximos 3 chefes**. Semana 1 = Eternatus Eternamax (Gen 8), semana 2 = Mega Rayquaza (Gen 3), e a lista gira.
+- **Mega Rayquaza:** sem couraça; o **ponto fraco muda a cada 2 ações** (só o tipo da vez machuca de verdade) e o **Dragon Ascent** carregado atinge o grupo todo.
+- **Co-op:** na sala, ☄ desafia o chefe da semana em grupo. O HP cresce com o número de jogadores, mas **menos que proporcional**; o golpe carregado atinge o time inteiro; e quem ficar sem Pokémon de pé pode **usar um Revive** (até 3 por luta) enquanto os outros seguram. A insígnia escolhida aparece ao lado do nome na sala.
+- **Ainda não:** os outros chefes da lista (formas alternativas e Megas de lendários) e os itens exclusivos de prêmio.
+
 ### 🤝 Badges de parceiros
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 

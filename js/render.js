@@ -18,6 +18,8 @@ import { terasDisponiveis } from './tera.js';
 import { zDisponiveis, avisoDoZ } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
+import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
+import { resumoDoChefe, nivelDoChefe } from './boss.js';
 import { progressoRastreado } from './rastreio.js';
 import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
@@ -83,7 +85,29 @@ function plate(m) {
      justamente o dado que explica por que o seu golpe acertou fraco. Usa `badgesDeTipo`, então mostra o tipo
      Tera de quem terastalizou, que é o que vale pra defesa. */
   return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>
-    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m)}${amizadeBar(m)}${chipsFor(m)}`;
+    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m)}${blocoChefe(m)}${amizadeBar(m)}${chipsFor(m)}`;
+}
+// chefe do evento semanal (boss.js): barra da couraça, fase e o aviso do golpe carregado — o que decide o turno
+function blocoChefe(m) {
+  const r = resumoDoChefe(m); if (!r) return '';
+  return `<div class="boss-info">
+    ${r.temCoura ? `<div class="hp boss-coura ${r.exposto ? 'exposto' : ''}" title="Couraça: enquanto de pé, o chefe leva pouco dano. Quando zera, vem a Ruptura (dano maior)."><span>🛡</span><div class="bar"><div class="fill" style="width:${Math.round(r.couraFracao * 100)}%"></div></div><span>${r.exposto ? 'EXPOSTO' : r.couraAtiva ? '' : '—'}</span></div>`
+      : r.exposto ? '<div class="boss-fase" style="color:#e4572e">💥 EXPOSTO: dano ×1,5</div>' : ''}
+    ${r.pontoFraco ? `<div class="boss-fraco" title="Só golpes deste tipo machucam de verdade; os outros são reduzidos">🎯 Ponto fraco: ${badge(r.pontoFraco)}</div>` : ''}
+    <div class="boss-fase">☄ Fase ${r.fase}/3</div>
+    ${r.carregando ? `<div class="boss-carga" role="alert">⚠ Carregando o ${esc(r.rotuloCarga)}! Faltam <b>${r.faltaParaInterromper}</b> de dano neste turno pra interromper.</div>` : ''}
+  </div>`;
+}
+// caixa do evento semanal na rota final: sprite do chefe com brilho, e o botão (ou quanto falta pra tentar de novo)
+function blocoEvento(g) {
+  const sit = situacaoDoEvento({ dificuldade: dificuldadeDe(G.S), gen: g }); if (!sit.evento || sit.motivo === 'modo') return '';
+  const ev = sit.evento;
+  if (sit.motivo === 'em-breve') return `<div class="chefe-box evento em-breve"><img src="${SPR(ev.formaId)}" alt=""><div><b>☄ EM BREVE: ${esc(ev.nome)}</b>
+    <small>O primeiro chefe da semana chega em <b>${dataBR(sit.inicio)}</b> (segunda-feira, meia-noite de Brasília). Prepare o time: é muito difícil.</small></div><button class="btn ghost sm" disabled>🗓 ${dataBR(sit.inicio)}</button></div>`;
+  const botao = sit.ok ? `<button class="btn sm" data-act="evento" ${G.busy ? 'disabled' : ''}>☄ Desafiar</button>`
+    : `<button class="btn ghost sm" disabled title="Uma tentativa a cada 8 horas">⏳ ${formatarEspera(sit.esperaMs || 0)}</button>`;
+  return `<div class="chefe-box evento"><img src="${SPR(ev.formaId)}" alt=""><div><b>☄ EVENTO DA SEMANA: ${esc(ev.nome)}</b> <span class="muted">Nv. ${nivelDoChefe(G.S.player.level)}</span>
+    <small>${esc(ev.resumo)} Muito difícil, sem fuga. Vencer dá ${esc(fmt(ev.especie))} na Pokédex, a insígnia ${esc(ev.badge.nome)} e um prêmio.${sit.ok ? '' : ' Uma tentativa a cada 8 horas.'}</small></div>${botao}</div>`;
 }
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
 function turnoBar(B, P, E) {
@@ -299,6 +323,7 @@ function renderScene() {
       ${avisoRepelente(z)}
       ${pokedexRota(z)}
       ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}
+      ${lend && G.S.player.level >= z.libera ? blocoEvento(g) : ''}
       ${lend ? `<div class="chefe-box lendarios ${fechada ? 'vencido' : ''}"><div class="lend-imgs">${lend.map((l, i) => `<img src="${SPR(l.id)}" alt="" class="${i === lend.length - 1 ? 'principal' : ''}" title="${esc(l.nome)}">`).join('')}</div><div><b>Lendários de ${dadosDaGen(g).regiao}</b> <span class="muted">Nv. ${lend[0].nivel}–${lend[lend.length - 1].nivel}</span><small>${fechada ? '✓ Gen fechada.' : `Até ${Math.min(4, lend.length)} lendários em sequência; ${esc(lend[lend.length - 1].nome)} por último, turbinado. Vencer fecha a Gen ${g}${DIFICULDADES[dificuldadeDe(G.S)].fimNaGen ? ' e encerra a run em vitória' : ''}.`}</small></div><button class="btn ${fechada ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Enfrentar</button></div>` : ''}`;
   }
 }

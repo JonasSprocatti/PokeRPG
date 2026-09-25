@@ -13,6 +13,7 @@ import { guardar } from './saves.js';
 import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta } from './carreira.js';
 import { pokedexDaConta } from './pokedex-conta.js';
 import { vantagensDe } from './badges.js';
+import { modoComEvento, eventoDaGen, agenda, agoraDoEvento, jaComecou, dataBR, INICIO } from './evento.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
@@ -42,6 +43,7 @@ export function showCreate() {
     <label class="check caca-opcao"><input type="checkbox" id="pv-caca" ${G.cacaShiny ? 'checked' : ''}> 🎯 Modo Caça Shiny
       <small class="muted">Quando você revelar todas as espécies de uma rota (10 derrotados de cada), pode escolher UMA delas pra ser a única que aparece ali. Serve pra caçar shiny — ou o que você quiser — sem depender da sorte do sorteio. Só dá pra ligar agora, no começo da jornada.</small></label>
     <div id="clima-opcao"></div>
+    <div id="agenda-evento"></div>
     <h3 class="passo"><span>3</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
     <div id="escolha"></div>
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
@@ -133,6 +135,19 @@ function renderClimaOpcao() {
   el.innerHTML = `<label class="check caca-opcao"><input type="checkbox" id="pv-clima" ${fixo || G.climaRotas ? 'checked' : ''} ${fixo ? 'disabled' : ''}> 🌦 Clima e terreno das rotas
       <small class="muted">Várias rotas começam a luta com o tempo da paisagem (neve, areia, chuva, sol) ou com um terreno (grama, elétrico…), valendo para os dois lados. Um golpe ou habilidade troca por 5 turnos e depois a rota volta ao padrão. ${fixo ? '<b>Neste modo é sempre ligado.</b>' : 'Desligado por padrão. Só dá pra ligar agora, no começo da jornada.'}</small></label>`;
 }
+/* ☄ Agenda dos chefes da semana (evento.js): o aviso do primeiro chefe enquanto o evento não começou, e os próximos 3 chefes com
+   as datas. Só nos modos que jogam evento (Roguelike e Hardcore) — nos outros ela nem aparece, pra não prometer o que não vale. */
+function renderAgendaEvento() {
+  const el = $('#agenda-evento'); if (!el) return;
+  if (!modoComEvento(G.dif)) { el.innerHTML = ''; return; }
+  const agora = agoraDoEvento(), lista = agenda(agora, 3);
+  el.innerHTML = `<section class="agenda-evento" aria-label="Agenda dos chefes da semana"><h4>☄ Chefes da semana</h4>
+    ${jaComecou(agora) ? '' : `<p class="agenda-aviso" role="status">🚨 <b>O primeiro chefe chega em ${dataBR(INICIO)}</b> (segunda-feira, 00:00 de Brasília): <b>${esc(lista[0].evento.nome)}</b>. Prepare o seu time — é muito difícil.</p>`}
+    <ol class="agenda-lista">${lista.map(a => `<li class="${a.atual ? 'atual' : ''}"><img src="${SPR(a.evento.formaId)}" alt="" loading="lazy">
+      <div><b>${esc(a.evento.nome)}</b> <span class="muted small">Gen ${a.evento.gen} · ${esc(dadosDaGen(a.evento.gen).regiao)}</span>
+      <small>${a.atual ? '<b>Esta semana</b> · ' : ''}${dataBR(a.inicio)} a ${dataBR(a.fim - 1)}</small></div></li>`).join('')}</ol>
+    <p class="small muted">O chefe muda toda segunda-feira à meia-noite (horário de Brasília). Ele aparece na rota final da Gen dele, uma tentativa a cada 8 horas.</p></section>`;
+}
 // mapas que dá pra escolher neste modo: no Roguelike (fimNaGen), só os liberados vencendo a Gen anterior; nos outros, todos
 const gensLiberadas = () => DIFICULDADES[G.dif].fimNaGen ? gensLiberadasRoguelike(carregarCarreira().jornadas) : GENS.map(x => x.gen);
 // passo 2: mapa (Gen). Full Randomizer sorteia o mapa também (não mostra escolha)
@@ -141,9 +156,11 @@ function renderGens() {
   if (!ok.includes(G.gen)) G.gen = ok[ok.length - 1];
   if (G.dif === 'randomizer') { $('#gens').innerHTML = '<p class="small muted">🎲 O mapa também é sorteado.</p>'; return; }
   // o rosto do mapa é o lendário principal — pega da rota FINAL (mapas.lendariosDaGen), nunca da última do array
-  $('#gens').innerHTML = `<div class="gens">${GENS.map(x => { const lib = ok.includes(x.gen), lend = lendariosDaGen(x.gen);
-    return `<button class="gen-card ${G.gen === x.gen ? 'on' : ''} ${lib ? '' : 'trancada'}" data-act="gen" data-v="${x.gen}" ${lib ? '' : 'disabled'} aria-pressed="${G.gen === x.gen}" title="${lib ? '' : `Vença a Gen ${x.gen - 1} no Roguelike pra liberar`}">
-      ${lend.length ? `<img src="${SPR(lend.at(-1).id)}" alt="" loading="lazy">` : ''}<b>${lib ? '' : '🔒 '}Gen ${x.gen}</b><span>${x.regiao}</span></button>`; }).join('')}</div>
+  // Roguelike/Hardcore: o chefe da semana ocupa o lugar do rosto do mapa, com brilho (evento.js) — o boss final da Gen "mudou"
+  const comEvento = modoComEvento(G.dif);
+  $('#gens').innerHTML = `<div class="gens">${GENS.map(x => { const lib = ok.includes(x.gen), lend = lendariosDaGen(x.gen), ev = comEvento ? eventoDaGen(x.gen) : null;
+    return `<button class="gen-card ${G.gen === x.gen ? 'on' : ''} ${lib ? '' : 'trancada'} ${ev ? 'evento' : ''}" data-act="gen" data-v="${x.gen}" ${lib ? '' : 'disabled'} aria-pressed="${G.gen === x.gen}" title="${lib ? (ev ? `Evento da semana: ${ev.nome}` : '') : `Vença a Gen ${x.gen - 1} no Roguelike pra liberar`}">
+      ${ev ? `<img class="evento-sprite" src="${SPR(ev.formaId)}" alt="" loading="lazy"><small class="evento-tag">☄ Evento</small>` : lend.length ? `<img src="${SPR(lend.at(-1).id)}" alt="" loading="lazy">` : ''}<b>${lib ? '' : '🔒 '}Gen ${x.gen}</b><span>${x.regiao}</span></button>`; }).join('')}</div>
     <p class="small muted">${DIFICULDADES[G.dif].fimNaGen ? 'No Roguelike, vencer os lendários de um mapa encerra a run em vitória e libera o mapa da Gen seguinte.' : 'Cada mapa tem 10 rotas; vencer os lendários da última deixa você escolher o próximo mapa, com a mesma equipe.'} Os Pokémon selvagens são os daquela Gen.</p>`;
 }
 // cartões de dificuldade + monta os passos 2 e 3 conforme o modo (Randomizer não escolhe Pokémon nem mapa)
@@ -152,6 +169,7 @@ export function renderDificuldade() {
   renderGens();
   renderVantagens();
   renderClimaOpcao();
+  renderAgendaEvento();
   const rnd = G.dif === 'randomizer';
   $('#escolha').hidden = rnd; $('#rnd').hidden = !rnd;
   $('#passo2-titulo').textContent = rnd ? 'Tudo sorteado' : 'Escolha o Pokémon';

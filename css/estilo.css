@@ -50,6 +50,35 @@ img{max-width:100%}
 .icone-mini{width:32px;height:32px;image-rendering:pixelated;vertical-align:middle;margin:-6px 4px -6px -4px}
 .icone-grande{width:96px;height:96px;image-rendering:pixelated}
 .chip-conta{display:inline-flex;align-items:center;gap:2px;position:relative}
+/* ---- eventos semanais (js/evento.js, js/boss.js): caixa do chefe na rota, selo no mapa, barras do chefe e insígnias ---- */
+.chefe-box.evento{border-color:#b45cff;background:radial-gradient(120% 160% at 0% 0%,rgba(180,92,255,.28),transparent 60%),var(--panel2);
+  box-shadow:0 0 0 1px rgba(180,92,255,.4) inset,0 0 18px rgba(180,92,255,.35);animation:evento-pulso 2.8s ease-in-out infinite}
+.chefe-box.evento img{filter:drop-shadow(0 0 8px rgba(180,92,255,.9))}
+@keyframes evento-pulso{50%{box-shadow:0 0 0 1px rgba(180,92,255,.6) inset,0 0 28px rgba(180,92,255,.6)}}
+.gen-card.evento{border-color:#b45cff;box-shadow:0 0 16px rgba(180,92,255,.55);position:relative}
+.gen-card.evento .evento-sprite{filter:drop-shadow(0 0 7px rgba(210,150,255,.95))}
+.gen-card .evento-tag{position:absolute;top:6px;right:6px;font-size:10px;font-weight:700;letter-spacing:.06em;background:#b45cff;color:#fff;padding:1px 7px;border-radius:999px}
+.chefe-box.evento.em-breve{opacity:.92;animation:none}
+.agenda-evento{margin:12px 0;padding:12px 14px;border-radius:12px;border:2px solid #b45cff;background:var(--panel)}
+.agenda-evento h4{margin:0 0 6px}
+.agenda-aviso{margin:6px 0 10px;padding:8px 10px;border-radius:10px;background:rgba(180,92,255,.18);border:1px solid #b45cff}
+.agenda-lista{list-style:none;padding:0;margin:0 0 8px;display:grid;gap:8px}
+.agenda-lista li{display:grid;grid-template-columns:56px 1fr;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;border:2px solid var(--line)}
+.agenda-lista li.atual{border-color:#b45cff;box-shadow:0 0 12px rgba(180,92,255,.5)}
+.agenda-lista img{width:56px;height:56px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(180,92,255,.7))}
+.agenda-lista small{display:block}
+.boss-fraco{margin-top:4px;font-size:12px;font-weight:700}
+.boss-info{margin-top:6px}
+.boss-coura .fill{background:linear-gradient(90deg,#7bd0ff,#b45cff)}
+.boss-coura.exposto .fill{background:#e4572e}
+.boss-fase{font-size:12px;font-weight:700;color:#8a3fd8;margin-top:2px}
+.boss-carga{margin-top:5px;padding:5px 7px;border-radius:8px;background:#fff1cf;color:#7a3a00;font-size:12px;border:2px solid #f0a020;animation:evento-pulso 1.2s ease-in-out infinite}
+.badge-nome{margin-left:6px;font-size:1.05em;filter:drop-shadow(0 0 3px rgba(180,92,255,.8))}
+.insignias{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.insignia{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--panel)}
+.insignia.ganha{border-color:#b45cff}.insignia.bloqueada{opacity:.6}.insignia.exibida{box-shadow:0 0 14px rgba(180,92,255,.55)}
+.insignia-icone{font-size:2rem}
+@media(max-width:520px){.insignia{grid-template-columns:auto 1fr}.insignia .btn{grid-column:1/-1}}
 /* ---- insígnia Alpha (js/alpha.js): medalha dourada com uma Poké Ball; raios girando devagar e estrelas cintilando ---- */
 .alpha-svg{display:block;width:120px;height:120px;filter:drop-shadow(0 4px 10px rgba(246,199,68,.45))}
 .alpha-svg.compacto{width:22px;height:22px;filter:drop-shadow(0 0 3px rgba(246,199,68,.7))}

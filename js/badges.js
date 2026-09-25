@@ -15,6 +15,7 @@ import { ALVOS, MARCOS_ABATES } from './conquistas.js';
 import { TYPE_PT } from './dados.js';
 import { MAX_ALIADOS } from './regras.js';
 import { MAX_ESCONDIDOS } from './esconderijo.js';
+import { EVENTOS } from './evento.js';
 
 export const ALVO_TIPO = 1000;          // derrotados de um tipo pra ganhar a vantagem daquele tipo
 export const ALVO_AMIGOS = 100;         // aliados recrutados na conta inteira
@@ -79,6 +80,13 @@ export const BADGES = [
   { id: 'cemiterio', grupo: 'Parceiros', icone: '🪦', nome: 'Cemitério de parceiros',
     desc: `Perca ${ALVO_PERDIDOS} parceiros em batalha numa mesma run (só conta quem cai de vez, como no Roguelike). Fora do modo Fácil.`,
     mede: c => feito(c.maxParceirosPerdidos, ALVO_PERDIDOS), recompensa: { itens: { revive: 1, 'heart-scale': 1 } } },
+  // ---- eventos semanais (evento.js): uma badge por chefe, com título. Só se ganha vencendo o chefe no Roguelike/Hardcore ----
+  ...EVENTOS.map(e => ({
+    id: `evento-${e.id}`, grupo: 'Eventos', icone: e.badge.icone, nome: e.badge.nome, evento: e.id,
+    desc: `Derrote ${e.nome}, o chefe do evento semanal da Gen ${e.gen} (só no Roguelike ou no Hardcore). Título: “${e.badge.titulo}”.`,
+    mede: c => feito(c.eventos?.[e.id] ? 1 : 0, 1),
+    recompensa: { ...e.badge.vantagem, titulo: e.badge.titulo }
+  })),
   // ---- coragem ----
   { id: 'hardcore', grupo: 'Coragem', icone: '💀', nome: 'Sem rede de proteção', desc: 'Feche uma Gen no modo Hardcore.',
     mede: c => feito(c.gensHardcore, 1), recompensa: { itens: { 'heart-scale': 1 } } },
@@ -127,6 +135,7 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
     gensHardcore: jornadas.filter(j => j.dificuldade === 'hardcore' && j.genVencida).length,
     gensRoguelike: new Set(jornadas.filter(j => j.dificuldade === 'roguelike' && j.genVencida).map(j => j.genVencida)).size,
     // só jornada VENCIDA conta (ver a badge 'sem-centro'): sair de uma run recém-criada também é "terminar"
+    eventos: progresso?.eventos || {},   // chefes semanais já vencidos (progresso-conta.registrarEventoVencido)
     runsSemCentro: jornadas.filter(j => j.semCentro && venceu(j)).length,
     // parceiros: por JORNADA (nunca a soma da conta), sem o modo Fácil. `amigos` = quantos foram recrutados na run.
     runsCasaCheia: jornadas.filter(j => j.casaCheia && venceu(j) && j.dificuldade !== 'easy').length,

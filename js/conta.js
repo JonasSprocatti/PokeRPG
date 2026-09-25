@@ -6,6 +6,8 @@ import { SPR, SPR_SHINY } from './dados.js';
 import { nuvem, nuvemConfigurada, usuario, meuIcone } from './nuvem.js';
 import { loadList } from './api.js';
 import { ehJogadorAlpha, htmlCartaoAlpha, htmlInsigniaAlpha } from './alpha.js';
+import { badgesDaCarreira } from './carreira.js';
+import { BADGES } from './badges.js';
 import { esc, offline, rand } from './util.js';
 
 // "G" do Google nas cores oficiais (o botão segue o padrão visual do "Sign in with Google": fundo branco, logo à esquerda)
@@ -26,9 +28,29 @@ export function renderChipConta() {
   if (!nuvemConfigurada()) { el.innerHTML = selo; return; }
   const u = usuario(), pedidos = nuvem.amigos.filter(a => a.recebido && a.status === 'pendente').length;
   el.innerHTML = selo + (u
-    ? `<button class="btn ghost sm chip-conta" data-act="conta" title="${esc(statusTxt())}">${htmlIcone(meuIcone(), 'icone-mini')} ${esc(nuvem.apelido || u.email || 'Conta')}${ehJogadorAlpha(nuvem.criadoEm) ? `<span class="alpha-mini" title="Treinador do Alpha">${htmlInsigniaAlpha({ compacto: true })}</span>` : ''} ${nuvem.status === 'erro' ? '⚠' : nuvem.status === 'sincronizando' ? '⟳' : ''}${pedidos ? `<span class="bolinha" title="Pedidos de amizade">${pedidos}</span>` : ''}</button>`
+    ? `<button class="btn ghost sm chip-conta" data-act="conta" title="${esc(statusTxt())}">${htmlIcone(meuIcone(), 'icone-mini')} ${esc(nuvem.apelido || u.email || 'Conta')}${ehJogadorAlpha(nuvem.criadoEm) ? `<span class="alpha-mini" title="Treinador do Alpha">${htmlInsigniaAlpha({ compacto: true })}</span>` : ''}${insigniaExibida()} ${nuvem.status === 'erro' ? '⚠' : nuvem.status === 'sincronizando' ? '⟳' : ''}${pedidos ? `<span class="bolinha" title="Pedidos de amizade">${pedidos}</span>` : ''}</button>`
     : '<button class="btn btn-login" data-act="conta" title="Entrar pra salvar sua carreira e a jornada na nuvem"><span aria-hidden="true">👤</span> Entrar</button>');
   if (G.mode === 'conta' && !$('#conta-editando')?.contains(document.activeElement)) telaConta(); // atualiza sem roubar o foco de quem digita
+}
+
+// a insígnia de evento que a pessoa escolheu mostrar ao lado do nome (só o ícone; o nome e o título vão no tooltip)
+function insigniaExibida() {
+  const b = nuvem.badgeExibida && BADGES.find(x => x.id === nuvem.badgeExibida && x.grupo === 'Eventos');
+  return b ? `<span class="badge-nome" title="${esc(b.nome)} — título: ${esc(b.recompensa?.titulo || b.nome)}" aria-label="Insígnia ${esc(b.nome)}">${b.icone}</span>` : '';
+}
+/* Insígnias dos eventos semanais: todas aparecem aqui (conquistadas e por conquistar). Uma só pode ficar ao lado do nome. */
+function secaoInsigniasEvento() {
+  const lista = badgesDaCarreira().filter(b => b.grupo === 'Eventos'); if (!lista.length) return '';
+  const cartao = b => `<li class="insignia ${b.completo ? 'ganha' : 'bloqueada'} ${nuvem.badgeExibida === b.id ? 'exibida' : ''}">
+      <span class="insignia-icone" aria-hidden="true">${b.icone}</span>
+      <div><b>${esc(b.nome)}</b> ${b.completo ? `<span class="muted small">título: ${esc(b.recompensa?.titulo || b.nome)}</span>` : '<span class="muted small">🔒 não conquistada</span>'}
+        <div class="small muted">${esc(b.desc)}</div></div>
+      ${b.completo ? (nuvem.badgeExibida === b.id
+        ? `<button class="btn ghost sm" data-act="badge-exibir" data-v="">Ocultar do nome</button>`
+        : `<button class="btn sm" data-act="badge-exibir" data-v="${esc(b.id)}">Mostrar ao lado do nome</button>`) : ''}</li>`;
+  return `<section class="pv conta"><div><h3>Insígnias de evento</h3>
+    <p class="small muted">Você ganha uma derrotando o chefe da semana (só no Roguelike ou no Hardcore). Escolha <b>uma</b> pra aparecer ao lado do seu nome, no topo.</p>
+    <ul class="insignias">${lista.map(cartao).join('')}</ul></div></section>`;
 }
 
 /* ---- ícone: qualquer Pokémon (1–1025), normal ou shiny ---- */
@@ -91,7 +113,7 @@ export function telaConta(msg = '') {
           <p class="small muted">${nuvem.naNuvem} jornada(s) terminada(s) na sua conta${nuvem.ultimaSync ? `, última sincronização às ${nuvem.ultimaSync.toLocaleTimeString('pt-BR')}` : ''}. A jornada em andamento também é salva sozinha, e dá pra continuar em outro aparelho entrando com a mesma conta.</p>
           <div class="subrow"><button class="btn ghost" data-act="sincronizar">⟳ Sincronizar agora</button><button class="btn ghost" data-act="sair">Sair da conta</button></div>
         </div>
-      </section>${ehJogadorAlpha(nuvem.criadoEm) ? htmlCartaoAlpha(nuvem.criadoEm) : ''}${secaoIcone(true)}${secaoAmigos()}`
+      </section>${ehJogadorAlpha(nuvem.criadoEm) ? htmlCartaoAlpha(nuvem.criadoEm) : ''}${secaoInsigniasEvento()}${secaoIcone(true)}${secaoAmigos()}`
     : `
       <section class="login-card">
         <h2>Entre ou crie sua conta</h2>

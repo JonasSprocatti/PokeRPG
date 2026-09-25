@@ -1,17 +1,18 @@
 /* ============ exploração ============ */
 // Um clique em "Explorar": 10% treinador caçador, 58% selvagem, 15% item, 7% dinheiro, 10% só ambientação.
 import { G, zone, save, emCampo, rotasAtuais, dificuldadeDe } from './estado.js';
-import { gastarRepelente, semSelvagens } from './mapas.js';
+import { gastarRepelente, semSelvagens, genDe } from './mapas.js';
 import { rotaEsgotada } from './regras.js';
-import { log, say } from './ui.js';
+import { log, say, ask } from './ui.js';
 import { render } from './render.js';
-import { startBattle, startTrainerBattle, startBossBattle, startLendarios } from './batalha.js';
+import { startBattle, startTrainerBattle, startBossBattle, startLendarios, startEvento } from './batalha.js';
+import { situacaoDoEvento } from './evento.js';
 import { verificarEvolucoesPendentes } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
 import { addItem } from './itens.js';
 import { ITEMS, FIND_ITEMS, FLAVOR, ITENS_EVO_ACHADOS } from './dados.js';
 import { apiErr } from './api.js';
-import { rand, pick } from './util.js';
+import { rand, pick, esc } from './util.js';
 
 export const CHANCE_ESCAMA = 0.03; // fatia dos itens achados que sai Escama do Coração (ver o sorteio de item)
 
@@ -55,6 +56,21 @@ export async function explore() {
     if (!G.B) try { await verificarMissoes(); } catch (e) { console.error(e); }
     G.busy = false; render(); save();
   }
+}
+// botão "☄ Desafiar" do chefe do evento semanal (rota final do mapa): confirma, porque gasta a tentativa das 8 horas
+export async function desafiarEvento() {
+  const z = zone();
+  if (G.busy || !z.lendarios || G.S.player.level < z.libera) return;
+  const sit = situacaoDoEvento({ dificuldade: dificuldadeDe(G.S), gen: genDe(G.S) });
+  if (!sit.ok) return;
+  const ev = sit.evento;
+  const ok = await ask(`☄ Desafiar <b>${esc(ev.nome)}</b>?<br><br>É <b>muito difícil</b>: couraça de energia, golpe carregado e três fases. Não dá pra fugir, imune a status, e a tentativa gasta as <b>8 horas</b> de espera assim que a luta começa, vença ou perca. Perder não encerra a sua jornada.`,
+    [{ label: '☄ Enfrentar', value: true }, { label: 'Agora não', value: false, ghost: true }]);
+  if (!ok) return;
+  G.busy = true; render();
+  try { await startEvento(ev); }
+  catch (e) { console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main'; log(e.offline ? e.message : apiErr(e), 'hit'); }
+  finally { G.busy = false; render(); save(); }
 }
 // botão "⚔ Desafiar": o Alfa da rota atual, ou os lendários na rota final do mapa
 export async function desafiarChefe() {

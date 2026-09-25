@@ -20,6 +20,7 @@
 //   poder: fórmula   poder calculado na hora (poderEspecial em regras.js)
 //   danoIgualHp      o alvo fica com o HP de quem usou (Endeavor)
 //   soPrimeiroTurno  só funciona no primeiro golpe que você dá na batalha (Fake Out, First Impression)
+//   soSeAlvoAtaca    só funciona se o alvo escolheu um golpe de DANO neste turno e ainda não agiu (Sucker Punch, Thunderclap)
 //   clima: tipo      muda o tempo da batalha por CLIMA_TURNOS (Rain Dance, Sunny Day, Sandstorm, Hail, Snowscape)
 //   terreno: tipo    muda o chão por TERRENO_TURNOS (Electric/Grassy/Psychic/Misty Terrain)
 //   lado: campo      liga algo no SEU lado do campo (Reflect, Light Screen, Aurora Veil, Safeguard, Mist, Tailwind)
@@ -62,6 +63,8 @@ export const GOLPES_ESPECIAIS = {
   endeavor: { danoIgualHp: true },
   // só no primeiro golpe que o Pokémon dá na batalha (senão falha) — é o que segura o recuo do Fake Out
   'fake-out': { soPrimeiroTurno: true }, 'first-impression': { soPrimeiroTurno: true },
+  // golpe de prioridade que é um "contra-ataque": falha se o alvo vai usar golpe de status (ou já agiu). `vol.golpeEscolhido` (golpe.js)
+  'sucker-punch': { soSeAlvoAtaca: true }, thunderclap: { soSeAlvoAtaca: true },
   // clima (regras.CLIMAS): duram CLIMA_TURNOS e valem pros dois lados
   'rain-dance': { clima: 'chuva' }, 'sunny-day': { clima: 'sol' }, sandstorm: { clima: 'areia' },
   hail: { clima: 'granizo' }, snowscape: { clima: 'neve' }, chillyreception: { clima: 'neve' },

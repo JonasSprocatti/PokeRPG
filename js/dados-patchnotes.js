@@ -5,6 +5,26 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.31', data: '2026-09-25', titulo: 'Chefes em grupo e a agenda da semana', piada: 'A Rayquaza pediu para constar que ela não é atrasada: só prefere fazer entrada dramática numa segunda-feira.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>O evento semanal começa na segunda 28/09/2026</b> (e vira toda segunda-feira à meia-noite, horário de Brasília). Até lá há só o aviso do primeiro chefe — <b>Eternatus Eternamax</b> — na tela inicial e na rota final da Gen 8. A tela inicial mostra a <b>agenda dos próximos 3 chefes</b> com as datas.',
+        'Segundo chefe: a <b>Mega Rayquaza</b> (Gen 3, a partir de 05/10). Ela não tem couraça: tem um <b>ponto fraco que muda a cada duas ações</b> (só o tipo da vez machuca de verdade, os outros são reduzidos) e o <b>Dragon Ascent</b> carregado, que atinge o grupo inteiro. Vencer dá a insígnia <b>Guardião do Pilar Celeste</b> e libera a Rayquaza pra começar jornadas.',
+        '<b>Chefe no co-op:</b> na sala, o botão ☄ desafia o chefe da semana com o grupo. O HP dele cresce com o número de jogadores, mas menos que proporcional — jogar junto compensa. O golpe carregado atinge <b>o time todo</b>. Quem ficar sem nenhum Pokémon de pé pode <b>usar um Revive</b> (até 3 por luta) enquanto os outros seguram, e volta com metade do HP.',
+        'A insígnia de evento que você escolheu mostrar aparece ao lado do seu nome também <b>na sala do multiplayer</b>.'
+      ] }
+    ] },
+  { versao: '2.30', data: '2026-09-25', titulo: 'O céu racha: chefe da semana', piada: 'O Eternatus pediu para avisar que não é ele que está atrasado: é o resto do universo que chegou cedo.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Evento semanal:</b> o primeiro chefe é o <b>Eternatus Eternamax</b>, na rota final da <b>Gen 8</b>, só no <b>Roguelike</b> e no <b>Hardcore</b>. Ele aparece numa caixa roxa brilhante acima dos lendários, e o mapa da Gen mostra o sprite dele na escolha de mapa. Uma tentativa a cada <b>8 horas</b>.',
+        'O chefe é <b>muito difícil</b>: uma <b>couraça de energia</b> que corta o dano até se romper (a <b>Ruptura</b> deixa ele exposto), o <b>Eternabeam</b> carregado com aviso — dá pra interromper causando dano suficiente no mesmo turno — e <b>três fases</b>. É imune a status e não dá pra fugir. Perder não encerra a sua jornada.',
+        'Derrotar o chefe libera o <b>Eternatus</b> na Pokédex e pra começar jornadas, dá a insígnia <b>Domador do Infinito</b> (título incluído) e um prêmio uma vez por semana. Na tela 👤 Conta você vê todas as insígnias de evento e escolhe <b>uma</b> pra mostrar ao lado do seu nome.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Sucker Punch</b> (e Thunderclap) agora só funciona se o alvo escolheu um golpe de dano neste turno e ainda não agiu. Antes era só um golpe de prioridade que nunca falhava.'
+      ] }
+    ] },
   { versao: '2.29', data: '2026-09-25', titulo: 'Parceiros em foco', piada: 'O esconderijo pediu um cartaz de "lotado". O Snorlax na porta diz que ainda cabe mais um.',
     secoes: [
       { nome: 'Novidades', itens: [

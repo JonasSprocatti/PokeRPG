@@ -93,6 +93,21 @@ export function runsDeNivelDe(progresso, nivel, modoQueNaoConta = 'easy') {
   return out;
 }
 
+/* Evento semanal vencido (evento.js). `progresso.eventos[id] = { primeiraEm, vitorias, semanas: { idDaSemana: true } }` e a
+   espécie do chefe entra em `especies` (razão 'evento'): fica desbloqueada pra sempre. Devolve o progresso novo e o que mudou:
+     primeiraVez  → primeira vitória sobre este chefe (badge, título e espécie);
+     semanaNova   → ainda não tinha vencido NESTA semana (o prêmio da vitória só sai uma vez por semana). */
+export function registrarEventoVencido(progresso, ev, semanaId, quando = new Date().toISOString()) {
+  const p = { ...progressoVazio(), ...progresso, especies: { ...(progresso?.especies || {}) }, porJornada: { ...(progresso?.porJornada || {}) },
+    eventos: { ...(progresso?.eventos || {}) } };
+  const antes = p.eventos[ev.id];
+  const primeiraVez = !antes, semanaNova = !antes?.semanas?.[semanaId];
+  const semanas = { ...(antes?.semanas || {}), [semanaId]: true };
+  p.eventos[ev.id] = { primeiraEm: antes?.primeiraEm || quando, vitorias: Object.keys(semanas).length, semanas };   // `vitorias` = semanas vencidas
+  if (ev.especie && !p.especies[ev.especie]) p.especies[ev.especie] = { id: ev.especieId || null, em: quando, razoes: ['evento'] };
+  return { progresso: p, primeiraVez, semanaNova };
+}
+
 /* Junta dois progressos (este aparelho e o que veio da nuvem). NUNCA remove: o resultado tem tudo dos dois lados.
    Espécie repetida fica com a data mais ANTIGA — é a data em que você conquistou de verdade. */
 export function mesclarProgresso(a, b) {
@@ -104,6 +119,14 @@ export function mesclarProgresso(a, b) {
       p.especies[especie] = !ja ? d : { ...ja, ...d, em: (ja.em && d.em) ? (ja.em < d.em ? ja.em : d.em) : (ja.em || d.em) };
     }
     for (const [id, abates] of Object.entries(fonte.porJornada || {})) p.porJornada[id] ||= abates;
+    // eventos semanais: união das semanas vencidas e da data mais ANTIGA da primeira vitória (nunca perde uma vitória)
+    for (const [id, e] of Object.entries(fonte.eventos || {})) {
+      const ja = (p.eventos ||= {})[id];
+      p.eventos[id] = !ja ? { ...e, semanas: { ...(e.semanas || {}) } } : {
+        primeiraEm: (ja.primeiraEm && e.primeiraEm) ? (ja.primeiraEm < e.primeiraEm ? ja.primeiraEm : e.primeiraEm) : (ja.primeiraEm || e.primeiraEm),
+        semanas: { ...(ja.semanas || {}), ...(e.semanas || {}) }, vitorias: 0 };
+      p.eventos[id].vitorias = Object.keys(p.eventos[id].semanas).length;
+    }
   }
   return p;
 }

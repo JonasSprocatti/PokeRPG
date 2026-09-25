@@ -83,6 +83,16 @@ test('parceiros: Casa cheia, Lobo solitário e Cemitério medem UMA jornada, exi
   assert.equal(b({ a: { dificuldade: 'easy', aliadosPerdidos: 20 } }, 'cemiterio').completo, false, 'Fácil não conta');
 });
 
+test('badge de evento: só acende ao vencer o chefe, e traz o título', () => {
+  const ctxDe = eventos => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, progresso: { porJornada: {}, eventos }, dex: null, conquistas: null });
+  const id = 'evento-eternatus-eternamax';
+  assert.equal(acha(badgesDaConta(ctxDe({})), id).completo, false);
+  const lista = badgesDaConta(ctxDe({ 'eternatus-eternamax': { primeiraEm: '2026-09-25', semanas: { '2026-S00': true }, vitorias: 1 } }));
+  assert.equal(acha(lista, id).completo, true);
+  assert.equal(acha(lista, id).grupo, 'Eventos');
+  assert.ok(vantagensDe(lista).titulos.includes('Domador do Infinito'));
+});
+
 test('badges que leem o progresso permanente (jornadas bancadas)', () => {
   const progresso = { porJornada: {
     a: { dificuldade: 'hardcore', genVencida: 1, amigos: 60, semCentro: false },

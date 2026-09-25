@@ -19,6 +19,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima } from './regras.js';
+import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
@@ -96,7 +97,7 @@ export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || nul
 // Algo impediu de agir: carga e fúria se perdem (como nos jogos)
 function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.vol.furia; }
 // Fim da rodada (depois de todos agirem): proteções de um turno só acabam
-export function fimDaRodada(m) { if (!m.vol) return; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; }
+export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; }
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
 /* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
@@ -237,6 +238,15 @@ async function reagirAoGolpe(t, g, crit, ctx) {
     if (r.terreno) await mudarTerreno(r.terreno, ctx, t);
   }
 }
+// Chefe de evento (boss.js): aplica e narra a lista de efeitos que as regras dele devolveram
+async function aplicarEfeitosChefe(m, efeitos, ctx) {
+  for (const e of efeitos || []) {
+    if (e.dizer) await ctx.say(e.dizer, e.cls || 'status');
+    if (e.curaStatus) { m.status = null; m.sleep = 0; m.vol.conf = 0; delete m.vol.toxico; delete m.vol.semente; }
+    if (e.estagios) await mudarEstagios(m, e.estagios.map(([stat, change]) => ({ stat, change })), ctx, m);
+  }
+  up(ctx);
+}
 // Magic Guard: nenhum dano que não venha direto de um golpe (veneno, queimadura, recuo, armadilha, espinhos…)
 const indireto = m => !!hab(m).semDanoIndireto;
 // Pressure: o oponente gasta 1 PP a mais ao usar um golpe contra quem tem
@@ -267,6 +277,7 @@ export async function aplicarArmadilhas(m, ctx) {
 
 // `fonte` = quem causou (Salvaguarda só protege de status vindo do inimigo, como nos jogos)
 export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
+  if (t.boss) { if (avisar) await ctx.say(`Não afeta ${ctx.nome(t)}... (chefe de evento: imune a status)`); return; }
   if (fonte && fonte !== t && temSalvaguarda(ladoDoCampo(ctx, t))) {
     if (avisar) await ctx.say(`${NOME_LADO.salvaguarda} protege ${ctx.nome(t)}!`);
     return;
@@ -386,10 +397,19 @@ async function golpeDeStatus(u, t, g, selfT, ctx) {
 }
 
 // `primeiro` = u agiu antes de t neste turno (recuo só vale assim)
-export async function usarGolpe(u, t, g, primeiro, ctx) {
+/* `opcoes.extra` = o mesmo golpe do chefe caindo em OUTRO alvo (o golpe carregado atinge o time inteiro no co-op — mp-motor): não
+   conta como uma ação nova do chefe, não cobra recarga nem chama as regras dele de novo. */
+export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   await ajustarForma(u, ctx); if (t !== u) await ajustarForma(t, ctx);   // Castform: a forma do tempo de agora, antes de qualquer conta
   const U = ctx.nome(u), hu = hab(u);
-  if (u.vol.recarga) { delete u.vol.recarga; await ctx.say(`${U} precisa recarregar!`); return; }  // Hyper Beam & cia.
+  if (!opcoes.extra && u.vol.recarga) { delete u.vol.recarga; await ctx.say(`${U} precisa recarregar!`); return; }  // Hyper Beam & cia.
+  if (u.boss && !opcoes.extra) {           // chefe de evento (boss.js): couraça, ponto fraco, golpe telegrafado e fases
+    u.boss.soltouTodos = false;
+    const r = antesDoChefeAgir(u);
+    await aplicarEfeitosChefe(u, r.efeitos, ctx);
+    if (r.pular) return;
+    if (r.golpe) { g = r.golpe; u.boss.soltouTodos = !!r.todos; }   // mp-motor lê isto pra acertar os outros alvos
+  }
   if (hu.preguica && u.vol.folga) { u.vol.folga = false; interromper(u); await ctx.say(`${U} está com preguiça...`); return; } // Truant: folga no turno seguinte a um golpe
   const travado = golpeTravado(u);                                                    // carga / fúria: repete sozinho
   if (travado) g = travado;
@@ -442,6 +462,12 @@ export async function usarGolpe(u, t, g, primeiro, ctx) {
   // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)
   const primeiroGolpe = !u.vol.golpesDados;
   u.vol.golpesDados = (u.vol.golpesDados || 0) + 1;
+  // Sucker Punch: o alvo tem que ter ESCOLHIDO um golpe de dano neste turno e ainda não ter agido (`primeiro`). Sem isso o golpe
+  // era só "prioridade +1 que sempre funciona". `vol.golpeEscolhido` é preenchido por batalha.turn / mp-motor antes de resolver.
+  if (esp.soSeAlvoAtaca && u !== t) {
+    const escolhido = t.vol.golpeEscolhido;
+    if (!primeiro || !escolhido || escolhido.cls === 'status') { await ctx.say('Mas falhou! (só funciona se o alvo for atacar neste turno)'); return; }
+  }
   if (esp.soPrimeiroTurno && !primeiroGolpe) { await ctx.say('Mas falhou! (só funciona no primeiro golpe da batalha)'); return; }
 
   const res = await executar(u, t, g, primeiro, ctx, esp);
@@ -472,6 +498,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (!selfT && t.vol.invul) { await ctx.say('Mas errou!'); return; }                 // alvo no ar / debaixo da terra
   if (esp.soDormindo && t.status !== 'sleep') { await ctx.say(`Não afeta ${T}... (só funciona em quem está dormindo)`); return; }
   if (esp.ohko) {
+    if (t.boss) { await ctx.say(`Não afeta ${T}... (chefe de evento)`); return; }
     if (typeEff(g.type, t.data.types) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
     if (ht.aguenta) { await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`); return; }     // Sturdy
     if (Math.random() >= chanceOhko(u, t)) { await ctx.say(t.level > u.level ? 'Mas falhou! (o alvo tem nível maior)' : 'Mas errou!'); return; }
@@ -505,7 +532,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
     const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx), ladoDoCampo(ctx, t));
-    let dano = r.dmg;
+    let dano = danoNoChefe(t, r.dmg, g.type);   // chefe de evento: couraça reduz, exposto aumenta, ponto fraco pelo tipo (sem `t.boss` devolve o mesmo)
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
     else if (seg(t).aguentaCheio && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; faixa = t.item; t.item = null; } // Faixa de Foco
@@ -518,6 +545,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (ef > 1) await ctx.say('É super efetivo!', 'good'); else if (ef < 1) await ctx.say('Não é muito efetivo...');
   if (hits > 1) await ctx.say(`Acertou ${acertos} vez${acertos > 1 ? 'es' : ''}!`);
   await ctx.say(`${T} perdeu ${total} HP.`, 'hit');
+  if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, total), ctx);   // desgasta a couraça, interrompe a carga, muda de fase
   if (aguentou) await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`, 'status');
   if (resistiu) await ctx.say(`${T} aguentou o golpe!`, 'status');
   if (faixa) await ctx.say(`${T} aguentou com 1 de HP usando a Faixa de Foco! (item gasto)`, 'status');

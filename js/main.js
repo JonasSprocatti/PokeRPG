@@ -13,15 +13,15 @@ import { telaPatchNotes } from './tela-patchnotes.js';
 import { aplicarFonte } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
-  nuvem, salvarIcone, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
+  nuvem, salvarIcone, salvarBadgeExibida, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela } from './relatos.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP } from './multiplayer.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
-import { explore, desafiarChefe } from './mundo.js';
+import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo } from './itens.js';
@@ -77,6 +77,8 @@ document.addEventListener('click', async e => {
     case 'mp-sair': await sairSala(); return voltar();
     case 'mp-explorar': return iniciarBatalhaMP('selvagem');
     case 'mp-alfa': return iniciarBatalhaMP('alfa');
+    case 'mp-evento': return iniciarBatalhaMP('evento');
+    case 'mp-revive': return reviverMP();
     case 'mp-pvp': return iniciarBatalhaMP('pvp');
     case 'mp-time': return escolherTime(v);
     case 'mp-desistir': {
@@ -168,6 +170,8 @@ document.addEventListener('click', async e => {
     }
     case 'gen': G.gen = +v; return renderDificuldade();
     case 'chefe': return desafiarChefe();
+    case 'evento': return desafiarEvento();
+    case 'badge-exibir': await salvarBadgeExibida(v || null); return telaConta();   // v vazio = ocultar
     // 🎯 Caça Shiny: escolher (ou parar de caçar) a espécie que aparece nesta rota
     case 'caca': {
       if (G.busy || G.mode !== 'explore' || !G.S.cacaShiny) return;

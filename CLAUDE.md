@@ -238,6 +238,29 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 **As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
 O que sobrou e o que ficou combinado:
 
+- **Evento semanal** (`evento.js` calendário/elegibilidade/espera de 8 h, `boss.js` regras do chefe, testes em `tests/evento.test.js` e `tests/boss.test.js`):
+  `EVENTOS[semana % n]`, semana = segunda→domingo UTC contada de `INICIO` (21/09/2026); só `DIFICULDADES[x].eventoSemanal` (Roguelike/Hardcore) e só na Gen do chefe.
+  Aparece na rota FINAL (`z.lendarios`, mesma trava de nível) em `render.blocoEvento` e como sprite com brilho na escolha de Gen (`criacao.renderGens`); botão
+  `data-act="evento"` → `mundo.desafiarEvento` → `batalha.startEvento`. A espera fica só no navegador (`evento.TENTATIVA_KEY`) — dá pra burlar pelo relógio; servidor
+  valida depois. **O chefe é um Pokémon comum com `E.boss`** (dados puros: vai no save e, no futuro, na rede) e as regras entram em `golpe.js` por 4 ganchos:
+  `danoNoChefe` (couraça reduz/Ruptura aumenta, no laço de dano), `aposDanoNoChefe` (desgasta couraça, interrompe carga, fases → efeitos `{dizer,estagios,curaStatus}`
+  aplicados por `aplicarEfeitosChefe`), `antesDoChefeAgir` (início de `usarGolpe`: carrega/solta o Eternabeam, que já tem `recarga` em `especiais.js`) e a imunidade
+  a status em `aplicarStatus`. Todos os números em `boss.AJUSTES` — a dificuldade se calibra jogando (chute inicial: HP ×5, atributos ×1,3, couraça 16% do HP, ciclo de 4).
+  `EVENTO_SEM_PERMADEATH` (evento.js): perder pro chefe não encerra a run nem perde aliado. Vitória → `carreira.registrarVitoriaDeEvento` grava
+  `progresso.eventos[id] = {primeiraEm, vitorias, semanas}` + espécie em `progresso.especies` (razão `evento`) — `mesclarProgresso` faz união. Badge `evento-<id>` (grupo `Eventos`,
+  `badges.js`); a exibida ao lado do nome é `nuvem.badgeExibida` (localStorage + `perfis.badge_exibida`, migração `20260925120000_badge_exibida.sql`; sem a coluna segue local).
+  **Calendário**: `INICIO` = segunda 28/09/2026 00:00 de Brasília (03:00 UTC); a semana vira toda segunda 00:00 BRT (`FUSO_MS`); antes de `INICIO` `eventoDaSemana` é `null` e
+  `situacaoDoEvento` devolve `motivo:'em-breve'`. `agenda(agora, 3)` alimenta a tela inicial (`criacao.renderAgendaEvento`). Pra TESTAR antes da data: no console,
+  `localStorage.setItem('pokerpg-evento-agora', Date.UTC(2026,8,28,12))` (`evento.RELOGIO_KEY`; qualquer chamada usa `agoraDoEvento()`, nunca `Date.now()` direto).
+  **Vários chefes**: `boss.CHEFES[id]` guarda a config (couraça e/ou `pontoFraco`, canhão, fases, ciclo); `E.boss.id` escolhe. Eternatus = couraça + Ruptura; Mega Rayquaza = ponto fraco
+  rotativo (`danoNoChefe(t, dano, tipo)` recebe o TIPO do golpe) + Dragon Ascent (`expostoAposCanhao`). Chefe novo = uma linha em `EVENTOS` (evento.js) + uma em `CHEFES` (o teste confere as duas).
+  **Co-op** (`multiplayer.iniciarBatalhaMP('evento')`, botão `botaoEventoMP`): `fotoDoMon` leva `boss`; HP por `jogadoresEfetivos(jogadores, porJogador)`; o golpe carregado devolve `todos` →
+  `u.boss.soltouTodos` e o `mp-motor` chama `usarGolpe(..., {extra:true})` nos outros alvos (sem nova ação, sem recarga). **Revive**: ação `revive` → `registrarRevive` (anfitrião) →
+  `mp-motor.reviverNoEvento` muta o estado NA HORA (o Pokémon já escolhe no turno); `b.revivesUsados[dono]` viaja no estado e cada cliente desconta o Revive da PRÓPRIA mochila em
+  `consumirRevives` (o anfitrião não sabe a mochila dos outros). Sem fuga no evento (`s.evento`). Cada participante registra a tentativa de 8 h ao ver o 1º estado (`sala.tentativaEvento`)
+  e recebe o prêmio em `premiarEventoMP` só se a SUA run é Roguelike/Hardcore. A insígnia exibida vai no payload de presença (`meuPayload().badge`). **Falta**: os outros chefes e os itens.
+- **Sucker Punch** (`soSeAlvoAtaca` em `especiais.js`): `vol.golpeEscolhido` é preenchido por `batalha.turn`/`mp-motor` antes de resolver o turno e apagado em `fimDaRodada`;
+  falha se o alvo escolheu status, não escolheu golpe (item/fuga) ou já agiu (`primeiro` falso).
 - **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),
   `lobo-solitario` (venceu com `amigos === 0`) e `cemiterio` (`ALVO_PERDIDOS` = 15 aliados PERDIDOS de vez numa MESMA run). Medem uma jornada, nunca a
   soma; ignoram `easy`; as duas de vitória usam `venceu(j)`. Dados novos no resumo da jornada (`fim.montarResumo`: `casaCheia`, `aliadosPerdidos`) e no

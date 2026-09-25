@@ -9,7 +9,8 @@
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE } from './dados.js';
 import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento } from './regras.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
+import { golpeCanhao } from './boss.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
 import { rand, clamp, fmt } from './util.js';
 
 // Cópia enxuta de um Pokémon do jogo pra batalha multiplayer (sem descrições longas: vai pela rede).
@@ -24,12 +25,33 @@ export function fotoDoMon(M, ref, dono, nome, slot = 0) {
     stats: { ...M.stats }, hp: M.hp, status: M.status || null, sleep: M.sleep || 0,
     moves: M.moves.map(m => ({ name: m.name, type: m.type, cls: m.cls, power: m.power, acc: m.acc, pp: m.pp, ppLeft: m.ppLeft,
       priority: m.priority || 0, target: m.target, meta: m.meta || {}, stats: m.stats || [] })),
-    vol: freshVol()
+    vol: freshVol(),
+    // chefe do evento semanal (boss.js): o estado das mecânicas vai junto pela rede e no estado da sala
+    ...(M.boss ? { boss: structuredClone(M.boss), chefeEvento: true } : {})
   };
 }
 // pvp: ninguém foge (só dá pra desistir)
 // `campo` = o que vale pros dois lados (hoje só o clima — regras.CLIMAS)
-export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: novoCampo(opcoes.zona) });
+// `evento` = id do chefe semanal (boss.js) quando a luta é do evento; `revivesUsados` = quantos Revives cada jogador já gastou nela
+export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: novoCampo(opcoes.zona),
+  evento: opcoes.evento || null, revivesUsados: {} });
+
+/* Revive no meio da luta do chefe (só no evento): quem ficou com TODOS os Pokémon caídos enquanto o grupo ainda aguenta pode
+   trazer um de volta com um Revive da mochila, com metade do HP. É o que faz valer a pena lutar em equipe: o grupo segura a
+   luta e o amigo volta. Devolve o Pokémon revivido, ou null se não pôde (não é evento, não é dele, não está caído, o grupo
+   já não aguenta, ou ele já gastou `MAX_REVIVES` nesta luta). Muta o estado — quem chama é o anfitrião. */
+export const MAX_REVIVES = 3;
+export function reviverNoEvento(estado, ref, dono) {
+  if (!estado?.evento || estado.fim) return null;
+  const m = monMP(estado, ref);
+  if (!m || m.dono !== dono || m.hp > 0 || ladoDe(estado, m.ref) !== 'A') return null;
+  if (!estado.lados.A.some(x => x.hp > 0)) return null;                                   // o grupo todo caiu: acabou
+  if (estado.lados.A.some(x => x.dono === dono && x.hp > 0)) return null;                // ele ainda tem alguém de pé: não precisa
+  const usados = estado.revivesUsados?.[dono] || 0; if (usados >= MAX_REVIVES) return null;
+  m.hp = Math.max(1, Math.floor(m.stats.hp / 2)); m.status = null; m.sleep = 0; m.caido = false; m.vol = freshVol();
+  (estado.revivesUsados ||= {})[dono] = usados + 1;
+  return m;
+}
 
 /* ---- balancear ---- */
 // mesmo Pokémon em outro nível: recalcula os stats (base/IVs/EVs/natureza) e mantém a FRAÇÃO de HP
@@ -97,7 +119,8 @@ export async function resolverTurnoMP(estado, acoes) {
   }
 
   // 1) fuga (só o lado A, e nunca no PvP): o mais rápido de quem pediu tenta contra o mais rápido do outro lado
-  const fugindo = s.pvp ? [] : acoes.filter(a => a.tipo === 'fugir' && valida(a) && ladoDe(s, a.ref) === 'A').map(a => monMP(s, a.ref));
+  // (pvp e chefe da semana: ninguém foge)
+  const fugindo = s.pvp || s.evento ? [] : acoes.filter(a => a.tipo === 'fugir' && valida(a) && ladoDe(s, a.ref) === 'A').map(a => monMP(s, a.ref));
   if (fugindo.length) {
     s.fugas++;
     const quem = fugindo.reduce((a, b) => effStat(b, 'speed') > effStat(a, 'speed') ? b : a);
@@ -114,6 +137,9 @@ export async function resolverTurnoMP(estado, acoes) {
     const m = monMP(s, a.ref), g = a.golpe === -1 || !m.moves[a.golpe] ? STRUGGLE : m.moves[a.golpe];
     return { ...a, m, g, prio: g.priority || 0, vel: effStat(m, 'speed', false, true, climaDe(s.campo), terrenoDe(s.campo)) * multVento(s.campo.lados?.[ladoDe(s, m.ref)]) }; // clima entra aqui (Swift Swim…)
   });
+  // o que cada um vai usar neste turno (Sucker Punch: só funciona contra quem vai atacar); limpo em fimDaRodada
+  for (const m of todosMP(s)) delete m.vol.golpeEscolhido;
+  for (const a of golpes) a.m.vol.golpeEscolhido = golpeTravado(a.m) || a.g;
   const ordem = ordenarAcoes(golpes), pos = ref => ordem.findIndex(o => o.ref === ref);
   for (let i = 0; i < ordem.length; i++) {
     const a = ordem[i];
@@ -126,6 +152,12 @@ export async function resolverTurnoMP(estado, acoes) {
       t = vivos[rand(0, vivos.length - 1)];
     }
     await usarGolpe(a.m, t, a.g, pos(t.ref) === -1 || i < pos(t.ref), ctx);
+    // o golpe carregado do chefe atinge o TIME INTEIRO (boss.antesDoChefeAgir → `todos`): os outros alvos levam o mesmo golpe
+    if (a.m.boss?.soltouTodos) {
+      a.m.boss.soltouTodos = false;
+      const canhao = golpeCanhao(a.m.boss.id);
+      for (const x of vivosMP(s.lados[outro(ladoDe(s, a.m.ref))])) if (x !== t) await usarGolpe(a.m, x, canhao, true, ctx, { extra: true });
+    }
     if (!vivosMP(s.lados.A).length || !vivosMP(s.lados.B).length) break;
   }
 

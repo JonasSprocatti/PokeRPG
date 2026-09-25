@@ -8,14 +8,14 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { healFull, CTX } from './efeitos.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
-import { STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
+import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
@@ -27,7 +27,11 @@ import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarrega
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { zDisponiveis } from './zmove.js';
 import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax } from './dynamax.js';
-import { loadPokemon, loadSpecies, pokemonEmCache } from './api.js';
+import { loadPokemon, loadSpecies, loadMove, pokemonEmCache } from './api.js';
+import { EVENTOS, idDaSemana, registrarTentativa, agoraDoEvento, EVENTO_SEM_PERMADEATH } from './evento.js';
+import { prepararChefe, nivelDoChefe } from './boss.js';
+import { registrarVitoriaDeEvento } from './carreira.js';
+import { sincronizar, usuario } from './nuvem.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
 
 // golpes e fim de turno vêm do motor único (golpe.js), narrados pelo CTX do single player (efeitos.js)
@@ -36,7 +40,7 @@ const useMove = (user, target, move, movedFirst) => usarGolpe(user, target, move
 // acertam o golpe (regras.escolhaIA). O alvo é sempre o seu lado — pega o primeiro em pé pra medir a eficácia.
 function chooseEnemyMove(E) {
   const B = G.B;
-  const esperteza = B?.chefe || B?.lendarios ? ESPERTEZA.chefe : B?.trainer ? ESPERTEZA.treinador : ESPERTEZA.selvagem;
+  const esperteza = B?.chefe || B?.lendarios || B?.evento ? ESPERTEZA.chefe : B?.trainer ? ESPERTEZA.treinador : ESPERTEZA.selvagem;
   const alvo = vivos(emCampo())[0] || G.S.player;
   return escolhaIA(E.moves, E.data.types, alvo.data.types, esperteza) || STRUGGLE;
 }
@@ -130,6 +134,43 @@ export async function startLendarios(z) {
   await say(`<b>${esc(fmt(equipe[0].name))}</b> (Nv. ${equipe[0].level}) avança!${equipe[0].shiny ? ' ✨ Shiny!' : ''}`);
   await intimidar(equipe[0]);
 }
+/* ---- chefe do evento semanal (evento.js / boss.js) ----
+   Nível do jogador + 12 (piso 70), IVs perfeitos, HP e atributos muito acima de um Alfa, imune a status, com couraça,
+   golpe telegrafado e fases. Sem fuga (o botão avisa), e a tentativa já gasta as 8 horas de espera na hora em que a luta
+   começa. Perder no Roguelike/Hardcore é perder como em qualquer luta: a regra do modo vale. */
+export async function startEvento(ev) {
+  const S = G.S, P = S.player;
+  if (offline() && !pokemonEmCache(ev.formaId)) throw erroOffline(`📴 Sem internet: ${ev.nome} ainda não está salvo neste aparelho. Abra o evento online uma vez.`);
+  const max = Object.fromEntries(STATS.map(s => [s, 31]));
+  const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(P.level), { ivs: max, shiny: false });
+  // golpes escolhidos a dedo (a lista de nível do Eternamax é curta e fraca demais pra um chefe)
+  const golpes = (await Promise.all((ev.golpes || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
+  if (golpes.length) E.moves = golpes;
+  prepararChefe(E, 1, ev.chefe);
+  registrarTentativa();                      // 1 tentativa a cada 8 horas: conta ao começar, vença ou perca
+  iniciar({ enemy: E, turn: 1, runs: 0, evento: ev.id });
+  await say(`☄ O céu racha. <b>${esc(ev.nome)}</b> (Nv. ${E.level}) surge, e o ar vibra com energia demais para um Pokémon.`, 'enc');
+  await say('EVENTO DA SEMANA: o chefe é imune a status, tem uma couraça de energia e carrega um golpe devastador. Não dá pra fugir.', 'muted');
+  await intimidar(E);
+}
+// vitória sobre o chefe: o Pokémon é seu na Pokédex e nas próximas jornadas, e a badge de evento vem junto
+async function vencerEvento() {
+  const S = G.S, B = G.B, ev = EVENTOS.find(e => e.id === B.evento); if (!ev) { endBattle(); return; }
+  endBattle();
+  const r = registrarVitoriaDeEvento(ev, idDaSemana(agoraDoEvento()));
+  await say(`🏆 <b>${esc(ev.nome)} foi derrotado!</b>`, 'level');
+  if (r.semanaNova) {
+    S.money += ev.recompensa.dinheiro || 0;
+    for (const [k, n] of Object.entries(ev.recompensa.itens || {})) S.bag[k] = (S.bag[k] || 0) + n;
+    await say(`Prêmio da semana: ₽${ev.recompensa.dinheiro || 0}${Object.entries(ev.recompensa.itens || {}).map(([k, n]) => `, ${n}× ${ITEMS[k]?.name || k}`).join('')}.`, 'level');
+  } else await say('Você já tinha vencido este chefe nesta semana: o prêmio só sai uma vez por semana.', 'muted');
+  if (r.primeiraVez) {
+    await say(`🌌 Insígnia <b>${esc(ev.badge.nome)}</b> conquistada — título “${esc(ev.badge.titulo)}”. Escolha qual insígnia mostrar ao lado do seu nome na tela 👤 Conta.`, 'level');
+    await say(`🔓 <b>${esc(fmt(ev.especie))}</b> está liberado na Pokédex e pra começar novas jornadas!`, 'level');
+  }
+  if (usuario()) sincronizar().catch(e => console.warn('sincronizar (evento)', e));   // sobe a conquista pra nuvem já
+  save();
+}
 // Treinador caçador: 1–3 Pokémon da zona (mais na zona alta), algumas bolas, e quer te capturar
 export async function startTrainerBattle(z) {
   const P = G.S.player;
@@ -171,7 +212,8 @@ async function lancarBola(P) {
 const idVez = m => m === G.S.player ? 'p' : 'a' + G.S.aliados.indexOf(m);
 // aliado que acabou de cair: anuncia uma vez só (B.caidos guarda quem já foi anunciado nesta batalha)
 async function anunciarQuedas() {
-  const permadeath = DIFICULDADES[dificuldadeDe(G.S)].permadeath;
+  // no chefe de evento ninguém é perdido pra sempre (evento.EVENTO_SEM_PERMADEATH): a luta é difícil, não um risco à run inteira
+  const permadeath = DIFICULDADES[dificuldadeDe(G.S)].permadeath && !(EVENTO_SEM_PERMADEATH && G.B?.evento);
   for (const A of [...(G.S.aliados || [])]) if (A.hp <= 0 && !G.B.caidos.has(A)) {
     G.B.caidos.add(A);
     if (!permadeath) { await say(`${nm(A)} desmaiou!`, 'hit'); continue; }
@@ -304,6 +346,9 @@ export async function turn(action) {
   try {
     // 1) sua ação que não é golpe resolve antes de tudo (fuga, item, petisco) — como item nos jogos
     let pm = null;
+    if (action.type === 'run' && B.evento) {
+      await say('Não dá pra fugir do chefe da semana!', 'hit'); return;   // não gasta o turno
+    }
     if (action.type === 'run') {
       B.runs++;
       await vez('p');
@@ -342,6 +387,9 @@ export async function turn(action) {
     }
     const ea = acaoDoInimigo(E, P);
     acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: vel(E) });
+    // o que cada um vai usar neste turno (Sucker Punch olha isso: só funciona contra quem vai atacar). Golpe travado (carga/fúria) vale.
+    for (const m of [...ladoJogador(), E]) delete m.vol.golpeEscolhido;
+    for (const a of acoes) if (a.golpe) a.quem.vol.golpeEscolhido = golpeTravado(a.quem) || a.golpe;
     const ordem = ordenarAcoes(acoes);
     const posicao = m => ordem.findIndex(a => a.quem === m); // -1 = não age neste turno
     for (let i = 0; i < ordem.length; i++) {
@@ -422,6 +470,7 @@ async function win() {
     return;
   }
   if (B.lendarios) { await vencerGen(); return; }
+  if (B.evento) { await vencerEvento(); return; }
   if (B.chefe && !S.chefes?.[B.chefe]) {
     const premio = premioChefe(E.level) * mult, z = ZONES.find(x => x.id === B.chefe), evo = pick(ITENS_EVO_ACHADOS);
     (S.chefes ||= {})[B.chefe] = true;
@@ -491,6 +540,12 @@ async function vencerGen() {
 // Desmaio: do Médio pra cima (`desmaiosLivres`), depois dos desmaios livres cada um gasta um Revive — sem Revive, Game Over
 async function lose() {
   const S = G.S, regra = DIFICULDADES[dificuldadeDe(S)], livres = regra.desmaiosLivres;
+  if (EVENTO_SEM_PERMADEATH && G.B?.evento) {   // o chefe da semana te derrubou: não é fim de run nem gasta Revive
+    await say(`${nm(S.player)} desmaiou... ${esc(fmt(G.B.enemy.name))} foi forte demais. Dá pra tentar de novo daqui a algumas horas.`, 'hit');
+    await say('Derrota de evento não encerra a jornada: você acorda no Centro Pokémon, sem perder nada.', 'muted');
+    healFull(); zerarDescontoCentro(); endBattle();
+    return;
+  }
   S.desmaios = (S.desmaios || 0) + 1;
   await say(`${nm(S.player)} desmaiou...`, 'hit');
   if (regra.permadeath) { await say('No Roguelike não existe segunda chance. A run acabou.', 'hit'); encerrarJornada('desmaiou'); return; }

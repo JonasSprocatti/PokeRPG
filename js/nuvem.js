@@ -26,7 +26,17 @@ async function sb() {
 export const usuario = () => sessao?.user || null;
 
 // estado mostrado na tela de conta / no chip do topo
-export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false, criadoEm: null };
+export const BADGE_EXIBIDA_KEY = 'pokerpg-badge-exibida';
+export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false, criadoEm: null,
+  badgeExibida: store.get(BADGE_EXIBIDA_KEY) || null };   // qual insígnia de evento aparece ao lado do nome (id da badge)
+/* A insígnia que aparece ao lado do nome. Fica neste navegador na hora e, com conta, sobe pro perfil (`perfis.badge_exibida`,
+   supabase/migrations/20260925120000_badge_exibida.sql). Se a coluna ainda não existir o jogo segue só com o valor local. */
+export async function salvarBadgeExibida(id) {
+  nuvem.badgeExibida = id || null; store.set(BADGE_EXIBIDA_KEY, nuvem.badgeExibida); avisar();
+  const c = await sb(), u = usuario(); if (!c || !u) return;
+  const { error } = await c.from('perfis').update({ badge_exibida: nuvem.badgeExibida }).eq('id', u.id);
+  if (error) console.warn('badge_exibida: rode a migração do banco pra os outros verem', error.message);
+}
 // conta de manutenção: libera o painel de testes em ⚙ Ajustes (dev.js). Sai de `perfis.admin`, nunca do navegador.
 export const ehAdmin = () => !!nuvem.admin && !!usuario();
 
@@ -195,6 +205,11 @@ async function sincronizarAgora() {
        no SQL Editor. Aqui do lado do cliente isso é só a chave do painel; o que protege dado é a RLS. */
     nuvem.admin = !!perfil?.admin;
     nuvem.criadoEm = perfil?.criado_em || null; // insígnia Alpha (alpha.js): a data de criação da conta vem do servidor
+    // insígnia de evento escolhida (coluna à parte: se a migração ainda não rodou, o erro é ignorado e vale a do navegador)
+    try {
+      const { data: be, error: eb } = await c.from('perfis').select('badge_exibida').eq('id', u.id).maybeSingle();
+      if (!eb && be?.badge_exibida) { nuvem.badgeExibida = be.badge_exibida; store.set(BADGE_EXIBIDA_KEY, be.badge_exibida); }
+    } catch (e) { console.warn('badge_exibida', e); }
     await carregarAmigos().catch(e => console.warn('amigos', e)); // sem a tabela ainda: segue sem amigos
 
     // carreira: sobe o que só existe aqui, baixa o que só existe lá
