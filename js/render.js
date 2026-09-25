@@ -25,8 +25,9 @@ import { clamp, esc, fmt } from './util.js';
 // sprite certo pro Pokémon (shiny ou não). Se o shiny não existir (formas raras), `onerror` cai no normal.
 // Costas: Gen 8+ não tem sprite de costas — aí usa a frente espelhada (classe .flip).
 // `espelhar` em tudo que vem de `m.data`: save e cache antigos guardam o endereço velho das imagens (dados.js)
-export const spriteFrente = m => m.shiny ? SPR_SHINY(m.id) : espelhar(m.data.sprite);
-const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.id) : espelhar(m.data.back)) : null;
+// `formaSprite` = id do sprite da forma de batalha (Castform com o tempo, golpe.ajustarForma); o shiny precisa dele porque monta a URL pelo id
+export const spriteFrente = m => m.shiny ? SPR_SHINY(m.formaSprite || m.id) : espelhar(m.data.sprite);
+const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.formaSprite || m.id) : espelhar(m.data.back)) : null;
 /* Dois planos B, nesta ordem: (1) o MESMO arquivo no outro servidor de imagens — cobre CDN fora do ar ou
    bloqueado na rede de quem joga; (2) a sprite normal — cobre shiny que não existe pra aquela forma. Sem o
    primeiro, uma falha do servidor deixava o Pokémon como ícone quebrado mesmo com a imagem disponível ali ao

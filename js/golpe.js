@@ -176,6 +176,7 @@ export async function ajustarForma(m, ctx) {
     types: alvo ? [alvo.tipo] : [...b.types],
     sprite: alvo ? spriteDaForma(b.sprite, alvo.id) : b.sprite, back: alvo ? spriteDaForma(b.back, alvo.id) : b.back, art: alvo ? spriteDaForma(b.art, alvo.id) : b.art };
   m.formaClima = chave;
+  if (alvo) m.formaSprite = alvo.id; else delete m.formaSprite;   // o sprite shiny é montado pelo id (render.spriteFrente)
   up(ctx);
   await ctx.say(`${ctx.nome(m)} mudou de forma com o tempo!`, 'status');
   return true;
@@ -184,7 +185,7 @@ export async function ajustarForma(m, ctx) {
 export function desfazerForma(m) {
   if (!m?.formaBase) return false;
   m.data = { ...m.data, types: [...m.formaBase.types], sprite: m.formaBase.sprite, back: m.formaBase.back, art: m.formaBase.art };
-  delete m.formaBase; delete m.formaClima;
+  delete m.formaBase; delete m.formaClima; delete m.formaSprite;
   return true;
 }
 

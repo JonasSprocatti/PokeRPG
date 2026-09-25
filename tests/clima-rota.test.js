@@ -126,7 +126,9 @@ test('Castform: a forma (tipos e sprite) acompanha o tempo, sem mexer no objeto 
   await ajustarForma(cast, c);
   assert.deepEqual(cast.data.types, ['ice']);
 
+  assert.equal(cast.formaSprite, 10015, 'o shiny monta o sprite por este id');
   assert.equal(desfazerForma(cast), true);
+  assert.equal(cast.formaSprite, undefined);
   assert.deepEqual(cast.data.types, ['normal']);
   assert.equal(desfazerForma(cast), false);
   assert.equal(await ajustarForma(mon(), c), false, 'quem não tem Forecast é ignorado');
