@@ -24,7 +24,7 @@ import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe } from './mundo.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
-import { addItem, useItem, tirarItem, equiparItem } from './itens.js';
+import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_SPR, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem } from './regras.js';

@@ -14,11 +14,14 @@ import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './rogueli
 import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, fmt, store, novoId } from './util.js';
+import { equipeCheia, esconderijoCheio } from './esconderijo.js';
 
 // resumo de uma jornada (a atual, ainda em andamento, ou a que está terminando)
 export function montarResumo(S, motivo, extra = {}) {
   const P = S.player, dif = dificuldadeDe(S), est = estatisticasDaJornada(S);
-  return { ...est, id: S.id || (S.id = novoId()), nome: P.nick || fmt(P.name), sprite: spriteFrente(P), dificuldade: dif, motivo,
+  // parceiros (badges.js): `casaCheia` = terminou com a equipe E o esconderijo lotados; `aliadosPerdidos` = os que caíram de vez nesta run
+  return { ...est, casaCheia: equipeCheia(S) && esconderijoCheio(S), aliadosPerdidos: S.aliadosPerdidos || 0,
+    id: S.id || (S.id = novoId()), nome: P.nick || fmt(P.name), sprite: spriteFrente(P), dificuldade: dif, motivo,
     data: new Date().toISOString(), pontuacao: pontuacao(est, DIFICULDADES[dif].multPontos), ...extra };
 }
 

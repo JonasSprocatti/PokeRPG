@@ -5,6 +5,15 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.29', data: '2026-09-25', titulo: 'Parceiros em foco', piada: 'O esconderijo pediu um cartaz de "lotado". O Snorlax na porta diz que ainda cabe mais um.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Três badges novas de <b>parceiros</b> na tela 🏅 Conquistas: <b>Casa cheia</b> (feche uma Gen com a equipe e o esconderijo lotados), <b>Lobo solitário</b> (feche uma Gen sem recrutar ninguém) e <b>Cemitério de parceiros</b> (perca 15 parceiros numa mesma run). Fora do modo Fácil.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O botão <b>📦 Guardar</b> do esconderijo não fazia nada (e o ↩ Trazer também): a função não estava ligada ao clique. Corrigido.'
+      ] }
+    ] },
   { versao: '2.28', data: '2026-09-25', titulo: 'Insígnia do Alpha', piada: 'A Poké Ball dourada garante que é de ouro maciço. O Meowth já pediu para avaliar, por precaução.',
     secoes: [
       { nome: 'Novidades', itens: [

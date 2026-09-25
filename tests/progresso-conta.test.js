@@ -19,6 +19,16 @@ test('bancar guarda os abates por jornada e é idempotente (pode rodar sempre)',
   assert.deepEqual(totaisDe(p).especie, { pikachu: 20 });
 });
 
+test('bancar guarda os números de parceiros da jornada (badges Casa cheia, Lobo solitário e Cemitério)', () => {
+  const p = bancar(progressoVazio(), [jornada('j1', { casaCheia: true, aliadosPerdidos: 15, amigos: 3 }), jornada('j2')], []);
+  assert.equal(p.porJornada.j1.casaCheia, true);
+  assert.equal(p.porJornada.j1.aliadosPerdidos, 15);
+  assert.equal(p.porJornada.j1.amigos, 3);
+  // jornada antiga, sem os campos: valores neutros (não quebra e não concede nada)
+  assert.equal(p.porJornada.j2.casaCheia, false);
+  assert.equal(p.porJornada.j2.aliadosPerdidos, 0);
+});
+
 test('apagar a jornada do histórico NÃO reduz o progresso', () => {
   const p = bancar(progressoVazio(), [jornada('j1'), jornada('j2')], [{ especie: 'gengar', id: 94, razoes: ['derrotados'] }]);
   const totalAntes = totaisDe(p).total;

@@ -102,6 +102,9 @@ Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para
 ### Comprar em quantidade
 Tocar num item da loja abre um pequeno HUD: **−10 / − / campo / + / +10 / Máx**, com o **total e o troco** atualizando na hora (limite de 99 ou o que o dinheiro alcança). Ao confirmar, aparece um aviso 🛒 "Comprou N× item" com quantos você tem na mochila. `Enter` confirma, `Esc` ou tocar fora cancela.
 
+### 🤝 Badges de parceiros
+Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
+
 ### 🏅 Insígnia Alpha
 Quem criou a conta durante o Alpha ganha, para sempre, uma **Poké Ball dourada com o α** na tela 👤 Conta (e ao lado do nome no topo). A regra é a data de criação da conta, que vem do servidor (`ALPHA_ATE` em `js/alpha.js`); quem entra depois não consegue.
 

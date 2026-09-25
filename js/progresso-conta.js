@@ -55,6 +55,7 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
       especie: j.especie || null, nivel: j.nivel || 0, dificuldade: j.dificuldade || null,
       amigos: j.amigos || 0, alfas: j.alfas || 0, gens: j.gens || 0, genVencida: j.genVencida || 0,
       semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null,
+      casaCheia: !!j.casaCheia, aliadosPerdidos: j.aliadosPerdidos || 0,   // badges de parceiros (badges.js)
       abates: { total: a?.total || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a?.[l] || {}) }])) }
     };
   }

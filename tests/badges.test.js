@@ -63,6 +63,26 @@ test('Rayquaza: as duas missões contam SEPARADAS, em qualquer ordem', () => {
   assert.equal(vantagensDe(lista).lojaGratis, true);
 });
 
+test('parceiros: Casa cheia, Lobo solitário e Cemitério medem UMA jornada, exigem vencer (as duas primeiras) e ignoram o Fácil', () => {
+  const ctxDe = porJornada => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, progresso: { porJornada }, dex: null, conquistas: null });
+  const b = (porJornada, id) => acha(badgesDaConta(ctxDe(porJornada)), id);
+  // Casa cheia: venceu com equipe e esconderijo lotados
+  assert.equal(b({ a: { dificuldade: 'roguelike', genVencida: 1, casaCheia: true } }, 'casa-cheia').completo, true);
+  assert.equal(b({ a: { dificuldade: 'roguelike', genVencida: 1, casaCheia: false } }, 'casa-cheia').completo, false, 'faltou lotar');
+  assert.equal(b({ a: { dificuldade: 'roguelike', motivo: 'desmaiou', casaCheia: true } }, 'casa-cheia').completo, false, 'sem vitória não vale');
+  assert.equal(b({ a: { dificuldade: 'easy', genVencida: 1, casaCheia: true } }, 'casa-cheia').completo, false, 'Fácil não conta');
+  // Lobo solitário: venceu sem recrutar ninguém
+  assert.equal(b({ a: { dificuldade: 'hard', genVencida: 1, amigos: 0 } }, 'lobo-solitario').completo, true);
+  assert.equal(b({ a: { dificuldade: 'hard', genVencida: 1, amigos: 1 } }, 'lobo-solitario').completo, false, 'um recrutado já quebra');
+  assert.equal(b({ a: { dificuldade: 'hard', motivo: 'encerrou', amigos: 0 } }, 'lobo-solitario').completo, false, 'encerrar recém-criada não é vencer');
+  assert.equal(b({ a: { dificuldade: 'easy', genVencida: 1, amigos: 0 } }, 'lobo-solitario').completo, false, 'Fácil não conta');
+  // Cemitério: 15 perdidos NUMA run — 15 espalhados em várias runs não valem
+  assert.equal(b({ a: { dificuldade: 'roguelike', aliadosPerdidos: 15 } }, 'cemiterio').completo, true, 'vale mesmo sem vencer');
+  assert.equal(b({ a: { dificuldade: 'roguelike', aliadosPerdidos: 8 }, c: { dificuldade: 'roguelike', aliadosPerdidos: 8 } }, 'cemiterio').completo, false);
+  assert.equal(b({ a: { dificuldade: 'roguelike', aliadosPerdidos: 9 } }, 'cemiterio').n, 9, 'mostra o progresso');
+  assert.equal(b({ a: { dificuldade: 'easy', aliadosPerdidos: 20 } }, 'cemiterio').completo, false, 'Fácil não conta');
+});
+
 test('badges que leem o progresso permanente (jornadas bancadas)', () => {
   const progresso = { porJornada: {
     a: { dificuldade: 'hardcore', genVencida: 1, amigos: 60, semCentro: false },

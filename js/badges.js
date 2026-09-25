@@ -13,9 +13,12 @@
    de uma TERCEIRA que só olha se as duas estão prontas. */
 import { ALVOS, MARCOS_ABATES } from './conquistas.js';
 import { TYPE_PT } from './dados.js';
+import { MAX_ALIADOS } from './regras.js';
+import { MAX_ESCONDIDOS } from './esconderijo.js';
 
 export const ALVO_TIPO = 1000;          // derrotados de um tipo pra ganhar a vantagem daquele tipo
 export const ALVO_AMIGOS = 100;         // aliados recrutados na conta inteira
+export const ALVO_PERDIDOS = 15;        // parceiros perdidos de vez numa MESMA run (badge "Cemitério de parceiros")
 export const RAYQUAZA = 'rayquaza';
 
 // pedra de evolução ligada a cada tipo; tipo sem pedra ganha o petisco de afinidade (dados.ITEMS)
@@ -64,6 +67,18 @@ export const BADGES = [
     mede: c => feito(c.lendariosAmigos, 1), recompensa: { itens: { 'sitrus-berry': 1 } } },
   { id: 'shiny', grupo: 'Laços', icone: '✨', nome: 'Caçador de brilho', desc: 'Recrute um Pokémon shiny (1 em 4096).',
     mede: c => feito(c.shiniesAmigos, 1), recompensa: { itens: { 'lum-berry': 1 } } },
+  /* ---- parceiros: as três medem UMA jornada (não a soma da conta) e ignoram o modo Fácil, onde nada disso custa caro.
+     As duas de vitória exigem VENCER (fechar uma Gen), pelo mesmo motivo da 'sem-centro': sair de uma run recém-criada
+     também "terminaria" sem recrutar ninguém. ---- */
+  { id: 'casa-cheia', grupo: 'Parceiros', icone: '📦', nome: 'Casa cheia',
+    desc: `Feche uma Gen com a equipe (${MAX_ALIADOS}) e o esconderijo (${MAX_ESCONDIDOS}) lotados de parceiros ao mesmo tempo. Fora do modo Fácil.`,
+    mede: c => feito(c.runsCasaCheia, 1), recompensa: { dinheiro: 5000, itens: { 'rare-candy': 2 }, titulo: 'Rei da matilha' } },
+  { id: 'lobo-solitario', grupo: 'Parceiros', icone: '🐺', nome: 'Lobo solitário',
+    desc: 'Feche uma Gen sem recrutar nenhum parceiro, só você. Fora do modo Fácil.',
+    mede: c => feito(c.runsSemParceiro, 1), recompensa: { itens: { 'rare-candy': 1, 'lum-berry': 1 }, titulo: 'Lobo solitário' } },
+  { id: 'cemiterio', grupo: 'Parceiros', icone: '🪦', nome: 'Cemitério de parceiros',
+    desc: `Perca ${ALVO_PERDIDOS} parceiros em batalha numa mesma run (só conta quem cai de vez, como no Roguelike). Fora do modo Fácil.`,
+    mede: c => feito(c.maxParceirosPerdidos, ALVO_PERDIDOS), recompensa: { itens: { revive: 1, 'heart-scale': 1 } } },
   // ---- coragem ----
   { id: 'hardcore', grupo: 'Coragem', icone: '💀', nome: 'Sem rede de proteção', desc: 'Feche uma Gen no modo Hardcore.',
     mede: c => feito(c.gensHardcore, 1), recompensa: { itens: { 'heart-scale': 1 } } },
@@ -113,6 +128,10 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
     gensRoguelike: new Set(jornadas.filter(j => j.dificuldade === 'roguelike' && j.genVencida).map(j => j.genVencida)).size,
     // só jornada VENCIDA conta (ver a badge 'sem-centro'): sair de uma run recém-criada também é "terminar"
     runsSemCentro: jornadas.filter(j => j.semCentro && venceu(j)).length,
+    // parceiros: por JORNADA (nunca a soma da conta), sem o modo Fácil. `amigos` = quantos foram recrutados na run.
+    runsCasaCheia: jornadas.filter(j => j.casaCheia && venceu(j) && j.dificuldade !== 'easy').length,
+    runsSemParceiro: jornadas.filter(j => (j.amigos || 0) === 0 && venceu(j) && j.dificuldade !== 'easy').length,
+    maxParceirosPerdidos: jornadas.filter(j => j.dificuldade !== 'easy').reduce((m, j) => Math.max(m, j.aliadosPerdidos || 0), 0),
     terasLiberadas: (conquistas?.tera || []).filter(x => x.liberado).length,
     megasLiberadas: (conquistas?.mega || []).filter(x => x.liberado).length,
     rayquazaShiny: dex?.rayquazaShiny || 0,

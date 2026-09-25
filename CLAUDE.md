@@ -238,6 +238,11 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 **As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
 O que sobrou e o que ficou combinado:
 
+- **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),
+  `lobo-solitario` (venceu com `amigos === 0`) e `cemiterio` (`ALVO_PERDIDOS` = 15 aliados PERDIDOS de vez numa MESMA run). Medem uma jornada, nunca a
+  soma; ignoram `easy`; as duas de vitória usam `venceu(j)`. Dados novos no resumo da jornada (`fim.montarResumo`: `casaCheia`, `aliadosPerdidos`) e no
+  `progresso-conta.bancar` (senão somem — o resumo é lista branca). `S.aliadosPerdidos` sobe em `batalha.anunciarQuedas` e no co-op (`multiplayer`), SÓ em modo
+  `permadeath`: nos outros o aliado só desmaia e volta, então "perder" = cair de vez (na prática, Roguelike). Jornadas antigas não têm os campos (contam 0).
 - **Insígnia Alpha** (`js/alpha.js`, testada em `tests/alpha.test.js`): sem tabela nem contador — é a data de criação da conta
   (`perfis.criado_em` → `nuvem.criadoEm`, lida em `sincronizar`) antes de `ALPHA_ATE`. `htmlCartaoAlpha` na tela Conta e `htmlInsigniaAlpha({compacto})`
   no chip do topo (`conta.js`); ids do SVG únicos por desenho (`seq`). **Depois de anunciar o Beta, NÃO mexer em `ALPHA_ATE`** (é o que faz a insígnia valer).
