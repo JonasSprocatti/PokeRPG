@@ -30,11 +30,35 @@ test('semCritico corta o crítico até quando ele seria garantido', t => {
   assert.equal(calcDamage(mon({ ability: 'battle-armor' }), mon(), golpeCrit).crit, true);
 });
 
+/* Fur Coat ("dano físico pela metade") e Ice Scales ("dano especial pela metade") são escritas como Defesa ×2 e
+   Def. Esp. ×2. Não é atalho — é a mesma matemática. Este teste prova a equivalência, que é o que autoriza a
+   escrita curta: se um dia `effStat` ou `calcDamage` mudarem e as duas coisas deixarem de coincidir, cai aqui. */
+test('Fur Coat e Ice Scales realmente valem "metade do dano"', t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const fisico = golpe({ cls: 'physical', power: 80 }), especial = golpe({ cls: 'special', power: 80 });
+  const normal = mon();
+  /* "Perto da metade", e não a metade exata: a fórmula oficial tem dois arredondamentos e soma 2 no fim, então
+     dobrar a Defesa não corta o dano exatamente pela metade. A faixa é estreita o bastante pra pegar um gancho
+     que parou de funcionar, e larga o bastante pra não quebrar por causa do arredondamento. */
+  const perto = (a, b, oque) => assert.ok(a > b * 0.45 && a < b * 0.58, `${oque}: ${a} devia ser ~metade de ${b}`);
+  perto(calcDamage(mon(), mon({ ability: 'fur-coat' }), fisico).dmg, calcDamage(mon(), normal, fisico).dmg, 'Fur Coat no físico');
+  perto(calcDamage(mon(), mon({ ability: 'ice-scales' }), especial).dmg, calcDamage(mon(), normal, especial).dmg, 'Ice Scales no especial');
+  // e cada uma vale só pra sua metade: Fur Coat não protege de golpe especial
+  assert.equal(calcDamage(mon(), mon({ ability: 'fur-coat' }), especial).dmg, calcDamage(mon(), normal, especial).dmg);
+});
+
+test('super-luck aumenta a chance de crítico (focoBase)', t => {
+  // 1/24 é a chance normal; com +1 degrau vira 1/8. Um sorteio de 0,1 cai dentro de 1/8 e fora de 1/24.
+  t.mock.method(Math, 'random', () => 0.1);
+  assert.equal(calcDamage(mon(), mon(), golpe()).crit, false, 'sem a habilidade, 0,1 não é crítico');
+  assert.equal(calcDamage(mon({ ability: 'super-luck' }), mon(), golpe()).crit, true);
+});
+
 test('tabela: ganchos conhecidos, tipos e status válidos', () => {
   const ganchos = new Set(['pinch', 'stab', 'tecnico', 'critico', 'multStat', 'comStatus', 'precisao', 'precisaoFisica', 'resiste', 'superEfetivo',
     'poucoEfetivo', 'hpCheio', 'imuneTipo', 'absorve', 'cura', 'estagio', 'flashFire', 'soSuperEfetivo', 'imuneStatus', 'semQueda', 'semRecuo',
     'contato', 'contatoDano', 'aguenta', 'semDanoRecuo', 'maxAcertos', 'chanceSecundaria', 'semSecundario', 'sonoRapido', 'fimTurno',
-    'curaStatusFimTurno', 'intimida', 'fuga', 'semCritico',
+    'curaStatusFimTurno', 'intimida', 'fuga', 'semCritico', 'focoBase', 'estagioAoEntrar',
     // clima (regras.CLIMAS)
     'climaAoEntrar', 'multStatClima', 'curaClima', 'danoClimaProprio', 'imuneClima', 'escondeNoClima', 'curaStatusClima', 'semStatusClima',
     // terrenos (regras.TERRENOS)

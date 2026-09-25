@@ -9,7 +9,7 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP
 } from '../js/regras.js';
 
 const zeros = () => ({ hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 });
@@ -203,10 +203,13 @@ test('precisaCurar: HP, status ou PP abaixo do máximo', () => {
   assert.equal(precisaCurar(mon({ moves: [{ pp: 10, ppLeft: 9 }] })), true);
 });
 
-test('xpPorVitoria: base × nível / 7, mínimo 1; de treinador ×1,5', () => {
-  assert.equal(xpPorVitoria({ level: 7, data: { baseExp: 64 } }), 64);
-  assert.equal(xpPorVitoria({ level: 2, data: { baseExp: 1 } }), 1);
-  assert.equal(xpPorVitoria({ level: 7, data: { baseExp: 64 } }, true), 96);
+test('xpPorVitoria: base × nível / 7 × MULT_XP, mínimo 1; de treinador ×1,5', () => {
+  const alvo = { level: 7, data: { baseExp: 64 } };
+  assert.equal(xpPorVitoria(alvo), Math.floor(64 * MULT_XP));
+  assert.equal(xpPorVitoria({ level: 2, data: { baseExp: 1 } }), 1, 'nunca menos que 1, mesmo com o multiplicador');
+  // o multiplicador estica a jornada sem mexer no equilíbrio relativo: treinador continua valendo 1,5× o selvagem
+  assert.equal(xpPorVitoria(alvo, true), Math.floor(64 * 1.5 * MULT_XP));
+  assert.ok(MULT_XP > 0 && MULT_XP <= 1, 'o multiplicador estica a run; acima de 1 encurtaria');
 });
 
 test('treinador: prêmio pela soma dos níveis, bola pela faixa de nível', () => {

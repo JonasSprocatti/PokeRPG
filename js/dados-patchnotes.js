@@ -5,6 +5,19 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.23', data: '2026-09-25', titulo: 'Jornada mais longa', piada: 'Seu Pokémon reclamou que a aventura estava acabando rápido demais. Atendemos. Ele já se arrependeu.',
+    secoes: [
+      { nome: 'Equilíbrio', itens: [
+        'A <b>XP por vitória caiu para 60%</b>: são mais batalhas por nível e a jornada dura cerca de <b>1,65× mais</b>. O equilíbrio relativo não mudou — treinador continua valendo 1,5× de um selvagem, e o modo escolhido continua pesando igual.',
+        'Mexemos na XP ganha, e não na curva de nível: a curva vem da PokéAPI e fica guardada no seu aparelho, então mudá-la quebraria a comparação com as jornadas que você já terminou.'
+      ] },
+      { nome: 'Novidades', itens: [
+        'Mais 8 habilidades ativas em batalha: <b>Fur Coat</b> e <b>Ice Scales</b> (metade do dano físico / especial), <b>Super Luck</b> (crítico mais fácil), <b>Intrepid Sword</b> e <b>Dauntless Shield</b> (sobem um atributo ao entrar em campo), Download, Grass Pelt e Flower Gift.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O jogo abria em branco por causa de um erro de sintaxe no arquivo do esconderijo, que derrubava tudo o que dependia dele. Corrigido.'
+      ] }
+    ] },
   { versao: '2.22', data: '2026-09-24', titulo: 'Ninguém mais se despede à força', piada: 'O Pokémon que você deixou para trás na Rota 4 mandou dizer que agora tem um sofá e está confortável.',
     secoes: [
       { nome: 'Novidades', itens: [

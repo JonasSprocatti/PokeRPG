@@ -285,8 +285,9 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   // estágio de crítico: o do golpe + Focus Energy (u.vol.foco)
   // `semCritico` (Battle Armor, Shell Armor): o golpe nunca sai crítico contra quem tem. Vale inclusive sobre
   // Focus Energy e golpe de crítico garantido — é exatamente pra isso que a habilidade existe.
+  // `focoBase` (Super Luck): a habilidade já nasce com um degrau de crítico, somado ao do golpe e ao Focus Energy
   const crit = !ht.semCritico
-    && Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0))];
+    && Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0))];
   const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno);
   const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
@@ -378,8 +379,15 @@ export const custoCentro = nivel => 50 + 15 * nivel;
 // algo pra curar? (HP, status ou PP) — com tudo cheio o Centro não cobra nem cura
 export const precisaCurar = m => m.hp < m.stats.hp || !!m.status || m.moves.some(mv => mv.ppLeft < mv.pp);
 
+/* `MULT_XP` estica a jornada: menos XP por vitória = mais batalhas por nível = run mais longa (pedido do
+   usuário). Mexer aqui, e não na curva da PokéAPI, é de propósito — a curva vem da API e fica no cache de quem
+   joga, então mudá-la exigiria invalidar o cache de todo mundo e quebraria comparação com jornadas antigas.
+   0,6 ≈ jornada 1,65× mais longa. É UM número, fácil de girar: se ficar arrastado, suba; se ficar rápido, desça.
+   Não mexe no equilíbrio relativo — treinador continua valendo 1,5× de um selvagem. */
+export const MULT_XP = 0.6;
 // Pokémon de treinador dá 1,5× XP (como nos jogos)
-export const xpPorVitoria = (E, deTreinador = false) => Math.max(1, Math.floor(E.data.baseExp * E.level / 7 * (deTreinador ? 1.5 : 1)));
+export const xpPorVitoria = (E, deTreinador = false) =>
+  Math.max(1, Math.floor(E.data.baseExp * E.level / 7 * (deTreinador ? 1.5 : 1) * MULT_XP));
 
 /* ---- batalha com vários Pokémon do mesmo lado (aliados agora, multiplayer depois) ---- */
 

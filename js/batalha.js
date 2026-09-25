@@ -94,6 +94,13 @@ async function intimidar(E, soInimigo = false) {
     const c = hab(m).climaAoEntrar, tr = hab(m).terrenoAoEntrar;
     if (c) await mudarClima(c, CTX, m);
     if (tr) await mudarTerreno(tr, CTX, m);
+    /* `estagioAoEntrar` (Intrepid Sword, Dauntless Shield…): sobe um atributo do PRÓPRIO ao entrar em campo.
+       Passa por `changeStats`, então Clear Body e Névoa continuam valendo — é o mesmo caminho da Intimidação. */
+    const est = hab(m).estagioAoEntrar;
+    if (est) {
+      await say(`${nm(m)} entra decidido!`);
+      await changeStats(m, [{ stat: est[0], change: est[1] }], m);
+    }
   }
 }
 export async function startBattle(z) {

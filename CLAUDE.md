@@ -233,6 +233,27 @@ Por isso o schema vive em **`supabase/migrations/`**, no formato do Supabase CLI
 - **Uma vez só, à mão: `supabase/LIGAR-MIGRATIONS.sql`.** Projeto criado direto pelo SQL Editor (o nosso) não tem a tabela de controle `supabase_migrations.schema_migrations`, e a integração falha com `relation "supabase_migrations.schema_migrations" does not exist` — ela precisa da tabela pra saber o que aplicar, mas não a cria sozinha. Rodar esse arquivo no SQL Editor resolve de vez; depois é só merge no `main`.
 - `tests/schema.test.js` lê a pasta inteira (soma das migrations) pra conferir que os pesos de pontuação do SQL batem com os de `regras.js`. **Mudou a fórmula num lado, muda no outro**, senão o servidor recusa jornadas legítimas.
 - Nada destrutivo aqui: `drop`/`alter` que possa perder dado de jogador vai num arquivo rodado à mão, porque este fluxo roda sozinho.
+## ESTADO ATUAL (25/09/2026) — ler primeiro ao retomar
+
+**As quatro gimmicks estão jogáveis** (Mega, Tera, Z-Move, Gigantamax) e o roteiro de 1 a 7 está fechado.
+O que sobrou e o que ficou combinado:
+
+- **Item 8 — habilidades**: em andamento. Duas levas feitas (~24 novas). A regra que vale: só entra habilidade
+  com gancho FIEL. Ficaram de fora, documentadas no próprio `habilidades.js`, as que não têm (Steam Engine,
+  Water Compaction, Wonder Skin, Sticky Hold) — mapear no gancho errado deixaria a habilidade mais forte que o
+  original, e a ficha promete "✓ ativa em batalha".
+- **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
+- **Em aberto, esperando decisão do usuário**: inimigo gigantamaxar (hoje só mega/terastaliza); se o painel de
+  manutenção sai quando o jogo estabilizar; e se o teto da equipe (`MAX_ALIADOS`) muda agora que existe o
+  esconderijo.
+
+### ⚠️ Lição cara (25/09/2026): `node --check` não roda nesta máquina
+`S?.escondidos ||= []` — optional chaining como alvo de atribuição é **erro de sintaxe**. Derrubou o jogo inteiro
+(tela branca) porque o módulo não parseava e levou junto `render.js`, `itens.js` e `amizade.js`. Um `node --check`
+pegaria em um segundo. Enquanto não houver Node aqui: **arquivo novo ou reescrito é o maior risco do projeto**, e
+o CI é a única rede de verdade. Avisar "não rodei os testes" não basta quando o erro não falha um teste — ele
+impede o jogo de abrir.
+
 ## Decidido com o usuário, ainda NÃO implementado
 
 Ordem acordada: **1 ✅ contadores + telas** · **2 ✅ cada Gen é uma jornada** · **3 badges com vantagem** · **4 Mega** · **5 Tera** · **6 Z-Move** · **7 Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.

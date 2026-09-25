@@ -25,6 +25,8 @@
 //   contatoDano: fração    quem acerta com golpe físico perde essa fração do HP máx. (golpe.js)
 //   aguenta                com HP cheio, sobrevive com 1 a um golpe que derrubaria (Sturdy) (golpe.js)
 //   semCritico             golpe contra você nunca sai crítico (Battle Armor, Shell Armor) (calcDamage)
+//   focoBase: n            já começa com n degraus de crítico, somados ao do golpe e ao Focus Energy (calcDamage)
+//   estagioAoEntrar: [stat, n]  ao entrar em campo, sobe n desse atributo no PRÓPRIO (batalha.intimidar)
 //   semDanoRecuo           não sofre dano de recuo dos próprios golpes (golpe.js)
 //   maxAcertos             golpe de vários acertos sempre acerta o máximo (golpe.js)
 //   chanceSecundaria: n    chance de efeito secundário dos próprios golpes × n (golpe.js)
@@ -126,7 +128,28 @@ export const HABILIDADES = {
   'desolate-land': { climaAoEntrar: 'sol' }, 'primordial-sea': { climaAoEntrar: 'chuva' },
   // força com status: no jogo original cada uma pede um status específico (veneno / queimadura); aqui vale pra
   // qualquer status, como o Guts, porque o gancho é esse. A direção do efeito é a mesma.
-  'toxic-boost': { comStatus: { attack: 1.5 } }, 'flare-boost': { comStatus: { 'special-attack': 1.5 } }
+  'toxic-boost': { comStatus: { attack: 1.5 } }, 'flare-boost': { comStatus: { 'special-attack': 1.5 } },
+
+  /* ---- segunda leva ----
+     Vários efeitos famosos são, na conta, a MESMA coisa que dobrar um atributo — e isso o motor já sabia fazer.
+     Fur Coat ("dano físico pela metade") é Defesa ×2; Ice Scales ("dano especial pela metade") é Def. Esp. ×2.
+     Escrever assim não é atalho: é a mesma matemática, e reusa o caminho já testado em vez de abrir um novo. */
+  'fur-coat': { multStat: { defense: 2 } },            // dano físico pela metade
+  'ice-scales': { multStat: { 'special-defense': 2 } }, // dano especial pela metade
+  'grass-pelt': { multStatTerreno: { grama: { defense: 1.5 } } },
+  'flower-gift': { multStatClima: { sol: { attack: 1.5, 'special-defense': 1.5 } } },
+  // crítico mais fácil (gancho novo `focoBase`, somado ao do golpe e ao Focus Energy)
+  'super-luck': { focoBase: 1 },
+  // sobe um atributo ao entrar em campo (gancho novo `estagioAoEntrar`, mesmo caminho da Intimidação)
+  'intrepid-sword': { estagioAoEntrar: ['attack', 1] }, 'dauntless-shield': { estagioAoEntrar: ['defense', 1] },
+  /* Download no original olha a defesa do oponente e escolhe qual atributo subir. Aqui sobe sempre o Ataque
+     Especial — a metade que depende de ler o adversário não está implementada, e está dito pra ninguém contar
+     com o que não acontece. */
+  download: { estagioAoEntrar: ['special-attack', 1] }
+  /* FICARAM DE FORA de propósito, por não ter gancho fiel: Steam Engine e Water Compaction sobem atributo ao
+     SOFRER um golpe (o gancho `absorve` daria imunidade, que elas não têm — seria mais forte que o original);
+     Wonder Skin mexe na precisão de golpe de status alheio; Sticky Hold protege o item segurado. Habilidade sem
+     efeito fiel fica como descrição: a ficha só promete "✓ ativa em batalha" pra quem está aqui. */
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
 /* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).
