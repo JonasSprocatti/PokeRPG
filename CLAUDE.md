@@ -262,6 +262,19 @@ O que sobrou e o que ficou combinado:
   `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
   (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
   `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. **Falta**: os outros chefes e os itens.
+- **Os 14 chefes** (`evento.EVENTOS`, fábrica `ev()`; regras em `boss.CHEFES`, mesma `id`): a ordem do array É o calendário (semana N = `N % 14`). Mecânicas novas além de couraça/ponto fraco/canhão/fases:
+  `climaFixo` (`aplicarClimaDoChefe` usa o clima fixo de `novoCampo`; Groudon sol, Kyogre chuva), `anula {tipos}` (dano 0 + texto em `golpe.js`), `inverso {acoes}` (Mundo Reverso: `danoNoChefe(t, dano,
+  tipo, ef)` divide pelo ef² do motor, com teto ×4), `adapta {reducao}` (guarda `b.ultimoTipo` DENTRO de `danoNoChefe`), `dreno` (`drenoDoChefe` em `executar`), `regenera` (efeito `{cura}` em
+  `antesDoChefeAgir`), `habilidade` (habilidade da tabela do motor: Calyrex `grim-neigh`, Necrozma `neuroforce`, Zacian `intrepid-sword`). **O golpe carregado NÃO pode ser golpe de carga do motor**
+  (`especiais.carga`, ex.: Freeze Shock — viraria "preparando" de novo); o teste confere. `EVENTO_SEM_PERMADEATH` vale pra todos. **Simplificações a lembrar**: as duplas (Zacian+Zamazenta,
+  Dialga+Palkia) viraram UM chefe cada; Mewtwo troca pro "modo X" só como bônus de atributo (fase 2) — não há troca de forma/sprite; Kyurem não ignora habilidades do jogador.
+- **Itens de raide** (`dados.ITEMS[x].raide`, `boss.usarItemDeRaide`): `cristal-de-ruptura`, `selo-de-interrupcao`, `escudo-astral`; UM de cada tipo por luta (marca em `E.boss.raide`), só valem com `E.boss`.
+  Single player: `itens.useItem` → `usarRaide` (gasta o turno). Co-op: ação livre `raide` → `multiplayer.registrarRaide` (anfitrião) → `mp-motor.usarRaideNoEvento`; `b.raideUsados[dono][tipo]` viaja no estado e
+  `consumirRevives` desconta da PRÓPRIA mochila. Escudo Astral = `b.canhaoMult` (0,5) consumido no próximo golpe carregado; `canhaoUltimoMult` faz os outros alvos do co-op levarem o mesmo corte.
+  Vêm de prêmio: `evento.ev()` dá 2 itens de raide por vitória, girando entre os três. **BACKLOG dos itens aprovados (fazer depois)**: Núcleo Eternamax (segurar: +dano Dragão/Veneno, −Def), Escama do Céu (segurar:
+  resiste Voador/Dragão), Cinza Vulcânica (consumível: time resiste Fogo 3 turnos), Escama Abissal (idem Água), Cristal Psíquico (segurar: −dano psíquico), Prisma de Luz (consumível: quebra a armadura de prisma),
+  Rédea Espectral (segurar: +Velocidade, age antes no 1º turno), Emblema da Coroa (segurar: +dano em conjunto), Cristal Gélido (segurar: protege de gelo), Espelho Reverso (consumível: inverte a tabela a seu favor
+  por 3 turnos), Relógio de Areia (consumível: prioridade por 1 turno), Fragmento Tera (consumível: recarrega o Tera), Presa da Lua (segurar: cura 10% do dano), Célula Zygarde (consumível: elimina uma célula).
 - **Sucker Punch** (`soSeAlvoAtaca` em `especiais.js`): `vol.golpeEscolhido` é preenchido por `batalha.turn`/`mp-motor` antes de resolver o turno e apagado em `fimDaRodada`;
   falha se o alvo escolheu status, não escolheu golpe (item/fuga) ou já agiu (`primeiro` falso).
 - **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),

@@ -9,7 +9,7 @@
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE } from './dados.js';
 import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento } from './regras.js';
-import { golpeCanhao } from './boss.js';
+import { golpeCanhao, usarItemDeRaide } from './boss.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
 import { rand, clamp, fmt } from './util.js';
 
@@ -34,7 +34,20 @@ export function fotoDoMon(M, ref, dono, nome, slot = 0) {
 // `campo` = o que vale pros dois lados (hoje só o clima — regras.CLIMAS)
 // `evento` = id do chefe semanal (boss.js) quando a luta é do evento; `revivesUsados` = quantos Revives cada jogador já gastou nela
 export const novaBatalhaMP = (A, B, opcoes = {}) => ({ turno: 1, lados: { A, B }, fugas: 0, fim: null, pvp: !!opcoes.pvp, campo: novoCampo(opcoes.zona),
-  evento: opcoes.evento || null, revivesUsados: {} });
+  evento: opcoes.evento || null, revivesUsados: {}, raideUsados: {} });
+
+/* Item de raide no co-op (boss.usarItemDeRaide): ação LIVRE de um jogador do grupo, um de cada tipo por luta pro GRUPO todo (a marca
+   fica no `boss.raide` do chefe). Muta o estado — quem chama é o anfitrião. `raideUsados[dono][tipo]` viaja no estado: é por ele que
+   cada cliente desconta o item da PRÓPRIA mochila. Devolve { ok, efeitos, motivo? }. */
+export function usarRaideNoEvento(estado, dono, tipo) {
+  if (!estado?.evento || estado.fim) return { ok: false, efeitos: [], motivo: 'Fora da luta do chefe.' };
+  if (!estado.lados.A.some(m => m.dono === dono)) return { ok: false, efeitos: [], motivo: 'Você não está nesta luta.' };
+  const E = estado.lados.B.find(m => m.boss && m.hp > 0);
+  if (!E) return { ok: false, efeitos: [], motivo: 'O chefe já caiu.' };
+  const r = usarItemDeRaide(E, tipo);
+  if (r.ok) { const meu = ((estado.raideUsados ||= {})[dono] ||= {}); meu[tipo] = (meu[tipo] || 0) + 1; }
+  return r;
+}
 
 /* Revive no meio da luta do chefe (só no evento): quem ficou com TODOS os Pokémon caídos enquanto o grupo ainda aguenta pode
    trazer um de volta com um Revive da mochila, com metade do HP. É o que faz valer a pena lutar em equipe: o grupo segura a
@@ -155,7 +168,7 @@ export async function resolverTurnoMP(estado, acoes) {
     // o golpe carregado do chefe atinge o TIME INTEIRO (boss.antesDoChefeAgir → `todos`): os outros alvos levam o mesmo golpe
     if (a.m.boss?.soltouTodos) {
       a.m.boss.soltouTodos = false;
-      const canhao = golpeCanhao(a.m.boss.id);
+      const canhao = golpeCanhao(a.m.boss.id, a.m.boss.canhaoUltimoMult);   // o Escudo Astral (se usado) vale pro time inteiro
       for (const x of vivosMP(s.lados[outro(ladoDe(s, a.m.ref))])) if (x !== t) await usarGolpe(a.m, x, canhao, true, ctx, { extra: true });
     }
     if (!vivosMP(s.lados.A).length || !vivosMP(s.lados.B).length) break;

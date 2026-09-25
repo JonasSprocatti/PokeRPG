@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EVENTOS, INICIO, SEMANA_MS, COOLDOWN_MS, indiceDaSemana, idDaSemana, eventoDaSemana, eventoDaGen, fimDaSemana, modoComEvento,
   esperaRestante, formatarEspera, situacaoDoEvento, agenda, dataBR, jaComecou, eventoDoIndice } from '../js/evento.js';
-import { DIFICULDADES } from '../js/dados.js';
+import { DIFICULDADES, ITEMS } from '../js/dados.js';
 import { GENS } from '../js/mapas.js';
 
 const H = 60 * 60 * 1000;
@@ -48,17 +48,34 @@ test('cada evento é completo: forma da PokéAPI, golpes, espécie que ganha, ba
   assert.deepEqual([ray.gen, ray.formaId, ray.especieId], [3, 10079, 384]);
 });
 
-test('os chefes se alternam semana a semana: Eternatus (28/09), Mega Rayquaza (05/10), Eternatus (12/10)…', () => {
-  assert.equal(eventoDaSemana(INICIO).id, 'eternatus-eternamax');
-  assert.equal(eventoDaSemana(INICIO + SEMANA_MS).id, 'rayquaza-mega');
-  assert.equal(eventoDaSemana(INICIO + 2 * SEMANA_MS).id, 'eternatus-eternamax');
-  assert.equal(eventoDoIndice(EVENTOS.length).id, EVENTOS[0].id, 'a lista gira');
+test('são 14 chefes, na ordem da lista, e a cada segunda entra o próximo (depois do 14º a lista recomeça)', () => {
+  const ordem = ['eternatus-eternamax', 'rayquaza-mega', 'groudon-primal', 'kyogre-primal', 'mewtwo-mega-y', 'necrozma-ultra', 'calyrex-shadow',
+    'zacian-crowned', 'kyurem-black', 'giratina-origin', 'dialga-origin', 'terapagos-stellar', 'ursaluna-bloodmoon', 'zygarde-complete'];
+  assert.deepEqual(EVENTOS.map(e => e.id), ordem);
+  ordem.forEach((id, i) => assert.equal(eventoDaSemana(INICIO + i * SEMANA_MS).id, id, `semana ${i}`));
+  assert.equal(eventoDaSemana(INICIO + 14 * SEMANA_MS).id, 'eternatus-eternamax', 'a lista gira');
+  assert.equal(eventoDoIndice(EVENTOS.length).id, EVENTOS[0].id);
+});
+
+test('os prêmios trazem itens de raide que existem, e cada chefe tem forma e espécie próprias', () => {
+  const formas = new Set(), especiesVistas = [];
+  EVENTOS.forEach((e, i) => {
+    for (const k of Object.keys(e.recompensa.itens)) assert.ok(ITEMS[k], `${e.id}: item "${k}" não existe`);
+    assert.ok(Object.keys(e.recompensa.itens).some(k => ITEMS[k].raide), `${e.id}: sem item de raide no prêmio`);
+    assert.equal(e.badge.vantagem.dinheiro, 2000);
+    formas.add(e.formaId); especiesVistas.push(e.especie);
+  });
+  assert.equal(formas.size, EVENTOS.length, 'formaId repetido');
+  assert.equal(new Set(especiesVistas).size, EVENTOS.length, 'espécie repetida (o prêmio desbloquearia a mesma duas vezes)');
+  // os três itens de raide se revezam entre os chefes
+  const dosPremios = new Set(EVENTOS.flatMap(e => Object.keys(e.recompensa.itens)).filter(k => ITEMS[k].raide));
+  assert.deepEqual([...dosPremios].sort(), ['cristal-de-ruptura', 'escudo-astral', 'selo-de-interrupcao']);
 });
 
 test('a agenda mostra os próximos 3 chefes, com as datas no horário de Brasília', () => {
   // antes do início: a agenda começa na semana 0 e nada é "atual"
   const antes = agenda(INICIO - 5 * 24 * H, 3);
-  assert.deepEqual(antes.map(a => a.evento.id), ['eternatus-eternamax', 'rayquaza-mega', 'eternatus-eternamax']);
+  assert.deepEqual(antes.map(a => a.evento.id), ['eternatus-eternamax', 'rayquaza-mega', 'groudon-primal']);
   assert.ok(antes.every(a => !a.atual));
   assert.equal(dataBR(antes[0].inicio), '28/09');
   assert.equal(dataBR(antes[1].inicio), '05/10');
@@ -75,6 +92,7 @@ test('só aparece na Gen do chefe da semana, e só no Roguelike e no Hardcore', 
   assert.equal(eventoDaGen(8, INICIO)?.id, 'eternatus-eternamax');
   assert.equal(eventoDaGen(3, INICIO), null);
   assert.equal(eventoDaGen(3, INICIO + SEMANA_MS)?.id, 'rayquaza-mega');
+  assert.equal(eventoDaGen(3, INICIO + 2 * SEMANA_MS)?.id, 'groudon-primal', 'a Gen 3 tem três chefes, um por semana');
   assert.equal(eventoDaGen(8, INICIO + SEMANA_MS), null);
   assert.deepEqual(Object.keys(DIFICULDADES).filter(modoComEvento).sort(), ['hardcore', 'roguelike']);
   assert.equal(situacaoDoEvento({ dificuldade: 'roguelike', gen: 8 }, INICIO, 0).ok, true);

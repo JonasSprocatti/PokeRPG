@@ -11,6 +11,7 @@ import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
 import { heal, itemTemEfeito, golpesParaEnsinar, freshVol } from './regras.js';
 import { guardar, trazer } from './esconderijo.js';
+import { usarItemDeRaide } from './boss.js';
 import { loadPokemon } from './api.js';
 import { esc, fmt, offline } from './util.js';
 
@@ -143,6 +144,17 @@ export async function tirarItem(M) {
   addItem(M.item, 1); M.item = null;
   render(); await say(`${nm(M)} guardou ${nome} na mochila.`, 'muted');
 }
+/* Item de raide (dados.ITEMS `raide`, boss.usarItemDeRaide): age no chefe da semana. Só é gasto se funcionou (o motivo da recusa
+   vai pro registro). No single player gasta o turno, como qualquer item em batalha. */
+async function usarRaide(id) {
+  const S = G.S, it = ITEMS[id], E = G.B?.enemy;
+  const r = usarItemDeRaide(E, it.raide);
+  if (!r.ok) { await say(r.motivo, 'muted'); return false; }
+  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+  await say(`Você usa <b>${esc(it.name)}</b>!`, 'good');
+  for (const e of r.efeitos) if (e.dizer) await say(e.dizer, e.cls || 'status');
+  render(); return true;
+}
 export async function useItem(id, inBattle) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it || !S.bag[id]) return false;
@@ -152,6 +164,7 @@ export async function useItem(id, inBattle) {
     if (inBattle) { await say('Não dá pra evoluir no meio de uma batalha.'); return false; }
     return evoluirComItem(id);
   }
+  if (it.raide) return usarRaide(id);      // itens de raide: só na luta do chefe da semana
   if (it.segurar) { await say(`${it.name} fica na mochila: é gasto sozinho quando a evolução que pede ele acontecer.`, 'muted'); return false; }
   if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
   if (it.repelente) { if (inBattle) { await say('Repelente só funciona explorando.'); return false; } return usarRepelente(id); }

@@ -18,7 +18,7 @@ import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
-  novoCampo, climaDasRotasAtivo, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
+  novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
@@ -29,7 +29,7 @@ import { zDisponiveis } from './zmove.js';
 import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax } from './dynamax.js';
 import { loadPokemon, loadSpecies, loadMove, pokemonEmCache } from './api.js';
 import { EVENTOS, idDaSemana, registrarTentativa, agoraDoEvento, EVENTO_SEM_PERMADEATH } from './evento.js';
-import { prepararChefe, nivelDoChefe } from './boss.js';
+import { prepararChefe, nivelDoChefe, habilidadeDoChefe, aplicarClimaDoChefe } from './boss.js';
 import { registrarVitoriaDeEvento } from './carreira.js';
 import { sincronizar, usuario } from './nuvem.js';
 import { rand, pick, esc, fmt, offline, erroOffline } from './util.js';
@@ -142,13 +142,14 @@ export async function startEvento(ev) {
   const S = G.S, P = S.player;
   if (offline() && !pokemonEmCache(ev.formaId)) throw erroOffline(`📴 Sem internet: ${ev.nome} ainda não está salvo neste aparelho. Abra o evento online uma vez.`);
   const max = Object.fromEntries(STATS.map(s => [s, 31]));
-  const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(P.level), { ivs: max, shiny: false });
+  const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(P.level), { ivs: max, shiny: false, ability: habilidadeDoChefe(ev.chefe) || undefined });
   // golpes escolhidos a dedo (a lista de nível do Eternamax é curta e fraca demais pra um chefe)
   const golpes = (await Promise.all((ev.golpes || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
   if (golpes.length) E.moves = golpes;
   prepararChefe(E, 1, ev.chefe);
   registrarTentativa();                      // 1 tentativa a cada 8 horas: conta ao começar, vença ou perca
   iniciar({ enemy: E, turn: 1, runs: 0, evento: ev.id });
+  aplicarClimaDoChefe(G.B.campo, ev.chefe, CLIMA_TURNOS);   // Groudon/Kyogre Primais: a luta nasce com Sol/Chuva permanentes
   await say(`☄ O céu racha. <b>${esc(ev.nome)}</b> (Nv. ${E.level}) surge, e o ar vibra com energia demais para um Pokémon.`, 'enc');
   await say('EVENTO DA SEMANA: o chefe é imune a status, tem uma couraça de energia e carrega um golpe devastador. Não dá pra fugir.', 'muted');
   await intimidar(E);

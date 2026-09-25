@@ -16,10 +16,10 @@ import { spriteFrente } from './render.js';
 import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
-import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe } from './boss.js';
+import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo } from './regras.js';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, MAX_REVIVES } from './mp-motor.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo, CLIMA_TURNOS } from './regras.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento } from './carreira.js';
 import { desbloqueadas } from './roguelike.js';
 import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizar } from './nuvem.js';
@@ -305,7 +305,7 @@ export async function iniciarBatalhaMP(tipo) {
         const sit = situacaoDoEvento({ dificuldade: dificuldadeDe(G.S), gen: genDe(G.S) });
         if (!sit.ok) throw new Error('O chefe da semana não está disponível agora.');
         const ev = sit.evento, maxIv = { hp: 31, attack: 31, defense: 31, 'special-attack': 31, 'special-defense': 31, speed: 31 };
-        const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(cfg.balancear ? meuNivel : maisForte), { ivs: maxIv, shiny: false });
+        const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(cfg.balancear ? meuNivel : maisForte), { ivs: maxIv, shiny: false, ability: habilidadeDoChefe(ev.chefe) || undefined });
         const golpes = (await Promise.all((ev.golpes || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
         if (golpes.length) E.moves = golpes;
         prepararChefe(E, jogadoresEfetivos(membros.length, cfg.porJogador), ev.chefe);
@@ -323,7 +323,9 @@ export async function iniciarBatalhaMP(tipo) {
       abertura = `${tipo === 'evento' ? `☄ EVENTO DA SEMANA: ${B[0].nome} (Nv. ${B[0].level}) surge! Imune a status, sem fuga. Quem ficar sem Pokémon em pé pode usar um Revive (até ${MAX_REVIVES}) enquanto o grupo aguenta.`
         : tipo === 'alfa' ? `⚔ ${B[0].nome} (Nv. ${B[0].level}) desafia o grupo!` : `${B.map(e => `${e.nome} (Nv. ${e.level})`).join(', ')} apareceu!`} ${abertura}`;
     }
-    sala.batalha = novaBatalhaMP(A, B, opcoes); sala.tipo = cfg.modo === 'pvp' ? 'pvp' : tipo; sala.acoes = {}; sala.revivesConsumidos = 0; sala.tentativaEvento = tipo === 'evento';
+    sala.batalha = novaBatalhaMP(A, B, opcoes);
+    if (tipo === 'evento') aplicarClimaDoChefe(sala.batalha.campo, EVENTOS.find(e => e.id === opcoes.evento)?.chefe, CLIMA_TURNOS);   // Sol/Chuva primordiais
+    sala.tipo = cfg.modo === 'pvp' ? 'pvp' : tipo; sala.acoes = {}; sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.tentativaEvento = tipo === 'evento';
     publicarEstado([{ txt: cfg.modo === 'pvp' ? '— PvP —' : `— ${(ZONES.find(x => x.id === sala.zona) || ZONES[0]).name} —`, cls: 'turno' }, { txt: abertura, cls: 'enc' }], true);
   } catch (e) { console.error(e); logRaw({ html: esc(e.message), cls: 'hit' }); }
   finally { if (sala) { sala.ocupado = false; renderSala(); } }
@@ -345,9 +347,19 @@ function registrarRevive(de, acao) {
   anotar(`← revive de ${m.nome}`);
   publicarEstado([{ txt: `💊 ${m.nome} foi revivido com um Revive e volta pra luta com metade do HP!`, cls: 'good' }], false);
 }
+// Item de raide (Cristal de Ruptura, Selo de Interrupção, Escudo Astral): ação livre, aplicada NA HORA pelo anfitrião
+function registrarRaide(de, acao) {
+  const b = sala?.batalha; if (!b || sala.resolvendo) { anotar('← item de raide ignorado (luta resolvendo ou fora dela)', true); return; }
+  const r = usarRaideNoEvento(b, de, acao.item);
+  if (!r.ok) { anotar(`← item de raide recusado (${acao.item}): ${r.motivo}`, true); return; }
+  anotar(`← item de raide: ${acao.item}`);
+  const quem = membroDe(de)?.nome || 'Alguém';
+  publicarEstado([{ txt: `🎒 ${quem} usou ${ITEMS[ITEM_DO_RAIDE[acao.item]]?.name || 'um item de raide'}!`, cls: 'good' }, ...r.efeitos.filter(e => e.dizer).map(e => ({ txt: e.dizer, cls: e.cls || 'status' }))], false);
+}
 function registrarAcao(de, acao) {
   const b = sala?.batalha; if (!b || !acao) return;
   if (acao.tipo === 'revive') return registrarRevive(de, acao);
+  if (acao.tipo === 'raide') return registrarRaide(de, acao);
   const m = monMP(b, acao.ref);
   if (!m || m.dono !== de || m.hp <= 0) { anotar(`← escolha ignorada (${acao.ref}): não é dela ou já caiu`, true); return; } // só o dono escolhe pelos próprios
   anotar(`← escolha de ${m.nome} (${acao.tipo})`);
@@ -413,20 +425,33 @@ function aoReceberEstado(p) {
   const luta = !sala.batalha;   // primeira vez que vejo esta luta
   if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) { anotar(`← estado (turno ${p.batalha.turno})`); sala.escolhidos = new Set(); } // turno novo: escolhe de novo
   sala.batalha = p.batalha; sala.prazo = p.prazo; sala.acoesFeitas = p.acoesFeitas || []; sala.tipo = p.tipo; sala.zona = p.zona;
-  if (luta) { sala.revivesConsumidos = 0; sala.tentativaEvento = false; }
+  if (luta) { sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.tentativaEvento = false; }
   // chefe da semana: a tentativa (8 h) conta pra TODOS assim que a luta começa, e cada Revive que o anfitrião aceitou sai da MINHA mochila
   if (p.tipo === 'evento' && !sala.tentativaEvento) { registrarTentativa(); sala.tentativaEvento = true; }
   consumirRevives(p.batalha);
   for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
   renderSala();
 }
-// o anfitrião conta os Revives de cada jogador em `b.revivesUsados`; o que passou do que eu já descontei sai da minha mochila
+// o anfitrião conta os Revives e os itens de raide de cada jogador (`b.revivesUsados`, `b.raideUsados`); o que passou do que eu já
+// descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros)
 function consumirRevives(b) {
   if (!b?.evento || !temRun() || sala?.convidado) return;
-  const usados = b.revivesUsados?.[meuId()] || 0, ja = sala.revivesConsumidos || 0;
-  if (usados <= ja) return;
-  const S = G.S; S.bag.revive = Math.max(0, (S.bag.revive || 0) - (usados - ja)); if (!S.bag.revive) delete S.bag.revive;
-  sala.revivesConsumidos = usados; save();
+  const S = G.S, eu = meuId(); let mexeu = false;
+  const gastar = (id, n) => { S.bag[id] = Math.max(0, (S.bag[id] || 0) - n); if (!S.bag[id]) delete S.bag[id]; mexeu = true; };
+  const usados = b.revivesUsados?.[eu] || 0, ja = sala.revivesConsumidos || 0;
+  if (usados > ja) { gastar('revive', usados - ja); sala.revivesConsumidos = usados; }
+  const feitos = (sala.raideConsumidos ||= {});
+  for (const [tipo, n] of Object.entries(b.raideUsados?.[eu] || {})) if (n > (feitos[tipo] || 0)) { gastar(ITEM_DO_RAIDE[tipo], n - (feitos[tipo] || 0)); feitos[tipo] = n; }
+  if (mexeu) save();
+}
+// Itens de raide que posso usar agora: tenho na mochila e o grupo ainda não usou aquele tipo nesta luta
+const raideDisponiveis = b => (!b?.evento || !temRun() || sala.convidado) ? []
+  : ITENS_DE_RAIDE.filter(tipo => (G.S.bag?.[ITEM_DO_RAIDE[tipo]] || 0) > 0 && !b.lados.B.some(m => m.boss?.raide?.[tipo]));
+const botoesRaide = b => { const l = raideDisponiveis(b); return l.length ? `<div class="subrow">${l.map(t => `<button class="btn ghost sm" data-act="mp-raide" data-v="${t}" title="${esc(ITEMS[ITEM_DO_RAIDE[t]].desc)}">🎒 ${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} ×${G.S.bag[ITEM_DO_RAIDE[t]]}</button>`).join('')}</div>` : ''; };
+export function usarRaideMP(tipo) {
+  const b = sala?.batalha; if (!b || !raideDisponiveis(b).includes(tipo)) return;
+  const a = { tipo: 'raide', item: tipo };
+  if (sala.anfitriao) registrarAcao(meuId(), a); else enviar('acao', { de: meuId(), acao: a });
 }
 // posso usar um Revive agora? (chefe da semana, sem nenhum Pokémon meu de pé, o grupo ainda aguenta, tenho Revive e ainda não gastei o limite)
 const podeReviver = b => !!b?.evento && temRun() && !sala.convidado && (G.S.bag?.revive || 0) > 0
@@ -570,6 +595,11 @@ function blocoChefeMP(m) {
   return `<div class="boss-info">
     ${r.temCoura ? `<div class="hp boss-coura ${r.exposto ? 'exposto' : ''}"><span>🛡</span><div class="bar"><div class="fill" style="width:${Math.round(r.couraFracao * 100)}%"></div></div><span>${r.exposto ? 'EXPOSTO' : ''}</span></div>` : r.exposto ? '<div class="boss-fase" style="color:#e4572e">💥 EXPOSTO: dano ×1,5</div>' : ''}
     ${r.pontoFraco ? `<div class="boss-fraco">🎯 Ponto fraco: <b>${esc(TYPE_PT[r.pontoFraco] || r.pontoFraco)}</b></div>` : ''}
+    ${r.anula ? `<div class="boss-fraco" title="${esc(r.textoAnula)}">🚫 Imune a: <b>${r.anula.map(t => esc(TYPE_PT[t] || t)).join(', ')}</b></div>` : ''}
+    ${r.temReverso ? (r.reverso ? '<div class="boss-carga" role="alert">🔄 MUNDO REVERSO: tipos INVERTIDOS agora!</div>' : '<div class="boss-fase">🔄 Mundo Reverso (alterna)</div>') : ''}
+    ${r.adaptado !== undefined ? `<div class="boss-fraco">🧬 Adaptado a: <b>${r.adaptado ? esc(TYPE_PT[r.adaptado] || r.adaptado) : '—'}</b></div>` : ''}
+    ${r.regenera ? '<div class="boss-fase">🧬 Regenera (exponha-o pra parar)</div>' : ''}
+    ${r.escudo ? '<div class="boss-fase" style="color:#1c7ed6">🛡 Escudo Astral ativo</div>' : ''}
     <div class="boss-fase">☄ Fase ${r.fase}/3</div>
     ${r.carregando ? `<div class="boss-carga" role="alert">⚠ Carregando o ${esc(r.rotuloCarga)}! Faltam <b>${r.faltaParaInterromper}</b> de dano neste turno pra interromper.</div>` : ''}
   </div>`;
@@ -610,15 +640,16 @@ function renderSala() {
   if (!jogaveis(b).some(m => m.dono === meuId())) {
     const reviver = podeReviver(b)
       ? `<div class="subrow"><button class="btn" data-act="mp-revive" title="Gasta 1 Revive da sua mochila; o Pokémon volta com metade do HP">💊 Usar Revive (${G.S.bag.revive} na mochila · ${MAX_REVIVES - (b.revivesUsados?.[meuId()] || 0)} uso(s) restante(s))</button></div>` : '';
-    $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${reviver}<div class="subrow">${sair}</div>`; return;
+    $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${reviver}${botoesRaide(b)}<div class="subrow">${sair}</div>`; return;
   }
-  if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p><div class="subrow">${sair}</div>`; return; }
+  if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p>${botoesRaide(b)}<div class="subrow">${sair}</div>`; return; }
   const alvos = inimigosDe(vez); if (!alvos.some(e => e.ref === sala.alvo)) sala.alvo = alvos[0]?.ref;
   const semPP = vez.moves.every(g => g.ppLeft <= 0);
   $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` +
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
       : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
+    ${botoesRaide(b)}
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }
 // Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.

@@ -26,28 +26,75 @@ export const agoraDoEvento = () => { const t = Number(store.get(RELOGIO_KEY)); r
 /* Cada evento: `forma` = o Pokémon da PokéAPI que aparece (o Eternamax é uma forma própria, id 10190); `especie` = a espécie
    que o jogador GANHA (desbloqueia na Pokédex e pra começar jornadas). `badge` = a insígnia de conta. `chefe` = a chave das
    regras dele em boss.js (CHEFES). */
+/* Fábrica dos eventos: `forma` = a forma da PokéAPI que aparece (pelo id), `especie` = o que o jogador GANHA. O prêmio da semana
+   inclui 2 itens de raide (dados.ITEMS `raide`) girando entre os três, pra os chefes se ajudarem entre si. */
+const ITENS_RAIDE_PREMIO = ['cristal-de-ruptura', 'selo-de-interrupcao', 'escudo-astral'];
+const VANTAGEM_BADGE = { dinheiro: 2000, itens: { 'rare-candy': 1 } };
+let contador = 0;
+function ev(e) {
+  const i = contador++;
+  return { ...e, chefe: e.id, forma: e.id, badge: { ...e.badge, vantagem: VANTAGEM_BADGE },
+    recompensa: { dinheiro: 8000, itens: { 'rare-candy': 3, [ITENS_RAIDE_PREMIO[i % 3]]: 2 } } };
+}
 export const EVENTOS = [
-  {
-    id: 'eternatus-eternamax', gen: 8, nome: 'Eternatus Eternamax', chefe: 'eternatus-eternamax',
-    especie: 'eternatus', especieId: 890, forma: 'eternatus-eternamax', formaId: 10190,
-    // golpes do chefe (nomes da PokéAPI): dano de dois tipos, um pra cada defesa, e o de cobertura
+  // (em boss.js cada `id` daqui tem as regras dele em CHEFES)
+  ev({ id: 'eternatus-eternamax', gen: 8, nome: 'Eternatus Eternamax', especie: 'eternatus', especieId: 890, formaId: 10190,
     golpes: ['sludge-wave', 'dragon-pulse', 'flamethrower', 'flash-cannon'],
     resumo: 'Couraça de energia, Eternabeam carregado e três fases. Interromper o golpe carregado abre a Ruptura.',
-    // `vantagem` = o que a badge dá no começo de TODA jornada futura (pequeno, como as outras badges); `recompensa` = o prêmio
-    // da vitória em si, pago uma vez por semana vencida
-    badge: { icone: '🌌', nome: 'Domador do Infinito', titulo: 'Domador do Infinito', vantagem: { dinheiro: 2000, itens: { 'rare-candy': 1 } } },
-    recompensa: { dinheiro: 8000, itens: { 'rare-candy': 3 } }
-  },
-  {
-    id: 'rayquaza-mega', gen: 3, nome: 'Mega Rayquaza', chefe: 'rayquaza-mega',
-    especie: 'rayquaza', especieId: 384, forma: 'rayquaza-mega', formaId: 10079,
+    badge: { icone: '🌌', nome: 'Domador do Infinito', titulo: 'Domador do Infinito' } }),
+  ev({ id: 'rayquaza-mega', gen: 3, nome: 'Mega Rayquaza', especie: 'rayquaza', especieId: 384, formaId: 10079,
     golpes: ['dragon-claw', 'air-slash', 'earthquake', 'extreme-speed'],
     resumo: 'Ponto fraco que muda a cada duas ações (só o tipo da vez machuca) e o Dragon Ascent carregado, que atinge o time inteiro.',
-    badge: { icone: '🐉', nome: 'Guardião do Pilar Celeste', titulo: 'Guardião do Pilar Celeste', vantagem: { dinheiro: 2000, itens: { 'rare-candy': 1 } } },
-    recompensa: { dinheiro: 8000, itens: { 'rare-candy': 3 } }
-  }
+    badge: { icone: '🐉', nome: 'Guardião do Pilar Celeste', titulo: 'Guardião do Pilar Celeste' } }),
+  ev({ id: 'groudon-primal', gen: 3, nome: 'Groudon Primal', especie: 'groudon', especieId: 383, formaId: 10078,
+    golpes: ['earthquake', 'fire-blast', 'stone-edge', 'overheat'],
+    resumo: 'Sol primordial permanente: golpes de Água são evaporados. Couraça de magma e as Lâminas do Precipício carregadas.',
+    badge: { icone: '🌋', nome: 'Domador do Magma', titulo: 'Herdeiro da Terra' } }),
+  ev({ id: 'kyogre-primal', gen: 3, nome: 'Kyogre Primal', especie: 'kyogre', especieId: 382, formaId: 10077,
+    golpes: ['surf', 'ice-beam', 'thunder', 'hydro-pump'],
+    resumo: 'Chuva primordial permanente: golpes de Fogo são apagados. Couraça de maré e o Pulso da Origem carregado.',
+    badge: { icone: '🌊', nome: 'Senhor das Marés', titulo: 'Soberano dos Oceanos' } }),
+  ev({ id: 'mewtwo-mega-y', gen: 1, nome: 'Mega Mewtwo', especie: 'mewtwo', especieId: 150, formaId: 10044,
+    golpes: ['psychic', 'focus-blast', 'shadow-ball', 'thunderbolt'],
+    resumo: 'Barreira psíquica: só Inseto, Fantasma e Sombrio a atravessam. Muda para o "modo X" (físico) na fase 2. Psystrike carregado.',
+    badge: { icone: '🧠', nome: 'Mente Inquebrável', titulo: 'Mestre da Mente' } }),
+  ev({ id: 'necrozma-ultra', gen: 7, nome: 'Necrozma Ultra', especie: 'necrozma', especieId: 800, formaId: 10157,
+    golpes: ['psychic', 'dragon-claw', 'dark-pulse', 'flash-cannon'],
+    resumo: 'Armadura de prisma: uma cor (tipo) vulnerável por vez, a cada 3 ações, e couraça de luz. Gêiser de Fótons carregado.',
+    badge: { icone: '💠', nome: 'Caçador de Prismas', titulo: 'Colecionador de Luz' } }),
+  ev({ id: 'calyrex-shadow', gen: 8, nome: 'Calyrex Cavaleiro Espectral', especie: 'calyrex', especieId: 898, formaId: 10194,
+    golpes: ['psychic', 'shadow-ball', 'dark-pulse', 'focus-blast'],
+    resumo: 'Bola de neve: cada Pokémon seu derrubado aumenta o Ataque Especial dele. Velocidade absurda e Astral Barrage carregado.',
+    badge: { icone: '🐴', nome: 'Cavaleiro Espectral', titulo: 'Rei Sombrio' } }),
+  ev({ id: 'zacian-crowned', gen: 8, nome: 'Zacian Coroada', especie: 'zacian', especieId: 888, formaId: 10188,
+    golpes: ['sacred-sword', 'close-combat', 'stone-edge', 'flash-cannon'],
+    resumo: 'Couraça de aço muito dura (só 30% do dano passa) e a Lâmina Colossal carregada, que deixa a Coroada exposta depois.',
+    badge: { icone: '👑', nome: 'Portador da Coroa', titulo: 'Cavaleiro Coroado' } }),
+  ev({ id: 'kyurem-black', gen: 5, nome: 'Kyurem Negro', especie: 'kyurem', especieId: 646, formaId: 10022,
+    golpes: ['ice-beam', 'dragon-claw', 'fusion-bolt', 'earth-power'],
+    resumo: 'Ponto fraco rotativo (Lutador, Pedra, Aço, Fada, Dragão) e couraça de gelo. Fusion Bolt carregado.',
+    badge: { icone: '❄️', nome: 'Quebra-Geada', titulo: 'Quebrador de Gelo' } }),
+  ev({ id: 'giratina-origin', gen: 4, nome: 'Giratina Origem', especie: 'giratina', especieId: 487, formaId: 10007,
+    golpes: ['shadow-claw', 'dragon-claw', 'earthquake', 'shadow-ball'],
+    resumo: 'Mundo Reverso: a cada 3 ações a tabela de tipos INVERTE (super efetivo vira fraco). Couraça e Esfera do Reverso carregada.',
+    badge: { icone: '🔄', nome: 'Viajante do Reverso', titulo: 'Andarilho do Mundo Reverso' } }),
+  ev({ id: 'dialga-origin', gen: 4, nome: 'Dialga Origem', especie: 'dialga', especieId: 483, formaId: 10245,
+    golpes: ['flash-cannon', 'draco-meteor', 'thunder', 'earth-power'],
+    resumo: 'Tempo acelerado a cada fase (Velocidade dobrada) e o Roar of Time carregado, que o obriga a recarregar depois.',
+    badge: { icone: '⏳', nome: 'Mestre do Tempo', titulo: 'Guardião do Tempo' } }),
+  ev({ id: 'terapagos-stellar', gen: 9, nome: 'Terapagos Estelar', especie: 'terapagos', especieId: 1024, formaId: 10277,
+    golpes: ['earth-power', 'dark-pulse', 'flash-cannon', 'ice-beam'],
+    resumo: 'Casco Tera: o tipo do último golpe que ele recebeu é resistido no seguinte. Varie os tipos! Tera Starstorm carregada.',
+    badge: { icone: '💎', nome: 'Estrela Cristalina', titulo: 'Estrela Tera' } }),
+  ev({ id: 'ursaluna-bloodmoon', gen: 9, nome: 'Ursaluna Lua de Sangue', especie: 'ursaluna', especieId: 901, formaId: 10272,
+    golpes: ['earth-power', 'hammer-arm', 'gunk-shot', 'focus-blast'],
+    resumo: 'Lua de Sangue: cura 30% do dano que causa. Quanto mais a luta demora, mais ele aguenta. Blood Moon carregada.',
+    badge: { icone: '🌑', nome: 'Caçador da Lua Rubra', titulo: 'Lua Sangrenta' } }),
+  ev({ id: 'zygarde-complete', gen: 6, nome: 'Zygarde Completo', especie: 'zygarde', especieId: 718, formaId: 10120,
+    golpes: ['thousand-arrows', 'earthquake', 'dragon-claw', 'draco-meteor'],
+    resumo: 'Células que se regeneram a cada ação (só param com o chefe exposto), couraça e Core Enforcer carregado.',
+    badge: { icone: '🧩', nome: 'Guardião do Equilíbrio', titulo: 'Ordem Perfeita' } })
 ];
-
 /* ---- calendário ---- */
 export const indiceDaSemana = agora => Math.floor((agora - INICIO) / SEMANA_MS);
 export const inicioDaSemana = indice => INICIO + indice * SEMANA_MS;

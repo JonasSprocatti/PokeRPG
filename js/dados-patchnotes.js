@@ -5,6 +5,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.32', data: '2026-09-25', titulo: 'Os 14 chefes da semana', piada: 'O Zygarde pediu para constar que a fila é longa mas ele não tem pressa: ele se regenera enquanto espera.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Agora são <b>14 chefes</b>, um por semana, e depois do último a lista recomeça: Eternatus Eternamax → Mega Rayquaza → Groudon Primal → Kyogre Primal → Mega Mewtwo → Necrozma Ultra → Calyrex Cavaleiro Espectral → Zacian Coroada → Kyurem Negro → Giratina Origem → Dialga Origem → Terapagos Estelar → Ursaluna Lua de Sangue → Zygarde Completo. Cada um aparece na rota final da Gen dele.',
+        'Cada chefe tem a sua mecânica: <b>Groudon e Kyogre</b> nascem com Sol e Chuva permanentes e anulam Água e Fogo; o <b>Giratina</b> abre o <b>Mundo Reverso</b> (a tabela de tipos inverte); o <b>Terapagos</b> resiste ao tipo do último golpe; a <b>Ursaluna</b> se cura com o dano que causa; o <b>Zygarde</b> se regenera; o <b>Calyrex</b> cresce a cada Pokémon seu que derruba; Necrozma, Mewtwo, Kyurem e Rayquaza têm pontos fracos que mudam.',
+        'Três <b>itens de raide</b>, dados como prêmio pelos chefes e só válidos na luta deles (um de cada por luta): <b>Cristal de Ruptura</b> (expõe o chefe na hora), <b>Selo de Interrupção</b> (corta o golpe que ele está carregando) e <b>Escudo Astral</b> (o próximo golpe carregado causa metade do dano no time todo). No co-op qualquer jogador do grupo pode usar, sem gastar o turno.'
+      ] }
+    ] },
   { versao: '2.31', data: '2026-09-25', titulo: 'Chefes em grupo e a agenda da semana', piada: 'A Rayquaza pediu para constar que ela não é atrasada: só prefere fazer entrada dramática numa segunda-feira.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -94,6 +94,11 @@ function blocoChefe(m) {
     ${r.temCoura ? `<div class="hp boss-coura ${r.exposto ? 'exposto' : ''}" title="Couraça: enquanto de pé, o chefe leva pouco dano. Quando zera, vem a Ruptura (dano maior)."><span>🛡</span><div class="bar"><div class="fill" style="width:${Math.round(r.couraFracao * 100)}%"></div></div><span>${r.exposto ? 'EXPOSTO' : r.couraAtiva ? '' : '—'}</span></div>`
       : r.exposto ? '<div class="boss-fase" style="color:#e4572e">💥 EXPOSTO: dano ×1,5</div>' : ''}
     ${r.pontoFraco ? `<div class="boss-fraco" title="Só golpes deste tipo machucam de verdade; os outros são reduzidos">🎯 Ponto fraco: ${badge(r.pontoFraco)}</div>` : ''}
+    ${r.anula ? `<div class="boss-fraco" title="${esc(r.textoAnula)}">🚫 Imune a: ${r.anula.map(badge).join(' ')}</div>` : ''}
+    ${r.temReverso ? (r.reverso ? '<div class="boss-carga" role="alert">🔄 MUNDO REVERSO: a tabela de tipos está INVERTIDA agora!</div>' : '<div class="boss-fase">🔄 Mundo Reverso (alterna a cada poucas ações)</div>') : ''}
+    ${r.adaptado !== undefined ? `<div class="boss-fraco" title="O tipo do último golpe que ele recebeu é resistido no seguinte">🧬 Adaptado a: ${r.adaptado ? badge(r.adaptado) : '—'}</div>` : ''}
+    ${r.regenera ? `<div class="boss-fase" title="Recupera HP a cada ação enquanto não estiver exposto">🧬 Regenera (exponha-o pra parar)</div>` : ''}
+    ${r.escudo ? '<div class="boss-fase" style="color:#1c7ed6">🛡 Escudo Astral ativo: o próximo golpe carregado é reduzido</div>' : ''}
     <div class="boss-fase">☄ Fase ${r.fase}/3</div>
     ${r.carregando ? `<div class="boss-carga" role="alert">⚠ Carregando o ${esc(r.rotuloCarga)}! Faltam <b>${r.faltaParaInterromper}</b> de dano neste turno pra interromper.</div>` : ''}
   </div>`;

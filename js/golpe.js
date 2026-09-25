@@ -19,7 +19,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima } from './regras.js';
-import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir } from './boss.js';
+import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 
 const nada = () => {};
@@ -242,6 +242,7 @@ async function reagirAoGolpe(t, g, crit, ctx) {
 async function aplicarEfeitosChefe(m, efeitos, ctx) {
   for (const e of efeitos || []) {
     if (e.dizer) await ctx.say(e.dizer, e.cls || 'status');
+    if (e.cura) { heal(m, e.cura); up(ctx); }
     if (e.curaStatus) { m.status = null; m.sleep = 0; m.vol.conf = 0; delete m.vol.toxico; delete m.vol.semente; }
     if (e.estagios) await mudarEstagios(m, e.estagios.map(([stat, change]) => ({ stat, change })), ctx, m);
   }
@@ -532,7 +533,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
     const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx), ladoDoCampo(ctx, t));
-    let dano = danoNoChefe(t, r.dmg, g.type);   // chefe de evento: couraça reduz, exposto aumenta, ponto fraco pelo tipo (sem `t.boss` devolve o mesmo)
+    let dano = danoNoChefe(t, r.dmg, g.type, ef);   // chefe de evento: couraça, exposição, ponto fraco, anula, Mundo Reverso, adaptação (sem `t.boss` devolve o mesmo)
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
     else if (seg(t).aguentaCheio && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; faixa = t.item; t.item = null; } // Faixa de Foco
@@ -545,7 +546,12 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (ef > 1) await ctx.say('É super efetivo!', 'good'); else if (ef < 1) await ctx.say('Não é muito efetivo...');
   if (hits > 1) await ctx.say(`Acertou ${acertos} vez${acertos > 1 ? 'es' : ''}!`);
   await ctx.say(`${T} perdeu ${total} HP.`, 'hit');
+  if (t.boss && total === 0 && anulaTexto(t, g.type)) await ctx.say(`🚫 ${anulaTexto(t, g.type)}: o golpe não faz nada!`, 'muted');
   if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, total), ctx);   // desgasta a couraça, interrompe a carga, muda de fase
+  if (u.boss) {                                                               // Ursaluna Bloodmoon: cura uma fração do que causou
+    const h = drenoDoChefe(u, total);
+    if (h > 0 && u.hp > 0 && u.hp < u.stats.hp) { heal(u, h); up(ctx); await ctx.say(`🌑 ${U} se cura com o dano causado (+${h} HP).`, 'muted'); }
+  }
   if (aguentou) await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`, 'status');
   if (resistiu) await ctx.say(`${T} aguentou o golpe!`, 'status');
   if (faixa) await ctx.say(`${T} aguentou com 1 de HP usando a Faixa de Foco! (item gasto)`, 'status');

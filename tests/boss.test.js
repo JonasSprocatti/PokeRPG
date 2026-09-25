@@ -1,9 +1,12 @@
 // Chefes do evento semanal (js/boss.js) e a integração deles no motor de golpes (js/golpe.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AJUSTES, CHEFES, nivelDoChefe, prepararChefe, danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, golpeCanhao, resumoDoChefe } from '../js/boss.js';
+import { AJUSTES, CHEFES, nivelDoChefe, prepararChefe, danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, golpeCanhao, resumoDoChefe,
+  usarItemDeRaide, anulaTexto, drenoDoChefe, aplicarClimaDoChefe, climaDoChefe, habilidadeDoChefe, ITEM_DO_RAIDE, ITENS_DE_RAIDE } from '../js/boss.js';
 import { usarGolpe, aplicarStatus } from '../js/golpe.js';
-import { freshVol } from '../js/regras.js';
+import { freshVol, novoCampo, climaDe, CLIMAS } from '../js/regras.js';
+import { GOLPES_ESPECIAIS } from '../js/especiais.js';
+import { ITEMS, TYPE_PT } from '../js/dados.js';
 
 const ETERNO = CHEFES['eternatus-eternamax'], RAY = CHEFES['rayquaza-mega'];
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
@@ -217,4 +220,162 @@ test('no motor: `extra` acerta outro alvo com o mesmo golpe sem contar como nova
   assert.ok(alvo.hp < 1000, 'o golpe acertou');
   assert.equal(boss.boss.acoes, acoes, 'não é uma ação nova');
   assert.equal(boss.vol.recarga, true, 'a recarga do golpe original continua valendo');
+});
+
+/* ---------------- os 14 chefes e as mecânicas novas ---------------- */
+test('nenhum golpe carregado dos chefes é golpe de carga do motor (viraria "preparando" de novo) nem protege/fúria', () => {
+  for (const [id, c] of Object.entries(CHEFES)) {
+    const e = GOLPES_ESPECIAIS[c.canhao.name] || {};
+    assert.ok(!e.carga && !e.furia && !e.protege && !e.ohko, `${id}: ${c.canhao.name} tem comportamento incompatível`);
+    assert.ok(TYPE_PT[c.canhao.type], `${id}: tipo do golpe carregado`);
+    for (const t of [...(c.anula?.tipos || []), ...(c.pontoFraco?.tipos || [])]) assert.ok(TYPE_PT[t], `${id}: tipo "${t}"`);
+  }
+  assert.equal(Object.keys(CHEFES).length, 14);
+});
+
+test('Groudon e Kyogre Primais: o clima nasce com a luta e o tipo oposto é anulado', () => {
+  for (const [id, clima, anulado, livre] of [['groudon-primal', 'sol', 'water', 'fire'], ['kyogre-primal', 'chuva', 'fire', 'water']]) {
+    assert.equal(climaDoChefe(id), clima); assert.ok(CLIMAS[clima]);
+    const campo = aplicarClimaDoChefe(novoCampo('rota1'), id, 5);
+    assert.equal(climaDe(campo), clima); assert.equal(campo.climaFixo, true); assert.equal(campo.padrao.clima, clima);
+    const t = chefe(1, id); t.boss.nucleo.ativo = false;
+    assert.equal(danoNoChefe(t, 100, anulado), 0, `${anulado} não machuca`);
+    assert.equal(danoNoChefe(t, 100, livre), 100, `${livre} passa`);
+    assert.ok(anulaTexto(t, anulado).length > 5); assert.equal(anulaTexto(t, livre), '');
+  }
+  assert.equal(climaDoChefe('eternatus-eternamax'), null);
+  assert.equal(aplicarClimaDoChefe(novoCampo('rota1'), 'eternatus-eternamax').clima, null, 'sem clima fixo o campo não muda');
+});
+
+test('no motor: o golpe anulado não faz nada e a luta diz por quê', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const groudon = chefe(1, 'groudon-primal'), c = ctx();
+  await usarGolpe(mon(), groudon, golpe({ type: 'water' }), true, c);
+  assert.equal(groudon.hp, groudon.stats.hp);
+  assert.ok(c.msgs.some(m => /evapora/.test(m)));
+  await usarGolpe(mon(), groudon, golpe({ type: 'grass' }), true, c);
+  assert.ok(groudon.hp < groudon.stats.hp, 'outro tipo machuca');
+});
+
+test('Giratina: o Mundo Reverso alterna a cada 3 ações e inverte super efetivo/fraco', () => {
+  const g = chefe(1, 'giratina-origin'); g.boss.nucleo.ativo = false;
+  const est = [];
+  for (let i = 1; i <= 9; i++) { antesDoChefeAgir(g); est.push(g.boss.reverso); if (g.boss.carga) g.boss.carga = null; }
+  assert.deepEqual(est, [false, false, false, true, true, true, false, false, false]);
+  g.boss.reverso = true;
+  assert.equal(danoNoChefe(g, 100, 'ice', 2), 25, 'super efetivo (×2 do motor) vira fraco (×0,5)');
+  assert.equal(danoNoChefe(g, 100, 'fire', 0.5), 400, 'pouco efetivo vira super efetivo (limitado a ×4)');
+  assert.equal(danoNoChefe(g, 100, 'normal', 1), 100, 'neutro não muda');
+  g.boss.reverso = false;
+  assert.equal(danoNoChefe(g, 100, 'ice', 2), 100, 'fora do Reverso o dano é o do motor');
+});
+
+test('Terapagos: repetir o tipo do último golpe quase não machuca; variar sim', () => {
+  const t = chefe(1, 'terapagos-stellar'); t.boss.nucleo.ativo = false;
+  assert.equal(danoNoChefe(t, 100, 'fire'), 100, 'primeiro golpe');
+  assert.equal(danoNoChefe(t, 100, 'fire'), Math.floor(100 * CHEFES['terapagos-stellar'].adapta.reducao), 'mesmo tipo de novo');
+  assert.equal(danoNoChefe(t, 100, 'water'), 100, 'tipo diferente');
+  assert.equal(t.boss.ultimoTipo, 'water');
+  assert.equal(resumoDoChefe(t).adaptado, 'water');
+});
+
+test('Ursaluna: cura uma fração do dano que causa; os outros não curam', () => {
+  const u = chefe(1, 'ursaluna-bloodmoon');
+  assert.equal(drenoDoChefe(u, 100), Math.floor(100 * CHEFES['ursaluna-bloodmoon'].dreno));
+  assert.equal(drenoDoChefe(u, 0), 0);
+  assert.equal(drenoDoChefe(chefe(), 100), 0);
+  assert.equal(drenoDoChefe(mon(), 100), 0, 'Pokémon comum');
+});
+
+test('no motor: a Ursaluna se cura ao machucar', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = chefe(1, 'ursaluna-bloodmoon'), alvo = mon({ hp: 1000, stats: { ...mon().stats, hp: 1000 } });
+  u.hp = Math.floor(u.stats.hp / 2); const antes = u.hp;
+  await usarGolpe(u, alvo, golpe(), true, ctx());
+  assert.ok(alvo.hp < 1000);
+  assert.ok(u.hp > antes, `curou ${u.hp - antes}`);
+});
+
+test('Zygarde: regenera a cada ação, menos enquanto está exposto ou com a vida cheia', () => {
+  const z = chefe(1, 'zygarde-complete');
+  assert.ok(!antesDoChefeAgir(z).efeitos.some(e => e.cura), 'vida cheia: nada a curar');
+  z.hp = 100;
+  const ef = antesDoChefeAgir(z).efeitos.find(e => e.cura);
+  assert.equal(ef.cura, Math.max(1, Math.floor(z.stats.hp * CHEFES['zygarde-complete'].regenera)));
+  z.boss.quebradoAcoes = 3;
+  assert.ok(!antesDoChefeAgir(z).efeitos.some(e => e.cura), 'exposto: as células não regeneram');
+});
+
+test('Calyrex, Necrozma e Zacian usam habilidades que já existem na tabela do motor', async () => {
+  const { HABILIDADES } = await import('../js/habilidades.js');
+  for (const id of ['calyrex-shadow', 'necrozma-ultra', 'zacian-crowned']) assert.ok(HABILIDADES[habilidadeDoChefe(id)], `${id}: habilidade`);
+  assert.equal(habilidadeDoChefe('calyrex-shadow'), 'grim-neigh');
+  assert.equal(habilidadeDoChefe('eternatus-eternamax'), null);
+});
+
+test('Necrozma: couraça E ponto fraco juntos (as duas reduções se somam)', () => {
+  const n = chefe(1, 'necrozma-ultra');
+  const c = CHEFES['necrozma-ultra'];
+  assert.equal(danoNoChefe(n, 100, n.boss.fraco), Math.floor(100 * c.coura.reducao * c.pontoFraco.mult));
+  assert.equal(danoNoChefe(n, 100, 'water'), Math.floor(100 * c.coura.reducao * c.pontoFraco.contra));
+});
+
+/* ---------------- itens de raide ---------------- */
+test('os três itens de raide existem, são de batalha e não se compram', () => {
+  assert.deepEqual(ITENS_DE_RAIDE, ['ruptura', 'interrupcao', 'escudo']);
+  for (const tipo of ITENS_DE_RAIDE) {
+    const it = ITEMS[ITEM_DO_RAIDE[tipo]];
+    assert.ok(it?.name && it.desc, tipo);
+    assert.equal(it.raide, tipo); assert.equal(it.battle, true); assert.equal(it.price, undefined, 'não vai pra loja');
+  }
+});
+
+test('Cristal de Ruptura: expõe o chefe na hora; um por luta; não vale contra Pokémon comum', () => {
+  const b = chefe();
+  const r = usarItemDeRaide(b, 'ruptura');
+  assert.equal(r.ok, true);
+  assert.equal(b.boss.nucleo.ativo, false); assert.equal(b.boss.quebradoAcoes, AJUSTES.exposto.acoes);
+  assert.ok(r.efeitos.some(e => /RUPTURA/.test(e.dizer)));
+  const de_novo = usarItemDeRaide(b, 'ruptura');
+  assert.equal(de_novo.ok, false); assert.match(de_novo.motivo, /já foi usado/);
+  assert.equal(usarItemDeRaide(mon(), 'ruptura').ok, false);
+  assert.equal(usarItemDeRaide(chefe(), 'inexistente').ok, false);
+  const jaExposto = chefe(); jaExposto.boss.quebradoAcoes = 2;
+  assert.equal(usarItemDeRaide(jaExposto, 'ruptura').ok, false, 'já exposto: não gasta o item');
+  assert.equal(jaExposto.boss.raide.ruptura, undefined, 'e não marca como usado');
+});
+
+test('Selo de Interrupção: só funciona enquanto o chefe carrega, e o golpe falha', () => {
+  const b = chefe();
+  assert.equal(usarItemDeRaide(b, 'interrupcao').ok, false, 'sem carga nenhuma');
+  for (let i = 0; i < 4; i++) antesDoChefeAgir(b);            // 4ª ação: carregando
+  const r = usarItemDeRaide(b, 'interrupcao');
+  assert.equal(r.ok, true);
+  assert.equal(b.boss.carga.interrompida, true);
+  assert.equal(b.boss.nucleo.ativo, false, 'e o expõe');
+  const proxima = antesDoChefeAgir(b);
+  assert.equal(proxima.pular, true); assert.equal(proxima.golpe, undefined, 'o golpe carregado não sai');
+});
+
+test('Escudo Astral: o PRÓXIMO golpe carregado causa metade, e só ele', () => {
+  const b = chefe();
+  assert.equal(usarItemDeRaide(b, 'escudo').ok, true);
+  assert.equal(b.boss.canhaoMult, AJUSTES.escudoAstral);
+  for (let i = 0; i < 4; i++) antesDoChefeAgir(b);
+  const solta = antesDoChefeAgir(b);
+  assert.equal(solta.golpe.power, Math.floor(CHEFES['eternatus-eternamax'].canhao.power * AJUSTES.escudoAstral));
+  assert.equal(b.boss.canhaoUltimoMult, AJUSTES.escudoAstral, 'o co-op usa isto pros outros alvos');
+  assert.equal(b.boss.canhaoMult, 0, 'o escudo se gasta');
+  assert.ok(solta.efeitos.some(e => /Escudo Astral/.test(e.dizer)));
+  // o golpe seguinte volta ao normal
+  b.boss.carga = { dano: 0, lim: 9, interrompida: false };
+  assert.equal(antesDoChefeAgir(b).golpe.power, CHEFES['eternatus-eternamax'].canhao.power);
+});
+
+test('itens de raide: cada tipo uma vez por luta, mas os três podem ser usados na mesma luta', () => {
+  const b = chefe();
+  for (let i = 0; i < 4; i++) antesDoChefeAgir(b);            // carregando
+  for (const tipo of ITENS_DE_RAIDE) assert.equal(usarItemDeRaide(b, tipo).ok, true, tipo);
+  for (const tipo of ITENS_DE_RAIDE) assert.equal(usarItemDeRaide(b, tipo).ok, false, `${tipo} de novo`);
+  assert.deepEqual(resumoDoChefe(b).usados, { ruptura: true, interrupcao: true, escudo: true });
 });

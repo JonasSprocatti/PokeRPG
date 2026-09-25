@@ -89,6 +89,11 @@ export const ITEMS = {
   'x-sp-atk': { name: 'X Sp. Atk', desc: 'At. Esp. +2 nesta batalha.', stage: 'special-attack', battle: true, price: 500 },
   'x-speed': { name: 'X Speed', desc: 'Velocidade +2 nesta batalha.', stage: 'speed', battle: true, price: 500 },
   'rare-candy': { name: 'Rare Candy', desc: 'Sobe um nível na hora.', candy: true },
+  // Itens de RAIDE (boss.usarItemDeRaide): só valem na luta contra o chefe da semana, e um de cada tipo por luta. Não se compra:
+  // vêm de prêmio de chefe (evento.js). Usar gasta o turno no single player; no co-op é uma ação livre do jogador.
+  'cristal-de-ruptura': { name: 'Cristal de Ruptura', desc: 'Só na luta do chefe da semana: estilhaça a defesa dele na hora (Ruptura: dano ×1,5 por 3 ações). Um por luta.', battle: true, raide: 'ruptura' },
+  'selo-de-interrupcao': { name: 'Selo de Interrupção', desc: 'Só na luta do chefe da semana: corta o golpe que ele está carregando (e o expõe). Só funciona enquanto ele carrega. Um por luta.', battle: true, raide: 'interrupcao' },
+  'escudo-astral': { name: 'Escudo Astral', desc: 'Só na luta do chefe da semana: o PRÓXIMO golpe carregado dele causa só metade do dano no time todo. Um por luta.', battle: true, raide: 'escudo' },
   // Revive: em você é gasto sozinho ao desmaiar (depois dos desmaios livres do modo); num aliado desmaiado, reanima com metade do HP
   revive: { name: 'Revive', desc: 'Reanima um aliado desmaiado com metade do HP. Do Médio pra cima, te salva do Game Over depois do 3º desmaio.', revive: true, price: 1500 },
   // petiscos de afinidade (Etapa 3.2): oferecidos a um selvagem pra ganhar amizade. Chave = nome do sprite na PokéAPI.
