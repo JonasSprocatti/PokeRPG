@@ -182,8 +182,8 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 - **Pedido pelo usuário (27/09/2026), pra depois**: ~~sprites 3D/animados com download opcional~~ ✔ FEITO
   (`dados.SPR_3D`/`SPR_ANIM`, `ajustes.estiloSpriteAtual`, `offline.baixarImagens3D`/`baixarImagensAnimadas`);
-  animação na barra de HP ao tomar dano/curar (hoje o número muda na hora, sem transição); animação de ataque,
-  cura e dano de status na cena de batalha (hoje só texto no log + `shake`/`tremer`).
+  ~~animação na barra de HP ao tomar dano/curar~~ ✔ FEITO (ver "Animação da barra de HP" abaixo); animação de
+  ataque, cura e dano de status na cena de batalha (hoje só texto no log + `shake`/`tremer`) — ainda não começada.
 - **Pedido pelo usuário (27/09/2026), pra depois — modo tutorial**: passo a passo tipo "onboarding" que aparece
   quando uma funcionalidade nova é desbloqueada/usada pela primeira vez (padrão de app: destaca o elemento na
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
@@ -513,6 +513,23 @@ pra espécie sem back 2D (frente + CSS `flip`). **Animado tem costas de verdade*
 novo). **Download opcional e À PARTE** do download normal: `offline.baixarImagens3D`/`imagensGuardadas3D` (2
 imagens: frente normal e shiny) e `baixarImagensAnimadas`/`imagensGuardadasAnimadas` (4 imagens: frente e costas,
 normal e shiny) — mesmo formato de `baixarImagens`, ninguém baixa imagem de estilo que não escolheu.
+
+### Animação da barra de HP (27/09/2026)
+Pedido do usuário (junto do backlog de animações): a barra saltava direto pro número novo, sem transição. O
+`.fill` já tinha `transition: width .45s ease` no CSS — o problema é que `render()` não faz diffing (destrói e
+recria o DOM inteiro a cada chamada, ver o comentário no topo de `render.js`), então uma barra NOVA nasce direto
+na largura final, sem "de onde" animar. Resolvido com a técnica **FLIP** (First-Last-Invert-Play) em `render.js`:
+`hpbar(m, chave)` ganhou um 2º parâmetro opcional — com `chave`, o `.fill` ganha `id="hp-fill-<chave>"` e a classe
+`fill-hp`. `capturarLarguraHP()` roda ANTES de `renderSheet()/renderScene()/renderActions()` redesenharem tudo
+(guarda a largura atual de cada barra com id); `animarBarrasHP(antes)` roda DEPOIS: força a barra nova a nascer na
+largura ANTIGA (sem transição), faz o navegador aplicar isso com `el.offsetWidth` (força reflow), e só então solta
+pra largura de verdade COM transição — o olho vê os dois quadros como uma animação contínua. Respeita `REDUCED`
+(`ui.js`, `prefers-reduced-motion`): sem animação nenhuma pra quem pediu, igual sempre foi. Chamadas de
+`plate(m, chave)` (cena de batalha: `'e'`, `'p'`, `'a'+i`), `cartaoAliado` (`'card-a'+i`) e `renderFicha`
+(`'ficha-p'`) já passam a chave certa. **Validado em jsdom** (não dá pra testar em `node:test`, é manipulação de
+DOM pura — mesmo padrão do resto de `render.js`): importar o módulo inteiro em jsdom já confirma que a cadeia de
+dependências carrega sem erro; as duas funções, expostas temporariamente pra teste e revertidas depois, terminam
+na largura correta nos três cenários (largura muda, largura igual — no-op, elemento novo sem entrada anterior).
 
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.

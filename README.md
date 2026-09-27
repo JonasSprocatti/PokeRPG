@@ -62,6 +62,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
+- A **barra de HP anima** ao tomar dano ou se curar, em vez de saltar direto pro número novo (respeita a preferência de "reduzir animações" do aparelho).
 - **Mais de 120 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
   - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Toxic Boost, Flare Boost, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head, Reckless, Neuroforce, Merciless, Defeatist, Iron Fist, Strong Jaw, Sharpness, Steelworker, Transistor, Dragon's Maw, Rocky Payload, Water Bubble, Sand Force.
   - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard, Unaware, Wonder Skin, Dazzling/Queenly Majesty/Armor Tail (barram golpe de prioridade), Pressure.
@@ -361,6 +362,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
 - [x] Estrutura de anúncios (Google AdSense) desligada por padrão, banner de consentimento de cookies (GDPR) e tela de Política de Privacidade
 - [x] Três estilos de sprite (Clássico, 3D "home", Animado do Showdown), com download à parte pro modo offline
+- [x] Barra de HP anima ao tomar dano/curar (técnica FLIP, respeita "reduzir animações")
 
 ## Licença
 

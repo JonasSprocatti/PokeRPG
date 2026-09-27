@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.45', data: '2026-09-27', titulo: 'A barra de HP se mexe', piada: 'Antes o número de HP só trocava de figurino sem avisar ninguém. Agora ele desliza até o lugar, como gente educada.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A <b>barra de HP</b> agora anima ao tomar dano ou se curar, em vez de simplesmente saltar pro número novo. Respeita a preferência de "reduzir animações" do aparelho — quem pediu isso continua vendo a barra mudar na hora, sem transição.'
+      ] }
+    ] },
   { versao: '2.44', data: '2026-09-27', titulo: 'Sprites animados', piada: 'O Pikachu 3D ficou parado demais pro gosto de alguns. Agora ele também pode se mexer, ao vivo, na tela de batalha.',
     secoes: [
       { nome: 'Novidades', itens: [
