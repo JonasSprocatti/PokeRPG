@@ -10,7 +10,9 @@ Precisa de servidor HTTP (ES modules não carregam por `file://` — o `index.ht
 python -m http.server 3000   # na raiz do projeto → http://localhost:3000
 ```
 
-Nesta máquina de dev (Windows): usar PowerShell, não Bash (o Bash embutido falha no fork). **Não há Node instalado** — não tentar rodar `node`; os testes rodam no CI.
+Duas máquinas de dev, ambientes diferentes:
+- **Windows**: usar PowerShell, não Bash (o Bash embutido falha no fork). **Não há Node instalado** — não tentar rodar `node`; os testes rodam no CI.
+- **Raspberry Pi (Linux/aarch64)**: Node e npm instalados (`node --test` roda a suíte inteira localmente, sem depender do CI) e Bash normal. O binário de Python é `python3`, não `python` (usar `python3 -m http.server 3000`).
 
 ## Estrutura
 
