@@ -3,10 +3,10 @@
 // escolher; a escolha vale na hora e fica guardada neste navegador. O clique (data-act="fonte") está em main.js.
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
-import { FONTES, fonteEscolhida, urlDaFonte, sprite3DAtivo } from './ajustes.js';
+import { FONTES, fonteEscolhida, urlDaFonte, ESTILOS_SPRITE, estiloSpriteAtual } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
-import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, baixarImagens3D, imagensGuardadas3D, quantoFaltaTudo, totalDoJogo } from './offline.js';
+import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, baixarImagens3D, imagensGuardadas3D, baixarImagensAnimadas, imagensGuardadasAnimadas, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache, limparCache } from './api.js';
 import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, limparTeste, temProgressoDeTeste } from './dev.js';
 import { TOTAL_GENS } from './mapas.js';
@@ -16,6 +16,7 @@ import { adsConfigurado, consentimento } from './ads.js';
 export function telaAjustes() {
   G.mode = 'ajustes'; limparTopo();
   const atual = fonteEscolhida();
+  const estiloAtual = estiloSpriteAtual();
   // carrega todas as fontes da lista pra amostra sair na fonte certa
   for (const f of FONTES) if (!document.querySelector(`link[data-fonte="${f.id}"]`)) {
     const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = urlDaFonte(f); l.dataset.fonte = f.id; document.head.appendChild(l);
@@ -33,10 +34,8 @@ export function telaAjustes() {
       </button>`).join('')}</div>
     <p class="small muted" style="margin-top:14px">As fontes vêm do Google Fonts e ficam guardadas para o modo offline depois do primeiro uso.</p>
     <h3 class="passo"><span>B</span> Sprites</h3>
-    <label class="check">
-      <input type="checkbox" id="ajuste-sprite-3d" ${sprite3DAtivo() ? 'checked' : ''}> Usar sprites 3D
-      <small class="muted">Troca o pixel-art clássico pelo render usado em Pokémon HOME e nos jogos mais recentes. Sem versão de costas — o seu Pokémon aparece de frente também na batalha. Se algum não tiver imagem 3D, cai de volta pro clássico sozinho.</small>
-    </label>
+    <div class="subrow">${ESTILOS_SPRITE.map(e => `<button class="btn ${e.id === estiloAtual ? '' : 'ghost'} sm" data-act="estilo-sprite" data-v="${e.id}" aria-pressed="${e.id === estiloAtual}">${esc(e.nome)}${e.id === estiloAtual ? ' ✓' : ''}</button>`).join('')}</div>
+    <p class="small muted" style="margin-top:8px">${esc(ESTILOS_SPRITE.find(e => e.id === estiloAtual)?.desc || '')} Se a imagem não existir pra algum Pokémon, cai de volta pro clássico sozinho.</p>
     <h3 class="passo"><span>C</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
     ${htmlAds()}
@@ -44,7 +43,8 @@ export function telaAjustes() {
   </main>`;
   mostrarEspaco();
   mostrarImagens();     // conta as imagens guardadas (assíncrono: a linha se preenche sozinha)
-  mostrarImagens3D();   // idem, pras imagens 3D (download opcional, à parte)
+  mostrarImagens3D();       // idem, pras imagens 3D (download opcional, à parte)
+  mostrarImagensAnimadas(); // idem, pros sprites animados
 }
 
 // Baixar um mapa inteiro pra jogar sem internet (offline.js). Sem isso, offline só aparece quem você já encontrou —
@@ -65,6 +65,8 @@ function htmlOffline() {
       <span class="small muted" id="offline-imagens">conferindo imagens guardadas…</span></div>
     <div class="subrow" style="margin-top:10px"><button class="btn ghost sm" data-act="baixar-imagens-3d">🧊 Baixar sprites 3D também (Gen ${gen})</button>
       <span class="small muted" id="offline-imagens-3d">conferindo sprites 3D guardados…</span></div>
+    <div class="subrow" style="margin-top:10px"><button class="btn ghost sm" data-act="baixar-imagens-animadas">🎬 Baixar sprites animados também (Gen ${gen})</button>
+      <span class="small muted" id="offline-imagens-animadas">conferindo sprites animados guardados…</span></div>
     <div class="subrow" style="margin-top:10px"><button class="btn ghost sm" data-act="limpar-baixar">🗑 Limpar tudo e baixar de novo (Gen ${gen})</button>
       <span class="small muted">apaga o que está guardado da PokéAPI e baixa do zero — use se algo ficou pela metade. Não mexe nos seus saves nem na carreira.</span></div>
     <div id="offline-progresso" class="small muted" style="margin-top:8px"></div>
@@ -92,7 +94,7 @@ export async function baixarMapaOffline(gen, limpar = false) {
   p.innerHTML = r.dadosOk && !r.imagens ? `✅ Pronto! ${oQue} guardado neste aparelho (${r.total} Pokémon e ${r.golpes} golpes).`
     : r.dadosOk ? `✅ ${oQue} dá pra jogar offline (${r.total} Pokémon e ${r.golpes} golpes) — mas ${r.imagens} imagem(ns) não desceram. Dá pra baixar de novo pra tentar só elas; o jogo funciona mesmo assim.`
     : `Terminou com ${r.falhas} falha(s) nos dados${r.imagens ? ` e ${r.imagens} em imagens` : ''} — dá pra tentar de novo, o que já baixou fica guardado.`;
-  const box = document.getElementById('offline-box'); if (box) { box.innerHTML = htmlOffline(); mostrarEspaco(); mostrarImagens(); mostrarImagens3D(); }
+  const box = document.getElementById('offline-box'); if (box) { box.innerHTML = htmlOffline(); mostrarEspaco(); mostrarImagens(); mostrarImagens3D(); mostrarImagensAnimadas(); }
 }
 
 /* Só as imagens (botão 🖼). Serve pro caso em que os dados estão inteiros e as figuras não — que acontece quando
@@ -138,6 +140,25 @@ async function mostrarImagens3D() {
   if (!document.getElementById('offline-imagens-3d')) return;
   el.innerHTML = n === null ? '' : n >= total ? `✅ ${n}/${total} sprites 3D guardados.`
     : n === 0 ? 'nenhum sprite 3D baixado ainda (opcional)' : `${n}/${total} sprites 3D guardados.`;
+}
+export async function baixarImagensAnimadasOffline(gen) {
+  const el = () => document.getElementById('offline-progresso');
+  if (!el()) return;
+  if (offline()) { el().innerHTML = '📴 Sem internet agora: conecte pra poder baixar.'; return; }
+  if (semServiceWorker()) { el().innerHTML = '⚠ <b>Recarregue a página primeiro</b> (F5): sem o service worker no comando, imagem baixada não fica guardada em lugar nenhum.'; return; }
+  el().innerHTML = 'Baixando sprites animados…';
+  const r = await baixarImagensAnimadas(+gen, (f, t) => { const p = el(); if (p) p.innerHTML = `Baixando sprites animados… <b>${f}/${t}</b>`; });
+  const p = el(); if (!p) return;
+  p.innerHTML = r.ok ? `✅ Sprites animados da Gen ${gen} guardados (${r.total} Pokémon).`
+    : `Terminou com ${r.falhas} sprite(s) animado(s) que não desceram — dá pra rodar de novo, o que já veio fica guardado.`;
+  mostrarImagensAnimadas();
+}
+async function mostrarImagensAnimadas() {
+  const el = document.getElementById('offline-imagens-animadas'); if (!el) return;
+  const gen = genDe(G.S), total = alvosDaGen(gen).length, n = await imagensGuardadasAnimadas(gen);
+  if (!document.getElementById('offline-imagens-animadas')) return;
+  el.innerHTML = n === null ? '' : n >= total ? `✅ ${n}/${total} sprites animados guardados.`
+    : n === 0 ? 'nenhum sprite animado baixado ainda (opcional)' : `${n}/${total} sprites animados guardados.`;
 }
 /* Preferência de cookies de anúncio (js/ads.js). Só aparece se a conta AdSense estiver configurada — sem isso,
    perguntar "aceita cookie de anúncio?" não faz sentido nenhum, porque não existe anúncio nenhum. */

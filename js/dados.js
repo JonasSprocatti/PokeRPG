@@ -25,6 +25,13 @@ export const SPR_SHINY_COSTAS = id => `${SPRITES}/pokemon/back/shiny/${id}.png`;
    nas costas (mesmo fallback que já existe pra espécie sem back 2D — ver render.sprCostas). */
 export const SPR_3D = id => `${SPRITES}/pokemon/other/home/${id}.png`;
 export const SPR_3D_SHINY = id => `${SPRITES}/pokemon/other/home/shiny/${id}.png`;
+/* Sprites ANIMADOS (pedido do usuário, depois do 3D): GIF do conjunto `showdown` — o mesmo sprite (pequeno,
+   com uma animação de espera) usado no Pokémon Showdown. Ao contrário do "home", TEM versão de costas de
+   verdade, então não precisa do fallback de frente+flip que o 3D precisa. */
+export const SPR_ANIM = id => `${SPRITES}/pokemon/other/showdown/${id}.gif`;
+export const SPR_ANIM_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/${id}.gif`;
+export const SPR_ANIM_SHINY = id => `${SPRITES}/pokemon/other/showdown/shiny/${id}.gif`;
+export const SPR_ANIM_SHINY_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/shiny/${id}.gif`;
 export const ITEM_SPR = n => `${SPRITES}/items/${n}.png`;
 /* Alguns itens novos (Gen 8/9) simplesmente NÃO têm imagem no repositório de sprites da PokéAPI — Coroa Galárica,
    Armadura Auspiciosa, Pote Rachado... Antes a figura quebrada era escondida (visibility:hidden) e sobrava um buraco:

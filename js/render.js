@@ -1,9 +1,9 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
-import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, espelhar, outroServidor, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
-import { sprite3DAtivo } from './ajustes.js';
+import { $, REDUCED } from './ui.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { estiloSpriteAtual } from './ajustes.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { TELAS } from './navegacao.js';
@@ -29,14 +29,24 @@ import { clamp, esc, fmt } from './util.js';
 // Costas: Gen 8+ não tem sprite de costas — aí usa a frente espelhada (classe .flip).
 // `espelhar` em tudo que vem de `m.data`: save e cache antigos guardam o endereço velho das imagens (dados.js)
 // `formaSprite` = id do sprite da forma de batalha (Castform com o tempo, golpe.ajustarForma); o shiny precisa dele porque monta a URL pelo id
-/* Sprite 3D (ajustes.sprite3DAtivo, pedido do usuário): sempre montado pelo id, igual ao shiny — nunca lê
-   m.data.sprite, porque o "home" nem sempre existe pros dados guardados de formas antigas. Se a imagem 3D não
-   existir de verdade pra esse Pokémon/forma, imgMon() já cai sozinho no sprite 2D clássico no 2º erro de <img>. */
-export const spriteFrente = m => sprite3DAtivo()
-  ? (m.shiny ? SPR_3D_SHINY(m.formaSprite || m.id) : SPR_3D(m.formaSprite || m.id))
-  : (m.shiny ? SPR_SHINY(m.formaSprite || m.id) : espelhar(m.data.sprite));
-// "home" não tem sprite de costas: com o 3D ativo, sempre null — quem chama já sabe cair pra frente + flip
-const sprCostas = m => sprite3DAtivo() ? null : (m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.formaSprite || m.id) : espelhar(m.data.back)) : null);
+/* Estilo do sprite (ajustes.estiloSpriteAtual, pedido do usuário): 3D e animado sempre montados pelo id, igual
+   ao shiny — nunca leem m.data.sprite, porque nem "home" nem "showdown" existem garantido pros dados guardados
+   de formas antigas. Se a imagem não existir de verdade pra esse Pokémon/forma, imgMon() já cai sozinho no
+   sprite 2D clássico no 2º erro de <img>. */
+export const spriteFrente = m => {
+  const estilo = estiloSpriteAtual();
+  if (estilo === 'animado') return m.shiny ? SPR_ANIM_SHINY(m.formaSprite || m.id) : SPR_ANIM(m.formaSprite || m.id);
+  if (estilo === '3d') return m.shiny ? SPR_3D_SHINY(m.formaSprite || m.id) : SPR_3D(m.formaSprite || m.id);
+  return m.shiny ? SPR_SHINY(m.formaSprite || m.id) : espelhar(m.data.sprite);
+};
+// "home" (3D) não tem sprite de costas: cai pra null, e quem chama já sabe cair pra frente + flip. O animado
+// (showdown) TEM costas de verdade, então usa a própria.
+const sprCostas = m => {
+  const estilo = estiloSpriteAtual();
+  if (estilo === 'animado') return m.shiny ? SPR_ANIM_SHINY_COSTAS(m.formaSprite || m.id) : SPR_ANIM_COSTAS(m.formaSprite || m.id);
+  if (estilo === '3d') return null;
+  return m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.formaSprite || m.id) : espelhar(m.data.back)) : null;
+};
 /* Dois planos B, nesta ordem: (1) o MESMO arquivo no outro servidor de imagens — cobre CDN fora do ar ou
    bloqueado na rede de quem joga; (2) a sprite normal — cobre shiny que não existe pra aquela forma. Sem o
    primeiro, uma falha do servidor deixava o Pokémon como ícone quebrado mesmo com a imagem disponível ali ao
@@ -68,9 +78,13 @@ export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:$
 export const badgesDeTipo = m => m?.tera
   ? `<span class="ty tera-ty" style="--c:${TC[m.tera] || '#888'};--tc:${DARK_TEXT.has(m.tera) ? '#1c1f3a' : '#fff'}">💎 ${TYPE_PT[m.tera] || fmt(m.tera)}</span>`
   : (m?.data?.types || []).map(badge).join('');
-function hpbar(m) {
+/* `chave` (opcional) dá um id estável ao preenchimento, pra animarBarrasHP() achar a MESMA barra entre um
+   render() e o próximo (o jogo não faz diffing — cada render() destrói e recria o DOM inteiro — então sem um id
+   pra amarrar a barra velha na nova não tem "de onde" animar). Sem chave (amizade, barra de XP…), sem animação:
+   só a HP muda com pausa suficiente durante a narração pra fazer diferença ver a transição. */
+function hpbar(m, chave = null) {
   const pct = clamp(m.hp / m.stats.hp * 100, 0, 100), col = pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E';
-  return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${col}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`;
+  return `<div class="hp"><span>HP</span><div class="bar"><div class="fill${chave ? ' fill-hp' : ''}" ${chave ? `id="hp-fill-${chave}"` : ''} style="width:${pct}%;background:${col}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`;
 }
 function chipsFor(m) {
   let h = m.status ? `<span class="st st-${m.status}">${m.status === 'poison' && m.vol?.toxico ? 'TÓX' : ST_SHORT[m.status]}</span>` : '';
@@ -86,13 +100,13 @@ function chipsFor(m) {
 }
 // barra de amizade (só aparece no selvagem depois do primeiro petisco)
 const amizadeBar = m => m.amizade ? `<div class="hp amz" title="Amizade"><span>♥</span><div class="bar"><div class="fill" style="width:${clamp(m.amizade, 0, 100)}%"></div></div><span>${m.amizade}/100</span></div>` : '';
-function plate(m) {
+function plate(m, chave) {
   const label = m === G.S.player || G.S.aliados?.includes(m) ? (m.nick || fmt(m.name)) : fmt(m.name);
   /* O TIPO de quem está em campo fica visível na plaquinha. Estava só na ficha, a um clique de distância — e é
      justamente o dado que explica por que o seu golpe acertou fraco. Usa `badgesDeTipo`, então mostra o tipo
      Tera de quem terastalizou, que é o que vale pra defesa. */
   return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>
-    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m)}${blocoChefe(m)}${amizadeBar(m)}${chipsFor(m)}`;
+    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m, chave)}${blocoChefe(m)}${amizadeBar(m)}${chipsFor(m)}`;
 }
 // chefe do evento semanal (boss.js): barra da couraça, fase e o aviso do golpe carregado — o que decide o turno
 function blocoChefe(m) {
@@ -186,7 +200,7 @@ const listaGolpes = M => `<div class="sec mlist"><h3>Golpes</h3>
 function cartaoAliado(A, i) {
   const ordem = A.ordem || 'livre';
   return `<div class="aliado ${ordem === 'fora' ? 'descansando' : ''}">
-    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A)}${barraXp(A, A.growth)}${chipsFor(A)}</div></div>
+    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth)}${chipsFor(A)}</div></div>
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
@@ -209,7 +223,7 @@ function renderFicha() {
       </div>
     </div>
     <div class="bars">
-      ${hpbar(P)}
+      ${hpbar(P, 'ficha-p')}
       ${barraXp(P, S.meta.growth)}
       ${chipsFor(P)}
     </div>
@@ -315,7 +329,7 @@ function renderScene() {
     // aliado descansando (ordem "fora") não aparece em campo; o índice `i` continua sendo o de S.aliados (ids mon-a{i})
     const B = G.B, AL = (G.S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.ordem !== 'fora');
     sc.innerHTML = `${turnoBar(B, P, E)}
-      <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E)}</div>
+      <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E, 'e')}</div>
         <div class="mon ${E.hp <= 0 ? 'fainted' : ''} ${E.dyna ? 'gigante' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
       <div class="side me">
         <div class="mons-lado">
@@ -323,8 +337,8 @@ function renderScene() {
           ${AL.map(([A, i]) => `<div class="mon mini ${A.hp <= 0 ? 'fainted' : ''}" id="mon-a${i}"><div class="pad"></div>${imgMon(A, `spr ${sprCostas(A) ? '' : 'flip'}`, sprCostas(A) || spriteFrente(A))}</div>`).join('')}
         </div>
         <div class="plates">
-          <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P)}</div>
-          ${AL.map(([A, i]) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A)}</div>`).join('')}
+          <div class="plate ${B.vez === 'p' ? 'agindo' : ''}">${plate(P, 'p')}</div>
+          ${AL.map(([A, i]) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A, 'a' + i)}</div>`).join('')}
         </div></div>`;
   } else {
     const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id], g = genDe(G.S);
@@ -475,6 +489,29 @@ function atualizarCarteira() {
   el.setAttribute('aria-label', `Dinheiro: ${brl(agora)}`);
   el.innerHTML = `<span aria-hidden="true">💰</span> <b>${brl(agora)}</b>${dif ? `<span class="dinheiro-delta ${dif > 0 ? 'ganho' : 'perda'}" aria-hidden="true">${dif > 0 ? '+' : '−'}${brl(Math.abs(dif))}</span>` : ''}`;
 }
+/* Animação da barra de HP (pedido do usuário — hoje o número muda na hora, sem transição): o jogo não faz
+   diffing (render() destrói e recria o DOM inteiro a cada chamada — ver o comentário no topo do arquivo), então
+   uma barra nova nasce direto na largura final, sem "de onde" animar. `hpbar(m, chave)` dá um id estável
+   (`hp-fill-<chave>`) só pra quem passa uma chave; isto aqui é a técnica FLIP: guarda a largura ANTES de
+   redesenhar, deixa o render() de sempre trocar o DOM, e então força a barra NOVA a nascer na largura ANTIGA
+   por um instante (sem transição) antes de soltar pra largura de verdade (com transição) — o olho vê os dois
+   quadros como uma animação contínua. Sem prefers-reduced-motion (REDUCED), a mudança fica instantânea, igual
+   sempre foi. */
+function capturarLarguraHP() {
+  const antes = {};
+  for (const el of document.querySelectorAll('.fill-hp[id]')) antes[el.id] = el.style.width;
+  return antes;
+}
+function animarBarrasHP(antes) {
+  if (REDUCED) return;
+  for (const el of document.querySelectorAll('.fill-hp[id]')) {
+    const de = antes[el.id]; if (de === undefined || de === el.style.width) continue;
+    const para = el.style.width;
+    el.style.transition = 'none'; el.style.width = de;
+    el.offsetWidth; // força o navegador a aplicar a largura antiga ANTES da próxima troca — senão as duas mudanças viram uma só, sem transição nenhuma
+    el.style.transition = ''; el.style.width = para;
+  }
+}
 // (As abas de celular ⚔/💬/📋 foram removidas — ver o comentário em paineis.js e o bloco "celular" do CSS.)
 export function render() {
   // só as telas de jogo têm painéis; nas outras (criação, carreira, conta, ranking, sala multiplayer) não desenha —
@@ -482,7 +519,9 @@ export function render() {
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
   document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
+  const antesHP = capturarLarguraHP();
   renderSheet(); renderScene(); renderActions();
+  animarBarrasHP(antesHP);
   atualizarCarteira();   // fora do menu ☰: sempre visível
   // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),
   // mais o que só existe dentro do jogo: ↺ Layout e Novo jogo. Em batalha, só esses dois (navegar fica pra depois).

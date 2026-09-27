@@ -41,11 +41,20 @@ export function aplicarFonte(id = null) {
   return f;
 }
 
-/* ============ ajustes: sprites 3D (pedido do usuário) ============ */
-// Troca o pixel-art clássico (dados.SPR) pelo render "home" (dados.SPR_3D — mesmo modelo 3D dos jogos modernos,
-// só que mais nítido). Fica neste navegador; sem versão de costas, então nas costas cai no mesmo fallback que
-// já existe pra espécie sem back 2D (render.sprCostas). Lido em toda parte que desenha um Pokémon em campo
-// (render.spriteFrente/sprCostas) — mudar aqui atualiza no próximo render, sem precisar recriar o Pokémon.
-export const SPRITE_3D_KEY = 'pokerpg-sprite-3d';
-export const sprite3DAtivo = () => store.get(SPRITE_3D_KEY) === true;
-export const definirSprite3D = v => store.set(SPRITE_3D_KEY, !!v);
+/* ============ ajustes: estilo do sprite (pedido do usuário) ============ */
+// Três estilos pra desenhar um Pokémon em campo — cada um troca o conjunto de imagens da PokéAPI, tudo montado
+// pelo id (como o shiny), então nunca depende do que ficou salvo em m.data:
+//   'classico' (padrão) → dados.SPR, o pixel-art de sempre. Tem versão de costas.
+//   '3d'                → dados.SPR_3D ("home": render 2D do modelo 3D dos jogos modernos). SEM costas — cai no
+//                          mesmo fallback de frente+flip que já existe pra espécie sem back 2D (render.sprCostas).
+//   'animado'           → dados.SPR_ANIM (GIF do Pokémon Showdown, com animação de espera). TEM costas de verdade.
+// Fica neste navegador (localStorage). Lido em toda parte que desenha um Pokémon em campo (render.spriteFrente/
+// sprCostas) — mudar aqui vale no próximo render, sem precisar recriar o Pokémon.
+export const ESTILO_SPRITE_KEY = 'pokerpg-estilo-sprite';
+export const ESTILOS_SPRITE = [
+  { id: 'classico', nome: 'Clássico', desc: 'O pixel-art de sempre.' },
+  { id: '3d', nome: '3D', desc: 'Render nítido (Pokémon HOME). Sem versão de costas.' },
+  { id: 'animado', nome: 'Animado', desc: 'GIF com animação de espera (Pokémon Showdown).' }
+];
+export const estiloSpriteAtual = () => ESTILOS_SPRITE.find(e => e.id === store.get(ESTILO_SPRITE_KEY))?.id || 'classico';
+export const definirEstiloSprite = id => store.set(ESTILO_SPRITE_KEY, id);

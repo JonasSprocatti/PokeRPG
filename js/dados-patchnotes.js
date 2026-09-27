@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.44', data: '2026-09-27', titulo: 'Sprites animados', piada: 'O Pikachu 3D ficou parado demais pro gosto de alguns. Agora ele também pode se mexer, ao vivo, na tela de batalha.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🎬 Sprites animados</b> (⚙ Ajustes → Sprites): o interruptor 2D/3D virou uma escolha de <b>três estilos</b> — Clássico, 3D e Animado (os GIFs do Pokémon Showdown, com versão de costas de verdade). Download opcional em ⚙ Ajustes → Jogar offline, à parte do download normal.'
+      ] }
+    ] },
   { versao: '2.43', data: '2026-09-27', titulo: 'Sair da loja sem rolar a tela', piada: 'O botão de sair agora mora nos dois andares da loja. Ninguém mais fica preso lendo a lista de Poké Balls sem querer.',
     secoes: [
       { nome: 'Correções', itens: [

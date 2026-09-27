@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY, ITEM_SPR, espelhar, outroServidor } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, ITEM_SPR, espelhar, outroServidor } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -20,6 +20,11 @@ test('as imagens vêm do CDN, e endereço antigo guardado é traduzido', () => {
   // sprites 3D (dados.SPR_3D): mesmo CDN, montados pelo id, caminho "other/home" — sem versão de costas
   assert.equal(SPR_3D(4), 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/home/4.png');
   assert.equal(SPR_3D_SHINY(4), 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/home/shiny/4.png');
+  // sprites animados (estilo "animado", conjunto do Pokémon Showdown): mesmo CDN, "other/showdown", COM costas
+  assert.equal(SPR_ANIM(4), 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/showdown/4.gif');
+  assert.equal(SPR_ANIM_COSTAS(4), 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/showdown/back/4.gif');
+  assert.equal(SPR_ANIM_SHINY(4), 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/showdown/shiny/4.gif');
+  assert.equal(SPR_ANIM_SHINY_COSTAS(4), 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/showdown/back/shiny/4.gif');
   // a API devolve `back`/`art` como null pra muita espécie: não pode virar a string "null"
   for (const vazio of [null, undefined, '']) assert.equal(espelhar(vazio), vazio);
   // o caminho de volta (plano B da <img>) tem que dar no MESMO arquivo, só no outro servidor

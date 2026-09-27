@@ -8,7 +8,7 @@
 // Baixar um mapa inteiro são ~150 Pokémon: pesado pra rede, leve pro aparelho. Puro o bastante pra testar a lista
 // de alvos (alvosDaGen) em tests/offline.test.js; o download em si precisa de rede e não é testado.
 import { rotasDaGen, dadosDaGen, GENS } from './mapas.js';
-import { SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY } from './dados.js';
+import { SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS } from './dados.js';
 import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache, temNoCache, marcarNoCache } from './api.js';
 
 /* Versão do que o download traz. Subiu na v2: além dos Pokémon, golpes e sprites, agora vêm a curva de XP e a
@@ -100,7 +100,7 @@ export async function imagensGuardadas(gen) {
   } catch { return null; }
 }
 
-/* Sprites 3D (ajustes.sprite3DAtivo): download SEMPRE opcional e À PARTE do baixarGen/baixarImagens normal —
+/* Sprites 3D (ajustes.estiloSpriteAtual === '3d'): download SEMPRE opcional e À PARTE do baixarGen/baixarImagens normal —
    ninguém baixa o dobro de imagem sem pedir. Mesmo formato de baixarImagens, sem a versão de costas (o
    conjunto "home" não tem uma; ver dados.SPR_3D). */
 export async function baixarImagens3D(gen, aoAndar = () => {}, sinal = null) {
@@ -122,6 +122,32 @@ export async function imagensGuardadas3D(gen) {
     const c = await caches.open(nome);
     let n = 0;
     for (const id of alvosDaGen(gen)) if (await c.match(SPR_3D(id), { ignoreVary: true })) n++;
+    return n;
+  } catch { return null; }
+}
+
+/* Sprites animados (ajustes.estiloSpriteAtual === 'animado'): mesmo formato de baixarImagens3D, mas com COSTAS
+   de verdade (o conjunto "showdown" tem — ao contrário do "home"), então baixa 4 imagens por Pokémon (frente,
+   costas, shiny frente, shiny costas), não 2. Também sempre opcional e à parte do download normal. */
+export async function baixarImagensAnimadas(gen, aoAndar = () => {}, sinal = null) {
+  const ids = alvosDaGen(gen);
+  let feitos = 0, falhas = 0;
+  for (let i = 0; i < ids.length && !sinal?.cancelado; i += LOTE) {
+    await Promise.all(ids.slice(i, i + LOTE).map(async id => {
+      const r = await Promise.all([guardarSprite(SPR_ANIM(id)), guardarSprite(SPR_ANIM_COSTAS(id)), guardarSprite(SPR_ANIM_SHINY(id)), guardarSprite(SPR_ANIM_SHINY_COSTAS(id))]);
+      falhas += r.filter(x => !x).length;
+      aoAndar(++feitos, ids.length, 'sprites animados');
+    }));
+  }
+  return { ok: !falhas && !sinal?.cancelado, falhas, total: ids.length };
+}
+export async function imagensGuardadasAnimadas(gen) {
+  try {
+    const nome = (await caches.keys()).find(k => k.includes('externo'));
+    if (!nome) return 0;
+    const c = await caches.open(nome);
+    let n = 0;
+    for (const id of alvosDaGen(gen)) if (await c.match(SPR_ANIM(id), { ignoreVary: true })) n++;
     return n;
   } catch { return null; }
 }

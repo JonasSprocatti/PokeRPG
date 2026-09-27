@@ -180,10 +180,10 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - **Batalha completa** (continua): habilidades → clima → terrenos → itens segurados → golpes especiais/IA → Mega, Z-Moves, Dynamax/Gigantamax, Tera. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
-- **Pedido pelo usuário (27/09/2026), pra depois**: ~~sprites 3D com download opcional~~ ✔ FEITO (`dados.SPR_3D`,
-  `ajustes.sprite3DAtivo`, `offline.baixarImagens3D`); animação na barra de HP ao tomar dano/curar (hoje o número
-  muda na hora, sem transição); animação de ataque, cura e dano de status na cena de batalha (hoje só texto no
-  log + `shake`/`tremer`).
+- **Pedido pelo usuário (27/09/2026), pra depois**: ~~sprites 3D/animados com download opcional~~ ✔ FEITO
+  (`dados.SPR_3D`/`SPR_ANIM`, `ajustes.estiloSpriteAtual`, `offline.baixarImagens3D`/`baixarImagensAnimadas`);
+  animação na barra de HP ao tomar dano/curar (hoje o número muda na hora, sem transição); animação de ataque,
+  cura e dano de status na cena de batalha (hoje só texto no log + `shake`/`tremer`).
 - **Pedido pelo usuário (27/09/2026), pra depois — modo tutorial**: passo a passo tipo "onboarding" que aparece
   quando uma funcionalidade nova é desbloqueada/usada pela primeira vez (padrão de app: destaca o elemento na
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
@@ -494,18 +494,25 @@ aprovação do AdSense — texto explica o que cada serviço (localStorage, Supa
 juridiquês. Escrita ANTES de qualquer anúncio existir de verdade, porque é isso que a revisão do Google confere.
 `ads.js`/`tela-privacidade.js` entraram no PRECACHE do `sw.js` (regra de sempre: arquivo novo em `js/` = entra lá).
 
-### Sprites 3D (27/09/2026)
-Pedido do usuário (junto do backlog de animações). A PokéAPI não tem modelo 3D interativo pra jogo — o que existe
-é `sprites.other.home`, um RENDER 2D do mesmo modelo 3D usado em Pokémon HOME/jogos modernos (bem mais nítido
-que o pixel-art `sprites.front_default`). `dados.SPR_3D`/`SPR_3D_SHINY` montam pelo id, mesmo padrão do shiny —
-nunca lê `m.data.sprite`, porque `home` pode não existir pra alguma forma antiga guardada num save velho.
-**Sem versão de costas** (`home` só tem frente): com o interruptor ligado (`ajustes.sprite3DAtivo`, localStorage
-`pokerpg-sprite-3d`), `render.sprCostas` sempre devolve `null` — cai sozinho no MESMO fallback que já existia
-pra espécie sem back 2D (frente + CSS `flip`), sem código novo pra isso. Se a imagem 3D não existir de verdade,
+### Estilo de sprite: Clássico / 3D / Animado (27/09/2026)
+Pedido do usuário (junto do backlog de animações), em duas levas: primeiro só o 3D (booleano), depois pediu
+também os GIFs animados do Showdown — o que virou um refactor de booleano pra enum de 3 estilos.
+A PokéAPI não tem modelo 3D interativo pra jogo — o que existe é `sprites.other.home`, um RENDER 2D do mesmo
+modelo 3D usado em Pokémon HOME/jogos modernos (bem mais nítido que o pixel-art `sprites.front_default`), e
+`sprites.other.showdown`, os GIFs animados usados no Pokémon Showdown (COM versão de costas de verdade,
+diferente do "home"). `dados.SPR_3D`/`SPR_3D_SHINY` e `SPR_ANIM`/`SPR_ANIM_COSTAS`/`SPR_ANIM_SHINY`/
+`SPR_ANIM_SHINY_COSTAS` montam pelo id, mesmo padrão do shiny — nunca leem `m.data.sprite`, porque essas imagens
+podem não existir pra alguma forma antiga guardada num save velho.
+Preferência em `ajustes.ESTILO_SPRITE_KEY` (localStorage `pokerpg-estilo-sprite`, enum `'classico'|'3d'|'animado'`
+via `ESTILOS_SPRITE`/`estiloSpriteAtual`/`definirEstiloSprite`), lida em `render.spriteFrente`/`sprCostas` a cada
+render — trocar o estilo vale na hora, sem precisar recriar nenhum Pokémon. **3D não tem versão de costas**
+("home" só tem frente): `sprCostas` devolve `null` nesse estilo e cai sozinho no MESMO fallback que já existia
+pra espécie sem back 2D (frente + CSS `flip`). **Animado tem costas de verdade**, então usa `SPR_ANIM_COSTAS`/
+`SPR_ANIM_SHINY_COSTAS` direto. Se a imagem do estilo escolhido não existir de verdade pra algum Pokémon/forma,
 `imgMon()` já cai pro sprite 2D clássico no 2º erro de `<img>` (fallback que já existia, não precisou de nada
-novo). Preferência lida em `render.spriteFrente`/`sprCostas` a cada render — trocar o interruptor vale na hora,
-sem precisar recriar nenhum Pokémon. **Download opcional e À PARTE** do download normal (`offline.baixarImagens3D`/
-`imagensGuardadas3D`, mesmo formato de `baixarImagens`, sem back): ninguém baixa o dobro de imagem sem pedir.
+novo). **Download opcional e À PARTE** do download normal: `offline.baixarImagens3D`/`imagensGuardadas3D` (2
+imagens: frente normal e shiny) e `baixarImagensAnimadas`/`imagensGuardadasAnimadas` (4 imagens: frente e costas,
+normal e shiny) — mesmo formato de `baixarImagens`, ninguém baixa imagem de estilo que não escolheu.
 
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
