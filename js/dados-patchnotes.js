@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.43', data: '2026-09-27', titulo: 'Sair da loja sem rolar a tela', piada: 'O botão de sair agora mora nos dois andares da loja. Ninguém mais fica preso lendo a lista de Poké Balls sem querer.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A loja só tinha o botão <b>"Sair da loja"</b> lá embaixo, depois de toda a lista de itens — quem clicava nela sem querer (ou mudava de ideia) tinha que rolar a tela inteira pra voltar. Agora o botão também aparece no topo.'
+      ] }
+    ] },
   { versao: '2.42', data: '2026-09-27', titulo: 'Sprites 3D', piada: 'O Pikachu clássico é pixel art desde 1996. Agora ele também pode aparecer renderizado, pra quem prefere.',
     secoes: [
       { nome: 'Novidades', itens: [

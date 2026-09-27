@@ -444,7 +444,9 @@ function renderActions() {
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
-    a.innerHTML = `<p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
+    a.innerHTML = `<p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>
+      <div class="subrow"><button class="btn ghost sm" data-act="panel" data-v="main">Sair da loja</button></div>
+      ${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()

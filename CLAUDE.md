@@ -180,10 +180,15 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - **Batalha completa** (continua): habilidades → clima → terrenos → itens segurados → golpes especiais/IA → Mega, Z-Moves, Dynamax/Gigantamax, Tera. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
-- **Pedido pelo usuário (27/09/2026), pra depois**: sprites 3D com download opcional (ao lado do 2D atual — ver
-  `js/offline.js`/`baixarGen`, que hoje só baixa os sprites 2D); animação na barra de HP ao tomar dano/curar (hoje
-  o número muda na hora, sem transição); animação de ataque, cura e dano de status na cena de batalha (hoje só
-  texto no log + `shake`/`tremer`).
+- **Pedido pelo usuário (27/09/2026), pra depois**: ~~sprites 3D com download opcional~~ ✔ FEITO (`dados.SPR_3D`,
+  `ajustes.sprite3DAtivo`, `offline.baixarImagens3D`); animação na barra de HP ao tomar dano/curar (hoje o número
+  muda na hora, sem transição); animação de ataque, cura e dano de status na cena de batalha (hoje só texto no
+  log + `shake`/`tremer`).
+- **Pedido pelo usuário (27/09/2026), pra depois — modo tutorial**: passo a passo tipo "onboarding" que aparece
+  quando uma funcionalidade nova é desbloqueada/usada pela primeira vez (padrão de app: destaca o elemento na
+  tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
+  principais? Mega/Tera/Z/Gigantamax quando desbloqueiam? a primeira batalha?), se é pulável, se guarda "já viu"
+  por conta (Supabase) ou só neste navegador (localStorage, como a fonte), e o texto de cada passo.
 
 ## Modo offline
 
