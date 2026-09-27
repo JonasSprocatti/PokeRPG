@@ -14,13 +14,14 @@ import { STAT_PT, AIL_MSG, SELF_TARGETS } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
-import { ITEMS } from './dados.js';
+import { ITEMS, ITEM_VINCULO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, tiposDefensivos } from './regras.js';
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, tiposDefensivos } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
+import { loadPokemon } from './api.js';
 
 const nada = () => {};
 const up = ctx => (ctx.atualizar || nada)();
@@ -188,6 +189,40 @@ export function desfazerForma(m) {
   m.data = { ...m.data, types: [...m.formaBase.types], sprite: m.formaBase.sprite, back: m.formaBase.back, art: m.formaBase.art };
   delete m.formaBase; delete m.formaClima; delete m.formaSprite;
   return true;
+}
+
+/* Vínculo de Batalha / Battle Bond (Greninja): segurando o item ITEM_VINCULO (conquista de conta, 1.000 golpes
+   finais sendo Greninja — igual à Pedra Mega em espírito, mas não é Mega: item checado DIRETO pelo id, como
+   Pedra Mega/Cristal Z, não pela tabela genérica de segurados.js), derrubar um oponente vira Ash-Greninja pro
+   resto da luta — atributos mais altos e Water Shuriken vira fixo em poder 20 e 3 acertos (regras.js
+   golpeDoBattleBond, mesmo padrão de golpeDoClima e golpeDoTera). Troca completa (id/nome/dados), igual à Mega
+   — diferente do Castform, que só muda tipo e sprite, porque os atributos-base do Ash-Greninja são mesmo
+   outros. `greninja-ash` fica pré-carregado no começo da luta (batalha.js iniciar, igual à Mega): se a rede
+   falhar aqui no meio do turno, o golpe.js simplesmente não vira, sem travar o combate. Uma vez só por luta
+   (m.ashGreninja); desfaz em endBattle, igual Mega/Tera/Dynamax. */
+export async function virarAshGreninja(m, ctx) {
+  if (m.item !== ITEM_VINCULO || m.ashGreninja || m.data?.speciesName !== 'greninja' || m.hp <= 0) return false;
+  let data;
+  try { data = await loadPokemon('greninja-ash'); } catch { return false; }
+  m.ashAntes = { id: m.id, name: m.name, data: m.data };
+  m.id = data.id; m.name = data.name; m.data = data; m.ashGreninja = true;
+  recalc(m); up(ctx);
+  await ctx.say(`<b>${ctx.nome(m)} sincronizou com você! Virou Ash-Greninja!</b>`, 'level');
+  return true;
+}
+export function desfazerAshGreninja(m) {
+  if (!m?.ashAntes) return false;
+  const antes = m.ashAntes;
+  m.id = antes.id; m.name = antes.name; m.data = antes.data;
+  delete m.ashAntes; delete m.ashGreninja;
+  recalc(m);
+  return true;
+}
+// Pré-carrega 'greninja-ash' se alguém do lado entrar segurando o Vínculo — mesma ideia de mega.preCarregarMegas:
+// no começo da luta, não no meio do turno. Só o lado do jogador pode ter o item (o inimigo não tem inventário).
+export async function preCarregarAshGreninja(lista) {
+  if (!lista.some(m => m?.item === ITEM_VINCULO)) return;
+  await loadPokemon('greninja-ash').catch(() => null);
 }
 
 /* Habilidades que agem ao ENTRAR em campo (o mesmo código no single player e no multiplayer):
@@ -484,6 +519,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
 async function executar(u, t, g, primeiro, ctx, esp) {
   g = golpeDoClima(g, climaDoCtx(ctx));   // Weather Ball: tipo e poder do tempo (o PP já foi gasto no golpe original)
   g = golpeDoTera(g, u);                  // Tera Blast: tipo de quem usa, se estiver terastalizado
+  g = golpeDoBattleBond(g, u);            // Water Shuriken vira fixo (poder 20, 3 acertos) se já é Ash-Greninja
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
   if (!selfT && t.vol.protegido) {
@@ -567,6 +603,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     await ctx.say(`${U} ganhou moral com ${fmt(u.ability)}!`, 'good');
     await mudarEstagios(u, [{ stat: hu.aoNocautear[0], change: hu.aoNocautear[1] }], ctx, u);
   }
+  // Vínculo de Batalha: derrubar o oponente vira Ash-Greninja (virarAshGreninja confere o item e se já não virou)
+  if (t.hp <= 0 && total > 0 && u.hp > 0) await virarAshGreninja(u, ctx);
 
   if (meta.drain > 0) { const h = Math.max(1, Math.floor(total * meta.drain / 100)); heal(u, h); up(ctx); await ctx.say(`${U} drenou ${h} HP.`, 'good'); }
   else if (meta.drain < 0 && !hu.semDanoRecuo && !indireto(u)) { // Rock Head e Magic Guard evitam; o total de recuo conta pra Basculegion (evolucao.js)

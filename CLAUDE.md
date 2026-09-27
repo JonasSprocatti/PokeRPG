@@ -449,6 +449,28 @@ senão o relato segue sem elas e a tela avisa (`semImagens`). Fila: campos `imag
   palavras, com `z.tema` tendo prioridade. Sem tabela por rota, então rota nova entra sozinha. Puro e testado —
   o teste falha se tudo cair no `padrao`, que é como essa lista morreria em silêncio.
 
+### Vínculo de Batalha / Ash-Greninja (27/09/2026)
+Pedido do usuário ("dá pra adicionar o Ash-Greninja?"): checado antes de implementar que `greninja-ash` (id 10117)
+e a habilidade `battle-bond` existem de verdade na PokéAPI. **Mas `battle-bond` NÃO é uma habilidade normal do
+Greninja** (a API só lista `torrent`/`protean` pra ele — bate com os jogos: historicamente só um Greninja de
+evento/história tinha essa habilidade). Por isso **não** entrou como habilidade sorteável em `pokemon.makeMon`:
+vira **item segurado exclusivo**, `dados.ITEM_VINCULO` (`vinculo-de-batalha`, ₽15.000), no MESMO padrão de Pedra
+Mega/Cristal Z — checado DIRETO pelo id em `golpe.js` (`m.item === ITEM_VINCULO`), não pela tabela genérica de
+`segurados.js` (que exige `Object.keys(SEGURADOS)` bater com `IDS_SEGURADOS` = só os 13 itens de `ITENS_SEGURADOS`).
+**A conquista é própria, não reaproveita a da Mega** (`conquistas.ALVOS.vinculo` = 1000, mesmo número da Mega —
+escolha do usuário; `ESPECIES_VINCULO = ['greninja']`, lista separada de `dados-megas.MEGAS` porque Greninja não
+tem Mega neste jogo): filtrar pela lista de Megas teria deixado o Greninja de fora da conta.
+`golpe.virarAshGreninja(m, ctx)` segurando o item + derrubar um oponente troca `id/name/data` inteiro (igual à
+Mega — Ash-Greninja tem atributos-base diferentes de verdade, diferente do Castform que só muda tipo/sprite) e
+chama `recalc`; `desfazerAshGreninja` roda em `endBattle` junto com Mega/Tera/Dynamax/Forma. `greninja-ash` é
+PRÉ-CARREGADO no início da luta (`batalha.iniciar` → `golpe.preCarregarAshGreninja`) se alguém do lado do jogador
+entra segurando o item — mesmo cuidado da Mega, nada de buscar no meio do turno. **Water Shuriken** ganha
+tratamento especial igual ao Weather Ball/Tera Blast (`regras.golpeDoBattleBond`: poder fixo 20, SEMPRE 3
+acertos — a versão normal é 2–5 aleatório): plugado no motor único (`golpe.executar`, vale nos dois lados e no
+co-op) e nos botões de golpe das duas telas. Validado com dados reais da PokéAPI (fora da suíte de testes, que
+não toca rede — mesmo recorte que `mega.megaevoluir`): a transformação, o Water Shuriken reforçado e o desfazer
+no fim da luta rodaram de ponta a ponta contra a API de verdade antes de ir pro commit.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

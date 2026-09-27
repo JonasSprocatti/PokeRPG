@@ -18,6 +18,8 @@
 //   curaEm        come sozinho ao cair nessa fração de HP: { fracao, cura?, fracaoCura? } (Frutas Oran/Sitrus)
 //   curaStatus    come sozinho quando você está com status            (Fruta Lum)
 // Puro (sem DOM): testado em tests/segurados.test.js.
+// (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
+// pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
 import { ITENS_SEGURADOS } from './dados.js';
 
 export const SEGURADOS = {

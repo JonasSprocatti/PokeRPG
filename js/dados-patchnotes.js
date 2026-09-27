@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.40', data: '2026-09-27', titulo: 'Ash-Greninja', piada: 'O Greninja treinou a vida toda pra esse momento. O Pikachu só queria voltar pra Kanto.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🥷 Vínculo de Batalha:</b> conquiste <b>1.000 golpes finais sendo Greninja</b> pra liberar a compra do item Vínculo de Batalha (₽15.000). Segurando-o, derrubar um oponente transforma seu Greninja em <b>Ash-Greninja</b> pro resto da luta — atributos mais altos e <b>Water Shuriken</b> vira poder fixo 20 com <b>sempre 3 acertos</b> (a versão normal é 2 a 5, aleatório). Não precisa apertar botão nenhum: acontece sozinho, como uma habilidade.'
+      ] }
+    ] },
   { versao: '2.39', data: '2026-09-27', titulo: 'Vender itens, e correções de Tera e Mega', piada: 'O cristal Tera jurava que tinha mudado de tipo. A mensagem de combate não acreditou nele.',
     secoes: [
       { nome: 'Novidades', itens: [

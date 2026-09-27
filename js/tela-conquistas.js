@@ -91,6 +91,7 @@ export function telaConquistas() {
   // toda Mega já conquistada aparece (a lista vem em ordem de progresso, então elas vêm primeiro); o corte de 24 é só
   // pras barras EM ANDAMENTO — antes cortava tudo, e a 25ª Mega conquistada sumia da tela
   const mega = p.mega.filter((x, i) => x.liberado || i < 24).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
+  const vinculo = p.vinculo.map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
   const zGolpe = p.zGolpe.slice(0, 10).map(x => linhaMissao(x, esc(fmt(x.chave))));
   const zElemento = p.zElemento.slice(0, 10).map(x => linhaMissao(x, esc(TYPE_PT[x.chave] || fmt(x.chave))));
   const gmax = p.gigantamax.slice(0, 10).map(x => linhaMissao(x, esc(fmt(x.chave)), spriteDaEspecie(jornadas, x.chave)));
@@ -120,6 +121,10 @@ export function telaConquistas() {
 
     ${bloco('🌀 Z-Moves', `<b>${n(ALVOS.zGolpe)} eliminações com o golpe</b>, ou <b>${n(ALVOS.zElemento)} com golpes do mesmo elemento</b>.
       Só golpe seu conta: o Z-Move é você dominando aquele golpe.`, [...zGolpe, ...zElemento], 'Nenhum golpe registrado ainda.')}
+
+    ${bloco('🥷 Vínculo de Batalha', `<b>${n(ALVOS.vinculo)} golpes finais</b> sendo Greninja liberam o item Vínculo de Batalha —
+      segure-o e derrube um oponente pra virar <b>Ash-Greninja</b> pro resto da luta.`, vinculo,
+      'Nenhum abate como Greninja ainda — só ele tem essa conquista.')}
 
     ${bloco('🔴 Gigantamax', `Chegar ao <b>nível ${ALVOS.gmaxNivel}</b> com a espécie em <b>${ALVOS.gmaxRuns} jornadas</b> diferentes.`,
       gmax, 'Nenhuma jornada chegou ao nível 50 ainda.')}

@@ -323,6 +323,13 @@ export function golpeDoTera(g, u) {
   if (g?.name !== 'tera-blast' || !u?.tera) return g;
   return { ...g, type: u.tera };
 }
+/* Battle Bond (Ash-Greninja): Water Shuriken vira poder fixo 20 e SEMPRE 3 acertos (a versão normal é poder 15,
+   2 a 5 acertos aleatórios). Texto oficial da habilidade na PokéAPI: "Water Shuriken's power is 20 and always
+   hits three times." Sem virar Ash-Greninja, o golpe original continua valendo. */
+export function golpeDoBattleBond(g, u) {
+  if (g?.name !== 'water-shuriken' || !u?.ashGreninja) return g;
+  return { ...g, power: 20, meta: { ...g.meta, minHits: 3, maxHits: 3 } };
+}
 export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
 // quem está no chão sente o terreno; Voador e Levitate flutuam
 export const noChao = m => !m.data.types.includes('flying') && hab(m).imuneTipo !== 'ground';

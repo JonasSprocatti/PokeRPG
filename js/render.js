@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -412,7 +412,7 @@ function renderActions() {
     const noPP = P.moves.every(m => m.ppLeft <= 0);
     a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Sem PP: ataque desesperado com recuo.</small></button>`
       : P.moves.map((golpeBase, i) => {
-        const m = golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), P);   // Weather Ball (clima) e Tera Blast (seu Tera) no botão
+        const m = golpeDoBattleBond(golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), P), P);   // Weather Ball (clima), Tera Blast (seu Tera) e Water Shuriken (Ash-Greninja) no botão
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;
@@ -429,11 +429,11 @@ function renderActions() {
        de conquistas falhar por qualquer motivo, o certo é abrir a loja sem eles e registrar o erro — e não
        deixar a pessoa sem loja. Uma exceção aqui não faz o clique "não funcionar" em silêncio, que é o pior
        jeito de quebrar. Uma consulta só (gimmicksNaLoja): antes eram duas, e cada uma recalcula a carreira. */
-    let gimmicks = { mega: false, z: false };
+    let gimmicks = { mega: false, z: false, vinculo: false };
     try { gimmicks = gimmicksNaLoja(P?.data?.speciesName, P?.moves, S?.registro); }
-    catch (e) { console.warn('loja: não consegui checar as gimmicks; abrindo sem a Pedra Mega e o Cristal Z', e); }
+    catch (e) { console.warn('loja: não consegui checar as gimmicks; abrindo sem a Pedra Mega, o Cristal Z e o Vínculo de Batalha', e); }
     const forSale = Object.entries(ITEMS).filter(([, it]) =>
-      it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z));
+      it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z) && (!it.soComVinculo || gimmicks.vinculo));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };

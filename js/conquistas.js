@@ -13,7 +13,11 @@
 import { temMega } from './dados-megas.js';
 
 // quanto falta pra cada desbloqueio
-export const ALVOS = { tera: 200, mega: 1000, zGolpe: 250, zElemento: 500, gmaxRuns: 25, gmaxNivel: 50 };
+export const ALVOS = { tera: 200, mega: 1000, zGolpe: 250, zElemento: 500, gmaxRuns: 25, gmaxNivel: 50, vinculo: 1000 };
+/* Vínculo de Batalha (Ash-Greninja): igual à Mega em espírito — 1.000 golpes finais sendo a espécie — mas não é
+   Mega (Greninja não tem uma neste jogo), então é uma conquista PRÓPRIA, com seu item (Vínculo de Batalha,
+   dados.js) em vez de Pedra Mega. Hoje só o Greninja; a lista existe pra caber outra espécie um dia. */
+export const ESPECIES_VINCULO = ['greninja'];
 
 // marcos de "derrotados na conta inteira" (badges de caçada)
 export const MARCOS_ABATES = [1000, 10000, 100000, 1000000];
@@ -86,13 +90,15 @@ export function progressoConquistas(jornadas, registroAtual, prontos = null) {
      Floette, que tem Mega sem ser final. Perguntar direto à tabela de Megas acerta os dois casos.
      Tera (por tipo), Z-Move (por golpe/elemento) e Gigantamax (por jornada) continuam contando tudo. */
   const soQuemMegaevolui = mapa => Object.fromEntries(Object.entries(mapa).filter(([especie]) => temMega(especie)));
+  const soQuemTemVinculo = mapa => Object.fromEntries(Object.entries(mapa).filter(([especie]) => ESPECIES_VINCULO.includes(especie)));
   return {
     abates: marcoDeAbates(abates.total || 0),
     tera: lista(abates.tipoAlvo, ALVOS.tera, 'tera'),
     mega: lista(soQuemMegaevolui(abates.especie), ALVOS.mega, 'mega'),
     zGolpe: lista(abates.golpe, ALVOS.zGolpe, 'zGolpe'),
     zElemento: lista(abates.elemento, ALVOS.zElemento, 'zElemento'),
-    gigantamax: lista(runs, ALVOS.gmaxRuns, 'gigantamax')
+    gigantamax: lista(runs, ALVOS.gmaxRuns, 'gigantamax'),
+    vinculo: lista(soQuemTemVinculo(abates.especie), ALVOS.vinculo, 'vinculo')
   };
 }
 
@@ -102,3 +108,4 @@ export const megaLiberada = (p, especie) => !!p.mega.find(x => x.chave === espec
 export const gmaxLiberado = (p, especie) => !!p.gigantamax.find(x => x.chave === especie)?.liberado;
 export const zLiberado = (p, golpe) => !!p.zGolpe.find(x => x.chave === golpe?.name)?.liberado
   || !!p.zElemento.find(x => x.chave === golpe?.type)?.liberado;
+export const vinculoLiberado = (p, especie) => !!p.vinculo.find(x => x.chave === especie)?.liberado;

@@ -188,6 +188,20 @@ Object.assign(ITEMS, {
   }
 });
 
+/* Vínculo de Batalha (Battle Bond): mesma ideia da Pedra Mega, mas pro Greninja — 1.000 golpes finais sendo ele
+   liberam a COMPRA (conquistas.js ALVOS.vinculo/ESPECIES_VINCULO), e é preciso segurar. Derrubar um oponente
+   segurando ele vira Ash-Greninja pro resto da luta (golpe.js virarAshGreninja); Water Shuriken fica fixo em
+   poder 20 e 3 acertos (regras.golpeDoBattleBond). Igual à habilidade de verdade, só funciona no Greninja —
+   noutra espécie o item fica parado na mochila, sem efeito (a descrição já avisa). */
+export const PRECO_VINCULO = 15000;
+export const ITEM_VINCULO = 'vinculo-de-batalha';
+Object.assign(ITEMS, {
+  [ITEM_VINCULO]: {
+    name: 'Vínculo de Batalha', segurado: true, soComVinculo: true, price: PRECO_VINCULO, categoria: 'segurado',
+    desc: 'Só funciona no Greninja: derrubar um oponente segurando ele vira Ash-Greninja pro resto da luta, com Water Shuriken bem mais forte.'
+  }
+});
+
 // Repelentes (mapas.js): mexem SÓ no encontro selvagem — treinador, item, dinheiro e ambientação continuam iguais.
 // `passos` = quantas explorações duram.
 export const ITENS_REPELENTE = {

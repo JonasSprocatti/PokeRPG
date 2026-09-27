@@ -251,6 +251,8 @@ O abate do aliado conta para a espécie que você está usando; tipo e golpe só
 
 Do outro lado, **Alfa, lendários e treinadores** megaevoluem *ou* terastalizam ao cair à metade do HP — uma virada por luta, nunca as duas. A **Mega do inimigo só aparece de nível 40 em diante**; o Tera dele pode vir em qualquer rota. **Só Pokémon de treinador gigantamaxam** (no mesmo gatilho e na mesma "uma virada por luta": quem não tem Mega sorteia entre Tera e Gigantamax) e **só treinadores e Alfas usam Z-Move**: o treinador sempre carrega um, o Alfa só de vez em quando (chance baixa, sorteada no começo da luta), e é um golpe de dano por luta, num turno sorteado.
 
+**Vínculo de Batalha (Ash-Greninja).** Mesma economia da Pedra Mega, mas com espécie própria: **1.000 golpes finais sendo Greninja** liberam a compra do item **Vínculo de Batalha** (₽15.000, só funciona nele). Segurando-o, **derrubar um oponente** vira **Ash-Greninja** automaticamente pro resto da luta — atributos mais altos e **Water Shuriken** vira poder fixo 20 com **sempre 3 acertos** (a versão normal é poder 15 e 2 a 5 acertos aleatórios). Não é um botão: é automático, como qualquer habilidade — e dura até o fim da batalha.
+
 **No co-op** o seu Pokémon **principal** também usa as quatro gimmicks (selvagens, Alfa e chefe da semana), com as mesmas regras e as suas próprias conquistas, Pedra Mega e Cristal Z: os botões ⚡ 💎 🔴 🌀 aparecem acima dos golpes, na sua vez, e valem uma vez por luta. Aliados, Pokémon convidado e PvP ficam de fora, e nada disso muda o Pokémon da sua run depois da luta. Os derrotados do co-op também contam para a barra da Mega e para os marcos de caçada.
 
 ### 🏆 Ranking global
@@ -353,6 +355,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail
 - [x] Mega, Tera, Z-Move e Gigantamax jogáveis; inimigo gigantamaxa (só treinador) e usa Z (treinador e Alfa); as quatro gimmicks no co-op; conquistas da Mega auditadas (`tests/gimmicks-coop-inimigo.test.js`)
 - [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)
+- [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
 
 ## Licença
 

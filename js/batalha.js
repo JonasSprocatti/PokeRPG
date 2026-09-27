@@ -8,7 +8,7 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { healFull, CTX } from './efeitos.js';
-import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
@@ -84,6 +84,7 @@ function iniciar(B) {
      falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
      a Mudança de Postura do Aegislash documentou (golpe.trocarPostura). */
   preCarregarMegas([G.S.player, G.B.enemy]).catch(e => console.warn('mega: pré-carga', e));
+  preCarregarAshGreninja(ladoJogador()).catch(e => console.warn('vínculo: pré-carga', e));
 }
 // Habilidades de entrada em campo (Intimidate, Drizzle, Download, Intrepid Sword…): cada um do seu lado age sobre o
 // inimigo e o inimigo age sobre todo o seu lado. Na troca de Pokémon do treinador só o que acabou de entrar dispara.
@@ -621,7 +622,7 @@ async function serCapturado() {
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
   G.B = null; G.mode = 'explore'; G.panel = 'main';
-  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); m.vol = freshVol(); }
+  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); m.vol = freshVol(); }
 }
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----
