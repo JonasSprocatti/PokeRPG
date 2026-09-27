@@ -221,6 +221,11 @@ async function evolve(M, speciesName, arvore) {
   M.ability = habilidadeDaEvolucao(habVelhas, data.abilities, habVelha);
   recalc(M); render();
   registrar(G.S, 'evolucoes', data.speciesName, data.id); // conta pro Roguelike (5× forma do meio / 10× final)
+  /* Evoluir pra uma espécie que você nunca viu no mundo a deixava eternamente "?" na Pokédex de toda rota onde
+     ela vive — mesmo tendo uma na sua equipe. Conta como VISTA (silhueta), não como DERROTADA: a % de chance
+     na rota é sobre quem aparece ALI de verdade, e uma evolução em outro mapa não informa nada sobre isso — só
+     encontrar de fato ainda revela a taxa. Relatado em jogo. */
+  registrar(G.S, 'vistos', data.speciesName, data.id);
   (G.S.registro.formas ||= {})[data.speciesName] = forma;
   await say(`Parabéns! ${esc(oldName)} evoluiu para <b>${esc(fmt(data.name))}</b>!`, 'level');
   // dizer POR QUE saiu diferente: senão parece bug ("evoluí e veio outro Pokémon")
