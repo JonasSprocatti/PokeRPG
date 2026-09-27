@@ -353,3 +353,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail
 - [x] Mega, Tera, Z-Move e Gigantamax jogáveis; inimigo gigantamaxa (só treinador) e usa Z (treinador e Alfa); as quatro gimmicks no co-op; conquistas da Mega auditadas (`tests/gimmicks-coop-inimigo.test.js`)
 - [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)
+
+## Licença
+
+Código-fonte disponível para leitura, mas **não é open source**: todos os direitos são reservados ao autor (ver [`LICENSE`](LICENSE)). Os dados de Pokémon vêm da [PokéAPI](https://pokeapi.co); Pokémon é marca da Nintendo/Game Freak/Creatures Inc. — este projeto não tem afiliação oficial com nenhuma delas.

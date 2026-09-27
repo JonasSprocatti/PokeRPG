@@ -1,0 +1,36 @@
+Copyright (c) 2026 Jonas Sprocatti. Todos os direitos reservados.
+Copyright (c) 2026 Jonas Sprocatti. All rights reserved.
+
+Este é um projeto de código-fonte disponível para leitura (source-available),
+não um projeto de código aberto (open source). O código deste repositório
+("PokéRPG") pertence ao autor acima e é disponibilizado publicamente apenas
+para fins de consulta, estudo e colaboração diretamente com o autor.
+
+Nenhuma permissão é concedida, expressa ou implicitamente, para copiar,
+redistribuir, publicar, sublicenciar, vender ou criar trabalhos derivados
+deste projeto (no todo ou em parte), nem para usar o nome "PokéRPG" ou a
+identidade visual do projeto, sem autorização prévia e por escrito do autor.
+
+O histórico de commits deste repositório (com data, autoria e conteúdo de
+cada alteração) constitui registro de autoria e desenvolvimento do projeto.
+
+---
+
+This is a source-available project, not an open-source project. The code in
+this repository ("PokéRPG") belongs to the author above and is made public
+only for reading, study, and direct collaboration with the author.
+
+No permission is granted, express or implied, to copy, redistribute,
+publish, sublicense, sell, or create derivative works from this project (in
+whole or in part), nor to use the "PokéRPG" name or the project's visual
+identity, without the author's prior written authorization.
+
+This repository's commit history (with date, authorship, and content of
+each change) serves as a record of the project's authorship and development.
+
+---
+
+PokéRPG usa dados públicos da PokéAPI (pokeapi.co) e sprites do repositório
+de sprites da PokéAPI (github.com/PokeAPI/sprites), sob suas próprias
+licenças. Pokémon é marca registrada da Nintendo/Game Freak/Creatures Inc.;
+este projeto não tem afiliação oficial com nenhuma delas.

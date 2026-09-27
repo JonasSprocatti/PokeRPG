@@ -49,7 +49,8 @@ export function showCreate() {
     <div id="escolha"></div>
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
     <div id="netwarn"></div>
-    <div id="preview"></div></main>`;
+    <div id="preview"></div>
+    <p class="small muted rodape-creditos">© 2026 Jonas Sprocatti · <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">código-fonte no GitHub</a></p></main>`;
   renderDificuldade();
 }
 // passo 2: grade de iniciais por região (padrão) ou busca livre (modo com `especiesLivres`)
