@@ -18,7 +18,7 @@ import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima } from './regras.js';
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, tiposDefensivos } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 
@@ -374,7 +374,7 @@ async function statusEspecial(u, t, g, esp, ctx) {
     return true;
   }
   if (esp.semente) {
-    if (t.data.types.includes('grass')) { await ctx.say(`Não afeta ${T}...`); return true; }
+    if (tiposDefensivos(t).includes('grass')) { await ctx.say(`Não afeta ${T}...`); return true; }
     if (t.vol.semente != null) { await ctx.say(`${T} já está semeado!`); return true; }
     t.vol.semente = ctx.refDe ? ctx.refDe(u) : true; await ctx.say(`${T} foi semeado!`, 'status'); return true;
   }
@@ -500,7 +500,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (esp.soDormindo && t.status !== 'sleep') { await ctx.say(`Não afeta ${T}... (só funciona em quem está dormindo)`); return; }
   if (esp.ohko) {
     if (t.boss) { await ctx.say(`Não afeta ${T}... (chefe de evento)`); return; }
-    if (typeEff(g.type, t.data.types) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
+    if (typeEff(g.type, tiposDefensivos(t)) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
     if (ht.aguenta) { await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`); return; }     // Sturdy
     if (Math.random() >= chanceOhko(u, t)) { await ctx.say(t.level > u.level ? 'Mas falhou! (o alvo tem nível maior)' : 'Mas errou!'); return; }
     t.hp = 0; up(ctx); (ctx.tremer || nada)(t); await ctx.say('É um nocaute de um golpe só!', 'crit'); return 'acertou';
@@ -517,7 +517,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (ht.flashFire) t.vol.flashFire = true;
     return;
   }
-  const ef = typeEff(g.type, t.data.types);
+  const ef = typeEff(g.type, tiposDefensivos(t));                                     // terastalizado defende pelo tipo Tera
   if (ef === 0) { await ctx.say(`Não afeta ${T}...`); return; }
   if (ht.soSuperEfetivo && ef <= 1) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; } // Wonder Guard
 
@@ -592,7 +592,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
       if (c.estagio) {                                                                // Gooey, Tangling Hair: a Velocidade de quem encosta cai
         await ctx.say(`${U} tocou em ${T}...`, 'muted');
         await mudarEstagios(u, [{ stat: c.estagio[0], change: c.estagio[1] }], ctx, t);
-      } else if (!u.status && !(c.po && (u.data.types.includes('grass') || hab(u).imunePo))) {   // pó não pega Grama nem Overcoat
+      } else if (!u.status && !(c.po && (tiposDefensivos(u).includes('grass') || hab(u).imunePo))) {   // pó não pega Grama nem Overcoat
         const ail = c.sorteio ? sortearPeso(c.sorteio) : c.status;                    // Effect Spore: sono, paralisia ou veneno
         await ctx.say(`${U} tocou em ${T}...`, 'muted'); await aplicarStatus(u, ail, ctx);
       }

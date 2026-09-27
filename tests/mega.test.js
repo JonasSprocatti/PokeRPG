@@ -120,6 +120,21 @@ test('desfazerMega devolve o Pokémon exatamente como estava', () => {
   assert.equal(desfazerMega(mon('pidgey')), null, 'quem nunca megaevoluiu é ignorado');
 });
 
+/* Bug real relatado em jogo: um Alfa Alakazam mega-evoluiu (metade do HP) e desmaiou já mega-evoluído.
+   `M.id` fica sobrescrito com o id da FORMA (10037, > 10000) enquanto a Mega está ativa; como o inimigo é
+   descartado no fim da luta (não passa por `desfazerMega`, que só roda no lado do jogador), quem lia `E.id`
+   direto pra gravar em `registro.ids` (batalha.js win()) salvava o id da Mega pra sempre — a tela de desbloqueio
+   do Roguelike passou a mostrar "Alakazam #10037" no lugar do Alakazam de verdade (#65). O fix lê
+   `E.mega?.antes?.id ?? E.id`, o mesmo dado que `desfazerMega` já usa pra devolver o Pokémon ao normal. */
+test('o id salvo no registro é o original, mesmo se o Pokémon desmaiou mega-evoluído', () => {
+  const M = mon('alakazam', { id: 65 });
+  M.mega = { forma: megasDe('alakazam')[0], antes: { id: 65, name: 'alakazam', data: M.data, ability: 'synchronize' } };
+  M.id = 10037; M.name = 'alakazam-mega'; // como fica depois de aplicarForma, sem desfazer
+  assert.equal(M.mega?.antes?.id ?? M.id, 65, 'não pode gravar o id da forma Mega no registro da espécie');
+  const N = mon('pidgey', { id: 16 }); // quem não megaevoluiu não tem `.mega`: cai no próprio id, como sempre
+  assert.equal(N.mega?.antes?.id ?? N.id, 16);
+});
+
 // o inimigo não tem inventário: exigir a pedra dele faria a segunda fase da luta nunca acontecer
 test('o lado inimigo megaevolui sem pedra', () => {
   const alfa = mon('charizard');

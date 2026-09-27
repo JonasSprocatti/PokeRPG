@@ -479,7 +479,10 @@ async function win() {
   const money = T ? 0 : E.level * rand(8, 14) * mult; // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
-  registrar(S, 'derrotados', E.data.speciesName, E.id);
+  // E.id vira o id da forma Mega enquanto ela está ativa (mega.aplicarForma); se ele desmaiou já mega-evoluído
+  // e nada desfaz isso (o inimigo é descartado, não salvo), registrar E.id direto gravaria pra sempre o id da
+  // Mega em registro.ids — a tela de desbloqueio do Roguelike passou a mostrar "Alakazam #10037" (a Mega).
+  registrar(S, 'derrotados', E.data.speciesName, E.mega?.antes?.id ?? E.id);
   /* Conquistas da conta (conquistas.js). A espécie conta sempre — o aliado lutando com você também constrói a sua
      Pedra Mega. Tipo e golpe só quando o golpe final foi SEU (`B.abate.porMim`, preenchido no laço do turno).
      Sem `B.abate` o inimigo caiu de veneno/armadilha/recuo: a equipe venceu, mas não há golpe pra creditar. */
