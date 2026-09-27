@@ -40,3 +40,12 @@ export function aplicarFonte(id = null) {
   document.documentElement.style.setProperty('--body', f.corpo);
   return f;
 }
+
+/* ============ ajustes: sprites 3D (pedido do usuário) ============ */
+// Troca o pixel-art clássico (dados.SPR) pelo render "home" (dados.SPR_3D — mesmo modelo 3D dos jogos modernos,
+// só que mais nítido). Fica neste navegador; sem versão de costas, então nas costas cai no mesmo fallback que
+// já existe pra espécie sem back 2D (render.sprCostas). Lido em toda parte que desenha um Pokémon em campo
+// (render.spriteFrente/sprCostas) — mudar aqui atualiza no próximo render, sem precisar recriar o Pokémon.
+export const SPRITE_3D_KEY = 'pokerpg-sprite-3d';
+export const sprite3DAtivo = () => store.get(SPRITE_3D_KEY) === true;
+export const definirSprite3D = v => store.set(SPRITE_3D_KEY, !!v);

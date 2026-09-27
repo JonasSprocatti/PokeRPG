@@ -8,10 +8,10 @@ import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEsp
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
 import { telaSaves } from './tela-saves.js';
-import { telaAjustes, baixarMapaOffline, baixarImagensOffline, acaoDev } from './tela-ajustes.js';
+import { telaAjustes, baixarMapaOffline, baixarImagensOffline, baixarImagens3DOffline, acaoDev } from './tela-ajustes.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
 import { telaPrivacidade } from './tela-privacidade.js';
-import { aplicarFonte } from './ajustes.js';
+import { aplicarFonte, definirSprite3D } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
   nuvem, salvarIcone, salvarBadgeExibida, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
@@ -60,6 +60,7 @@ document.addEventListener('click', async e => {
       return ok ? baixarMapaOffline(null) : undefined;
     }
     case 'baixar-imagens': return baixarImagensOffline(genDe(G.S));   // só as figuras; os dados ficam como estão
+    case 'baixar-imagens-3d': return baixarImagens3DOffline(genDe(G.S));   // idem, pros sprites 3D (opcional)
     // painel de testes (só conta admin; dev.js barra de novo do lado de lá)
     case 'fixar': return fixarConquista(v);   // 📌 acompanhar uma conquista da conta nesta jornada
     case 'dev-megas': return acaoDev('megas');
@@ -296,6 +297,7 @@ document.addEventListener('change', e => {
     const A = G.S.aliados[+io]; A.ordem = e.target.value;
     log(`${nm(A)}: ${ORDENS[A.ordem].nome}.`, 'muted'); save(); return render();
   }
+  if (e.target.id === 'ajuste-sprite-3d') { definirSprite3D(e.target.checked); return; } // vale no próximo render (ficha, batalha…), sem recriar Pokémon nenhum
   if (e.target.id === 'pv-clima') { G.climaRotas = e.target.checked; return; } // 🌦 clima/terreno das rotas (só opcional fora do Roguelike/Hardcore)
   if (e.target.id === 'pv-caca') { G.cacaShiny = e.target.checked; return; } // vale mesmo sem prévia de Pokémon
   if (!G.PV) return;

@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.42', data: '2026-09-27', titulo: 'Sprites 3D', piada: 'O Pikachu clássico é pixel art desde 1996. Agora ele também pode aparecer renderizado, pra quem prefere.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🧊 Sprites 3D</b> (⚙ Ajustes → Sprites): troca o pixel-art clássico pelo render usado em Pokémon HOME. Sem versão de costas — na batalha, seu Pokémon aparece de frente também. Download opcional em ⚙ Ajustes → Jogar offline, à parte do download normal.'
+      ] }
+    ] },
   { versao: '2.41', data: '2026-09-27', titulo: 'Política de Privacidade', piada: 'O jogo agora tem uma página inteira só pra dizer que não guarda quase nada sobre você. Ironicamente, é a página mais longa do site.',
     secoes: [
       { nome: 'Novidades', itens: [

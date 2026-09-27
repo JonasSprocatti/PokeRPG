@@ -489,6 +489,19 @@ aprovação do AdSense — texto explica o que cada serviço (localStorage, Supa
 juridiquês. Escrita ANTES de qualquer anúncio existir de verdade, porque é isso que a revisão do Google confere.
 `ads.js`/`tela-privacidade.js` entraram no PRECACHE do `sw.js` (regra de sempre: arquivo novo em `js/` = entra lá).
 
+### Sprites 3D (27/09/2026)
+Pedido do usuário (junto do backlog de animações). A PokéAPI não tem modelo 3D interativo pra jogo — o que existe
+é `sprites.other.home`, um RENDER 2D do mesmo modelo 3D usado em Pokémon HOME/jogos modernos (bem mais nítido
+que o pixel-art `sprites.front_default`). `dados.SPR_3D`/`SPR_3D_SHINY` montam pelo id, mesmo padrão do shiny —
+nunca lê `m.data.sprite`, porque `home` pode não existir pra alguma forma antiga guardada num save velho.
+**Sem versão de costas** (`home` só tem frente): com o interruptor ligado (`ajustes.sprite3DAtivo`, localStorage
+`pokerpg-sprite-3d`), `render.sprCostas` sempre devolve `null` — cai sozinho no MESMO fallback que já existia
+pra espécie sem back 2D (frente + CSS `flip`), sem código novo pra isso. Se a imagem 3D não existir de verdade,
+`imgMon()` já cai pro sprite 2D clássico no 2º erro de `<img>` (fallback que já existia, não precisou de nada
+novo). Preferência lida em `render.spriteFrente`/`sprCostas` a cada render — trocar o interruptor vale na hora,
+sem precisar recriar nenhum Pokémon. **Download opcional e À PARTE** do download normal (`offline.baixarImagens3D`/
+`imagensGuardadas3D`, mesmo formato de `baixarImagens`, sem back): ninguém baixa o dobro de imagem sem pedir.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

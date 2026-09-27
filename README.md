@@ -89,6 +89,9 @@ Modo opcional, ligado **no começo da jornada**. Quando você revela todas as es
 ### Jogar offline
 Depois do primeiro acesso o jogo abre sem internet, e guarda sozinho tudo o que você encontra. Em **⚙ Ajustes → Jogar offline** dá para **baixar um mapa inteiro de uma vez** — ou **o jogo inteiro**, com os nove mapas (Pokémon, golpes e sprites) — para que nada apareça sem imagem quando você estiver sem rede. A tela mostra quanto de cada mapa já está guardado e quanto espaço isso ocupa no aparelho. O download do jogo todo passa de 100 MB e leva alguns minutos: use uma rede boa e deixe a tela aberta.
 
+### 🧊 Sprites 3D
+Em **⚙ Ajustes → Sprites**, um interruptor troca o pixel-art clássico pelo render usado em Pokémon HOME e nos jogos mais recentes — mesmo modelo 3D, só que renderizado em 2D. Sem versão de costas: na batalha, o seu Pokémon aparece de frente também (igual acontece hoje com espécies sem sprite de costas clássico). Se algum Pokémon ou forma não tiver imagem 3D, a tela cai sozinha de volta pro sprite clássico. Download **opcional e separado** do download normal, em ⚙ Ajustes → Jogar offline.
+
 ### Itens segurados
 Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Para equipar: **loja → 🎒 Para segurar**, e depois "Segurar" na mochila (ou direto pelo atalho na ficha). Uma **Fruta Oran** também aparece explorando. A ficha mostra o que cada um leva, com botão para guardar de volta.
 - **Restos** (cura 1/16 por turno), **Lodo Negro** (cura Venenosos, machuca o resto), **Sino-Concha** (drena 1/8 do dano que você causa).
@@ -357,6 +360,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)
 - [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
 - [x] Estrutura de anúncios (Google AdSense) desligada por padrão, banner de consentimento de cookies (GDPR) e tela de Política de Privacidade
+- [x] Sprites 3D opcionais (render "home" da PokéAPI), com download à parte pro modo offline
 
 ## Licença
 

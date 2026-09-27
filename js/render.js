@@ -2,7 +2,8 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $ } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, espelhar, outroServidor, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { sprite3DAtivo } from './ajustes.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { TELAS } from './navegacao.js';
@@ -28,8 +29,14 @@ import { clamp, esc, fmt } from './util.js';
 // Costas: Gen 8+ não tem sprite de costas — aí usa a frente espelhada (classe .flip).
 // `espelhar` em tudo que vem de `m.data`: save e cache antigos guardam o endereço velho das imagens (dados.js)
 // `formaSprite` = id do sprite da forma de batalha (Castform com o tempo, golpe.ajustarForma); o shiny precisa dele porque monta a URL pelo id
-export const spriteFrente = m => m.shiny ? SPR_SHINY(m.formaSprite || m.id) : espelhar(m.data.sprite);
-const sprCostas = m => m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.formaSprite || m.id) : espelhar(m.data.back)) : null;
+/* Sprite 3D (ajustes.sprite3DAtivo, pedido do usuário): sempre montado pelo id, igual ao shiny — nunca lê
+   m.data.sprite, porque o "home" nem sempre existe pros dados guardados de formas antigas. Se a imagem 3D não
+   existir de verdade pra esse Pokémon/forma, imgMon() já cai sozinho no sprite 2D clássico no 2º erro de <img>. */
+export const spriteFrente = m => sprite3DAtivo()
+  ? (m.shiny ? SPR_3D_SHINY(m.formaSprite || m.id) : SPR_3D(m.formaSprite || m.id))
+  : (m.shiny ? SPR_SHINY(m.formaSprite || m.id) : espelhar(m.data.sprite));
+// "home" não tem sprite de costas: com o 3D ativo, sempre null — quem chama já sabe cair pra frente + flip
+const sprCostas = m => sprite3DAtivo() ? null : (m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.formaSprite || m.id) : espelhar(m.data.back)) : null);
 /* Dois planos B, nesta ordem: (1) o MESMO arquivo no outro servidor de imagens — cobre CDN fora do ar ou
    bloqueado na rede de quem joga; (2) a sprite normal — cobre shiny que não existe pra aquela forma. Sem o
    primeiro, uma falha do servidor deixava o Pokémon como ícone quebrado mesmo com a imagem disponível ali ao

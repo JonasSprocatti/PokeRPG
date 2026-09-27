@@ -18,6 +18,13 @@ export const SPR = id => `${SPRITES}/pokemon/${id}.png`;
 // shiny: montado pelo id (não fica no cache da API — save antigo funciona sem migrar). Gen 8+ não tem sprite de costas.
 export const SPR_SHINY = id => `${SPRITES}/pokemon/shiny/${id}.png`;
 export const SPR_SHINY_COSTAS = id => `${SPRITES}/pokemon/back/shiny/${id}.png`;
+/* Sprites "3D" (pedido do usuário): a PokéAPI não tem modelo 3D de verdade pra jogar — o que existe é `home`,
+   render 2D do MESMO modelo 3D usado em Pokémon HOME/jogos modernos (bem mais nítido que o pixel-art clássico).
+   Montado pelo id, como o shiny — mesmo motivo (save antigo não precisa migrar). **Sem versão de costas**: o
+   conjunto `home` só tem sprite de frente, então quem ativa o modo 3D vê a mesma figura tanto na frente quanto
+   nas costas (mesmo fallback que já existe pra espécie sem back 2D — ver render.sprCostas). */
+export const SPR_3D = id => `${SPRITES}/pokemon/other/home/${id}.png`;
+export const SPR_3D_SHINY = id => `${SPRITES}/pokemon/other/home/shiny/${id}.png`;
 export const ITEM_SPR = n => `${SPRITES}/items/${n}.png`;
 /* Alguns itens novos (Gen 8/9) simplesmente NÃO têm imagem no repositório de sprites da PokéAPI — Coroa Galárica,
    Armadura Auspiciosa, Pote Rachado... Antes a figura quebrada era escondida (visibility:hidden) e sobrava um buraco:

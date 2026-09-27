@@ -8,7 +8,7 @@
 // Baixar um mapa inteiro são ~150 Pokémon: pesado pra rede, leve pro aparelho. Puro o bastante pra testar a lista
 // de alvos (alvosDaGen) em tests/offline.test.js; o download em si precisa de rede e não é testado.
 import { rotasDaGen, dadosDaGen, GENS } from './mapas.js';
-import { SPR, SPR_SHINY } from './dados.js';
+import { SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY } from './dados.js';
 import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache, temNoCache, marcarNoCache } from './api.js';
 
 /* Versão do que o download traz. Subiu na v2: além dos Pokémon, golpes e sprites, agora vêm a curva de XP e a
@@ -96,6 +96,32 @@ export async function imagensGuardadas(gen) {
     const c = await caches.open(nome);
     let n = 0;
     for (const id of alvosDaGen(gen)) if (await c.match(SPR(id), { ignoreVary: true })) n++;
+    return n;
+  } catch { return null; }
+}
+
+/* Sprites 3D (ajustes.sprite3DAtivo): download SEMPRE opcional e À PARTE do baixarGen/baixarImagens normal —
+   ninguém baixa o dobro de imagem sem pedir. Mesmo formato de baixarImagens, sem a versão de costas (o
+   conjunto "home" não tem uma; ver dados.SPR_3D). */
+export async function baixarImagens3D(gen, aoAndar = () => {}, sinal = null) {
+  const ids = alvosDaGen(gen);
+  let feitos = 0, falhas = 0;
+  for (let i = 0; i < ids.length && !sinal?.cancelado; i += LOTE) {
+    await Promise.all(ids.slice(i, i + LOTE).map(async id => {
+      const r = await Promise.all([guardarSprite(SPR_3D(id)), guardarSprite(SPR_3D_SHINY(id))]);
+      falhas += r.filter(x => !x).length;
+      aoAndar(++feitos, ids.length, 'imagens 3D');
+    }));
+  }
+  return { ok: !falhas && !sinal?.cancelado, falhas, total: ids.length };
+}
+export async function imagensGuardadas3D(gen) {
+  try {
+    const nome = (await caches.keys()).find(k => k.includes('externo'));
+    if (!nome) return 0;
+    const c = await caches.open(nome);
+    let n = 0;
+    for (const id of alvosDaGen(gen)) if (await c.match(SPR_3D(id), { ignoreVary: true })) n++;
     return n;
   } catch { return null; }
 }
