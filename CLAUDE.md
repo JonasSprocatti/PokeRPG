@@ -218,6 +218,30 @@ juntando `shiniesAmigos: r.shiniesAmigos || {}` na lista branca.
   jornada já terminada não dá pra recuperar (não dá pra saber por qual Pokémon elas passaram — `registro.evolucoes`
   mistura jogador e aliados), mas o caso mais comum (a run em andamento, como a do relato) é coberto pela árvore.
 
+### Investigado (27/09/2026) — Pedra Mega sumida da loja e confusão no desbloqueio do Roguelike
+Relato: conta "Berga" bateu 1.249 abates como Mewtwo (Mega conquistada, confirmado "conquistado" na tela de
+Conquistas) e mesmo assim a Pedra Mega não apareceu na loja jogando como Mewtwo numa run nova. **Consultado
+direto no banco** (service role key, `ferramentas/.relatos-admin.env` — mesmo padrão do `relatos-admin.mjs`) e
+simulada a lógica REAL do jogo (`gimmicksNaLoja`/`conquistasDaConta`) com o `progresso`/`jornadas` de verdade
+daquela conta: **o cálculo dá `mega: true` corretamente** quando alimentado com os dados certos — não é bug de
+fórmula. A explicação mais provável é um problema pontual do lado do cliente (sincronização que não tinha
+"assentado" no `localStorage` no momento exato em que ele conferiu a loja logo após vencer). **Fragilidade real
+corrigida de qualquer forma**: `render.js` envolvia Mega+Z+Vínculo numa única `try/catch` — uma exceção em
+QUALQUER uma das três apagava as TRÊS da loja em silêncio (só `console.warn`, invisível pra quem joga).
+`carreira.gimmicksNaLoja` agora isola cada gimmick no próprio try/catch (`seguro(fn)`), então um problema
+pontual numa não derruba as outras duas. Se o sumiço da Pedra Mega se repetir, o próximo passo é pegar o
+console do navegador na hora (`console.error('gimmicksNaLoja', ...)` já aparece lá se uma delas falhar).
+
+Segundo relato da mesma conta ("matei 10 de quase tudo e não libera pra jogar"): **não é bug**. Conferido nos
+dados reais: a maioria das espécies de Gen 1 JÁ está liberada (10+ abates); várias outras estão em 8–9, faltando
+mesmo 1–2. E o caso do Rhydon (print: "derrotou 12" na Pokédex, mas não desbloqueado): a Pokédex mostra o total
+da CARREIRA INTEIRA (qualquer dificuldade), mas o desbloqueio do Roguelike só conta abate **em jornada
+Roguelike** — dos 12 Rhydon, só 7 vieram de jornadas Roguelike (5 vieram do modo Difícil). Isso é intencional
+("não dá pra farmar fora do Roguelike"), mas a UI não deixava claro o porquê do número não bater. **Corrigido**:
+`tela-pokedex.js` (`htmlRoguelike`, usa `roguelike.progressoRoguelike`/`textoProgresso`) agora mostra, na ficha de
+cada espécie, o progresso ESPECÍFICO do Roguelike separado do total ("Pro Roguelike: 7/10 derrotas" ou "🔓
+Desbloqueado..."), então a conta fica clara na hora, sem precisar ir a outra tela.
+
 ## Modo offline
 
 - `sw.js` (service worker, registrado no `index.html`): arquivos do jogo em **rede primeiro** (online pega sempre a versão nova, sem trocar versão a cada deploy; offline cai no cache), PokéAPI/sprites/esm.sh/fontes em **cache primeiro**, Supabase nunca em cache. **Todo arquivo novo em `js/` entra em `PRECACHE`** — `tests/sw.test.js` falha se esquecer.

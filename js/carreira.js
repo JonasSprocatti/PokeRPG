@@ -162,13 +162,19 @@ export const vinculoDaContaLiberado = (especie, registroAtual = null) => vinculo
 /* O que a LOJA precisa saber pra decidir se mostra a Pedra Mega, o Cristal Z e o Vínculo de Batalha, numa consulta só.
    Existe porque a tela perguntava duas vezes — e cada pergunta recalcula a carreira inteira e ainda GRAVA o
    progresso. Duas vezes por render de loja é desperdício puro, e dobrava a chance de um erro ali derrubar uma
-   tela que não tem nada a ver com gimmick. */
+   tela que não tem nada a ver com gimmick.
+   Bug relatado (27/09/2026): render.js envolvia a chamada inteira num try/catch só — uma exceção em QUALQUER
+   uma das três (ex.: um golpe malformado quebrando o `golpes.some` do Z) apagava as TRÊS da loja em silêncio
+   (só um console.warn), mesmo com a Mega genuinamente conquistada. `p` (a carreira/progresso) é uma consulta só
+   de propósito e uma falha nela derruba as três mesmo — mas dali pra frente cada gimmick tem o próprio try/catch,
+   pra um problema isolado numa não apagar as outras duas. */
 export function gimmicksNaLoja(especie, golpes = [], registroAtual = null) {
   const p = conquistasDaConta(registroAtual);
+  const seguro = fn => { try { return fn(); } catch (e) { console.error('gimmicksNaLoja', e); return false; } };
   return {
-    mega: megaLiberada(p, especie),
-    z: golpes.some(g => g && g.cls !== 'status' && zLiberado(p, g)),
-    vinculo: vinculoLiberado(p, especie)
+    mega: seguro(() => megaLiberada(p, especie)),
+    z: seguro(() => golpes.some(g => g && g.cls !== 'status' && zLiberado(p, g))),
+    vinculo: seguro(() => vinculoLiberado(p, especie))
   };
 }
 /* ---- badges (badges.js) ----

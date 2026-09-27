@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.47', data: '2026-09-27', titulo: 'Loja mais resistente, Roguelike mais claro', piada: 'A Pedra Mega e o Cristal Z brigaram feio uma vez e resolveram nunca mais sumir juntos por causa da briga do outro.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A loja verificava a Pedra Mega, o Cristal Z e o Vínculo de Batalha numa tentativa só: um problema em QUALQUER um dos três podia apagar os TRÊS da prateleira sem aviso nenhum. Agora cada um é verificado por conta própria.',
+        'A ficha de cada espécie na Pokédex agora mostra também o progresso ESPECÍFICO do Roguelike (que só conta o que foi feito em jornadas Roguelike) — antes só dava pra ver o total da carreira inteira, o que confundia quem via "derrotou 12" e achava que já tinha passado dos 10 exigidos.'
+      ] }
+    ] },
   { versao: '2.46', data: '2026-09-27', titulo: 'Shiny desbloqueia de verdade', piada: 'O Beedrill shiny reclamou anos sem crédito no currículo. Agora ele finalmente entrou na ficha.',
     secoes: [
       { nome: 'Correções', itens: [

@@ -9,6 +9,7 @@ import { $, limparTopo } from './ui.js';
 import { barraTelas } from './navegacao.js';
 import { carregarCarreira } from './carreira.js';
 import { pokedexDaConta, ondeAparece, TOTAL_DEX, ESTADOS } from './pokedex-conta.js';
+import { progressoRoguelike, textoProgresso } from './roguelike.js';
 import { SPR, STATS, STAT_PT, TYPE_PT, TC, DARK_TEXT } from './dados.js';
 import { loadPokemon, loadAbility } from './api.js';
 import { textoTaxa } from './mapas.js';
@@ -77,6 +78,7 @@ export async function verNaPokedex(id) {
         <h3>#${id} ${esc(fmt(e.especie))}</h3>
         <div class="chips">${d.types.map(tipoSelo).join('')}</div>
         <p class="small muted">Você já viu <b>${n(e.vistos)}</b>, derrotou <b>${n(e.derrotados)}</b> e recrutou <b>${n(e.amigos)}</b>.</p>
+        ${htmlRoguelike(e.especie)}
       </div>
     </div>
     <table class="stats"><thead><tr><th>Atributo</th><th>Base</th></tr></thead><tbody>
@@ -93,6 +95,18 @@ export async function verNaPokedex(id) {
   }
 }
 
+/* Progresso do desbloqueio pro Roguelike (roguelike.js): só conta abates/amizades/evoluções em jornadas
+   ROGUELIKE — pode ser MENOR que o "derrotou N" da carreira inteira mostrado acima, porque abate em outro modo
+   não conta pra esse desbloqueio. Bug relatado (27/09/2026, Rhydon): jogador via "derrotou 12" e achava que já
+   passava dos 10 exigidos, sem saber que só 7 desses 12 vieram de jornadas Roguelike — os outros 5 foram no
+   Difícil. Essa linha deixa a conta clara na hora, em vez de só na tela de Roguelike/Conquistas. */
+function htmlRoguelike(especie) {
+  const p = progressoRoguelike(carregarCarreira().jornadas).find(x => x.especie === especie);
+  if (!p) return '';
+  return p.desbloqueada
+    ? `<p class="small muted">🔓 Desbloqueado pra escolher no início de uma jornada Roguelike (${esc(textoProgresso(p))}).</p>`
+    : `<p class="small muted">Pro Roguelike (só conta o que foi feito EM jornadas Roguelike, pode ser menos que o total acima): ${esc(textoProgresso(p))}.</p>`;
+}
 // onde a espécie aparece no mundo (pokedex-conta.ondeAparece): rotas, Alfa e luta final
 function htmlOnde(id) {
   const onde = ondeAparece(id);

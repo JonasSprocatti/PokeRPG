@@ -446,13 +446,15 @@ function renderActions() {
     /* `soComMega` (a Pedra Mega) só entra na prateleira quando a SUA espécie já tem a Mega conquistada na conta.
        Assim não há como comprar uma pedra que não serve pra ninguém — e quem ainda não conquistou não vê um
        item caro e inútil na loja. */
-    /* O filtro NUNCA pode impedir a loja de abrir. Ele decide se dois itens aparecem na prateleira; se a conta
+    /* O filtro NUNCA pode impedir a loja de abrir. Ele decide se três itens aparecem na prateleira; se a conta
        de conquistas falhar por qualquer motivo, o certo é abrir a loja sem eles e registrar o erro — e não
        deixar a pessoa sem loja. Uma exceção aqui não faz o clique "não funcionar" em silêncio, que é o pior
-       jeito de quebrar. Uma consulta só (gimmicksNaLoja): antes eram duas, e cada uma recalcula a carreira. */
+       jeito de quebrar. Uma consulta só (gimmicksNaLoja): antes eram duas, e cada uma recalcula a carreira.
+       gimmicksNaLoja já isola erro por gimmick (carreira.js) — este try/catch é só a rede de segurança se `p`
+       (a consulta compartilhada) falhar antes de chegar em qualquer uma das três. */
     let gimmicks = { mega: false, z: false, vinculo: false };
     try { gimmicks = gimmicksNaLoja(P?.data?.speciesName, P?.moves, S?.registro); }
-    catch (e) { console.warn('loja: não consegui checar as gimmicks; abrindo sem a Pedra Mega, o Cristal Z e o Vínculo de Batalha', e); }
+    catch (e) { console.error('loja: não consegui checar as gimmicks; abrindo sem a Pedra Mega, o Cristal Z e o Vínculo de Batalha', e); }
     const forSale = Object.entries(ITEMS).filter(([, it]) =>
       it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z) && (!it.soComVinculo || gimmicks.vinculo));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
