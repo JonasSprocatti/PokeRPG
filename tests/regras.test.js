@@ -75,6 +75,22 @@ test('recalc: subir de nível mantém o dano sofrido', () => {
   assert.equal(m.hp, m.stats.hp - 5);
 });
 
+/* Bug real relatado em jogo: um Alfa Dragonite mega-evoluiu com 50% do HP (já dobrado por statsDeChefe, batalha.js)
+   e desmaiou na hora, antes do aliado bater — sem `m.statsChefe`, recalc() jogava o teto de HP de volta pro valor
+   SEM o bônus de chefe (quase a metade), e o `clamp` zerava o HP atual junto. */
+test('recalc de um chefe (statsChefe) preserva o bônus de statsDeChefe ao trocar de forma', () => {
+  const base = { hp: 91, attack: 134, defense: 95, 'special-attack': 100, 'special-defense': 100, speed: 80 };
+  const m = { level: 68, nature: 'hardy', ivs: { hp: 31, attack: 31, defense: 31, 'special-attack': 31, 'special-defense': 31, speed: 31 }, evs: zeros(), data: { base }, statsChefe: true };
+  m.stats = statsDeChefe(calcStats(m)); m.hp = m.stats.hp; // como batalha.startBossBattle monta o Alfa
+  const hpChefeCheio = m.stats.hp;
+  m.hp = Math.floor(hpChefeCheio * 0.5); // levou dano até ficar em 50% — o gatilho da Mega
+  m.data = { base: { hp: 91, attack: 124, defense: 115, 'special-attack': 145, 'special-defense': 125, speed: 100 } }; // Mega Dragonite: mesma base de HP
+  recalc(m);
+  assert.equal(m.stats.hp, hpChefeCheio, 'o teto de HP do chefe não pode cair ao recalcular (mesma base de HP)');
+  assert.ok(m.hp > 0, `o chefe não pode nascer desmaiado da própria Mega (ficou com ${m.hp} HP)`);
+  assert.equal(m.hp, Math.floor(hpChefeCheio * 0.5), 'o dano já sofrido continua o mesmo — só a base mudou, não o bônus');
+});
+
 test('stageMul: estágios −6..+6', () => {
   assert.equal(stageMul(0), 1);
   assert.equal(stageMul(1), 1.5);

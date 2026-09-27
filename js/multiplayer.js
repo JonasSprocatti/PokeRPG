@@ -18,7 +18,7 @@ import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, climaDe, climaDasRotasAtivo, CLIMA_TURNOS } from './regras.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, climaDe, climaDasRotasAtivo, CLIMA_TURNOS } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
@@ -732,7 +732,7 @@ function renderSala() {
   $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` + botoesGimmickMP(gd) +
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
-      : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
+      : vez.moves.map((g0, i) => { const g = golpeDoTera(golpeDoClima(g0, climaDe(b.campo)), vez); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
     ${botoesRaide(b)}
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }

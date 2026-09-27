@@ -111,7 +111,11 @@ export function calcStats(m) {
   }
   return out;
 }
-export function recalc(m) { const old = m.stats.hp; m.stats = calcStats(m); m.hp = clamp(m.hp + (m.stats.hp - old), 0, m.stats.hp); }
+/* `m.statsChefe` (batalha.js: Alfa e o lendário principal) marca quem recebeu statsDeChefe (HP ×2, resto ×1,3) na
+   entrada — um bônus de UMA VEZ, fora do calcStats normal. Sem reaplicar aqui, um chefe que muda de forma no meio
+   da luta (Mega, Castform, Aegislash…) perdia o bônus na recontagem: o teto de HP caía pela metade e o `clamp`
+   embaixo zerava o HP atual — Alfa mega-evoluindo já saía desmaiado, antes até do aliado bater. Relatado em jogo. */
+export function recalc(m) { const old = m.stats.hp; m.stats = m.statsChefe ? statsDeChefe(calcStats(m)) : calcStats(m); m.hp = clamp(m.hp + (m.stats.hp - old), 0, m.stats.hp); }
 export const freshVol = () => ({ stages: { attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0, accuracy: 0, evasion: 0 }, conf: 0, flinch: false, flashFire: false });
 export const stageMul = n => n >= 0 ? (2 + n) / 2 : 2 / (2 - n);
 // quanto o clima mexe num atributo deste Pokémon: habilidade (Swift Swim…) e o bônus do próprio clima (CLIMAS.defesaDe)
@@ -311,6 +315,13 @@ export const TIPO_BOLA_DO_TEMPO = { sol: 'fire', chuva: 'water', areia: 'rock', 
 export function golpeDoClima(g, clima) {
   if (g?.name !== 'weather-ball' || !TIPO_BOLA_DO_TEMPO[clima]) return g;
   return { ...g, type: TIPO_BOLA_DO_TEMPO[clima], power: (g.power || 50) * 2 };
+}
+/* Tera Blast: o tipo segue o Tera de QUEM USA (não muda de categoria física/especial — simplificação; o poder já
+   vem certo da PokéAPI). Sem terastalizar, continua Fogo/Normal do golpe original. Relatado em jogo: o golpe
+   nunca mudava de tipo depois de terastalizar. */
+export function golpeDoTera(g, u) {
+  if (g?.name !== 'tera-blast' || !u?.tera) return g;
+  return { ...g, type: u.tera };
 }
 export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
 // quem está no chão sente o terreno; Voador e Levitate flutuam

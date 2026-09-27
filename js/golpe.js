@@ -18,7 +18,7 @@ import { ITEMS } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, tiposDefensivos } from './regras.js';
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, tiposDefensivos } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 
@@ -483,6 +483,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
 // O golpe em si, depois de "X usou Y!". Devolve 'acertou' quando o golpe de dano conectou (Hyper Beam só recarrega assim).
 async function executar(u, t, g, primeiro, ctx, esp) {
   g = golpeDoClima(g, climaDoCtx(ctx));   // Weather Ball: tipo e poder do tempo (o PP já foi gasto no golpe original)
+  g = golpeDoTera(g, u);                  // Tera Blast: tipo de quem usa, se estiver terastalizado
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
   if (!selfT && t.vol.protegido) {

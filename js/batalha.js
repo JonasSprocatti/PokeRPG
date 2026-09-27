@@ -109,7 +109,7 @@ export async function startBossBattle(z) {
   const c = z.chefe, max = Object.fromEntries(STATS.map(s => [s, 31]));
   if (offline() && !pokemonEmCache(c.id)) throw erroOffline(`📴 Sem internet: o Alfa de ${z.name} ainda não está salvo neste aparelho. Desafie ele online uma vez, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: max });
-  E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id;
+  E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id; E.statsChefe = true;
   iniciar({ enemy: E, turn: 1, runs: 0, chefe: z.id });
   await say(`⚔ O chão treme. <b>${esc(fmt(E.name))} Alfa</b> (Nv. ${E.level}) guarda ${esc(z.name)}!`, 'enc');
   await say('Alfas são muito mais fortes que o normal: o dobro de HP e 30% a mais em todo o resto.', 'muted');
@@ -124,7 +124,7 @@ export async function startLendarios(z) {
   if (offline() && seq.some(l => !pokemonEmCache(l.id))) throw erroOffline(`📴 Sem internet: os lendários de ${z.name} ainda não estão salvos neste aparelho. Baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   const equipe = await Promise.all(seq.map(async (l, i) => {
     const M = await makeMon(await loadPokemon(l.id), l.nivel, { ivs: max });
-    if (i === seq.length - 1) { M.stats = statsDeChefe(M.stats); M.hp = M.stats.hp; }
+    if (i === seq.length - 1) { M.stats = statsDeChefe(M.stats); M.hp = M.stats.hp; M.statsChefe = true; }
     M.lendario = true; return M;
   }));
   const regiao = dadosDaGen(z.gen).regiao;

@@ -3,7 +3,7 @@
    sentidos, e que a conta antiga continua valendo pra quem não terastalizou. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tiposDefensivos, multStab, typeEff, calcDamage, calcStats, freshVol } from '../js/regras.js';
+import { tiposDefensivos, multStab, typeEff, calcDamage, calcStats, freshVol, golpeDoTera } from '../js/regras.js';
 import { usarGolpe } from '../js/golpe.js';
 import { TYPE_PT } from '../js/dados.js';
 
@@ -108,4 +108,26 @@ test('Leech Seed e pó respeitam o tipo Tera, não só o original', async t => {
   const normalTeraGrama = monMotor(['normal'], { tera: 'grass' });
   await usarGolpe(monMotor(['normal']), normalTeraGrama, semente, true, c);
   assert.equal(normalTeraGrama.vol.semente, undefined, 'Tera Grama vira imune a Leech Seed mesmo sem ser Grama de origem');
+});
+
+/* Bug real relatado em jogo: "Terablast não está trocando conforme a tipagem do terastal" — o golpe nunca tinha
+   tratamento especial (diferente do Weather Ball, que já mudava de tipo com o clima), então saía sempre Normal. */
+test('golpeDoTera: Tera Blast vira o tipo de quem usa, só quando terastalizado', () => {
+  const teraBlast = { name: 'tera-blast', type: 'normal', power: 80, cls: 'special' };
+  assert.equal(golpeDoTera(teraBlast, { tera: 'fire' }).type, 'fire');
+  assert.equal(golpeDoTera(teraBlast, { tera: 'dragon' }).type, 'dragon');
+  assert.equal(golpeDoTera(teraBlast, {}).type, 'normal', 'sem terastalizar, continua o tipo original');
+  assert.equal(golpeDoTera(teraBlast, { tera: 'water' }).power, 80, 'poder não muda, só o tipo');
+  assert.equal(golpeDoTera({ name: 'tackle', type: 'normal' }, { tera: 'fire' }).type, 'normal', 'só mexe no Tera Blast');
+});
+
+test('Tera Blast muda de tipo de verdade dentro do motor do golpe', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const teraBlast = golpe({ name: 'tera-blast', type: 'normal', power: 80, cls: 'special' });
+  const usuario = monMotor(['fire'], { tera: 'normal' }); // vira Tera Blast Normal — imune contra Fantasma
+  const alvo = monMotor(['ghost']);
+  const c = ctx();
+  await usarGolpe(usuario, alvo, teraBlast, true, c);
+  assert.equal(alvo.hp, 200, 'Tera Blast virou Normal: Fantasma é imune, não devia tirar HP nenhum');
+  assert.ok(c.msgs.some(m => /não afeta/i.test(m)), 'e a narração precisa dizer que não afetou');
 });

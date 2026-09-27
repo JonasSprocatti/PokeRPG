@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada, vantagemDoGolpe, golpeDoClima } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -405,7 +405,7 @@ function renderActions() {
     const noPP = P.moves.every(m => m.ppLeft <= 0);
     a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Sem PP: ataque desesperado com recuo.</small></button>`
       : P.moves.map((golpeBase, i) => {
-        const m = golpeDoClima(golpeBase, climaDe(G.B?.campo));   // Weather Ball mostra o tipo e o poder do tempo de agora
+        const m = golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), P);   // Weather Ball (clima) e Tera Blast (seu Tera) no botão
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;

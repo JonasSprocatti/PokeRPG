@@ -10,7 +10,9 @@ export const PATCH_NOTES = [
       { nome: 'Correções', itens: [
         'Depois de <b>terastalizar</b>, alguns golpes ainda calculavam a eficácia ("Não é muito efetivo...", "É super efetivo!") pelo tipo ANTIGO, não pelo tipo Tera — o dano de verdade já estava certo, mas a mensagem (e a imunidade de golpes como Leech Seed, Guilhotina e esporos) ainda olhava pro tipo de antes. Agora os dois seguem o tipo Tera.',
         'Derrotar um Pokémon <b>já Mega Evoluído</b> (Alfa, lendário ou de treinador) podia gravar a Mega, e não a espécie normal, no seu progresso — a tela de desbloqueio do Roguelike chegou a mostrar "Alakazam #10037" (o número da Mega) no lugar do Alakazam de verdade. Corrigido: o que conta agora é sempre a espécie original.',
-        'Escolher (ou parar) a <b>🎯 Caça Shiny</b> de uma rota agora mostra um aviso bem visível na tela, além da linha que já ficava no registro — a mudança de borda da caixa sozinha passava despercebida e parecia que o clique não tinha feito nada.'
+        'Escolher (ou parar) a <b>🎯 Caça Shiny</b> de uma rota agora mostra um aviso bem visível na tela, além da linha que já ficava no registro — a mudança de borda da caixa sozinha passava despercebida e parecia que o clique não tinha feito nada.',
+        'Um <b>Alfa</b> (ou o lendário principal) que Mega Evoluía no meio da luta podia desmaiar na hora, sem ninguém encostar nele — o bônus de HP que todo chefe ganha ao entrar em campo se perdia na troca de forma, cortando o teto de HP quase pela metade. Agora o bônus sobrevive à Mega.',
+        '<b>Tera Blast</b> nunca mudava de tipo depois de terastalizar — saía sempre Normal, o tipo original do golpe. Agora ele segue o seu tipo Tera, como deveria.'
       ] }
     ] },
   { versao: '2.38', data: '2026-09-25', titulo: 'Carteira, prints e Mega Z', piada: 'A carteira agora aparece na tela. O Alfa continua sem saber onde guardou o dele.',
