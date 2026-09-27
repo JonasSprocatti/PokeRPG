@@ -173,7 +173,7 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 
 ## Bugs e sugestões
 
-- `relatos.js` (tela, `G.mode = 'relatos'`) → `enviarRelato` (nuvem.js) → tabela `relatos` (schema.sql: insert pra anon/authenticated, select só dos próprios). Sem config/offline/falha → fila `pokerpg-relatos-fila`, enviada no `iniciarNuvem` e no `online`. Bug pode anexar `contextoTecnico()` (sem dados pessoais; o jogador vê o JSON antes). Quem mantém lê no Table Editor.
+- `relatos.js` (tela, `G.mode = 'relatos'`) → `enviarRelato` (nuvem.js) → tabela `relatos` (schema.sql: insert pra anon/authenticated, select só dos próprios). Sem config/offline/falha → fila `pokerpg-relatos-fila`, enviada no `iniciarNuvem` e no `online`. Bug pode anexar `contextoTecnico()` (sem dados pessoais; o jogador vê o JSON antes). Quem mantém lê no Table Editor — ou por `ferramentas/relatos-admin.mjs` (só no Raspberry Pi, `node ferramentas/relatos-admin.mjs`): puxa tudo com a **service role key** local (`ferramentas/.relatos-admin.env`, git-ignorado, nunca colar em chat — ver `relatos-admin.env.example`), baixa os prints do bucket privado `relatos-imagens` e monta `relatos-baixados/RESUMO.md`. Puxa só `status = 'novo'` e marca como `lido` (flags `--manter`/`--todos` mudam isso).
 
 ### Próximos passos combinados (em ordem sugerida)
 - **Evoluções especiais** (pedido do usuário): hoje `loadEvo` só guarda `trigger` e `min_level` — pedras/itens (use-item), troca (Cabo de Conexão no single player; troca real no multiplayer), amizade, dia/noite, golpe conhecido, zona. A PokéAPI traz tudo em `evolution_details`.

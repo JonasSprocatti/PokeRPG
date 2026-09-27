@@ -1,0 +1,6 @@
+# Chave de acesso total ao Supabase (service role) usada só pela ferramenta de manutenção
+# ferramentas/relatos-admin.mjs. Nunca subir: ignora todas as políticas de RLS do banco.
+ferramentas/.relatos-admin.env
+
+# Saída local da mesma ferramenta: relatos de bug/sugestão baixados (texto + prints de jogadores).
+/relatos-baixados/
