@@ -471,6 +471,24 @@ co-op) e nos botões de golpe das duas telas. Validado com dados reais da PokéA
 não toca rede — mesmo recorte que `mega.megaevoluir`): a transformação, o Water Shuriken reforçado e o desfazer
 no fim da luta rodaram de ponta a ponta contra a API de verdade antes de ir pro commit.
 
+### Anúncios (Google AdSense) e Política de Privacidade (27/09/2026)
+Pedido do usuário: monetizar o site com ads. **Decidido não perseguir a Play Store** (avaliei a complexidade —
+TWA/Bubblewrap é barato tecnicamente, mas conta pessoal exige teste fechado com 12 testadores por 14 dias
+corridos antes de publicar, e o risco de marca do Pokémon fica bem mais visível virando app publicado — o
+usuário optou por focar só no site). `js/ads.js` é a estrutura pronta, **desligada por padrão**: mesmo gate do
+Supabase (`config.ADSENSE_CLIENT_ID`, marcador = nada roda). Quando a conta existir: preencher o client id +
+`AD_SLOT_INICIO` (`criacao.js`) com o id da unidade de anúncio.
+**O jogo NUNCA carrega o script do Google antes do consentimento** (exigência da política de consentimento da UE
+— GDPR): `ads.iniciarAds()` (chamado no boot, `main.js`) só mostra um banner fixo (`.cookie-banner`, não é modal,
+não trava o jogo) se `adsConfigurado()` e ainda não houver escolha salva (`pokerpg-consentimento-ads`); só
+`aceitar` chama `carregarScript()`. Escolha mudável depois em `⚙ Ajustes` (`htmlAds()`, só aparece com conta
+configurada). `blocoAds(unitId)`/`ativarSlots()` desenham e ativam um slot — sempre vazio sem config ou sem
+consentimento, nunca um `<ins>` "morto" esperando.
+**Tela 🔒 Privacidade** (`js/tela-privacidade.js`, nova entrada em `navegacao.TELAS`) é pré-requisito de
+aprovação do AdSense — texto explica o que cada serviço (localStorage, Supabase, PokéAPI, AdSense) coleta, sem
+juridiquês. Escrita ANTES de qualquer anúncio existir de verdade, porque é isso que a revisão do Google confere.
+`ads.js`/`tela-privacidade.js` entraram no PRECACHE do `sw.js` (regra de sempre: arquivo novo em `js/` = entra lá).
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

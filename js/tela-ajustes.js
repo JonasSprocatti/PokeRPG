@@ -11,6 +11,7 @@ import { espacoUsado, itensNoCache, limparCache } from './api.js';
 import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, limparTeste, temProgressoDeTeste } from './dev.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
+import { adsConfigurado, consentimento } from './ads.js';
 
 export function telaAjustes() {
   G.mode = 'ajustes'; limparTopo();
@@ -33,6 +34,7 @@ export function telaAjustes() {
     <p class="small muted" style="margin-top:14px">As fontes vêm do Google Fonts e ficam guardadas para o modo offline depois do primeiro uso.</p>
     <h3 class="passo"><span>B</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
+    ${htmlAds()}
     ${htmlDev()}
   </main>`;
   mostrarEspaco();
@@ -106,6 +108,19 @@ async function mostrarImagens() {
   if (!document.getElementById('offline-imagens')) return;   // trocou de tela enquanto contava
   el.innerHTML = n === null ? '' : n >= total ? `✅ ${n}/${total} imagens guardadas.`
     : `⚠ só <b>${n}/${total}</b> imagens guardadas — sem internet, o resto aparece como figura quebrada.`;
+}
+/* Preferência de cookies de anúncio (js/ads.js). Só aparece se a conta AdSense estiver configurada — sem isso,
+   perguntar "aceita cookie de anúncio?" não faz sentido nenhum, porque não existe anúncio nenhum. */
+function htmlAds() {
+  if (!adsConfigurado()) return '';
+  const c = consentimento();
+  return `<h3 class="passo"><span>C</span> Cookies de anúncio</h3>
+    <p class="small muted">Sua escolha atual: <b>${c === 'aceito' ? 'aceitou' : c === 'recusado' ? 'recusou' : 'ainda não escolheu'}</b>.
+      Detalhes na <button type="button" class="link" data-act="privacidade" style="background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Política de Privacidade</button>.</p>
+    <div class="subrow">
+      <button class="btn ${c === 'aceito' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="aceito">Aceitar</button>
+      <button class="btn ${c === 'recusado' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="recusado">Recusar</button>
+    </div>`;
 }
 /* 🧪 Painel de testes — só pra conta admin (dev.js explica o porquê e como virar admin).
    Existe pra validar mecânica sem jogar 1.000 batalhas: a Mega pede 1.000 golpes finais com a espécie, o que

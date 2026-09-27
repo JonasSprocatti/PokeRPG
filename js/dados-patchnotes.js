@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.41', data: '2026-09-27', titulo: 'Política de Privacidade', piada: 'O jogo agora tem uma página inteira só pra dizer que não guarda quase nada sobre você. Ironicamente, é a página mais longa do site.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Nova tela <b>🔒 Privacidade</b>, explicando em português claro o que fica só no seu aparelho, o que a conta guarda (se você tiver uma) e o que a PokéAPI/Supabase recebem.'
+      ] }
+    ] },
   { versao: '2.40', data: '2026-09-27', titulo: 'Ash-Greninja', piada: 'O Greninja treinou a vida toda pra esse momento. O Pikachu só queria voltar pra Kanto.',
     secoes: [
       { nome: 'Novidades', itens: [

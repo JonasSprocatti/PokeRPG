@@ -356,7 +356,18 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Mega, Tera, Z-Move e Gigantamax jogáveis; inimigo gigantamaxa (só treinador) e usa Z (treinador e Alfa); as quatro gimmicks no co-op; conquistas da Mega auditadas (`tests/gimmicks-coop-inimigo.test.js`)
 - [x] Auditoria de todos os golpes e habilidades; primeira leva de golpes especiais corrigida (Protect, Endure, Focus Energy, Rest, Explosion, Toxic, Leech Seed, Dream Eater, OHKO, Fly/Dig/Solar Beam, Hyper Beam, Outrage, Flail/Eruption/Hex…)
 - [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
+- [x] Estrutura de anúncios (Google AdSense) desligada por padrão, banner de consentimento de cookies (GDPR) e tela de Política de Privacidade
 
 ## Licença
 
 Código-fonte disponível para leitura, mas **não é open source**: todos os direitos são reservados ao autor (ver [`LICENSE`](LICENSE)). Os dados de Pokémon vêm da [PokéAPI](https://pokeapi.co); Pokémon é marca da Nintendo/Game Freak/Creatures Inc. — este projeto não tem afiliação oficial com nenhuma delas.
+
+## Anúncios (Google AdSense)
+
+Estrutura pronta em `js/ads.js`, desligada por padrão (mesmo padrão do Supabase em `js/config.js`: enquanto `ADSENSE_CLIENT_ID` for o marcador, nada roda). Pra ativar, depois que a conta AdSense estiver **aprovada**:
+
+1. Preencha `ADSENSE_CLIENT_ID` em `js/config.js` (formato `ca-pub-xxxxxxxxxxxxxxxx`, em adsense.google.com → Conta).
+2. Crie uma unidade de anúncio (Anúncios → Por unidade de anúncio) e cole o id em `AD_SLOT_INICIO` (`js/criacao.js`). Repita pra outros slots que quiser adicionar em outras telas — cada um é uma chamada a `blocoAds(id)` seguida de `ativarSlots()` depois de desenhar a tela.
+3. Gere o `ads.txt` no painel do AdSense e publique na **raiz do domínio** (`https://seusite/ads.txt`) — não é obrigatório, mas sem ele muita verba de anunciante nem chega a competir pelo seu espaço.
+
+O jogo **nunca** carrega o script do Google antes do jogador aceitar: aparece um banner de cookies (GDPR) na primeira visita, e a escolha fica salva (`⚙ Ajustes` pra mudar depois). Tela **🔒 Política de Privacidade** já publicada, explicando o que cada serviço (Supabase, PokéAPI, AdSense) coleta.

@@ -10,6 +10,7 @@ import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js'
 import { telaSaves } from './tela-saves.js';
 import { telaAjustes, baixarMapaOffline, baixarImagensOffline, acaoDev } from './tela-ajustes.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
+import { telaPrivacidade } from './tela-privacidade.js';
 import { aplicarFonte } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
@@ -33,6 +34,7 @@ import { freshVol, zonaLiberada, precoItem, precoVenda } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
+import { iniciarAds, definirConsentimento } from './ads.js';
 
 /* ============ eventos ============ */
 document.addEventListener('click', async e => {
@@ -50,6 +52,7 @@ document.addEventListener('click', async e => {
     case 'ajustes': if (G.busy || G.mode === 'battle') return; return telaAjustes();
     case 'patch': if (G.busy || G.mode === 'battle') return; return telaPatchNotes();
     case 'fonte': aplicarFonte(v); return telaAjustes();
+    case 'ads-consentimento': definirConsentimento(v); return telaAjustes();
     case 'baixar-gen': return baixarMapaOffline(v);   // guarda um mapa pra jogar sem internet
     case 'baixar-tudo': {                             // o jogo inteiro: pode passar de 100 MB
       const ok = await ask('Baixar <b>todos os mapas</b> (Pokémon, golpes e sprites das 9 Gens)? Pode passar de 100 MB e levar alguns minutos. Deixe esta tela aberta.',
@@ -112,6 +115,7 @@ document.addEventListener('click', async e => {
     case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
     // bugs e sugestões
     case 'relatos': if (G.busy || G.mode === 'battle') return; return telaRelatos();
+    case 'privacidade': if (G.busy || G.mode === 'battle') return; return telaPrivacidade();
     case 'rel-tipo': return escolherTipoRelato(v);
     case 'rel-enviar': return enviarRelatoTela();
     case 'rel-img-del': return removerImagemRelato(v);   // tira uma imagem do relato antes de enviar
@@ -408,5 +412,6 @@ iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
   if (saveValido(s)) abrirJornada(s, 'Jogo carregado deste navegador.');
   else showCreate();
 });
+iniciarAds(); // sem conta configurada (config.js), não faz nada; com conta, só carrega o script depois do consentimento
 aoMudarNuvem(renderChipConta);
 iniciarNuvem().catch(e => console.error(e)); // sem config: não faz nada

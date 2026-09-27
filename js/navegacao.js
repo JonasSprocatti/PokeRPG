@@ -18,7 +18,8 @@ export const TELAS = [
   { id: 'conta', act: 'conta', rotulo: '👤 Conta', dica: 'Login, ícone e amigos' },
   { id: 'patch', act: 'patch', rotulo: '📜 Novidades', dica: 'O que mudou no jogo' },
   { id: 'ajustes', act: 'ajustes', rotulo: '⚙ Ajustes', dica: 'Fonte do jogo' },
-  { id: 'relatos', act: 'relatos', rotulo: '🐞 Bugs', dica: 'Bugs e sugestões' }
+  { id: 'relatos', act: 'relatos', rotulo: '🐞 Bugs', dica: 'Bugs e sugestões' },
+  { id: 'privacidade', act: 'privacidade', rotulo: '🔒 Privacidade', dica: 'O que o jogo guarda sobre você' }
 ];
 export const rotuloVoltar = () => G.S ? '← Voltar ao jogo' : '← Voltar ao início';
 

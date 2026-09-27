@@ -18,6 +18,11 @@ import { htmlComoFuncionam } from './ajuda-chefes.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
+import { blocoAds, ativarSlots } from './ads.js';
+
+// "Ad slot" da tela inicial: crie em adsense.google.com → Anúncios → Por unidade de anúncio, depois de aprovado.
+// Enquanto for o marcador abaixo, blocoAds() não desenha nada (mesmo com ADSENSE_CLIENT_ID já preenchido).
+const AD_SLOT_INICIO = 'SEU-AD-SLOT-AQUI';
 import { rand, pick, esc, fmt, novoId } from './util.js';
 
 const livres = () => DIFICULDADES[G.dif].especiesLivres;
@@ -50,8 +55,10 @@ export function showCreate() {
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
     <div id="netwarn"></div>
     <div id="preview"></div>
+    ${blocoAds(AD_SLOT_INICIO)}
     <p class="small muted rodape-creditos">© 2026 Jonas Sprocatti · <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">código-fonte no GitHub</a></p></main>`;
   renderDificuldade();
+  ativarSlots();
 }
 // passo 2: grade de iniciais por região (padrão) ou busca livre (modo com `especiesLivres`)
 function renderEscolha() {

@@ -154,6 +154,12 @@ table.ranking td.jogador{white-space:nowrap}
 #toasts{position:fixed;right:14px;bottom:14px;z-index:20;display:grid;gap:8px;max-width:min(380px,calc(100vw - 28px))}
 .toast{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;background:var(--panel);border:2px solid var(--yellow);border-radius:14px;padding:12px 14px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
 .toast-x{background:none;border:0;color:var(--muted);font-size:16px}
+/* banner de consentimento de cookies/anúncio (js/ads.js) — rodapé fixo, não bloqueia o jogo */
+.cookie-banner{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;background:var(--panel);border-top:2px solid var(--yellow);padding:12px 16px;box-shadow:0 -8px 24px rgba(0,0,0,.4)}
+.cookie-banner p{margin:0;font-size:14px;color:var(--text);max-width:640px}
+.cookie-banner .link{background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0}
+.cookie-banner .choices{display:flex;gap:8px;flex:none}
+.ads-slot{margin:24px 0 0;min-height:90px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 /* bugs e sugestões */
 .relato-card{max-width:640px}
 .relato-card textarea{background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);font:inherit;resize:vertical}
