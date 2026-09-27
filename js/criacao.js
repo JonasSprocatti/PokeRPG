@@ -1,7 +1,7 @@
 /* ============ render: criação ============ */
 // Tela inicial: passo 1 dificuldade, passo 2 espécie (só os iniciais — REGIOES_INICIAIS — salvo modo com
 // `especiesLivres`), prévia (habilidade, natureza, nível, apelido) e início do jogo.
-import { G, save, nm } from './estado.js';
+import { G, save, nm, registrar } from './estado.js';
 import { $, limparTopo, REDUCED, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
@@ -298,6 +298,9 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
+  // Segredo do brilho (regras.bonusShiny): registra NA HORA pra "✨ Começar shiny" (opcaoShiny) já valer nesta
+  // espécie em jornadas futuras — bug corrigido em 27/09/2026, antes só recrutar um ALIADO shiny registrava isso.
+  if (mon.shiny) registrar(G.S, 'shiniesAmigos', data.speciesName, data.id);
   G.mode = 'explore'; G.panel = 'main';
   buildGame();
   log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);

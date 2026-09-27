@@ -189,21 +189,34 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
   principais? Mega/Tera/Z/Gigantamax quando desbloqueiam? a primeira batalha?), se é pulável, se guarda "já viu"
   por conta (Supabase) ou só neste navegador (localStorage, como a fonte), e o texto de cada passo.
-- **BUG relatado (27/09/2026) — shiny do JOGADOR não desbloqueia o início-shiny da espécie, nem propaga na evolução.**
-  Desenho original (desde o começo do projeto): pegar um shiny desbloqueia a versão shiny da espécie NA HORA, pro
-  jogador poder começar jornadas futuras com ela ✨ (`criacao.opcaoShiny`/`roguelike.js`, lendo `registro.shiniesAmigos`
-  por espécie). Só que `registrar(S, 'shiniesAmigos', …)` só é chamado em DOIS lugares: `amizade.js:66` (recrutar um
-  selvagem shiny como aliado) e `progressao.js` `casulo()` (o caso especial do Shedinja). **O jogador NÃO tem
-  esse registro pro seu PRÓPRIO Pokémon** — nem no início da jornada (`criacao.startGame` não registra nada se o
-  jogador saiu shiny no sorteio de `makeMon`), nem na evolução normal: `progressao.js` `evolve()` (a função geral,
-  ~linha 206) registra `'evolucoes'` e `'vistos'` pra nova espécie, mas nunca `'shiniesAmigos'` mesmo quando
-  `M.shiny` é true — diferente de `casulo()`, que faz isso certinho pro Shedinja. Relato real: jogador começou (ou
-  recrutou) um Weedle shiny, evoluiu pra Kakuna e depois Beedrill, e nenhuma das três espécies desbloqueou o
-  início-shiny. **Correção precisa de duas partes**: (1) `criacao.startGame` registrar `shiniesAmigos` pra espécie
-  inicial se o jogador saiu shiny; (2) `progressao.evolve()` registrar `shiniesAmigos` pra `data.speciesName` quando
-  `M.shiny` (vale pro jogador E pro aliado, já que `evolve` atende os dois). Cuidado: registro retroativo (quem já
-  passou por isso antes da correção) não é resolvido só corrigindo o código pra frente — se for importante recuperar
-  os casos já jogados, precisa de uma migração no save/carreira, não só o código do dia a dia.
+### ✅ CORRIGIDO (27/09/2026) — shiny do jogador não desbloqueava o início-shiny da espécie
+Relato real: jogador começou (ou recrutou) um Weedle shiny, evoluiu pra Kakuna e depois Beedrill, e nenhuma das
+três espécies desbloqueou "✨ Começar shiny" (`criacao.opcaoShiny`) em jornadas futuras. Causa: `registrar(S,
+'shiniesAmigos', …)` só era chamado ao recrutar um ALIADO selvagem shiny (`amizade.js`) e no caso especial do
+Shedinja (`progressao.js` `casulo()`) — nunca pro PRÓPRIO Pokémon do jogador, nem no início da jornada nem na
+evolução normal.
+
+**Correção pra frente** (dois pontos): `criacao.iniciarJornada` registra `shiniesAmigos` pra `especieInicial` se
+`mon.shiny`; `progressao.evolve()` registra `shiniesAmigos` pra `data.speciesName` quando `M.shiny` (vale pro
+jogador E pro aliado, já que `evolve()` atende os dois — por isso um aliado shiny que evolui também passa a
+desbloquear a forma nova). Achado JUNTO no processo: a cópia de `registro` que sobrevive na carreira
+(`regras.estatisticasDaJornada`) era uma LISTA BRANCA que não incluía `shiniesAmigos` — só o TOTAL agregado
+sobrevivia (`shiniesAmigos: soma(...)`), o mapa por espécie sumia pra sempre ao terminar a jornada. Corrigido
+juntando `shiniesAmigos: r.shiniesAmigos || {}` na lista branca.
+
+**Correção retroativa** (quem já passou por isso antes da correção, como o relato acima):
+- `regras.caminhoNaArvore(node, nome)` + `regras.especiesShinyDoJogador(S)` (puras, testadas em `regras.test.js`):
+  com a árvore de evolução carregada (`S.meta.evo`), devolve TODA espécie no caminho de `especieInicial` até a
+  atual; sem a árvore (evoPendente/offline), melhor esforço com só as duas pontas.
+- `estado.migrarShiniesAmigos(S)`: credita (idempotente, `||=` — nunca soma de novo, então pode rodar toda vez
+  sem inflar o número mostrado na Carreira) a espécie do jogador (via `especiesShinyDoJogador`) e a de cada
+  aliado shiny (só a espécie atual dele — não tem `especieInicial` guardado por aliado, então não dá pra andar
+  a árvore retroativamente pra ele). Chamada em `main.abrirJornada`, uma vez a cada jornada aberta.
+- `carreira.retroativoShinyDaJornada(j)` (pura, testada): pra jornadas JÁ TERMINADAS (carreira, onde o mapa por
+  espécie nunca existiu por causa do bug da lista branca), melhor esforço recalculado a cada leitura de
+  `carregarCarreira()` — credita `especie` (inicial) e `especieFinal` quando `j.shiny`. Formas intermediárias de
+  jornada já terminada não dá pra recuperar (não dá pra saber por qual Pokémon elas passaram — `registro.evolucoes`
+  mistura jogador e aliados), mas o caso mais comum (a run em andamento, como a do relato) é coberto pela árvore.
 
 ## Modo offline
 

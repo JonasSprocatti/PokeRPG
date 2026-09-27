@@ -664,8 +664,11 @@ export function estatisticasDaJornada(S) {
        conquistas de conta, também os `abates` (conquistas.js), que alimentam as gimmicks.
        ATENÇÃO: esta cópia é uma LISTA BRANCA. Campo novo em `S.registro` que não for citado aqui existe durante a
        run e some quando a jornada termina. Foi exatamente o que aconteceu com `abates` na primeira versão: o
-       contador subia jogando e zerava ao encerrar, porque a carreira nunca recebia o campo. */
-    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {}, abates: r.abates || {} }))
+       contador subia jogando e zerava ao encerrar, porque a carreira nunca recebia o campo — e de novo com
+       `shiniesAmigos` (bug corrigido em 27/09/2026): só o TOTAL sobrevivia aqui embaixo (`shiniesAmigos: soma(...)`),
+       o mapa por espécie sumia ao fechar a jornada e `criacao.opcaoShiny` nunca via qual espécie exatamente
+       tinha ficado shiny. */
+    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {}, abates: r.abates || {}, shiniesAmigos: r.shiniesAmigos || {} }))
   };
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)
@@ -699,6 +702,31 @@ export const ehShiny = (sorte = Math.random()) => sorte < CHANCE_SHINY;
 export const MULT_SHINY = 2;
 export const bonusShiny = S => !!S?.player?.shiny;
 export const multShiny = S => bonusShiny(S) ? MULT_SHINY : 1;
+
+/* Caminho (nomes de espécie) da raiz até `nome` numa árvore de evolução (api.slimEvo: {name, to:[...]}). `null`
+   se a árvore não tiver o nó (save sem a árvore carregada ainda, ex. evoPendente). Usado pro desbloqueio
+   retroativo do início-shiny (bug corrigido em 27/09/2026, ver `especiesShinyDoJogador`): sem isso não dava pra
+   saber quais formas intermediárias um Pokémon shiny passou ao evoluir mais de uma vez. */
+export function caminhoNaArvore(node, nome) {
+  if (!node) return null;
+  if (node.name === nome) return [node.name];
+  for (const filho of node.to || []) {
+    const resto = caminhoNaArvore(filho, nome);
+    if (resto) return [node.name, ...resto];
+  }
+  return null;
+}
+/* Espécies que merecem o registro de "shiny recrutado" (registro.shiniesAmigos) pro PRÓPRIO Pokémon do jogador
+   (bug: só era gravado ao recrutar um ALIADO shiny — o jogador shiny nunca desbloqueava a própria espécie pra
+   começar de novo, nem propagava pras formas em que evoluiu). Com a árvore carregada (S.meta.evo), a espécie
+   inicial E toda forma no caminho até a atual; sem ela (melhor esforço), só as duas pontas. */
+export function especiesShinyDoJogador(S) {
+  if (!S?.player?.shiny) return [];
+  const atual = S.player.data?.speciesName;
+  if (!atual) return [];
+  const caminho = S.meta?.evo && caminhoNaArvore(S.meta.evo, atual);
+  return caminho || [...new Set([S.especieInicial, atual].filter(Boolean))];
+}
 
 /* ---- treinadores caçadores (Etapa 3) ---- */
 

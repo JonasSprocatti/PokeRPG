@@ -9,7 +9,8 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda,
+  caminhoNaArvore, especiesShinyDoJogador
 } from '../js/regras.js';
 import { CHART, ITEMS } from '../js/dados.js';
 
@@ -446,6 +447,33 @@ test('estatisticasDaJornada + pontuacao', () => {
   const g2 = estatisticasDaJornada({ ...S, gen: 3, gensVencidas: [1, 2] });
   assert.deepEqual([g2.gen, g2.gens], [3, 2]);
   assert.equal(pontuacao(g2), 3030 + 4000);
+});
+
+test('caminhoNaArvore: acha o caminho da raiz até o nó, ou null sem o nó', () => {
+  const arvore = { name: 'weedle', to: [{ name: 'kakuna', to: [{ name: 'beedrill', to: [] }] }] };
+  assert.deepEqual(caminhoNaArvore(arvore, 'weedle'), ['weedle']);
+  assert.deepEqual(caminhoNaArvore(arvore, 'kakuna'), ['weedle', 'kakuna']);
+  assert.deepEqual(caminhoNaArvore(arvore, 'beedrill'), ['weedle', 'kakuna', 'beedrill']);
+  assert.equal(caminhoNaArvore(arvore, 'pikachu'), null);
+  assert.equal(caminhoNaArvore(null, 'weedle'), null);
+  // ramifica (ex.: Eevee): acha o nó em qualquer galho
+  const eevee = { name: 'eevee', to: [{ name: 'vaporeon', to: [] }, { name: 'jolteon', to: [] }] };
+  assert.deepEqual(caminhoNaArvore(eevee, 'jolteon'), ['eevee', 'jolteon']);
+});
+
+test('especiesShinyDoJogador: bug corrigido 27/09/2026 — shiny do jogador desbloqueia a espécie inicial e toda forma até a atual', () => {
+  // não é shiny: nada a desbloquear
+  assert.deepEqual(especiesShinyDoJogador({ player: { shiny: false, data: { speciesName: 'weedle' } } }), []);
+  // shiny, COM a árvore carregada (S.meta.evo): a cadeia inteira até a espécie atual
+  const arvore = { name: 'weedle', to: [{ name: 'kakuna', to: [{ name: 'beedrill', to: [] }] }] };
+  const S1 = { especieInicial: 'weedle', player: { shiny: true, data: { speciesName: 'beedrill' } }, meta: { evo: arvore } };
+  assert.deepEqual(especiesShinyDoJogador(S1), ['weedle', 'kakuna', 'beedrill']);
+  // shiny, SEM a árvore (evoPendente/offline): melhor esforço, só as duas pontas
+  const S2 = { especieInicial: 'weedle', player: { shiny: true, data: { speciesName: 'beedrill' } } };
+  assert.deepEqual(especiesShinyDoJogador(S2), ['weedle', 'beedrill']);
+  // ainda na espécie inicial: uma entrada só, sem repetir
+  const S3 = { especieInicial: 'weedle', player: { shiny: true, data: { speciesName: 'weedle' } } };
+  assert.deepEqual(especiesShinyDoJogador(S3), ['weedle']);
 });
 
 test('situacaoMissoes: missão de outro mapa (gen) nem aparece', () => {

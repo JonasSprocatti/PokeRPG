@@ -1,7 +1,7 @@
 /* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
-import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais } from './estado.js';
+import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
 import { render, buildGame } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
@@ -328,6 +328,7 @@ const saveValido = s => !!(s?.player?.data && s.meta?.growth);
 // abre uma jornada salva (deste navegador ou da nuvem) na tela do jogo
 function abrirJornada(s, aviso) {
   G.S = s; G.B = null; G.S.id ||= novoId(); // save de antes do id existir ganha um agora
+  migrarShiniesAmigos(G.S); // bug corrigido em 27/09/2026: shiny do jogador/evolução sem o registro que libera o início-shiny
   G.mode = 'explore'; G.panel = 'main';
   // batalha em andamento volta do jeito que estava (fechar/recarregar não é fuga): os `vol` vêm salvos junto
   G.B = restaurarBatalha(s.batalha);

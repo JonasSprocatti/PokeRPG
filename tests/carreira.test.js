@@ -1,7 +1,7 @@
 // Carreira (js/carreira.js): juntar local + nuvem sem contar em dobro, e os números calculados das jornadas.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { migrarRecordes, adicionarJornada, mesclarJornadas, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES } from '../js/carreira.js';
+import { migrarRecordes, adicionarJornada, mesclarJornadas, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, retroativoShinyDaJornada } from '../js/carreira.js';
 
 const j = (id, o = {}) => ({ id, especie: 'mudkip', pontuacao: 100, nivel: 10, data: `2026-01-0${id.length}`, ...o });
 
@@ -43,6 +43,26 @@ test('melhorDaEspecie ignora a própria jornada', () => {
   assert.equal(melhorDaEspecie(js, 'mudkip').id, 'b');
   assert.equal(melhorDaEspecie(js, 'mudkip', 'b').id, 'a');
   assert.equal(melhorDaEspecie(js, 'pikachu'), null);
+});
+
+test('retroativoShinyDaJornada: bug corrigido 27/09/2026 — jornada já terminada shiny credita início e fim', () => {
+  // não shiny: devolve o mesmo objeto, sem mexer em nada
+  const naoShiny = j('a', { shiny: false });
+  assert.equal(retroativoShinyDaJornada(naoShiny), naoShiny);
+  // shiny, sem registro nenhum: credita especie (inicial) e especieFinal
+  const r1 = retroativoShinyDaJornada(j('b', { shiny: true, especie: 'weedle', especieFinal: 'beedrill' }));
+  assert.deepEqual(r1.registro.shiniesAmigos, { weedle: 1, beedrill: 1 });
+  // já tinha ALGUMA espécie registrada (ex.: corrigido antes de terminar a run): não pisa no que já tinha
+  const r2 = retroativoShinyDaJornada(j('c', { shiny: true, especie: 'weedle', especieFinal: 'beedrill',
+    registro: { shiniesAmigos: { kakuna: 3 } } }));
+  assert.deepEqual(r2.registro.shiniesAmigos, { kakuna: 3, weedle: 1, beedrill: 1 });
+  // especie === especieFinal (nunca evoluiu): uma entrada só
+  const r3 = retroativoShinyDaJornada(j('d', { shiny: true, especie: 'pikachu', especieFinal: 'pikachu' }));
+  assert.deepEqual(r3.registro.shiniesAmigos, { pikachu: 1 });
+  // não muda a REFERÊNCIA quando não há nada a acrescentar (já tinha as duas espécies)
+  const jaTinha = j('e', { shiny: true, especie: 'weedle', especieFinal: 'beedrill',
+    registro: { shiniesAmigos: { weedle: 1, beedrill: 1 } } });
+  assert.equal(retroativoShinyDaJornada(jaTinha), jaTinha);
 });
 
 test('calcularCarreira: máximos, totais, Pokédex, shinies e favorito', () => {

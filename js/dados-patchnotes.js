@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.46', data: '2026-09-27', titulo: 'Shiny desbloqueia de verdade', piada: 'O Beedrill shiny reclamou anos sem crédito no currículo. Agora ele finalmente entrou na ficha.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Pegar (ou evoluir até) um Pokémon <b>shiny</b> agora desbloqueia mesmo a opção "✨ Começar shiny" daquela espécie em jornadas futuras — antes só recrutar um aliado shiny fazia isso, e o seu PRÓPRIO Pokémon shiny nunca contava, nem quando evoluía. Quem já tinha um shiny antes desta correção recebe o crédito retroativo assim que abrir a jornada de novo.'
+      ] }
+    ] },
   { versao: '2.45', data: '2026-09-27', titulo: 'A barra de HP se mexe', piada: 'Antes o número de HP só trocava de figurino sem avisar ninguém. Agora ele desliza até o lugar, como gente educada.',
     secoes: [
       { nome: 'Novidades', itens: [

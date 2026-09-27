@@ -25,9 +25,23 @@ export function migrarRecordes(rec) {
   }
   return { jornadas };
 }
+/* Retroativo (bug corrigido em 27/09/2026): a cópia de `registro` na carreira (regras.estatisticasDaJornada) só
+   guardava o TOTAL de shiniesAmigos, não o mapa por espécie — toda jornada terminada shiny perdia pra sempre QUAL
+   espécie tinha ficado shiny, e o início-shiny (criacao.opcaoShiny) nunca liberava nada pra quem já tinha
+   encerrado a run. Melhor esforço, recalculado a cada leitura (puro, não persiste): jornada que terminou shiny
+   credita a espécie inicial e a final. Formas intermediárias (uma evolução no meio do caminho) não dá pra
+   recuperar sem saber por qual Pokémon elas passaram — `registro.evolucoes` mistura jogador e aliados. */
+export function retroativoShinyDaJornada(j) {
+  if (!j?.shiny) return j;
+  const especies = [j.especie, j.especieFinal].filter(Boolean);
+  const shiniesAmigos = { ...(j.registro?.shiniesAmigos || {}) };
+  let mudou = false;
+  for (const e of especies) if (!shiniesAmigos[e]) { shiniesAmigos[e] = 1; mudou = true; }
+  return mudou ? { ...j, registro: { ...(j.registro || {}), shiniesAmigos } } : j;
+}
 export function carregarCarreira() {
   const c = store.get(CARREIRA_KEY);
-  if (c?.jornadas) return c;
+  if (c?.jornadas) return { ...c, jornadas: c.jornadas.map(retroativoShinyDaJornada) };
   const antigo = store.get(RECORDES_ANTIGO);
   return antigo ? migrarRecordes(antigo) : { jornadas: [] };
 }

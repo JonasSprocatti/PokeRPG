@@ -226,6 +226,9 @@ async function evolve(M, speciesName, arvore) {
      na rota é sobre quem aparece ALI de verdade, e uma evolução em outro mapa não informa nada sobre isso — só
      encontrar de fato ainda revela a taxa. Relatado em jogo. */
   registrar(G.S, 'vistos', data.speciesName, data.id);
+  // Segredo do brilho: quem já era shiny continua shiny na evolução — desbloqueia a NOVA espécie pro início-shiny
+  // também (bug corrigido em 27/09/2026: só o recrutamento de aliado shiny registrava isso, evoluir nunca).
+  if (M.shiny) registrar(G.S, 'shiniesAmigos', data.speciesName, data.id);
   (G.S.registro.formas ||= {})[data.speciesName] = forma;
   await say(`Parabéns! ${esc(oldName)} evoluiu para <b>${esc(fmt(data.name))}</b>!`, 'level');
   // dizer POR QUE saiu diferente: senão parece bug ("evoluí e veio outro Pokémon")

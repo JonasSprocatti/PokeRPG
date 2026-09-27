@@ -14,7 +14,7 @@
 //   busy  = true enquanto um turno/exploração está resolvendo (trava os botões)
 //   panel = painel de ações visível: 'main' | 'shop' | 'moves' | 'bag'
 import { DIFICULDADES } from './dados.js';
-import { precisaCurar, custoCentroEquipe, custoComDesconto, bonusShiny } from './regras.js';
+import { precisaCurar, custoCentroEquipe, custoComDesconto, bonusShiny, especiesShinyDoJogador } from './regras.js';
 import { genDe, rotasDaGen, rotaNaJornada } from './mapas.js';
 import { esc, fmt, store } from './util.js';
 
@@ -74,6 +74,17 @@ export function registrarVisto(M) {
   if (!G.S) return;
   registrar(G.S, 'vistos', M.data.speciesName, M.id);
   if (M.shiny) registrar(G.S, 'shinies', M.data.speciesName, M.id);
+}
+/* Retroativo (bug corrigido em 27/09/2026, relatado em jogo): shiniesAmigos nunca era gravado pro PRÓPRIO
+   Pokémon do jogador (só ao recrutar um ALIADO shiny) nem propagava pra nova espécie na evolução — quem já
+   tinha um shiny antes da correção (ex.: Weedle shiny evoluído até Beedrill) nunca via o início-shiny liberado.
+   Chamada uma vez ao abrir a jornada (main.abrirJornada); idempotente (`||=`, nunca soma de novo) — pode rodar
+   toda vez sem inflar o total mostrado na Carreira. */
+export function migrarShiniesAmigos(S) {
+  if (!S) return;
+  const sa = () => ((S.registro ||= {}).shiniesAmigos ||= {});
+  for (const especie of especiesShinyDoJogador(S)) sa()[especie] ||= 1;
+  for (const A of S.aliados || []) if (A.shiny && A.data?.speciesName) sa()[A.data.speciesName] ||= 1;
 }
 export const nm = m => '<b>' + esc(rotulo(m)) + '</b>';
 // save de antes da dificuldade existir conta como Fácil (não punir retroativamente quem não escolheu)
