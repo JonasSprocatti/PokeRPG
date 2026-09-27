@@ -180,6 +180,10 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - **Batalha completa** (continua): habilidades → clima → terrenos → itens segurados → golpes especiais/IA → Mega, Z-Moves, Dynamax/Gigantamax, Tera. Desbloqueia uma **espécie** pra próxima run ao derrotar ou fazer amizade com 5–10 dela; evoluir 5× pra forma do meio desbloqueia a do meio, 10× pra forma final desbloqueia a final. Exige progresso persistente entre runs.
 - **Etapa 4 — Supabase/multiplayer**: ranking de todos os jogadores (melhor pontuação geral por espécie) e batalha com Pokémon de vários jogadores do mesmo lado (a batalha já é N-do-meu-lado).
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
+- **Pedido pelo usuário (27/09/2026), pra depois**: sprites 3D com download opcional (ao lado do 2D atual — ver
+  `js/offline.js`/`baixarGen`, que hoje só baixa os sprites 2D); animação na barra de HP ao tomar dano/curar (hoje
+  o número muda na hora, sem transição); animação de ataque, cura e dano de status na cena de batalha (hoje só
+  texto no log + `shake`/`tremer`).
 
 ## Modo offline
 
