@@ -1,7 +1,7 @@
 // Carreira (js/carreira.js): juntar local + nuvem sem contar em dobro, e os números calculados das jornadas.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { migrarRecordes, adicionarJornada, mesclarJornadas, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, retroativoShinyDaJornada } from '../js/carreira.js';
+import { migrarRecordes, adicionarJornada, mesclarJornadas, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, retroativoShinyDaJornada, gimmicksNaLoja } from '../js/carreira.js';
 
 const j = (id, o = {}) => ({ id, especie: 'mudkip', pontuacao: 100, nivel: 10, data: `2026-01-0${id.length}`, ...o });
 
@@ -63,6 +63,19 @@ test('retroativoShinyDaJornada: bug corrigido 27/09/2026 — jornada já termina
   const jaTinha = j('e', { shiny: true, especie: 'weedle', especieFinal: 'beedrill',
     registro: { shiniesAmigos: { weedle: 1, beedrill: 1 } } });
   assert.equal(retroativoShinyDaJornada(jaTinha), jaTinha);
+});
+
+test('gimmicksNaLoja: Mega conquistada aparece mesmo vindo do progresso persistente da conta (caso relatado: Mewtwo, 1249 abates)', () => {
+  // (o store do Node não tem localStorage: store engole o erro e devolve vazio — implementação em memória por baixo,
+  // mesmo padrão de tests/hall.test.js)
+  globalThis.localStorage = (() => { const m = new Map(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; })();
+  try {
+    const jornada = j('mewtwo-1', { especie: 'mewtwo', dificuldade: 'roguelike', nivel: 88, shiny: false,
+      registro: { abates: { total: 1249, especie: { mewtwo: 1249 }, tipoAlvo: {}, golpe: {}, elemento: {} } } });
+    localStorage.setItem('pokerpg-carreira-v1', JSON.stringify({ jornadas: [jornada] }));
+    const g = gimmicksNaLoja('mewtwo', [], null);
+    assert.deepEqual(g, { mega: true, z: false, vinculo: false });
+  } finally { delete globalThis.localStorage; }
 });
 
 test('calcularCarreira: máximos, totais, Pokédex, shinies e favorito', () => {

@@ -167,9 +167,22 @@ export const vinculoDaContaLiberado = (especie, registroAtual = null) => vinculo
    uma das três (ex.: um golpe malformado quebrando o `golpes.some` do Z) apagava as TRÊS da loja em silêncio
    (só um console.warn), mesmo com a Mega genuinamente conquistada. `p` (a carreira/progresso) é uma consulta só
    de propósito e uma falha nela derruba as três mesmo — mas dali pra frente cada gimmick tem o próprio try/catch,
-   pra um problema isolado numa não apagar as outras duas. */
+   pra um problema isolado numa não apagar as outras duas.
+   SEGUNDA CAMADA (mesmo dia, mesmo relato — a primeira correção não bastou): `conquistasDaConta` passa pelo
+   progresso PERSISTENTE (`atualizarProgresso`/`bancar`, progresso-conta.js) antes de chegar em `p` — se ALGO
+   nesse caminho falhar no navegador de alguém (localStorage com um dado antigo/quebrado, por exemplo), a exceção
+   acontece ANTES de qualquer `seguro()`, e as três gimmicks caem juntas de novo, sem log nenhum específico. Por
+   isso `p` agora tem o PRÓPRIO fallback: se o progresso persistente falhar, recalcula direto das jornadas da
+   carreira (sem o "nunca encolhe" da conta permanente, mas correto pra quem tem as jornadas certas salvas) —
+   melhor mostrar a Mega de verdade sem o acúmulo entre jornadas apagadas do que não mostrar nada. */
 export function gimmicksNaLoja(especie, golpes = [], registroAtual = null) {
-  const p = conquistasDaConta(registroAtual);
+  const jornadas = carregarCarreira().jornadas;
+  let p;
+  try { p = conquistasDoProgresso(jornadas, registroAtual, atualizarProgresso(jornadas)); }
+  catch (e) {
+    console.error('gimmicksNaLoja: progresso permanente da conta falhou, caindo pro cálculo direto das jornadas', e);
+    p = progressoConquistas(jornadas, registroAtual);
+  }
   const seguro = fn => { try { return fn(); } catch (e) { console.error('gimmicksNaLoja', e); return false; } };
   return {
     mega: seguro(() => megaLiberada(p, especie)),

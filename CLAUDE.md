@@ -229,8 +229,19 @@ fórmula. A explicação mais provável é um problema pontual do lado do client
 corrigida de qualquer forma**: `render.js` envolvia Mega+Z+Vínculo numa única `try/catch` — uma exceção em
 QUALQUER uma das três apagava as TRÊS da loja em silêncio (só `console.warn`, invisível pra quem joga).
 `carreira.gimmicksNaLoja` agora isola cada gimmick no próprio try/catch (`seguro(fn)`), então um problema
-pontual numa não derruba as outras duas. Se o sumiço da Pedra Mega se repetir, o próximo passo é pegar o
-console do navegador na hora (`console.error('gimmicksNaLoja', ...)` já aparece lá se uma delas falhar).
+pontual numa não derruba as outras duas.
+
+**Voltou a acontecer no mesmo dia, com Mega E Z-Move os dois sumidos** — a primeira correção não bastava:
+`gimmicksNaLoja` calculava `p` (a consulta de `conquistasDaConta`, que passa por `atualizarProgresso`/`bancar`,
+progresso-conta.js) FORA do `seguro()` de cada gimmick — uma falha ali acontece ANTES de qualquer isolamento e
+derruba as três de novo, sem log específico algum. **Segunda camada**: `gimmicksNaLoja` agora tenta o progresso
+PERSISTENTE primeiro e, se falhar, cai pro cálculo DIRETO das jornadas da carreira (`conquistas.progressoConquistas`
+sem `prontos`, que soma `registro.abates` de cada jornada na hora, sem passar pelo "livro-caixa" de
+`progresso-conta.js`) — perde o "nunca encolhe" entre jornadas apagadas, mas mostra a Mega de verdade em vez de
+nada. `tests/carreira.test.js` (`gimmicksNaLoja: Mega conquistada…`) trava o caminho normal. **Causa raiz exata
+ainda não confirmada** (a simulação com os dados reais do Berga não reproduziu nenhuma exceção) — se sumir nesse
+navegador de novo mesmo com as duas camadas, o próximo passo é pegar o texto do erro no console dele na hora
+(agora tem `console.error` em dois pontos: `'gimmicksNaLoja: progresso permanente...'` e `'gimmicksNaLoja'`).
 
 Segundo relato da mesma conta ("matei 10 de quase tudo e não libera pra jogar"): **não é bug**. Conferido nos
 dados reais: a maioria das espécies de Gen 1 JÁ está liberada (10+ abates); várias outras estão em 8–9, faltando

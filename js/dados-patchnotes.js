@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.48', data: '2026-09-27', titulo: 'Loja com plano B pro progresso da conta', piada: 'Se o livro-caixa da conta pegar fogo, a loja agora sabe contar os abates de cabeça mesmo assim.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A verificação da Pedra Mega, do Cristal Z e do Vínculo de Batalha na loja agora tem um plano B: se o progresso permanente da conta falhar por qualquer motivo, ela recalcula direto das suas jornadas em vez de simplesmente esconder os três itens.'
+      ] }
+    ] },
   { versao: '2.47', data: '2026-09-27', titulo: 'Loja mais resistente, Roguelike mais claro', piada: 'A Pedra Mega e o Cristal Z brigaram feio uma vez e resolveram nunca mais sumir juntos por causa da briga do outro.',
     secoes: [
       { nome: 'Correções', itens: [
