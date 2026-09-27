@@ -189,6 +189,21 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
   principais? Mega/Tera/Z/Gigantamax quando desbloqueiam? a primeira batalha?), se é pulável, se guarda "já viu"
   por conta (Supabase) ou só neste navegador (localStorage, como a fonte), e o texto de cada passo.
+- **BUG relatado (27/09/2026) — shiny do JOGADOR não desbloqueia o início-shiny da espécie, nem propaga na evolução.**
+  Desenho original (desde o começo do projeto): pegar um shiny desbloqueia a versão shiny da espécie NA HORA, pro
+  jogador poder começar jornadas futuras com ela ✨ (`criacao.opcaoShiny`/`roguelike.js`, lendo `registro.shiniesAmigos`
+  por espécie). Só que `registrar(S, 'shiniesAmigos', …)` só é chamado em DOIS lugares: `amizade.js:66` (recrutar um
+  selvagem shiny como aliado) e `progressao.js` `casulo()` (o caso especial do Shedinja). **O jogador NÃO tem
+  esse registro pro seu PRÓPRIO Pokémon** — nem no início da jornada (`criacao.startGame` não registra nada se o
+  jogador saiu shiny no sorteio de `makeMon`), nem na evolução normal: `progressao.js` `evolve()` (a função geral,
+  ~linha 206) registra `'evolucoes'` e `'vistos'` pra nova espécie, mas nunca `'shiniesAmigos'` mesmo quando
+  `M.shiny` é true — diferente de `casulo()`, que faz isso certinho pro Shedinja. Relato real: jogador começou (ou
+  recrutou) um Weedle shiny, evoluiu pra Kakuna e depois Beedrill, e nenhuma das três espécies desbloqueou o
+  início-shiny. **Correção precisa de duas partes**: (1) `criacao.startGame` registrar `shiniesAmigos` pra espécie
+  inicial se o jogador saiu shiny; (2) `progressao.evolve()` registrar `shiniesAmigos` pra `data.speciesName` quando
+  `M.shiny` (vale pro jogador E pro aliado, já que `evolve` atende os dois). Cuidado: registro retroativo (quem já
+  passou por isso antes da correção) não é resolvido só corrigindo o código pra frente — se for importante recuperar
+  os casos já jogados, precisa de uma migração no save/carreira, não só o código do dia a dia.
 
 ## Modo offline
 
