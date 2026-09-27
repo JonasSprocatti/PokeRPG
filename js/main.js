@@ -191,7 +191,10 @@ document.addEventListener('click', async e => {
       if (G.busy || G.mode !== 'explore' || !G.S.cacaShiny) return;
       const z = zone(); (G.S.caca ||= {});
       if (v) G.S.caca[z.id] = v; else delete G.S.caca[z.id];
-      log(v ? `🎯 Caçando <b>${esc(fmt(v))}</b> em ${esc(z.name)}: só ele vai aparecer por aqui.` : `🎯 Caça encerrada em ${esc(z.name)}.`, 'muted');
+      // O clique só mudava a borda da caixa (tracejada → sólida) e uma linha no painel de log — fácil de não
+      // notar (painel de log fora da vista, sobretudo no celular) e parecer "não fez nada". Relatado em jogo.
+      const msg = v ? `🎯 Caçando <b>${esc(fmt(v))}</b> em ${esc(z.name)}: só ele vai aparecer por aqui.` : `🎯 Caça encerrada em ${esc(z.name)}.`;
+      log(msg, 'muted'); toast(msg, 4000);
       save(); return render();
     }
     // Roguelike: venceu a Gen e escolheu seguir no Santuário — este botão fecha a run em vitória quando quiser
