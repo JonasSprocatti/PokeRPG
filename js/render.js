@@ -9,7 +9,7 @@ import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -281,7 +281,14 @@ function renderMochila() {
     const rot = it.segurado ? 'Segurar' : it.evo || it.troca ? 'Usar (evoluir)' : 'Usar';
     return `<button class="btn ghost sm" data-act="item" data-v="${k}" ${G.busy ? 'disabled' : ''}>${rot}</button>`;
   };
-  const linha = ([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span>${botao(k)}</li>`;
+  // Vender (metade do preço de compra) ou Jogar fora (item sem preço de loja) — qualquer item pode, mesmo
+  // os que só valem EM batalha (X Attack…) ou os de raide, que não têm botão de "Usar" fora dela.
+  const botaoVender = k => {
+    if (G.mode !== 'explore') return '';
+    const preco = precoVenda(k, S);
+    return `<button class="btn ghost sm" data-act="vender" data-v="${k}" ${G.busy ? 'disabled' : ''}>${preco ? `Vender ₽${preco}` : 'Jogar fora'}</button>`;
+  };
+  const linha = ([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span><div class="bag-acoes">${botao(k)}${botaoVender(k)}</div></li>`;
   $('#p-mochila').innerHTML = bag.length
     ? porCategoria(bag).map(c => `<h4 class="bag-div">${c.nome} <span class="muted">(${c.itens.length})</span></h4><ul class="bag">${c.itens.map(linha).join('')}</ul>`).join('')
     : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';

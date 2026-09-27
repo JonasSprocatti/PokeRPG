@@ -26,10 +26,10 @@ import { telaPerfil } from './perfil-amigo.js';
 import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaRaide, arenaDesistir, arenaFim } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
-import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo } from './itens.js';
+import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_SPR, ITEM_ERRO } from './dados.js';
-import { freshVol, zonaLiberada, precoItem } from './regras.js';
+import { freshVol, zonaLiberada, precoItem, precoVenda } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
@@ -227,6 +227,17 @@ document.addEventListener('click', async e => {
       log(`Você comprou ${qtd > 1 ? `${qtd}× ` : ''}${it.name} por ₽${total.toLocaleString('pt-BR')}.`, 'good');
       toast(`🛒 Comprou <b>${qtd > 1 ? `${qtd}× ` : ''}${esc(it.name)}</b> por ₽${total.toLocaleString('pt-BR')}<br><small class="muted">Na mochila: ${G.S.bag[v]}</small>`, 3500);
       await verificarMissoes(); save(); return render(); // missões de gastar dinheiro
+    }
+    // Vender (ou jogar fora, se não tem preço) — pedido do usuário: "ter como jogar os itens fora ou vender eles"
+    case 'vender': {
+      const it = ITEMS[v], max = G.S.bag?.[v] || 0; if (G.busy || G.mode !== 'explore' || !it || !max) return;
+      const preco = precoVenda(v, G.S);
+      const qtd = await pedirQuantidade({ nome: esc(it.name), figuraHtml: `<img src="${ITEM_SPR(v)}" alt="" onerror="${ITEM_ERRO}">`, preco, max, acao: 'vender' });
+      if (!qtd || G.busy) return;
+      const total = venderItem(v, qtd);
+      log(preco ? `Você vendeu ${qtd > 1 ? `${qtd}× ` : ''}${it.name} por ₽${total.toLocaleString('pt-BR')}.` : `Você jogou fora ${qtd > 1 ? `${qtd}× ` : ''}${it.name}.`, 'muted');
+      toast(preco ? `💰 Vendeu <b>${qtd > 1 ? `${qtd}× ` : ''}${esc(it.name)}</b> por ₽${total.toLocaleString('pt-BR')}` : `🗑 Jogou fora <b>${qtd > 1 ? `${qtd}× ` : ''}${esc(it.name)}</b>`, 3500);
+      save(); return render();
     }
     // equipar um item da mochila direto pela ficha (data-quem: 'p' = você, número = aliado)
     case 'segurar': {

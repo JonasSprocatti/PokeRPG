@@ -5,8 +5,11 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
-  { versao: '2.39', data: '2026-09-27', titulo: 'Correções de Tera e Mega', piada: 'O cristal Tera jurava que tinha mudado de tipo. A mensagem de combate não acreditou nele.',
+  { versao: '2.39', data: '2026-09-27', titulo: 'Vender itens, e correções de Tera e Mega', piada: 'O cristal Tera jurava que tinha mudado de tipo. A mensagem de combate não acreditou nele.',
     secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>💰 Vender ou jogar fora:</b> cada item da mochila ganhou um botão pra vender (metade do preço de compra) ou jogar fora, pra quem não tem preço de loja. Mesmo HUD de quantidade da compra, só que ao contrário.'
+      ] },
       { nome: 'Correções', itens: [
         'Depois de <b>terastalizar</b>, alguns golpes ainda calculavam a eficácia ("Não é muito efetivo...", "É super efetivo!") pelo tipo ANTIGO, não pelo tipo Tera — o dano de verdade já estava certo, mas a mensagem (e a imunidade de golpes como Leech Seed, Guilhotina e esporos) ainda olhava pro tipo de antes. Agora os dois seguem o tipo Tera.',
         'Derrotar um Pokémon <b>já Mega Evoluído</b> (Alfa, lendário ou de treinador) podia gravar a Mega, e não a espécie normal, no seu progresso — a tela de desbloqueio do Roguelike chegou a mostrar "Alakazam #10037" (o número da Mega) no lugar do Alakazam de verdade. Corrigido: o que conta agora é sempre a espécie original.',

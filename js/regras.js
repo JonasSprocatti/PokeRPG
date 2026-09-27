@@ -454,6 +454,9 @@ export const PRECO_DISCO = 8000, AUMENTO_DISCO = 4000;
 export const precoItem = (id, S) => S?.lojaGratis ? 0 : id === 'tm-normal'
   ? PRECO_DISCO + AUMENTO_DISCO * (S?.discosUsados || 0)
   : (ITEMS[id]?.price || 0);
+// Venda (itens.js venderItem, mochila): metade do preço de compra, igual à convenção dos jogos. Item sem preço
+// (achado explorando, prêmio de Alfa…) devolve 0 — a mochila oferece "Jogar fora" nesse caso, não "Vender".
+export const precoVenda = (id, S) => Math.floor(precoItem(id, S) / 2);
 
 /* O que um item de golpe (ITENS_GOLPE) oferece pra este Pokémon, sem repetir o que ele já sabe:
    'relembrar' (Escama do Coração) = golpes da lista POR NÍVEL até o nível atual — o que você deixou passar;

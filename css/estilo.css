@@ -341,6 +341,7 @@ ul.bag{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 ul.bag li{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px}
 ul.bag img{width:30px;height:30px;image-rendering:pixelated}
 ul.bag small{display:block;color:var(--muted);font-size:12px}
+.bag-acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
 .scene{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:18px;min-height:290px}
 .zone-head h2{font:700 30px/1.1 var(--display);margin:0}

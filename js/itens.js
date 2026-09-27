@@ -9,7 +9,7 @@ import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.j
 import { ITEMS, ST_SHORT } from './dados.js';
 import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar, freshVol } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda } from './regras.js';
 import { guardar, trazer } from './esconderijo.js';
 import { usarItemDeRaide } from './boss.js';
 import { loadPokemon } from './api.js';
@@ -19,6 +19,17 @@ import { esc, fmt, offline } from './util.js';
 const SEM_EFEITO = { heal: 'O HP já está cheio.', healPct: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
+
+/* Vender (ou jogar fora, se o item não tem preço de loja): o oposto de addItem. `precoVenda` é regra pura
+   (regras.js); aqui só mexe no estado. `qtd` já vem confirmada por pedirQuantidade (ui.js, no modo 'vender');
+   nunca vende mais do que a mochila tem. Pedido do usuário: "ter como jogar os itens fora ou vender eles". */
+export function venderItem(k, qtd) {
+  const n = Math.min(qtd, G.S.bag[k] || 0); if (n <= 0) return 0;
+  G.S.bag[k] -= n; if (G.S.bag[k] <= 0) delete G.S.bag[k];
+  const total = precoVenda(k, G.S) * n;
+  G.S.money += total;
+  return total;
+}
 
 // Itens SEGURADOS (segurados.js): cada um da equipe segura no máximo um. Equipar tira da mochila; trocar devolve o
 // antigo. O efeito acontece sozinho na batalha (Restos, Orbe da Vida, frutas…).

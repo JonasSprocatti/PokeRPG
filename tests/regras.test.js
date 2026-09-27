@@ -9,9 +9,9 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda
 } from '../js/regras.js';
-import { CHART } from '../js/dados.js';
+import { CHART, ITEMS } from '../js/dados.js';
 
 test('sortearTipoTera: cobre os 18 tipos, sem sair da tabela', () => {
   const vistos = new Set();
@@ -89,6 +89,15 @@ test('recalc de um chefe (statsChefe) preserva o bônus de statsDeChefe ao troca
   assert.equal(m.stats.hp, hpChefeCheio, 'o teto de HP do chefe não pode cair ao recalcular (mesma base de HP)');
   assert.ok(m.hp > 0, `o chefe não pode nascer desmaiado da própria Mega (ficou com ${m.hp} HP)`);
   assert.equal(m.hp, Math.floor(hpChefeCheio * 0.5), 'o dano já sofrido continua o mesmo — só a base mudou, não o bônus');
+});
+
+// Pedido do usuário: vender itens da mochila (ou jogar fora os que não têm preço de loja).
+test('precoVenda: metade do preço de compra, arredondado pra baixo; sem preço, zero', () => {
+  assert.equal(precoVenda('potion', null), Math.floor(ITEMS.potion.price / 2));
+  assert.equal(precoVenda('revive', null), Math.floor(ITEMS.revive.price / 2));
+  assert.equal(precoVenda('rare-candy', null), 0, 'item sem price: venda 0 (a mochila oferece "Jogar fora")');
+  assert.equal(precoVenda('tm-normal', { discosUsados: 2 }), Math.floor(precoItem('tm-normal', { discosUsados: 2 }) / 2), 'segue o preço dinâmico do Disco');
+  assert.equal(precoVenda('potion', { lojaGratis: true }), 0, 'loja grátis: preço de compra 0, venda também 0');
 });
 
 test('stageMul: estágios −6..+6', () => {

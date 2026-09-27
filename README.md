@@ -102,6 +102,9 @@ Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para
 ### Comprar em quantidade
 Tocar num item da loja abre um pequeno HUD: **−10 / − / campo / + / +10 / Máx**, com o **total e o troco** atualizando na hora (limite de 99 ou o que o dinheiro alcança). Ao confirmar, aparece um aviso 🛒 "Comprou N× item" com quantos você tem na mochila. `Enter` confirma, `Esc` ou tocar fora cancela.
 
+### Vender ou jogar fora
+Cada item da mochila tem um botão **Vender** (metade do preço de compra) — ou **Jogar fora**, pra quem não tem preço de loja (achado explorando, prêmio de Alfa…). Mesmo HUD de quantidade da compra, só que ao contrário.
+
 ### ☄ Evento semanal (chefe da semana)
 No **Roguelike** e no **Hardcore**, um chefe especial ocupa a rota final da Gen dele numa caixa roxa brilhante (e o sprite dele aparece na escolha de mapa). O primeiro é o **Eternatus Eternamax** (Gen 8). **Uma tentativa a cada 8 horas**, sem fuga, imune a status, e perder não encerra a jornada.
 - **Mecânicas:** *couraça de energia* (o dano cai até ela se romper; a **Ruptura** deixa o chefe exposto), *Eternabeam telegrafado* (carrega com aviso; dano suficiente no mesmo turno interrompe e ainda abre a Ruptura) e *três fases* (66% e 33% do HP).

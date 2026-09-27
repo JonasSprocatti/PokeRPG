@@ -64,13 +64,17 @@ export function ask(html, options, extra = '') {
 }
 /* HUD de quantidade da loja: − / + / campo / Máx, com o total e o troco ao vivo. Devolve a quantidade escolhida
    (1..max) ou 0 se cancelou. `figuraHtml` é o <img> do item, montado por quem chama. Esc e clicar fora cancelam. */
-export function pedirQuantidade({ nome, figuraHtml = '', preco, max, dinheiro }) {
+/* `acao`: 'comprar' (padrão, gasta `dinheiro`) ou 'vender' (ganha na venda — a loja e a mochila usam o mesmo
+   modal, só o texto muda). `preco` em 'vender' já vem como o valor de venda (metade do de compra). */
+export function pedirQuantidade({ nome, figuraHtml = '', preco, max, dinheiro, acao = 'comprar' }) {
   return new Promise(res => {
     let q = 1;
+    const vendendo = acao === 'vender';
     const brl = n => '₽' + n.toLocaleString('pt-BR');
     const d = document.createElement('div'); d.className = 'modal';
-    d.innerHTML = `<div class="box qtd-box" role="dialog" aria-modal="true" aria-label="Comprar ${nome}">
-      <div class="qtd-topo">${figuraHtml}<div><b>${nome}</b><div class="small muted">${brl(preco)} cada · você tem ${brl(dinheiro)}</div></div></div>
+    const verbo = vendendo ? 'Vender' : 'Comprar';
+    d.innerHTML = `<div class="box qtd-box" role="dialog" aria-modal="true" aria-label="${verbo} ${nome}">
+      <div class="qtd-topo">${figuraHtml}<div><b>${nome}</b><div class="small muted">${vendendo ? `${brl(preco)} cada` : `${brl(preco)} cada · você tem ${brl(dinheiro)}`}</div></div></div>
       <div class="qtd-ctl">
         <button type="button" class="btn ghost" data-q="-10" aria-label="Menos 10">−10</button>
         <button type="button" class="btn ghost" data-q="-1" aria-label="Menos 1">−</button>
@@ -80,11 +84,13 @@ export function pedirQuantidade({ nome, figuraHtml = '', preco, max, dinheiro })
       </div>
       <div class="qtd-atalho"><button type="button" class="btn ghost" data-q="max">Máx (${max})</button></div>
       <div class="qtd-total"></div>
-      <div class="choices"><button type="button" class="btn" data-ok>Comprar</button><button type="button" class="btn ghost" data-cancel>Cancelar</button></div></div>`;
+      <div class="choices"><button type="button" class="btn" data-ok>${verbo}</button><button type="button" class="btn ghost" data-cancel>Cancelar</button></div></div>`;
     const inp = d.querySelector('input'), tot = d.querySelector('.qtd-total');
     const pinta = () => {
       q = Math.min(max, Math.max(1, Math.floor(+inp.value) || 1)); inp.value = q;
-      tot.innerHTML = `Total <b>${brl(q * preco)}</b> <span class="muted small">— sobram ${brl(dinheiro - q * preco)}</span>`;
+      tot.innerHTML = vendendo
+        ? `Você recebe <b>${brl(q * preco)}</b>`
+        : `Total <b>${brl(q * preco)}</b> <span class="muted small">— sobram ${brl(dinheiro - q * preco)}</span>`;
     };
     const fim = v => { document.removeEventListener('keydown', tecla, true); d.remove(); res(v); };
     const tecla = e => {
