@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.53', data: '2026-09-28', titulo: 'Itens funcionam no multiplayer', piada: 'Os Restos finalmente descobriram que sala de multiplayer também tem HP pra curar.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'O <b>item segurado</b> do seu Pokémon (Restos, Orbe da Vida, Faixa de Foco, Sino-Concha, Elmo Rochoso, Vínculo de Batalha…) agora funciona em qualquer luta de multiplayer — antes não fazia efeito nenhum em sala.',
+        'Também dá pra usar um <b>item comum</b> da mochila (Potion, X Attack, curas de status, Éter…) na sua vez, dentro de uma sala — ocupa o turno, sempre em você mesmo.'
+      ] }
+    ] },
   { versao: '2.52', data: '2026-09-28', titulo: 'Reordenar golpes', piada: 'O Hyper Beam pediu pra ir mais pro fim da lista. Ninguém o culpa.',
     secoes: [
       { nome: 'Novidades', itens: [

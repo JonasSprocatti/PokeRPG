@@ -7,10 +7,10 @@
 // Estado: { turno, lados: { A: [mon], B: [mon] }, fugas, fim: null | 'A' | 'B' | 'fuga' }
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
-import { STRUGGLE, STATS, TYPE_PT } from './dados.js';
-import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX } from './regras.js';
+import { STRUGGLE, STATS, TYPE_PT, ITEMS } from './dados.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
-import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
 import { aplicarForma, verboDaForma } from './mega.js';
 import { megasDe } from './dados-megas.js';
 import { teracristalizar } from './tera.js';
@@ -25,6 +25,11 @@ import { hab } from './habilidades.js';
 export function fotoDoMon(M, ref, dono, nome, slot = 0) {
   return {
     ref, dono, slot, nome: nome || M.nick || fmt(M.name), id: M.id, name: M.name, level: M.level, shiny: !!M.shiny, ability: M.ability,
+    // item segurado (pedido do usuário, 28/09/2026): antes NENHUM item segurado fazia efeito em luta de multiplayer
+    // (Restos, Orbe da Vida, Faixa de Foco...) nem o Vínculo de Batalha virava Ash-Greninja — `seg(m)`/`m.item ===
+    // ITEM_VINCULO` liam de `m.item`, e a "foto" simplesmente não tinha esse campo. golpe.js/regras.js são o MESMO
+    // motor do single player, então só faltava mandar o dado: nenhuma lógica nova de dano/cura precisou mudar.
+    item: M.item || null,
     nature: M.nature, ivs: { ...(M.ivs || {}) }, evs: { ...(M.evs || {}) },
     data: { types: [...M.data.types], sprite: M.data.sprite, back: M.data.back, speciesName: M.data.speciesName, baseExp: M.data.baseExp,
       effort: { ...(M.data.effort || {}) }, base: { ...(M.data.base || {}) } },
@@ -86,6 +91,29 @@ function aplicarGimmicksMP(s, acoes, say) {
     }
   }
   return zRefs;
+}
+
+/* Item comum (Potion, X Attack, curas de status, Éter...) no multiplayer (pedido do usuário, 28/09/2026): é uma
+   ESCOLHA DE TURNO (como golpe/fugir, não uma ação livre) — ocupa a vez do Pokémon, igual no single player. Sempre
+   no PRÓPRIO Pokémon que usou (sem "usar em qual aliado?": mantém simples numa sala, onde cada jogador só vê a
+   própria mochila). `itemTemEfeito`/`heal` são as MESMAS regras puras do single player; `mudarEstagios` (golpe.js)
+   é o motor único de estágio, então Clear Body/Simple/Contrary do alvo continuam valendo mesmo aqui. */
+async function aplicarItemComum(m, it, ctx, say) {
+  if (it.heal || it.healPct) {
+    const base = it.healPct ? Math.ceil(m.stats.hp * it.healPct / 100) : it.heal;
+    const h = Math.min(base, m.stats.hp - m.hp); heal(m, h);
+    const curou = it.cure && m.status; if (curou) { m.status = null; m.sleep = 0; }
+    say(`${m.nome} usou ${it.name} e recuperou ${h} HP${curou ? ', curado de status' : ''}.`, 'good');
+  } else if (it.cure) {
+    m.status = null; m.sleep = 0;
+    say(`${m.nome} usou ${it.name} e está curado!`, 'good');
+  } else if (it.ether) {
+    m.moves.forEach(g => { g.ppLeft = Math.min(g.pp, g.ppLeft + it.ether); });
+    say(`${m.nome} usou ${it.name}. PP restaurados.`, 'good');
+  } else if (it.stage) {
+    say(`${m.nome} usou ${it.name}.`);
+    await mudarEstagios(m, [{ stat: it.stage, change: 2 }], ctx, m);
+  }
 }
 
 /* Item de raide no co-op (boss.usarItemDeRaide): ação LIVRE de um jogador do grupo, um de cada tipo por luta pro GRUPO todo (a marca
@@ -181,6 +209,15 @@ export async function resolverTurnoMP(estado, acoes) {
     const dele = todosMP(s).filter(m => m.dono === dono && m.hp > 0);
     for (const m of dele) { m.hp = 0; m.caido = true; }
     say(`${dele[0]?.nome || 'Alguém'} e a equipe desistiram da luta.`, 'hit');
+  }
+
+  // 0b) itens comuns: ocupam a vez (como nos jogos, antes de qualquer golpe), sempre no PRÓPRIO Pokémon.
+  // `itensUsados[dono]` acumula pra cada cliente descontar da própria mochila depois (mesmo padrão de revive/raide).
+  for (const a of acoes.filter(x => x.tipo === 'item' && valida(x))) {
+    const m = monMP(s, a.ref), it = ITEMS[a.item];
+    if (!it || !itemTemEfeito(it, m)) continue;
+    await aplicarItemComum(m, it, ctx, say);
+    ((s.itensUsados ||= {})[m.dono] ||= []).push(a.item);
   }
 
   // 1) fuga (só o lado A, e nunca no PvP): o mais rápido de quem pediu tenta contra o mais rápido do outro lado

@@ -562,6 +562,9 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-mons{display:grid;gap:6px}
 .mp-grupo{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
 .mp-times{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mp-itens{margin-top:8px}
+.mp-itens summary{cursor:pointer;font:600 14px var(--display)}
+.mp-itens .bag-grid{margin-top:6px}
 @media(max-width:640px){.mp-times{grid-template-columns:1fr}}
 /* estado da conexão da sala + diagnóstico (multiplayer.js barraConexao) */
 .mp-conexao{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;padding:6px 10px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:13px}

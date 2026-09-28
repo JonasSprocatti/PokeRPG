@@ -215,6 +215,7 @@ Um jogador cria a sala e passa o **código de 4 letras**; até 6 entram com ele.
 **Ganhos da run de outra pessoa:** se você lutou no **seu nível real**, **XP, EVs, dinheiro, itens** (35% de chance por vitória) e prêmios de Alfa **voltam com você** para a sua run. Se o Balancear ajustou o seu nível, a luta vale como diversão e não leva ganhos.
 
 Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos escolherem, ou em 45 segundos, no automático.
+- **Itens**: o item segurado do seu Pokémon (Restos, Orbe da Vida, Faixa de Foco, Sino-Concha, Elmo Rochoso, Vínculo de Batalha…) funciona normalmente em qualquer luta de sala. Também dá para usar um item comum da mochila (Potion, X Attack, curas de status, Éter…) na sua vez — ocupa o turno, sempre em você mesmo (sem escolher aliado). Ambos descontam da sua própria mochila depois da luta.
 - **Co-op:** XP, EVs e dinheiro vão para a jornada de cada um, e o HP e o PP gastos voltam junto. Fora do Roguelike, desmaiar volta com 1 de HP; **no Roguelike, desmaiar conta de verdade**.
 - **Sala firme:** cada mensagem é reenviada se falhar, o anfitrião repete o estado da luta de tempos em tempos e há um botão **🔄 Sincronizar**. Trocar de aba não derruba ninguém, e a sala mostra o estado da conexão com um diagnóstico das últimas mensagens.
 - **Centro Pokémon na sala:** dá para curar a equipe entre as lutas sem sair.

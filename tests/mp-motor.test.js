@@ -21,6 +21,42 @@ test('fotoDoMon: cópia enxuta, sem descrição dos golpes, estágios zerados', 
   assert.equal(f.vol.stages.attack, 0);
 });
 
+/* Item segurado no multiplayer (pedido do usuário, 28/09/2026): antes `fotoDoMon` não levava `item`, então
+   NENHUM item segurado fazia efeito em luta de sala — golpe.js/regras.js já leem `m.item` (é o mesmo motor do
+   single player), só faltava o dado viajar. Sem precisar mudar nada no motor: Orbe da Vida (+30% de dano) e
+   Restos (cura 1/16 no fim do turno) já provam que a leitura funciona ponta a ponta. */
+test('item segurado funciona na luta de multiplayer (Orbe da Vida e Restos)', async t => {
+  t.mock.method(Math, 'random', () => 0.99); // acerta, sem crítico, rolagem máxima
+  const f = fotoDoMon(pokemon({ item: 'life-orb' }), 'A0', 'u1');
+  assert.equal(f.item, 'life-orb', 'fotoDoMon leva o item segurado');
+  const semItem = batalha();
+  const comOrbe = novaBatalhaMP([fotoDoMon(pokemon({ item: 'life-orb' }), 'A0', 'jogador0')], [fotoDoMon(pokemon(), 'B0', 'ia', 'Selvagem 0')]);
+  const r1 = await resolverTurnoMP(semItem, [{ ref: 'A0', tipo: 'golpe', golpe: 0, alvo: 'B0' }]);
+  const r2 = await resolverTurnoMP(comOrbe, [{ ref: 'A0', tipo: 'golpe', golpe: 0, alvo: 'B0' }]);
+  const dano1 = 100 - monMP(r1.estado, 'B0').hp, dano2 = 100 - monMP(r2.estado, 'B0').hp;
+  assert.ok(dano2 > dano1, `Orbe da Vida devia bater mais forte: ${dano2} vs ${dano1}`);
+  assert.ok(monMP(r2.estado, 'A0').hp < 100, 'Orbe da Vida também cobra o próprio HP');
+
+  // Restos cura no fim do turno — golpe que não acerta ninguém (Struggle contra si mesmo seria estranho: usa um
+  // golpe de status pra não interferir no HP, só deixar o fim de turno rodar)
+  const machucado = pokemon({ item: 'leftovers', hp: 50, moves: [golpe({ name: 'growl', cls: 'status', power: null, meta: { statChance: 0 } })] });
+  const comRestos = novaBatalhaMP([fotoDoMon(machucado, 'A0', 'jogador0')], [fotoDoMon(pokemon(), 'B0', 'ia', 'Selvagem 0')]);
+  const r3 = await resolverTurnoMP(comRestos, [{ ref: 'A0', tipo: 'golpe', golpe: 0, alvo: 'B0' }]);
+  assert.equal(monMP(r3.estado, 'A0').hp, 56, 'Restos curou 1/16 de 100 no fim do turno (50 + 6)');
+});
+
+/* Item comum (Potion, X Attack...) usado durante a luta de multiplayer (pedido do usuário, 28/09/2026): ocupa a
+   vez do Pokémon (não ataca naquele turno), cura/buffa e fica registrado em `itensUsados[dono]` pra cada cliente
+   descontar da própria mochila depois — testado aqui via a AÇÃO em si, não via a mochila (isso é multiplayer.js). */
+test('item comum ocupa a vez: cura HP, não ataca, e fica em itensUsados[dono]', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const e = novaBatalhaMP([fotoDoMon(pokemon({ hp: 50 }), 'A0', 'jogador0')], [fotoDoMon(pokemon(), 'B0', 'ia', 'Selvagem 0')]);
+  const { estado } = await resolverTurnoMP(e, [{ ref: 'A0', tipo: 'item', item: 'potion' }]);
+  assert.equal(monMP(estado, 'A0').hp, 70, 'Potion curou 20 HP');
+  assert.equal(monMP(estado, 'B0').hp, 100, 'não atacou: usar item ocupa o turno inteiro');
+  assert.deepEqual(estado.itensUsados, { jogador0: ['potion'] });
+});
+
 test('turno: dano aplicado, PP gasto, estado original intacto', async t => {
   t.mock.method(Math, 'random', () => 0.99); // acerta, sem crítico, rolagem máxima
   const e = batalha();
