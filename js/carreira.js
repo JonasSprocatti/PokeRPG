@@ -4,7 +4,7 @@
 // contadores) é o que deixa juntar local + nuvem de vários aparelhos sem contar nada em dobro (mesclarJornadas).
 // Puro + localStorage via `store` (que é no-op no Node) — testado em tests/carreira.test.js.
 import { store } from './util.js';
-import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, runsDeNivelDe, especiesDesbloqueadas, registrarEventoVencido } from './progresso-conta.js';
+import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, runsDeNivelDe, especiesDesbloqueadas, registrarEventoVencido, saldoArenaDisponivel, gastarSaldoArena } from './progresso-conta.js';
 import { desbloqueadas } from './roguelike.js';
 import { entradaDoHall, registrarNoHall, listaDoHall } from './hall.js';
 import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
@@ -126,6 +126,15 @@ export const desbloqueadasDaConta = (jornadas = carregarCarreira().jornadas) =>
 // abates somados: os das jornadas já bancadas + os da run em andamento (que ainda não é jornada)
 export const abatesDaConta = (registroAtual = null, jornadas = carregarCarreira().jornadas) =>
   totaisDe(atualizarProgresso(jornadas), registroAtual?.abates);
+// saldo da Arena (loja de preparo, arena.js): 10% do dinheiro final de cada jornada terminada, pra sempre
+export const saldoArenaDaConta = (jornadas = carregarCarreira().jornadas) => saldoArenaDisponivel(atualizarProgresso(jornadas));
+// gasta na hora (devolve true se deu certo) — usado pela loja de preparo ao comprar
+export function gastarSaldoArenaDaConta(valor) {
+  const antes = carregarProgresso();
+  if (saldoArenaDisponivel(antes) < valor) return false;
+  salvarProgresso(gastarSaldoArena(antes, valor));
+  return true;
+}
 // o Pokémon principal de uma jornada que TERMINOU entra no Hall da Fama (hall.js) — é o que a Arena do Chefe usa
 export function registrarNoHallDaConta(S, resumo) {
   const entrada = entradaDoHall(S, resumo);

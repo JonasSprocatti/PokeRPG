@@ -127,6 +127,8 @@ Na lista de amigos (tela 👤 Conta), **Ver perfil** mostra o ícone, a insígni
 ### 🏟 Arena do Chefe e Hall da Fama
 Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada jornada Roguelike/Hardcore que você termina** (venceu, perdeu ou encerrou) entra no **Hall da Fama** com o nível que tinha (guarda os 30 melhores, sincroniza com a conta). Na **🏟 Arena** você leva de 1 a 3 deles contra o chefe da semana. Não mexe em nenhuma jornada em andamento, perder não custa nada, vale a mesma tentativa de 8 horas. Prêmio: Pokémon na Pokédex, insígnia e título (1ª vitória) e os itens de raide da semana. Diferenças pra luta dentro de uma run: sem itens segurados, sem Mega/Tera/Z-Move/Gigantamax e sem Revive. A tela inicial e a Arena trazem o texto **"Como funcionam os chefes da semana"**.
 
+**🎒 Loja de preparo:** toda jornada terminada deixa **10% do seu dinheiro máximo** como saldo de conta, pra sempre. Na Arena, esse saldo compra itens de raide direto (até 5 de cada guardados), sem precisar esperar cair de prêmio.
+
 ### 🤝 Badges de parceiros
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 

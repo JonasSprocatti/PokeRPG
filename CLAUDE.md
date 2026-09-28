@@ -400,6 +400,21 @@ O que sobrou e o que ficou combinado:
   exigiria threading de "é o turno 1" nos dois motores de ordenação); Emblema da Coroa vira +15% de dano fixo
   (sem depender de "lutar acompanhado" — mesma classe de problema que fez a habilidade Friend Guard ficar de
   fora da 5ª leva: `calcDamage` não recebe o roster de aliados do atacante).
+- **Loja de preparo da Arena** (28/09/2026, `progresso-conta.js` + `carreira.js` + `arena.js`): saldo de conta em
+  dinheiro, só usável ali — `FRACAO_SALDO_ARENA` (10%) de `maxDinheiro` de CADA jornada bancada (`porJornada[id].maxDinheiro`,
+  campo novo nessa entrada), somado pra sempre e nunca encolhe (mesmo princípio do resto de `progresso-conta.js`).
+  `saldoArenaGanho`/`saldoArenaDisponivel`/`gastarSaldoArena` são puras e testadas; `gastoArena` mescla pelo MAIOR
+  valor entre os dois lados (é gasto, não conquista — perder o controle de quanto já foi gasto deixaria comprar
+  de graça). `carreira.saldoArenaDaConta`/`gastarSaldoArenaDaConta` fazem a ponte com `localStorage`. Na tela da
+  Arena (`htmlLobby`), cada um dos 10 itens de raide (ver acima) tem um botão "Comprar ₽X" a `PRECO_BASE_RAIDE × 4`
+  (12.000 — preço-base é só uma referência interna, esses itens nunca tiveram preço de loja normal), que soma no
+  MESMO `inventarioRaide()` de sempre. **Simplificação assumida**: o teto de 5 por tipo (`MAX_ESTOQUE_RAIDE`) é um
+  ESTOQUE PERSISTENTE (quantos ficam guardados entre lutas), não uma seleção por tentativa — como a regra de uso
+  já limita a UM de cada tipo por luta independente de quantos você tem guardado, um teto de estoque cumpre o
+  mesmo papel prático ("não acumular indefinidamente") sem precisar de uma tela de "escolher o kit desta luta".
+  Fora do escopo aqui: itens comuns (Potion, X-itens) e itens segurados NÃO têm equipar/usar na Arena — ela roda
+  o motor do co-op sem `G.S` (ver acima), que não tem ação de usar item comum nem slot de equipar; só os 10
+  consumíveis de raide entram.
 - **Sucker Punch** (`soSeAlvoAtaca` em `especiais.js`): `vol.golpeEscolhido` é preenchido por `batalha.turn`/`mp-motor` antes de resolver o turno e apagado em `fimDaRodada`;
   falha se o alvo escolheu status, não escolheu golpe (item/fuga) ou já agiu (`primeiro` falso).
 - **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),
@@ -484,6 +499,29 @@ O que sobrou e o que ficou combinado:
   "furar"), Damp (bloquear autodestruição do OUTRO lado — cross-side igual Friend Guard, mas em cima de uma
   mecânica, autoDesmaio, que ainda não devolve controle pro motor decidir "deixar acontecer ou não"), Aftermath
   (precisa de um gancho novo "ao desmaiar por contato", que não existe).
+- **BACKLOG — dado de golpe que falta pra habilidades futuras (pedido do usuário, 28/09/2026): "flags" de golpe**
+  (Contato, Cortante, Projétil/Bola e mais). **Pesquisado e confirmado**: a PokéAPI (REST, `pokeapi.co/api/v2`)
+  **NÃO expõe isso** — não existe endpoint `move-flag`/`move-attribute` pra golpe (o `item-attribute` existe, mas
+  o equivalente de golpe não; `/move/{x}` tem `meta` com ailment/crit_rate/drain/healing/flinch_chance/stat_chance/
+  min_hits/max_hits/min_turns/max_turns, mas NADA de contato/som/bala/pó/dança). É por isso que `regras.
+  FAMILIAS_GOLPE` (soco/mordida/corte, pra Iron Fist/Strong Jaw/Sharpness) é uma lista escrita À MÃO — não tem
+  como vir da API. **Achado bom**: os dados brutos que GERAM a PokéAPI (não a API pública, o repositório-fonte)
+  TÊM essa informação: `github.com/PokeAPI/pokeapi/blob/master/data/v2/csv/move_flags.csv` (21 flags: contact,
+  charge, recharge, protect, reflectable, snatch, mirror, punch, sound, gravity, defrost, distance, heal,
+  authentic, powder, bite, pulse, ballistics, mental, non-sky-battle, dance) e `move_flag_map.csv` (1970 linhas,
+  golpe → flags, por ID numérico do golpe — bate com o id usado em `/move/{id}/`). Confirmado com `curl` direto
+  nesses dois arquivos (28/09/2026) — CSV puro, sem chave de API, dá pra buscar num gerador (`ferramentas/gerar-*`,
+  mesmo padrão de `gerar-megas.ps1`/`gerar-item-sprites.mjs`) e virar uma tabela local, tipo
+  `js/dados-golpe-flags.js` com `{ [nomeDoGolpe]: ['contact', 'sound', ...] }`. **Sharpness/"cortante" NÃO está
+  nessa lista de 21** (a habilidade Sharpness é da Gen 9, mais nova que esse dado) — `FAMILIAS_GOLPE.corte`
+  continua sendo a única fonte pra corte, sem alternativa encontrada. **Onde isso destrava habilidade nova**:
+  `contact` é o mais valioso — hoje `g.cls === 'physical'` é usado como PROXY de "fez contato" (Static, Rough
+  Skin, Iron Barbs, Effect Spore, Poison Touch, Gooey…), mas os dois não são a mesma coisa nos jogos de verdade
+  (ex.: Earthquake é físico e NÃO faz contato) — ter o flag de verdade corrigiria esses ganchos em vez de
+  aproximar. `sound` libera Soundproof (imune a golpe sonoro) direito. `ballistics` libera Bulletproof de
+  verdade (hoje só está listado como "falta" na auditoria). `powder` generaliza o que hoje só existe hardcoded
+  pra Overcoat/Grama no pólen do `contato.po`. **Não fazer isso "de qualquer jeito"**: são ~2000 golpes pra
+  mapear — vale a pena gerar uma vez (script) e comitar o resultado, não tentar de cabeça igual `FAMILIAS_GOLPE`.
 - **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
 - **Decidido com o usuário (28/09/2026)**: confirmado que o inimigo TAMBÉM deveria gigantamaxar (só treinador) —
   ao investigar pra implementar, achei que **já existia** (`batalha.gmaxDoInimigo`/`dynamax.inimigoPodeGmax`,

@@ -16,7 +16,23 @@ import { mesclarHall } from './hall.js';
 export const PROGRESSO_KEY = 'pokerpg-progresso-v1';
 export const LISTAS_ABATE = ['tipoAlvo', 'especie', 'golpe', 'elemento'];
 
-export const progressoVazio = () => ({ v: 1, especies: {}, porJornada: {} });
+export const progressoVazio = () => ({ v: 1, especies: {}, porJornada: {}, gastoArena: 0 });
+
+/* ---- saldo da Arena (arena.js, "loja de preparo") ----
+   Pedido do usuário (28/09/2026): comprar itens de raide fora de uma run, pagando 4x o preço, usando um saldo de
+   CONTA (não o dinheiro da run — a Arena não tem run nenhuma). `FRACAO_SALDO_ARENA` de CADA jornada terminada
+   vira saldo, pra sempre — por isso "ganho" é sempre RECALCULADO de `porJornada[id].maxDinheiro` (que já é união
+   por chave, nunca conta a mesma jornada duas vezes) em vez de guardado à parte: reaproveita a mesma garantia
+   de "nunca encolhe, nunca duplica" que o resto do progresso-conta já tem, sem precisar reinventar. Só o GASTO
+   precisa de um campo próprio, porque gastar é uma ação (não dá pra recalcular do histórico). */
+export const FRACAO_SALDO_ARENA = 0.1;
+export const saldoArenaGanho = progresso => Object.values(progresso?.porJornada || {}).reduce((s, j) => s + Math.floor((j.maxDinheiro || 0) * FRACAO_SALDO_ARENA), 0);
+export const saldoArenaDisponivel = progresso => Math.max(0, saldoArenaGanho(progresso) - (progresso?.gastoArena || 0));
+// Gasta `valor` do saldo (devolve o progresso NOVO, ou o mesmo se não dá o saldo — nunca fica negativo)
+export function gastarSaldoArena(progresso, valor) {
+  if (valor <= 0 || saldoArenaDisponivel(progresso) < valor) return progresso;
+  return { ...progresso, gastoArena: (progresso?.gastoArena || 0) + valor };
+}
 
 /* ---- marca do que veio do painel de manutenção (dev.js) ----
    Mora aqui, e não em dev.js, por dois motivos: é uma característica do FORMATO do progresso, e porque
@@ -58,6 +74,7 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
       amigos: j.amigos || 0, alfas: j.alfas || 0, gens: j.gens || 0, genVencida: j.genVencida || 0,
       semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null,
       casaCheia: !!j.casaCheia, aliadosPerdidos: j.aliadosPerdidos || 0,   // badges de parceiros (badges.js)
+      maxDinheiro: j.maxDinheiro || 0,   // loja de preparo da Arena (arena.js): alimenta o saldo de conta
       abates: { total: a?.total || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a?.[l] || {}) }])) }
     };
   }
@@ -122,6 +139,9 @@ export function mesclarProgresso(a, b) {
     }
     for (const [id, abates] of Object.entries(fonte.porJornada || {})) p.porJornada[id] ||= abates;
     if (fonte.hall) p.hall = mesclarHall(p.hall, fonte.hall);   // Hall da Fama (hall.js): união pela chave da jornada
+    // saldo da Arena (arena.js): "ganho" é sempre recalculado de porJornada (união por chave já resolve isso
+    // sozinha); só "gasto" precisa de fusão — pega o MAIOR entre os dois lados (nunca desconta duas vezes)
+    p.gastoArena = Math.max(p.gastoArena || 0, fonte.gastoArena || 0);
     // eventos semanais: união das semanas vencidas e da data mais ANTIGA da primeira vitória (nunca perde uma vitória)
     for (const [id, e] of Object.entries(fonte.eventos || {})) {
       const ja = (p.eventos ||= {})[id];

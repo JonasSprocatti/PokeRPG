@@ -4,7 +4,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { progressoVazio, bancar, totaisDe, runsDeNivelDe, mesclarProgresso, especiesDesbloqueadas,
-  semTeste, temTeste, ID_JORNADA_TESTE, RAZAO_TESTE, registrarEventoVencido } from '../js/progresso-conta.js';
+  semTeste, temTeste, ID_JORNADA_TESTE, RAZAO_TESTE, registrarEventoVencido,
+  saldoArenaGanho, saldoArenaDisponivel, gastarSaldoArena, FRACAO_SALDO_ARENA } from '../js/progresso-conta.js';
 
 const jornada = (id, o = {}) => ({ id, especie: 'pikachu', nivel: 30, dificuldade: 'hard', registro: { abates: {
   total: 10, tipoAlvo: { fire: 4 }, especie: { pikachu: 10 }, golpe: { thunderbolt: 6 }, elemento: { electric: 6 }
@@ -149,4 +150,38 @@ test('desbloqueadas = gravadas + o que a regra de hoje reconhece (retroatividade
   assert.equal(lista.find(x => x.especie === 'onix').permanente, false);
   // sem id não dá pra desenhar nem começar jornada: fica de fora da lista jogável
   assert.deepEqual(especiesDesbloqueadas({ especies: { mew: { id: null } } }, []), []);
+});
+
+// Loja de preparo da Arena: saldo = 10% do dinheiro máximo de CADA jornada bancada, somado pra sempre.
+test('saldoArenaGanho soma 10% do maxDinheiro de cada jornada bancada', () => {
+  const p = bancar(progressoVazio(), [
+    jornada('j1', { maxDinheiro: 10000 }), jornada('j2', { maxDinheiro: 2500 })
+  ], []);
+  assert.equal(FRACAO_SALDO_ARENA, 0.1);
+  assert.equal(saldoArenaGanho(p), 1000 + 250);
+  // jornada antiga sem maxDinheiro não quebra e não soma nada
+  const semCampo = bancar(progressoVazio(), [jornada('j3')], []);
+  assert.equal(saldoArenaGanho(semCampo), 0);
+});
+
+test('saldoArenaDisponivel desconta o já gasto, sem nunca ficar negativo', () => {
+  const p = bancar(progressoVazio(), [jornada('j1', { maxDinheiro: 10000 })], []);
+  assert.equal(saldoArenaDisponivel(p), 1000);
+  const gasto = gastarSaldoArena(p, 600);
+  assert.equal(saldoArenaDisponivel(gasto), 400);
+  // gastar mais do que tem: não muda nada (recusa)
+  const recusado = gastarSaldoArena(gasto, 999);
+  assert.equal(recusado, gasto);
+  assert.equal(saldoArenaDisponivel(recusado), 400);
+  // gastar exatamente tudo: zera, nunca fica negativo
+  const zerado = gastarSaldoArena(gasto, 400);
+  assert.equal(saldoArenaDisponivel(zerado), 0);
+});
+
+test('mesclar com a nuvem leva o MAIOR gasto (nunca perde o controle de saldo já usado)', () => {
+  const a = { ...progressoVazio(), gastoArena: 500 };
+  const b = { ...progressoVazio(), gastoArena: 900 };
+  assert.equal(mesclarProgresso(a, b).gastoArena, 900);
+  assert.equal(mesclarProgresso(b, a).gastoArena, 900);
+  assert.equal(mesclarProgresso(progressoVazio(), progressoVazio()).gastoArena, 0);
 });

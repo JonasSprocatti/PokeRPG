@@ -11,10 +11,10 @@ import { G } from './estado.js';
 import { $, limparTopo, logRaw } from './ui.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { SPR, SPR_SHINY, ITEMS, API, TC, TYPE_PT, CLS_PT } from './dados.js';
-import { hallDaConta, registrarVitoriaDeEvento } from './carreira.js';
+import { hallDaConta, registrarVitoriaDeEvento, saldoArenaDaConta, gastarSaldoArenaDaConta } from './carreira.js';
 import { EVENTOS, eventoDaSemana, jaComecou, idDaSemana, agoraDoEvento, esperaRestante, ultimaTentativaEfetiva, registrarTentativa, formatarEspera, dataBR,
   inventarioRaide, darItensDeRaide, gastarItemDeRaide, INICIO, BETA_SEM_ESPERA } from './evento.js';
-import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
+import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE, PRECO_BASE_RAIDE } from './boss.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento } from './mp-motor.js';
 import { cartao } from './multiplayer.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
@@ -26,6 +26,7 @@ import { esc, fmt } from './util.js';
 
 const MAX_TIME = 3;
 const DONO = 'eu';
+const MAX_ESTOQUE_RAIDE = 5;   // loja de preparo: quanto de cada item de raide dá pra ter guardado
 let selecao = [];            // chaves do Hall escolhidas (na ordem)
 let arena = null;            // luta em andamento (ou terminada): { ev, estado, escolhas, log, fim, ocupado }
 
@@ -81,8 +82,19 @@ function htmlLobby() {
   const chamarJogadores = `<section class="pv conta"><div><h3>👥 Jogar em grupo</h3>
     <p class="small muted">Esta Arena aqui é só você, com Pokémon do Hall da Fama — sem risco, mas sem outros jogadores. Pra enfrentar o chefe da semana <b>em grupo de verdade</b> (até 6 jogadores, 3 Pokémon cada), crie ou entre numa sala no Multiplayer: quem tiver uma run Roguelike ou Hardcore em andamento vê o botão "☄ Chefe da semana" lá dentro.</p>
     <button class="btn ghost" data-act="mp">Ir pro Multiplayer</button></div></section>`;
-  const inv = inventarioRaide();
-  const itens = ITENS_DE_RAIDE.map(t => `<li>${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} <b>×${inv[ITEM_DO_RAIDE[t]] || 0}</b></li>`).join('');
+  const inv = inventarioRaide(), saldo = saldoArenaDaConta();
+  /* Loja de preparo (pedido do usuário, 28/09/2026): a Arena não tem run nenhuma pra ter mochila própria, então
+     os itens de raide vivem só nesse estoque de conta (`inventarioRaide`, evento.js — o MESMO que já recebia o
+     que sobrava de uma jornada terminada). Aqui dá pra completar até MAX_ESTOQUE_RAIDE de cada um comprando com
+     o saldo da conta (10% do dinheiro final de cada jornada, pra sempre — carreira.saldoArenaDaConta), a
+     PRECO_BASE_RAIDE×4 (esses itens nunca tiveram preço de loja normal, só vêm de prêmio). */
+  const precoCompra = PRECO_BASE_RAIDE * 4;
+  const linhaRaide = t => {
+    const id = ITEM_DO_RAIDE[t], qtd = inv[id] || 0, cheio = qtd >= MAX_ESTOQUE_RAIDE;
+    return `<li><span>${esc(ITEMS[id].name)} <b>×${qtd}</b></span>
+      <button class="btn ghost sm" data-act="arena-comprar-raide" data-v="${t}" ${cheio || saldo < precoCompra ? 'disabled' : ''} title="${cheio ? `Já tem o máximo (${MAX_ESTOQUE_RAIDE})` : saldo < precoCompra ? 'Saldo insuficiente' : esc(ITEMS[id].desc)}">Comprar ₽${precoCompra.toLocaleString('pt-BR')}</button></li>`;
+  };
+  const itens = ITENS_DE_RAIDE.map(linhaRaide).join('');
   const escolhidos = new Set(selecao);
   const cartaoHall = e => { const on = escolhidos.has(e.chave), cheio = !on && selecao.length >= MAX_TIME;
     return `<button class="hall-card ${on ? 'on' : ''}" data-act="arena-sel" data-v="${esc(e.chave)}" ${cheio ? 'disabled' : ''} aria-pressed="${on}">
@@ -98,9 +110,9 @@ function htmlLobby() {
       <p class="small muted">O Pokémon principal de cada jornada <b>Roguelike ou Hardcore</b> que você termina entra aqui, com o nível que tinha. Escolha de 1 a ${MAX_TIME} pra enfrentar o chefe. Não usa nenhuma jornada em andamento.</p>
       ${hall.length ? `<div class="hall-lista">${hall.map(cartaoHall).join('')}</div>`
         : '<p class="notice">Seu Hall da Fama está vazio. <b>Termine (ou encerre) uma jornada Roguelike ou Hardcore</b> e o Pokémon dela aparece aqui, pronto pra Arena.</p>'}</div></section>
-    <section class="pv conta"><div><h3>Itens de raide da conta</h3>
-      <ul class="raide-lista">${itens}</ul>
-      <p class="small muted">Só valem contra o chefe, um de cada tipo por luta. Vêm de prêmio dos chefes; o que sobra numa jornada que termina também vem pra cá.</p></div></section>
+    <section class="pv conta"><div><h3>🎒 Loja de preparo — itens de raide</h3>
+      <p class="small muted">Só valem contra o chefe, um de cada tipo por luta (até ${MAX_ESTOQUE_RAIDE} de cada guardados). Vêm de prêmio dos chefes, do que sobra numa jornada que termina, ou <b>comprados aqui</b> com o saldo da conta — 10% do dinheiro final de cada jornada terminada, pra sempre. Saldo: <b>₽${saldo.toLocaleString('pt-BR')}</b>.</p>
+      <ul class="raide-lista">${itens}</ul></div></section>
     <div class="subrow"><button class="btn big" data-act="arena-iniciar" ${podeIniciar ? '' : 'disabled'}>${rotuloBotao}</button></div>`;
 }
 
@@ -135,6 +147,16 @@ function botoesRaide(chefe) {
 const registrar = (txt, cls = '') => { const l = { html: esc(txt), cls }; arena.log.push(l); logRaw(l); };
 
 /* ---------- ações (main.js liga cada data-act) ---------- */
+// Loja de preparo: compra 1 unidade de um item de raide com o saldo da conta (₽PRECO_BASE_RAIDE×4), até o teto
+export function arenaComprarRaide(tipo) {
+  if (arena || G.mode !== 'arena' || !ITEM_DO_RAIDE[tipo]) return;
+  const id = ITEM_DO_RAIDE[tipo], qtd = inventarioRaide()[id] || 0;
+  if (qtd >= MAX_ESTOQUE_RAIDE) return telaArena(`Já tem o máximo de ${ITEMS[id].name} guardado (${MAX_ESTOQUE_RAIDE}).`);
+  const preco = PRECO_BASE_RAIDE * 4;
+  if (!gastarSaldoArenaDaConta(preco)) return telaArena('Saldo insuficiente.');
+  darItensDeRaide({ [id]: 1 });
+  telaArena(`Comprou ${ITEMS[id].name} por ₽${preco.toLocaleString('pt-BR')}.`);
+}
 export function arenaSelecionar(chave) {
   if (arena) return;
   selecao = selecao.includes(chave) ? selecao.filter(c => c !== chave) : (selecao.length < MAX_TIME ? [...selecao, chave] : selecao);

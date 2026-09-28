@@ -295,6 +295,10 @@ export function antesDoChefeAgir(u) {
      fragmento    recarrega o Tera já gasto — devolve `{recarregaTera: true}`, o chamador reseta a PRÓPRIA marca
      celula       elimina uma célula: desliga a regeneração pelo resto da luta, só em chefe que regenera
    Devolve { ok, efeitos, motivo? }. Quem chama gasta o item da mochila só se `ok`. */
+// Preço de referência da Loja de Preparo da Arena (arena.js): não têm preço de loja normal (só vêm de prêmio),
+// então esse é o valor que a 4x do pedido do usuário multiplica — escolha própria, no mesmo patamar dos itens
+// segurados mais fortes (Orbe da Vida ₽3.000).
+export const PRECO_BASE_RAIDE = 3000;
 export const ITENS_DE_RAIDE = ['ruptura', 'interrupcao', 'escudo', 'cinza', 'abissal', 'prisma', 'espelho', 'relogio', 'fragmento', 'celula'];
 export const ITEM_DO_RAIDE = {
   ruptura: 'cristal-de-ruptura', interrupcao: 'selo-de-interrupcao', escudo: 'escudo-astral',

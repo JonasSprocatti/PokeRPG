@@ -24,7 +24,7 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
-import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim } from './arena.js';
+import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim, arenaComprarRaide } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem } from './itens.js';
@@ -107,6 +107,7 @@ document.addEventListener('click', async e => {
     case 'arena': if (G.busy || G.mode === 'battle') return; return telaArena();
     case 'amigo-perfil': if (G.busy || G.mode === 'battle') return; return telaPerfil(v);   // 👤 Ver perfil (perfil-amigo.js)
     case 'arena-sel': return arenaSelecionar(v);
+    case 'arena-comprar-raide': return arenaComprarRaide(v);
     case 'arena-iniciar': return arenaIniciar();
     case 'arena-golpe': return arenaGolpe(v);
     case 'arena-golpe-mover': return arenaGolpeMover(+v, +b.dataset.dir);
