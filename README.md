@@ -63,7 +63,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
 - A **barra de HP anima** ao tomar dano ou se curar, em vez de saltar direto pro número novo (respeita a preferência de "reduzir animações" do aparelho).
-- **Mais de 120 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
+- **Mais de 150 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
   - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Toxic Boost, Flare Boost, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head, Reckless, Neuroforce, Merciless, Defeatist, Iron Fist, Strong Jaw, Sharpness, Steelworker, Transistor, Dragon's Maw, Rocky Payload, Water Bubble, Sand Force.
   - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard, Unaware, Wonder Skin, Dazzling/Queenly Majesty/Armor Tail (barram golpe de prioridade), Pressure.
   - **Absorção de tipo:** Levitate, Flash Fire, Volt/Water Absorb, Lightning Rod, Motor Drive, Sap Sipper.
@@ -72,8 +72,8 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
   - **Reagem a levar golpe:** Steam Engine, Water Compaction, Stamina, Weak Armor, Justified, Rattled, Anger Point, Sand Spit, Seed Sower.
   - **Contato:** Static, Flame Body, Rough Skin, Effect Spore (sono, paralisia ou veneno), Gooey, Tangling Hair, Poison Touch.
   - **Ao derrubar:** Moxie, Chilling Neigh, Grim Neigh.
-  - **Ao entrar em campo:** Intimidate (com Guard Dog, Inner Focus, Own Tempo e Oblivious reagindo), Download (lê a defesa do oponente), Hadron Engine, Orichalcum Pulse.
-  - **Fim de turno:** Speed Boost, Shed Skin. **Outras:** Truant, Run Away…
+  - **Ao entrar em campo:** Intimidate (com Guard Dog, Inner Focus, Own Tempo e Oblivious reagindo), Download (lê a defesa do oponente), Hadron Engine, Orichalcum Pulse, Anticipation (avisa se algum oponente tem golpe perigoso).
+  - **Fim de turno:** Speed Boost, Shed Skin. **Clima/terreno com maior atributo:** Protosynthesis (sol), Quark Drive (Campo Elétrico). **Outras:** Truant, Run Away, Magnet Pull (prende quem é do tipo Aço), Synchronize (devolve queimadura/paralisia/veneno pra quem causou), Stench (chance extra de fazer recuar).
 
   A ficha marca quais estão ativas.
 

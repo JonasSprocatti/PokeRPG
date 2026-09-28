@@ -64,7 +64,7 @@ Duas máquinas de dev, ambientes diferentes:
 | `js/config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (marcadores = jogo só local). |
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 65 de 307 habilidades da PokéAPI; ~40% pesando por quantos Pokémon as têm — ver `docs/auditoria-batalha.md`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 160 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -386,7 +386,7 @@ O que sobrou e o que ficou combinado:
   (`forecast` → `formaDoClima`): `golpe.ajustarForma` troca `m.data` por uma CÓPIA (tipos + sprite pelos ids 10013/14/15) ao
   entrar, no começo de todo `usarGolpe` (usuário e alvo) e no fim do turno; `desfazerForma` roda em `endBattle`. Cherrim
   (Flower Gift) só tem o bônus de atributo, sem troca de sprite.
-- **Item 8 — habilidades**: quatro levas feitas. A regra que vale: só entra habilidade com gancho FIEL —
+- **Item 8 — habilidades**: cinco levas feitas. A regra que vale: só entra habilidade com gancho FIEL —
   mapear no gancho errado deixaria a habilidade mais forte que o original, e a ficha promete "✓ ativa em batalha".
   A **4ª leva** (41 novas + 13 parciais completadas) criou ~24 ganchos, todos documentados no topo de
   `habilidades.js` e validados em `tests/habilidades.test.js` (a lista `ganchos` do teste precisa ganhar o nome de
@@ -404,6 +404,23 @@ O que sobrou e o que ficou combinado:
   Ficaram de fora, documentadas no fim da tabela: Sticky Hold (nenhum golpe rouba item), Regenerator/Natural Cure
   (agem ao trocar), Beast Boost, Analytic, Mold Breaker & cia. **Cuidado ao editar a tabela**: o teste que detecta
   habilidade duplicada varre o bloco com uma regex — não escreva `nome: {` dentro de comentário da tabela.
+  **5ª leva** (trabalho noturno autônomo, 27/09/2026 — ver `feedback_autorizacao_raspberry_pi`): 6 habilidades,
+  6 ganchos novos (`multMaiorStatClima`, `multMaiorStatTerreno`, `prendeTipo`, `anticipa`, `sincroniza`,
+  `flinchChance`), escolhidas por já terem hook DISPONÍVEL no motor de hoje (clima/terreno, `consegueFugir`,
+  `aoEntrarEmCampo`, `aplicarStatus` com `fonte`, o cálculo de recuo em `executar`) — não abriram mecânica nova.
+  **Protosynthesis/Quark Drive**: reforçam o MAIOR atributo BASE (empate: Atk>Def>SpA>SpD>Spe), ×1,3 ou ×1,5 se o
+  maior for Velocidade (regra FIXA dos jogos — por isso o multiplicador não mora na tabela de habilidades, é
+  `regras.multMaiorStat`, só o gatilho de clima/terreno mora lá). `regras.maiorStatBase(m)` lê `m.data.base`.
+  **Simplificação assumida**: só o gatilho de clima("sol")/terreno(Elétrico) está aqui — Booster Energy (item que
+  ativa a mesma coisa fora do clima/terreno certo) ainda não existe no jogo. **Magnet Pull**: `consegueFugir` ganhou
+  o parâmetro `preso` (regras.js não sabe de habilidade — `batalha.js`/`mp-motor.js` resolvem `hab(inimigo).prendeTipo`
+  e mandam o booleano pronto); Run Away segue ignorando até isso. **Anticipation**: só narra (sem stat/estágio
+  nenhum) se algum oponente tiver golpe super efetivo, OHKO ou autodestrutivo — `golpe.aoEntrarEmCampo`, reaproveita
+  `especial(g).ohko`/`autoDesmaio` e `typeEff`. **Synchronize**: `aplicarStatus` já recebia `fonte` (pra Salvaguarda);
+  ao aplicar burn/paralysis/poison com sucesso, se há `fonte` viva sem status, devolve o MESMO status pra ela com uma
+  chamada recursiva passando `fonte: null` — é isso que impede ida-e-volta infinita se os dois tiverem a habilidade.
+  Sono/congelamento não sincronizam (fiel aos jogos). **Stench**: 10% de recuo extra em golpe de dano que ainda não
+  tem `meta.flinch` própria (senão dobraria a chance à toa).
 - **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
 - **Em aberto, esperando decisão do usuário**: inimigo gigantamaxar (hoje só mega/terastaliza); se o painel de
   manutenção sai quando o jogo estabilizar; e se o teto da equipe (`MAX_ALIADOS`) muda agora que existe o

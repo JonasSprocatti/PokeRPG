@@ -74,6 +74,16 @@
 //   preguica               só age em turnos alternados (golpe.usarGolpe) — Truant
 //   formaDoClima           os tipos e o sprite acompanham o tempo (golpe.ajustarForma) — Forecast, do Castform
 //   bloqueiaPrioridade     golpe de prioridade contra você não passa (golpe.usarGolpe) — Dazzling, Queenly Majesty, Armor Tail
+//   multMaiorStatClima: {clima:true}    o MAIOR atributo base (empate: Atk>Def>SpA>SpD>Spe) ×1,3 (×1,5 se for
+//                          Velocidade — fixo dos jogos, embutido em regras.multMaiorStat) naquele clima (effStat) — Protosynthesis
+//   multMaiorStatTerreno: {terreno:true}  idem, no terreno (effStat) — Quark Drive. Simplificação: só o gatilho de
+//                          clima/terreno está aqui; o Booster Energy (item que ativa fora do clima/terreno certo)
+//                          ainda não existe no jogo — fica pra quando esse item entrar.
+//   prendeTipo: [tipo]     Pokémon selvagem desse tipo não consegue fugir de você (regras.consegueFugir) — Magnet Pull (Aço)
+//   anticipa               ao entrar em campo, avisa (sem efeito mecânico) se algum oponente tem golpe super
+//                          efetivo, OHKO ou autodestrutivo contra você (golpe.aoEntrarEmCampo) — Anticipation
+//   sincroniza             queimadura/paralisia/veneno recebidos de um golpe voltam pra quem causou (golpe.aplicarStatus) — Synchronize
+//   flinchChance: n        chance extra (%) de fazer o alvo recuar em golpe de dano que ainda não tem chance própria de recuo (golpe.js) — Stench
 export const HABILIDADES = {
   // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
   drizzle: { climaAoEntrar: 'chuva' }, drought: { climaAoEntrar: 'sol' }, 'sand-stream': { climaAoEntrar: 'areia' }, 'snow-warning': { climaAoEntrar: 'neve' },
@@ -86,10 +96,12 @@ export const HABILIDADES = {
   'sand-veil': { escondeNoClima: ['areia'], imuneClima: ['areia'] }, 'snow-cloak': { escondeNoClima: ['granizo', 'neve'], imuneClima: ['granizo'] },
   'magic-guard': { imuneClima: ['areia', 'granizo'], semDanoIndireto: true },
   hydration: { curaStatusClima: 'chuva' }, 'leaf-guard': { semStatusClima: 'sol' },
+  protosynthesis: { multMaiorStatClima: { sol: true } },
   // terrenos: ligam o campo ao entrar, ou se aproveitam dele
   'electric-surge': { terrenoAoEntrar: 'eletrico' }, 'grassy-surge': { terrenoAoEntrar: 'grama' },
   'psychic-surge': { terrenoAoEntrar: 'psiquico' }, 'misty-surge': { terrenoAoEntrar: 'fada' },
   'surge-surfer': { multStatTerreno: { eletrico: { speed: 2 } } },
+  'quark-drive': { multMaiorStatTerreno: { eletrico: true } },
   overcoat: { imuneClima: ['areia', 'granizo'], semSecundario: true, imunePo: true },
   // força em apuros
   overgrow: { pinch: 'grass' }, blaze: { pinch: 'fire' }, torrent: { pinch: 'water' }, swarm: { pinch: 'bug' },
@@ -125,8 +137,10 @@ export const HABILIDADES = {
   static: { contato: { status: 'paralysis', chance: 30 } }, 'flame-body': { contato: { status: 'burn', chance: 30 } },
   'poison-point': { contato: { status: 'poison', chance: 30 } },
   'rough-skin': { contatoDano: 1 / 8 }, 'iron-barbs': { contatoDano: 1 / 8 },
+  synchronize: { sincroniza: true }, stench: { flinchChance: 10 },
   // outros
   'speed-boost': { fimTurno: 'speed' }, intimidate: { intimida: true }, 'run-away': { fuga: true },
+  'magnet-pull': { prendeTipo: ['steel'] }, anticipation: { anticipa: true },
   // Aegislash: golpe de dano vira a Forma Lâmina, King's Shield volta pra Forma Escudo (golpe.trocarPostura).
   // As duas formas são o MESMO Pokémon com Ataque/Defesa e At.Esp./Def.Esp. trocados entre si — por isso dá pra
   // fazer sem buscar a outra forma na API: é só espelhar os atributos base.

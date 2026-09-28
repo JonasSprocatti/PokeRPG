@@ -68,12 +68,14 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     // quarta leva (documentados no topo de habilidades.js)
     'danoTipo', 'danoTipoClima', 'golpesFamilia', 'recuo', 'superEfetivoCausado', 'critContraStatus', 'abaixoDeMetade', 'soStatus',
     'ignoraEstagios', 'inverteEstagios', 'dobraEstagios', 'espelhaQueda', 'aoSerBaixado', 'aoNocautear', 'aoSerAtingido', 'limitaStatus',
-    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima']);
+    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima',
+    // quinta leva
+    'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
     for (const k of Object.keys(h)) assert.ok(ganchos.has(k), `${nome}: gancho desconhecido "${k}" (não faz nada no motor)`);
-    for (const t of [h.pinch, h.imuneTipo, h.absorve, ...Object.keys(h.resiste || {}), ...Object.keys(h.danoTipo || {})].filter(Boolean)) assert.ok(tipos.includes(t), `${nome}: tipo "${t}"`);
+    for (const t of [h.pinch, h.imuneTipo, h.absorve, ...Object.keys(h.resiste || {}), ...Object.keys(h.danoTipo || {}), ...(h.prendeTipo || [])].filter(Boolean)) assert.ok(tipos.includes(t), `${nome}: tipo "${t}"`);
     for (const a of h.imuneStatus || []) assert.ok(AIL_MSG[a] || a === 'confusion', `${nome}: status "${a}"`);
     for (const s of Object.keys({ ...h.multStat, ...h.comStatus })) assert.ok(STATS.includes(s), `${nome}: atributo "${s}"`);
     // ganchos da quarta leva: tipo, status, atributo e família existem de verdade (typo aqui deixaria a habilidade inerte)
@@ -460,4 +462,54 @@ test('entrada em campo liga clima e terreno junto do bônus (Orichalcum Pulse, H
   assert.ok(Math.abs(effStat(sol, 'attack', false, true, 'sol') - 133) <= 1);
   assert.ok(Math.abs(effStat(raio, 'special-attack', false, true, null, 'eletrico') - 133) <= 1);
   assert.equal(effStat(sol, 'attack', false, true, 'chuva'), 100, 'fora do sol, sem bônus');
+});
+
+test('Protosynthesis e Quark Drive reforçam o MAIOR atributo BASE (empate por ordem; Velocidade ganha ×1,5, o resto ×1,3)', () => {
+  const baseCom = destaque => ({ hp: 100, attack: 80, defense: 80, 'special-attack': 80, 'special-defense': 80, speed: 80, [destaque]: 150 });
+  const fisico = mon({ ability: 'protosynthesis', data: { types: ['normal'], base: baseCom('attack') } });
+  assert.equal(effStat(fisico, 'attack', false, true, 'sol'), Math.floor(100 * 1.3));
+  assert.equal(effStat(fisico, 'defense', false, true, 'sol'), 100, 'só o maior atributo sobe');
+  assert.equal(effStat(fisico, 'attack', false, true, 'chuva'), 100, 'fora do sol, sem bônus');
+
+  const veloz = mon({ ability: 'quark-drive', data: { types: ['normal'], base: baseCom('speed') } });
+  assert.equal(effStat(veloz, 'speed', false, true, null, 'eletrico'), Math.floor(100 * 1.5), 'Velocidade ganha ×1,5, não ×1,3');
+  assert.equal(effStat(veloz, 'speed', false, true, null, 'grama'), 100, 'fora do Campo Elétrico, sem bônus');
+
+  // empate: Ataque vem antes de Defesa na ordem de desempate dos jogos
+  const empatado = mon({ ability: 'protosynthesis', data: { types: ['normal'], base: { hp: 100, attack: 120, defense: 120, 'special-attack': 80, 'special-defense': 80, speed: 80 } } });
+  assert.equal(effStat(empatado, 'attack', false, true, 'sol'), Math.floor(100 * 1.3), 'empate: Ataque vence');
+  assert.equal(effStat(empatado, 'defense', false, true, 'sol'), 100);
+});
+
+test('Anticipation avisa sem mudar nada; Synchronize devolve status; Stench dá recuo extra', async t => {
+  const perigoso = mon({ moves: [golpe({ type: 'fire' })] });   // super efetivo contra Grama
+  const antena = mon({ ability: 'anticipation', data: { types: ['grass'] } });
+  const c1 = ctx();
+  await aoEntrarEmCampo([antena], () => [perigoso], c1);
+  assert.ok(c1.msgs.some(m => m.includes('pressente')), 'avisa quando há golpe perigoso por perto');
+  assert.equal(antena.vol.stages.attack, 0, 'não muda nada — é só aviso');
+  const semPerigo = mon({ moves: [golpe({ type: 'normal' })] });
+  const antena2 = mon({ ability: 'anticipation', data: { types: ['grass'] } });
+  const c2 = ctx();
+  await aoEntrarEmCampo([antena2], () => [semPerigo], c2);
+  assert.ok(!c2.msgs.some(m => m.includes('pressente')), 'sem golpe perigoso, não avisa');
+
+  // Synchronize: quem causou o status recebe o mesmo (burn/paralysis/poison; não sono/congelamento)
+  const sinc = mon({ ability: 'synchronize' }), atacante = mon();
+  await aplicarStatus(sinc, 'burn', ctx(), false, atacante);
+  assert.equal(sinc.status, 'burn'); assert.equal(atacante.status, 'burn', 'a queimadura voltou pro atacante');
+  const sinc2 = mon({ ability: 'synchronize' }), atacante2 = mon();
+  await aplicarStatus(sinc2, 'sleep', ctx(), false, atacante2);
+  assert.equal(atacante2.status, null, 'sono não sincroniza');
+  // sem fonte (ex.: veneno de armadilha), não há quem devolver — não quebra
+  const sinc3 = mon({ ability: 'synchronize' });
+  await aplicarStatus(sinc3, 'poison', ctx(), false, null);
+  assert.equal(sinc3.status, 'poison');
+
+  // Stench: 10% de recuo extra num golpe que não tem chance própria (meta.flinch)
+  t.mock.method(Math, 'random', () => 0.05);           // dentro dos 10%
+  const federado = mon({ ability: 'stench' });
+  const alvo = mon();
+  await usarGolpe(federado, alvo, golpe(), true, ctx());
+  assert.equal(alvo.vol.flinch, true, 'Stench fez o alvo recuar');
 });

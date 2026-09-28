@@ -218,6 +218,12 @@ test('consegueFugir: Run Away, mais rápido, e a chance que cresce a cada tentat
   assert.equal(consegueFugir(50, 100, 2, 'none', 94 / 256), true);
 });
 
+test('consegueFugir: Magnet Pull (preso) trava até quem é mais rápido; Run Away ignora', () => {
+  assert.equal(consegueFugir(200, 10, 1, 'none', 0.5, true), false, 'preso não foge nem sendo bem mais rápido');
+  assert.equal(consegueFugir(10, 200, 1, 'run-away', 0.5, true), true, 'Run Away escapa até de quem prende');
+  assert.equal(consegueFugir(200, 10, 1, 'none', 0.5, false), true, 'sem estar preso, foge normal (mais rápido)');
+});
+
 test('jogadorAgePrimeiro: prioridade > velocidade > moeda', () => {
   assert.equal(jogadorAgePrimeiro({ priority: 1 }, { priority: 0 }, 10, 100), true);
   assert.equal(jogadorAgePrimeiro({ priority: 0 }, { priority: 1 }, 100, 10), false);

@@ -118,16 +118,29 @@ export function calcStats(m) {
 export function recalc(m) { const old = m.stats.hp; m.stats = m.statsChefe ? statsDeChefe(calcStats(m)) : calcStats(m); m.hp = clamp(m.hp + (m.stats.hp - old), 0, m.stats.hp); }
 export const freshVol = () => ({ stages: { attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0, accuracy: 0, evasion: 0 }, conf: 0, flinch: false, flashFire: false });
 export const stageMul = n => n >= 0 ? (2 + n) / 2 : 2 / (2 - n);
+// maior atributo BASE de combate (sem HP), empate desfeito por Ataque > Defesa > At.Esp. > Def.Esp. > Velocidade
+// (mesma ordem dos jogos) — Protosynthesis e Quark Drive reforçam esse, seja lá qual for, em vez de um fixo.
+const STATS_COMBATE = ['attack', 'defense', 'special-attack', 'special-defense', 'speed'];
+export const maiorStatBase = m => STATS_COMBATE.reduce((a, s) => m.data.base[s] > m.data.base[a] ? s : a);
 // quanto o clima mexe num atributo deste Pokémon: habilidade (Swift Swim…) e o bônus do próprio clima (CLIMAS.defesaDe)
 export function multStatClima(m, stat, clima) {
   if (!clima || !CLIMAS[clima]) return 1;
   const porTipo = CLIMAS[clima].defesaDe || {};
   const bonus = m.data.types.reduce((a, t) => a * (porTipo[t]?.[stat] || 1), 1);
-  return (hab(m).multStatClima?.[clima]?.[stat] || 1) * bonus;
+  const h = hab(m);
+  const maior = h.multMaiorStatClima?.[clima] && stat === maiorStatBase(m) ? multMaiorStat(stat) : 1;
+  return (h.multStatClima?.[clima]?.[stat] || 1) * maior * bonus;
 }
-// quanto o terreno mexe num atributo (só pra quem está no chão) — Surge Surfer no Campo Elétrico
-export const multStatTerreno = (m, stat, terreno) =>
-  terreno && noChao(m) ? (hab(m).multStatTerreno?.[terreno]?.[stat] || 1) : 1;
+// Protosynthesis/Quark Drive: ×1,3 no maior atributo, ou ×1,5 se o maior for Velocidade — valor FIXO dos jogos
+// (não é um número que a habilidade escolhe, por isso não mora na tabela de habilidades.js).
+const multMaiorStat = stat => stat === 'speed' ? 1.5 : 1.3;
+// quanto o terreno mexe num atributo (só pra quem está no chão) — Surge Surfer no Campo Elétrico, Quark Drive no Campo Elétrico
+export function multStatTerreno(m, stat, terreno) {
+  if (!terreno || !noChao(m)) return 1;
+  const h = hab(m);
+  const maior = h.multMaiorStatTerreno?.[terreno] && stat === maiorStatBase(m) ? multMaiorStat(stat) : 1;
+  return (h.multStatTerreno?.[terreno]?.[stat] || 1) * maior;
+}
 // a habilidade de "força com status" vale pra este status? (Guts: qualquer; Toxic Boost: só veneno; Flare Boost: só queimadura)
 export const statusVale = (h, ail) => !h.soStatus || h.soStatus.includes(ail);
 /* Golpes por família, pras habilidades que reforçam um tipo de golpe pelo NOME (a PokéAPI não traz essa marca no golpe):
@@ -440,9 +453,13 @@ export function danoResidual(m) {
   return frac ? Math.max(1, Math.floor(m.stats.hp / frac)) : 0;
 }
 
-// fuga: Run Away ou ser mais rápido garante; senão a chance sobe 30/256 a cada tentativa
-export function consegueFugir(velP, velE, tentativas, habilidade, sorte = Math.random()) {
-  return habilidade === 'run-away' || velP >= velE || sorte * 256 < Math.floor(velP * 128 / velE) + 30 * tentativas;
+/* fuga: Run Away ou ser mais rápido garante; senão a chance sobe 30/256 a cada tentativa. `preso` = o oponente
+   tem Magnet Pull e você é do tipo Aço (regras.js não sabe de habilidade — quem chama já resolveu isso em
+   `hab(inimigo).prendeTipo`) — nem a velocidade ajuda, só Run Away escapa disso, como nos jogos. */
+export function consegueFugir(velP, velE, tentativas, habilidade, sorte = Math.random(), preso = false) {
+  if (habilidade === 'run-away') return true;
+  if (preso) return false;
+  return velP >= velE || sorte * 256 < Math.floor(velP * 128 / velE) + 30 * tentativas;
 }
 
 // true = o jogador age primeiro. Prioridade do golpe decide; empate de prioridade vai pela velocidade; empate total é moeda

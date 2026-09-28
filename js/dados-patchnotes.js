@@ -5,6 +5,22 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.50', data: '2026-09-27', titulo: 'Pedras e cristais de verdade, GIFs sem esticar, 6 habilidades novas', piada: 'A Pedra-Chave sempre serviu pra qualquer Mega. Só faltava alguém te contar que ela existia.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A <b>Pedra Mega</b> e o <b>Cristal Z</b> agora mostram a pedra/cristal de VERDADE da sua espécie ou tipo na mochila e na loja, em vez do ícone genérico de caixinha — quem joga de Charizard vê a Charizardita de verdade.',
+        'Seis <b>habilidades</b> novas com efeito real em batalha: <b>Protosynthesis</b> e <b>Quark Drive</b> (reforçam seu maior atributo no sol ou no Campo Elétrico), <b>Magnet Pull</b> (prende selvagens do tipo Aço, nem fugir adianta), <b>Anticipation</b> (avisa se o oponente tem golpe perigoso), <b>Synchronize</b> (devolve queimadura, paralisia ou veneno pra quem causou) e <b>Stench</b> (chance extra de fazer o oponente recuar).'
+      ] },
+      { nome: 'Correções', itens: [
+        'Os <b>GIFs animados</b> (Pokémon Showdown) esticavam pra caber numa caixa quadrada, ficando com a proporção errada — cada Pokémon tem um tamanho de sprite diferente lá. Agora encolhem mantendo a forma certa.'
+      ] }
+    ] },
+  { versao: '2.49', data: '2026-09-27', titulo: 'A Pedra Mega sumida, resolvida de vez', piada: 'Um "P" desconhecido invadiu a loja. A perícia técnica identificou o suspeito e ele já está preso na variável certa.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A loja apagava a Pedra Mega, o Cristal Z e o Vínculo de Batalha toda vez que era aberta FORA de uma batalha (ou seja, quase sempre) — um erro de programação (a tela tentava ler o Pokémon de dentro de uma luta que não estava acontecendo) derrubava a checagem dos três itens em silêncio. Corrigido: a loja agora sempre olha pro Pokémon certo, dentro ou fora de batalha.'
+      ] }
+    ] },
   { versao: '2.48', data: '2026-09-27', titulo: 'Loja com plano B pro progresso da conta', piada: 'Se o livro-caixa da conta pegar fogo, a loja agora sabe contar os abates de cabeça mesmo assim.',
     secoes: [
       { nome: 'Correções', itens: [

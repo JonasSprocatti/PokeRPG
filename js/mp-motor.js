@@ -17,6 +17,7 @@ import { teracristalizar } from './tera.js';
 import { gigantamaxar, passarDynamax } from './dynamax.js';
 import { inimigoTemZ, inimigoUsaZAgora } from './zmove.js';
 import { rand, clamp, fmt } from './util.js';
+import { hab } from './habilidades.js';
 
 // Cópia enxuta de um Pokémon do jogo pra batalha multiplayer (sem descrições longas: vai pela rede).
 // `slot` = 0 principal, 1..2 aliados (índice em S.aliados + 1) — é por ele que o resultado volta pro Pokémon certo.
@@ -189,7 +190,9 @@ export async function resolverTurnoMP(estado, acoes) {
     s.fugas++;
     const quem = fugindo.reduce((a, b) => effStat(b, 'speed') > effStat(a, 'speed') ? b : a);
     const inimigoRapido = Math.max(...vivosMP(s.lados.B).map(m => effStat(m, 'speed')));
-    if (consegueFugir(effStat(quem, 'speed'), inimigoRapido, s.fugas, quem.ability)) {
+    // Magnet Pull: qualquer inimigo vivo com a habilidade prende quem é do tipo Aço
+    const preso = quem.data.types.some(t => vivosMP(s.lados.B).some(m => hab(m).prendeTipo?.includes(t)));
+    if (consegueFugir(effStat(quem, 'speed'), inimigoRapido, s.fugas, quem.ability, undefined, preso)) {
       say(`${quem.nome} achou uma saída e todo mundo fugiu!`, 'good');
       s.fim = 'fuga'; return { estado: s, eventos: ev };
     }

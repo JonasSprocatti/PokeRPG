@@ -28,6 +28,7 @@ import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { zDisponiveis, inimigoTemZ, inimigoUsaZAgora } from './zmove.js';
 import { podeGigantamax, gigantamaxar, passarDynamax, desfazerDynamax, inimigoPodeGmax } from './dynamax.js';
 import { loadPokemon, loadSpecies, loadMove, pokemonEmCache } from './api.js';
+import { hab } from './habilidades.js';
 import { EVENTOS, idDaSemana, registrarTentativa, agoraDoEvento, EVENTO_SEM_PERMADEATH } from './evento.js';
 import { prepararChefe, nivelDoChefe, habilidadeDoChefe, aplicarClimaDoChefe } from './boss.js';
 import { registrarVitoriaDeEvento } from './carreira.js';
@@ -380,7 +381,8 @@ export async function turn(action) {
       B.runs++;
       await vez('p');
       const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
-      if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability)) {
+      const preso = hab(E).prendeTipo?.some(t => P.data.types.includes(t));   // Magnet Pull
+      if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability, undefined, preso)) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
       await say('Não conseguiu fugir!');

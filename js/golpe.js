@@ -258,6 +258,12 @@ export async function aoEntrarEmCampo(entrantes, oponentesDe, ctx) {
     if (est) await mudarEstagios(m, [{ stat: est[0], change: est[1] }], ctx, m);
   }
   for (const m of entrantes) await ajustarForma(m, ctx);   // Castform já entra na forma do tempo (o da rota ou o que acabou de ser ligado)
+  // Anticipation: só avisa (não muda nada) se algum oponente tem golpe super efetivo, OHKO ou autodestrutivo contra quem entrou
+  for (const m of entrantes) if (hab(m).anticipa) {
+    const perigo = oponentesDe(m).some(o => (o.moves || []).some(g =>
+      g.cls !== 'status' && (especial(g).ohko || especial(g).autoDesmaio || typeEff(g.type, tiposDefensivos(m)) >= 2)));
+    if (perigo) await ctx.say(`${ctx.nome(m)} pressente um golpe perigoso por perto!`, 'status');
+  }
 }
 
 // Reação a levar um golpe de dano (Steam Engine, Stamina, Weak Armor, Sand Spit…). Dispara UMA vez por golpe, mesmo
@@ -340,6 +346,12 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
   if (t.status) { if (avisar) await ctx.say(`${ctx.nome(t)} já tem uma condição de status.`); return; }
   t.status = ail; delete t.vol.toxico; if (ail === 'sleep') t.sleep = rand(2, 4);
   up(ctx); await ctx.say(`${ctx.nome(t)} ${AIL_MSG[ail]}!`, 'status');
+  // Synchronize: devolve queimadura/paralisia/veneno pra quem causou (não sono/congelamento). `fonte: null` na
+  // chamada espelhada evita ping-pong se os dois tiverem a habilidade — só a aplicação ORIGINAL espelha.
+  if (hab(t).sincroniza && fonte && fonte !== t && fonte.hp > 0 && !fonte.status && ['burn', 'paralysis', 'poison'].includes(ail)) {
+    await ctx.say(`A Sincronia de ${ctx.nome(t)} passa a condição para ${ctx.nome(fonte)}!`, 'status');
+    await aplicarStatus(fonte, ail, ctx, false, null);
+  }
   return true;
 }
 
@@ -621,6 +633,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (t.hp > 0 && !ht.semSecundario) {
     if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx, false, u);
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
+    // Stench: golpe que já tem chance própria de recuo não soma outra
+    else if (hu.flinchChance && !meta.flinch && primeiro && total > 0 && !ht.semRecuo && chance(hu.flinchChance)) t.vol.flinch = true;
   }
   // reação a ter sido atingido (Steam Engine, Stamina, Weak Armor, Anger Point, Sand Spit…)
   if (total > 0 && t.hp > 0 && ht.aoSerAtingido) await reagirAoGolpe(t, g, crit, ctx);
