@@ -1003,6 +1003,23 @@ Prioridade 3 da mesma leva. Três toques, todos CSS-only (menos o `<span>` novo 
   transforms (o de maior especificidade CSS, `.pick:hover`) em vez dos dois combinados — efeito colateral
   pequeno, não vale compor os dois valores de `transform` só por causa disso.
 
+### FLIP em XP e PP (28/09/2026)
+Prioridade 4 (a última) da mesma leva, fechando o ciclo "mais vivo". `render.js`:
+- **XP**: `barraXp(M, GR, chave)` ganhou o MESMO 3º parâmetro opcional que `hpbar` já tinha — com `chave`, o
+  `.fill` ganha `id="xp-fill-<chave>"` e a classe `fill-xp`. `capturarLarguraHP`/`animarBarrasHP` viraram
+  `capturarLargurasBarras`/`animarBarras` (renomeadas: já não são só de HP) e passam a consultar
+  `.fill-hp[id],.fill-xp[id]` juntas — a MESMA técnica FLIP, uma função só. O piscar vermelho/verde (hit/heal)
+  continua exclusivo de `.fill-hp` (`if (!el.classList.contains('fill-hp')) continue`): dano/cura não fazem
+  sentido pra XP. Chaves: `'ficha-p'` (jogador) e `'card-a'+i` (aliado) — as MESMAS já usadas pela barra de HP
+  correspondente (sem colisão de id: prefixos `hp-fill-`/`xp-fill-` diferentes).
+- **PP não é barra, é texto** ("PP 5/10" nos botões de golpe) — FLIP de largura não se aplica. Tratamento
+  PARALELO, não literal: `capturarTextosPP`/`animarPP` comparam `textContent` antes/depois (mesma ideia do FLIP,
+  ANTES/DEPOIS do render, só que em texto) e piscam a classe `.pp-mudou` (CSS: escala + cor por um instante) só
+  quando o texto muda. Só o `.pp` do BOTÃO de golpe (`renderActions`, `id="pp-<índice>"`) ganhou id — é o único
+  que decrementa DURANTE a batalha; o da ficha (dentro do `<details>` de cada golpe) ficou de fora por não ter
+  tanto valor piscar toda vez que o painel reabre.
+- Ambos cobertos pelo `prefers-reduced-motion` global — nenhum tratamento extra precisou, igual o resto da leva.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

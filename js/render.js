@@ -183,10 +183,11 @@ function desmaiosTxt(S) {
     : `<br><span class="${S.bag.revive ? '' : 'err'}">Desmaios: <b>${n}</b>. O próximo gasta um Revive (você tem ${S.bag.revive || 0})${S.bag.revive ? '' : ': sem Revive é Game Over'}.</span>`;
 }
 /* peças da ficha, usadas pra você e pra cada aliado */
-function barraXp(M, GR) {
+function barraXp(M, GR, chave = null) {
   if (!GR) return '';
   const cur = M.exp - GR[M.level], need = M.level < 100 ? GR[M.level + 1] - GR[M.level] : 1;
-  return `<div class="hp xp"><span>XP</span><div class="bar"><div class="fill" style="width:${M.level < 100 ? clamp(cur / need * 100, 0, 100) : 100}%"></div></div><span>${M.level < 100 ? `faltam ${GR[M.level + 1] - M.exp}` : 'máx.'}</span></div>`;
+  const pct = M.level < 100 ? clamp(cur / need * 100, 0, 100) : 100;
+  return `<div class="hp xp"><span>XP</span><div class="bar"><div class="fill${chave ? ' fill-xp' : ''}" ${chave ? `id="xp-fill-${chave}"` : ''} style="width:${pct}%"></div></div><span>${M.level < 100 ? `faltam ${GR[M.level + 1] - M.exp}` : 'máx.'}</span></div>`;
 }
 function tabelaStats(M) {
   const [up, down] = NATURES[M.nature] || [];
@@ -217,7 +218,7 @@ const listaGolpes = (M, quem) => `<div class="sec mlist"><h3>Golpes</h3>
 function cartaoAliado(A, i) {
   const ordem = A.ordem || 'livre';
   return `<div class="aliado ${ordem === 'fora' ? 'descansando' : ''}">
-    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth)}${chipsFor(A)}</div></div>
+    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth, 'card-a' + i)}${chipsFor(A)}</div></div>
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
@@ -241,7 +242,7 @@ function renderFicha() {
     </div>
     <div class="bars">
       ${hpbar(P, 'ficha-p')}
-      ${barraXp(P, S.meta.growth)}
+      ${barraXp(P, S.meta.growth, 'ficha-p')}
       ${chipsFor(P)}
     </div>
     ${tabelaStats(P)}
@@ -454,7 +455,7 @@ function renderActions() {
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;
-        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp">PP ${m.ppLeft}/${m.pp}</span></button>`;
+        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
       }).join('')}</div>
       ${botaoMega(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
@@ -516,14 +517,17 @@ function atualizarCarteira() {
    por um instante (sem transição) antes de soltar pra largura de verdade (com transição) — o olho vê os dois
    quadros como uma animação contínua. Sem prefers-reduced-motion (REDUCED), a mudança fica instantânea, igual
    sempre foi. */
-function capturarLarguraHP() {
+// `.fill-hp` (barra de HP) e `.fill-xp` (barra de XP) usam a MESMA técnica FLIP — generalizado (28/09/2026)
+// pra não duplicar a função só porque XP não pisca vermelho/verde igual dano/cura.
+function capturarLargurasBarras() {
   const antes = {};
-  for (const el of document.querySelectorAll('.fill-hp[id]')) antes[el.id] = el.style.width;
+  for (const el of document.querySelectorAll('.fill-hp[id],.fill-xp[id]')) antes[el.id] = el.style.width;
   return antes;
 }
-// hp-fill-e/-p/-a<N> são as barras da CENA de batalha (plate(m,'e'/'p'/'a'+i) em renderScene) — as únicas que
-// têm um .mon correspondente pra piscar. As outras (ficha-p, card-a0…) mostram o MESMO Pokémon noutro lugar da
-// tela; sem esse filtro a piscada duplicaria (uma vez por barra, não por Pokémon).
+// hp-fill-e/-p/-a<N> são as barras de HP da CENA de batalha (plate(m,'e'/'p'/'a'+i) em renderScene) — as únicas
+// que têm um .mon correspondente pra piscar. As outras (ficha-p, card-a0…) mostram o MESMO Pokémon noutro lugar
+// da tela; sem esse filtro a piscada duplicaria (uma vez por barra, não por Pokémon). XP nunca pisca (não faz
+// sentido dano/cura em barra de XP), então esta função só é chamada pra `.fill-hp`.
 const idDoMonNaCena = chave => chave === 'e' ? 'mon-e' : chave === 'p' ? 'mon-p' : /^a\d+$/.test(chave) ? 'mon-' + chave : null;
 function piscar(id, classe) {
   const el = document.getElementById(id); if (!el) return;
@@ -536,16 +540,34 @@ function piscar(id, classe) {
    Simplificação assumida: a largura é uma PORCENTAGEM (hp/hp máximo), então um HP MÁXIMO que muda no meio da
    luta (Rare Candy, Dynamax) também mexe na largura sem ninguém ter apanhado ou curado — rarérrimo e sem efeito
    de jogo, só uma piscada errada ocasional; não vale a complexidade de separar os dois casos. */
-function animarBarrasHP(antes) {
+function animarBarras(antes) {
   if (REDUCED) return;
-  for (const el of document.querySelectorAll('.fill-hp[id]')) {
+  for (const el of document.querySelectorAll('.fill-hp[id],.fill-xp[id]')) {
     const de = antes[el.id]; if (de === undefined || de === el.style.width) continue;
     const para = el.style.width;
     el.style.transition = 'none'; el.style.width = de;
     el.offsetWidth; // força o navegador a aplicar a largura antiga ANTES da próxima troca — senão as duas mudanças viram uma só, sem transição nenhuma
     el.style.transition = ''; el.style.width = para;
+    if (!el.classList.contains('fill-hp')) continue;   // XP: só a largura anima, sem piscar hit/heal
     const id = idDoMonNaCena(el.id.replace(/^hp-fill-/, ''));
     if (id) piscar(id, parseFloat(para) < parseFloat(de) ? 'hit-flash' : 'heal-flash');
+  }
+}
+/* PP não é uma barra (é texto — "PP 5/10", nos botões de golpe da batalha), então FLIP de largura não se aplica;
+   em vez disso, um flash de cor quando o número muda (a mesma ideia — comparar ANTES/DEPOIS do render — só que
+   em texto em vez de largura). Só o `.pp` do botão de golpe (`renderActions`, id="pp-<índice>") ganhou id: é o
+   único que decrementa DURANTE a batalha; o da ficha (dentro do <details>) é informativo, sem tanto valor em
+   piscar toda vez que o painel reabre. */
+function capturarTextosPP() {
+  const antes = {};
+  for (const el of document.querySelectorAll('.pp[id]')) antes[el.id] = el.textContent;
+  return antes;
+}
+function animarPP(antes) {
+  if (REDUCED) return;
+  for (const el of document.querySelectorAll('.pp[id]')) {
+    if (antes[el.id] === undefined || antes[el.id] === el.textContent) continue;
+    el.classList.remove('pp-mudou'); void el.offsetWidth; el.classList.add('pp-mudou');
   }
 }
 // (As abas de celular ⚔/💬/📋 foram removidas — ver o comentário em paineis.js e o bloco "celular" do CSS.)
@@ -555,9 +577,9 @@ export function render() {
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
   document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
-  const antesHP = capturarLarguraHP();
+  const antes = capturarLargurasBarras(), antesPP = capturarTextosPP();
   renderSheet(); renderScene(); renderActions();
-  animarBarrasHP(antesHP);
+  animarBarras(antes); animarPP(antesPP);
   atualizarCarteira();   // fora do menu ☰: sempre visível
   // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),
   // mais o que só existe dentro do jogo: ↺ Layout e Novo jogo. Em batalha, só esses dois (navegar fica pra depois).

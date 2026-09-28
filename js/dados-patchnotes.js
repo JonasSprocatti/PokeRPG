@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.63', data: '2026-09-28', titulo: 'Barra de XP anima, PP pisca', piada: 'O PP descobriu que também merecia um efeito especial, não só o HP.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A barra de XP agora anima ao mudar, igual a de HP; o número de PP pisca quando você usa um golpe.'
+      ] }
+    ] },
   { versao: '2.62', data: '2026-09-28', titulo: 'Tela inicial mais viva', piada: 'O Pokémon da prévia aprendeu a flutuar. Levitate não é habilidade dele, mas ninguém contou pra ele.',
     secoes: [
       { nome: 'Novidades', itens: [

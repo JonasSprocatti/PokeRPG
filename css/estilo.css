@@ -692,6 +692,9 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 .mv b{font:700 17px var(--display)}
 .mv small{color:var(--muted);font-size:13px}
 .mv .pp{font:500 13px var(--display);color:var(--yellow)}
+/* PP não é barra, é texto — pisca quando o número muda (render.animarPP), em vez de FLIP de largura */
+@keyframes pp-mudou{0%,100%{transform:scale(1);color:var(--yellow)}40%{transform:scale(1.25);color:var(--text)}}
+.pp.pp-mudou{animation:pp-mudou .3s ease-out}
 .mv:hover:not(:disabled){border-color:var(--c)}
 /* Vantagem de tipo no botão do golpe: a informação que decide o turno e que, sem ela, só existe na cabeça de
    quem decorou a tabela de 18 tipos. Cor + seta + texto, os três juntos — cor sozinha exclui quem não a
