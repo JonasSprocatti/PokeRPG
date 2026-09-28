@@ -80,6 +80,8 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 ### No celular
 Na batalha, a **cena fica presa no topo** (os dois lados, com HP e status de toda a equipe) enquanto você rola o resto da página: golpes, registro, ficha, aliados, missões e mochila continuam todos ali, um embaixo do outro. Nada fica escondido atrás de aba nenhuma — você vê o Pokémon enquanto escolhe o golpe e alcança a ficha de qualquer aliado sem sair da luta.
 
+**Celular deitado:** a cena vira uma coluna fixa à esquerda (em vez de presa no topo, que sobraria pouca altura numa tela baixa) — golpes, registro e painéis ficam numa coluna à direita, rolando por dentro.
+
 ### 🎯 Caça Shiny
 Modo opcional, ligado **no começo da jornada**. Quando você revela todas as espécies de uma rota (10 derrotados de cada), pode escolher **uma delas para ser a única que aparece ali** — bom para caçar um shiny ou farmar uma espécie. Dá para trocar ou parar a caça quando quiser, rota por rota. **Muda só o Pokémon selvagem:** treinadores, itens, dinheiro e as frases de ambientação continuam com a mesma chance.
 

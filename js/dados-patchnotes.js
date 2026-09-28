@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.59', data: '2026-09-28', titulo: 'Celular deitado', piada: 'A cena descobriu que também podia ficar de pé — quer dizer, de lado.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Batalha no celular <b>deitado</b>: a cena vira uma coluna fixa à esquerda em vez de ficar presa no topo, aproveitando a tela larga e baixa.'
+      ] }
+    ] },
   { versao: '2.58', data: '2026-09-28', titulo: 'Jogando agora', piada: 'O marcador de presença jura que não sabe seu nome. Só sabe contar.',
     secoes: [
       { nome: 'Novidades', itens: [
