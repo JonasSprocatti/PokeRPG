@@ -2,7 +2,7 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $, REDUCED } from './ui.js';
-import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
+import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_SPR_MEGA, ITEM_SPR_Z, ITEM_SPR_VINCULO, ITEM_PEDRA_MEGA, ITEM_CRISTAL_Z, ITEM_VINCULO, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { estiloSpriteAtual } from './ajustes.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
@@ -16,7 +16,7 @@ import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
 import { gimmicksNaLoja } from './carreira.js';
 import { terasDisponiveis } from './tera.js';
-import { zDisponiveis, avisoDoZ } from './zmove.js';
+import { zDisponiveis, avisoDoZ, primeiroTipoZ } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
 import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
@@ -33,6 +33,14 @@ import { clamp, esc, fmt } from './util.js';
    ao shiny — nunca leem m.data.sprite, porque nem "home" nem "showdown" existem garantido pros dados guardados
    de formas antigas. Se a imagem não existir de verdade pra esse Pokémon/forma, imgMon() já cai sozinho no
    sprite 2D clássico no 2º erro de <img>. */
+/* Sprite de um item na mochila/loja/ficha. Pedra Mega e Cristal Z são itens ÚNICOS no jogo (dados.js), mas a
+   PokéAPI tem sprite de verdade por espécie/tipo (dados-item-sprites.js) — passando `m` (o Pokémon que segura ou
+   seguraria o item) o ícone vira a pedra/cristal certo em vez do genérico. Sem `m` (contexto não sabido ainda),
+   cai no genérico de sempre — nunca quebra por falta de contexto. */
+export const spriteItem = (k, m) => k === ITEM_PEDRA_MEGA ? ITEM_SPR_MEGA(m?.data?.speciesName)
+  : k === ITEM_CRISTAL_Z ? ITEM_SPR_Z(primeiroTipoZ(m))
+  : k === ITEM_VINCULO ? ITEM_SPR_VINCULO
+  : ITEM_SPR(k);
 export const spriteFrente = m => {
   const estilo = estiloSpriteAtual();
   if (estilo === 'animado') return m.shiny ? SPR_ANIM_SHINY(m.formaSprite || m.id) : SPR_ANIM(m.formaSprite || m.id);
@@ -238,7 +246,7 @@ function renderFicha() {
 function blocoItem(M, quem) {
   const it = M.item && ITEMS[M.item];
   return `<div class="sec item-seg"><h3>Item segurado</h3>${it
-    ? `<div class="seg-linha"><img src="${ITEM_SPR(M.item)}" alt="" onerror="${ITEM_ERRO}"><span><b>${it.name}</b><small>${esc(it.desc)}</small></span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="tirar-item" data-v="${quem}" ${G.busy ? 'disabled' : ''}>Tirar</button>` : ''}</div>`
+    ? `<div class="seg-linha"><img src="${spriteItem(M.item, M)}" alt="" onerror="${ITEM_ERRO}"><span><b>${it.name}</b><small>${esc(it.desc)}</small></span>${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="tirar-item" data-v="${quem}" ${G.busy ? 'disabled' : ''}>Tirar</button>` : ''}</div>`
     : semSegurar(quem)}</div>`;
 }
 // sem item na mão: se já tem algum na mochila, oferece equipar aqui mesmo; senão explica onde conseguir
@@ -309,7 +317,7 @@ function renderMochila() {
     const preco = precoVenda(k, S);
     return `<button class="btn ghost sm" data-act="vender" data-v="${k}" ${G.busy ? 'disabled' : ''}>${preco ? `Vender ₽${preco}` : 'Jogar fora'}</button>`;
   };
-  const linha = ([k, n]) => `<li><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span><div class="bag-acoes">${botao(k)}${botaoVender(k)}</div></li>`;
+  const linha = ([k, n]) => `<li><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span><div class="bag-acoes">${botao(k)}${botaoVender(k)}</div></li>`;
   $('#p-mochila').innerHTML = bag.length
     ? porCategoria(bag).map(c => `<h4 class="bag-div">${c.nome} <span class="muted">(${c.itens.length})</span></h4><ul class="bag">${c.itens.map(linha).join('')}</ul>`).join('')
     : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
@@ -425,7 +433,7 @@ function renderActions() {
         : G.B.chefe ? '<p class="small muted">Um Alfa guarda o território: não aceita petiscos.</p>'
         : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
         : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';
-      a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
+      a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${spriteItem(k, P)}" alt="" onerror="${ITEM_ERRO}"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
         <h4 class="bag-sec">Fazer amizade com ${esc(fmt(E.name))} <span class="muted">(${E.data.types.map(t => TYPE_PT[t]).join('/')})</span></h4>${secPetisco}
         <div class="subrow"><button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button></div>`;
       return;
@@ -458,7 +466,7 @@ function renderActions() {
     const forSale = Object.entries(ITEMS).filter(([, it]) =>
       it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z) && (!it.soComVinculo || gimmicks.vinculo));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
-    const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
+    const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
     a.innerHTML = `<p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>
       <div class="subrow"><button class="btn ghost sm" data-act="panel" data-v="main">Sair da loja</button></div>

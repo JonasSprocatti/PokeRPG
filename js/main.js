@@ -3,7 +3,7 @@
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
-import { render, buildGame } from './render.js';
+import { render, buildGame, spriteItem } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
@@ -29,7 +29,7 @@ import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, res
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
-import { ITEMS, ORDENS, ITEM_SPR, ITEM_ERRO } from './dados.js';
+import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem, precoVenda } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
@@ -226,7 +226,7 @@ document.addEventListener('click', async e => {
       const it = ITEMS[v], preco = precoItem(v, G.S); if (G.busy || !it || !preco || G.S.money < preco) return;
       // HUD de quantidade: até onde o dinheiro alcança (teto 99, como na mochila dos jogos)
       const max = Math.min(99, Math.floor(G.S.money / preco));
-      const qtd = await pedirQuantidade({ nome: esc(it.name), figuraHtml: `<img src="${ITEM_SPR(v)}" alt="" onerror="${ITEM_ERRO}">`, preco, max, dinheiro: G.S.money });
+      const qtd = await pedirQuantidade({ nome: esc(it.name), figuraHtml: `<img src="${spriteItem(v, G.S.player)}" alt="" onerror="${ITEM_ERRO}">`, preco, max, dinheiro: G.S.money });
       // o modal é assíncrono: reconfere (o dinheiro pode ter mudado enquanto ele estava aberto)
       if (!qtd || G.busy || G.S.money < qtd * preco) return;
       const total = qtd * preco;
@@ -239,7 +239,7 @@ document.addEventListener('click', async e => {
     case 'vender': {
       const it = ITEMS[v], max = G.S.bag?.[v] || 0; if (G.busy || G.mode !== 'explore' || !it || !max) return;
       const preco = precoVenda(v, G.S);
-      const qtd = await pedirQuantidade({ nome: esc(it.name), figuraHtml: `<img src="${ITEM_SPR(v)}" alt="" onerror="${ITEM_ERRO}">`, preco, max, acao: 'vender' });
+      const qtd = await pedirQuantidade({ nome: esc(it.name), figuraHtml: `<img src="${spriteItem(v, G.S.player)}" alt="" onerror="${ITEM_ERRO}">`, preco, max, acao: 'vender' });
       if (!qtd || G.busy) return;
       const total = venderItem(v, qtd);
       log(preco ? `Você vendeu ${qtd > 1 ? `${qtd}× ` : ''}${it.name} por ₽${total.toLocaleString('pt-BR')}.` : `Você jogou fora ${qtd > 1 ? `${qtd}× ` : ''}${it.name}.`, 'muted');

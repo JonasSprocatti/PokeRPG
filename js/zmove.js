@@ -45,6 +45,14 @@ export function temZConquistado(M = G.S?.player) {
   return (M.moves || []).some(g => g.cls !== 'status' && zLiberado(p, g));
 }
 
+// tipo do primeiro golpe elegível pro Z — só decide o SPRITE do Cristal Z (loja/mochila/ficha), não é o golpe que
+// vai virar Z de fato na hora H (esse é escolhido em batalha, em zDisponiveis).
+export function primeiroTipoZ(M = G.S?.player) {
+  if (!M) return null;
+  const p = conquistasDaConta(G.S?.registro);
+  return (M.moves || []).find(g => g.cls !== 'status' && zLiberado(p, g))?.type || null;
+}
+
 export function zDisponiveis(M = G.S?.player) {
   const B = G.B;
   if (!B || B.zUsado || !M || M.item !== ITEM_CRISTAL_Z) return [];

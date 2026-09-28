@@ -577,6 +577,42 @@ novo). **Download opcional e À PARTE** do download normal: `offline.baixarImage
 imagens: frente normal e shiny) e `baixarImagensAnimadas`/`imagensGuardadasAnimadas` (4 imagens: frente e costas,
 normal e shiny) — mesmo formato de `baixarImagens`, ninguém baixa imagem de estilo que não escolheu.
 
+**Bug relatado pelo usuário (27/09/2026): GIFs animados "estranhamente desproporcionais".** Causa: `.spr` (e as
+outras classes que desenham `spriteFrente`/`sprCostas` sem passar por `.spr` — `.me img` da ficha, `.aliado-top
+img` do cartão de aliado, `.mp-mon img` do multiplayer) fixam `width`/`height` iguais, o que é inofensivo pro
+clássico e pro 3D (sempre quadrados) mas ESTICA o GIF do Showdown: cada Pokémon tem um tamanho de sprite
+diferente lá (Wailord bem mais largo que alto, Onix mais alto que largo…), e forçar num quadrado distorce a
+imagem. Corrigido com `object-fit:contain` nas quatro regras — encolhe mantendo a proporção, com uma pequena
+margem dentro da caixa, em vez de esticar. Não muda nada visualmente pro clássico/3D.
+
+### Sprites de verdade pra Pedra Mega e Cristal Z (27/09/2026)
+Pedido do usuário: os três itens de gimmick (`dados.ITEM_PEDRA_MEGA`/`ITEM_CRISTAL_Z`/`ITEM_VINCULO`) são únicos e
+genéricos no jogo (uma Pedra Mega serve pra qualquer espécie, um Cristal Z pra qualquer tipo) — `ITEM_SPR(k)`
+simples não tem como saber qual arquivo mostrar, então caíam sempre no ícone de caixinha genérico
+(`ITEM_SPR_RESERVA`). A PokéAPI TEM sprite de verdade por espécie (pedra) e por tipo (cristal): `PEDRAS_MEGA`/
+`CRISTAIS_Z` (`js/dados-item-sprites.js`, GERADO por `ferramentas/gerar-item-sprites.mjs` — Node, roda no
+Raspberry Pi, não PowerShell) trazem essas tabelas. `dados.ITEM_SPR_MEGA(especie)`/`ITEM_SPR_Z(tipo)` fazem a
+troca; `render.spriteItem(k, m)` é o ponto único que decide qual sprite mostrar pra QUALQUER item, dado quem
+seguraria ele (`m`, um Pokémon-like com `.data.speciesName`/`.moves` — `blocoItem` passa o dono de verdade; loja,
+mochila e os modais de comprar/vender em `main.js` passam `S.player` como melhor palpite antes de saber quem vai
+equipar). `zmove.primeiroTipoZ(M)` acha o tipo do primeiro golpe com Z conquistado (só decide o SPRITE — o golpe
+que vira Z de fato na hora H continua escolhido em batalha, por `zDisponiveis`).
+**Nem toda espécie tem pedra de verdade**: só 47 das 89 Megas deste jogo são Mega oficial dos jogos de verdade
+(+ Kyogre/Groudon, que usam os Orbes da Reversão Primitiva) — o resto (Meganium, Chesnaught, Greninja, Zeraora…)
+só existe neste projeto, e a PokéAPI não tem pedra desenhada pra eles (o item existe nos DADOS da API, mas sem
+sprite — confirmado um por um, 404 no CDN). Pra esses, `CHAVE_MEGA_GENERICA` = `key-stone`, a Pedra-Chave: item
+real dos jogos que ativa QUALQUER Mega Evolução, então nunca fica errado mostrá-la. O gerador casa o nome do
+item com a espécie de dois jeitos: pro item OFICIAL, lê o texto em inglês do próprio item na API ("Allows X to
+Mega Evolve") — sem depender de adivinhar o padrão do nome (que é irregular: `blastoisinite`, `alakazite`,
+`heracronite`… não seguem `especie+"ite"`); pros itens sem esse texto (os ~40 "fan-made" que só existem nesta
+extensão da PokéAPI), casa pelo maior PREFIXO comum com o nome da espécie (ex. `meganiumite` → `meganium`) — como
+o próprio nome do item já É a espécie com um sufixo trocado, funciona sem ambiguidade nos 89 casos.
+**Cristal Z é mais simples**: os 18 tipos têm cristal oficial de verdade (`firium-z`, `waterium-z`…, sufixo
+`--held` no arquivo de sprite — nome de arquivo diferente do nome do item, cuidado se algum dia regenerar à mão).
+Sem tipo elegível ainda, cai no Anel Z (`z-power-ring`, item real e genérico a todo Z-Move).
+**Vínculo de Batalha não tem item nenhum nos jogos** (Battle Bond é habilidade, não item segurado) — ícone
+próprio, um SVG embutido de shuriken (tema ninja do Greninja), em vez de fingir que existe um sprite oficial.
+
 ### Animação da barra de HP (27/09/2026)
 Pedido do usuário (junto do backlog de animações): a barra saltava direto pro número novo, sem transição. O
 `.fill` já tinha `transition: width .45s ease` no CSS — o problema é que `render()` não faz diffing (destrói e

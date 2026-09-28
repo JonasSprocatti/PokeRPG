@@ -316,7 +316,7 @@ table.ranking td.jogador{white-space:nowrap}
   body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:32vh}
 }
 .me{display:flex;gap:12px;align-items:center}
-.me img{width:96px;height:96px;image-rendering:pixelated;background:var(--panel2);border-radius:12px;flex:none}
+.me img{width:96px;height:96px;image-rendering:pixelated;object-fit:contain;background:var(--panel2);border-radius:12px;flex:none}
 .me h2{margin:0;font:700 26px/1.1 var(--display)}
 .me .sub{color:var(--muted);font-size:14px;margin:2px 0 6px}
 .bars{margin:14px 0 6px;display:grid;gap:6px}
@@ -458,7 +458,11 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .side.foe .mon{order:2}
 .mon{position:relative;width:170px;height:130px;display:grid;place-items:end center;flex:none}
 .pad{position:absolute;bottom:4px;left:8px;right:8px;height:30px;border-radius:50%;background:rgba(0,0,0,.25)}
-.spr{position:relative;width:128px;height:128px;image-rendering:pixelated}
+/* object-fit:contain é o que impede o GIF animado (Showdown) de esticar: ao contrário do sprite clássico (sempre
+   quadrado, 96×96), o tamanho de cada GIF varia por Pokémon — sem isso, width/height fixos DISTORCIAM a imagem
+   pra caber na caixa (pedido do usuário: "os gifs animados ficaram estranhamente desproporcionais"). Não muda
+   nada pro clássico/3D, que já são quadrados. */
+.spr{position:relative;width:128px;height:128px;image-rendering:pixelated;object-fit:contain}
 .spr.back{width:150px;height:150px}
 .spr.flip{transform:scaleX(-1)}
 .mon.fainted .spr{opacity:.15;transition:opacity .5s}
@@ -493,7 +497,7 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .aliado{background:var(--panel2);border-radius:12px;padding:10px 12px}
 .aliado.descansando{opacity:.7}
 .aliado-top{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center}
-.aliado-top img{width:56px;height:56px;image-rendering:pixelated;background:var(--panel);border-radius:10px}
+.aliado-top img{width:56px;height:56px;image-rendering:pixelated;object-fit:contain;background:var(--panel);border-radius:10px}
 .aliado .ordem{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;color:var(--muted)}
 .aliado .ordem select{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:4px 8px;color:var(--text)}
 .aliado details{margin:6px 0}
@@ -545,7 +549,7 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-grupo,.mp-lado{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
 .mp-campo{display:grid;gap:12px;background:linear-gradient(#34428a 0 50%,#3d6a4b 50%);border-radius:14px;padding:12px}
 .mp-mon{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:8px 12px}
-.mp-mon img{width:64px;height:64px;image-rendering:pixelated}
+.mp-mon img{width:64px;height:64px;image-rendering:pixelated;object-fit:contain}
 .mp-mon small{display:block}
 .mp-mon .bar{background:#cfc8b6}
 .mp-mon.caido{opacity:.45}

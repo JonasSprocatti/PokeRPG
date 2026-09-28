@@ -1,6 +1,7 @@
 /* ============ dados fixos ============ */
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 import { GENS } from './dados-mapas.js';
+import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO } from './dados-item-sprites.js';
 export const API = 'https://pokeapi.co/api/v2';
 /* As imagens vêm do jsDelivr, que espelha o MESMO repositório de sprites da PokéAPI (mesmos arquivos, byte a
    byte — é o repositório do GitHub servido por uma CDN). O endereço original, `raw.githubusercontent.com`, é
@@ -40,6 +41,18 @@ export const ITEM_SPR = n => `${SPRITES}/items/${n}.png`;
 export const ITEM_SPR_RESERVA = 'data:image/svg+xml,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="4" y="11" width="24" height="16" rx="3" fill="#6b74c9"/><rect x="4" y="11" width="24" height="5" rx="2" fill="#9aa3ff"/><rect x="14" y="11" width="4" height="16" fill="#3b4190"/><path d="M16 10c0-3 3-4 4-2.5S18 10 16 10zm0 0c0-3-3-4-4-2.5S14 10 16 10z" fill="#9aa3ff"/></svg>`);
 export const ITEM_ERRO = `this.onerror=null;this.src='${ITEM_SPR_RESERVA}'`;
+/* Pedra Mega e Cristal Z são itens ÚNICOS e genéricos no jogo (dados.ITEM_PEDRA_MEGA/ITEM_CRISTAL_Z, mais
+   abaixo), mas a PokéAPI tem sprite de verdade por ESPÉCIE (pedra) e por TIPO (cristal) — dados-item-sprites.js
+   (GERADO, ver ferramentas/gerar-item-sprites.mjs) traz essas tabelas. Sem espécie/tipo (ou espécie sem pedra
+   própria — metade das Megas deste jogo não existe nos jogos de verdade), cai no item genérico real que resolve
+   qualquer uma: a Pedra-Chave (ativa qualquer Mega Evolução) e o Anel Z (ativa qualquer Z-Move). */
+export const ITEM_SPR_MEGA = especie => ITEM_SPR(PEDRAS_MEGA[especie] || CHAVE_MEGA_GENERICA);
+export const ITEM_SPR_Z = tipo => ITEM_SPR(tipo && CRISTAIS_Z[tipo] ? `${CRISTAIS_Z[tipo]}--held` : ANEL_Z_GENERICO);
+/* Vínculo de Batalha (Ash-Greninja) não existe como item nos jogos de verdade — Battle Bond é habilidade, não
+   item segurado — então não tem sprite pra buscar. Ícone próprio (shuriken, tema ninja do Greninja) em vez do
+   genérico de caixinha. */
+export const ITEM_SPR_VINCULO = 'data:image/svg+xml,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2 L20 12 L30 16 L20 20 L16 30 L12 20 L2 16 L12 12 Z" fill="#37474f"/><circle cx="16" cy="16" r="4" fill="#e53935"/></svg>`);
 
 export const STATS = ['hp', 'attack', 'defense', 'special-attack', 'special-defense', 'speed'];
 export const STAT_PT = { hp: 'HP', attack: 'Ataque', defense: 'Defesa', 'special-attack': 'At. Esp.', 'special-defense': 'Def. Esp.', speed: 'Velocidade', accuracy: 'Precisão', evasion: 'Evasão' };
