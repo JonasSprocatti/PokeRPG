@@ -216,6 +216,7 @@ table.ranking td.jogador{white-space:nowrap}
 .create h1{font:700 clamp(34px,5.5vw,60px)/1.02 var(--display);margin:0 0 12px;color:var(--yellow);max-width:14ch}
 .create .lead{max-width:62ch;color:var(--muted);margin:0}
 .online-marcador{color:var(--muted);font-size:14px;margin:2px 0 8px}
+.dot-viva{display:inline-block;animation:pulso-status 1.8s ease-in-out infinite}
 .rodape-creditos{margin:40px 0 0;text-align:center}
 .rodape-creditos a{color:inherit}
 .passo{display:flex;align-items:center;gap:10px;font:700 20px var(--display);color:var(--text);margin:30px 0 12px}
@@ -225,8 +226,8 @@ table.ranking td.jogador{white-space:nowrap}
 .search{display:flex;gap:10px;margin:26px 0 16px;flex-wrap:wrap}
 .search input{flex:1;min-width:220px;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:12px 14px;font-size:17px}
 .picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}
-.pick{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:2px 2px 6px;display:grid;place-items:center;font-size:12px;color:var(--muted)}
-.pick:hover{border-color:var(--yellow);color:var(--text)}
+.pick{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:2px 2px 6px;display:grid;place-items:center;font-size:12px;color:var(--muted);transition:transform .12s ease}
+.pick:hover{border-color:var(--yellow);color:var(--text);transform:translateY(-3px)}
 .pick.on{border-color:var(--yellow);color:var(--text);background:var(--panel2)}
 .pick img{width:72px;height:72px;image-rendering:pixelated}
 .notice{background:#3a1f2a;border:2px solid var(--red);border-radius:12px;padding:14px 16px;margin-top:18px}
@@ -236,7 +237,10 @@ table.ranking td.jogador{white-space:nowrap}
 .pv{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:28px;margin-top:28px;background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:24px}
 @media(max-width:760px){.pv{grid-template-columns:1fr}}
 .pv-art{background:var(--panel2);border-radius:14px;display:grid;place-items:center;padding:10px;align-self:start}
-.pv-art img{width:100%;aspect-ratio:1;object-fit:contain}
+.pv-art img{width:100%;aspect-ratio:1;object-fit:contain;animation:flutuar 3.2s ease-in-out infinite}
+/* o Pokémon escolhido "flutua" na prévia (o único sprite grande e sozinho da tela inicial — um grid inteiro
+   flutuando ao mesmo tempo ficaria ocupado demais; aqui, sozinho, é só vida) */
+@keyframes flutuar{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .dexno{font:500 14px var(--display);color:var(--muted);margin:0}
 .pv h2{font:700 40px/1.1 var(--display);margin:2px 0 10px}
 .pv h3{font:700 16px var(--display);color:var(--yellow);margin:20px 0 8px}

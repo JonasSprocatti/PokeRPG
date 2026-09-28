@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.62', data: '2026-09-28', titulo: 'Tela inicial mais viva', piada: 'O Pokémon da prévia aprendeu a flutuar. Levitate não é habilidade dele, mas ninguém contou pra ele.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Tela inicial com mais vida: o marcador "jogando agora" pulsa, o Pokémon da prévia flutua sozinho, e a grade de iniciais levanta um pouco no toque.'
+      ] }
+    ] },
   { versao: '2.61', data: '2026-09-28', titulo: 'Botões com mais vida', piada: 'Os botões descobriram o afundar-no-clique. Não querem mais voltar a ser planos.',
     secoes: [
       { nome: 'Novidades', itens: [

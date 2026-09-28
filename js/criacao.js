@@ -138,7 +138,7 @@ function renderOnline() {
   }
   const anon = ehAdmin() && anonimosCache != null
     ? ` <span class="muted small" title="Só admin vê isso">· ${anonimosCache} sem conta desde sempre</span>` : '';
-  el.innerHTML = n === null ? '' : `<p class="online-marcador">🟢 ${n} jogando agora${anon}</p>`;
+  el.innerHTML = n === null ? '' : `<p class="online-marcador"><span class="dot-viva" aria-hidden="true">🟢</span> ${n} jogando agora${anon}</p>`;
 }
 /* Vantagens da conta (badges.js): o que as suas conquistas dão nesta jornada, e o interruptor pra jogar sem elas.
    Quem desliga ganha bônus de pontuação no ranking — a ideia é que o desafio puro continue valendo a pena. */

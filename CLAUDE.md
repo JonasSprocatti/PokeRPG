@@ -988,6 +988,21 @@ Prioridade 2 da mesma leva ("mais vivo"). Duas regras CSS globais, sem tocar JS 
   usam só `render()`, que atualiza divs internas sem recriar `.game`, então a entrada anima uma vez só.
   Coberto pelo `prefers-reduced-motion` global (já existia) — nenhum tratamento extra precisou.
 
+### Tela inicial mais viva (28/09/2026)
+Prioridade 3 da mesma leva. Três toques, todos CSS-only (menos o `<span>` novo do marcador de presença):
+- **🟢 marcador de presença** (`js/presenca.js`, feito antes nesta mesma leva): o emoji do ponto vira
+  `<span class="dot-viva" aria-hidden="true">` (escondido de leitor de tela — o texto ao lado já diz "X jogando
+  agora", repetir "círculo verde" seria ruído) e pulsa com o MESMO `@keyframes pulso-status` já usado nos chips
+  de status da batalha (reaproveitado, não duplicado).
+  - **Prévia do Pokémon escolhido** (`.pv-art img`, `criacao.renderPreview`): flutua sozinho (`@keyframes
+  flutuar`, translateY suave, 3.2s). É o ÚNICO sprite grande e sozinho da tela — um grid inteiro flutuando ao
+  mesmo tempo (a grade de iniciais) ficaria ocupado demais, então NÃO entrou lá.
+- **Grade de iniciais** (`.pick`, os cartões de espécie): levanta um pouco no hover (`transform:translateY(-3px)`),
+  além da borda que já mudava de cor. **Simplificação aceita**: como `.pick` também é um `<button>` e já ganhou
+  o `:active{scale(.96)}` global (microinterações, acima), hover+pressionar ao mesmo tempo mostra só UM dos dois
+  transforms (o de maior especificidade CSS, `.pick:hover`) em vez dos dois combinados — efeito colateral
+  pequeno, não vale compor os dois valores de `transform` só por causa disso.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 
