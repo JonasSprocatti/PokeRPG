@@ -108,8 +108,19 @@ export function pedirQuantidade({ nome, figuraHtml = '', preco, max, dinheiro, a
     document.body.appendChild(d); pinta(); inp.focus(); inp.select();
   });
 }
-export function shake(m) {
+// id do .mon na CENA de batalha pra este Pokémon (jogador/aliado/inimigo) — usado por toda animação de golpe
+// (tremer, atacar…) que precisa achar o sprite certo. Devolve null fora da cena (nada pra animar).
+function idDoMon(m) {
+  if (!G.S) return null;
   const ia = (G.S.aliados || []).indexOf(m);
-  const el = document.getElementById(m === G.S.player ? 'mon-p' : ia >= 0 ? 'mon-a' + ia : 'mon-e'); if (!el) return;
-  el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+  return m === G.S.player ? 'mon-p' : ia >= 0 ? 'mon-a' + ia : G.B?.enemy === m ? 'mon-e' : null;
 }
+// troca a classe (removendo antes, forçando reflow) pra reiniciar a animação mesmo se ela já estava rodando
+function reanimar(id, classe) {
+  const el = document.getElementById(id); if (!el) return;
+  el.classList.remove(classe); void el.offsetWidth; el.classList.add(classe);
+}
+export function shake(m) { const id = idDoMon(m); if (id) reanimar(id, 'shake'); }
+// quem usou o golpe "pula" um pouco — narrado bem no momento em que golpe.js anuncia "X usou Y!" (ctx.atacar,
+// opcional: o multiplayer não tem DOM, então o ctx dele simplesmente não define isso)
+export function atacar(m) { const id = idDoMon(m); if (id) reanimar(id, 'atacando'); }

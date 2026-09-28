@@ -521,6 +521,21 @@ function capturarLarguraHP() {
   for (const el of document.querySelectorAll('.fill-hp[id]')) antes[el.id] = el.style.width;
   return antes;
 }
+// hp-fill-e/-p/-a<N> são as barras da CENA de batalha (plate(m,'e'/'p'/'a'+i) em renderScene) — as únicas que
+// têm um .mon correspondente pra piscar. As outras (ficha-p, card-a0…) mostram o MESMO Pokémon noutro lugar da
+// tela; sem esse filtro a piscada duplicaria (uma vez por barra, não por Pokémon).
+const idDoMonNaCena = chave => chave === 'e' ? 'mon-e' : chave === 'p' ? 'mon-p' : /^a\d+$/.test(chave) ? 'mon-' + chave : null;
+function piscar(id, classe) {
+  const el = document.getElementById(id); if (!el) return;
+  el.classList.remove('hit-flash', 'heal-flash'); void el.offsetWidth; el.classList.add(classe);
+}
+/* Dano pisca vermelho, cura pisca verde — deduzido da MESMA comparação de largura que já anima a barra (FLIP),
+   sem precisar de outro gancho no motor do golpe: qualquer cura (Restos, fruta, dreno, clima…) já passa por
+   `heal()` → `up(ctx)` → um render novo, então a largura muda e o sentido da mudança (cresceu = cura, encolheu
+   = dano) já diz tudo. Pedido do usuário (28/09/2026): "mais vivo, mais animações".
+   Simplificação assumida: a largura é uma PORCENTAGEM (hp/hp máximo), então um HP MÁXIMO que muda no meio da
+   luta (Rare Candy, Dynamax) também mexe na largura sem ninguém ter apanhado ou curado — rarérrimo e sem efeito
+   de jogo, só uma piscada errada ocasional; não vale a complexidade de separar os dois casos. */
 function animarBarrasHP(antes) {
   if (REDUCED) return;
   for (const el of document.querySelectorAll('.fill-hp[id]')) {
@@ -529,6 +544,8 @@ function animarBarrasHP(antes) {
     el.style.transition = 'none'; el.style.width = de;
     el.offsetWidth; // força o navegador a aplicar a largura antiga ANTES da próxima troca — senão as duas mudanças viram uma só, sem transição nenhuma
     el.style.transition = ''; el.style.width = para;
+    const id = idDoMonNaCena(el.id.replace(/^hp-fill-/, ''));
+    if (id) piscar(id, parseFloat(para) < parseFloat(de) ? 'hit-flash' : 'heal-flash');
   }
 }
 // (As abas de celular ⚔/💬/📋 foram removidas — ver o comentário em paineis.js e o bloco "celular" do CSS.)

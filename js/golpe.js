@@ -6,6 +6,7 @@
 //   ctx.say(txt, cls)  narra (pode ser async: o single player espera entre mensagens)
 //   ctx.atualizar()  redesenha (barras de HP) — opcional
 //   ctx.tremer(m)    animação de quem levou dano — opcional
+//   ctx.atacar(m)    animação de quem usou o golpe — opcional
 //   ctx.refDe(m) / ctx.monPorRef(ref)  identificam quem plantou Leech Seed (pra curar no fim do turno) — opcionais
 //   ctx.campo        objeto do campo da batalha, compartilhado pelos dois lados: { clima, turnos } — opcional
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
@@ -505,6 +506,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   if (esp.carga) { delete u.vol.carregando; delete u.vol.invul; }                    // 2º turno: não gasta PP de novo
   else if (!travado && g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1 - pressao(u, t, g));  // fúria: só o 1º turno gasta
   if (esp.furia && !u.vol.furia) u.vol.furia = { golpe: g, turnos: rand(2, 3) };
+  (ctx.atacar || nada)(u);
   await ctx.say(`${U} usou ${ctx.golpe(g)}!`);
   if (hu.preguica) u.vol.folga = true;                                                // Truant: o próximo turno é de folga
   // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)

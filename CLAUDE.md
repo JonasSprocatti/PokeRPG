@@ -185,8 +185,18 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Ideias soltas ainda não pedidas: mais missões (por tipo elemental, por zona), recompensa de Alfa diferente por zona, rank/título de explorador.
 - **Pedido pelo usuário (27/09/2026), pra depois**: ~~sprites 3D/animados com download opcional~~ ✔ FEITO
   (`dados.SPR_3D`/`SPR_ANIM`, `ajustes.estiloSpriteAtual`, `offline.baixarImagens3D`/`baixarImagensAnimadas`);
-  ~~animação na barra de HP ao tomar dano/curar~~ ✔ FEITO (ver "Animação da barra de HP" abaixo); animação de
-  ataque, cura e dano de status na cena de batalha (hoje só texto no log + `shake`/`tremer`) — ainda não começada.
+  ~~animação na barra de HP ao tomar dano/curar~~ ✔ FEITO (ver "Animação da barra de HP" abaixo); ~~animação de
+  ataque, cura e dano de status na cena de batalha~~ ✔ FEITO (28/09/2026, ver "Animações de batalha" abaixo).
+- **Backlog (pedido do usuário, 28/09/2026): som no jogo.** Pesquisado: a PokéAPI TEM os **cries** (grito curto de
+  cada espécie) no mesmo repositório de sprites já usado (`PokeAPI/sprites`, pasta `cries/`, `.ogg` por id —
+  `pokemon.cries.latest`/`legacy` na resposta de `/pokemon/{id}`), então dá pra tocar com a MESMA técnica de
+  espelhamento por jsdelivr já usada pras imagens (`dados.espelhar`). **Música de jogo (tema de batalha, de
+  rota, vitória) a PokéAPI NÃO tem** — ela é só dados + sprites/cries, nunca teve trilha sonora. Pra ter música
+  precisaria de outra fonte, e aí vira uma decisão de risco (trilha original dos jogos = direito autoral mais
+  exposto que sprite/dado; trilha própria/livre de direitos = mais seguro, mas exige compor ou buscar external).
+  Ainda sem desenho: pelo menos precisa decidir se entra som ligado por padrão (com ajuste de volume/mudo em
+  ⚙ Ajustes, mesmo espírito do `presencaLigada`/`REDUCED`) e quais eventos tocam cry (encontro selvagem? seu
+  Pokémon entrando em campo? os dois?).
 - **Pedido pelo usuário (27/09/2026), pra depois — modo tutorial**: passo a passo tipo "onboarding" que aparece
   quando uma funcionalidade nova é desbloqueada/usada pela primeira vez (padrão de app: destaca o elemento na
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
@@ -923,6 +933,42 @@ pra largura de verdade COM transição — o olho vê os dois quadros como uma a
 DOM pura — mesmo padrão do resto de `render.js`): importar o módulo inteiro em jsdom já confirma que a cadeia de
 dependências carrega sem erro; as duas funções, expostas temporariamente pra teste e revertidas depois, terminam
 na largura correta nos três cenários (largura muda, largura igual — no-op, elemento novo sem entrada anterior).
+
+### Animações de batalha: ataque, dano, cura, status (28/09/2026)
+Pedido do usuário ("mais vivo, mais animações"), prioridade 1 de uma leva maior (ver "Layout paisagem"/"Loja de
+preparo" — não, essas são de outro dia; a leva desta é celular deitado + isto + microinterações + tela inicial +
+FLIP em XP/PP). Intensidade escolhida pelo usuário: **sutil e polido**, não chamativo.
+- **Ataque**: `ctx.atacar(m)` — novo gancho OPCIONAL no `ctx` do motor único (`golpe.js`, mesmo espírito de
+  `ctx.tremer`, documentado no cabeçalho do arquivo), chamado em `usarGolpe` no EXATO instante em que anuncia
+  "X usou Y!" (linha `await ctx.say(...)`). Single player define `CTX.atacar` (`efeitos.js`, importa `atacar` de
+  `ui.js`); multiplayer não define nada — `(ctx.atacar || nada)(u)` no motor não quebra. `ui.js` ganhou
+  `idDoMon(m)`/`reanimar(id, classe)`, fatorados de `shake()` (que virou uma linha), reusados por `atacar()`. CSS
+  `.mon.atacando` (`atacando .35s`): um "pulo" de escala, sem depender de direção (jogador/aliado/inimigo ficam
+  em lados diferentes da cena — decidir lunge direcional exigiria saber a posição de cada um, complexidade maior
+  pro ganho; um pulo simétrico já comunica "agiu" sem isso).
+- **Dano e cura**: SEM gancho novo no motor — reaproveita a técnica FLIP que já existe (`render.js`,
+  "Animação da barra de HP" acima). `animarBarrasHP` já compara a largura ANTES/DEPOIS de cada `.fill-hp`;
+  agora também olha o SENTIDO da mudança (encolheu = dano, cresceu = cura) e faz `.mon` piscar vermelho
+  (`hit-flash`) ou verde (`heal-flash`), só pra `hp-fill-e`/`-p`/`-a<N>` (as barras da CENA — `ficha-p`/`card-a0`
+  mostram o MESMO Pokémon noutro lugar, filtradas pra não duplicar a piscada). Isso cobre TODO caminho de cura
+  (Restos, fruta, dreno, clima, item, Centro…) de graça, sem precisar caçar os ~15 pontos de `heal()` espalhados
+  por `golpe.js`. **Simplificação assumida**: a largura é uma PORCENTAGEM (hp/hp máximo), então um HP MÁXIMO que
+  muda no meio da luta (Rare Candy, Dynamax) também mexe na largura sem ninguém ter apanhado ou curado — piscada
+  errada rara e sem efeito de jogo, não vale separar os dois casos.
+- **Status**: SEM gancho novo — pulso contínuo e sutil em CSS (`@keyframes pulso-status`, `animation:...infinite`)
+  nos chips `.st-burn`/`.st-poison`/`.st-paralysis`/`.st-freeze` e `.stg.up`/`.stg.down` (estágio subiu/desceu):
+  como a classe já nasce no HTML a cada render enquanto o status durar, "pulsar enquanto durar" não precisa de
+  JS nenhum — só a classe continuar presente já mantém a animação (CSS não reinicia animação em elemento que já
+  a tinha, só teria efeito NOVO se o elemento nascesse agora, que é exatamente quando o status é aplicado).
+  **Sem "pop" no instante exato em que o status é aplicado** (diferente do FLIP de HP, eu precisaria capturar o
+  status ANTES do render pra saber que é novo — decidido não fazer por ora: o pulso contínuo + a mensagem no
+  log já comunicam o evento, e o ganho do "pop" isolado não parecia valer a complexidade extra).
+- `@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}` (já existia,
+  linha final do CSS) cobre TODAS essas animações novas de graça — nenhuma precisou de tratamento próprio de
+  `REDUCED`.
+- **Fora do escopo por ora**: multiplayer não ganhou essas animações (a cena da sala usa outro DOM, `cartao()`
+  em `multiplayer.js`, sem os ids `mon-p`/`mon-e`/`mon-a<N>` que `idDoMon`/`hit-flash` dependem) — se pedido,
+  precisaria da mesma técnica adaptada pra lá.
 
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.

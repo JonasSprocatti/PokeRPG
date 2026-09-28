@@ -1,9 +1,10 @@
 /* ============ efeitos com narração (single player) ============ */
 // A regra de estágio/status mora no motor único (golpe.js). Aqui fica o CTX do single player — como narrar:
-// nome em HTML (nm), golpe colorido, pausa entre mensagens (say), redesenho (render) e tremida (shake) —
-// e os atalhos que batalha/itens usam. O multiplayer usa o mesmo motor com outro ctx (texto puro).
+// nome em HTML (nm), golpe colorido, pausa entre mensagens (say), redesenho (render), tremida de quem apanha
+// (shake) e "pulo" de quem ataca (atacar) — e os atalhos que batalha/itens usam. O multiplayer usa o mesmo
+// motor com outro ctx (texto puro, sem DOM — por isso `atacar`/`tremer` são OPCIONAIS em golpe.js).
 import { G, nm, ladoJogador } from './estado.js';
-import { say, shake } from './ui.js';
+import { say, shake, atacar } from './ui.js';
 import { render } from './render.js';
 import { TC } from './dados.js';
 import { mudarEstagios, aplicarStatus } from './golpe.js';
@@ -12,7 +13,7 @@ import { esc, fmt } from './util.js';
 export const CTX = {
   nome: nm,
   golpe: g => `<b style="color:${TC[g.type] || 'inherit'};filter:brightness(.7)">${esc(fmt(g.name))}</b>`,
-  say, atualizar: render, tremer: shake,
+  say, atualizar: render, tremer: shake, atacar,
   // campo da batalha (clima, terreno e o lado de cada um): vive em G.B.campo
   get campo() { if (G.B) return (G.B.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }); return null; },
   // em que lado do campo este Pokémon está (telas, salvaguarda, armadilhas)
