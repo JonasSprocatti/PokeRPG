@@ -5,7 +5,7 @@
 import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
-import { seg, multDanoDoItem, resisteDoItem } from './segurados.js';
+import { seg, multDanoDoItem, resisteDoItem, multEviolite } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
 import { GOLPE_FLAGS } from './dados-golpe-flags.js';
 
@@ -178,6 +178,7 @@ export function effStat(m, stat, crit = false, attacking = true, clima = null, t
   const h = hab(m);
   let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
   v *= multStatClima(m, stat, clima) * multStatTerreno(m, stat, terreno);         // clima e terreno
+  v *= multEviolite(m, stat);                                                     // Eviolite: só se a espécie ainda evolui
   if (h.abaixoDeMetade?.[stat] && m.hp <= m.stats.hp / 2) v *= h.abaixoDeMetade[stat]; // Defeatist
   if (m.status && h.comStatus?.[stat] && statusVale(h, m.status)) v *= h.comStatus[stat]; // Guts, Quick Feet, Marvel Scale, Toxic/Flare Boost
   else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
@@ -540,10 +541,18 @@ export const xpPorVitoria = (E, deTreinador = false) =>
 
 /* ---- batalha com vários Pokémon do mesmo lado (aliados agora, multiplayer depois) ---- */
 
-// Ordena as ações do turno: prioridade maior primeiro, depois velocidade maior; empate = moeda.
-// Cada ação: { prio, vel, ... } (o resto passa intacto). Não muta a lista recebida.
+// Garra Rápida: 20% de chance, sorteada de novo a cada turno, de agir primeiro DENTRO da própria prioridade —
+// não fura quem tem prioridade maior, só ganha de quem está na mesma faixa (mesmo sendo mais lento). Se os dois
+// lados tiverem a Garra e os dois ativarem, a velocidade ainda decide entre eles (ver `ordenarAcoes`).
+export const CHANCE_QUICK_CLAW = 0.2;
+export const ativouQuickClaw = (m, sorte = Math.random()) => !!seg(m).quickClaw && sorte < CHANCE_QUICK_CLAW;
+// Ordena as ações do turno: prioridade maior primeiro, depois quem ativou a Garra Rápida (`rapido`), depois
+// velocidade maior; empate = moeda. Cada ação: { prio, vel, rapido?, ... } (o resto passa intacto). Não muta a
+// lista recebida.
 export function ordenarAcoes(acoes, sorte = Math.random) {
-  return acoes.map(a => ({ a, k: sorte() })).sort((x, y) => (y.a.prio - x.a.prio) || (y.a.vel - x.a.vel) || (x.k - y.k)).map(x => x.a);
+  return acoes.map(a => ({ a, k: sorte() }))
+    .sort((x, y) => (y.a.prio - x.a.prio) || ((y.a.rapido ? 1 : 0) - (x.a.rapido ? 1 : 0)) || (y.a.vel - x.a.vel) || (x.k - y.k))
+    .map(x => x.a);
 }
 
 // IA simples de aliado: o golpe com mais dano esperado (poder × eficácia × STAB) entre os que têm PP.
@@ -574,9 +583,12 @@ export function escolhaIA(moves, tiposAtacante, tiposAlvo, esperteza = ESPERTEZA
 // O que o aliado faz neste turno, pela ordem dele (ORDENS em dados.js):
 //   { golpe }        → usa esse golpe (golpe null = sem PP em nada → Struggle, só no 'livre')
 //   { parado: txt }  → não age neste turno (txt vai pro log)
-export function golpeDoAliado(ordem, moves, tiposA, tiposAlvo, sorte = Math.random) {
-  const comPP = moves.filter(m => m.ppLeft > 0);
+export function golpeDoAliado(ordem, moves, tiposA, tiposAlvo, sorte = Math.random, travado = null) {
   if (ordem === 'parado' || ordem === 'fora') return { parado: 'fica de guarda, sem atacar.' };
+  /* Faixa/Óculos/Lenço Escolha: aliado já travado num golpe — nem a IA de ordem escolhe outro (senão a trava se
+     desfaria sozinha a cada turno). Sem PP no golpe travado, `golpe: null` vira Struggle (quem chama já trata). */
+  if (travado) { const m = moves.find(x => x.name === travado); return { golpe: m?.ppLeft > 0 ? m : null }; }
+  const comPP = moves.filter(m => m.ppLeft > 0);
   if (ordem === 'status') {
     const st = comPP.filter(m => m.cls === 'status');
     return st.length ? { golpe: st[Math.floor(sorte() * st.length)] } : { parado: 'não tem golpe de status com PP e espera.' };

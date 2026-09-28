@@ -10,10 +10,11 @@ import {
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda,
-  caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag
+  caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW
 } from '../js/regras.js';
 import { CHART, ITEMS } from '../js/dados.js';
 import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
+import { AINDA_EVOLUI } from '../js/dados-evolucao-restante.js';
 
 test('sortearTipoTera: cobre os 18 tipos, sem sair da tabela', () => {
   const vistos = new Set();
@@ -119,6 +120,19 @@ test('effStat: paralisia, Guts, crítico ignora estágio ruim, mínimo 1', () =>
   const alto = mon(); alto.vol.stages.defense = 2;
   assert.equal(effStat(alto, 'defense', true, false), 100); // crítico ignora defesa elevada do alvo
   assert.equal(effStat(mon({ stats: { ...mon().stats, speed: 0 } }), 'speed'), 1);
+});
+
+test('Eviolite: Defesa/Def. Especial ×1.5 só em espécie que ainda evolui, e só nesses dois atributos', () => {
+  assert.ok(AINDA_EVOLUI.has('pichu'), 'sanity: Pichu ainda evolui (vira Pikachu)');
+  assert.ok(!AINDA_EVOLUI.has('raichu'), 'sanity: Raichu é forma final');
+  const pichu = mon({ item: 'eviolite', data: { speciesName: 'pichu', types: ['electric'] } });
+  assert.equal(effStat(pichu, 'defense'), 150);
+  assert.equal(effStat(pichu, 'special-defense'), 150);
+  assert.equal(effStat(pichu, 'attack'), 100, 'não mexe em outro atributo');
+  const raichu = mon({ item: 'eviolite', data: { speciesName: 'raichu', types: ['electric'] } });
+  assert.equal(effStat(raichu, 'defense'), 100, 'forma final: item não faz nada');
+  const semItem = mon({ data: { speciesName: 'pichu', types: ['electric'] } });
+  assert.equal(effStat(semItem, 'defense'), 100, 'sem o item, mesmo ainda evoluindo, não vale');
 });
 
 test('defaultMoves: os 4 mais recentes até o nível, sem repetir, em ordem de nível', () => {
@@ -309,6 +323,24 @@ test('ordenarAcoes: prioridade > velocidade > sorteio, sem mutar a lista', () =>
   assert.deepEqual(ordenarAcoes([{ id: 'a', prio: 0, vel: 50 }, { id: 'b', prio: 0, vel: 50 }], () => seq[i++]).map(a => a.id), ['b', 'a']);
 });
 
+test('ordenarAcoes: Garra Rápida (rapido) fura a velocidade DENTRO da mesma prioridade, mas não a prioridade maior', () => {
+  const acoes = [{ id: 'lento-rapido', prio: 0, vel: 10, rapido: true }, { id: 'veloz-normal', prio: 0, vel: 200 }, { id: 'prioridade', prio: 1, vel: 1 }];
+  assert.deepEqual(ordenarAcoes(acoes).map(a => a.id), ['prioridade', 'lento-rapido', 'veloz-normal'], 'rapido vence dentro da prioridade, mas nunca fura quem tem prioridade maior');
+  // os dois com Garra Rápida: a velocidade ainda desempata entre eles
+  const dois = [{ id: 'a', prio: 0, vel: 10, rapido: true }, { id: 'b', prio: 0, vel: 90, rapido: true }];
+  assert.deepEqual(ordenarAcoes(dois).map(a => a.id), ['b', 'a']);
+});
+
+test('ativouQuickClaw: só com o item, 20% de chance', () => {
+  const m = { item: 'quick-claw' };
+  assert.equal(CHANCE_QUICK_CLAW, 0.2);
+  assert.equal(ativouQuickClaw(m, 0.1), true);
+  assert.equal(ativouQuickClaw(m, 0.2), false, 'no limite, não ativa (< estrito)');
+  assert.equal(ativouQuickClaw(m, 0.99), false);
+  assert.equal(ativouQuickClaw({ item: 'leftovers' }, 0.1), false, 'item errado');
+  assert.equal(ativouQuickClaw({}, 0.1), false, 'sem item');
+});
+
 test('melhorGolpe: dano esperado (poder × eficácia × STAB), ignora sem PP', () => {
   const g = (name, type, power, o = {}) => ({ name, type, power, cls: 'physical', ppLeft: 5, ...o });
   const moves = [g('tackle', 'normal', 40), g('ember', 'fire', 40), g('water-gun', 'water', 40)];
@@ -419,6 +451,18 @@ test('golpeDoAliado: cada ordem escolhe o golpe certo', () => {
   assert.ok(golpeDoAliado('parado', moves, ['fire'], ['grass']).parado);
   assert.ok(golpeDoAliado('fora', moves, ['fire'], ['grass']).parado);
   assert.equal(golpeDoAliado('livre', [g('ember', 'fire', 40, 'physical', 0)], ['fire'], ['grass']).golpe, null); // sem PP → Struggle
+});
+
+test('golpeDoAliado: travado (Faixa/Óculos/Lenço Escolha) ignora a ordem e repete o mesmo golpe', () => {
+  const g = (name, type, power, cls = 'physical', ppLeft = 5) => ({ name, type, power, cls, ppLeft });
+  const moves = [g('tackle', 'normal', 40), g('flamethrower', 'fire', 90)];
+  // mesmo pedindo "livre" (que escolheria flamethrower por dano), travado força tackle
+  assert.equal(golpeDoAliado('livre', moves, ['fire'], ['grass'], undefined, 'tackle').golpe.name, 'tackle');
+  // travado sem PP: null (vira Struggle, não escapa pra outro golpe)
+  const semPP = [g('tackle', 'normal', 40, 'physical', 0), g('flamethrower', 'fire', 90)];
+  assert.equal(golpeDoAliado('livre', semPP, ['fire'], ['grass'], undefined, 'tackle').golpe, null);
+  // parado/fora continuam valendo mais que a trava (aliado descansando não ataca de jeito nenhum)
+  assert.ok(golpeDoAliado('parado', moves, ['fire'], ['grass'], undefined, 'tackle').parado);
 });
 
 test('situacaoMissoes: escondida até liberar, pronta quando cumpre, feita some da lista', () => {

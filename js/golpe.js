@@ -509,6 +509,9 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   if (esp.furia && !u.vol.furia) u.vol.furia = { golpe: g, turnos: rand(2, 3) };
   (ctx.atacar || nada)(u);
   await ctx.say(`${U} usou ${ctx.golpe(g)}!`);
+  // Faixa/Óculos/Lenço Escolha: trava no PRIMEIRO golpe de verdade usado (Struggle não conta — é golpe de
+  // emergência, sem PP sobrando pra "escolher" nada) até desmaiar/ser revivido (`m.vol` reseta nos dois casos).
+  if (seg(u).choice && !u.vol.escolha && g.name !== 'struggle') u.vol.escolha = g.name;
   if (hu.preguica) u.vol.folga = true;                                                // Truant: o próximo turno é de folga
   // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)
   const primeiroGolpe = !u.vol.golpesDados;

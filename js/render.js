@@ -11,6 +11,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond } from './regras.js';
+import { seg } from './segurados.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -449,15 +450,22 @@ function renderActions() {
         <div class="subrow"><button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button></div>`;
       return;
     }
-    const noPP = P.moves.every(m => m.ppLeft <= 0);
+    // Faixa/Óculos/Lenço Escolha: trava no golpe BASE (`P.vol.escolha` guarda o nome de antes de Weather
+    // Ball/Tera Blast mudarem de tipo — golpe.usarGolpe seta isso ANTES dessas transformações acontecerem).
+    // Se o golpe travado ficar sem PP, Struggle sai igual — travar não pode deixar sem NENHUM botão clicável.
+    const travado = seg(P).choice && P.vol.escolha;
+    const ppDoTravado = travado && P.moves.find(m => m.name === travado)?.ppLeft;
+    const noPP = P.moves.every(m => m.ppLeft <= 0) || ppDoTravado <= 0;
     a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Sem PP: ataque desesperado com recuo.</small></button>`
       : P.moves.map((golpeBase, i) => {
         const m = golpeDoBattleBond(golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), P), P);   // Weather Ball (clima), Tera Blast (seu Tera) e Water Shuriken (Ash-Greninja) no botão
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;
-        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 ? 'disabled' : ''} title="${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
+        const presoAqui = travado && golpeBase.name !== travado;
+        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 || presoAqui ? 'disabled' : ''} title="${presoAqui ? `Travado em ${esc(fmt(travado))} pelo ${esc(ITEMS[P.item]?.name || 'item')}` : `${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}`}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
       }).join('')}</div>
+      ${travado ? `<p class="small muted">🔒 Travado em <b>${esc(fmt(travado))}</b> pelo ${esc(ITEMS[P.item]?.name || 'item')} até desmaiar ou ser revivido.</p>` : ''}
       ${botaoMega(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
   } else if (G.panel === 'shop') {

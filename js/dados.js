@@ -195,7 +195,13 @@ export const ITENS_SEGURADOS = {
   // itens que se auto-infligem status — parecem punição, mas combinam com Guts/Flare Boost/Toxic Boost/Quick
   // Feet/Marvel Scale (todas já implementadas), que viram a queimadura/veneno em vantagem
   'flame-orb': ter('Orbe de Fogo', 'Se queima sozinho no fim do turno (sem efeito em Pokémon de Fogo). Combina com Guts, Flare Boost, Quick Feet e Marvel Scale.', 2200),
-  'toxic-orb': ter('Orbe Tóxico', 'Se envenena GRAVE sozinho no fim do turno (sem efeito em Pokémon Venenoso/Aço). Combina com Guts, Toxic Boost, Quick Feet e Marvel Scale.', 2200)
+  'toxic-orb': ter('Orbe Tóxico', 'Se envenena GRAVE sozinho no fim do turno (sem efeito em Pokémon Venenoso/Aço). Combina com Guts, Toxic Boost, Quick Feet e Marvel Scale.', 2200),
+  'quick-claw': ter('Garra Rápida', '20% de chance, a cada turno, de agir primeiro dentro da sua prioridade (empate de velocidade não conta).', 2500),
+  'choice-band': ter('Faixa Escolha', 'Ataque +50%, mas trava no primeiro golpe usado até você desmaiar (ou ser revivido).', 3000),
+  'choice-specs': ter('Óculos Escolha', 'At. Especial +50%, mas trava no primeiro golpe usado até você desmaiar (ou ser revivido).', 3000),
+  'choice-scarf': ter('Lenço Escolha', 'Velocidade +50%, mas trava no primeiro golpe usado até você desmaiar (ou ser revivido).', 3000),
+  'iron-ball': ter('Bola de Ferro', 'Velocidade -50%.', 1500),
+  eviolite: ter('Eviolite', 'Defesa e Defesa Especial +50% — só em espécies que ainda podem evoluir.', 2800)
 };
 Object.assign(ITEMS, ITENS_SEGURADOS);
 

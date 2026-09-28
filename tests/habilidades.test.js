@@ -467,6 +467,31 @@ test('Orbe de Fogo/Tóxico se auto-infligem status no fim do turno (respeitando 
   assert.equal(effStat(guts, 'attack'), 150, 'Guts sobe com o status que o próprio item causou');
 });
 
+/* Faixa/Óculos/Lenço Escolha (segurados.js `choice`): trava em `M.vol.escolha` no primeiro golpe DE VERDADE
+   usado (golpe.usarGolpe seta isso logo depois de "X usou Y!"). A trava em si é reforçada pela UI (botões
+   desabilitados em render.js/arena.js/multiplayer.js) e por golpeDoAliado (aliados) — o motor não re-valida o
+   `g` recebido, mesmo padrão de confiança já usado pro PP (0 PP também só é travado pela UI). */
+test('itens Choice: +50% no atributo certo e trava no primeiro golpe usado (não em Struggle)', async () => {
+  const banda = mon({ item: 'choice-band' });
+  assert.equal(effStat(banda, 'attack'), 150);
+  assert.equal(effStat(banda, 'defense'), 100, 'só o atributo certo do item');
+  assert.equal(banda.vol.escolha, undefined, 'ainda não usou nenhum golpe');
+  await usarGolpe(banda, mon(), golpe({ name: 'ember' }), true, ctx());
+  assert.equal(banda.vol.escolha, 'ember');
+  // usar outro golpe depois NÃO destrava sozinho (a UI que impede escolher outro; o motor confia nela)
+  await usarGolpe(banda, mon(), golpe({ name: 'tackle' }), true, ctx());
+  assert.equal(banda.vol.escolha, 'ember', 'continua travado no primeiro');
+  // Struggle nunca trava (é golpe de emergência, sem PP sobrando pra "escolher" nada)
+  const semTravar = mon({ item: 'choice-scarf' });
+  assert.equal(effStat(semTravar, 'speed'), 150);
+  await usarGolpe(semTravar, mon(), golpe({ name: 'struggle' }), true, ctx());
+  assert.equal(semTravar.vol.escolha, undefined);
+  // sem o item, nada trava
+  const normal = mon();
+  await usarGolpe(normal, mon(), golpe(), true, ctx());
+  assert.equal(normal.vol.escolha, undefined);
+});
+
 test('Pressure gasta 1 PP a mais; Truant folga um turno sim, um não; Dazzling barra prioridade', async t => {
   t.mock.method(Math, 'random', () => 0.5);
   const g = golpe({ ppLeft: 35 });

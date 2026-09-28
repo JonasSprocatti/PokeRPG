@@ -21,10 +21,17 @@
 //   resisteTipo   {tipos:[t], mult}  golpe desses tipos que VOCÊ recebe ×mult (Escama do Céu, Cristal Psíquico/Gélido)
 //   statusFimTurno  tenta se auto-infligir esse status todo fim de turno enquanto não tiver nenhum — 'toxic' é
 //                 veneno GRAVE (mesma regra do golpe Toxic)                    (Orbe de Fogo, Orbe Tóxico)
+//   quickClaw     20% de chance de agir primeiro DENTRO da própria prioridade  (Garra Rápida) — lido em
+//                 regras.ordenarAcoes via regras.ativouQuickClaw (não aqui: precisa do `sorte` do turno inteiro)
+//   choice        trava no primeiro golpe usado (Faixas/Óculos/Lenço Escolha) — a trava em si é `M.vol.escolha`
+//                 (golpe.usarGolpe seta; render.js/arena.js/multiplayer.js desabilitam os outros botões)
+//   eviolite      Defesa/Def. Especial ×1.5 SÓ se a espécie ainda evolui (dados-evolucao-restante.js) — lido por
+//                 `multEviolite`, não por `multStat` (o multiplicador do Eviolite depende da espécie, não é fixo)
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
 import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO } from './dados.js';
+import { AINDA_EVOLUI } from './dados-evolucao-restante.js';
 
 export const SEGURADOS = {
   leftovers: { curaFimTurno: 1 / 16 },
@@ -42,6 +49,16 @@ export const SEGURADOS = {
   'lum-berry': { curaStatus: true, gastaNoUso: true },
   'flame-orb': { statusFimTurno: 'burn' },
   'toxic-orb': { statusFimTurno: 'toxic' },
+  'quick-claw': { quickClaw: true },
+  'choice-band': { multStat: { attack: 1.5 }, choice: true },
+  'choice-specs': { multStat: { 'special-attack': 1.5 }, choice: true },
+  'choice-scarf': { multStat: { speed: 1.5 }, choice: true },
+  /* Bola de Ferro nos jogos de verdade TAMBÉM torna o portador "no chão" (perde imunidade a golpe de Terra, mesmo
+     voador ou com Levitate) — simplificação assumida: essa parte ficou de fora (mexeria na imunidade de tipo do
+     motor único, `typeEff`/`ht.imuneTipo` em golpe.js, usada em todo golpe do jogo — risco maior que o ganho pro
+     uso mais comum do item, que é só o corte de Velocidade pra Trick Room). */
+  'iron-ball': { multStat: { speed: 0.5 } },
+  eviolite: { eviolite: true },   // Defesa/Def. Especial: `multEviolite` (depende da espécie, não é um `multStat` fixo)
   /* Prêmios de raide (boss.js) — pedra Mega Eternamax não existe: estes 7 são itens SEGURADOS comuns, cai na
      mochila e equipa que nem qualquer um dos outros. Valem em qualquer batalha (não só contra o chefe da semana) —
      diferente dos consumíveis de raide (ITENS_DE_RAIDE), esses aqui são passivos, como os itens de fábrica.
@@ -80,6 +97,10 @@ export function resisteDoItem(m, tipo) {
   const s = seg(m);
   return (s.resisteTipo && tipo && s.resisteTipo.tipos.includes(tipo)) ? s.resisteTipo.mult : 1;
 }
+// Eviolite: Defesa/Def. Especial ×1.5, só se a ESPÉCIE ainda evolui (dados-evolucao-restante.js — gerado do
+// repositório-fonte da PokéAPI, sem precisar buscar a árvore de evolução no meio do turno).
+export const multEviolite = (m, stat) =>
+  (seg(m).eviolite && (stat === 'defense' || stat === 'special-defense') && AINDA_EVOLUI.has(m?.data?.speciesName)) ? 1.5 : 1;
 // Fruta que come sozinha: devolve o que fazer agora ({ cura } ou { curaStatus }) ou null. `m.hp` já atualizado.
 export function frutaAgora(m) {
   const s = seg(m);

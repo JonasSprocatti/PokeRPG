@@ -8,7 +8,7 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE, STATS, TYPE_PT, ITEMS } from './dados.js';
-import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO } from './regras.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
 import { aplicarForma, verboDaForma } from './mega.js';
@@ -275,7 +275,7 @@ export async function resolverTurnoMP(estado, acoes) {
   // 2) golpes na ordem de prioridade e velocidade
   const golpes = acoes.filter(a => a.tipo === 'golpe' && valida(a)).map(a => {
     const m = monMP(s, a.ref), g = a.golpe === -1 || !m.moves[a.golpe] ? STRUGGLE : m.moves[a.golpe];
-    return { ...a, m, g, prio: g.priority || 0, vel: effStat(m, 'speed', false, true, climaDe(s.campo), terrenoDe(s.campo)) * multVento(s.campo.lados?.[ladoDe(s, m.ref)]) }; // clima entra aqui (Swift Swim…)
+    return { ...a, m, g, prio: g.priority || 0, vel: effStat(m, 'speed', false, true, climaDe(s.campo), terrenoDe(s.campo)) * multVento(s.campo.lados?.[ladoDe(s, m.ref)]), rapido: ativouQuickClaw(m) }; // clima entra aqui (Swift Swim…)
   });
   // o que cada um vai usar neste turno (Sucker Punch: só funciona contra quem vai atacar); limpo em fimDaRodada
   for (const m of todosMP(s)) delete m.vol.golpeEscolhido;

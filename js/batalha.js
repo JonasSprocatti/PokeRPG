@@ -14,10 +14,11 @@ import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
+import { seg } from './segurados.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
-  freshVol, effStat, consegueFugir, ordenarAcoes, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
+  freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera
 } from './regras.js';
@@ -406,16 +407,16 @@ export async function turn(action) {
     const acoes = [], clima = climaDe(B.campo), terreno = terrenoDe(B.campo); // clima e terreno entram na velocidade
     // Vento de Cauda (Tailwind) dobra a velocidade do lado dele (regras.multVento)
     const vel = m => effStat(m, 'speed', false, true, clima, terreno) * multVento(B.campo.lados?.[CTX.ladoDe(m)]);
-    if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: vel(P) });
+    if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: vel(P), rapido: ativouQuickClaw(P) });
     // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
-      const d = golpeDoAliado(A.ordem || 'livre', A.moves, A.data.types, E.data.types);
+      const d = golpeDoAliado(A.ordem || 'livre', A.moves, A.data.types, E.data.types, undefined, seg(A).choice ? A.vol.escolha : null);
       if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
       const g = d.golpe || STRUGGLE;
-      acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: vel(A) });
+      acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: vel(A), rapido: ativouQuickClaw(A) });
     }
     const ea = acaoDoInimigo(E, P);
-    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: vel(E) });
+    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: vel(E), rapido: ativouQuickClaw(E) });
     // o que cada um vai usar neste turno (Sucker Punch olha isso: só funciona contra quem vai atacar). Golpe travado (carga/fúria) vale.
     for (const m of [...ladoJogador(), E]) delete m.vol.golpeEscolhido;
     for (const a of acoes) if (a.golpe) a.quem.vol.golpeEscolhido = golpeTravado(a.quem) || a.golpe;

@@ -215,6 +215,7 @@ export async function useItem(id, inBattle) {
     await say(`Você usou ${it.name}${em}. PP restaurados.`, 'good');
   } else if (it.revive) {
     M.hp = Math.max(1, Math.floor(M.stats.hp * (it.revivePct || 50) / 100)); M.status = null; M.sleep = 0;
+    delete M.vol?.escolha; // Faixa/Óculos/Lenço Escolha: voltar do desmaio destrava o golpe (igual trocar de campo nos jogos)
     G.B?.caidos?.delete(M); // em batalha: se cair de novo, anuncia de novo
     render();
     await say(`Você usou ${it.name}${em}. ${nm(M)} se levanta com ${it.revivePct === 100 ? 'todo o HP' : 'metade do HP'}!`, 'good');
