@@ -1,7 +1,7 @@
 // Itens segurados (js/segurados.js) e as divisões da mochila (js/dados.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem } from '../js/segurados.js';
+import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem, statusDoItem } from '../js/segurados.js';
 import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
@@ -27,7 +27,7 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
     assert.ok(SEGURADOS[k], `${k} não tem gancho em SEGURADOS`);
   }
   const ganchos = new Set(['multDano', 'soFisico', 'soEspecial', 'soSuperEfetivo', 'multStat', 'semStatus', 'recuoPorGolpe', 'drenaDano',
-    'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus', 'danoTipo', 'resisteTipo']);
+    'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus', 'danoTipo', 'resisteTipo', 'statusFimTurno']);
   for (const [k, s] of Object.entries(SEGURADOS)) {
     for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);
     for (const t of [...(s.danoTipo?.tipos || []), ...(s.resisteTipo?.tipos || [])]) assert.ok(TYPE_PT[t], `${k}: tipo "${t}"`);
@@ -106,6 +106,14 @@ test('fim de turno: Restos curam; Lodo Negro cura Venenoso e machuca o resto', (
   assert.equal(fimDeTurnoDoItem(mon({ item: 'black-sludge', hp: 50 })), -12);
   assert.equal(fimDeTurnoDoItem(mon({ item: 'black-sludge', hp: 50, data: { types: ['poison'] } })), 6);
   assert.equal(fimDeTurnoDoItem(mon({ hp: 50 })), 0);
+});
+
+test('statusDoItem: Orbe de Fogo/Tóxico tentam se auto-infligir status sem status atual; nunca com status', () => {
+  assert.equal(statusDoItem(mon({ item: 'flame-orb' })), 'burn');
+  assert.equal(statusDoItem(mon({ item: 'flame-orb', status: 'poison' })), null, 'já tem status: não tenta de novo');
+  assert.equal(statusDoItem(mon({ item: 'toxic-orb' })), 'poison', "'toxic' vira 'poison' pra aplicarStatus (o vol.toxico=1 é golpe.js quem soma)");
+  assert.equal(statusDoItem(mon({ item: 'leftovers' })), null, 'item sem statusFimTurno');
+  assert.equal(statusDoItem(mon()), null, 'sem item');
 });
 
 test('a loja mostra os itens pra segurar (é por onde o jogador conhece a mecânica)', () => {

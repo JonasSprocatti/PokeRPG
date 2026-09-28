@@ -105,6 +105,7 @@ Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Pa
 - **Orbe da Vida** (+30% de dano, custa 10% do seu HP por golpe), **Faixa Muscular** (+10% físico), **Óculos do Sábio** (+10% especial), **Cinto do Perito** (+20% em super efetivo).
 - **Faixa de Foco** (com HP cheio, sobra com 1 de HP; gasta-se), **Elmo Rochoso** (quem te acerta no físico perde 1/6), **Colete de Assalto** (+50% de Defesa Especial, sem golpes de status).
 - **Frutas** comidas sozinhas: **Oran** e **Sitrus** quando o HP cai à metade, **Lum** ao pegar qualquer status.
+- **Orbe de Fogo** e **Orbe Tóxico**: se auto-infligem queimadura/veneno grave no fim de cada turno sem status (o tipo certo é imune, como sempre). Parecem punição, mas combinam com Guts, Flare Boost, Toxic Boost, Quick Feet e Marvel Scale — todas já implementadas.
 - **Pedra Mega**, **Cristal Z** e **Vínculo de Batalha** mostram, na mochila e na loja, a pedra/cristal de verdade da sua espécie/tipo (quando existe na PokéAPI) em vez do ícone genérico — Charizard vê a Charizardita, um golpe de Fogo conquistado mostra o Cristal Ígneo, e assim por diante. Metade das Megas deste jogo (Meganium, Greninja, Zeraora…) não existe nos jogos de verdade e não tem pedra desenhada — nesses casos aparece a **Pedra-Chave**, o item real que ativa qualquer Mega Evolução.
 
 ### Mochila e loja em divisões

@@ -14,7 +14,7 @@
 import { STAT_PT, AIL_MSG, SELF_TARGETS } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
-import { seg, fimDeTurnoDoItem, frutaAgora } from './segurados.js';
+import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem } from './segurados.js';
 import { ITEMS, ITEM_VINCULO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
@@ -711,6 +711,10 @@ export async function fimDeTurno(m, ctx) {
   const di = fimDeTurnoDoItem(m);
   if (di > 0 && m.hp > 0) { heal(m, di); up(ctx); await ctx.say(`${ctx.nome(m)} recuperou ${di} HP com ${nomeDoItem(m)}.`, 'good'); }
   else if (di < 0 && m.hp > 0 && !indireto(m)) { m.hp = Math.max(0, m.hp + di); up(ctx); await ctx.say(`${nomeDoItem(m)} machucou ${ctx.nome(m)}. (${di})`, 'hit'); }
+  // Orbe de Fogo/Tóxico: tenta se auto-infligir o status a cada fim de turno sem status (aplicarStatus já cobre
+  // imunidade de tipo — Fogo não queima, Venenoso/Aço não envenena); 'toxic' é veneno GRAVE, como o golpe Toxic.
+  const ailOrbe = statusDoItem(m);
+  if (ailOrbe && m.hp > 0 && await aplicarStatus(m, ailOrbe, ctx, false, null) && seg(m).statusFimTurno === 'toxic') m.vol.toxico = 1;
   if (m.hp > 0 && h.fimTurno) await mudarEstagios(m, [{ stat: h.fimTurno, change: 1 }], ctx);
   await comerFruta(m, ctx);
   await ajustarForma(m, ctx);

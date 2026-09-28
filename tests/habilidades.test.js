@@ -437,6 +437,36 @@ test('Poison Heal cura com veneno; Magic Guard não sofre dano indireto', async 
   assert.ok(normal.hp < 100, 'sem a habilidade, queima');
 });
 
+/* Orbe de Fogo/Tóxico (segurados.js): itens que se auto-infligem status no fim do turno — "punição" que combina
+   com Guts/Flare Boost/Toxic Boost/Quick Feet/Marvel Scale (todas já implementadas). */
+test('Orbe de Fogo/Tóxico se auto-infligem status no fim do turno (respeitando imunidade de tipo)', async () => {
+  const fogo = mon({ item: 'flame-orb' });
+  await fimDeTurno(fogo, ctx());
+  assert.equal(fogo.status, 'burn');
+  // Pokémon de Fogo é imune a queimadura — o item não faz nada (nem mensagem: `aplicarStatus` já cobre isso)
+  const imuneFogo = mon({ item: 'flame-orb', data: { types: ['fire'] } });
+  await fimDeTurno(imuneFogo, ctx());
+  assert.equal(imuneFogo.status, null);
+  const toxico = mon({ item: 'toxic-orb' });
+  await fimDeTurno(toxico, ctx());
+  assert.equal(toxico.status, 'poison');
+  assert.equal(toxico.vol.toxico, 1, 'veneno GRAVE, igual ao golpe Toxic — não poison comum');
+  // Venenoso e Aço são imunes a veneno
+  for (const tipo of ['poison', 'steel']) {
+    const imune = mon({ item: 'toxic-orb', data: { types: [tipo] } });
+    await fimDeTurno(imune, ctx());
+    assert.equal(imune.status, null, tipo);
+  }
+  // já tem status: o item não tenta de novo (não troca queimadura por veneno, por exemplo)
+  const jaQueimado = mon({ item: 'toxic-orb', status: 'burn' });
+  await fimDeTurno(jaQueimado, ctx());
+  assert.equal(jaQueimado.status, 'burn');
+  // combina com Guts: Ataque ×1.5 assim que o Orbe queima/envenena
+  const guts = mon({ item: 'flame-orb', ability: 'guts' });
+  await fimDeTurno(guts, ctx());
+  assert.equal(effStat(guts, 'attack'), 150, 'Guts sobe com o status que o próprio item causou');
+});
+
 test('Pressure gasta 1 PP a mais; Truant folga um turno sim, um não; Dazzling barra prioridade', async t => {
   t.mock.method(Math, 'random', () => 0.5);
   const g = golpe({ ppLeft: 35 });

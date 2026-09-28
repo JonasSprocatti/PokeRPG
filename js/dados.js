@@ -191,7 +191,11 @@ export const ITENS_SEGURADOS = {
   'assault-vest': ter('Colete de Assalto', 'Defesa Especial +50%, mas você não consegue usar golpes de status.', 2800),
   'oran-berry': ter('Fruta Oran', 'Come sozinha e recupera 10 de HP quando você cai para metade do HP.', 300),
   'sitrus-berry': ter('Fruta Sitrus', 'Come sozinha e recupera 1/4 do HP quando você cai para metade do HP.', 800),
-  'lum-berry': ter('Fruta Lum', 'Come sozinha e cura qualquer condição de status (queimado, dormindo, envenenado…).', 900)
+  'lum-berry': ter('Fruta Lum', 'Come sozinha e cura qualquer condição de status (queimado, dormindo, envenenado…).', 900),
+  // itens que se auto-infligem status — parecem punição, mas combinam com Guts/Flare Boost/Toxic Boost/Quick
+  // Feet/Marvel Scale (todas já implementadas), que viram a queimadura/veneno em vantagem
+  'flame-orb': ter('Orbe de Fogo', 'Se queima sozinho no fim do turno (sem efeito em Pokémon de Fogo). Combina com Guts, Flare Boost, Quick Feet e Marvel Scale.', 2200),
+  'toxic-orb': ter('Orbe Tóxico', 'Se envenena GRAVE sozinho no fim do turno (sem efeito em Pokémon Venenoso/Aço). Combina com Guts, Toxic Boost, Quick Feet e Marvel Scale.', 2200)
 };
 Object.assign(ITEMS, ITENS_SEGURADOS);
 

@@ -19,6 +19,8 @@
 //   curaStatus    come sozinho quando você está com status            (Fruta Lum)
 //   danoTipo      {tipos:[t], mult}  golpe desses tipos que VOCÊ usa ×mult     (Núcleo Eternamax)
 //   resisteTipo   {tipos:[t], mult}  golpe desses tipos que VOCÊ recebe ×mult (Escama do Céu, Cristal Psíquico/Gélido)
+//   statusFimTurno  tenta se auto-infligir esse status todo fim de turno enquanto não tiver nenhum — 'toxic' é
+//                 veneno GRAVE (mesma regra do golpe Toxic)                    (Orbe de Fogo, Orbe Tóxico)
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
@@ -38,6 +40,8 @@ export const SEGURADOS = {
   'oran-berry': { curaEm: { fracao: 0.5, cura: 10 }, gastaNoUso: true },
   'sitrus-berry': { curaEm: { fracao: 0.5, fracaoCura: 0.25 }, gastaNoUso: true },
   'lum-berry': { curaStatus: true, gastaNoUso: true },
+  'flame-orb': { statusFimTurno: 'burn' },
+  'toxic-orb': { statusFimTurno: 'toxic' },
   /* Prêmios de raide (boss.js) — pedra Mega Eternamax não existe: estes 7 são itens SEGURADOS comuns, cai na
      mochila e equipa que nem qualquer um dos outros. Valem em qualquer batalha (não só contra o chefe da semana) —
      diferente dos consumíveis de raide (ITENS_DE_RAIDE), esses aqui são passivos, como os itens de fábrica.
@@ -86,6 +90,13 @@ export function frutaAgora(m) {
     return m.hp < m.stats.hp ? { cura } : null;
   }
   return null;
+}
+// status que o item tenta se auto-infligir no fim do turno (Orbe de Fogo/Tóxico) — null se não tem ou já tem
+// status. Devolve o status de VERDADE ('toxic' vira 'poison' pra `aplicarStatus`; golpe.js soma o `vol.toxico`).
+export function statusDoItem(m) {
+  const s = seg(m);
+  if (!s.statusFimTurno || m.status) return null;
+  return s.statusFimTurno === 'toxic' ? 'poison' : s.statusFimTurno;
 }
 // fim de turno: quanto o item cura (>0) ou machuca (<0)
 export function fimDeTurnoDoItem(m) {
