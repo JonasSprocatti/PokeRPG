@@ -8,7 +8,7 @@
    mundo vê o mesmo chefe na mesma semana, sem servidor. Cada tentativa gasta `COOLDOWN_MS` (8 horas) de espera, guardada neste
    aparelho. Limite honesto: quem mexe no relógio do aparelho engana isso; pra uma disputa de ranking valer, o servidor teria de conferir.
    Puro (a única "entrada" é a data que quem chama passa): tests/evento.test.js. */
-import { DIFICULDADES } from './dados.js';
+import { DIFICULDADES, ITEMS } from './dados.js';
 import { store } from './util.js';
 
 export const COOLDOWN_MS = 8 * 60 * 60 * 1000;
@@ -130,15 +130,22 @@ export function dataBR(ms) {
   return `${dd}/${mm}`;
 }
 
-/* ---- inventário de itens de raide DA CONTA ----
-   Os itens de raide (dados.ITEMS `raide`) que sobram numa jornada que termina vão pra cá, e o prêmio da Arena do Chefe também: é o que
-   a Arena usa. Fica só neste aparelho (localStorage): contador não se funde com a nuvem como o resto do progresso. */
+/* ---- inventário de itens "de conta" usados na Arena/raide ----
+   Os itens de raide (dados.ITEMS `raide`) que sobram numa jornada que termina vão pra cá, o prêmio da Arena do
+   Chefe também, e — desde a Loja de preparo (28/09/2026, arena.js) — TUDO que se compra lá (cura/revive, itens
+   de stat, itens de segurar) também: é uma "mochila de conta" única, sem run nenhuma por trás. Fica só neste
+   aparelho (localStorage): contador não se funde com a nuvem como o resto do progresso.
+   ⚠️ Bug real corrigido (28/09/2026): esta função tinha uma lista própria (`IDS_DE_RAIDE`, só os 3 itens de
+   raide ORIGINAIS) que rejeitava em silêncio qualquer item fora dela — sobrou de antes da Loja de preparo
+   existir e nunca foi atualizada. Resultado: comprar qualquer coisa na Loja de preparo (Potion, X Attack,
+   Restos, Orbe da Vida...) descontava o saldo mas o item NUNCA entrava no inventário — "comprei mas não
+   apareceu pra equipar/usar", relatado pelo jogador. Só `ITEMS[k]` (o id existe de verdade) é validação
+   suficiente: quem chama (arena.js, fim.js) já curou a lista antes de chamar. */
 export const RAIDE_KEY = 'pokerpg-raide-v1';
-export const IDS_DE_RAIDE = ['cristal-de-ruptura', 'selo-de-interrupcao', 'escudo-astral'];
 export const inventarioRaide = () => store.get(RAIDE_KEY) || {};
 export function darItensDeRaide(itens = {}) {
   const inv = { ...inventarioRaide() };
-  for (const [k, n] of Object.entries(itens)) if (IDS_DE_RAIDE.includes(k) && n > 0) inv[k] = (inv[k] || 0) + n;
+  for (const [k, n] of Object.entries(itens)) if (ITEMS[k] && n > 0) inv[k] = (inv[k] || 0) + n;
   store.set(RAIDE_KEY, inv); return inv;
 }
 export function gastarItemDeRaide(id) {

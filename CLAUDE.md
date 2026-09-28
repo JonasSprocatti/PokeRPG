@@ -497,6 +497,69 @@ O que sobrou e o que ficou combinado:
   `data-act` pra `change`, então entrou como um `if` a mais no listener de `change` já existente (ao lado de
   `data-ranking-especie`).
 
+  **✅ CORRIGIDO (28/09/2026) — segundo bug real, relatado de novo pelo usuário: "os itens equipáveis e
+  consumíveis não estão funcionando, não consigo equipar".** Diferente do primeiro bug (saldo travado em ₽0):
+  desta vez o saldo descontava certinho na compra, mas **o item nunca entrava no inventário** — confirmado
+  reproduzindo o fluxo inteiro com jsdom (seleção do Hall → compra → checar `pokerpg-raide-v1`): depois de
+  `arenaComprarSegurado('leftovers')`, o saldo caía mas `inventarioRaide()` continuava `{}`. Causa raiz:
+  `evento.darItensDeRaide()` tinha uma lista própria, `IDS_DE_RAIDE = ['cristal-de-ruptura', 'selo-de-interrupcao',
+  'escudo-astral']` — os TRÊS itens de raide originais, de ANTES da Loja de preparo existir — e rejeitava em
+  silêncio qualquer id fora dela. Ninguém atualizou essa lista quando a Loja passou a comprar Potion, X Attack,
+  Restos, Orbe da Vida etc. pela MESMA função: `arenaComprarComum`/`arenaComprarSegurado` chamavam
+  `darItensDeRaide({[id]:1})` normalmente, a função rodava sem erro, só que o `if (IDS_DE_RAIDE.includes(k) ...)`
+  descartava a entrada — sem exceção, sem aviso, o dinheiro simplesmente sumia. Isso também afetava o prêmio
+  semanal da Arena (`arena.finalizar`) e o repasse da mochila da run pro Hall ao terminar uma jornada (`fim.js`
+  linha ~40): qualquer um dos 14 itens de raide mais novos (além dos 3 originais) sofria o mesmo descarte.
+  **Corrigido**: a validação interna virou `ITEMS[k]` (o id existe de verdade) em vez da lista de 3 — cada
+  chamador já cura o que manda (as listas `CURA_ARENA`/`STATS_ARENA`/`ITENS_SEGURADOS` em `arena.js`, o filtro
+  `ITEMS[k]?.raide` em `fim.js`/`arena.finalizar`), então não precisa de uma segunda whitelist redundante e
+  desatualizável dentro da função. `IDS_DE_RAIDE` foi removida (não sobrava uso nenhum fora desta função).
+  `tests/hall.test.js` reescrito pra travar exatamente este caso (`potion`/`leftovers`, fora dos 3 originais,
+  precisam entrar).
+
+  **✅ FEITO (28/09/2026) — `js/loja-conta.js`: Loja de preparo + Hall da Fama extraídos, compartilhados com o
+  Multiplayer.** Junto do segundo bug acima, `arena.js` tinha a ÚNICA implementação de "comprar com o saldo da
+  conta" e "reconstruir um Pokémon do Hall fora de uma run" — exatamente o tipo de duplicação que already causou
+  o bug (duas listas de validação que podem desalinhar). Extraído pra `js/loja-conta.js` (tem rede —
+  `loadPokemon`/`loadMove` — mas sem DOM, quem desenha continua sendo a tela): `comprarComumConta`/
+  `comprarSeguradoConta` (a compra em si), `htmlLojaConta`/`htmlEquiparConta` (o HTML, genérico — quem chama passa
+  os `data-act`/`data-*` de cada tela) e `reidratarHall` (a reconstrução do Pokémon). `arena.js` foi reescrito
+  pra usar isso (mesmo comportamento, confirmado com o mesmo repro de jsdom do bug acima).
+
+  **✅ FEITO (28/09/2026) — ☄ Sala de Raide: enfrentar o chefe da semana em grupo sem run nenhuma
+  (`js/multiplayer.js`).** Pedido do usuário: "pra iniciar uma raide multiplayer eu preciso criar um save novo,
+  isso não está certo" — verdade: `iniciarBatalhaMP` sempre exigiu `temRun()` pro modo co-op inteiro (`if
+  (!temRun()) throw new Error('Co-op é jogar a run de alguém...')`), incluindo a luta do chefe da semana em
+  grupo. Um TERCEIRO valor de `sala.config.modo` (além de `'coop'`/`'pvp'`): **`'raide'`** — nenhum jogador
+  precisa de run, cada um leva de 1 a `MAX_TIME_HALL` (3) Pokémon do PRÓPRIO Hall da Fama (mesma fonte da Arena,
+  `carreira.hallDaConta()`) e compra/equipa da PRÓPRIA Loja de preparo (`js/loja-conta.js`, acima) — tudo local,
+  sem afetar os outros jogadores. **Seleção vira "foto" pela MESMA `fotoDoMon` de sempre**: `sala.hallSel`
+  (seleção + equipamento, só meu) alimenta `atualizarHallMons()` (async — busca na PokéAPI via `reidratarHall`)
+  que guarda o resultado em `sala.hallMons`; `minhasFotos()` ganhou um terceiro ramo (antes do `convidado`) que
+  usa `sala.hallMons` quando `sala.config.modo === 'raide'` — o resto do jogo (montarLado, mp-motor, presença)
+  nunca soube a diferença, porque uma "foto" de Hall é só mais uma foto. **"Pronto"**: `sala.pronto` (booleano,
+  local) entra no payload de presença (`meuPayload().pronto`); `todosProntosParaRaide()` (`sala.membros.every(m
+  => m.pronto && m.mons?.length)`) trava o botão "☄ Começar a Raide" do anfitrião — pedido explícito do usuário
+  ("quando todos derem pronto, a Raid começa"). **Construção do chefe SEM run**: dentro de `iniciarBatalhaMP`,
+  um `if (cfg.modo === 'raide')` que chama `eventoDaSemana(agoraDoEvento())` DIRETO (nada de
+  `situacaoDoEvento({dificuldade, gen})`, que exige a run do anfitrião) e seta `tipo = 'evento'` — o resto do
+  turno inteiro (ESPERTEZA.chefe, revive, itens de raide, clima fixo do chefe, cooldown de 8h por jogador) é
+  **reaproveitado de graça**, porque tudo isso já era condicionado só a `sala.tipo === 'evento'`/`b.evento`, nunca
+  a "tem run". **Resultado não mexe em run nenhuma**: `raideSemRun()` (`sala.config.modo === 'raide'`, sincronizado
+  a todo mundo pela própria `sala.config` que já viaja no broadcast `'lobby'` — não precisou de um campo novo no
+  estado da batalha) guarda `aplicarCoop` (desvia pra `aplicarRaideSemRun`, que nunca toca `G.S` e nunca é
+  permadeath) e os pontos que liam `G.S.bag` durante a luta (`consumirRevives`, `consumirItensComuns`,
+  `raideDisponiveis`, `itensComunsDisponiveis`, `podeReviver`, `gimmicksDisponiveisMP`, `centroNaSala`) — sem
+  isso, um jogador que TAMBÉM tivesse uma run aberta enquanto jogava a Sala de Raide teria itens/gimmicks da
+  RUN aplicados num Pokémon do HALL, ou a run debitada por engano. **Prêmio**: `aplicarRaideSemRun`/
+  `premiarRaideSemRun` espelham exatamente `arena.finalizar` (mesma função `registrarVitoriaDeEvento` +
+  `darItensDeRaide` da conta) — dinheiro/Rare Candy nunca saem daqui, só de dentro de uma run de verdade.
+  **Simplificação assumida**: sem Mega/Tera/Z-Move/Gigantamax na Sala de Raide (mesma limitação da Arena — o
+  motor do co-op fora de uma run não tem isso) e sem balancear/zona (Hall sempre no nível real, como a Arena).
+  O caminho ANTIGO (co-op dentro da run do anfitrião, botão `☄ Chefe da semana` no modo Co-op) continua existindo
+  do lado do modo `'raide'` na mesma lista — quem prefere lutar com o Pokémon da run de verdade (XP/dinheiro reais)
+  ainda pode.
+
   **Usar item comum em batalha** (`arenaUsarItem`): ocupa a vez de quem usar, exatamente como no multiplayer —
   `botoesItemComum` filtra `inventarioRaide()` por `!SEM_BATALHA_MP.some(...)` (exportado de `multiplayer.js`
   pra não duplicar a lista) e `regras.itemTemEfeito`, e a escolha vira `{ref, tipo:'item', item:id}` — o MESMO

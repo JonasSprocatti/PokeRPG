@@ -135,6 +135,8 @@ Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada j
 
 **🎒 Loja de preparo:** toda jornada terminada deixa **10% do seu dinheiro máximo** como saldo de conta, pra sempre. Na Arena, esse saldo compra cura, revive, itens de stat e itens de segurar (pelo mesmo preço da loja normal) — escolha quem equipa cada item de segurar antes de entrar na luta. Os itens de raide (Cristal de Ruptura e companhia) continuam só de prêmio, não se compram.
 
+**☄ Sala de Raide (multiplayer):** pra enfrentar o chefe da semana em GRUPO sem precisar de uma jornada em andamento, crie ou entre numa sala no 👥 Multiplayer e escolha o modo **"☄ Sala de Raide"**. Cada jogador leva de 1 a 3 Pokémon do PRÓPRIO Hall da Fama, compra e equipa itens na PRÓPRIA Loja de preparo — tudo isso independente do que os outros fazem — e marca **✅ Pronto**. O anfitrião só consegue começar quando todo mundo estiver pronto. Não mexe em nenhuma run de ninguém (como a Arena); o prêmio da semana (itens de raide, insígnia, Pokédex) vai pra conta de cada jogador que participar da vitória.
+
 ### 🤝 Badges de parceiros
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 

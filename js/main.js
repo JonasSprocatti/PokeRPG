@@ -21,7 +21,8 @@ import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP } from './multiplayer.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
+  raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
@@ -113,6 +114,11 @@ document.addEventListener('click', async e => {
     case 'mp-fugir': return fugirMP();
     case 'mp-mirar': return mirarMP(v);
     case 'mp-sync': return sincronizarSala();   // pedir o estado da sala de novo (rede engoliu alguma mensagem)
+    // ☄ Sala de Raide (Hall da Fama, sem run — multiplayer.js)
+    case 'mp-raide-sel': return raideSelecionarHall(v);
+    case 'mp-raide-comprar-comum': return raideComprarComum(v);
+    case 'mp-raide-comprar-segurado': return raideComprarSegurado(v);
+    case 'mp-pronto': return alternarProntoMP();
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
     // 🏟 Arena do Chefe (arena.js): o chefe da semana com os Pokémon do Hall da Fama, sem mexer em nenhuma jornada
@@ -318,6 +324,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', e => {
   if (e.target.matches?.('[data-ranking-especie]')) return telaRanking(e.target.value || null);
   if (e.target.matches?.('[data-arena-equipar]')) return arenaEquipar(e.target.dataset.arenaEquipar, e.target.value);
+  if (e.target.matches?.('[data-mp-equipar]')) return raideEquiparHall(e.target.dataset.mpEquipar, e.target.value);
   const cfg = e.target.dataset?.mpCfg; // configuração da sala (anfitrião): modo, porJogador, zona, balancear
   if (cfg) return configurarSala(cfg, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
   // ordem de aliado (vale a partir da próxima escolha de golpe — o turno em andamento já decidiu as ações)

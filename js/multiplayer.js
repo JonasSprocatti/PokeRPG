@@ -15,12 +15,13 @@ import { $, limparTopo, logRaw, say, toast, ask } from './ui.js';
 import { spriteFrente } from './render.js';
 import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR, ITEM_CRISTAL_Z } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
-import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
+import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH, darItensDeRaide } from './evento.js';
+import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comprarSeguradoConta, reidratarHall } from './loja-conta.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe, itemTemEfeito } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
-import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta } from './carreira.js';
+import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta, hallDaConta, saldoArenaDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
 import { megasDisponiveis } from './mega.js';
 import { desbloqueadas } from './roguelike.js';
@@ -45,6 +46,10 @@ export const naSala = () => !!sala;
 // 'convidado' = um emprestado só pra sala (iniciais + desbloqueados do Roguelike, Nv. 5), que não mexe em save nenhum.
 let entrada = { tipo: 'run', id: null };
 const temRun = () => !!G.S?.player;
+// Sala de Raide (modo 'raide'): ninguém tem run nenhuma pra mexer — `sala.config` já chega sincronizado a todo
+// mundo pela 'lobby' antes da luta começar, então checar o modo é o bastante (sem precisar de um campo à parte
+// no estado da batalha, nem broadcast extra).
+const raideSemRun = () => sala?.config?.modo === 'raide';
 // espécies que dá pra levar como convidado: a mesma regra da criação (iniciais + desbloqueadas no Roguelike)
 function especiesConvidado() {
   const lista = REGIOES_INICIAIS.flatMap(r => r.ids.map((id, i) => ({ id, nome: r.nomes[i] })));
@@ -62,12 +67,15 @@ const meuNome = () => nuvem.apelido || G.S?.player?.nick || (G.S ? fmt(G.S.playe
 // Convidado: só ele, marcado `convidado` (o anfitrião ajusta o nível dele; o resultado não vai pra save nenhum).
 function minhasFotos() {
   const eu = meuId(), S = G.S;
+  // Sala de Raide (modo 'raide'): Pokémon do Hall da Fama, reidratados no nível real — ver `atualizarHallMons`.
+  // Cada um já sai com o item da Loja de preparo (reidratarHall), sem tocar em nenhuma run.
+  if (sala?.config?.modo === 'raide') return (sala.hallMons || []).map((m, i) => ({ ...fotoDoMon(m, '', eu, null, i), hall: true }));
   if (sala?.convidado) return [{ ...fotoDoMon(sala.convidado, '', eu, null, 0), convidado: true }];
   const aliados = (S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.hp > 0 && A.ordem !== 'fora').slice(0, 2);
   return [fotoDoMon(S.player, '', eu, null, 0), ...aliados.map(([A, i]) => fotoDoMon(A, '', eu, null, i + 1))];
 }
 // a insígnia de evento que a pessoa escolheu mostrar ao lado do nome (só o ID vai pela rede; o ícone sai de BADGES)
-const meuPayload = () => ({ id: meuId(), nome: meuNome(), icone: meuIcone(), anfitriao: sala.anfitriao, time: sala.time, entrouEm: sala.entrouEm, mons: minhasFotos(), badge: nuvem.badgeExibida || null });
+const meuPayload = () => ({ id: meuId(), nome: meuNome(), icone: meuIcone(), anfitriao: sala.anfitriao, time: sala.time, entrouEm: sala.entrouEm, mons: minhasFotos(), badge: nuvem.badgeExibida || null, pronto: !!sala.pronto });
 const iconeDaBadge = htmlInsigniaDe;   // (conta.js) o mesmo ícone do topo, da lista de amigos e do ranking
 // anfitrião chama um amigo: aviso aparece pra ele em qualquer tela (nuvem.convidarAmigo → canal pessoal do amigo)
 export async function convidarAmigoMP(amigoId) {
@@ -172,6 +180,7 @@ async function conectar(codigo, anfitriao) {
   }
   sala = { codigo, anfitriao, canal: null, membros: [], zona: G.S?.zone || ZONES[0].id, batalha: null, acoes: {}, acoesFeitas: [], escolhidos: new Set(),
     convidado, // anfitrião sem run: só PvP (co-op é jogar a run de alguém)
+    hallSel: { selecao: [], equipamento: {} }, hallMons: [], pronto: false, // Sala de Raide (modo 'raide')
     config: { modo: anfitriao && !temRun() ? 'pvp' : 'coop', porJogador: 1, balancear: true }, time: anfitriao ? 'A' : 'B', entrouEm: Date.now(), encontrouAnfitriao: anfitriao };
   try {
     const canal = await canalSala(codigo, meuId());
@@ -243,9 +252,10 @@ export function configurarSala(campo, valor) {
     const z = temRun() && rotasAtuais().find(x => x.id === valor); // só rotas do mapa (Gen) da run do anfitrião
     if (!z || !zonaLiberada(z, G.S.player.level, G.S)) return;
     sala.zona = valor;
-  } else if (campo === 'modo' && ['coop', 'pvp'].includes(valor)) {
+  } else if (campo === 'modo' && ['coop', 'pvp', 'raide'].includes(valor)) {
     if (valor === 'coop' && !temRun()) return renderSala(); // co-op é a run do anfitrião
     sala.config.modo = valor;
+    if (valor === 'raide') sala.config.porJogador = clamp(sala.config.porJogador, 1, MAX_TIME_HALL);
   }
   else if (campo === 'porJogador') sala.config.porJogador = clamp(+valor || 1, 1, 3);
   else if (campo === 'balancear') sala.config.balancear = !!valor;
@@ -255,6 +265,56 @@ export async function escolherTime(t) {
   if (!sala || sala.batalha || !['A', 'B'].includes(t)) return;
   sala.time = t; await retrack(); renderSala();
 }
+
+/* ---------- Sala de Raide (modo 'raide'): Hall da Fama + Loja de preparo, sem run nenhuma ----------
+   Pedido do usuário (28/09/2026): pra jogar o chefe da semana em grupo com Pokémon de verdade (não o convidado de
+   Nv. 5), antes era obrigatório ter uma run em andamento — "preciso criar um save novo" (relato real). Agora
+   qualquer um pode hospedar/entrar numa Sala de Raide: cada jogador escolhe de 1 a MAX_TIME_HALL Pokémon do
+   PRÓPRIO Hall da Fama (o mesmo da Arena do Chefe, arena.js) e equipa item da PRÓPRIA Loja de preparo — tudo
+   local, na conta de cada um, igual à Arena. Quando os dois lados estão prontos (`pronto`), o anfitrião começa.
+   `sala.hallSel` (seleção + equipamento) é só desta pessoa; `sala.hallMons` é a reidratação PRONTA (rede, async)
+   que `minhasFotos()` usa pra montar a "foto" que viaja pela sala — igual ao `sala.convidado`, só que plural. */
+let atualizandoHall = false;
+async function atualizarHallMons() {
+  if (!sala || atualizandoHall) return;
+  atualizandoHall = true; renderSala();
+  try {
+    const hall = hallDaConta(), sel = sala.hallSel;
+    const entradas = sel.selecao.map(c => hall.find(e => e.chave === c)).filter(Boolean);
+    sala.hallMons = await Promise.all(entradas.map(e => reidratarHall(e, sel.equipamento[e.chave])));
+  } catch (e) { console.error(e); toast('Não consegui buscar um dos Pokémon do Hall agora.', 5000); }
+  finally { atualizandoHall = false; if (sala) { await retrack(); renderSala(); } }
+}
+export function raideSelecionarHall(chave) {
+  if (!sala || sala.batalha || sala.config.modo !== 'raide') return;
+  const sel = sala.hallSel;
+  if (sel.selecao.includes(chave)) { sel.selecao = sel.selecao.filter(c => c !== chave); delete sel.equipamento[chave]; }
+  else if (sel.selecao.length < MAX_TIME_HALL) sel.selecao = [...sel.selecao, chave];
+  else return;
+  sala.pronto = false; atualizarHallMons();
+}
+export function raideEquiparHall(chave, id) {
+  if (!sala || sala.batalha || sala.config.modo !== 'raide' || !sala.hallSel.selecao.includes(chave)) return;
+  const eq = sala.hallSel.equipamento;
+  if (id) { for (const c of Object.keys(eq)) if (eq[c] === id) delete eq[c]; eq[chave] = id; } else delete eq[chave];
+  atualizarHallMons();
+}
+export function raideComprarComum(id) {
+  if (!sala) return;
+  const r = comprarComumConta(id); if (!r.ok) return toast(r.motivo || 'Não deu.', 4000);
+  renderSala();
+}
+export function raideComprarSegurado(id) {
+  if (!sala) return;
+  const r = comprarSeguradoConta(id); if (!r.ok) return toast(r.motivo || 'Não deu.', 4000);
+  renderSala();
+}
+// "pronto" — o anfitrião só consegue começar a Raide quando TODO MUNDO na sala está pronto (com Pokémon escolhido)
+export async function alternarProntoMP() {
+  if (!sala || sala.batalha) return;
+  sala.pronto = !sala.pronto; await retrack(); renderSala();
+}
+const todosProntosParaRaide = () => sala.membros.length > 0 && sala.membros.every(m => m.pronto && m.mons?.length);
 
 /* ---------- anfitrião: montar a batalha ---------- */
 // lista de Pokémon de um jogador pra luta: os primeiros `porJogador` em pé, com ref/dono/slot
@@ -271,7 +331,25 @@ export async function iniciarBatalhaMP(tipo) {
   sala.ocupado = true; renderSala();
   try {
     let A, B, opcoes = {}, abertura;
-    if (cfg.modo === 'pvp') {
+    if (cfg.modo === 'raide') {
+      // Sala de Raide: ninguém precisa de run — cada um traz o próprio Hall da Fama (ver a seção acima).
+      if (!todosProntosParaRaide()) throw new Error('Espere todo mundo escolher os Pokémon do Hall da Fama e marcar "pronto".');
+      const agora = agoraDoEvento(), ev = eventoDaSemana(agora);
+      if (!ev || !jaComecou(agora)) throw new Error('O chefe da semana não está disponível agora.');
+      A = montarLado(membros, 'A');
+      if (!A.length) throw new Error('Ninguém escolheu um Pokémon do Hall ainda.');
+      const nivel = Math.max(...A.map(m => m.level));
+      const maxIv = { hp: 31, attack: 31, defense: 31, 'special-attack': 31, 'special-defense': 31, speed: 31 };
+      const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(nivel), { ivs: maxIv, shiny: false, ability: habilidadeDoChefe(ev.chefe) || undefined });
+      const golpes = (await Promise.all((ev.golpes || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
+      if (golpes.length) E.moves = golpes;
+      prepararChefe(E, jogadoresEfetivos(membros.length, cfg.porJogador), ev.chefe);
+      B = [fotoDoMon(E, 'B0', 'ia', ev.nome)];
+      opcoes.evento = ev.id;
+      tipo = 'evento';   // reaproveita TODO o resto do fluxo de evento (revive, itens de raide, prêmio…)
+      registrarTentativa();
+      abertura = `☄ RAIDE: ${B[0].nome} (Nv. ${B[0].level}) surge! Imune a status, sem fuga. Perder não custa nada — os Pokémon são do Hall da Fama de cada um.`;
+    } else if (cfg.modo === 'pvp') {
       A = montarLado(membros.filter(m => m.time === 'A'), 'A'); B = montarLado(membros.filter(m => m.time === 'B'), 'B');
       if (!A.length || !B.length) throw new Error('Os dois times precisam de pelo menos um jogador.');
       if (cfg.balancear) { const b = balancearPvP(A, B); A = b.A; B = b.B; abertura = `Balanceado: todos no nível ${b.nivel}${A.length !== B.length ? ', e o time menor ganhou HP extra' : ''}.`; }
@@ -449,7 +527,7 @@ function aoReceberEstado(p) {
 // o anfitrião conta os Revives e os itens de raide de cada jogador (`b.revivesUsados`, `b.raideUsados`); o que passou do que eu já
 // descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros)
 function consumirRevives(b) {
-  if (!b?.evento || !temRun() || sala?.convidado) return;
+  if (!b?.evento || !temRun() || sala?.convidado || raideSemRun()) return;
   const S = G.S, eu = meuId(); let mexeu = false;
   const gastar = (id, n) => { S.bag[id] = Math.max(0, (S.bag[id] || 0) - n); if (!S.bag[id]) delete S.bag[id]; mexeu = true; };
   const usados = b.revivesUsados?.[eu] || 0, ja = sala.revivesConsumidos || 0;
@@ -463,7 +541,7 @@ function consumirRevives(b) {
 // `itensUsados[dono]` é uma LISTA que só cresce (cada uso vira um item novo no array); `itensComunsConsumidos`
 // lembra até onde eu já descontei, pra não gastar de novo a cada estado que chega.
 function consumirItensComuns(b) {
-  if (!b || !temRun() || sala?.convidado) return;
+  if (!b || !temRun() || sala?.convidado || raideSemRun()) return;
   const S = G.S, eu = meuId(), usados = b.itensUsados?.[eu] || [], ja = sala.itensComunsConsumidos || 0;
   if (usados.length <= ja) return;
   for (const id of usados.slice(ja)) { S.bag[id] = Math.max(0, (S.bag[id] || 0) - 1); if (!S.bag[id]) delete S.bag[id]; }
@@ -471,7 +549,7 @@ function consumirItensComuns(b) {
   save();
 }
 // Itens de raide que posso usar agora: tenho na mochila e o grupo ainda não usou aquele tipo nesta luta
-const raideDisponiveis = b => (!b?.evento || !temRun() || sala.convidado) ? []
+const raideDisponiveis = b => (!b?.evento || !temRun() || sala.convidado || raideSemRun()) ? []
   : ITENS_DE_RAIDE.filter(tipo => (G.S.bag?.[ITEM_DO_RAIDE[tipo]] || 0) > 0 && !b.lados.B.some(m => m.boss?.raide?.[tipo]));
 const botoesRaide = b => { const l = raideDisponiveis(b); return l.length ? `<div class="subrow">${l.map(t => `<button class="btn ghost sm" data-act="mp-raide" data-v="${t}" title="${esc(ITEMS[ITEM_DO_RAIDE[t]].desc)}">🎒 ${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} ×${G.S.bag[ITEM_DO_RAIDE[t]]}</button>`).join('')}</div>` : ''; };
 // Itens comuns: lista recolhível (pode ser bem maior que os 3 de raide) — usar um já é a escolha do turno, sem confirmar
@@ -493,7 +571,7 @@ export function usarRaideMP(tipo) {
    `escolher()`, igual escolherGolpeMP, em vez de `registrarAcao` direto. */
 export const SEM_BATALHA_MP = ['candy', 'afinidade', 'evo', 'troca', 'segurar', 'segurado', 'repelente', 'ensina', 'raide', 'revive'];
 function itensComunsDisponiveis() {
-  const m = minhaVez(); if (!m || !temRun() || sala.convidado) return [];
+  const m = minhaVez(); if (!m || !temRun() || sala.convidado || raideSemRun()) return [];
   return Object.entries(G.S.bag || {}).filter(([k, n]) => n > 0 && ITEMS[k] && !SEM_BATALHA_MP.some(f => ITEMS[k][f]) && itemTemEfeito(ITEMS[k], m)).map(([k]) => k);
 }
 export function usarItemComumMP(id) {
@@ -501,7 +579,7 @@ export function usarItemComumMP(id) {
   escolher({ tipo: 'item', item: id });
 }
 // posso usar um Revive agora? (chefe da semana, sem nenhum Pokémon meu de pé, o grupo ainda aguenta, tenho Revive e ainda não gastei o limite)
-const podeReviver = b => !!b?.evento && temRun() && !sala.convidado && (G.S.bag?.revive || 0) > 0
+const podeReviver = b => !!b?.evento && temRun() && !sala.convidado && !raideSemRun() && (G.S.bag?.revive || 0) > 0
   && b.lados.A.some(m => m.hp > 0) && !b.lados.A.some(m => m.dono === meuId() && m.hp > 0)
   && b.lados.A.some(m => m.dono === meuId() && m.hp <= 0) && (b.revivesUsados?.[meuId()] || 0) < MAX_REVIVES;
 export function reviverMP() {
@@ -519,7 +597,7 @@ const minhaVez = () => { const b = sala?.batalha; return b && jogaveis(b).find(m
 const golpeZ = (p, g) => !!g && !!p && g.cls !== 'status' && g.power > 0 && g.ppLeft > 0 && g.name !== 'struggle' && zLiberado(p, g);
 // o que o meu Pokémon principal pode usar agora; null = não se aplica (PvP, convidado, aliado, sem run)
 function gimmicksDisponiveisMP(b, m) {
-  if (!b || b.pvp || !m || m.slot !== 0 || m.convidado || sala.convidado || !temRun()) return null;
+  if (!b || b.pvp || !m || m.slot !== 0 || m.convidado || sala.convidado || !temRun() || raideSemRun()) return null;
   const M = G.S.player, usou = b.gimmicksUsados?.[meuId()] || {}, p = conquistasDaConta(G.S.registro);
   return {
     p,
@@ -636,6 +714,7 @@ async function aplicarPvP(p) {
 }
 // co-op: devolve true se a run acabou (Roguelike, principal desmaiado)
 async function aplicarCoop(p) {
+  if (raideSemRun()) return aplicarRaideSemRun(p);   // Hall da Fama, sem run nenhuma — ver a Sala de Raide, acima
   if (sala.convidado || !temRun()) { await say(p.fim === 'A' ? '🏆 Vitória do grupo! (Pokémon convidado: a luta não mexe na sua run.)' : 'Pokémon convidado: a luta não mexe na sua run.', 'muted'); return false; }
   // luta do chefe da semana: perder não é permadeath (evento.EVENTO_SEM_PERMADEATH), como no single player
   const S = G.S, eu = meuId(), permadeath = DIFICULDADES[dificuldadeDe(S)].permadeath && !(p.evento && EVENTO_SEM_PERMADEATH);
@@ -706,6 +785,30 @@ async function premiarEventoMP(id) {
   if (usuario()) sincronizarComRetentativa().catch(e => console.warn('sincronizar (evento)', e));
 }
 
+// Sala de Raide (modo 'raide'): igual à Arena do Chefe — sem run nenhuma pra mexer, prêmio vai pra CONTA
+// (darItensDeRaide + registrarVitoriaDeEvento), nunca por dinheiro/Rare Candy (isso só existe dentro de uma run).
+async function aplicarRaideSemRun(p) {
+  const venceu = p.fim === 'A';
+  await say(venceu ? '🏆 Vitória do grupo!' : 'O grupo foi derrotado. Dá pra tentar de novo mais tarde — perder não custa nada.', venceu ? 'good' : 'muted');
+  if (venceu && p.evento) await premiarRaideSemRun(p.evento);
+  return false;   // Sala de Raide nunca é permadeath: não existe run pra acabar
+}
+async function premiarRaideSemRun(id) {
+  const ev = EVENTOS.find(e => e.id === id); if (!ev) return;
+  const r = registrarVitoriaDeEvento(ev, idDaSemana(agoraDoEvento()));
+  if (r.semanaNova) {
+    const itens = Object.fromEntries(Object.entries(ev.recompensa.itens || {}).filter(([k]) => ITEMS[k]?.raide));
+    darItensDeRaide(itens);
+    const txt = Object.entries(itens).map(([k, n]) => `${n}× ${ITEMS[k].name}`).join(', ');
+    await say(`Prêmio da semana: ${txt || 'nenhum item de raide'} (guardados na conta). Dinheiro e Rare Candy só saem em lutas dentro de uma run.`, 'level');
+  } else await say('Você já tinha vencido este chefe nesta semana: o prêmio só sai uma vez por semana.', 'muted');
+  if (r.primeiraVez) {
+    await say(`🌌 Insígnia <b>${esc(ev.badge.nome)}</b> conquistada — título “${esc(ev.badge.titulo)}”. Escolha qual mostrar ao lado do nome na tela 👤 Conta.`, 'level');
+    await say(`🔓 <b>${esc(fmt(ev.especie))}</b> está liberado na Pokédex e pra começar novas jornadas!`, 'level');
+  }
+  if (usuario()) sincronizarComRetentativa().catch(e => console.warn('sincronizar (raide sem run)', e));
+}
+
 /* ---------- tela ---------- */
 function telaSala() {
   G.mode = 'mp'; limparTopo();
@@ -740,8 +843,8 @@ export function cartao(m, legenda, destaque = false) {
   return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
     <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${marcas ? ` <span class="small">${esc(marcas)}</span>` : ''}${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
 }
-const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' (você)' : ''}</b>
-  <div class="mp-mons">${(m.mons || []).slice(0, sala.config.porJogador).map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : '')).join('')}</div></div>`;
+const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' (você)' : ''}${sala.config.modo === 'raide' ? ` ${m.pronto ? '✅ pronto' : '⏳ escolhendo…'}` : ''}</b>
+  <div class="mp-mons">${(m.mons || []).slice(0, sala.config.porJogador).map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : x.hall ? '🏟 Hall da Fama' : '')).join('')}</div></div>`;
 // Linha de conexão + diagnóstico: some quando está tudo bem? Não — fica sempre, porque saber se a sala está viva
 // é metade do problema num jogo em rede. Mostra o estado, há quanto tempo chegou algo, o 🔄 e o detalhe escondido.
 function barraConexao() {
@@ -791,22 +894,43 @@ function renderSala() {
 // Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.
 // Mesmo preço e mesma regra do jogo sozinho (estado.centroPokemon); só aparece entre as lutas, com uma run em andamento.
 function centroNaSala() {
-  if (!temRun() || sala.batalha || sala.convidado) return '';
+  if (!temRun() || sala.batalha || sala.convidado || sala.config?.modo === 'raide') return '';
   const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = G.S.money < custo;
   const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s>` : '';
   return `<div class="subrow mp-centro"><button class="btn ghost" data-act="mp-centro" ${!precisa || semGrana || sala.ocupado ? 'disabled' : ''}
     title="${!precisa ? 'Sua equipe já está curada' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">🏥 Centro Pokémon${!precisa ? ' (equipe curada)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}`}</button>
     <span class="small muted">₽${G.S.money.toLocaleString('pt-BR')}</span></div>`;
 }
+// Sala de Raide: minha própria seleção do Hall da Fama + Loja de preparo + "pronto" — igual pra anfitrião e
+// convidado, cada um mexe só na PRÓPRIA conta (hallDaConta/saldoArenaDaConta já são locais, sem run nenhuma).
+function htmlRaideSelecao() {
+  const hall = hallDaConta(), sel = sala.hallSel, saldo = saldoArenaDaConta();
+  const escolhidos = new Set(sel.selecao);
+  const cartaoHall = e => { const on = escolhidos.has(e.chave), cheio = !on && sel.selecao.length >= MAX_TIME_HALL;
+    return `<button class="hall-card ${on ? 'on' : ''}" data-act="mp-raide-sel" data-v="${esc(e.chave)}" ${cheio || sala.ocupado ? 'disabled' : ''} aria-pressed="${on}">
+      <img src="${e.shiny ? SPR_SHINY(e.id) : SPR(e.id)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${SPR(e.id)}'">
+      <b>${e.shiny ? '✨ ' : ''}${esc(e.nick || fmt(e.nome))}</b><span class="muted small">Nv. ${e.nivel} · Gen ${e.gen}</span></button>`; };
+  const entradas = sel.selecao.map(c => hall.find(e => e.chave === c)).filter(Boolean).map(e => ({ chave: e.chave, rotulo: e.nick || fmt(e.nome) }));
+  return `<section class="pv conta"><div><h3>🏟 Seus Pokémon (Hall da Fama)</h3>
+    <p class="small muted">O principal de cada jornada Roguelike/Hardcore terminada entra aqui, com o nível que tinha. Escolha de 1 a ${MAX_TIME_HALL} — não usa nenhuma jornada em andamento.</p>
+    ${hall.length ? `<div class="hall-lista">${hall.map(cartaoHall).join('')}</div>`
+      : '<p class="notice">Seu Hall da Fama está vazio. Termine (ou encerre) uma jornada Roguelike ou Hardcore pra ter Pokémon aqui.</p>'}</div></section>
+    ${htmlEquiparConta(entradas, sel.equipamento, 'data-mp-equipar')}
+    ${htmlLojaConta(saldo, 'mp-raide-comprar-comum', 'mp-raide-comprar-segurado')}
+    <div class="subrow"><button class="btn ${sala.pronto ? '' : 'ghost'} big" data-act="mp-pronto" ${sala.ocupado ? 'disabled' : ''}>${sala.pronto ? '✅ Pronto! (toque pra voltar a escolher)' : 'Marcar como pronto'}</button></div>`;
+}
 function renderLobby(cabecalho, pvp, z) {
-  const cfg = sala.config, dis = sala.ocupado ? 'disabled' : '';
+  const cfg = sala.config, dis = sala.ocupado ? 'disabled' : '', raide = cfg.modo === 'raide';
   const time = t => sala.membros.filter(m => (m.time || 'B') === t);
   $('#mp-topo').innerHTML = cabecalho + (pvp
     ? `<div class="mp-times">${['A', 'B'].map(t => `<div class="mp-time"><h3>Time ${t} <small class="muted">(${time(t).length})</small></h3>${time(t).map(cartaoMembro).join('') || '<p class="small muted">Ninguém ainda.</p>'}</div>`).join('')}</div>`
     : `<div class="mp-grupo">${sala.membros.map(cartaoMembro).join('')}</div>`);
   const trocarTime = pvp ? `<div class="subrow">Seu time: ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
   const sair = '<button class="btn ghost" data-act="mp-sair">Sair da sala</button>';
-  if (!sala.anfitriao) { $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
+  if (!sala.anfitriao) {
+    if (raide) { $('#mp-acoes').innerHTML = htmlRaideSelecao() + `<p class="muted">${sala.ocupado ? 'Buscando os Pokémon…' : 'Esperando todo mundo ficar pronto e o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
+    $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return;
+  }
   const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level, G.S)) : []; // rotas do mapa (Gen) da run
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
   const naSalaIds = new Set(sala.membros.map(m => m.id));
@@ -814,8 +938,19 @@ function renderLobby(cabecalho, pvp, z) {
   const convites = amigosFora.length ? `<div class="mp-convites"><b>Chamar amigos:</b> ${amigosFora.map(a => `<button class="btn ghost sm" data-act="mp-convidar" data-v="${a.amigo}">${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')} ${esc(a.apelido)}${htmlInsigniaDe(a.badge_exibida)}</button>`).join('')}</div>`
     : usuario() ? '' : '<p class="small muted">Entre na conta pra chamar amigos direto (sem precisar passar o código).</p>';
   const podePvp = time('A').length && time('B').length;
+  if (raide) {
+    const prontos = todosProntosParaRaide();
+    $('#mp-acoes').innerHTML = `<div class="mp-config">
+        <label class="campo">Modo<select data-mp-cfg="modo" ${dis}><option value="coop" ${temRun() ? '' : 'disabled'}>Co-op (contra selvagens / Alfa)${temRun() ? '' : ' — precisa de uma run'}</option><option value="pvp">PvP (Time A × Time B)</option><option value="raide" selected>☄ Sala de Raide (Hall da Fama, sem run)</option></select></label>
+        <label class="campo">Pokémon por jogador<select data-mp-cfg="porJogador" ${dis}>${[1, 2, 3].map(n => `<option value="${n}" ${cfg.porJogador === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      </div>
+      <p class="small muted">Cada jogador escolhe do PRÓPRIO Hall da Fama, compra e equipa da PRÓPRIA Loja de preparo. Quando todo mundo estiver ✅ pronto, comece a Raide.</p>
+      ${convites}${htmlRaideSelecao()}
+      <div class="subrow"><button class="btn big" data-act="mp-evento" ${dis || !prontos ? 'disabled' : ''} title="${prontos ? '' : 'Espere todo mundo escolher os Pokémon e marcar \'pronto\''}">☄ Começar a Raide</button>${sair}</div>`;
+    return;
+  }
   $('#mp-acoes').innerHTML = `<div class="mp-config">
-      <label class="campo">Modo<select data-mp-cfg="modo" ${dis}><option value="coop" ${!pvp ? 'selected' : ''} ${temRun() ? '' : 'disabled'}>Co-op (contra selvagens / Alfa)${temRun() ? '' : ' — precisa de uma run'}</option><option value="pvp" ${pvp ? 'selected' : ''}>PvP (Time A × Time B)</option></select></label>
+      <label class="campo">Modo<select data-mp-cfg="modo" ${dis}><option value="coop" ${!pvp ? 'selected' : ''} ${temRun() ? '' : 'disabled'}>Co-op (contra selvagens / Alfa)${temRun() ? '' : ' — precisa de uma run'}</option><option value="pvp" ${pvp ? 'selected' : ''}>PvP (Time A × Time B)</option><option value="raide">☄ Sala de Raide (Hall da Fama, sem run)</option></select></label>
       <label class="campo">Pokémon por jogador<select data-mp-cfg="porJogador" ${dis}>${[1, 2, 3].map(n => `<option value="${n}" ${cfg.porJogador === n ? 'selected' : ''}>${n}${n === 1 ? ' (só o principal)' : ' (com aliados)'}</option>`).join('')}</select></label>
       ${pvp ? '' : `<label class="campo">Zona<select data-mp-cfg="zona" ${dis}>${zonas.map(x => `<option value="${x.id}" ${x.id === sala.zona ? 'selected' : ''}>${x.name}</option>`).join('')}</select></label>`}
       <label class="check"><input type="checkbox" data-mp-cfg="balancear" ${cfg.balancear ? 'checked' : ''} ${dis}> Balancear níveis

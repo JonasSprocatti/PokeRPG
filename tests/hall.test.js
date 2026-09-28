@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HALL_MAX, entraNoHall, compactarPokemon, entradaDoHall, podarHall, registrarNoHall, listaDoHall, mesclarHall } from '../js/hall.js';
 import { mesclarProgresso, progressoVazio, bancar } from '../js/progresso-conta.js';
-import { darItensDeRaide, gastarItemDeRaide, inventarioRaide, IDS_DE_RAIDE } from '../js/evento.js';
+import { darItensDeRaide, gastarItemDeRaide, inventarioRaide } from '../js/evento.js';
 import { htmlComoFuncionam } from '../js/ajuda-chefes.js';
 
 const pokemon = (o = {}) => ({ id: 6, name: 'charizard', nick: 'Brasa', level: 60, shiny: false, nature: 'adamant', ability: 'blaze',
@@ -69,20 +69,22 @@ test('o Hall sobrevive ao bancar as jornadas (o progresso é espalhado, não rec
   assert.equal(depois.hall.j1.nivel, 60);
 });
 
-test('inventário de itens de raide da conta: soma só itens de raide e gasta um de cada vez', () => {
+test('inventário "de conta" da Arena: aceita qualquer item de verdade (não só os 3 de raide originais) e gasta um de cada vez', () => {
   // (o store do Node não tem localStorage: `store` engole o erro e devolve vazio — o que se testa aqui é a regra, com uma
   // implementação em memória por baixo)
   globalThis.localStorage = (() => { const m = new Map(); return { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; })();
   try {
     assert.deepEqual(inventarioRaide(), {});
-    darItensDeRaide({ 'cristal-de-ruptura': 2, 'rare-candy': 5, 'escudo-astral': 1, 'selo-de-interrupcao': 0 });
-    assert.deepEqual(inventarioRaide(), { 'cristal-de-ruptura': 2, 'escudo-astral': 1 }, 'ignora o que não é de raide e o zero');
+    /* Bug real corrigido (28/09/2026): esta função ignorava em silêncio qualquer item fora dos 3 originais de
+       raide — a Loja de preparo (potion, x-attack, leftovers...) descontava o saldo e o item nunca aparecia.
+       'potion' e 'leftovers' aqui são exatamente o tipo de item que a Loja de preparo compra. */
+    darItensDeRaide({ 'cristal-de-ruptura': 2, potion: 3, leftovers: 1, 'item-que-nao-existe': 5, 'escudo-astral': 0 });
+    assert.deepEqual(inventarioRaide(), { 'cristal-de-ruptura': 2, potion: 3, leftovers: 1 }, 'item real entra (mesmo fora dos 3 originais); id inexistente e quantidade zero são ignorados');
     darItensDeRaide({ 'cristal-de-ruptura': 1 });
     assert.equal(inventarioRaide()['cristal-de-ruptura'], 3);
     assert.equal(gastarItemDeRaide('cristal-de-ruptura'), true); assert.equal(inventarioRaide()['cristal-de-ruptura'], 2);
-    assert.equal(gastarItemDeRaide('escudo-astral'), true); assert.equal(inventarioRaide()['escudo-astral'], undefined, 'zerou: sai do inventário');
-    assert.equal(gastarItemDeRaide('escudo-astral'), false); assert.equal(gastarItemDeRaide('selo-de-interrupcao'), false);
-    assert.deepEqual([...IDS_DE_RAIDE].sort(), ['cristal-de-ruptura', 'escudo-astral', 'selo-de-interrupcao']);
+    assert.equal(gastarItemDeRaide('leftovers'), true); assert.equal(inventarioRaide().leftovers, undefined, 'zerou: sai do inventário');
+    assert.equal(gastarItemDeRaide('leftovers'), false); assert.equal(gastarItemDeRaide('selo-de-interrupcao'), false);
   } finally { delete globalThis.localStorage; }
 });
 
