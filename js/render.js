@@ -201,8 +201,17 @@ function blocoHabilidade(M) {
   return `<div class="sec"><h3>Habilidade: ${esc(fmt(M.ability))}</h3>
       <p class="small muted">${esc(abDesc || 'Carregando descrição…')} ${IMPL.has(M.ability) ? '<span class="impl">✓ ativa em batalha</span>' : '<em class="small impl-futura">(efeito em batalha: será ajustado em atualizações futuras)</em>'}</p></div>`;
 }
-const listaGolpes = M => `<div class="sec mlist"><h3>Golpes</h3>
-      ${M.moves.map(m => `<details><summary><b>${esc(fmt(m.name))}</b><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`).join('')}
+// `quem` = 'p' ou índice do aliado — dá pra reordenar (▲▼, data-act="golpe-mover") a qualquer hora, mesmo em
+// batalha: só muda a ORDEM na lista, não gasta turno nem golpe. Sem `quem` (não usado hoje) fica só leitura.
+const listaGolpes = (M, quem) => `<div class="sec mlist"><h3>Golpes</h3>
+      ${M.moves.map((m, i) => {
+        // os botões ficam DENTRO do <summary> (junto do nome), então um clique neles também abriria/fecharia o
+        // <details> (comportamento nativo do navegador pro clique em QUALQUER lugar do summary) — só
+        // preventDefault (sem stopPropagation: o clique precisa seguir borbulhando até o listener em main.js).
+        const mover = dir => `<button class="btn ghost sm mv-btn" data-act="golpe-mover" data-quem="${quem}" data-v="${i}" data-dir="${dir}" ${G.busy || (dir < 0 ? i === 0 : i === M.moves.length - 1) ? 'disabled' : ''} title="${dir < 0 ? 'Subir' : 'Descer'}" onclick="event.preventDefault()">${dir < 0 ? '▲' : '▼'}</button>`;
+        // <b> mora dentro do MESMO item de grid que os botões de ordem (a linha do summary é grid 1fr/auto: nome × PP)
+        return `<details><summary><span class="mv-nome">${quem != null ? `<span class="mv-ordem">${mover(-1)}${mover(1)}</span>` : ''}<b>${esc(fmt(m.name))}</b></span><span class="pp">PP ${m.ppLeft}/${m.pp}</span><small>${badge(m.type)} ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}, precisão ${m.acc ?? '—'}</small></summary><p>${esc(m.desc)}</p></details>`;
+      }).join('')}
     </div>`;
 // aliado: resumo + seletor de ordem + ficha completa num <details> (aberto/fechado sobrevive ao re-render via G.abertos)
 function cartaoAliado(A, i) {
@@ -212,7 +221,7 @@ function cartaoAliado(A, i) {
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
-      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoItem(A, i)}${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A)}
+      ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoItem(A, i)}${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A, i)}
     </details>
     ${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}
   </div>`;
@@ -240,7 +249,7 @@ function renderFicha() {
     ${blocoItem(P, 'p')}
     ${blocoEvolucao(P, S.meta.evo)}
     ${blocoHabilidade(P)}
-    ${listaGolpes(P)}`;
+    ${listaGolpes(P, 'p')}`;
 }
 // item segurado (segurados.js): o que está na mão e um botão pra devolver pra mochila. `quem` = 'p' ou o índice do aliado
 function blocoItem(M, quem) {

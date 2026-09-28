@@ -10,7 +10,7 @@ import {
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda,
-  caminhoNaArvore, especiesShinyDoJogador
+  caminhoNaArvore, especiesShinyDoJogador, moverGolpe
 } from '../js/regras.js';
 import { CHART, ITEMS } from '../js/dados.js';
 
@@ -216,6 +216,16 @@ test('consegueFugir: Run Away, mais rápido, e a chance que cresce a cada tentat
   assert.equal(consegueFugir(50, 100, 1, 'none', 93 / 256), true);
   assert.equal(consegueFugir(50, 100, 1, 'none', 94 / 256), false);
   assert.equal(consegueFugir(50, 100, 2, 'none', 94 / 256), true);
+});
+
+test('moverGolpe: troca posições vizinhas, leva o ppLeft junto, não muta o array original', () => {
+  const moves = [{ name: 'a', ppLeft: 5 }, { name: 'b', ppLeft: 10 }, { name: 'c', ppLeft: 15 }];
+  const depois = moverGolpe(moves, 0, 1);   // "a" desce, troca com "b"
+  assert.deepEqual(depois.map(m => m.name), ['b', 'a', 'c']);
+  assert.equal(depois[1].ppLeft, 5, 'o PP usado viaja junto com o golpe');
+  assert.deepEqual(moves.map(m => m.name), ['a', 'b', 'c'], 'não muta o array original');
+  assert.equal(moverGolpe(moves, 0, -1), moves, 'fora da borda (subir o primeiro): devolve o mesmo array, sem erro');
+  assert.equal(moverGolpe(moves, 2, 1), moves, 'fora da borda (descer o último): devolve o mesmo array, sem erro');
 });
 
 test('consegueFugir: Magnet Pull (preso) trava até quem é mais rápido; Run Away ignora', () => {

@@ -344,6 +344,9 @@ table.stats td.v{font:700 15px var(--display)}
 .mlist summary b{font:700 15px var(--display)}
 .mlist summary small{color:var(--muted);grid-column:1/-1}
 .mlist .pp{font:500 13px var(--display);color:var(--yellow)}
+.mv-nome{display:flex;align-items:center;gap:6px;min-width:0}
+.mv-ordem{display:flex;gap:2px;flex:none}
+.mv-ordem .btn{padding:0 6px;line-height:1.8;font-size:12px}
 .mlist details p{font-size:13px;color:var(--muted);margin:4px 0 2px}
 ul.bag{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 ul.bag li{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px}
@@ -612,6 +615,11 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 .actions{display:flex;flex-wrap:wrap;gap:10px}
 .moves{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
 @media(max-width:420px){.moves{grid-template-columns:1fr}}
+/* Arena/Multiplayer: o botão de atacar (.mv) não pode ficar DENTRO de outro <button> (HTML inválido), então os
+   dois botões de reordenar (▲▼) ficam ao lado, dentro de um wrapper que vira o item do grid .moves. */
+.mv-cel{display:flex;gap:4px}
+.mv-cel .mv{flex:1;min-width:0}
+.mv-cel .mv-ordem{flex-direction:column;justify-content:center}
 .mv{text-align:left;background:var(--panel2);border:2px solid var(--line);border-left:8px solid var(--c);border-radius:10px;padding:9px 12px;display:grid;gap:1px}
 .mv b{font:700 17px var(--display)}
 .mv small{color:var(--muted);font-size:13px}

@@ -447,6 +447,16 @@ export const imuneAoStatusMon = (m, ail) => (ail !== 'confusion' && imuneAoStatu
 // dano de queimadura (1/16) e veneno (1/8) no fim do turno, mínimo 1 (como nos jogos); 0 = sem status que cause dano.
 // Sem o mínimo, HP máximo < 16 (queimadura) ou < 8 (veneno) dava floor = 0 e o status nunca machucava.
 // Veneno grave (Toxic, m.vol.toxico = n): n/16 do HP, n sobe a cada turno (golpe.js fimDeTurno).
+// Reordena os golpes na ficha (pedido do usuário: run e Raid) — troca a posição i com a vizinha (i+dir). Devolve
+// um array NOVO (nunca muta): quem chama faz `M.moves = moverGolpe(M.moves, i, dir)`. O PP usado mora dentro de
+// cada objeto de golpe (`ppLeft`), então ele viaja junto com o golpe na troca, sem lógica extra.
+export function moverGolpe(moves, i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= moves.length) return moves;
+  const novo = [...moves];
+  [novo[i], novo[j]] = [novo[j], novo[i]];
+  return novo;
+}
 export function danoResidual(m) {
   if (m.status === 'poison' && m.vol?.toxico) return Math.max(1, Math.floor(m.stats.hp * m.vol.toxico / 16));
   const frac = m.status === 'burn' ? 16 : m.status === 'poison' ? 8 : 0;

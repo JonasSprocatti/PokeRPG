@@ -18,7 +18,7 @@ import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH } from './evento.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS } from './regras.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
@@ -359,10 +359,21 @@ function registrarRaide(de, acao) {
   const quem = membroDe(de)?.nome || 'Alguém';
   publicarEstado([{ txt: `🎒 ${quem} usou ${ITEMS[ITEM_DO_RAIDE[acao.item]]?.name || 'um item de raide'}!`, cls: 'good' }, ...r.efeitos.filter(e => e.dizer).map(e => ({ txt: e.dizer, cls: e.cls || 'status' }))], false);
 }
+// Reordenar golpes (▲▼): ação livre como Revive/item de raide — o anfitrião muta a ordem no Pokémon CANÔNICO
+// (o dele, não a cópia local de quem pediu) e reenvia o estado, senão a escolha por índice do próximo turno
+// bateria errado (cada lado veria uma ordem diferente pro mesmo Pokémon).
+function registrarGolpeMover(de, acao) {
+  const b = sala?.batalha; if (!b || sala.resolvendo) { anotar('← reordenar golpe ignorado (luta resolvendo)', true); return; }
+  const m = monMP(b, acao.ref);
+  if (!m || m.dono !== de || m.hp <= 0) { anotar(`← reordenar golpe ignorado (${acao.ref})`, true); return; }
+  m.moves = moverGolpe(m.moves, acao.i, acao.dir);
+  publicarEstado([], false);
+}
 function registrarAcao(de, acao) {
   const b = sala?.batalha; if (!b || !acao) return;
   if (acao.tipo === 'revive') return registrarRevive(de, acao);
   if (acao.tipo === 'raide') return registrarRaide(de, acao);
+  if (acao.tipo === 'golpe-mover') return registrarGolpeMover(de, acao);
   const m = monMP(b, acao.ref);
   if (!m || m.dono !== de || m.hp <= 0) { anotar(`← escolha ignorada (${acao.ref}): não é dela ou já caiu`, true); return; } // só o dono escolhe pelos próprios
   anotar(`← escolha de ${m.nome} (${acao.tipo})`);
@@ -538,6 +549,11 @@ export function escolherGolpeMP(i) {
   if (gimmicks.some(g => g.tipo === 'z') && !golpeZ(gimmicksDisponiveisMP(sala.batalha, m)?.p, m.moves[i])) { toast('Esse golpe não pode virar Z.', 4000); return; }
   escolher({ tipo: 'golpe', golpe: i, alvo: sala?.alvo, ...(gimmicks.length ? { gimmicks } : {}) });
   if (sala) sala.gimmicksSel = {};
+}
+export function moverGolpeMP(i, dir) {
+  const m = minhaVez(); if (!m) return;
+  const a = { tipo: 'golpe-mover', ref: m.ref, i, dir };
+  if (sala.anfitriao) registrarAcao(meuId(), a); else enviar('acao', { de: meuId(), acao: a });
 }
 export function fugirMP() { escolher({ tipo: 'fugir' }); }
 export function desistirMP() { escolher({ tipo: 'desistir' }); }
@@ -729,10 +745,12 @@ function renderSala() {
   const alvos = inimigosDe(vez); if (!alvos.some(e => e.ref === sala.alvo)) sala.alvo = alvos[0]?.ref;
   const semPP = vez.moves.every(g => g.ppLeft <= 0);
   const gd = gimmicksDisponiveisMP(b, vez), zLigado = !!(gd && sala.gimmicksSel?.z);   // com o Z ligado, só os golpes que podem virar Z ficam clicáveis
+  // reordenar (▲▼) não gasta turno; fica fora do <button> de atacar (não dá pra aninhar <button> em <button>)
+  const moverMP = (i, dir) => `<button class="btn ghost sm" data-act="mp-golpe-mover" data-v="${i}" data-dir="${dir}" ${(dir < 0 ? i === 0 : i === vez.moves.length - 1) ? 'disabled' : ''} title="${dir < 0 ? 'Subir' : 'Descer'}">${dir < 0 ? '▲' : '▼'}</button>`;
   $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` + botoesGimmickMP(gd) +
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
-      : vez.moves.map((g0, i) => { const g = golpeDoBattleBond(golpeDoTera(golpeDoClima(g0, climaDe(b.campo)), vez), vez); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
+      : vez.moves.map((g0, i) => { const g = golpeDoBattleBond(golpeDoTera(golpeDoClima(g0, climaDe(b.campo)), vez), vez); return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${moverMP(i, -1)}${moverMP(i, 1)}</span></div>`; }).join('')}</div>
     ${botoesRaide(b)}
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }

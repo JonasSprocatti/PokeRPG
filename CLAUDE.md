@@ -437,9 +437,13 @@ O que sobrou e o que ficou combinado:
   Sono/congelamento não sincronizam (fiel aos jogos). **Stench**: 10% de recuo extra em golpe de dano que ainda não
   tem `meta.flinch` própria (senão dobraria a chance à toa).
 - **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
-- **Em aberto, esperando decisão do usuário**: inimigo gigantamaxar (hoje só mega/terastaliza); se o painel de
-  manutenção sai quando o jogo estabilizar; e se o teto da equipe (`MAX_ALIADOS`) muda agora que existe o
-  esconderijo.
+- **Decidido com o usuário (28/09/2026)**: confirmado que o inimigo TAMBÉM deveria gigantamaxar (só treinador) —
+  ao investigar pra implementar, achei que **já existia** (`batalha.gmaxDoInimigo`/`dynamax.inimigoPodeGmax`,
+  testado em `tests/gimmicks-coop-inimigo.test.js`): esta nota de "em aberto" tinha ficado esquecida no CLAUDE.md
+  depois que o recurso foi construído. Nada a fazer aqui. Painel de manutenção **continua** (jogo ainda em ajuste
+  ativo, modo beta da Raide ligado); teto de aliados **continua em 2** (o Esconderijo já resolve "guardar mais
+  parceiros" sem mexer em quantos agem por turno — subir o teto mudaria o balanceamento da batalha, não só
+  armazenamento).
 
 ### ⚠️ Lição cara (25/09/2026): `node --check` não roda nesta máquina
 `S?.escondidos ||= []` — optional chaining como alvo de atribuição é **erro de sintaxe**. Derrubou o jogo inteiro
@@ -548,6 +552,30 @@ senão o relato segue sem elas e a tela avisa (`semImagens`). Fila: campos `imag
 - **`js/cenario.js`**: clima da cena de batalha deduzido do TEXTO da rota (nome+descrição) contra uma lista de
   palavras, com `z.tema` tendo prioridade. Sem tabela por rota, então rota nova entra sozinha. Puro e testado —
   o teste falha se tudo cair no `padrao`, que é como essa lista morreria em silêncio.
+
+### Reordenar golpes (28/09/2026)
+Pedido do usuário: mudar a ordem dos golpes na lista, sem gastar turno, tanto na run quanto na Raide.
+`regras.moverGolpe(moves, i, dir)` é a única regra (pura, testada): troca a posição `i` com a vizinha `i+dir`,
+devolve um array NOVO (não muta) — o PP usado mora dentro de cada objeto de golpe (`ppLeft`), então viaja junto
+com o golpe na troca, sem lógica extra. Três UIs diferentes chamam ela:
+- **Single player**: botões ▲▼ dentro de `render.listaGolpes(M, quem)` (ficha, `data-act="golpe-mover"` +
+  `data-quem`/`data-v`/`data-dir` em main.js) — como a ficha usa o MESMO array `M.moves` que a tela de batalha
+  (`renderActions`) lê pra montar os botões de ataque, reordenar na ficha já reordena os botões de ataque também,
+  sem precisar duplicar UI lá. Os botões ficam DENTRO do `<summary>` do golpe (junto do nome) — clicar neles
+  também abriria/fecharia o `<details>` (é o comportamento nativo do navegador pra qualquer clique no summary);
+  `onclick="event.preventDefault()"` no botão evita isso SEM `stopPropagation()` (o clique precisa continuar
+  borbulhando até o listener delegado em main.js, senão o `data-act` nunca dispara).
+- **Arena** (`arena.arenaGolpeMover`): local, muta direto `proximoSemEscolha().moves` e re-renderiza — a Arena não
+  tem rede, é só o motor local.
+- **Multiplayer** (`multiplayer.moverGolpeMP`): **não pode ser só local** — o estado da batalha é autoritativo do
+  anfitrião (`sala.batalha`), e a escolha de golpe manda um ÍNDICE (`{tipo:'golpe', golpe: i}`); se cada cliente
+  reordenasse só a PRÓPRIA cópia, o índice enviado depois bateria num golpe ERRADO na cópia do anfitrião (que não
+  reordenou). Por isso `golpe-mover` é uma "ação livre" como Revive/item de raide (`registrarGolpeMover` em
+  `registrarAcao`, mesmo padrão de `registrarRevive`/`registrarRaide`): o ANFITRIÃO muta o Pokémon canônico e
+  reenvia o estado (`publicarEstado`), pra todo mundo ver a MESMA ordem antes de escolher. Guardado contra
+  `sala.resolvendo` como os outros dois.
+- Em Arena e Multiplayer, `.mv` (botão de atacar) não pode ficar DENTRO de outro `<button>` de reordenar (HTML
+  inválido) — cada golpe vira um wrapper `.mv-cel` com o botão de atacar e o `<span class="mv-ordem">` lado a lado.
 
 ### Vínculo de Batalha / Ash-Greninja (27/09/2026)
 Pedido do usuário ("dá pra adicionar o Ash-Greninja?"): checado antes de implementar que `greninja-ash` (id 10117)

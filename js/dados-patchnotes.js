@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.52', data: '2026-09-28', titulo: 'Reordenar golpes', piada: 'O Hyper Beam pediu pra ir mais pro fim da lista. Ninguém o culpa.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Agora dá pra reordenar os <b>golpes</b> na lista com os botões ▲▼ — não gasta turno, é só a posição. Funciona na ficha (dentro ou fora de batalha, na sua jornada) e também nas Raides, tanto na Arena quanto em sala de multiplayer.'
+      ] }
+    ] },
   { versao: '2.51', data: '2026-09-28', titulo: 'Modo beta da Raide: sem espera, e a Arena aponta pro grupo', piada: 'O Eternatus reclamou que agora não tem nem tempo de tomar um café entre uma surra e outra.',
     secoes: [
       { nome: 'Novidades', itens: [

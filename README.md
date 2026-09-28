@@ -149,6 +149,8 @@ Um Pokémon carrega **4 golpes**, e a cada nível você decide o que esquecer. D
 
 O jogo só mostra o que aquele Pokémon realmente pode aprender, e nunca repete um golpe que ele já sabe.
 
+Cada golpe da lista tem botões **▲▼** pra reordenar do jeito que preferir — não gasta turno nem muda o golpe em si, é só a posição na lista. Vale na ficha (fora e durante a batalha, na sua run) e nas Raides (Arena e sala de multiplayer).
+
 ### Evoluções
 Além de subir de nível, os Pokémon evoluem como nos jogos:
 - **Pedras e itens:** 10 pedras (Fogo, Água, Trovão, Folha, Lua, Sol, Brilhante, Crepúsculo, Aurora, Gelo) e itens como Maçã Doce, Bule Rachado e Armadura Auspiciosa. As pedras e o **Cabo de Conexão** são vendidos na loja; o resto aparece explorando (da 4ª rota em diante) e como prêmio de Alfa.

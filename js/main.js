@@ -20,17 +20,17 @@ import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
-import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaRaide, arenaDesistir, arenaFim } from './arena.js';
+import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
-import { freshVol, zonaLiberada, precoItem, precoVenda } from './regras.js';
+import { freshVol, zonaLiberada, precoItem, precoVenda, moverGolpe } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
@@ -95,6 +95,7 @@ document.addEventListener('click', async e => {
       return ok ? desistirMP() : undefined;
     }
     case 'mp-golpe': return escolherGolpeMP(+v);
+    case 'mp-golpe-mover': return moverGolpeMP(+v, +b.dataset.dir);
     case 'mp-gimmick': return alternarGimmickMP(v);   // liga/desliga Mega, Tera, Gigantamax ou Z pro golpe deste turno (co-op)
     case 'mp-fugir': return fugirMP();
     case 'mp-mirar': return mirarMP(v);
@@ -107,6 +108,7 @@ document.addEventListener('click', async e => {
     case 'arena-sel': return arenaSelecionar(v);
     case 'arena-iniciar': return arenaIniciar();
     case 'arena-golpe': return arenaGolpe(v);
+    case 'arena-golpe-mover': return arenaGolpeMover(+v, +b.dataset.dir);
     case 'arena-raide': return arenaRaide(v);
     case 'arena-desistir': return arenaDesistir();
     case 'arena-fim': return arenaFim();
@@ -258,6 +260,13 @@ document.addEventListener('click', async e => {
       if (G.busy || G.mode !== 'explore') return;
       const M = v === 'p' ? G.S.player : G.S.aliados?.[+v];
       await tirarItem(M); save(); return render();
+    }
+    // reordenar golpes (ficha): não gasta turno, dá pra usar em qualquer tela, inclusive em batalha
+    case 'golpe-mover': {
+      if (G.busy) return;
+      const M = b.dataset.quem === 'p' ? G.S.player : G.S.aliados?.[+b.dataset.quem]; if (!M) return;
+      M.moves = moverGolpe(M.moves, +v, +b.dataset.dir);
+      save(); return render();
     }
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });

@@ -18,7 +18,7 @@ import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, apli
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento } from './mp-motor.js';
 import { cartao } from './multiplayer.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
-import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe } from './regras.js';
+import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe } from './regras.js';
 import { loadPokemon, loadMove, apiErr } from './api.js';
 import { makeMon } from './pokemon.js';
 import { sincronizar, usuario } from './nuvem.js';
@@ -115,9 +115,12 @@ function htmlLuta() {
       <div class="subrow"><button class="btn big" data-act="arena-fim">Voltar à Arena</button></div>`;
   } else if (vez) {
     const semPP = vez.moves.every(g => g.ppLeft <= 0);
+    // reordenar (▲▼) não gasta turno — muda só a ordem em vez.moves, fora do <button> de atacar (não dá pra
+    // aninhar <button> dentro de <button>, então cada golpe vira um "mv-cel" com os dois lado a lado.
+    const mover = (i, dir) => `<button class="btn ghost sm" data-act="arena-golpe-mover" data-v="${i}" data-dir="${dir}" ${(dir < 0 ? i === 0 : i === vez.moves.length - 1) ? 'disabled' : ''} title="${dir < 0 ? 'Subir' : 'Descer'}">${dir < 0 ? '▲' : '▼'}</button>`;
     acoes = `<p class="muted small">Turno ${b.turno} · <b>Vez de ${esc(vez.nome)}</b></p>
       <div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="arena-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
-        : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="arena-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button>`; }).join('')}</div>
+        : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="arena-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${mover(i, -1)}${mover(i, 1)}</span></div>`; }).join('')}</div>
       ${botoesRaide(chefe)}
       <div class="subrow"><button class="btn ghost" data-act="arena-desistir">Desistir</button></div>`;
   } else acoes = `<p class="muted">Resolvendo o turno…</p>`;
@@ -151,6 +154,12 @@ export async function arenaIniciar() {
     arena.log.push({ html: esc(`☄ ${ev.nome} (Nv. ${estado.lados.B[0].level}) surge! Imune a status, sem fuga. Perder não custa nada.`), cls: 'enc' });
     renderArena();
   } catch (e) { console.error(e); telaArena(`Não consegui montar a luta: ${esc(e.offline ? e.message : apiErr(e))}`); }
+}
+export function arenaGolpeMover(i, dir) {
+  if (!arena || arena.fim || arena.ocupado) return;
+  const m = proximoSemEscolha(); if (!m) return;
+  m.moves = moverGolpe(m.moves, i, dir);
+  renderArena();
 }
 export async function arenaGolpe(i) {
   if (!arena || arena.fim || arena.ocupado) return;
