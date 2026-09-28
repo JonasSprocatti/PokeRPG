@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.54', data: '2026-09-28', titulo: 'Hall da Fama mais resistente a rede ruim', piada: 'Agora até fechar o jogo com raiva depois de um Game Over dá tempo de mandar tudo pra nuvem.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Uma jornada que termina (fim de Roguelike/Hardcore, vitória na Arena ou no chefe em grupo) agora tenta de novo sozinha se a sincronização com a nuvem falhar na hora — antes era uma tentativa só, e uma rede instável bem na tela de Game Over podia deixar o Pokémon de fora do Hall da Fama.'
+      ] }
+    ] },
   { versao: '2.53', data: '2026-09-28', titulo: 'Itens funcionam no multiplayer', piada: 'Os Restos finalmente descobriram que sala de multiplayer também tem HP pra curar.',
     secoes: [
       { nome: 'Novidades', itens: [

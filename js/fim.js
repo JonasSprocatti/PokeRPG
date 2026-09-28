@@ -10,7 +10,7 @@ import { DIFICULDADES, SPR, ITEMS } from './dados.js';
 import { estatisticasDaJornada, pontuacao, formatarTempo } from './regras.js';
 import { carregarCarreira, salvarCarreira, adicionarJornada, melhorDaEspecie, calcularCarreira, TOTAL_ESPECIES, atualizarProgresso, registrarNoHallDaConta } from './carreira.js';
 import { darItensDeRaide } from './evento.js';
-import { sincronizar, apagarSaveNuvem, usuario } from './nuvem.js';
+import { sincronizarComRetentativa, apagarSaveNuvem, usuario } from './nuvem.js';
 import { progressoRoguelike, novosDesbloqueios, textoProgresso } from './roguelike.js';
 import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
@@ -45,7 +45,9 @@ export function encerrarJornada(motivo, extra = {}) {
   salvarCarreira(nova);
   atualizarProgresso(nova.jornadas);   // grava a conquista em lugar próprio: apagar a jornada depois não desfaz
   store.del(SAVE_KEY); G.S = null; G.B = null;
-  if (usuario()) apagarSaveNuvem(resumo.id).then(sincronizar).catch(e => console.error(e)); // sobe a jornada e tira o save da nuvem
+  // sobe a jornada, tira o save da nuvem e confirma o progresso (Hall da Fama…) com retentativa: é a tela de
+  // Game Over, o jogador pode fechar o app logo em seguida, e uma rede instável não pode custar o Hall da Fama
+  if (usuario()) apagarSaveNuvem(resumo.id).then(() => sincronizarComRetentativa()).catch(e => console.error(e));
   // a próxima jornada já abre no mapa seguinte: fechar a Gen 2 propõe começar na 3 (criacao.renderGens lê G.gen)
   if (resumo.genVencida && resumo.genVencida < TOTAL_GENS) G.gen = resumo.genVencida + 1;
   const jornadas = nova.jornadas.filter(j => j.especie === resumo.especie).length;

@@ -145,9 +145,10 @@ export async function iniciarNuvem() {
   });
   if (sessao) { sincronizar(); ouvirConvites(); }
   enviarFilaRelatos().catch(e => console.warn('relatos', e));
-  // sair da aba / fechar: manda o save pendente na hora
-  addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') enviarSaveAgora(); });
-  addEventListener('pagehide', enviarSaveAgora);
+  // sair da aba / fechar: manda o save pendente na hora, e mais uma tentativa se o progresso (Hall da Fama…) ainda não confirmou
+  const aoSair = () => { enviarSaveAgora(); if (progressoPendente) sincronizar(); };
+  addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') aoSair(); });
+  addEventListener('pagehide', aoSair);
 }
 
 const voltarPraCa = () => location.origin + location.pathname;
@@ -179,6 +180,24 @@ const linhaJornada = j => ({ id: j.id, user_id: j.dono, especie: j.especie, difi
    perguntava DE NOVO a mesma jornada — e, com o estado velho na mão, ainda sobrescrevia a lista de guardadas que a
    primeira acabara de gravar. Chamada durante uma em andamento não roda em paralelo: pede UMA repetição no fim (que
    já enxerga o que acabou de mudar, como uma jornada que terminou agora). */
+/* Bug relatado (28/09/2026): jornada de Roguelike terminou (desmaiou, nível 66) e o Hall da Fama nunca chegou na
+   nuvem — a jornada em si subiu (é outro caminho), só o progresso permanente (que leva o Hall) ficou pra trás.
+   Causa provável: `sincronizar()` engole o próprio erro (vira `nuvem.status`/`nuvem.erro`, nunca uma exceção) e
+   quem chama depois de `encerrarJornada` era um fire-and-forget de UMA tentativa só — uma rede instável bem na
+   hora da tela de Game Over (o jogador fecha o app logo depois de perder) não tinha segunda chance nenhuma.
+   `sincronizarComRetentativa` tenta de novo (mesmo espaçamento de `api.getJSON`: 400ms, 800ms) e `progressoPendente`
+   segue o MESMO padrão do `pendente` do save: se ainda não confirmou, esconder/fechar a aba tenta mais uma vez. */
+let progressoPendente = false;
+export async function sincronizarComRetentativa(tentativas = 3, esperaMs = 400) {
+  progressoPendente = true;
+  for (let i = 1; i <= tentativas; i++) {
+    await sincronizar();
+    if (nuvem.status !== 'erro') { progressoPendente = false; return true; }
+    if (i < tentativas) await new Promise(r => setTimeout(r, esperaMs * i));
+  }
+  return false;   // fica progressoPendente = true: visibilitychange/pagehide tentam de novo ao sair
+}
+
 let sincronizando = null, sincronizarDeNovo = false;
 export function sincronizar() {
   if (sincronizando) { sincronizarDeNovo = true; return sincronizando; }

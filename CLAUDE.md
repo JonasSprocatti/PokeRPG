@@ -587,6 +587,43 @@ Cliente manda a ação como QUALQUER escolha de turno (`escolher()`, não `regis
 caminho próprio ou não fazem sentido em batalha). UI: `botoesItemComum()`, um `<details>` recolhível (pode ter
 bem mais que os 3 itens de raide) ao lado dos botões de raide.
 
+### ✅ CORRIGIDO (28/09/2026) — jornada terminada sem entrar no Hall da Fama
+Relato real: jogador ("Berga") fez uma run Roguelike de Mudkip até nível 66, desmaiou, e o Pokémon não apareceu
+no Hall da Fama (Arena do Chefe). Hipótese inicial do usuário (uma jornada de Swampert no modo Difícil "roubando"
+o lugar por ter nível maior) **descartada por auditoria de código**: cada entrada do Hall usa o ID da JORNADA
+como chave (nunca colide entre jornadas diferentes), e `hall.entraNoHall` só aceita dificuldade com
+`eventoSemanal: true` — só Roguelike e Hardcore; "Difícil" (`hard`) nunca entra, não importa o nível.
+**Confirmado direto no banco** (service role key, mesmo padrão de `ferramentas/relatos-admin.mjs`): a jornada de
+Mudkip está certinha na carreira (tabela `jornadas`, dificuldade roguelike, nível 66), mas ausente do
+`progresso.dados.hall` daquela conta — 10 entradas no Hall, nenhuma dela. Auditando `hall.js`/`progresso-conta.js`/
+`carreira.js`/`nuvem.js` por inteiro: a lógica de registro, poda (`podarHall`) e fusão local↔nuvem
+(`mesclarProgresso`, união por chave, nunca remove) está correta — não achei bug reproduzível nelas.
+
+**Causa mais provável**: `registrarNoHallDaConta` grava no `localStorage` NA HORA (síncrono, sempre funciona),
+mas o envio pra nuvem depois (`encerrarJornada` → `sincronizar()`) era um fire-and-forget de UMA tentativa só,
+e `sincronizar()` **engole a própria falha** (vira `nuvem.status`/`nuvem.erro`, nunca lança uma exceção) — uma
+rede instável bem na tela de Game Over (comum: o jogador fecha o app logo depois de perder no Roguelike) não
+tinha segunda chance. Esse é o mesmo tipo de janela que motivou o `pendente`/retentativa que o SAVE já tinha;
+o Hall/progresso não tinha o equivalente.
+
+**Corrigido pra frente**: `nuvem.sincronizarComRetentativa(tentativas=3)` tenta de novo (400ms, 800ms — mesmo
+espaçamento de `api.getJSON`) e liga `progressoPendente` (mesmo padrão do `pendente` do save) até confirmar;
+`visibilitychange`/`pagehide` agora tentam mais uma vez se ainda estiver pendente ao esconder/fechar a aba —
+exatamente como já acontecia com o save. Trocado em TODO lugar que sincroniza depois de um momento que grava
+progresso permanente: fim de jornada (`fim.encerrarJornada`), vitória na Arena (`arena.finalizar`) e vitória do
+chefe em co-op (`multiplayer`, `aplicarCoop`'s finalizar de evento). **Limite honesto**: se o fechamento do
+app for tão rápido que nem a PRIMEIRA tentativa termina, ou se o armazenamento local for perdido (cache limpo,
+app reinstalado, trocou de aparelho) antes de qualquer sincronização bem-sucedida, não tem como recuperar — o
+dado local é a única fonte, a nuvem é cópia.
+
+**Correção retroativa pra este caso específico**: a jornada dele tinha ido pra carreira mas não guarda IVs/EVs/
+moveset exatos (isso só existe na run em andamento, já apagada) — reconstruí a entrada do Hall usando o
+CÓDIGO real do jogo (`hall.entradaDoHall`/`registrarNoHall`, não JSON escrito à mão) com os dados reais que
+sobreviveram (espécie final Swampert, nível 66, apelido "Poteto", Roguelike, data) e um "melhor esforço" honesto
+pro que se perdeu: moveset = os 4 golpes com mais abates no registro real da run (`registro.abates.golpe`, dado
+de verdade daquela run), IVs neutros (15) e natureza neutra (hardy) por não fingir precisão que não existe.
+Gravado direto na tabela `progresso` da conta dele — na próxima sincronização o Hall aparece no aparelho dele.
+
 ### Reordenar golpes (28/09/2026)
 Pedido do usuário: mudar a ordem dos golpes na lista, sem gastar turno, tanto na run quanto na Raide.
 `regras.moverGolpe(moves, i, dir)` é a única regra (pura, testada): troca a posição `i` com a vizinha `i+dir`,

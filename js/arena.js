@@ -21,7 +21,7 @@ import { htmlComoFuncionam } from './ajuda-chefes.js';
 import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe } from './regras.js';
 import { loadPokemon, loadMove, apiErr } from './api.js';
 import { makeMon } from './pokemon.js';
-import { sincronizar, usuario } from './nuvem.js';
+import { sincronizarComRetentativa, usuario } from './nuvem.js';
 import { esc, fmt } from './util.js';
 
 const MAX_TIME = 3;
@@ -213,7 +213,7 @@ async function finalizar(fim) {
     registrar(`🌌 Insígnia ${ev.badge.nome} conquistada — título “${ev.badge.titulo}”. Escolha qual mostrar ao lado do nome na tela 👤 Conta.`, 'level');
     registrar(`🔓 ${fmt(ev.especie)} está liberado na Pokédex e pra começar novas jornadas!`, 'level');
   }
-  if (usuario()) sincronizar().catch(e => console.warn('sincronizar (arena)', e));
+  if (usuario()) sincronizarComRetentativa().catch(e => console.warn('sincronizar (arena)', e));
 }
 // sair da tela no meio da luta (menu, voltar): a luta acaba — a tentativa já foi gasta ao começar
 export const arenaAtiva = () => !!arena && !arena.fim;

@@ -24,7 +24,7 @@ import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta } from '.
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
 import { megasDisponiveis } from './mega.js';
 import { desbloqueadas } from './roguelike.js';
-import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizar } from './nuvem.js';
+import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizarComRetentativa } from './nuvem.js';
 import { htmlIcone, htmlInsigniaDe } from './conta.js';
 import { loadPokemon, loadMove } from './api.js';
 import { makeMon } from './pokemon.js';
@@ -707,7 +707,7 @@ async function premiarEventoMP(id) {
     await say(`🌌 Insígnia <b>${esc(ev.badge.nome)}</b> conquistada — título “${esc(ev.badge.titulo)}”. Escolha qual mostrar ao lado do nome na tela 👤 Conta.`, 'level');
     await say(`🔓 <b>${esc(fmt(ev.especie))}</b> está liberado na Pokédex e pra começar novas jornadas!`, 'level');
   }
-  if (usuario()) sincronizar().catch(e => console.warn('sincronizar (evento)', e));
+  if (usuario()) sincronizarComRetentativa().catch(e => console.warn('sincronizar (evento)', e));
 }
 
 /* ---------- tela ---------- */
