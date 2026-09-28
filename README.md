@@ -18,6 +18,9 @@ Feito em JavaScript puro (ES modules), sem build e sem dependências. Funciona o
 3. **Escolha seu Pokémon** entre os iniciais das 9 regiões (Kanto a Paldea), Pikachu e Eevee, **mais todas as espécies que você já desbloqueou**. O desbloqueio só é conquistado jogando Roguelike, mas a espécie desbloqueada vale em qualquer modo.
 4. Explore. O jogo salva sozinho.
 
+### ❓ Tutorial (tour guiado)
+Na primeiríssima vez que o jogo abre neste aparelho (sem nenhum save ainda), ele mostra um tour rápido antes da criação: explica que você é o Pokémon (não um treinador), e faz você **abrir a loja e comprar um item**, **lutar** contra um Pokémon selvagem de demonstração, ver o que acontece quando um **treinador tenta te capturar** (e como isso muda por dificuldade) e termina com um resumo do que é uma **Run**. É pulável a qualquer momento e não mexe em nenhum save de verdade — o Pokémon e o dinheiro do tour são só de mentirinha. Dá para rever quando quiser no botão **❓ Tutorial**, disponível em qualquer tela (menu ☰ no celular).
+
 ### Roguelike (modo principal)
 Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloqueia novas espécies para as próximas runs**. Os contadores somam todas as suas jornadas Roguelike:
 - derrotar **10** de uma espécie, **ou**

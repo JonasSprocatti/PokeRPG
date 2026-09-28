@@ -17,6 +17,7 @@ export const TELAS = [
   { id: 'arena', act: 'arena', rotulo: '🏟 Arena', dica: 'Enfrente o chefe da semana com os Pokémon do seu Hall da Fama' },
   { id: 'conta', act: 'conta', rotulo: '👤 Conta', dica: 'Login, ícone e amigos' },
   { id: 'patch', act: 'patch', rotulo: '📜 Novidades', dica: 'O que mudou no jogo' },
+  { id: 'tutorial', act: 'tutorial', rotulo: '❓ Tutorial', dica: 'Tour guiado: loja, batalha, captura e as Runs' },
   { id: 'ajustes', act: 'ajustes', rotulo: '⚙ Ajustes', dica: 'Fonte do jogo' },
   { id: 'relatos', act: 'relatos', rotulo: '🐞 Bugs', dica: 'Bugs e sugestões' },
   { id: 'privacidade', act: 'privacidade', rotulo: '🔒 Privacidade', dica: 'O que o jogo guarda sobre você' }

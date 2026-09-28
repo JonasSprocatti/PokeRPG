@@ -234,6 +234,17 @@ table.ranking td.jogador{white-space:nowrap}
 .loading{font:500 16px var(--display);color:var(--muted)}
 .err{color:#ff9b82}
 
+/* ===== tutorial (js/tela-tutorial.js): tour guiado + demonstração ===== */
+.tut-passos{display:flex;gap:6px;margin-bottom:18px}
+.tut-ponto{width:10px;height:10px;border-radius:50%;background:var(--panel2);border:2px solid var(--line)}
+.tut-ponto.on{background:var(--yellow);border-color:var(--yellow)}
+.tut-ponto.feito{background:var(--grass);border-color:var(--grass)}
+.tut-mon{display:flex;align-items:center;gap:12px;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:16px;max-width:420px}
+.tut-mon img{width:56px;height:56px;image-rendering:pixelated;flex:none}
+.tut-mon .hp{margin-top:4px}
+.tut-duelo{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px}
+.tut-nav{margin-top:22px}
+
 .pv{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:28px;margin-top:28px;background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:24px}
 @media(max-width:760px){.pv{grid-template-columns:1fr}}
 .pv-art{background:var(--panel2);border-radius:14px;display:grid;place-items:center;padding:10px;align-self:start}

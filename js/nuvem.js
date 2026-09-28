@@ -50,6 +50,20 @@ export async function salvarBadgeExibida(id) {
   const { error } = await c.from('perfis').update({ badge_exibida: nuvem.badgeExibida }).eq('id', u.id);
   if (error) console.warn('badge_exibida: rode a migração do banco pra os outros verem', error.message);
 }
+
+/* ---- modo tutorial (js/tutorial.js, js/tela-tutorial.js): "já visto" ---- */
+// Mesmo padrão de salvarBadgeExibida: fica neste navegador na hora (funciona sem conta e antes de qualquer
+// sincronização) e sobe pro perfil com conta (`perfis.tutorial_visto`, supabase/migrations/20260928130000_tutorial_visto.sql).
+// Sem a coluna, o jogo segue só com o valor local — nunca trava o tutorial por causa disso.
+export const TUTORIAL_KEY = 'pokerpg-tutorial-visto';
+export const tutorialVistoLocal = () => !!store.get(TUTORIAL_KEY);
+export async function salvarTutorialVisto() {
+  if (tutorialVistoLocal()) return; // idempotente: nada a fazer (e nada a subir de novo) se já estava marcado
+  store.set(TUTORIAL_KEY, true);
+  const c = await sb(), u = usuario(); if (!c || !u) return;
+  const { error } = await c.from('perfis').update({ tutorial_visto: true }).eq('id', u.id);
+  if (error) console.warn('tutorial_visto: rode a migração do banco pra sincronizar entre aparelhos', error.message);
+}
 // conta de manutenção: libera o painel de testes em ⚙ Ajustes (dev.js). Sai de `perfis.admin`, nunca do navegador.
 export const ehAdmin = () => !!nuvem.admin && !!usuario();
 
@@ -248,6 +262,12 @@ async function sincronizarAgora() {
       const { data: be, error: eb } = await c.from('perfis').select('badge_exibida').eq('id', u.id).maybeSingle();
       if (!eb && be?.badge_exibida) { nuvem.badgeExibida = be.badge_exibida; store.set(BADGE_EXIBIDA_KEY, be.badge_exibida); }
     } catch (e) { console.warn('badge_exibida', e); }
+    // "já viu o tutorial" (outra coluna à parte, mesmo motivo): true na conta marca aqui também; false não apaga
+    // um "true" que só existe neste navegador (visto localmente antes de logar não pode "desver" ao entrar)
+    try {
+      const { data: tv, error: etv } = await c.from('perfis').select('tutorial_visto').eq('id', u.id).maybeSingle();
+      if (!etv && tv?.tutorial_visto) store.set(TUTORIAL_KEY, true);
+    } catch (e) { console.warn('tutorial_visto', e); }
     await carregarAmigos().catch(e => console.warn('amigos', e)); // sem a tabela ainda: segue sem amigos
 
     // carreira: sobe o que só existe aqui, baixa o que só existe lá

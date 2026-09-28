@@ -9,12 +9,13 @@ import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
 import { telaSaves } from './tela-saves.js';
 import { telaAjustes, baixarMapaOffline, baixarImagensOffline, baixarImagens3DOffline, baixarImagensAnimadasOffline, acaoDev } from './tela-ajustes.js';
+import { telaTutorial, tutAvancar, tutVoltar, tutExplorar, tutGolpe, tutComprar, tutRevelarCaptura, tutSair } from './tela-tutorial.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
 import { telaPrivacidade } from './tela-privacidade.js';
 import { aplicarFonte, definirEstiloSprite } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
-  nuvem, salvarIcone, salvarBadgeExibida, pedirAmizade, aceitarAmizade, removerAmizade } from './nuvem.js';
+  nuvem, salvarIcone, salvarBadgeExibida, pedirAmizade, aceitarAmizade, removerAmizade, tutorialVistoLocal } from './nuvem.js';
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
@@ -43,7 +44,7 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
@@ -52,6 +53,15 @@ document.addEventListener('click', async e => {
     // navegação (navegacao.js): início e ajustes
     case 'inicio': if (G.busy || G.mode === 'battle') return; G.PV = null; return showCreate();
     case 'ajustes': if (G.busy || G.mode === 'battle') return; return telaAjustes();
+    // ❓ Tutorial: tour guiado + demonstração (tela-tutorial.js). Sempre pode abrir de novo pra rever.
+    case 'tutorial': if (G.busy || G.mode === 'battle') return; return telaTutorial();
+    case 'tut-avancar': return tutAvancar();
+    case 'tut-voltar': return tutVoltar();
+    case 'tut-explorar': return tutExplorar();
+    case 'tut-golpe': return tutGolpe();
+    case 'tut-comprar': return tutComprar(v);
+    case 'tut-revelar-captura': return tutRevelarCaptura();
+    case 'tut-pular': case 'tut-fim': return tutSair();
     case 'patch': if (G.busy || G.mode === 'battle') return; return telaPatchNotes();
     case 'fonte': aplicarFonte(v); return telaAjustes();
     case 'ads-consentimento': definirConsentimento(v); return telaAjustes();
@@ -432,6 +442,10 @@ iniciarMenu();    // ☰ do topo no celular
 iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
   const s = store.get(SAVE_KEY);
   if (saveValido(s)) abrirJornada(s, 'Jogo carregado deste navegador.');
+  // primeira visita neste navegador (sem save nenhum, ainda não viu o tour): abre o tutorial em vez da criação.
+  // Quem já jogou antes (tem save, mesmo que a jornada tenha terminado) não vê isso sem pedir — só pelo botão
+  // ❓ Tutorial, sempre disponível no menu (navegacao.TELAS).
+  else if (!tutorialVistoLocal()) telaTutorial();
   else showCreate();
 });
 iniciarAds(); // sem conta configurada (config.js), não faz nada; com conta, só carrega o script depois do consentimento

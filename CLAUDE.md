@@ -28,6 +28,7 @@ Duas máquinas de dev, ambientes diferentes:
 | `js/util.js` | `rand`/`pick`/`clamp`/`sleep`/`fmt`/`esc`/`lastSeg`/`store`. Sem DOM. |
 | `js/dados.js` | Tabelas fixas: tipos (`CHART`, `TYPE_PT`, `TC`), `NATURES`, `ITEMS`, `ZONES` (= rotas de `dados-mapas.js`), `FLAVOR`, `MISSOES`, `DIFICULDADES`… Sem DOM. `ITEM_SPR(n)` monta a URL do sprite do item; vários itens de Gen 8/9 (Coroa Galárica, Armadura Auspiciosa, Pote Rachado…) **não existem** no repositório de sprites da PokéAPI, então toda `<img>` de item usa `onerror="${ITEM_ERRO}"` e cai no `ITEM_SPR_RESERVA` (SVG embutido de caixinha). Antes a figura quebrada era só escondida e ficava um buraco — parecia bug de tela. |
 | **Rede instável** | `api.getJSON` tenta 3× com pausa (400ms, 800ms) em falha de REDE e em 429; 404/500 não repetem. `apiErr(e)` escreve pro JOGADOR: `file://` → instrução de servidor; `navigator.onLine === false` → sem internet; 429 → "pediu calma"; com `code` → erro do servidor; sem `code` → conexão instável. Todas as mensagens de falta de dado apontam pra **⚙ Ajustes → Jogar offline** (offline.js). Relato real que motivou isso: celular em 5G oscilando mostrava "Failed to fetch" e a antiga mensagem falava de abrir o jogo dentro de um chat. |
+| `js/tutorial.js` / `js/tela-tutorial.js` | **❓ Tutorial** (tour guiado + demonstração, ver "Próximos passos combinados" pra decisão completa). `tutorial.js` puro (`tests/tutorial.test.js`): passos (`TUT_PASSOS`), dados de mentirinha (Pichu/Caterpie/Treinador Theo) e a lógica de golpe/compra/captura — `resultadoCaptura`/o resumo de Runs leem `dados.DIFICULDADES` direto, nunca duplicam o texto. `tela-tutorial.js` desenha em `G.tut` (nunca `G.S`); `telaTutorial()` chama `nuvem.salvarTutorialVisto()` (idempotente) assim que abre. Aberto sozinho no `boot()` de main.js só na primeiríssima visita (sem save); sempre disponível de novo em `navegacao.TELAS` (`❓ Tutorial`). |
 | `js/navegacao.js` / `js/ajustes.js` / `js/tela-ajustes.js` | **Navegação e ajustes.** `TELAS` é a ÚNICA lista de telas: `barraTelas(atual)` usa nas telas e `render()` usa no `#topr` (o menu ☰ do celular) — tela nova entra lá e aparece nos dois. `barraTelas(atual)` monta a MESMA barra no topo de toda tela fora do jogo (criação, carreira, saves, ranking, mp, conta, ajustes, relatos): `← Voltar` (`rotuloVoltar()`: pro jogo se há `G.S`, senão pro início) + atalhos pras outras (`TELAS`). Tela nova = incluir `barraTelas('id')` e pôr a entrada em `TELAS`. `Esc` clica no botão de voltar (main.js keydown, fora de explore/battle/create e sem modal aberto). `🏠 Início` com jornada aberta não perde nada: `iniciarJornada` guarda a atual (saves.js) antes de trocar. Fonte: `ajustes.js` (`FONTES`, `aplicarFonte` troca as variáveis CSS `--display`/`--body` e injeta o link do Google Fonts; escolha em `pokerpg-fonte`), aplicada no boot de main.js; tela em `tela-ajustes.js` com cada opção escrita na própria fonte. `tests/ajustes.test.js`. |
 | `js/offline.js` | **Baixar um mapa pra jogar offline.** `alvosDaGen(gen)` = todo id do mapa (pool + Alfas + lendários; puro, `tests/offline.test.js`), `quantoFalta`/`jaBaixado` usam `api.pokemonEmCache`, `baixarGen(gen, aoAndar, sinal)` busca em lotes de 6: `loadPokemon` (cai no localStorage), os golpes do learnset até o nível 60 (`loadMove`, deduplicados num Set) e os sprites — pra sprite basta um `fetch(..., {mode:'no-cors'})`, que o service worker guarda no cache EXTERNOS. UI em `tela-ajustes.js` (`htmlOffline`/`baixarMapaOffline`, clique `baixar-gen`). `baixarTudo`/`quantoFaltaTudo`/`totalDoJogo` fazem o mesmo pros 9 mapas de uma vez (botão "⬇⬇ Baixar o jogo inteiro"), o que só passou a ser possível com o cache no IndexedDB (ver `js/api.js`): no localStorage isso estourava a cota e falhava calado. |
 | **Clima** | `regras.CLIMAS` (sol/chuva/areia/granizo/neve) + `CLIMA_TURNOS` (5). Estado no **campo da batalha**, compartilhado pelos dois lados: single player `G.B.campo` (exposto como `CTX.campo`, getter em efeitos.js), multiplayer `estado.campo` (mp-motor). `climaDe(campo)` só devolve o clima com `turnos > 0`. Entra em: `calcDamage(u,t,move,clima)` (`multClima`), `effStat(m,stat,crit,atacando,clima)` (`multStatClima`: habilidade + `CLIMAS.defesaDe` por tipo), `chanceAcerto(move,u,t,clima)` (`PRECISAO_CLIMA` + `escondeNoClima`), `golpe.fimDeTurno` (dano de areia/granizo por `danoClima`, `curaClima`, `danoClimaProprio`, `curaStatusClima`) e `aplicarStatus` (`semStatusClima` = Leaf Guard). `mudarClima(clima, ctx, quem)` liga (golpe com `especiais.clima` ou habilidade `climaAoEntrar` em `intimidar`/1º turno do MP) e `passarClima(campo, ctx)` gasta um turno no fim da rodada (batalha.js e mp-motor). **Ao mexer em velocidade, lembrar do clima**: a ordem do turno usa `effStat(..., clima)` nos dois motores. `tests/clima.test.js`. |
@@ -197,11 +198,30 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
   Ainda sem desenho: pelo menos precisa decidir se entra som ligado por padrão (com ajuste de volume/mudo em
   ⚙ Ajustes, mesmo espírito do `presencaLigada`/`REDUCED`) e quais eventos tocam cry (encontro selvagem? seu
   Pokémon entrando em campo? os dois?).
-- **Pedido pelo usuário (27/09/2026), pra depois — modo tutorial**: passo a passo tipo "onboarding" que aparece
-  quando uma funcionalidade nova é desbloqueada/usada pela primeira vez (padrão de app: destaca o elemento na
-  tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
-  principais? Mega/Tera/Z/Gigantamax quando desbloqueiam? a primeira batalha?), se é pulável, se guarda "já viu"
-  por conta (Supabase) ou só neste navegador (localStorage, como a fonte), e o texto de cada passo.
+- ✅ FEITO (28/09/2026) — **Modo tutorial**: pedido em 27/09/2026 como "onboarding por funcionalidade" (destacar
+  elemento novo na hora em que desbloqueia); quando o usuário voltou a pedir em 28/09/2026 mudou de forma —
+  virou um **tour guiado único** combinando explicação com uma **demonstração jogável** (abrir a loja, comprar
+  item, lutar, correr risco de ser capturado por um treinador) e um resumo curto das Runs, em vez de vários
+  tutoriais pontuais por funcionalidade. Perguntado ao usuário (`AskUserQuestion`) e fechado: abre sozinho **só
+  na primeiríssima vez** que o jogo é aberto neste aparelho (sem save nenhum ainda — decidido no `boot()` de
+  main.js, antes de `showCreate()`) + fica sempre disponível pra rever num botão `❓ Tutorial` (entrou em
+  `navegacao.TELAS`, então aparece de graça na barra de qualquer tela fora do jogo E no menu ☰ dentro do jogo,
+  igual qualquer outra tela da lista); é uma **demonstração à parte, com um Pokémon de mentirinha** (um Pichu
+  fixo, sprite por id — `dados.SPR`, sem precisar da PokéAPI, porque o tour precisa abrir mesmo na primeiríssima
+  visita, antes de qualquer cache) — nunca toca `G.S` nem o save de verdade, todo o estado vive em `G.tut`;
+  "já visto" **sincroniza com a conta** (`perfis.tutorial_visto`, `supabase/migrations/20260928130000_tutorial_visto.sql`,
+  mesmo padrão de `badge_exibida`), com o navegador como reserva sem conta (`nuvem.tutorialVistoLocal`/
+  `salvarTutorialVisto`, idempotente — nunca reenvia depois do primeiro "visto"). **É pulável em qualquer
+  passo** (botão "Pular tutorial", filosofia de não travar — mesmo espírito do banner de cookies do `ads.js`) e
+  **"Continuar" nunca fica bloqueado**: mesmo os passos interativos (batalha, loja, captura) deixam avançar sem
+  ter batido/comprado/revelado nada — forçar uma ação específica pra sair de uma tela é exatamente o tipo de
+  trava que o resto do jogo evita. `js/tutorial.js` (puro, sem DOM, `tests/tutorial.test.js`) guarda os dados de
+  mentirinha (Pichu Nv. 8, Caterpie selvagem, Treinador Theo) e a lógica de passo/golpe/compra; **o texto de cada
+  passo lê dado real em vez de duplicar**: o resumo de Runs e a tabela "o que acontece se eu for capturado" vêm
+  direto de `dados.DIFICULDADES` (`d.desc`, `d.semCaptura`, `d.fimDeJogo`) — mudou a regra ali, o tutorial muda
+  sozinho, sem re-escrever texto solto. `js/tela-tutorial.js` desenha (reaproveita classes existentes: `.hp`/
+  `.bar`/`.fill` pra HP, `.item-btn`/`spriteItem` pra loja, `.difs`/`.abil` pra os cards de dificuldade — quase
+  nenhum CSS novo precisou).
 - **Pedido pelo usuário (28/09/2026), pra depois:**
   1. ✅ FEITO — **Layout pro celular em modo paisagem (horizontal)**: ver "Celular DEITADO" na tabela de arquivos
      acima (a cena vira coluna lateral, não fica mais presa no topo).
