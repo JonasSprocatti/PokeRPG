@@ -172,6 +172,9 @@ export function reviverCompanheiro(estado, ref, dono, pct = 50) {
   const usados = estado.revivesUsados?.[dono] || 0; if (usados >= MAX_REVIVES) return null;
   m.hp = Math.max(1, Math.floor(m.stats.hp * pct / 100)); m.status = null; m.sleep = 0; m.caido = false; m.vol = freshVol();
   (estado.revivesUsados ||= {})[dono] = usados + 1;
+  // Sala de Raide (multiplayer.js consumirRevives): Revive x Max Revive descontam itens DIFERENTES do
+  // inventário de conta — `revivesUsados` é só um contador, então a lista de tipos vai à parte, na MESMA ordem.
+  ((estado.revivesTipos ||= {})[dono] ||= []).push(pct === 100 ? 'max-revive' : 'revive');
   return m;
 }
 

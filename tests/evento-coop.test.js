@@ -102,6 +102,18 @@ test('reviverCompanheiro: reanima mesmo com outro Pokémon do dono ainda de pé 
   const m = reviverCompanheiro(e, 'A0', 'j0');
   assert.ok(m); assert.equal(m.hp, 500); assert.equal(m.caido, false);
   assert.equal(e.revivesUsados.j0, 1);
+  assert.deepEqual(e.revivesTipos.j0, ['revive'], 'Sala de Raide (multiplayer.consumirRevives) precisa saber QUAL item descontar da conta');
+});
+
+// Sala de Raide (multiplayer.js): Revive e Max Revive descontam itens DIFERENTES do inventário de conta, e
+// `revivesUsados` é só um contador — `revivesTipos` é a lista na mesma ordem que guarda qual foi usado em cada uso.
+test('reviverCompanheiro: revivesTipos registra cada uso, na ordem, por dono', () => {
+  const e = timeSolo([forte(), forte(), forte()]);
+  monMP(e, 'A0').hp = 0;
+  reviverCompanheiro(e, 'A0', 'j0', 100);
+  monMP(e, 'A0').hp = 0;
+  reviverCompanheiro(e, 'A0', 'j0', 50);
+  assert.deepEqual(e.revivesTipos.j0, ['max-revive', 'revive']);
 });
 
 test('reviverCompanheiro: aceita a fração de HP (100 = Max Revive), recusa dono errado/vivo/limite/fora do evento', () => {

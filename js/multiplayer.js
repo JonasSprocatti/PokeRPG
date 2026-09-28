@@ -15,12 +15,12 @@ import { $, limparTopo, logRaw, say, toast, ask } from './ui.js';
 import { spriteFrente } from './render.js';
 import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR, ITEM_CRISTAL_Z } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
-import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH, darItensDeRaide } from './evento.js';
+import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH, darItensDeRaide, inventarioRaide, gastarItemDeRaide } from './evento.js';
 import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comprarSeguradoConta, reidratarHall } from './loja-conta.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe, itemTemEfeito } from './regras.js';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, reviverCompanheiro, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta, hallDaConta, saldoArenaDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
 import { megasDisponiveis } from './mega.js';
@@ -419,10 +419,12 @@ const primeiroInimigo = (b, m) => b.lados[ladoDe(b, m.ref) === 'A' ? 'B' : 'A'].
 // Revive no meio da luta do chefe (o anfitrião valida e aplica NA HORA: o Pokémon volta e já escolhe neste turno)
 function registrarRevive(de, acao) {
   const b = sala?.batalha; if (!b || sala.resolvendo) { anotar('← revive ignorado (luta resolvendo ou fora dela)', true); return; }
-  const m = reviverNoEvento(b, acao.ref, de);
+  // Sala de Raide: reviverCompanheiro NÃO exige o time inteiro caído (dá pra reviver enquanto ainda luta), e
+  // aceita Max Revive (pct=100, `acao.pct` mandado pelo cliente). Fora dela, continua a regra de sempre.
+  const m = sala.config.modo === 'raide' ? reviverCompanheiro(b, acao.ref, de, acao.pct || 50) : reviverNoEvento(b, acao.ref, de);
   if (!m) { anotar(`← revive recusado (${acao.ref})`, true); return; }
   anotar(`← revive de ${m.nome}`);
-  publicarEstado([{ txt: `💊 ${m.nome} foi revivido com um Revive e volta pra luta com metade do HP!`, cls: 'good' }], false);
+  publicarEstado([{ txt: `💊 ${m.nome} foi revivido com um ${acao.pct === 100 ? 'Max Revive (HP cheio)' : 'Revive (metade do HP)'} e volta pra luta!`, cls: 'good' }], false);
 }
 // Item de raide (Cristal de Ruptura, Selo de Interrupção, Escudo Astral): ação livre, aplicada NA HORA pelo anfitrião
 function registrarRaide(de, acao) {
@@ -527,65 +529,105 @@ function aoReceberEstado(p) {
 // o anfitrião conta os Revives e os itens de raide de cada jogador (`b.revivesUsados`, `b.raideUsados`); o que passou do que eu já
 // descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros)
 function consumirRevives(b) {
-  if (!b?.evento || !temRun() || sala?.convidado || raideSemRun()) return;
-  const S = G.S, eu = meuId(); let mexeu = false;
-  const gastar = (id, n) => { S.bag[id] = Math.max(0, (S.bag[id] || 0) - n); if (!S.bag[id]) delete S.bag[id]; mexeu = true; };
+  if (!b?.evento || sala?.convidado || (!raideSemRun() && !temRun())) return;
+  const eu = meuId(); let mexeu = false;
+  // Sala de Raide desconta do INVENTÁRIO DE CONTA (evento.gastarItemDeRaide); fora dela, da mochila da run.
+  const gastar = (id, n) => { for (let i = 0; i < n; i++) if (raideSemRun() ? gastarItemDeRaide(id) : gastarDaRun(id)) mexeu = true; };
+  const gastarDaRun = id => { const t = G.S.bag[id] > 0; if (t) { G.S.bag[id]--; if (!G.S.bag[id]) delete G.S.bag[id]; } return t; };
   const usados = b.revivesUsados?.[eu] || 0, ja = sala.revivesConsumidos || 0;
-  if (usados > ja) { gastar('revive', usados - ja); sala.revivesConsumidos = usados; }
+  if (usados > ja) {
+    // Revive x Max Revive descontam itens diferentes: `revivesTipos[dono]` é a lista na MESMA ordem que os usos
+    // foram contados (mp-motor.reviverCompanheiro) — só existe na Sala de Raide, onde há os dois tipos.
+    if (raideSemRun()) for (const tipo of (b.revivesTipos?.[eu] || []).slice(ja, usados)) gastar(tipo, 1);
+    else gastar('revive', usados - ja);
+    sala.revivesConsumidos = usados;
+  }
   const feitos = (sala.raideConsumidos ||= {});
   for (const [tipo, n] of Object.entries(b.raideUsados?.[eu] || {})) if (n > (feitos[tipo] || 0)) { gastar(ITEM_DO_RAIDE[tipo], n - (feitos[tipo] || 0)); feitos[tipo] = n; }
-  if (mexeu) save();
+  if (mexeu && !raideSemRun()) save();
 }
 // Item comum (Potion, X Attack...) usado durante a luta: ao contrário de Revive/raide, vale em QUALQUER luta de
-// sala (explorar junto, Alfa, chefe da semana) — só quem tem run desconta, convidado não tem mochila nenhuma.
-// `itensUsados[dono]` é uma LISTA que só cresce (cada uso vira um item novo no array); `itensComunsConsumidos`
-// lembra até onde eu já descontei, pra não gastar de novo a cada estado que chega.
+// sala (explorar junto, Alfa, chefe da semana) — desconta da mochila certa (`minhaMochila`), convidado não tem
+// mochila nenhuma. `itensUsados[dono]` é uma LISTA que só cresce (cada uso vira um item novo no array);
+// `itensComunsConsumidos` lembra até onde eu já descontei, pra não gastar de novo a cada estado que chega.
 function consumirItensComuns(b) {
-  if (!b || !temRun() || sala?.convidado || raideSemRun()) return;
-  const S = G.S, eu = meuId(), usados = b.itensUsados?.[eu] || [], ja = sala.itensComunsConsumidos || 0;
+  if (!b || sala?.convidado || (!raideSemRun() && !temRun())) return;
+  const eu = meuId(), usados = b.itensUsados?.[eu] || [], ja = sala.itensComunsConsumidos || 0;
   if (usados.length <= ja) return;
-  for (const id of usados.slice(ja)) { S.bag[id] = Math.max(0, (S.bag[id] || 0) - 1); if (!S.bag[id]) delete S.bag[id]; }
+  for (const id of usados.slice(ja)) {
+    if (raideSemRun()) gastarItemDeRaide(id);
+    else { G.S.bag[id] = Math.max(0, (G.S.bag[id] || 0) - 1); if (!G.S.bag[id]) delete G.S.bag[id]; }
+  }
   sala.itensComunsConsumidos = usados.length;
-  save();
+  if (!raideSemRun()) save();
 }
-// Itens de raide que posso usar agora: tenho na mochila e o grupo ainda não usou aquele tipo nesta luta
-const raideDisponiveis = b => (!b?.evento || !temRun() || sala.convidado || raideSemRun()) ? []
-  : ITENS_DE_RAIDE.filter(tipo => (G.S.bag?.[ITEM_DO_RAIDE[tipo]] || 0) > 0 && !b.lados.B.some(m => m.boss?.raide?.[tipo]));
-const botoesRaide = b => { const l = raideDisponiveis(b); return l.length ? `<div class="subrow">${l.map(t => `<button class="btn ghost sm" data-act="mp-raide" data-v="${t}" title="${esc(ITEMS[ITEM_DO_RAIDE[t]].desc)}">🎒 ${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} ×${G.S.bag[ITEM_DO_RAIDE[t]]}</button>`).join('')}</div>` : ''; };
+/* Itens de raide, comuns e Revive: fora da Sala de Raide vêm da MOCHILA DA RUN (G.S.bag); dentro dela vêm do
+   INVENTÁRIO DE CONTA (evento.inventarioRaide — a mesma "mochila de conta" da Loja de preparo/Arena, comprada
+   sem run nenhuma). `minhaMochila()` é o único ponto que decide qual das duas usar; todo o resto (disponíveis,
+   botões, consumo) lê daqui em vez de checar `raideSemRun()` cada um por conta própria. */
+const minhaMochila = () => raideSemRun() ? inventarioRaide() : (G.S?.bag || {});
+// Itens de raide que posso usar agora: tenho (na mochila certa) e o grupo ainda não usou aquele tipo nesta luta
+const raideDisponiveis = b => {
+  if (!b?.evento || sala.convidado || (!raideSemRun() && !temRun())) return [];
+  const bag = minhaMochila();
+  return ITENS_DE_RAIDE.filter(tipo => (bag[ITEM_DO_RAIDE[tipo]] || 0) > 0 && !b.lados.B.some(m => m.boss?.raide?.[tipo]));
+};
+const botoesRaide = b => { const l = raideDisponiveis(b), bag = minhaMochila(); return l.length ? `<div class="subrow">${l.map(t => `<button class="btn ghost sm" data-act="mp-raide" data-v="${t}" title="${esc(ITEMS[ITEM_DO_RAIDE[t]].desc)}">🎒 ${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} ×${bag[ITEM_DO_RAIDE[t]]}</button>`).join('')}</div>` : ''; };
 // Itens comuns: lista recolhível (pode ser bem maior que os 3 de raide) — usar um já é a escolha do turno, sem confirmar
 function botoesItemComum() {
-  const l = itensComunsDisponiveis();
-  return l.length ? `<details class="mp-itens"><summary>🎒 Usar item da mochila (${l.length})</summary><div class="bag-grid">${l.map(k => `<button class="item-btn sm" data-act="mp-item" data-v="${k}" title="${esc(ITEMS[k].desc)}">${esc(ITEMS[k].name)} ×${G.S.bag[k]}</button>`).join('')}</div></details>` : '';
+  const l = itensComunsDisponiveis(), bag = minhaMochila();
+  const rotulo = raideSemRun() ? 'da conta' : 'da mochila';
+  return l.length ? `<details class="mp-itens"><summary>🎒 Usar item ${rotulo} (${l.length})</summary><div class="bag-grid">${l.map(k => `<button class="item-btn sm" data-act="mp-item" data-v="${k}" title="${esc(ITEMS[k].desc)}">${esc(ITEMS[k].name)} ×${bag[k]}</button>`).join('')}</div></details>` : '';
 }
 export function usarRaideMP(tipo) {
   const b = sala?.batalha; if (!b || !raideDisponiveis(b).includes(tipo)) return;
   const a = { tipo: 'raide', item: tipo };
   if (sala.anfitriao) registrarAcao(meuId(), a); else enviar('acao', { de: meuId(), acao: a });
 }
-/* Itens comuns (Potion, X Attack, curas de status, Éter...) que dá pra usar AGORA: na minha mochila, com efeito
-   de verdade (mesma regra pura do single player, `itemTemEfeito`) e vale em qualquer luta de sala — diferente do
-   Revive/raide, não é exclusivo do chefe da semana. Sempre no PRÓPRIO Pokémon (sem "usar em qual aliado?": cada
-   jogador só vê a própria mochila numa sala). Fora as categorias que já têm caminho próprio (segurado, raide,
-   revive, evolução...) ou não fazem sentido em batalha (repelente, relembrar golpe).
+/* Itens comuns (Potion, X Attack, curas de status, Éter...) que dá pra usar AGORA: na mochila certa (run OU
+   conta, ver `minhaMochila`), com efeito de verdade (mesma regra pura do single player, `itemTemEfeito`) e vale
+   em qualquer luta de sala — diferente do Revive/raide, não é exclusivo do chefe da semana. Sempre no PRÓPRIO
+   Pokémon (sem "usar em qual aliado?": cada jogador só vê a própria mochila numa sala). Fora as categorias que
+   já têm caminho próprio (segurado, raide, revive, evolução...) ou não fazem sentido em batalha (repelente,
+   relembrar golpe).
    Usa uma vez o turno inteiro: é uma ESCOLHA (como golpe/fugir), não uma ação livre — por isso passa por
    `escolher()`, igual escolherGolpeMP, em vez de `registrarAcao` direto. */
 export const SEM_BATALHA_MP = ['candy', 'afinidade', 'evo', 'troca', 'segurar', 'segurado', 'repelente', 'ensina', 'raide', 'revive'];
 function itensComunsDisponiveis() {
-  const m = minhaVez(); if (!m || !temRun() || sala.convidado || raideSemRun()) return [];
-  return Object.entries(G.S.bag || {}).filter(([k, n]) => n > 0 && ITEMS[k] && !SEM_BATALHA_MP.some(f => ITEMS[k][f]) && itemTemEfeito(ITEMS[k], m)).map(([k]) => k);
+  const m = minhaVez(); if (!m || sala.convidado || (!raideSemRun() && !temRun())) return [];
+  return Object.entries(minhaMochila()).filter(([k, n]) => n > 0 && ITEMS[k] && !SEM_BATALHA_MP.some(f => ITEMS[k][f]) && itemTemEfeito(ITEMS[k], m)).map(([k]) => k);
 }
 export function usarItemComumMP(id) {
   if (!itensComunsDisponiveis().includes(id)) return;
   escolher({ tipo: 'item', item: id });
 }
-// posso usar um Revive agora? (chefe da semana, sem nenhum Pokémon meu de pé, o grupo ainda aguenta, tenho Revive e ainda não gastei o limite)
-const podeReviver = b => !!b?.evento && temRun() && !sala.convidado && !raideSemRun() && (G.S.bag?.revive || 0) > 0
-  && b.lados.A.some(m => m.hp > 0) && !b.lados.A.some(m => m.dono === meuId() && m.hp > 0)
-  && b.lados.A.some(m => m.dono === meuId() && m.hp <= 0) && (b.revivesUsados?.[meuId()] || 0) < MAX_REVIVES;
+/* Posso usar um Revive agora? Fora da Sala de Raide: só com o time INTEIRO caído (reviverNoEvento, mesma regra
+   de sempre). Dentro dela: igual à Arena (reviverCompanheiro) — reviver com o time ainda lutando, contanto que
+   tenha pelo menos um de pé (`m.hp > 0` do mesmo dono) e um caído; aceita Max Revive. */
+const podeReviver = b => {
+  if (!b?.evento || sala.convidado || (b.revivesUsados?.[meuId()] || 0) >= MAX_REVIVES) return false;
+  const meusCaidos = b.lados.A.some(m => m.dono === meuId() && m.hp <= 0);
+  if (raideSemRun()) {
+    const bag = minhaMochila();
+    return ((bag.revive || 0) > 0 || (bag['max-revive'] || 0) > 0) && meusCaidos && b.lados.A.some(m => m.dono === meuId() && m.hp > 0);
+  }
+  return temRun() && (G.S.bag?.revive || 0) > 0 && meusCaidos
+    && b.lados.A.some(m => m.hp > 0) && !b.lados.A.some(m => m.dono === meuId() && m.hp > 0);
+};
+function botoesReviver(b) {
+  if (!podeReviver(b)) return '';
+  const restam = MAX_REVIVES - (b.revivesUsados?.[meuId()] || 0);
+  if (raideSemRun()) {
+    const bag = minhaMochila(), usaMax = (bag['max-revive'] || 0) > 0, id = usaMax ? 'max-revive' : 'revive';
+    return `<div class="subrow"><button class="btn" data-act="mp-revive" title="Gasta 1 ${esc(ITEMS[id].name)} da sua conta">💊 Usar ${esc(ITEMS[id].name)} (${bag[id]} na conta · ${restam} uso(s) restante(s))</button></div>`;
+  }
+  return `<div class="subrow"><button class="btn" data-act="mp-revive" title="Gasta 1 Revive da sua mochila; o Pokémon volta com metade do HP">💊 Usar Revive (${G.S.bag.revive} na mochila · ${restam} uso(s) restante(s))</button></div>`;
+}
 export function reviverMP() {
   const b = sala?.batalha; if (!b || !podeReviver(b)) return;
   const m = b.lados.A.find(x => x.dono === meuId() && x.hp <= 0); if (!m) return;   // o primeiro caído (o principal, se for ele)
-  const a = { tipo: 'revive', ref: m.ref };
+  const raide = raideSemRun(), usaMax = raide && (minhaMochila()['max-revive'] || 0) > 0;
+  const a = { tipo: 'revive', ref: m.ref, ...(raide ? { pct: usaMax ? 100 : 50 } : {}) };
   if (sala.anfitriao) registrarAcao(meuId(), a); else { enviar('acao', { de: meuId(), acao: a }); }
 }
 // meu próximo Pokémon que ainda não escolheu neste turno
@@ -873,11 +915,9 @@ function renderSala() {
   const status = `<p class="muted small">Turno ${b.turno} · ${esperando.length ? `esperando: ${esperando.map(esc).join(', ')}` : 'resolvendo…'} · <span id="mp-relogio">${Math.max(0, Math.ceil((sala.prazo - Date.now()) / 1000))}s</span></p>`;
   const sair = `<button class="btn ghost" data-act="mp-sair">Sair da sala</button>`;
   if (!jogaveis(b).some(m => m.dono === meuId())) {
-    const reviver = podeReviver(b)
-      ? `<div class="subrow"><button class="btn" data-act="mp-revive" title="Gasta 1 Revive da sua mochila; o Pokémon volta com metade do HP">💊 Usar Revive (${G.S.bag.revive} na mochila · ${MAX_REVIVES - (b.revivesUsados?.[meuId()] || 0)} uso(s) restante(s))</button></div>` : '';
-    $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${reviver}${botoesRaide(b)}<div class="subrow">${sair}</div>`; return;
+    $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${botoesReviver(b)}${botoesRaide(b)}<div class="subrow">${sair}</div>`; return;
   }
-  if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p>${botoesRaide(b)}<div class="subrow">${sair}</div>`; return; }
+  if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p>${botoesRaide(b)}${botoesReviver(b)}<div class="subrow">${sair}</div>`; return; }
   const alvos = inimigosDe(vez); if (!alvos.some(e => e.ref === sala.alvo)) sala.alvo = alvos[0]?.ref;
   const semPP = vez.moves.every(g => g.ppLeft <= 0);
   const gd = gimmicksDisponiveisMP(b, vez), zLigado = !!(gd && sala.gimmicksSel?.z);   // com o Z ligado, só os golpes que podem virar Z ficam clicáveis
@@ -889,6 +929,7 @@ function renderSala() {
       : vez.moves.map((g0, i) => { const g = golpeDoBattleBond(golpeDoTera(golpeDoClima(g0, climaDe(b.campo)), vez), vez); return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${moverMP(i, -1)}${moverMP(i, 1)}</span></div>`; }).join('')}</div>
     ${botoesItemComum()}
     ${botoesRaide(b)}
+    ${botoesReviver(b)}
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
 }
 // Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.

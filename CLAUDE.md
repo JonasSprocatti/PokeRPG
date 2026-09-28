@@ -560,6 +560,24 @@ O que sobrou e o que ficou combinado:
   do lado do modo `'raide'` na mesma lista — quem prefere lutar com o Pokémon da run de verdade (XP/dinheiro reais)
   ainda pode.
 
+  **✅ FEITO (28/09/2026) — itens DURANTE a luta na Sala de Raide** (prioridade pedida pelo usuário logo depois
+  da leva acima; antes só dava pra escolher/equipar no lobby). `minhaMochila()` (novo, único ponto de decisão) —
+  `raideSemRun() ? inventarioRaide() : G.S.bag` — substitui os vários `if (!temRun()...)` espalhados;
+  `raideDisponiveis`/`botoesRaide`, `itensComunsDisponiveis`/`botoesItemComum` e `podeReviver` leem daqui em vez
+  de checar a run direto. **Revive na Raide usa `mp-motor.reviverCompanheiro`, não `reviverNoEvento`**: a regra de
+  sempre (`registrarRevive`, host) exige o TIME INTEIRO caído; `reviverCompanheiro` (a mesma função que a Arena já
+  usa) deixa reviver com o time ainda lutando, contanto que tenha pelo menos um de pé — por isso o botão
+  `botoesReviver()` (extraído, usado nos TRÊS estados da tela: sem ninguém de pé, esperando os outros, e no seu
+  turno normal) aparece bem mais cedo na Raide do que fora dela. **Aceita Max Revive**: o cliente manda
+  `acao.pct` (100 se tiver Max Revive no inventário de conta, preferido sobre o normal — mesma prioridade da
+  Arena); `reviverCompanheiro` ganhou `estado.revivesTipos[dono]` (lista, mesma ordem de `revivesUsados` — que é
+  só um contador, não diferencia QUAL item) pra `consumirRevives` (cliente) saber exatamente qual dos dois
+  descontar do inventário de conta a cada uso. `tests/evento-coop.test.js` trava o `revivesTipos`. **Sem mudança
+  no motor de verdade**: `usarItemComumMP`/`usarRaideMP` continuam mandando a MESMA ação de sempre
+  (`{tipo:'item'|'raide', ...}`) pro `mp-motor.resolverTurnoMP`/`usarRaideNoEvento` — eles nunca souberam de bag
+  nenhuma, só o Pokémon; a única coisa que mudou foi QUAL mochila o CLIENTE lê pra mostrar o botão e descontar
+  depois.
+
   **Usar item comum em batalha** (`arenaUsarItem`): ocupa a vez de quem usar, exatamente como no multiplayer —
   `botoesItemComum` filtra `inventarioRaide()` por `!SEM_BATALHA_MP.some(...)` (exportado de `multiplayer.js`
   pra não duplicar a lista) e `regras.itemTemEfeito`, e a escolha vira `{ref, tipo:'item', item:id}` — o MESMO
