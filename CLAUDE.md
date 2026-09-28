@@ -970,6 +970,24 @@ FLIP em XP/PP). Intensidade escolhida pelo usuário: **sutil e polido**, não ch
   em `multiplayer.js`, sem os ids `mon-p`/`mon-e`/`mon-a<N>` que `idDoMon`/`hit-flash` dependem) — se pedido,
   precisaria da mesma técnica adaptada pra lá.
 
+### Microinterações gerais: botões e transição de tela (28/09/2026)
+Prioridade 2 da mesma leva ("mais vivo"). Duas regras CSS globais, sem tocar JS nenhum:
+- **Botões**: `button{transition:filter,border-color,background-color,transform}` + `button:active:not(:disabled)
+  {transform:scale(.96)}` na base (`css/estilo.css`, perto do reset). Cobre TUDO de graça porque quase todo
+  clicável do jogo É um `<button>` de verdade (o padrão `data-act`) — golpe (`.mv`), carta de Pokémon (`.pick`/
+  `.hall-card`), item da mochila, etc. — sem precisar enumerar cada classe.
+- **Transição de tela**: `.create,.game{animation:tela-entra .18s ease-out}` (fade + leve deslocamento). Como
+  TODA tela do jogo usa `<main class="create ...">` (ou `.game`, só a tela de jogo em si) como contêiner de
+  topo — confirmado varrendo `$('#app').innerHTML =` em cada arquivo `tela-*.js`/`criacao.js`/`arena.js`/etc.,
+  incluindo o helper `casca()` de `ranking.js`/`perfil-amigo.js` — uma única regra cobre toda navegação.
+  **Cuidado que motivou o valor pequeno (4px, 0.18s)**: `.create` é recriado inteiro em MUITAS interações
+  dentro da própria tela (ex.: `tela-ajustes.js`, trocar de fonte chama `telaAjustes()` de novo, não só troca
+  uma div), então a animação replay a cada clique — não só na troca de tela. Um valor sutil o bastante fica bem
+  mesmo repetindo; um valor mais chamativo (cogitado 6px/0.25s) ficaria cansativo nesse caso. `.game` NÃO tem
+  esse problema: só é recriado por `buildGame()`, chamado uma vez ao entrar na jornada — turnos e explorações
+  usam só `render()`, que atualiza divs internas sem recriar `.game`, então a entrada anima uma vez só.
+  Coberto pelo `prefers-reduced-motion` global (já existia) — nenhum tratamento extra precisou.
+
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 

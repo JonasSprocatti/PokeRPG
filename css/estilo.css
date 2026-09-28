@@ -11,7 +11,11 @@
 html,body{margin:0}
 body{background:var(--ink);color:var(--text);font:16px/1.5 var(--body);min-height:100vh;font-variant-numeric:tabular-nums}
 button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
+/* microinteração global (pedido do usuário, 28/09/2026 — "mais vivo"): quase todo clicável do jogo É um
+   <button> de verdade (o padrão data-act), então uma transição + um "afundar" no clique aqui cobre botão,
+   golpe (.mv), carta de Pokémon (.pick/.hall-card), item da mochila etc. de graça, sem enumerar cada classe. */
+button{cursor:pointer;transition:filter .15s ease,border-color .15s ease,background-color .15s ease,transform .1s ease}
+button:active:not(:disabled){transform:scale(.96)}
 button:disabled{cursor:not-allowed;opacity:.45}
 :focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
 img{max-width:100%}
@@ -197,6 +201,15 @@ table.ranking td.jogador{white-space:nowrap}
 
 .ty{display:inline-block;padding:1px 10px;border-radius:999px;font:700 12px/1.6 var(--display);background:var(--c);color:var(--tc)}
 .types{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Transição de tela (pedido do usuário, 28/09/2026 — "mais vivo"): toda troca de tela reescreve #app inteiro
+   (sem diffing, ver o topo de render.js), então uma animação na entrada de `.create`/`.game` — os DOIS
+   contêineres de topo que TODA tela usa (ver `casca()` de ranking.js/perfil-amigo.js e a lista de `$('#app').
+   innerHTML =` em cada arquivo de tela) — cobre toda navegação do jogo de graça, sem mexer em cada tela
+   individualmente. Telas que se redesenham em etapas (ranking/perfil: "carregando…" → conteúdo) reanimam a
+   cada etapa, o que é o comportamento certo (cada etapa É uma tela nova pro jogador). */
+@keyframes tela-entra{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.create,.game{animation:tela-entra .18s ease-out}
 
 /* criação */
 .create{max-width:1100px;margin:0 auto;padding:32px 20px 60px}
