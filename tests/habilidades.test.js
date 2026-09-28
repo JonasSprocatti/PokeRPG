@@ -6,6 +6,7 @@ import { HABILIDADES, IMPL } from '../js/habilidades.js';
 import { usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, aoEntrarEmCampo } from '../js/golpe.js';
 import { calcDamage, effStat, chanceAcerto, freshVol, FAMILIAS_GOLPE } from '../js/regras.js';
 import { TYPE_PT, AIL_MSG, STATS } from '../js/dados.js';
+import { FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
 const mon = (o = {}) => ({
@@ -72,7 +73,9 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     // quinta leva
     'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance',
     // sexta leva
-    'sheerForce', 'unnerve', 'friendGuard']);
+    'sheerForce', 'unnerve', 'friendGuard',
+    // sétima leva: flag de golpe de verdade (dados-golpe-flags.js)
+    'imuneFlag']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
@@ -80,6 +83,7 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     for (const t of [h.pinch, h.imuneTipo, h.absorve, ...Object.keys(h.resiste || {}), ...Object.keys(h.danoTipo || {}), ...(h.prendeTipo || [])].filter(Boolean)) assert.ok(tipos.includes(t), `${nome}: tipo "${t}"`);
     for (const a of h.imuneStatus || []) assert.ok(AIL_MSG[a] || a === 'confusion', `${nome}: status "${a}"`);
     for (const s of Object.keys({ ...h.multStat, ...h.comStatus })) assert.ok(STATS.includes(s), `${nome}: atributo "${s}"`);
+    if (h.imuneFlag) assert.ok(FLAGS_VALIDAS.includes(h.imuneFlag), `${nome}: flag de golpe "${h.imuneFlag}" não existe`);
     // ganchos da quarta leva: tipo, status, atributo e família existem de verdade (typo aqui deixaria a habilidade inerte)
     for (const a of [...(h.soStatus || []), h.critContraStatus, h.toque?.status, ...(h.contato?.sorteio || []).map(x => x[0]), ...(typeof h.contato?.status === 'string' ? [h.contato.status] : [])].filter(Boolean)) assert.ok(AIL_MSG[a], `${nome}: status "${a}"`);
     for (const s of [...Object.keys(h.abaixoDeMetade || {}), h.aoSerBaixado?.[0], h.aoNocautear?.[0], h.contato?.estagio?.[0]].filter(Boolean)) stat(nome, s);
@@ -145,8 +149,8 @@ test('Static paralisa quem encosta; Rough Skin machuca quem encosta', async t =>
   await usarGolpe(outro, mon({ ability: 'rough-skin' }), golpe(), true, ctx());
   assert.equal(outro.hp, 100 - Math.floor(100 / 8));
   const especial = mon();
-  await usarGolpe(especial, mon({ ability: 'rough-skin' }), golpe({ cls: 'special' }), true, ctx());
-  assert.equal(especial.hp, 100); // golpe especial não encosta
+  await usarGolpe(especial, mon({ ability: 'rough-skin' }), golpe({ name: 'ember', cls: 'special' }), true, ctx());
+  assert.equal(especial.hp, 100); // golpe especial (Ember, sem flag `contact` de verdade) não encosta
 });
 
 test('Clear Body: outro não baixa atributo; o próprio golpe/itens ainda mexem', async () => {
@@ -380,8 +384,38 @@ test('Poison Touch envenena o alvo com golpe físico', async t => {
   await usarGolpe(mon({ ability: 'poison-touch' }), alvo, golpe(), true, ctx());
   assert.equal(alvo.status, 'poison');
   const especial = mon();
-  await usarGolpe(mon({ ability: 'poison-touch' }), especial, golpe({ cls: 'special' }), true, ctx());
+  await usarGolpe(mon({ ability: 'poison-touch' }), especial, golpe({ name: 'ember', cls: 'special' }), true, ctx());
   assert.equal(especial.status, null);
+});
+
+test('Soundproof/Bulletproof: imunes à FLAG de golpe de verdade (dano e status), não ao tipo nem à classe', async () => {
+  const semHp = m => m.hp < 100;
+  // Hyper Voice (som, dano): bloqueado com Soundproof, normal sem
+  const surdo = mon({ ability: 'soundproof' });
+  await usarGolpe(mon(), surdo, golpe({ name: 'hyper-voice', power: 90 }), true, ctx());
+  assert.equal(surdo.hp, 100, 'Hyper Voice não afeta quem tem Soundproof');
+  const ouvinte = mon();
+  await usarGolpe(mon(), ouvinte, golpe({ name: 'hyper-voice', power: 90 }), true, ctx());
+  assert.ok(semHp(ouvinte), 'sem a habilidade, o mesmo golpe machuca normalmente');
+  // Growl (som, STATUS): também bloqueado — a imunidade é pela flag, não por ser golpe de dano
+  const surdoGrowl = mon({ ability: 'soundproof' });
+  await usarGolpe(mon(), surdoGrowl, golpe({ name: 'growl', cls: 'status', power: null, stats: [{ stat: 'attack', change: -1 }] }), true, ctx());
+  assert.equal(surdoGrowl.vol.stages.attack, 0, 'Growl (som) não baixa o Ataque de quem tem Soundproof');
+  // golpe SEM a flag: Soundproof não bloqueia à toa
+  const surdoTackle = mon({ ability: 'soundproof' });
+  await usarGolpe(mon(), surdoTackle, golpe(), true, ctx());
+  assert.ok(semHp(surdoTackle), 'Soundproof não bloqueia golpe sem a flag sound (Tackle)');
+  // Shadow Ball (bala, dano): bloqueado com Bulletproof, normal sem
+  const blindado = mon({ ability: 'bulletproof' });
+  await usarGolpe(mon(), blindado, golpe({ name: 'shadow-ball', power: 80 }), true, ctx());
+  assert.equal(blindado.hp, 100, 'Shadow Ball não afeta quem tem Bulletproof');
+  const desprotegido = mon();
+  await usarGolpe(mon(), desprotegido, golpe({ name: 'shadow-ball', power: 80 }), true, ctx());
+  assert.ok(semHp(desprotegido));
+  // Bullet Punch é soco (flag `punch`), NÃO tem a flag `ballistics` nos jogos de verdade — Bulletproof não bloqueia
+  const blindadoPunch = mon({ ability: 'bulletproof' });
+  await usarGolpe(mon(), blindadoPunch, golpe({ name: 'bullet-punch', power: 40 }), true, ctx());
+  assert.ok(semHp(blindadoPunch), 'Bulletproof não bloqueia Bullet Punch (é soco, não "bala")');
 });
 
 test('Poison Heal cura com veneno; Magic Guard não sofre dano indireto', async t => {

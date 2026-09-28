@@ -16,6 +16,8 @@
 //   superEfetivo: n        dano super efetivo recebido × n; poucoEfetivo: n  dano pouco efetivo CAUSADO × n (calcDamage)
 //   hpCheio: n             dano recebido com HP cheio × n (calcDamage)
 //   imuneTipo: tipo        imune a golpes desse tipo (golpe.js)
+//   imuneFlag: flag        imune a golpe com essa FLAG de verdade (regras.temFlag/dados-golpe-flags.js — vale pra
+//                          golpe de dano E de status), ex. 'sound'/'ballistics' (golpe.js) — Soundproof, Bulletproof
 //   absorve: tipo          golpe desse tipo não causa dano e: cura (fração do HP máx.), estagio [stat, n] ou flashFire (golpe.js)
 //   soSuperEfetivo         só golpe super efetivo acerta (Wonder Guard) (golpe.js)
 //   imuneStatus: [ail]     não pega esses status (inclui 'confusion') (golpe.js / imuneAoStatusMon)
@@ -128,6 +130,7 @@ export const HABILIDADES = {
   'wonder-guard': { soSuperEfetivo: true }, 'shield-dust': { semSecundario: true }, 'inner-focus': { semRecuo: true, imuneIntimidacao: true },
   // imunidades e absorções de tipo
   levitate: { imuneTipo: 'ground' },
+  soundproof: { imuneFlag: 'sound' }, bulletproof: { imuneFlag: 'ballistics' },   // imunidade por FLAG do golpe (dados-golpe-flags.js), não por tipo
   'flash-fire': { absorve: 'fire', flashFire: true },
   'volt-absorb': { absorve: 'electric', cura: 0.25 }, 'water-absorb': { absorve: 'water', cura: 0.25 }, // 'dry-skin' está lá em cima, com a parte de clima junto
   'lightning-rod': { absorve: 'electric', estagio: ['special-attack', 1] }, 'storm-drain': { absorve: 'water', estagio: ['special-attack', 1] },

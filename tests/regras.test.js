@@ -10,9 +10,10 @@ import {
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda,
-  caminhoNaArvore, especiesShinyDoJogador, moverGolpe
+  caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag
 } from '../js/regras.js';
 import { CHART, ITEMS } from '../js/dados.js';
+import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
 
 test('sortearTipoTera: cobre os 18 tipos, sem sair da tabela', () => {
   const vistos = new Set();
@@ -567,4 +568,37 @@ test('rota de nível baixo tem folga mínima pras missões dela', () => {
   // o ponto em que os dois critérios se encontram: daí pra cima, quem manda é o dobro
   assert.equal(limiteDaRota({ max: MARGEM_ESGOTADA }), MARGEM_ESGOTADA * FATOR_ESGOTADA);
   assert.equal(limiteDaRota({ max: 40 }), 80, 'rota alta não ganha folga extra');
+});
+
+/* Flags de golpe de verdade (js/dados-golpe-flags.js, gerado do repositório-fonte da PokéAPI — a API pública não
+   expõe isso, ver a nota "BACKLOG — dado de golpe" no CLAUDE.md). */
+test('dados-golpe-flags: cobertura substancial, sem flag inventada, sem repetição', () => {
+  const nomes = Object.keys(GOLPE_FLAGS);
+  assert.ok(nomes.length > 500, `só ${nomes.length} golpes mapeados — a geração pode ter falhado`);
+  for (const nome of nomes) {
+    assert.match(nome, /^[a-z0-9]+(-[a-z0-9]+)*$/, `"${nome}" não parece um nome de golpe kebab-case`);
+    const flags = GOLPE_FLAGS[nome];
+    assert.ok(flags.length > 0, `${nome}: entrada vazia (não deveria existir)`);
+    assert.equal(new Set(flags).size, flags.length, `${nome}: flag repetida`);
+    for (const f of flags) assert.ok(FLAGS_VALIDAS.includes(f), `${nome}: flag "${f}" fora das 21 conhecidas`);
+  }
+});
+
+test('temFlag: casos reais conhecidos (contato, som, bala) e golpe fora da tabela nunca tem flag', () => {
+  assert.equal(temFlag({ name: 'tackle' }, 'contact'), true);
+  assert.equal(temFlag({ name: 'earthquake' }, 'contact'), false, 'Earthquake é físico mas NÃO encosta');
+  assert.equal(temFlag({ name: 'hyper-voice' }, 'sound'), true);
+  assert.equal(temFlag({ name: 'tackle' }, 'sound'), false);
+  assert.equal(temFlag({ name: 'bullet-seed' }, 'ballistics'), true);
+  assert.equal(temFlag({ name: 'bullet-punch' }, 'ballistics'), false, 'Bullet Punch é soco, não é "bala"');
+  assert.equal(temFlag({ name: 'golpe-que-nao-existe' }, 'contact'), false);
+});
+
+test('fazContato: usa a flag de verdade quando o golpe está mapeado; sem mapa, cai pro proxy antigo (cls físico)', () => {
+  assert.equal(fazContato({ name: 'tackle', cls: 'physical' }), true);
+  assert.equal(fazContato({ name: 'earthquake', cls: 'physical' }), false, 'físico, mas sem a flag contact de verdade');
+  assert.equal(fazContato({ name: 'ember', cls: 'special' }), false);
+  // golpe sem entrada na tabela: nunca deveria acontecer com golpe real do jogo, mas o plano B existe mesmo assim
+  assert.equal(fazContato({ name: 'golpe-que-nao-existe', cls: 'physical' }), true, 'sem mapa: cai pro proxy antigo');
+  assert.equal(fazContato({ name: 'golpe-que-nao-existe', cls: 'special' }), false);
 });

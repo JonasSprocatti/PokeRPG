@@ -7,6 +7,7 @@ import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
+import { GOLPE_FLAGS } from './dados-golpe-flags.js';
 
 export function typeEff(atk, defs) {
   const c = CHART[atk]; if (!c) return 1;
@@ -159,6 +160,14 @@ export function multFamilia(h, nomeDoGolpe) {
   for (const [fam, m] of Object.entries(h.golpesFamilia || {})) if (FAMILIAS_GOLPE[fam]?.includes(nomeDoGolpe)) mult *= m;
   return mult;
 }
+/* Flag de golpe de verdade (dados-golpe-flags.js, gerado do repositório-fonte da PokéAPI — a API pública não
+   expõe isso). Golpe sem entrada na tabela (novo demais pro dado-fonte, ex. alguns golpes de Gen 9) devolve
+   `false` pra qualquer flag — nunca lança, nunca inventa. */
+export const temFlag = (move, flag) => !!GOLPE_FLAGS[move.name]?.includes(flag);
+/* Faz contato de verdade? Antes disso existir, o jogo usava `move.cls === 'physical'` como PROXY (Earthquake é
+   físico e NÃO faz contato, por exemplo) — com golpe MAPEADO na tabela, usa a flag `contact` de verdade; sem
+   mapa (golpe fora do dado-fonte), cai pro proxy antigo em vez de dizer "sem contato" à toa. */
+export const fazContato = move => GOLPE_FLAGS[move.name] ? temFlag(move, 'contact') : move.cls === 'physical';
 // Sheer Force: o golpe tem ALGUM efeito secundário nativo? (estágio, status ou recuo por chance) — se sim, o
 // golpe bate mais forte mas PERDE o efeito (golpe.executar guarda os três blocos de aplicação com `!hu.sheerForce`).
 export const temSecundario = move => !!(move.stats?.length || (move.meta?.ailment && move.meta.ailment !== 'none' && move.meta?.ailChance > 0) || move.meta?.flinch > 0);

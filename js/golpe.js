@@ -19,7 +19,8 @@ import { ITEMS, ITEM_VINCULO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, tiposDefensivos } from './regras.js';
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, tiposDefensivos,
+  fazContato, temFlag } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -538,9 +539,9 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
   if (!selfT && t.vol.protegido) {
     await ctx.say(`${T} se protegeu do golpe!`);
-    // barreira que pune contato: só golpe físico encosta (mesma regra de Static/Elmo Rochoso)
+    // barreira que pune contato: só quem encosta de verdade leva (fazContato/regras.js — mesma regra de Static/Elmo Rochoso)
     const pun = t.vol.punicao;
-    if (pun && g.cls === 'physical' && u.hp > 0) {
+    if (pun && fazContato(g) && u.hp > 0) {
       if (pun.estagio) await mudarEstagios(u, [{ stat: pun.estagio[0], change: pun.estagio[1] }], ctx, t);
       if (pun.dano && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * pun.dano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na barreira! (−${d})`, 'hit'); }
       if (pun.status && !u.status) await aplicarStatus(u, pun.status, ctx, true, t);
@@ -548,6 +549,10 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     return;
   }
   if (!selfT && t.vol.invul) { await ctx.say('Mas errou!'); return; }                 // alvo no ar / debaixo da terra
+  // Soundproof/Bulletproof: imunidade por FLAG do golpe, não por tipo — vale pra golpe de dano E de status (Growl,
+  // Sing…), por isso checado antes até do golpe de status. Golpe fora da tabela (dados-golpe-flags.js) não tem a
+  // flag marcada, então não é bloqueado — mais seguro que fingir saber.
+  if (!selfT && ht.imuneFlag && temFlag(g, ht.imuneFlag)) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
   if (esp.soDormindo && t.status !== 'sleep') { await ctx.say(`Não afeta ${T}... (só funciona em quem está dormindo)`); return; }
   if (esp.ohko) {
     if (t.boss) { await ctx.say(`Não afeta ${T}... (chefe de evento)`); return; }
@@ -613,7 +618,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   const si = seg(u);
   if (si.drenaDano && total > 0 && u.hp > 0 && u.hp < u.stats.hp) { const h = Math.max(1, Math.floor(total * si.drenaDano)); heal(u, h); up(ctx); await ctx.say(`${U} recuperou ${h} HP com o Sino-Concha.`, 'good'); }
   if (si.recuoPorGolpe && total > 0 && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
-  if (g.cls === 'physical' && seg(t).espetos && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
+  if (fazContato(g) && seg(t).espetos && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
   await comerFruta(t, ctx, hu.unnerve); await comerFruta(u, ctx, ht.unnerve);                 // Frutas Oran/Sitrus na hora do aperto (Unnerve trava o OUTRO lado)
   // Moxie, Chilling Neigh, Grim Neigh: derrubar o alvo sobe um atributo de quem derrubou
   if (t.hp <= 0 && total > 0 && u.hp > 0 && hu.aoNocautear) {
@@ -643,8 +648,9 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   }
   // reação a ter sido atingido (Steam Engine, Stamina, Weak Armor, Anger Point, Sand Spit…)
   if (total > 0 && t.hp > 0 && ht.aoSerAtingido) await reagirAoGolpe(t, g, crit, ctx);
-  // contato (golpe físico): Static, Flame Body, Poison Point, Effect Spore, Gooey; Rough Skin, Iron Barbs
-  if (g.cls === 'physical' && u.hp > 0) {
+  // contato de verdade (fazContato/regras.js — flag `contact`, não mais o proxy "é físico"): Static, Flame Body,
+  // Poison Point, Effect Spore, Gooey; Rough Skin, Iron Barbs
+  if (fazContato(g) && u.hp > 0) {
     const c = ht.contato;
     if (c && Math.random() * 100 < c.chance) {
       if (c.estagio) {                                                                // Gooey, Tangling Hair: a Velocidade de quem encosta cai
@@ -657,8 +663,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     }
     if (ht.contatoDano && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * ht.contatoDano)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se machucou na ${fmt(t.ability)} de ${T}! (−${d})`, 'hit'); }
   }
-  // Poison Touch: o golpe físico de quem tem a habilidade pode envenenar o alvo (Shield Dust protege)
-  if (g.cls === 'physical' && hu.toque && t.hp > 0 && !t.status && !ht.semSecundario && Math.random() * 100 < hu.toque.chance) await aplicarStatus(t, hu.toque.status, ctx, false, u);
+  // Poison Touch: o golpe de quem tem a habilidade envenena ao ENCOSTAR (Shield Dust protege)
+  if (fazContato(g) && hu.toque && t.hp > 0 && !t.status && !ht.semSecundario && Math.random() * 100 < hu.toque.chance) await aplicarStatus(t, hu.toque.status, ctx, false, u);
   return 'acertou';
 }
 

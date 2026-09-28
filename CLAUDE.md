@@ -68,7 +68,7 @@ Duas máquinas de dev, ambientes diferentes:
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 163 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 165 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -597,29 +597,33 @@ O que sobrou e o que ficou combinado:
   "furar"), Damp (bloquear autodestruição do OUTRO lado — cross-side igual Friend Guard, mas em cima de uma
   mecânica, autoDesmaio, que ainda não devolve controle pro motor decidir "deixar acontecer ou não"), Aftermath
   (precisa de um gancho novo "ao desmaiar por contato", que não existe).
-- **BACKLOG — dado de golpe que falta pra habilidades futuras (pedido do usuário, 28/09/2026): "flags" de golpe**
-  (Contato, Cortante, Projétil/Bola e mais). **Pesquisado e confirmado**: a PokéAPI (REST, `pokeapi.co/api/v2`)
-  **NÃO expõe isso** — não existe endpoint `move-flag`/`move-attribute` pra golpe (o `item-attribute` existe, mas
-  o equivalente de golpe não; `/move/{x}` tem `meta` com ailment/crit_rate/drain/healing/flinch_chance/stat_chance/
-  min_hits/max_hits/min_turns/max_turns, mas NADA de contato/som/bala/pó/dança). É por isso que `regras.
-  FAMILIAS_GOLPE` (soco/mordida/corte, pra Iron Fist/Strong Jaw/Sharpness) é uma lista escrita À MÃO — não tem
-  como vir da API. **Achado bom**: os dados brutos que GERAM a PokéAPI (não a API pública, o repositório-fonte)
-  TÊM essa informação: `github.com/PokeAPI/pokeapi/blob/master/data/v2/csv/move_flags.csv` (21 flags: contact,
-  charge, recharge, protect, reflectable, snatch, mirror, punch, sound, gravity, defrost, distance, heal,
-  authentic, powder, bite, pulse, ballistics, mental, non-sky-battle, dance) e `move_flag_map.csv` (1970 linhas,
-  golpe → flags, por ID numérico do golpe — bate com o id usado em `/move/{id}/`). Confirmado com `curl` direto
-  nesses dois arquivos (28/09/2026) — CSV puro, sem chave de API, dá pra buscar num gerador (`ferramentas/gerar-*`,
-  mesmo padrão de `gerar-megas.ps1`/`gerar-item-sprites.mjs`) e virar uma tabela local, tipo
-  `js/dados-golpe-flags.js` com `{ [nomeDoGolpe]: ['contact', 'sound', ...] }`. **Sharpness/"cortante" NÃO está
-  nessa lista de 21** (a habilidade Sharpness é da Gen 9, mais nova que esse dado) — `FAMILIAS_GOLPE.corte`
-  continua sendo a única fonte pra corte, sem alternativa encontrada. **Onde isso destrava habilidade nova**:
-  `contact` é o mais valioso — hoje `g.cls === 'physical'` é usado como PROXY de "fez contato" (Static, Rough
-  Skin, Iron Barbs, Effect Spore, Poison Touch, Gooey…), mas os dois não são a mesma coisa nos jogos de verdade
-  (ex.: Earthquake é físico e NÃO faz contato) — ter o flag de verdade corrigiria esses ganchos em vez de
-  aproximar. `sound` libera Soundproof (imune a golpe sonoro) direito. `ballistics` libera Bulletproof de
-  verdade (hoje só está listado como "falta" na auditoria). `powder` generaliza o que hoje só existe hardcoded
-  pra Overcoat/Grama no pólen do `contato.po`. **Não fazer isso "de qualquer jeito"**: são ~2000 golpes pra
-  mapear — vale a pena gerar uma vez (script) e comitar o resultado, não tentar de cabeça igual `FAMILIAS_GOLPE`.
+- ✅ FEITO (28/09/2026) — **"Flags" de golpe** (Contato, Som, Projétil/Bola e mais). A PokéAPI pública
+  (`pokeapi.co/api/v2`) não expõe isso, mas o repositório-fonte que a GERA tem, em CSV puro sem chave nenhuma:
+  `move_flags.csv` (21 flags), `move_flag_map.csv` (golpe → flag, por id) e `moves.csv` (id → nome kebab-case,
+  o mesmo já usado em `regras.FAMILIAS_GOLPE` e em todo golpe do jogo). `ferramentas/gerar-golpe-flags.mjs` (Node,
+  roda no Raspberry Pi) baixa os três e gera `js/dados-golpe-flags.js`: `GOLPE_FLAGS` (748 golpes mapeados) +
+  `FLAGS_VALIDAS` (as 21, pra validar typo em `imuneFlag` novo — ver abaixo). **Sharpness/"cortante" continua
+  fora** (é flag da Gen 9, mais nova que esse dado-fonte) — `FAMILIAS_GOLPE.corte` segue sendo a única fonte pra
+  corte. **Gen 9 tem buraco no dado-fonte**: `torch-song`/`alluring-voice`/`psychic-noise` (sonoros nos jogos de
+  verdade) EXISTEM em `moves.csv` mas não têm nenhuma flag em `move_flag_map.csv` — o gerador não inventa, então
+  esses golpes ficam sem a flag `sound` até o repositório-fonte atualizar (Soundproof não os bloqueia).
+  **Ganho 1 — corrigido o proxy de contato**: `regras.fazContato(move)` usa a flag `contact` de verdade quando o
+  golpe está mapeado (Earthquake é físico e NÃO faz contato — o proxy antigo, `move.cls === 'physical'`, errava
+  esse caso) e só cai pro proxy antigo se o golpe não estiver na tabela (plano B, nunca "sem contato" à toa).
+  Trocado nos 4 pontos de `golpe.js` que liam `g.cls === 'physical'` como "fez contato": a barreira que pune
+  contato (King's Shield e cia.), o Elmo Rochoso, o bloco de Static/Rough Skin/Effect Spore/Gooey/Iron Barbs e o
+  Poison Touch. **Ganho 2 — duas habilidades novas**: `soundproof: { imuneFlag: 'sound' }` e
+  `bulletproof: { imuneFlag: 'ballistics' }` (`habilidades.js`) + o gancho `imuneFlag` em `golpe.executar` —
+  checado ANTES até do golpe de status (diferente de `imuneTipo`, que só vale pra dano): Soundproof bloqueia
+  Growl tanto quanto Hyper Voice, porque a imunidade é da FLAG, não de ser golpe de dano. **Não mexido**: a
+  generalização do pólen (`contato.po`/`imunePo`, hoje hardcoded pra Overcoat/Grama) — ficou de fora desta leva
+  por escolha (`AskUserQuestion`: o usuário pediu dados + contato + as duas habilidades novas, não a
+  generalização do pólen). `tests/regras.test.js` (cobertura da tabela, `temFlag`, `fazContato` com casos reais)
+  e `tests/habilidades.test.js` (Soundproof/Bulletproof em batalha, `imuneFlag` validado contra `FLAGS_VALIDAS`).
+  **Dois testes existentes precisaram de ajuste**: "Rough Skin"/"Poison Touch" simulavam golpe especial fazendo
+  `golpe({ cls: 'special' })` em cima do Tackle padrão (nome continuava "tackle", só a classe mudava) — com a
+  flag de verdade, Tackle tem `contact` INDEPENDENTE da classe simulada no teste, e os dois passaram a "encostar"
+  de novo; trocado pra `golpe({ name: 'ember', cls: 'special' })`, um golpe especial de verdade sem a flag.
 - **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
 - **Decidido com o usuário (28/09/2026)**: confirmado que o inimigo TAMBÉM deveria gigantamaxar (só treinador) —
   ao investigar pra implementar, achei que **já existia** (`batalha.gmaxDoInimigo`/`dynamax.inimigoPodeGmax`,

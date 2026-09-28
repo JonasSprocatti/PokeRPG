@@ -69,7 +69,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 - **Cena mais viva**: quem ataca dá um pulo, quem apanha pisca vermelho, quem se cura pisca verde, e status (queimado, envenenado, paralisado, congelado) e mudanças de atributo pulsam sutilmente enquanto durarem.
 - **Mais de 160 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
   - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Toxic Boost, Flare Boost, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head, Reckless, Neuroforce, Merciless, Defeatist, Iron Fist, Strong Jaw, Sharpness, Steelworker, Transistor, Dragon's Maw, Rocky Payload, Water Bubble, Sand Force.
-  - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard, Unaware, Wonder Skin, Dazzling/Queenly Majesty/Armor Tail (barram golpe de prioridade), Pressure.
+  - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard, Unaware, Wonder Skin, Dazzling/Queenly Majesty/Armor Tail (barram golpe de prioridade), Pressure, Soundproof (imune a golpe sonoro), Bulletproof (imune a golpe de bala/bola).
   - **Absorção de tipo:** Levitate, Flash Fire, Volt/Water Absorb, Lightning Rod, Motor Drive, Sap Sipper.
   - **Status:** Immunity, Limber, Insomnia, Own Tempo, Poison Heal, Magic Guard (nenhum dano indireto).
   - **Atributos:** Clear Body, Hyper Cutter, Contrary, Simple, Mirror Armor, Defiant, Competitive.
