@@ -405,7 +405,8 @@ function blocoCaca(z, dex) {
     const { reveladas, total } = progressoCaca(z, saber);
     return `<p class="small muted caca-prog">🎯 <b>Caça Shiny</b>: revele todas as espécies desta rota pra escolher qual vai aparecer (${reveladas}/${total}).</p>`;
   }
-  const opcoes = dex.filter(p => !p.mitico).map(p => `<button class="btn ${p.n === alvo ? '' : 'ghost'} sm" data-act="caca" data-v="${esc(p.n)}">${esc(fmt(p.n))}</button>`).join('');
+  // mesma exclusão de mapas.cacaveisDaRota (mítico/lendário raro demais pra valer como alvo de caça)
+  const opcoes = dex.filter(p => !p.mitico && !p.lendario).map(p => `<button class="btn ${p.n === alvo ? '' : 'ghost'} sm" data-act="caca" data-v="${esc(p.n)}">${esc(fmt(p.n))}</button>`).join('');
   return `<div class="caca-box ${alvo ? 'on' : ''}"><p class="small"><b>🎯 Caça Shiny liberada nesta rota!</b> ${alvo ? `Só aparece <b>${esc(fmt(alvo))}</b>.` : 'Escolha quem vai aparecer:'} <span class="muted">Muda só o selvagem: treinadores, itens e dinheiro continuam iguais.</span></p>
     <div class="subrow">${opcoes}${alvo ? '<button class="btn ghost sm" data-act="caca" data-v="">✕ Parar a caça</button>' : ''}</div></div>`;
 }

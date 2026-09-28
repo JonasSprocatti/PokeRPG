@@ -149,8 +149,14 @@ export function pokedexDaRota(z, saber) {
 
 /* ---- Caça Shiny (modo ligado na criação: S.cacaShiny) ----
    Quando TODA espécie da rota estiver revelada (REVELA_DERROTADOS derrotados de cada uma), a rota libera a caça:
-   você escolhe uma espécie e só ela aparece ali. Míticos ficam de fora da conta — derrotar 10 Mew não é razoável. */
-export const cacaveisDaRota = (z, saber) => pokedexDaRota(z, saber).filter(p => !p.mitico);
+   você escolhe uma espécie e só ela aparece ali. Míticos ficam de fora da conta — derrotar 10 Mew não é razoável.
+   ⚠️ Bug real corrigido (28/09/2026, relatado pelo usuário: "a rota nunca libera a opção de escolher quem
+   caçar"): lendários tinham a MESMA razão de ficar de fora (raríssimos no pool, exigir 10 derrotas nunca fecha
+   de verdade) mas o filtro só excluía `mitico`, não `lendario` — só importa na prática pro Santuário (11ª rota,
+   `posVitoria`), a única que mistura lendários no pool normal (rotas 1–10 nunca têm `l` no pool: os lendários
+   delas vivem em `z.lendarios`, fora do sorteio selvagem). Sem essa exclusão, caçar no Santuário travava pra
+   sempre num "quase lá" que nunca fechava. */
+export const cacaveisDaRota = (z, saber) => pokedexDaRota(z, saber).filter(p => !p.mitico && !p.lendario);
 export const rotaLiberaCaca = (z, saber) => { const l = cacaveisDaRota(z, saber); return l.length > 0 && l.every(p => p.estado === 'revelado'); };
 // quanto falta pra liberar: { reveladas, total }
 export function progressoCaca(z, saber) {

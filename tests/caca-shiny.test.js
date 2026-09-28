@@ -19,6 +19,18 @@ test('a rota só libera a caça quando todas as espécies (sem contar míticos) 
   assert.equal(rotaLiberaCaca({ id: 'x', pool: [] }, saberCom({})), false); // rota sem espécie não libera nada
 });
 
+/* Bug real corrigido (28/09/2026, relatado pelo usuário: "a rota nunca libera a opção de escolher quem
+   caçar"): lendário no pool (só acontece no Santuário, `posVitoria`) tinha a MESMA razão de ficar de fora dos
+   míticos (raríssimo, 10 derrotas nunca fecha de verdade) mas não era excluído. */
+test('lendário no pool (Santuário) também fica de fora da conta, pela mesma razão do mítico', () => {
+  const santuario = { id: 'santuario', pool: [{ id: 16, n: 'pidgey', p: 8 }, { id: 19, n: 'rattata', p: 8 },
+    { id: 151, n: 'mew', p: 0.1, m: 1 }, { id: 150, n: 'mewtwo', p: 0.2, l: 1 }] };
+  assert.equal(cacaveisDaRota(santuario, saberCom({})).length, 2, 'mítico e lendário ficam de fora');
+  const tudo = { pidgey: REVELA_DERROTADOS, rattata: REVELA_DERROTADOS };
+  // sem isso, faltaria "revelar" o Mewtwo (raríssimo no pool) e a caça nunca liberaria nesta rota
+  assert.equal(rotaLiberaCaca(santuario, saberCom(tudo)), true, 'libera sem exigir 10 derrotas do lendário');
+});
+
 test('cacaDaRota: só com o modo ligado e a espécie escolhida', () => {
   assert.equal(cacaDaRota({ caca: { rota1: 'pidgey' } }, rota), null);                       // modo desligado
   assert.equal(cacaDaRota({ cacaShiny: true, caca: {} }, rota), null);
