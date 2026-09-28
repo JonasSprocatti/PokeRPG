@@ -26,15 +26,22 @@ export const agoraDoEvento = () => { const t = Number(store.get(RELOGIO_KEY)); r
 /* Cada evento: `forma` = o Pokémon da PokéAPI que aparece (o Eternamax é uma forma própria, id 10190); `especie` = a espécie
    que o jogador GANHA (desbloqueia na Pokédex e pra começar jornadas). `badge` = a insígnia de conta. `chefe` = a chave das
    regras dele em boss.js (CHEFES). */
-/* Fábrica dos eventos: `forma` = a forma da PokéAPI que aparece (pelo id), `especie` = o que o jogador GANHA. O prêmio da semana
-   inclui 2 itens de raide (dados.ITEMS `raide`) girando entre os três, pra os chefes se ajudarem entre si. */
+/* Fábrica dos eventos: `forma` = a forma da PokéAPI que aparece (pelo id), `especie` = o que o jogador GANHA. O prêmio
+   da semana tem DUAS partes de item de raide: os 3 originais (consumíveis "só na luta do chefe") continuam girando
+   como sempre, ×2; e os 14 novos (28/09/2026: 7 consumíveis + 7 segurados) têm um cada EXATAMENTE um chefe — como
+   são 14 chefes, dá cobertura completa: `i % 3` nunca deixaria os 3 últimos dos 17 de fora (14 chefes < 17 itens
+   não fecha conta certa), então os dois grupos giram em módulos diferentes. */
 const ITENS_RAIDE_PREMIO = ['cristal-de-ruptura', 'selo-de-interrupcao', 'escudo-astral'];
+const ITENS_RAIDE_NOVOS = [
+  'cinza-vulcanica', 'escama-abissal', 'prisma-de-luz', 'espelho-reverso', 'relogio-de-areia', 'fragmento-tera', 'celula-zygarde',
+  'nucleo-eternamax', 'escama-do-ceu', 'cristal-psiquico', 'redea-espectral', 'emblema-da-coroa', 'cristal-gelido', 'presa-da-lua'
+];
 const VANTAGEM_BADGE = { dinheiro: 2000, itens: { 'rare-candy': 1 } };
 let contador = 0;
 function ev(e) {
   const i = contador++;
   return { ...e, chefe: e.id, forma: e.id, badge: { ...e.badge, vantagem: VANTAGEM_BADGE },
-    recompensa: { dinheiro: 8000, itens: { 'rare-candy': 3, [ITENS_RAIDE_PREMIO[i % 3]]: 2 } } };
+    recompensa: { dinheiro: 8000, itens: { 'rare-candy': 3, [ITENS_RAIDE_PREMIO[i % ITENS_RAIDE_PREMIO.length]]: 2, [ITENS_RAIDE_NOVOS[i % ITENS_RAIDE_NOVOS.length]]: 1 } } };
 }
 export const EVENTOS = [
   // (em boss.js cada `id` daqui tem as regras dele em CHEFES)

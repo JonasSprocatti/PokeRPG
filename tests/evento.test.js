@@ -67,9 +67,14 @@ test('os prêmios trazem itens de raide que existem, e cada chefe tem forma e es
   });
   assert.equal(formas.size, EVENTOS.length, 'formaId repetido');
   assert.equal(new Set(especiesVistas).size, EVENTOS.length, 'espécie repetida (o prêmio desbloquearia a mesma duas vezes)');
-  // os três itens de raide se revezam entre os chefes
+  // os 10 consumíveis de raide (dados.ITEMS `raide`) se revezam entre os chefes
   const dosPremios = new Set(EVENTOS.flatMap(e => Object.keys(e.recompensa.itens)).filter(k => ITEMS[k].raide));
-  assert.deepEqual([...dosPremios].sort(), ['cristal-de-ruptura', 'escudo-astral', 'selo-de-interrupcao']);
+  assert.deepEqual([...dosPremios].sort(), ['celula-zygarde', 'cinza-vulcanica', 'cristal-de-ruptura', 'escama-abissal',
+    'escudo-astral', 'espelho-reverso', 'fragmento-tera', 'prisma-de-luz', 'relogio-de-areia', 'selo-de-interrupcao']);
+  // os 7 itens segurados novos (28/09/2026) têm cobertura completa: 14 chefes, 14 itens novos (7 consumíveis + 7 segurados) = 1 cada
+  const segurados = new Set(EVENTOS.flatMap(e => Object.keys(e.recompensa.itens)).filter(k => ITEMS[k].segurado && !ITEMS[k].price));
+  assert.deepEqual([...segurados].sort(), ['cristal-gelido', 'cristal-psiquico', 'emblema-da-coroa', 'escama-do-ceu',
+    'nucleo-eternamax', 'presa-da-lua', 'redea-espectral']);
 });
 
 test('a agenda mostra os próximos 3 chefes, com as datas no horário de Brasília', () => {

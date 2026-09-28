@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { AJUSTES, CHEFES, nivelDoChefe, prepararChefe, danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, golpeCanhao, resumoDoChefe,
   usarItemDeRaide, anulaTexto, drenoDoChefe, aplicarClimaDoChefe, climaDoChefe, habilidadeDoChefe, ITEM_DO_RAIDE, ITENS_DE_RAIDE } from '../js/boss.js';
 import { usarGolpe, aplicarStatus } from '../js/golpe.js';
-import { freshVol, novoCampo, climaDe, CLIMAS } from '../js/regras.js';
+import { freshVol, novoCampo, climaDe, CLIMAS, LADO_VAZIO } from '../js/regras.js';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';
 import { ITEMS, TYPE_PT } from '../js/dados.js';
 
@@ -321,8 +321,8 @@ test('Necrozma: couraça E ponto fraco juntos (as duas reduções se somam)', ()
 });
 
 /* ---------------- itens de raide ---------------- */
-test('os três itens de raide existem, são de batalha e não se compram', () => {
-  assert.deepEqual(ITENS_DE_RAIDE, ['ruptura', 'interrupcao', 'escudo']);
+test('os itens de raide existem, são de batalha e não se compram', () => {
+  assert.deepEqual(ITENS_DE_RAIDE, ['ruptura', 'interrupcao', 'escudo', 'cinza', 'abissal', 'prisma', 'espelho', 'relogio', 'fragmento', 'celula']);
   for (const tipo of ITENS_DE_RAIDE) {
     const it = ITEMS[ITEM_DO_RAIDE[tipo]];
     assert.ok(it?.name && it.desc, tipo);
@@ -372,10 +372,65 @@ test('Escudo Astral: o PRÓXIMO golpe carregado causa metade, e só ele', () => 
   assert.equal(antesDoChefeAgir(b).golpe.power, CHEFES['eternatus-eternamax'].canhao.power);
 });
 
-test('itens de raide: cada tipo uma vez por luta, mas os três podem ser usados na mesma luta', () => {
-  const b = chefe();
+test('itens de raide: cada tipo uma vez por luta, mas todos os "genéricos" podem ser usados na mesma luta', () => {
+  // 'prisma' (ponto fraco) e 'celula' (regenera) só valem em chefes com essa mecânica, e 'abissal' disputa a MESMA
+  // proteção elemental que 'cinza' (só uma de cada vez) — os três testados à parte
+  const genericos = ITENS_DE_RAIDE.filter(t => !['prisma', 'celula', 'abissal'].includes(t));
+  const b = chefe(), ladoJogador = LADO_VAZIO();
   for (let i = 0; i < 4; i++) antesDoChefeAgir(b);            // carregando
-  for (const tipo of ITENS_DE_RAIDE) assert.equal(usarItemDeRaide(b, tipo).ok, true, tipo);
-  for (const tipo of ITENS_DE_RAIDE) assert.equal(usarItemDeRaide(b, tipo).ok, false, `${tipo} de novo`);
-  assert.deepEqual(resumoDoChefe(b).usados, { ruptura: true, interrupcao: true, escudo: true });
+  for (const tipo of genericos) assert.equal(usarItemDeRaide(b, tipo, ladoJogador).ok, true, tipo);
+  for (const tipo of genericos) assert.equal(usarItemDeRaide(b, tipo, ladoJogador).ok, false, `${tipo} de novo`);
+  assert.deepEqual(resumoDoChefe(b).usados, Object.fromEntries(genericos.map(t => [t, true])));
+});
+
+test('Cinza Vulcânica/Escama Abissal: resistem o tipo por 3 turnos, um de cada vez', () => {
+  const b = chefe(), ladoJogador = LADO_VAZIO();
+  assert.equal(usarItemDeRaide(b, 'cinza').ok, false, 'sem lado do jogador: não dá pra aplicar');
+  const r = usarItemDeRaide(b, 'cinza', ladoJogador);
+  assert.equal(r.ok, true);
+  assert.deepEqual(ladoJogador.resisteRaide, { tipo: 'fire', turnos: 3 });
+  assert.equal(usarItemDeRaide(b, 'abissal', ladoJogador).ok, false, 'já tem uma proteção elemental ativa');
+});
+
+test('Prisma de Luz: só em chefe com ponto fraco, expõe na hora', () => {
+  const semPontoFraco = chefe();
+  assert.equal(usarItemDeRaide(semPontoFraco, 'prisma').ok, false, 'Eternatus não tem ponto fraco');
+  const comPontoFraco = chefe(1, 'rayquaza-mega');
+  const r = usarItemDeRaide(comPontoFraco, 'prisma');
+  assert.equal(r.ok, true);
+  assert.equal(comPontoFraco.boss.quebradoAcoes, AJUSTES.exposto.acoes);
+});
+
+test('Espelho Reverso: inverte a tabela a favor por 3 ações do chefe, depois se desfaz', () => {
+  const b = chefe();
+  assert.equal(usarItemDeRaide(b, 'espelho').ok, true);
+  assert.equal(b.boss.espelhoAcoes, 3);
+  const superEfetivo = danoNoChefe(b, 100, 'water'); // Eternatus (dragon/poison): água não é super efetivo contra ele
+  assert.ok(superEfetivo !== 100, 'a inversão mexeu no dano mesmo sem ser super/pouco efetivo por padrão');
+  for (let i = 0; i < 3; i++) antesDoChefeAgir(b);
+  assert.equal(b.boss.espelhoAcoes, 0, 'esgota em 3 ações do chefe');
+});
+
+test('Relógio de Areia: devolve os estágios pro chamador aplicar (boss.js não sabe em quem)', () => {
+  const r = usarItemDeRaide(chefe(), 'relogio');
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.estagios, [['speed', 2]]);
+});
+
+test('Fragmento Tera: devolve o marcador pro chamador resetar a própria marca de Tera usado', () => {
+  const r = usarItemDeRaide(chefe(), 'fragmento');
+  assert.equal(r.ok, true);
+  assert.equal(r.recarregaTera, true);
+});
+
+test('Célula Zygarde: só em chefe que regenera, desliga a regeneração pelo resto da luta', () => {
+  const semRegen = chefe();
+  assert.equal(usarItemDeRaide(semRegen, 'celula').ok, false, 'Eternatus não regenera');
+  const zygarde = chefe(1, 'zygarde-complete');
+  assert.equal(usarItemDeRaide(zygarde, 'celula').ok, true);
+  assert.equal(zygarde.boss.semRegen, true);
+  assert.equal(usarItemDeRaide(zygarde, 'celula').ok, false, 'já foi usado nesta luta');
+  zygarde.hp = Math.floor(zygarde.stats.hp / 2); // machucado, pra ver se a regeneração NÃO tenta agir mais
+  const { efeitos } = antesDoChefeAgir(zygarde);
+  assert.ok(!efeitos.some(e => e.cura), 'sem regeneração: antesDoChefeAgir não devolve mais {cura}');
 });

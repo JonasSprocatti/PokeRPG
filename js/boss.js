@@ -183,7 +183,8 @@ export function danoNoChefe(t, dano, tipo = null, ef = 1) {
   const cfg = cfgDe(b);
   if (cfg.anula && tipo && cfg.anula.tipos.includes(tipo)) return 0;
   let d = dano;
-  if (b.reverso && ef > 0 && ef !== 1) d = d * Math.min(4, Math.max(0.25, 1 / (ef * ef)));   // desfaz o ×ef do motor e aplica o inverso
+  // Mundo Reverso (Giratina) OU Espelho Reverso (item de raide, qualquer chefe): desfaz o ×ef do motor e aplica o inverso
+  if ((b.reverso || b.espelhoAcoes > 0) && ef > 0 && ef !== 1) d = d * Math.min(4, Math.max(0.25, 1 / (ef * ef)));
   if (cfg.adapta && tipo && tipo === b.ultimoTipo) d = d * cfg.adapta.reducao;
   if (cfg.adapta && tipo) b.ultimoTipo = tipo;
   if (b.nucleo?.ativo) d = d * cfg.coura.reducao;
@@ -257,7 +258,9 @@ export function antesDoChefeAgir(u) {
       ef.push(dizer(rev ? '🔄 O MUNDO REVERSO se abre: a tabela de tipos INVERTE! O que era super efetivo agora é fraco — e o contrário.' : '🔄 O Mundo Reverso se fecha: os tipos voltam ao normal.', 'level'));
     }
   }
-  if (cfg.regenera && !(b.quebradoAcoes > 0) && u.hp > 0 && u.hp < u.stats.hp) {
+  // Espelho Reverso (item de raide): a MESMA inversão do Mundo Reverso, mas por tempo limitado e em QUALQUER chefe
+  if (b.espelhoAcoes > 0 && --b.espelhoAcoes === 0) ef.push(dizer('🪞 O Espelho Reverso se desfaz: a tabela de tipos volta ao normal.', 'muted'));
+  if (cfg.regenera && !(b.quebradoAcoes > 0) && !b.semRegen && u.hp > 0 && u.hp < u.stats.hp) {
     const n = Math.max(1, Math.floor(u.stats.hp * cfg.regenera));
     ef.push({ cura: n }, dizer(`🧬 As células do chefe se regeneram (+${n} HP). Exponha-o pra parar isso!`, 'muted'));
   }
@@ -284,14 +287,27 @@ export function antesDoChefeAgir(u) {
      ruptura      força a Ruptura na hora (Cristal de Ruptura)
      interrupcao  interrompe o golpe carregado (Selo de Interrupção) — só se ele estiver carregando
      escudo       corta o PRÓXIMO golpe carregado pela metade (Escudo Astral)
+     cinza/abissal  time resiste Fogo/Água por 3 turnos (Cinza Vulcânica/Escama Abissal) — precisa de `ladoJogador`
+     prisma       expõe o chefe na hora, só em quem tem ponto fraco (Prisma de Luz — a "Ruptura" de quem não tem couraça)
+     espelho      inverte a tabela de tipos a seu favor por 3 AÇÕES do chefe (Espelho Reverso)
+     relogio      +2 de Velocidade na hora — aproximação de "prioridade" (ver CLAUDE.md); devolve `{estagios}` pro
+                  chamador aplicar em quem usou (boss.js não sabe qual Pokémon é: single player e MP resolvem isso)
+     fragmento    recarrega o Tera já gasto — devolve `{recarregaTera: true}`, o chamador reseta a PRÓPRIA marca
+     celula       elimina uma célula: desliga a regeneração pelo resto da luta, só em chefe que regenera
    Devolve { ok, efeitos, motivo? }. Quem chama gasta o item da mochila só se `ok`. */
-export const ITENS_DE_RAIDE = ['ruptura', 'interrupcao', 'escudo'];
-export const ITEM_DO_RAIDE = { ruptura: 'cristal-de-ruptura', interrupcao: 'selo-de-interrupcao', escudo: 'escudo-astral' };   // tipo → id em dados.ITEMS
-export function usarItemDeRaide(E, tipo) {
+export const ITENS_DE_RAIDE = ['ruptura', 'interrupcao', 'escudo', 'cinza', 'abissal', 'prisma', 'espelho', 'relogio', 'fragmento', 'celula'];
+export const ITEM_DO_RAIDE = {
+  ruptura: 'cristal-de-ruptura', interrupcao: 'selo-de-interrupcao', escudo: 'escudo-astral',
+  cinza: 'cinza-vulcanica', abissal: 'escama-abissal', prisma: 'prisma-de-luz', espelho: 'espelho-reverso',
+  relogio: 'relogio-de-areia', fragmento: 'fragmento-tera', celula: 'celula-zygarde'
+};   // tipo → id em dados.ITEMS
+export function usarItemDeRaide(E, tipo, ladoJogador = null) {
   const b = E?.boss, ef = [];
   if (!b) return { ok: false, efeitos: ef, motivo: 'Esse item só funciona na luta contra o chefe da semana.' };
   if (!ITENS_DE_RAIDE.includes(tipo)) return { ok: false, efeitos: ef, motivo: 'Item de raide desconhecido.' };
   if (b.raide?.[tipo]) return { ok: false, efeitos: ef, motivo: 'Esse item já foi usado nesta luta (um de cada por luta).' };
+  const cfg = cfgDe(b);
+  let extra;
   if (tipo === 'ruptura') {
     if (b.quebradoAcoes > 0) return { ok: false, efeitos: ef, motivo: 'O chefe já está exposto.' };
     exporChefe(b, ef, 'O Cristal de Ruptura estilhaça a defesa do chefe!', true);
@@ -304,9 +320,34 @@ export function usarItemDeRaide(E, tipo) {
     if (b.canhaoMult) return { ok: false, efeitos: ef, motivo: 'O Escudo Astral já está de pé.' };
     b.canhaoMult = AJUSTES.escudoAstral;
     ef.push(dizer(`🛡 O Escudo Astral envolve o time: o PRÓXIMO golpe carregado causa só ${Math.round(AJUSTES.escudoAstral * 100)}% do dano.`, 'good'));
+  } else if (tipo === 'cinza' || tipo === 'abissal') {
+    if (!ladoJogador) return { ok: false, efeitos: ef, motivo: 'Não deu pra aplicar a proteção agora.' };
+    if (ladoJogador.resisteRaide?.turnos > 0) return { ok: false, efeitos: ef, motivo: 'Já tem uma proteção elemental ativa no time.' };
+    const raideTipo = tipo === 'cinza' ? 'fire' : 'water';
+    ladoJogador.resisteRaide = { tipo: raideTipo, turnos: 3 };
+    ef.push(dizer(`${tipo === 'cinza' ? '🌋 A Cinza Vulcânica' : '🌊 A Escama Abissal'} cobre o time: dano de ${tipo === 'cinza' ? 'Fogo' : 'Água'} reduzido por 3 turnos.`, 'good'));
+  } else if (tipo === 'prisma') {
+    if (!cfg.pontoFraco) return { ok: false, efeitos: ef, motivo: 'Esse chefe não tem ponto fraco pra quebrar.' };
+    if (b.quebradoAcoes > 0) return { ok: false, efeitos: ef, motivo: 'O chefe já está exposto.' };
+    exporChefe(b, ef, 'O Prisma de Luz quebra a armadura do chefe!', true);
+  } else if (tipo === 'espelho') {
+    if (b.espelhoAcoes > 0) return { ok: false, efeitos: ef, motivo: 'O Espelho Reverso já está ativo.' };
+    b.espelhoAcoes = 3;
+    ef.push(dizer('🪞 O Espelho Reverso inverte a tabela de tipos a seu favor por 3 ações do chefe!', 'good'));
+  } else if (tipo === 'relogio') {
+    ef.push(dizer('⏳ O Relógio de Areia acelera o tempo ao seu redor!', 'good'));
+    extra = { estagios: [['speed', 2]] };
+  } else if (tipo === 'fragmento') {
+    ef.push(dizer('💎 O Fragmento Tera recarrega sua energia Tera!', 'good'));
+    extra = { recarregaTera: true };
+  } else if (tipo === 'celula') {
+    if (!cfg.regenera) return { ok: false, efeitos: ef, motivo: 'Esse chefe não tem células de regeneração.' };
+    if (b.semRegen) return { ok: false, efeitos: ef, motivo: 'A regeneração dele já foi eliminada nesta luta.' };
+    b.semRegen = true;
+    ef.push(dizer('🧬 Uma célula do chefe foi eliminada: ele para de se regenerar nesta luta.', 'good'));
   }
   (b.raide ||= {})[tipo] = true;
-  return { ok: true, efeitos: ef };
+  return { ok: true, efeitos: ef, ...extra };
 }
 
 // estado do chefe pra tela (barra de couraça, ponto fraco, aviso da carga, imunidades e o que ele tem de especial)

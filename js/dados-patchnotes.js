@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.55', data: '2026-09-28', titulo: '14 itens novos na Raide', piada: 'A Escama do Céu jura que não tem medo de altura. É só que os golpes Voadores doem menos agora.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Prêmio da Raide completo: 7 itens <b>consumíveis</b> novos (Cinza Vulcânica, Escama Abissal, Prisma de Luz, Espelho Reverso, Relógio de Areia, Fragmento Tera, Célula Zygarde) e 7 <b>segurados</b> novos que valem em qualquer batalha (Núcleo Eternamax, Escama do Céu, Cristal Psíquico, Rédea Espectral, Emblema da Coroa, Cristal Gélido, Presa da Lua) — todos só vêm de vencer o chefe da semana.'
+      ] }
+    ] },
   { versao: '2.54', data: '2026-09-28', titulo: 'Hall da Fama mais resistente a rede ruim', piada: 'Agora até fechar o jogo com raiva depois de um Game Over dá tempo de mandar tudo pra nuvem.',
     secoes: [
       { nome: 'Correções', itens: [

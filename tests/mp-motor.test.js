@@ -1,8 +1,9 @@
 // Motor da batalha multiplayer (js/mp-motor.js): dois lados com N Pokémon, estado imutável, narração em texto.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, nivelarMon, balancearPvP, balancearCoop, naNivelReal } from '../js/mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, nivelarMon, balancearPvP, balancearCoop, naNivelReal, usarRaideNoEvento } from '../js/mp-motor.js';
 import { freshVol, calcStats } from '../js/regras.js';
+import { prepararChefe } from '../js/boss.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], desc: 'longo…', ...o });
 const pokemon = (o = {}) => ({
@@ -55,6 +56,29 @@ test('item comum ocupa a vez: cura HP, não ataca, e fica em itensUsados[dono]',
   assert.equal(monMP(estado, 'A0').hp, 70, 'Potion curou 20 HP');
   assert.equal(monMP(estado, 'B0').hp, 100, 'não atacou: usar item ocupa o turno inteiro');
   assert.deepEqual(estado.itensUsados, { jogador0: ['potion'] });
+});
+
+/* Item de raide no co-op (pedido do usuário, 28/09/2026): boss.usarItemDeRaide não sabe QUAL Pokémon usou nem
+   se o Tera já saiu — usarRaideNoEvento (mp-motor.js) resolve isso lendo o próprio `estado`. */
+test('usarRaideNoEvento: Relógio de Areia aplica no principal de quem usou; Fragmento Tera reseta a marca de quem usou', () => {
+  const chefeMon = pokemon({ nick: 'Chefe' });
+  prepararChefe(chefeMon, 1, 'eternatus-eternamax');
+  const estado = novaBatalhaMP(
+    [fotoDoMon(pokemon(), 'A0', 'jogador0'), fotoDoMon(pokemon(), 'A1', 'jogador0', null, 1)],
+    [fotoDoMon(chefeMon, 'B0', 'ia', 'Chefe')], { evento: 'eternatus-eternamax' });
+  estado.gimmicksUsados = { jogador0: { tera: true } };
+
+  const r1 = usarRaideNoEvento(estado, 'jogador0', 'relogio');
+  assert.equal(r1.ok, true);
+  assert.equal(monMP(estado, 'A0').vol.stages.speed, 2, 'vai no PRINCIPAL (slot 0) de quem usou');
+  assert.equal(monMP(estado, 'A1').vol.stages.speed, 0, 'não afeta o outro Pokémon do mesmo jogador');
+
+  const r2 = usarRaideNoEvento(estado, 'jogador0', 'fragmento');
+  assert.equal(r2.ok, true);
+  assert.equal(estado.gimmicksUsados.jogador0.tera, false, 'reseta a marca de Tera usado de quem usou');
+
+  assert.equal(usarRaideNoEvento(estado, 'jogador0', 'cinza').ok, true);
+  assert.deepEqual(estado.campo.lados.A.resisteRaide, { tipo: 'fire', turnos: 3 });
 });
 
 test('turno: dano aplicado, PP gasto, estado original intacto', async t => {

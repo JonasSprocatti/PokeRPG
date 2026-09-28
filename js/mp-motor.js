@@ -8,7 +8,7 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE, STATS, TYPE_PT, ITEMS } from './dados.js';
-import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal } from './regras.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
 import { aplicarForma, verboDaForma } from './mega.js';
@@ -124,8 +124,19 @@ export function usarRaideNoEvento(estado, dono, tipo) {
   if (!estado.lados.A.some(m => m.dono === dono)) return { ok: false, efeitos: [], motivo: 'Você não está nesta luta.' };
   const E = estado.lados.B.find(m => m.boss && m.hp > 0);
   if (!E) return { ok: false, efeitos: [], motivo: 'O chefe já caiu.' };
-  const r = usarItemDeRaide(E, tipo);
-  if (r.ok) { const meu = ((estado.raideUsados ||= {})[dono] ||= {}); meu[tipo] = (meu[tipo] || 0) + 1; }
+  const ladoJogador = (estado.campo.lados ||= {}).A ||= LADO_VAZIO();
+  const r = usarItemDeRaide(E, tipo, ladoJogador);
+  if (r.ok) {
+    const meu = ((estado.raideUsados ||= {})[dono] ||= {}); meu[tipo] = (meu[tipo] || 0) + 1;
+    /* Relógio de Areia e Fragmento Tera: boss.js não sabe QUAL Pokémon é nem se o Tera já saiu — resolve aqui.
+       Simplificação: muta o estágio direto (sem passar por golpe.mudarEstagios) porque esta ação livre não tem
+       um `ctx` de narração como o resto do turno — Clear Body/Simple/Contrary não entram nesse +2 específico. */
+    if (r.estagios) {
+      const meuMon = estado.lados.A.find(m => m.dono === dono && m.slot === 0 && m.hp > 0) || estado.lados.A.find(m => m.dono === dono && m.hp > 0);
+      if (meuMon) for (const [stat, change] of r.estagios) meuMon.vol.stages[stat] = Math.max(-6, Math.min(6, (meuMon.vol.stages[stat] || 0) + change));
+    }
+    if (r.recarregaTera) { const g = estado.gimmicksUsados?.[dono]; if (g) g.tera = false; }
+  }
   return r;
 }
 

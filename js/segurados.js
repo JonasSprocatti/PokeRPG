@@ -17,10 +17,12 @@
 //   soTipo        `curaFimTurno` só pra esse tipo; nos outros machuca  (Lodo Negro)
 //   curaEm        come sozinho ao cair nessa fração de HP: { fracao, cura?, fracaoCura? } (Frutas Oran/Sitrus)
 //   curaStatus    come sozinho quando você está com status            (Fruta Lum)
+//   danoTipo      {tipos:[t], mult}  golpe desses tipos que VOCÊ usa ×mult     (Núcleo Eternamax)
+//   resisteTipo   {tipos:[t], mult}  golpe desses tipos que VOCÊ recebe ×mult (Escama do Céu, Cristal Psíquico/Gélido)
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
-import { ITENS_SEGURADOS } from './dados.js';
+import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS } from './dados.js';
 
 export const SEGURADOS = {
   leftovers: { curaFimTurno: 1 / 16 },
@@ -35,22 +37,41 @@ export const SEGURADOS = {
   'assault-vest': { multStat: { 'special-defense': 1.5 }, semStatus: true },
   'oran-berry': { curaEm: { fracao: 0.5, cura: 10 }, gastaNoUso: true },
   'sitrus-berry': { curaEm: { fracao: 0.5, fracaoCura: 0.25 }, gastaNoUso: true },
-  'lum-berry': { curaStatus: true, gastaNoUso: true }
+  'lum-berry': { curaStatus: true, gastaNoUso: true },
+  /* Prêmios de raide (boss.js) — pedra Mega Eternamax não existe: estes 7 são itens SEGURADOS comuns, cai na
+     mochila e equipa que nem qualquer um dos outros. Valem em qualquer batalha (não só contra o chefe da semana) —
+     diferente dos consumíveis de raide (ITENS_DE_RAIDE), esses aqui são passivos, como os itens de fábrica.
+     Simplificações assumidas (documentadas no CLAUDE.md): Rédea Espectral e Emblema da Coroa tinham uma versão
+     mais elaborada no design original ("prioridade no 1º turno", "dano em conjunto com aliado") que exigiria
+     mexer na ordenação de turno dos dois motores (single player e multiplayer) — a versão que entrou é mais
+     simples, mas com efeito real e testado. */
+  'nucleo-eternamax': { danoTipo: { tipos: ['dragon', 'poison'], mult: 1.2 }, multStat: { defense: 0.8 } },
+  'escama-do-ceu': { resisteTipo: { tipos: ['flying', 'dragon'], mult: 0.75 } },
+  'cristal-psiquico': { resisteTipo: { tipos: ['psychic'], mult: 0.6 } },
+  'redea-espectral': { multStat: { speed: 1.2 } },
+  'emblema-da-coroa': { multDano: 1.15 },
+  'cristal-gelido': { resisteTipo: { tipos: ['ice'], mult: 0.5 } },
+  'presa-da-lua': { drenaDano: 0.1 }
 };
 // o que este Pokémon está segurando (objeto vazio = nada)
 export const seg = m => SEGURADOS[m?.item] || {};
 export const temSegurado = m => !!SEGURADOS[m?.item];
 // itens segurados que existem na mochila/loja (dados.js) — o teste confere que as duas listas batem
-export const IDS_SEGURADOS = Object.keys(ITENS_SEGURADOS);
+export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS)];
 
-// Multiplicador de dano do item de quem ataca. `ef` = eficácia de tipo (2, 1, 0.5…), `fisico` = golpe físico.
-export function multDanoDoItem(m, { ef = 1, fisico = true } = {}) {
+// Multiplicador de dano do item de quem ataca. `ef` = eficácia de tipo (2, 1, 0.5…), `fisico` = golpe físico,
+// `tipo` = tipo do golpe (pro `danoTipo` do Núcleo Eternamax — independente do `multDano` genérico).
+export function multDanoDoItem(m, { ef = 1, fisico = true, tipo = null } = {}) {
   const s = seg(m);
-  if (!s.multDano) return 1;
-  if (s.soSuperEfetivo && ef <= 1) return 1;
-  if (s.soFisico && !fisico) return 1;
-  if (s.soEspecial && fisico) return 1;
-  return s.multDano;
+  let mult = 1;
+  if (s.multDano && !(s.soSuperEfetivo && ef <= 1) && !(s.soFisico && !fisico) && !(s.soEspecial && fisico)) mult *= s.multDano;
+  if (s.danoTipo && tipo && s.danoTipo.tipos.includes(tipo)) mult *= s.danoTipo.mult;
+  return mult;
+}
+// Multiplicador de dano do item de quem DEFENDE, por tipo do golpe recebido (Escama do Céu, Cristal Psíquico/Gélido).
+export function resisteDoItem(m, tipo) {
+  const s = seg(m);
+  return (s.resisteTipo && tipo && s.resisteTipo.tipos.includes(tipo)) ? s.resisteTipo.mult : 1;
 }
 // Fruta que come sozinha: devolve o que fazer agora ({ cura } ou { curaStatus }) ou null. `m.hp` já atualizado.
 export function frutaAgora(m) {

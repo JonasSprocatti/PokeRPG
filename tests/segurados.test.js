@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem } from '../js/segurados.js';
-import { ITEMS, ITENS_SEGURADOS, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS } from '../js/dados.js';
+import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
 const mon = (o = {}) => ({ level: 50, ability: 'none', data: { types: ['normal'] }, status: null, vol: { stages: {} },
@@ -14,9 +14,18 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
     assert.ok(it.segurado && it.name && it.desc && it.price > 0, k);
     assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
   }
+  // prêmios de raide (boss.js): mesma coisa, mas SEM preço — não vendem na loja, só vêm de vencer o chefe da semana
+  for (const [k, it] of Object.entries(ITENS_RAIDE_SEGURADOS)) {
+    assert.ok(it.segurado && it.name && it.desc && !it.price, k);
+    assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
+    assert.ok(SEGURADOS[k], `${k} não tem gancho em SEGURADOS`);
+  }
   const ganchos = new Set(['multDano', 'soFisico', 'soEspecial', 'soSuperEfetivo', 'multStat', 'semStatus', 'recuoPorGolpe', 'drenaDano',
-    'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus']);
-  for (const [k, s] of Object.entries(SEGURADOS)) for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);
+    'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus', 'danoTipo', 'resisteTipo']);
+  for (const [k, s] of Object.entries(SEGURADOS)) {
+    for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);
+    for (const t of [...(s.danoTipo?.tipos || []), ...(s.resisteTipo?.tipos || [])]) assert.ok(TYPE_PT[t], `${k}: tipo "${t}"`);
+  }
   assert.equal(temSegurado(mon()), false);
   assert.equal(temSegurado(mon({ item: 'leftovers' })), true);
   assert.deepEqual(seg(mon()), {});
@@ -40,6 +49,24 @@ test('o dano e os atributos realmente mudam (calcDamage / effStat)', t => {
   assert.ok(comOrbe > semItem, `${comOrbe} > ${semItem}`);
   assert.equal(effStat(mon({ item: 'assault-vest' }), 'special-defense'), 150);
   assert.equal(effStat(mon(), 'special-defense'), 100);
+});
+
+test('prêmios de raide: Núcleo Eternamax (dano por tipo) e Escama do Céu/Cristal Psíquico/Gélido (resiste por tipo)', t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const dragao = { name: 'dragon-claw', type: 'dragon', cls: 'physical', power: 80, meta: {} };
+  const normal = { name: 'tackle', type: 'normal', cls: 'physical', power: 80, meta: {} };
+  const semItemDragao = calcDamage(mon(), mon(), dragao).dmg;
+  const comNucleoDragao = calcDamage(mon({ item: 'nucleo-eternamax' }), mon(), dragao).dmg;
+  assert.ok(comNucleoDragao > semItemDragao, `Núcleo Eternamax devia bater mais forte em Dragão: ${comNucleoDragao} vs ${semItemDragao}`);
+  const semItemNormal = calcDamage(mon(), mon(), normal).dmg;
+  assert.equal(calcDamage(mon({ item: 'nucleo-eternamax' }), mon(), normal).dmg, semItemNormal, 'Núcleo Eternamax não afeta golpe Normal');
+  assert.equal(effStat(mon({ item: 'nucleo-eternamax' }), 'defense'), 80, 'Núcleo Eternamax reduz a própria Defesa em 20%');
+
+  const golpeGelo = { name: 'ice-beam', type: 'ice', cls: 'special', power: 80, meta: {} };
+  const semDefesaGelo = calcDamage(mon(), mon(), golpeGelo).dmg;
+  const comCristalGelido = calcDamage(mon(), mon({ item: 'cristal-gelido' }), golpeGelo).dmg;
+  assert.ok(comCristalGelido < semDefesaGelo, `Cristal Gélido devia reduzir o dano de Gelo: ${comCristalGelido} vs ${semDefesaGelo}`);
+  assert.equal(calcDamage(mon(), mon({ item: 'cristal-gelido' }), normal).dmg, semItemNormal, 'Cristal Gélido não afeta golpe Normal');
 });
 
 test('frutas: comem sozinhas na hora certa', () => {

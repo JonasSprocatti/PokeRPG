@@ -368,13 +368,38 @@ O que sobrou e o que ficou combinado:
   `antesDoChefeAgir`), `habilidade` (habilidade da tabela do motor: Calyrex `grim-neigh`, Necrozma `neuroforce`, Zacian `intrepid-sword`). **O golpe carregado NÃO pode ser golpe de carga do motor**
   (`especiais.carga`, ex.: Freeze Shock — viraria "preparando" de novo); o teste confere. `EVENTO_SEM_PERMADEATH` vale pra todos. **Simplificações a lembrar**: as duplas (Zacian+Zamazenta,
   Dialga+Palkia) viraram UM chefe cada; Mewtwo troca pro "modo X" só como bônus de atributo (fase 2) — não há troca de forma/sprite; Kyurem não ignora habilidades do jogador.
-- **Itens de raide** (`dados.ITEMS[x].raide`, `boss.usarItemDeRaide`): `cristal-de-ruptura`, `selo-de-interrupcao`, `escudo-astral`; UM de cada tipo por luta (marca em `E.boss.raide`), só valem com `E.boss`.
+- **Itens de raide** (`dados.ITEMS[x].raide`, `boss.usarItemDeRaide`): 10 consumíveis, UM de cada tipo por luta (marca
+  em `E.boss.raide`), só valem com `E.boss`: `cristal-de-ruptura`, `selo-de-interrupcao`, `escudo-astral` (os 3
+  originais) + `cinza-vulcanica`, `escama-abissal`, `prisma-de-luz`, `espelho-reverso`, `relogio-de-areia`,
+  `fragmento-tera`, `celula-zygarde` (28/09/2026, ver abaixo).
   Single player: `itens.useItem` → `usarRaide` (gasta o turno). Co-op: ação livre `raide` → `multiplayer.registrarRaide` (anfitrião) → `mp-motor.usarRaideNoEvento`; `b.raideUsados[dono][tipo]` viaja no estado e
   `consumirRevives` desconta da PRÓPRIA mochila. Escudo Astral = `b.canhaoMult` (0,5) consumido no próximo golpe carregado; `canhaoUltimoMult` faz os outros alvos do co-op levarem o mesmo corte.
-  Vêm de prêmio: `evento.ev()` dá 2 itens de raide por vitória, girando entre os três. **BACKLOG dos itens aprovados (fazer depois)**: Núcleo Eternamax (segurar: +dano Dragão/Veneno, −Def), Escama do Céu (segurar:
-  resiste Voador/Dragão), Cinza Vulcânica (consumível: time resiste Fogo 3 turnos), Escama Abissal (idem Água), Cristal Psíquico (segurar: −dano psíquico), Prisma de Luz (consumível: quebra a armadura de prisma),
-  Rédea Espectral (segurar: +Velocidade, age antes no 1º turno), Emblema da Coroa (segurar: +dano em conjunto), Cristal Gélido (segurar: protege de gelo), Espelho Reverso (consumível: inverte a tabela a seu favor
-  por 3 turnos), Relógio de Areia (consumível: prioridade por 1 turno), Fragmento Tera (consumível: recarrega o Tera), Presa da Lua (segurar: cura 10% do dano), Célula Zygarde (consumível: elimina uma célula).
+  Vêm de prêmio: `evento.ev()` dá 2 de um dos 3 originais + 1 de um dos 14 novos (7 consumíveis + 7 segurados), girando cada grupo no próprio módulo.
+  **✅ FEITO (28/09/2026) — os 14 itens do backlog aprovado.** `usarItemDeRaide(E, tipo, ladoJogador)` ganhou um
+  3º parâmetro (os 3 originais ignoram): `cinza`/`abissal` escrevem `ladoJogador.resisteRaide = {tipo, turnos:3}`
+  (novo campo em `regras.LADO_VAZIO`, decrementado em `passarLado`, lido por `regras.multResisteRaide` em
+  `calcDamage` — igual a `multTelas`); `prisma` reusa `exporChefe` (a MESMA Ruptura, mas com `cfg.pontoFraco`
+  como porta em vez de `cfg.coura` — dá contra-jogo pra lutas sem couraça); `espelho` é uma inversão de tabela
+  TEMPORÁRIA e independente do `b.reverso` do Giratina (`b.espelhoAcoes`, decrementado em `antesDoChefeAgir`,
+  checado em `danoNoChefe` junto com `b.reverso`); `celula` liga `b.semRegen` (checado onde `cfg.regenera` cura,
+  em `antesDoChefeAgir`), só funciona em chefe com essa mecânica (hoje só Zygarde Completo). **`relogio` e
+  `fragmento` não sabem QUAL Pokémon usou nem se o Tera já saiu** — isso mora no estado de cada motor, não no do
+  chefe — então `usarItemDeRaide` devolve marcadores (`{estagios:[['speed',2]]}`, `{recarregaTera:true}`) que os
+  TRÊS chamadores resolvem: `itens.usarRaide` (`changeStats(S.player,...)` + `G.B.teraUsada=false`),
+  `mp-motor.usarRaideNoEvento` (aplica direto em `vol.stages` do PRINCIPAL de quem usou — sem `ctx` de narração
+  nessa ação livre, então Clear Body/Simple/Contrary não entram nesse +2 específico — e reseta
+  `estado.gimmicksUsados[dono].tera`) e a Arena (`arena.arenaRaide` já chama o MESMO `usarRaideNoEvento` do
+  co-op, então herda de graça). **7 itens SEGURADOS novos** (`dados.ITENS_RAIDE_SEGURADOS`, sem `price` — só vêm
+  de prêmio, nunca da loja; `segurados.IDS_SEGURADOS` agora soma as duas tabelas): `nucleo-eternamax`
+  (`danoTipo` + `multStat`, gancho `danoTipo` NOVO em segurados.js — dano por tipo do PRÓPRIO golpe, igual ao
+  `danoTipo` de habilidades.js mas pro item), `escama-do-ceu`/`cristal-psiquico`/`cristal-gelido` (`resisteTipo`,
+  gancho NOVO — dano RECEBIDO daquele tipo, novo `regras.resisteDoItem` chamado em `calcDamage` do lado de quem
+  DEFENDE, mesmo espírito de `ht.resiste` das habilidades), `redea-espectral`/`emblema-da-coroa`/`presa-da-lua`
+  (ganchos que já existiam: `multStat`/`multDano`/`drenaDano`). **Simplificações assumidas** (documentado no
+  próprio código): Rédea Espectral vira só +20% Velocidade (sem a prioridade no 1º turno do design original —
+  exigiria threading de "é o turno 1" nos dois motores de ordenação); Emblema da Coroa vira +15% de dano fixo
+  (sem depender de "lutar acompanhado" — mesma classe de problema que fez a habilidade Friend Guard ficar de
+  fora da 5ª leva: `calcDamage` não recebe o roster de aliados do atacante).
 - **Sucker Punch** (`soSeAlvoAtaca` em `especiais.js`): `vol.golpeEscolhido` é preenchido por `batalha.turn`/`mp-motor` antes de resolver o turno e apagado em `fimDaRodada`;
   falha se o alvo escolheu status, não escolheu golpe (item/fuga) ou já agiu (`primeiro` falso).
 - **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),

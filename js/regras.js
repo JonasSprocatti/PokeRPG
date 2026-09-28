@@ -5,7 +5,7 @@
 import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
-import { seg, multDanoDoItem } from './segurados.js';
+import { seg, multDanoDoItem, resisteDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
 
 export function typeEff(atk, defs) {
@@ -240,7 +240,8 @@ export const CLIMA_TURNOS = 5;
    Armadilha só machuca quem ENTRA em campo — aqui isso acontece quando o treinador (ou a fila de lendários) manda
    o próximo Pokémon. Você nunca troca de Pokémon, então armadilha no seu lado não tem em quem pegar: os golpes
    dizem isso na hora de usar, em vez de fingir que funcionaram. */
-export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, neblina: 0, vento: 0, pedras: false, espinhos: 0, toxinas: 0 });
+// `resisteRaide` = { tipo, turnos }: Cinza Vulcânica/Escama Abissal (itens de raide, boss.js) — resiste um tipo por N turnos
+export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, neblina: 0, vento: 0, pedras: false, espinhos: 0, toxinas: 0, resisteRaide: null });
 export const TELA_TURNOS = 5, VENTO_TURNOS = 4;
 export const MAX_ESPINHOS = 3, MAX_TOXINAS = 2;
 // dano cortado pelas telas do lado de quem DEFENDE (Aurora Veil vale pros dois tipos de golpe)
@@ -253,6 +254,8 @@ export function multTelas(lado, move) {
 export const temSalvaguarda = lado => !!lado && lado.salvaguarda > 0;
 export const temNeblina = lado => !!lado && lado.neblina > 0;
 export const multVento = lado => (lado?.vento > 0 ? 2 : 1);
+// Cinza Vulcânica/Escama Abissal (item de raide): dano recebido daquele tipo, pela metade
+export const multResisteRaide = (lado, tipo) => (lado?.resisteRaide?.tipo === tipo ? 0.5 : 1);
 // Stealth Rock: 1/8 do HP máximo, corrigido pela eficácia de Pedra contra o tipo de quem entrou
 export const danoPedras = m => Math.max(1, Math.floor(m.stats.hp / 8 * typeEff('rock', tiposDefensivos(m))));
 // Spikes: só pega quem está no chão; 1/8, 1/6 ou 1/4 conforme as camadas
@@ -270,9 +273,10 @@ export function passarLado(lado) {
   for (const k of ['reflect', 'luz', 'veu', 'salvaguarda', 'neblina', 'vento']) {
     if (lado?.[k] > 0 && --lado[k] === 0) acabou.push(k);
   }
+  if (lado?.resisteRaide && --lado.resisteRaide.turnos <= 0) { lado.resisteRaide = null; acabou.push('resisteRaide'); }
   return acabou;
 }
-export const NOME_LADO = { reflect: 'Refletir', luz: 'Tela de Luz', veu: 'Véu da Aurora', salvaguarda: 'Salvaguarda', neblina: 'Névoa', vento: 'Vento de Cauda' };
+export const NOME_LADO = { reflect: 'Refletir', luz: 'Tela de Luz', veu: 'Véu da Aurora', salvaguarda: 'Salvaguarda', neblina: 'Névoa', vento: 'Vento de Cauda', resisteRaide: 'A proteção elemental' };
 
 /* ---- terrenos ----
    Também vivem no campo (`campo.terreno` / `campo.terrenoTurnos`) e duram 5 turnos, mas só valem pra quem está NO
@@ -412,10 +416,12 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
   if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
-  mod *= multDanoDoItem(u, { ef, fisico: phys });                                    // item segurado (Orbe da Vida…)
+  mod *= resisteDoItem(t, move.type);                                                // Escama do Céu, Cristal Psíquico/Gélido
+  mod *= multDanoDoItem(u, { ef, fisico: phys, tipo: move.type });                    // item segurado (Orbe da Vida, Núcleo Eternamax…)
   mod *= multClima(clima, move.type);                                                // sol/chuva (regras.CLIMAS)
   mod *= multTerreno(terreno, move.type, u);                                         // terreno, pra quem está no chão
   mod *= multTelas(ladoAlvo, move);                                                  // telas do lado de quem defende
+  mod *= multResisteRaide(ladoAlvo, move.type);                                      // Cinza Vulcânica/Escama Abissal (raide)
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
 export function confDamage(u) {

@@ -9,7 +9,7 @@ import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.j
 import { ITEMS, ST_SHORT } from './dados.js';
 import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, LADO_VAZIO } from './regras.js';
 import { guardar, trazer } from './esconderijo.js';
 import { usarItemDeRaide } from './boss.js';
 import { loadPokemon } from './api.js';
@@ -159,11 +159,16 @@ export async function tirarItem(M) {
    vai pro registro). No single player gasta o turno, como qualquer item em batalha. */
 async function usarRaide(id) {
   const S = G.S, it = ITEMS[id], E = G.B?.enemy;
-  const r = usarItemDeRaide(E, it.raide);
+  const ladoJogador = (G.B.campo.lados ||= {}).jogador ||= LADO_VAZIO();
+  const r = usarItemDeRaide(E, it.raide, ladoJogador);
   if (!r.ok) { await say(r.motivo, 'muted'); return false; }
   S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
   await say(`Você usa <b>${esc(it.name)}</b>!`, 'good');
   for (const e of r.efeitos) if (e.dizer) await say(e.dizer, e.cls || 'status');
+  // Relógio de Areia e Fragmento Tera: boss.usarItemDeRaide não sabe QUAL Pokémon usou nem se o Tera já saiu —
+  // isso mora no estado do single player (S.player, G.B), então é aqui que se resolve.
+  if (r.estagios) await changeStats(S.player, r.estagios.map(([stat, change]) => ({ stat, change })));
+  if (r.recarregaTera) G.B.teraUsada = false;
   render(); return true;
 }
 export async function useItem(id, inBattle) {
