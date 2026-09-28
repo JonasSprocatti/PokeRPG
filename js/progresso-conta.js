@@ -61,7 +61,18 @@ export const temTeste = p => !!p?.porJornada?.[ID_JORNADA_TESTE]
 export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando = new Date().toISOString()) {
   const p = { ...progressoVazio(), ...progresso, especies: { ...(progresso?.especies || {}) }, porJornada: { ...(progresso?.porJornada || {}) } };
   for (const j of jornadas) {
-    if (!j?.id || p.porJornada[j.id]) continue;          // sem id (save antiquíssimo) ou já contada
+    if (!j?.id) continue;                                 // sem id (save antiquíssimo)
+    /* Jornada JÁ contada antes de `maxDinheiro` existir aqui (campo novo, 28/09/2026, pra Loja de preparo da
+       Arena): sem isto, o `continue` de sempre pulava a jornada inteira e o saldo de quem já tinha a conta
+       registrada ANTES da Loja de preparo existir ficava travado em ₽0 pra sempre — a loja parecia quebrada
+       (nada comprável, tudo "saldo insuficiente"), mesmo tendo carreira de sobra. Só ATUALIZA o campo que falta
+       (com Math.max — nunca encolhe), não reprocessa a entrada inteira: o resto (abates, badges de parceiros…)
+       já está certo e reprocessar arriscaria sobrescrever algo por engano. Bug real relatado pelo usuário. */
+    if (p.porJornada[j.id]) {
+      const atual = p.porJornada[j.id], max = Math.max(atual.maxDinheiro || 0, j.maxDinheiro || 0);
+      if (max !== atual.maxDinheiro) p.porJornada[j.id] = { ...atual, maxDinheiro: max };
+      continue;
+    }
     const a = j.registro?.abates;
     /* Além dos abates, a entrada guarda os números da jornada que alguma conquista precisa (`especie`/`nivel` são
        a missão do Gigantamax: nível 50 em N jornadas). É o "livro-caixa" permanente: a carreira pode perder a

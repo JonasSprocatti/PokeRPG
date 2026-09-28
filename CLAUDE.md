@@ -438,6 +438,19 @@ O que sobrou e o que ficou combinado:
   o controle de quanto já foi gasto deixaria comprar de graça). `carreira.saldoArenaDaConta`/`gastarSaldoArenaDaConta`
   fazem a ponte com `localStorage`.
 
+  **✅ CORRIGIDO — bug real relatado pelo usuário: "itens equipáveis e itens de uso dentro da Raid não estão
+  funcionando, não tem lugar pra selecionar eles pra usar".** Causa raiz: `progresso-conta.bancar()` pula
+  jornadas cujo id JÁ está em `porJornada` (`if (p.porJornada[j.id]) continue`) — certo pra não reprocessar à toa,
+  mas isso também pulava o BACKFILL de `maxDinheiro`: quem já tinha a conta com jornadas bancadas ANTES desse
+  campo existir (ou seja, qualquer conta com carreira anterior a hoje) ficava com `maxDinheiro` sempre ausente
+  nessas entradas — `saldoArenaGanho` somava zero pra sempre, então TODO botão de comprar ficava "Saldo
+  insuficiente" desabilitado, e sem nada comprado não havia nada pra equipar nem usar (a seção "🎽 Equipar item"
+  também mostra a mensagem de "compre primeiro" quando `donos.length === 0`). Corrigido: `bancar()` agora, pra
+  jornada JÁ bancada, atualiza só o campo que falta (`Math.max` — nunca encolhe) em vez de pular a entrada
+  inteira. Autocorretivo: `atualizarProgresso()` já roda (e salva) a cada vez que a tela da Arena é aberta, então
+  o saldo se ajusta sozinho na próxima visita, sem precisar de migração à parte. `tests/progresso-conta.test.js`
+  ("bancar preenche maxDinheiro de jornada JÁ bancada antes desse campo existir") trava a regressão.
+
   **Revisão do que a loja vende (mesmo dia, pedido do usuário: "não era pra comprar item de raide, e sim cura,
   revive, stat e itens de segurar").** A primeira versão vendia os 10 itens de raide — **errado**, esses
   continuam só de prêmio (`ITENS_DE_RAIDE`, exibidos como lista comum no lobby, sem botão de comprar). `htmlLoja`

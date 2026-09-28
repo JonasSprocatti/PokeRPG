@@ -164,6 +164,23 @@ test('saldoArenaGanho soma 10% do maxDinheiro de cada jornada bancada', () => {
   assert.equal(saldoArenaGanho(semCampo), 0);
 });
 
+// Bug real relatado pelo usuário: quem já tinha a jornada bancada ANTES de maxDinheiro existir ficava com o
+// saldo travado em ₽0 pra sempre (a Loja de preparo parecia quebrada — nada comprável, nada pra equipar).
+test('bancar preenche maxDinheiro de jornada JÁ bancada antes desse campo existir (retroativo)', () => {
+  // 1ª rodada: a jornada é bancada num formato "antigo", sem maxDinheiro na carreira (save de antes da Loja)
+  let p = bancar(progressoVazio(), [jornada('j1', { maxDinheiro: undefined })], []);
+  assert.equal(saldoArenaGanho(p), 0, 'sem o dado, começa em zero — igual sempre foi');
+  // 2ª rodada: a MESMA jornada, agora com maxDinheiro (o campo existe na carreira, só nunca tinha sido lido)
+  p = bancar(p, [jornada('j1', { maxDinheiro: 8000 })], []);
+  assert.equal(saldoArenaGanho(p), 800, 'preenche o campo que faltava em vez de pular a jornada inteira');
+  // idempotente: rodar de novo não dobra
+  p = bancar(p, [jornada('j1', { maxDinheiro: 8000 })], []);
+  assert.equal(saldoArenaGanho(p), 800);
+  // nunca encolhe: um valor mais baixo não derruba o que já foi creditado
+  p = bancar(p, [jornada('j1', { maxDinheiro: 100 })], []);
+  assert.equal(saldoArenaGanho(p), 800);
+});
+
 test('saldoArenaDisponivel desconta o já gasto, sem nunca ficar negativo', () => {
   const p = bancar(progressoVazio(), [jornada('j1', { maxDinheiro: 10000 })], []);
   assert.equal(saldoArenaDisponivel(p), 1000);

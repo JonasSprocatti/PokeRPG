@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.64', data: '2026-09-28', titulo: 'Saldo da Arena consertado', piada: 'O saldo estava fazendo greve de fome. Agora come a carreira inteira, não só a jornada de hoje.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A Loja de preparo da Arena não contava o dinheiro de jornadas terminadas antes dela existir: quem já jogava ficava com saldo ₽0 pra sempre, sem conseguir comprar (nem equipar) nada. Corrigido — o saldo se acerta sozinho na próxima vez que você abrir a Arena.'
+      ] }
+    ] },
   { versao: '2.63', data: '2026-09-28', titulo: 'Barra de XP anima, PP pisca', piada: 'O PP descobriu que também merecia um efeito especial, não só o HP.',
     secoes: [
       { nome: 'Novidades', itens: [
