@@ -84,6 +84,14 @@
 //                          efetivo, OHKO ou autodestrutivo contra você (golpe.aoEntrarEmCampo) — Anticipation
 //   sincroniza             queimadura/paralisia/veneno recebidos de um golpe voltam pra quem causou (golpe.aplicarStatus) — Synchronize
 //   flinchChance: n        chance extra (%) de fazer o alvo recuar em golpe de dano que ainda não tem chance própria de recuo (golpe.js) — Stench
+//   sheerForce             golpe com efeito secundário nativo (estágio/status/recuo por chance) bate ×1,3 mas
+//                          PERDE o efeito (regras.temSecundario decide "tem efeito"; golpe.executar guarda os
+//                          três blocos de aplicação) — Sheer Force
+//   unnerve                enquanto este Pokémon está em campo, o LADO DE QUEM ELE ENFRENTA não come fruta
+//                          sozinho (golpe.comerFruta, só no momento em que os dois trocam golpe — não no fim de
+//                          turno, simplificação: ver CLAUDE.md) — Unnerve
+//   friendGuard             dano recebido por um ALIADO vivo cai 25% (golpe.executar, via `ctx.aliadosDe`, novo
+//                          nos dois ctx — sem isso a habilidade fica inerte) — Friend Guard
 export const HABILIDADES = {
   // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
   drizzle: { climaAoEntrar: 'chuva' }, drought: { climaAoEntrar: 'sol' }, 'sand-stream': { climaAoEntrar: 'areia' }, 'snow-warning': { climaAoEntrar: 'neve' },
@@ -138,6 +146,7 @@ export const HABILIDADES = {
   'poison-point': { contato: { status: 'poison', chance: 30 } },
   'rough-skin': { contatoDano: 1 / 8 }, 'iron-barbs': { contatoDano: 1 / 8 },
   synchronize: { sincroniza: true }, stench: { flinchChance: 10 },
+  'sheer-force': { sheerForce: true }, unnerve: { unnerve: true }, 'friend-guard': { friendGuard: true },
   // outros
   'speed-boost': { fimTurno: 'speed' }, intimidate: { intimida: true }, 'run-away': { fuga: true },
   'magnet-pull': { prendeTipo: ['steel'] }, anticipation: { anticipa: true },

@@ -70,7 +70,9 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     'ignoraEstagios', 'inverteEstagios', 'dobraEstagios', 'espelhaQueda', 'aoSerBaixado', 'aoNocautear', 'aoSerAtingido', 'limitaStatus',
     'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima',
     // quinta leva
-    'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance']);
+    'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance',
+    // sexta leva
+    'sheerForce', 'unnerve', 'friendGuard']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
@@ -512,4 +514,45 @@ test('Anticipation avisa sem mudar nada; Synchronize devolve status; Stench dá 
   const alvo = mon();
   await usarGolpe(federado, alvo, golpe(), true, ctx());
   assert.equal(alvo.vol.flinch, true, 'Stench fez o alvo recuar');
+});
+
+test('Sheer Force: golpe com efeito secundário nativo bate mais forte, mas perde o efeito', async t => {
+  t.mock.method(Math, 'random', () => 0.01); // aplicaria o secundário na certa, se não fosse Sheer Force
+  const golpeComEstagio = golpe({ stats: [{ stat: 'defense', change: -1 }], meta: { statChance: 100 } });
+  const normal = mon(), comSheerForce = mon({ ability: 'sheer-force' });
+  const alvo1 = mon(), alvo2 = mon();
+  await usarGolpe(normal, alvo1, golpeComEstagio, true, ctx());
+  await usarGolpe(comSheerForce, alvo2, golpeComEstagio, true, ctx());
+  assert.ok((100 - alvo2.hp) > (100 - alvo1.hp), `Sheer Force devia bater mais forte: ${100 - alvo2.hp} vs ${100 - alvo1.hp}`);
+  assert.equal(alvo1.vol.stages.defense, -1, 'sem Sheer Force, o estágio caiu normal');
+  assert.equal(alvo2.vol.stages.defense, 0, 'com Sheer Force, o estágio NÃO caiu — o efeito se foi');
+  // golpe SEM efeito secundário nenhum: Sheer Force não bate mais forte à toa
+  const semSecundario = golpe();
+  const a = mon(), b = mon();
+  await usarGolpe(mon(), a, semSecundario, true, ctx());
+  await usarGolpe(mon({ ability: 'sheer-force' }), b, semSecundario, true, ctx());
+  assert.equal(100 - a.hp, 100 - b.hp, 'sem efeito secundário, o dano é igual');
+});
+
+test('Unnerve: o alvo não come fruta sozinho logo depois de levar dano de quem tem a habilidade', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const comFruta = mon({ item: 'oran-berry', hp: 55 }); // vai ficar ≤ metade depois do golpe
+  await usarGolpe(mon(), comFruta, golpe(), true, ctx());
+  assert.equal(comFruta.item, null, 'sem Unnerve no atacante, come a fruta normal');
+
+  const comFruta2 = mon({ item: 'oran-berry', hp: 55 });
+  await usarGolpe(mon({ ability: 'unnerve' }), comFruta2, golpe(), true, ctx());
+  assert.equal(comFruta2.item, 'oran-berry', 'com Unnerve no atacante, a fruta do alvo trava');
+});
+
+test('Friend Guard: reduz o dano que um ALIADO recebe', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const guarda = mon({ ability: 'friend-guard' });
+  const alvoComGuarda = mon(), alvoSemGuarda = mon();
+  const ctxComAliado = { ...ctx(), aliadosDe: m => m === alvoComGuarda ? [guarda] : [] };
+  await usarGolpe(mon(), alvoComGuarda, golpe(), true, ctxComAliado);
+  await usarGolpe(mon(), alvoSemGuarda, golpe(), true, ctx());
+  const comGuarda = 100 - alvoComGuarda.hp, semGuarda = 100 - alvoSemGuarda.hp;
+  assert.ok(comGuarda < semGuarda, `Friend Guard devia reduzir o dano: ${comGuarda} vs ${semGuarda}`);
+  assert.ok(Math.abs(comGuarda - semGuarda * 0.75) <= 1, `~25% de redução: ${comGuarda} vs ${semGuarda * 0.75}`);
 });

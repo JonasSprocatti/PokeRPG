@@ -64,7 +64,7 @@ Duas máquinas de dev, ambientes diferentes:
 | `js/config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (marcadores = jogo só local). |
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 160 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 163 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -426,7 +426,7 @@ O que sobrou e o que ficou combinado:
   (`forecast` → `formaDoClima`): `golpe.ajustarForma` troca `m.data` por uma CÓPIA (tipos + sprite pelos ids 10013/14/15) ao
   entrar, no começo de todo `usarGolpe` (usuário e alvo) e no fim do turno; `desfazerForma` roda em `endBattle`. Cherrim
   (Flower Gift) só tem o bônus de atributo, sem troca de sprite.
-- **Item 8 — habilidades**: cinco levas feitas. A regra que vale: só entra habilidade com gancho FIEL —
+- **Item 8 — habilidades**: seis levas feitas. A regra que vale: só entra habilidade com gancho FIEL —
   mapear no gancho errado deixaria a habilidade mais forte que o original, e a ficha promete "✓ ativa em batalha".
   A **4ª leva** (41 novas + 13 parciais completadas) criou ~24 ganchos, todos documentados no topo de
   `habilidades.js` e validados em `tests/habilidades.test.js` (a lista `ganchos` do teste precisa ganhar o nome de
@@ -461,6 +461,29 @@ O que sobrou e o que ficou combinado:
   chamada recursiva passando `fonte: null` — é isso que impede ida-e-volta infinita se os dois tiverem a habilidade.
   Sono/congelamento não sincronizam (fiel aos jogos). **Stench**: 10% de recuo extra em golpe de dano que ainda não
   tem `meta.flinch` própria (senão dobraria a chance à toa).
+  **6ª leva** (28/09/2026): 3 habilidades — Sheer Force, Unnerve, Friend Guard —, mais trabalhosas que a 5ª
+  (cada uma abriu um gancho/contrato novo, não só reaproveitou hook pronto). `regras.temSecundario(move)` decide
+  se o golpe TEM efeito secundário nativo (estágio, status ou recuo por chance — olha `move.stats`/`move.meta`
+  direto, sem saber de habilidade); **Sheer Force** usa ela pra bater ×1,3 em `calcDamage`, e `golpe.executar`
+  guarda os TRÊS blocos que aplicam efeito secundário (estágio no golpe, status, flinch) com `!hu.sheerForce` —
+  time bate mais forte, mas perde o efeito, exatamente como nos jogos. **Unnerve**: `golpe.comerFruta(m, ctx,
+  travado)` ganhou um 3º parâmetro — `executar` manda `hu.unnerve`/`ht.unnerve` do lado de FORA na troca direta de
+  golpe (`comerFruta(t, ctx, hu.unnerve)`, i.e. quem ataca trava a fruta de quem apanha). **Simplificação
+  assumida**: só vale nessa troca direta (é onde os dois lados já estão em mãos, sem precisar de lista de lados) —
+  o `comerFruta` chamado no FIM DE TURNO (`fimDeTurno`, pra cada Pokémon do campo) não checa Unnerve do oponente,
+  porque esse call site não sabe "quem é o oponente de m" sem uma função de lado pronta. **Friend Guard**
+  precisou de um contrato NOVO nos dois `ctx`: `aliadosDe(m)` (lista de aliados VIVOS de `m`, sem ele mesmo) —
+  `efeitos.CTX.aliadosDe` (single player: seu lado é `ladoJogador()`, o do inimigo é só `[G.B.enemy]`, porque
+  você só enfrenta um por vez) e o `ctx` que `mp-motor.resolverTurnoMP` monta (`vivosMP(s.lados[ladoDe(s,
+  m.ref)])`). `golpe.executar` calcula o multiplicador ANTES do laço de acertos (`(ctx.aliadosDe?.(t) ||
+  []).reduce(...)`, multiplicativo se houver mais de um aliado com a habilidade) e aplica em `dano` antes dos
+  checks de Sturdy/Endure/Faixa de Foco — igual aos jogos, a redução conta pra decidir se aguenta ou não.
+  `ctx.aliadosDe` é OPCIONAL (`?.`): um ctx de teste ou futuro que não implemente simplesmente não tem Friend
+  Guard, em vez de quebrar. **Ficaram de fora** (mais complexas ainda, precisam de mais projeto): Mold Breaker
+  (ignora habilidade do ALVO — precisaria auditar todo gancho de imunidade/defesa do motor pra saber quais
+  "furar"), Damp (bloquear autodestruição do OUTRO lado — cross-side igual Friend Guard, mas em cima de uma
+  mecânica, autoDesmaio, que ainda não devolve controle pro motor decidir "deixar acontecer ou não"), Aftermath
+  (precisa de um gancho novo "ao desmaiar por contato", que não existe).
 - **Duração da run**: `regras.MULT_XP = 0.6` (escolha do usuário). É UM número — se ficar arrastado, suba.
 - **Decidido com o usuário (28/09/2026)**: confirmado que o inimigo TAMBÉM deveria gigantamaxar (só treinador) —
   ao investigar pra implementar, achei que **já existia** (`batalha.gmaxDoInimigo`/`dynamax.inimigoPodeGmax`,

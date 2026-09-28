@@ -208,7 +208,8 @@ export async function resolverTurnoMP(estado, acoes) {
   const s = structuredClone(estado), ev = [];
   const say = (txt, cls = '') => ev.push({ txt, cls });
   s.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }; // batalha de uma versão anterior, sem campo
-  const ctx = { nome: m => m.nome, golpe: g => fmt(g.name), say, refDe: m => m.ref, monPorRef: r => monMP(s, r), campo: s.campo, ladoDe: m => ladoDe(s, m.ref) };
+  const ctx = { nome: m => m.nome, golpe: g => fmt(g.name), say, refDe: m => m.ref, monPorRef: r => monMP(s, r), campo: s.campo, ladoDe: m => ladoDe(s, m.ref),
+    aliadosDe: m => vivosMP(s.lados[ladoDe(s, m.ref)]).filter(x => x !== m) };   // Friend Guard
   // habilidades de entrada em campo, no 1º turno (Intimidate, Drizzle, Download…): a MESMA regra do single player
   if (s.turno === 1) await aoEntrarEmCampo(vivosMP(todosMP(s)), m => vivosMP(s.lados[outro(ladoDe(s, m.ref))]), ctx);
   if (s.fim) return { estado: s, eventos: ev };

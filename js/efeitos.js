@@ -21,7 +21,9 @@ export const CTX = {
   get trocaDePokemon() { return !!G.B?.trainer; },
   // Leech Seed: 'E' = inimigo; número = posição no seu lado (você e aliados)
   refDe: m => m === G.B?.enemy ? 'E' : ladoJogador().indexOf(m),
-  monPorRef: r => r === 'E' ? G.B?.enemy : ladoJogador()[r]
+  monPorRef: r => r === 'E' ? G.B?.enemy : ladoJogador()[r],
+  // aliados vivos de m, no MESMO lado (Friend Guard): você só tem um inimigo por vez, então do lado dele é só ele
+  aliadosDe: m => (ladoJogador().includes(m) ? ladoJogador() : [G.B?.enemy]).filter(x => x && x !== m && x.hp > 0)
 };
 // `fonte` = quem causou (outro Pokémon → Clear Body, Hyper Cutter… podem impedir a queda). Itens: sem fonte.
 export const changeStats = (m, changes, fonte = null) => mudarEstagios(m, changes, CTX, fonte);

@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.56', data: '2026-09-28', titulo: '3 habilidades novas', piada: 'O Unnerve olha pra fruta do adversário e ela simplesmente perde a vontade de ser comida.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '3 habilidades novas com efeito real: <b>Sheer Force</b> (golpe com efeito secundário bate mais forte, mas perde o efeito), <b>Unnerve</b> (o oponente não consegue comer a própria fruta logo depois de levar um golpe seu) e <b>Friend Guard</b> (reduz o dano que um aliado seu recebe).'
+      ] }
+    ] },
   { versao: '2.55', data: '2026-09-28', titulo: '14 itens novos na Raide', piada: 'A Escama do Céu jura que não tem medo de altura. É só que os golpes Voadores doem menos agora.',
     secoes: [
       { nome: 'Novidades', itens: [

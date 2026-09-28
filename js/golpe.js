@@ -579,10 +579,13 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (hu.postura) await trocarPostura(u, true, ctx);
   const hits = meta.minHits ? (hu.maxAcertos ? meta.maxHits || meta.minHits : rand(meta.minHits, meta.maxHits || meta.minHits)) : 1;
   const cheio = t.hp >= t.stats.hp;
+  // Friend Guard: cada ALIADO vivo de t com a habilidade corta 25% (multiplicativo se houver mais de um)
+  const friendGuard = (ctx.aliadosDe?.(t) || []).reduce((m, a) => hab(a).friendGuard ? m * 0.75 : m, 1);
   let total = 0, acertos = 0, crit = false, aguentou = false, resistiu = false, faixa = null;
   for (let i = 0; i < hits && t.hp > 0; i++) {
     const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx), ladoDoCampo(ctx, t));
     let dano = danoNoChefe(t, r.dmg, g.type, ef);   // chefe de evento: couraça, exposição, ponto fraco, anula, Mundo Reverso, adaptação (sem `t.boss` devolve o mesmo)
+    if (friendGuard < 1) dano = Math.max(1, Math.floor(dano * friendGuard));            // Friend Guard: nunca zera o golpe
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
     else if (seg(t).aguentaCheio && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; faixa = t.item; t.item = null; } // Faixa de Foco
@@ -609,7 +612,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (si.drenaDano && total > 0 && u.hp > 0 && u.hp < u.stats.hp) { const h = Math.max(1, Math.floor(total * si.drenaDano)); heal(u, h); up(ctx); await ctx.say(`${U} recuperou ${h} HP com o Sino-Concha.`, 'good'); }
   if (si.recuoPorGolpe && total > 0 && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
   if (g.cls === 'physical' && seg(t).espetos && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
-  await comerFruta(t, ctx); await comerFruta(u, ctx);                                        // Frutas Oran/Sitrus na hora do aperto
+  await comerFruta(t, ctx, hu.unnerve); await comerFruta(u, ctx, ht.unnerve);                 // Frutas Oran/Sitrus na hora do aperto (Unnerve trava o OUTRO lado)
   // Moxie, Chilling Neigh, Grim Neigh: derrubar o alvo sobe um atributo de quem derrubou
   if (t.hp <= 0 && total > 0 && u.hp > 0 && hu.aoNocautear) {
     await ctx.say(`${U} ganhou moral com ${fmt(u.ability)}!`, 'good');
@@ -624,13 +627,13 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   }
   if (meta.heal > 0 && u.hp > 0) { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); }
 
-  // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo
+  // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo; Sheer Force os apaga (já bateu mais forte lá em cima)
   const chance = p => Math.random() * 100 < p * (hu.chanceSecundaria || 1);
-  if (g.stats.length && chance(meta.statChance || 100)) {
+  if (!hu.sheerForce && g.stats.length && chance(meta.statChance || 100)) {
     if (mudaOUsuario(meta) && u.hp > 0) await mudarEstagios(u, g.stats, ctx, u);
     else if (!mudaOUsuario(meta) && t.hp > 0 && !ht.semSecundario) await mudarEstagios(t, g.stats, ctx, u);
   }
-  if (t.hp > 0 && !ht.semSecundario) {
+  if (!hu.sheerForce && t.hp > 0 && !ht.semSecundario) {
     if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx, false, u);
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
     // Stench: golpe que já tem chance própria de recuo não soma outra
@@ -704,8 +707,12 @@ export async function fimDeTurno(m, ctx) {
   await comerFruta(m, ctx);
   await ajustarForma(m, ctx);
 }
-// Frutas que o Pokémon come sozinho (Oran, Sitrus, Lum): checadas no fim do turno e logo depois de levar dano.
-export async function comerFruta(m, ctx) {
+/* Frutas que o Pokémon come sozinho (Oran, Sitrus, Lum): checadas no fim do turno e logo depois de levar dano.
+   `travado` = true quando quem ele acabou de trocar golpe tem Unnerve (golpe.executar manda `hu.unnerve`/
+   `ht.unnerve` do OUTRO lado) — simplificação: só vale nessa troca direta, não no fim de turno (que não sabe
+   quem é "o oponente" de cada Pokémon sem uma lista de lados pronta). */
+export async function comerFruta(m, ctx, travado = false) {
+  if (travado) return;
   const f = frutaAgora(m); if (!f) return;
   const nome = nomeDoItem(m);
   m.item = null;

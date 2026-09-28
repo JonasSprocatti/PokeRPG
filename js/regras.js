@@ -159,6 +159,9 @@ export function multFamilia(h, nomeDoGolpe) {
   for (const [fam, m] of Object.entries(h.golpesFamilia || {})) if (FAMILIAS_GOLPE[fam]?.includes(nomeDoGolpe)) mult *= m;
   return mult;
 }
+// Sheer Force: o golpe tem ALGUM efeito secundário nativo? (estágio, status ou recuo por chance) — se sim, o
+// golpe bate mais forte mas PERDE o efeito (golpe.executar guarda os três blocos de aplicação com `!hu.sheerForce`).
+export const temSecundario = move => !!(move.stats?.length || (move.meta?.ailment && move.meta.ailment !== 'none' && move.meta?.ailChance > 0) || move.meta?.flinch > 0);
 // `semEstagio`: ignora os degraus deste atributo (Unaware de QUEM ESTÁ do outro lado)
 export function effStat(m, stat, crit = false, attacking = true, clima = null, terreno = null, semEstagio = false) {
   let st = semEstagio ? 0 : (m.vol?.stages[stat] || 0);
@@ -408,6 +411,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (ef < 1 && hu.poucoEfetivo) mod *= hu.poucoEfetivo;                            // Tinted Lens
   if (ef > 1 && hu.superEfetivoCausado) mod *= hu.superEfetivoCausado;              // Neuroforce
   mod *= hu.danoTipo?.[move.type] || 1;                                              // Steelworker, Transistor, Water Bubble…
+  if (hu.sheerForce && temSecundario(move)) mod *= 1.3;                              // Sheer Force: mais forte, mas perde o efeito (golpe.js)
   const dc = hu.danoTipoClima?.[clima]; if (dc?.tipos.includes(move.type)) mod *= dc.mult; // Sand Force na areia
   mod *= multFamilia(hu, move.name);                                                 // Iron Fist, Strong Jaw, Sharpness
   if (hu.recuo && move.meta?.drain < 0) mod *= hu.recuo;                             // Reckless: golpe com recuo
