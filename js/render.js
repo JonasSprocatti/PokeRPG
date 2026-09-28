@@ -453,7 +453,7 @@ function renderActions() {
        gimmicksNaLoja já isola erro por gimmick (carreira.js) — este try/catch é só a rede de segurança se `p`
        (a consulta compartilhada) falhar antes de chegar em qualquer uma das três. */
     let gimmicks = { mega: false, z: false, vinculo: false };
-    try { gimmicks = gimmicksNaLoja(P?.data?.speciesName, P?.moves, S?.registro); }
+    try { gimmicks = gimmicksNaLoja(S.player?.data?.speciesName, S.player?.moves, S?.registro); }
     catch (e) { console.error('loja: não consegui checar as gimmicks; abrindo sem a Pedra Mega, o Cristal Z e o Vínculo de Batalha', e); }
     const forSale = Object.entries(ITEMS).filter(([, it]) =>
       it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z) && (!it.soComVinculo || gimmicks.vinculo));
