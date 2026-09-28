@@ -16,7 +16,9 @@ import { blobParaDataUrl, dataUrlParaBlob, cabeNaFila } from './imagens-relato.j
 export const nuvemConfigurada = () => !!SUPABASE_URL && !SUPABASE_URL.includes('SEU-PROJETO') && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('SUA-CHAVE');
 
 let cliente = null, sessao = null;
-async function sb() {
+// exportado: presenca.js precisa do MESMO cliente (canal Realtime global + as duas RPCs de visitante), em vez
+// de abrir uma segunda conexão com o Supabase
+export async function sb() {
   if (!nuvemConfigurada()) return null;
   if (!cliente) {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -25,6 +27,16 @@ async function sb() {
   return cliente;
 }
 export const usuario = () => sessao?.user || null;
+// id do jogador: o da conta, ou um de visitante persistido neste navegador (não é PII, só serve pra contar
+// presença de sala/global e, sem conta, pra `registrar_visitante_anonimo`). Era privado em multiplayer.js
+// (`meuId`); exportado daqui pra não duplicar a mesma lógica em presenca.js.
+const VISITANTE_KEY = 'pokerpg-visitante';
+export function idJogador() {
+  const u = usuario(); if (u) return u.id;
+  let v = store.get(VISITANTE_KEY);
+  if (!v) { v = 'v-' + Math.random().toString(36).slice(2, 10); store.set(VISITANTE_KEY, v); }
+  return v;
+}
 
 // estado mostrado na tela de conta / no chip do topo
 export const BADGE_EXIBIDA_KEY = 'pokerpg-badge-exibida';

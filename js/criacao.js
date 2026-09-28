@@ -19,6 +19,8 @@ import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.j
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
 import { blocoAds, ativarSlots } from './ads.js';
+import { aoMudarOnline, onlineAgora, contagemAnonimos } from './presenca.js';
+import { ehAdmin } from './nuvem.js';
 
 // "Ad slot" da tela inicial: crie em adsense.google.com → Anúncios → Por unidade de anúncio, depois de aprovado.
 // Enquanto for o marcador abaixo, blocoAds() não desenha nada (mesmo com ADSENSE_CLIENT_ID já preenchido).
@@ -40,6 +42,7 @@ export function showCreate() {
   $('#app').innerHTML = `<main class="create">
     ${barraTelas('create')}
     <h1>Escolha quem você vai ser.</h1>
+    <div id="online-agora"></div>
     <p class="lead">Stats, IVs, EVs, natureza, golpes, XP e evolução seguem as fórmulas dos jogos. Você não tem treinador: é você na grama alta. Os outros Pokémon você encontra pelo caminho.</p>
     <h3 class="passo"><span>1</span> Dificuldade</h3>
     <div id="difs" class="difs"></div>
@@ -59,6 +62,7 @@ export function showCreate() {
     <p class="small muted rodape-creditos">© 2026 Jonas Sprocatti · <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">código-fonte no GitHub</a></p></main>`;
   renderDificuldade();
   ativarSlots();
+  aoMudarOnline(renderOnline);
 }
 // passo 2: grade de iniciais por região (padrão) ou busca livre (modo com `especiesLivres`)
 function renderEscolha() {
@@ -119,6 +123,22 @@ function secaoDesbloqueios() {
       <p class="small muted">${regra}</p>
       ${quase.length ? `<h4>Quase lá</h4><ul class="quase">${quase.map(p => `<li>${p.id ? `<img src="${SPR(p.id)}" alt="">` : ''}<b>${esc(fmt(p.especie))}</b><div class="bar"><div class="fill" style="width:${p.fracao * 100}%"></div></div><small>${esc(textoProgresso(p))}</small></li>`).join('')}</ul>` : ''}
     </div>`;
+}
+/* Marcador "jogando agora" (presenca.js — canal Realtime global, sem config vira null e o bloco some). O número
+   de visitantes sem conta ao lado é ADMIN-ONLY (pedido do usuário): só quem tem `perfis.admin` vê, e só na tela
+   inicial — não é uma estatística que interessa a quem só está jogando. `anonimosCache` evita pedir a RPC de
+   novo a cada re-render (undefined = nunca pediu, null = não pôde saber/não é admin, number = total). */
+let anonimosCache;
+function renderOnline() {
+  const el = $('#online-agora'); if (!el || G.mode !== 'create') return;
+  const n = onlineAgora();
+  if (ehAdmin() && anonimosCache === undefined) {
+    anonimosCache = null;
+    contagemAnonimos().then(v => { anonimosCache = v; renderOnline(); });
+  }
+  const anon = ehAdmin() && anonimosCache != null
+    ? ` <span class="muted small" title="Só admin vê isso">· ${anonimosCache} sem conta desde sempre</span>` : '';
+  el.innerHTML = n === null ? '' : `<p class="online-marcador">🟢 ${n} jogando agora${anon}</p>`;
 }
 /* Vantagens da conta (badges.js): o que as suas conquistas dão nesta jornada, e o interruptor pra jogar sem elas.
    Quem desliga ganha bônus de pontuação no ranking — a ideia é que o desafio puro continue valendo a pena. */

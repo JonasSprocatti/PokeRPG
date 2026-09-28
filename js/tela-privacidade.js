@@ -22,26 +22,34 @@ export function telaPrivacidade() {
       escolhido, sua carreira (jornadas terminadas) e a jornada em andamento, pra sincronizar entre aparelhos e
       aparecer no ranking. Você pode apagar sua conta e os dados a qualquer momento pela tela 👤 Conta.</p>
 
-    <h3 class="passo"><span>3</span> Dados de outros serviços</h3>
+    <h3 class="passo"><span>3</span> Marcador de "jogando agora" (mesmo sem conta)</h3>
+    <p class="small">A tela inicial mostra quantas pessoas estão jogando no momento. Pra isso, seu aparelho entra
+      num canal de presença do Supabase — sem enviar nome, e-mail, apelido nem nada que identifique você, só um
+      código aleatório gerado neste navegador (o mesmo já usado pra salas de multiplayer, guardado como
+      <code>pokerpg-visitante</code>). Ninguém vê QUEM está online, só QUANTOS. Se você não cria conta, esse
+      mesmo código também é usado uma vez, no banco, só pra contar quantas pessoas já jogaram sem conta ao longo
+      do tempo — um número que só quem mantém o jogo consegue ver, nunca aparece pra outros jogadores.</p>
+
+    <h3 class="passo"><span>4</span> Dados de outros serviços</h3>
     <ul class="small" style="padding-left:20px">
       <li><b>PokéAPI</b> (pokeapi.co): fornece os dados de Pokémon. Não recebe nenhuma informação sua — é só leitura.</li>
-      <li><b>Supabase</b>: hospeda conta, saves e ranking (item 2 acima).</li>
+      <li><b>Supabase</b>: hospeda conta, saves, ranking (item 2 acima) e o marcador de presença (item 3 acima).</li>
       <li><b>Google AdSense</b>: se e quando os anúncios estiverem ativos neste site (ver a última seção), a Google
         pode usar cookies pra mostrar anúncios — inclusive personalizados, se você aceitar.</li>
     </ul>
 
-    <h3 class="passo"><span>4</span> Cookies e anúncios</h3>
+    <h3 class="passo"><span>5</span> Cookies e anúncios</h3>
     <p class="small">Sem anúncio ativo, o jogo não usa cookie nenhum — só localStorage (que não é cookie e não sai
       do seu aparelho). Quando os anúncios estiverem ativos, aparece um aviso perguntando se você aceita cookies
       de anúncio antes de qualquer um ser carregado; sua escolha fica salva e você pode mudar de ideia a qualquer
       hora. Sem aceitar, nenhum cookie de anúncio é usado. A Google explica como opta por anúncios menos
       personalizados em <a href="https://adssettings.google.com" target="_blank" rel="noopener">adssettings.google.com</a>.</p>
 
-    <h3 class="passo"><span>5</span> Menores de idade</h3>
+    <h3 class="passo"><span>6</span> Menores de idade</h3>
     <p class="small">O PokéRPG não é feito especificamente para crianças, mas é um jogo de Pokémon — sabemos que
       menores de idade jogam. Pra quem é identificado como menor, os anúncios (quando ativos) não são personalizados.</p>
 
-    <h3 class="passo"><span>6</span> Dúvidas ou pedido de remoção</h3>
+    <h3 class="passo"><span>7</span> Dúvidas ou pedido de remoção</h3>
     <p class="small">Use a tela 🐞 Bugs e sugestões pra falar com quem mantém o jogo — inclusive pra pedir a
       remoção dos seus dados da conta.</p>
   </main>`;

@@ -36,6 +36,7 @@ import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
 import { iniciarAds, definirConsentimento } from './ads.js';
+import { iniciarPresencaGlobal, registrarVisitanteAnonimo, definirPresenca } from './presenca.js';
 
 /* ============ eventos ============ */
 document.addEventListener('click', async e => {
@@ -315,6 +316,7 @@ document.addEventListener('change', e => {
     const A = G.S.aliados[+io]; A.ordem = e.target.value;
     log(`${nm(A)}: ${ORDENS[A.ordem].nome}.`, 'muted'); save(); return render();
   }
+  if (e.target.id === 'pv-presenca') { definirPresenca(e.target.checked); return; } // ⚙ Ajustes → presença global
   if (e.target.id === 'pv-clima') { G.climaRotas = e.target.checked; return; } // 🌦 clima/terreno das rotas (só opcional fora do Roguelike/Hardcore)
   if (e.target.id === 'pv-caca') { G.cacaShiny = e.target.checked; return; } // vale mesmo sem prévia de Pokémon
   if (!G.PV) return;
@@ -434,4 +436,6 @@ iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
 });
 iniciarAds(); // sem conta configurada (config.js), não faz nada; com conta, só carrega o script depois do consentimento
 aoMudarNuvem(renderChipConta);
-iniciarNuvem().catch(e => console.error(e)); // sem config: não faz nada
+// presença global (marcador "jogando agora") e o registro de visitante sem conta esperam a sessão carregar
+// primeiro — senão um jogador logado apareceria como "sem conta" por uma fração de segundo
+iniciarNuvem().then(() => { iniciarPresencaGlobal(); registrarVisitanteAnonimo(); }).catch(e => console.error(e)); // sem config: não faz nada

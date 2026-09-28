@@ -12,6 +12,8 @@ import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, limpar
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
 import { adsConfigurado, consentimento } from './ads.js';
+import { presencaLigada } from './presenca.js';
+import { nuvemConfigurada } from './nuvem.js';
 
 export function telaAjustes() {
   G.mode = 'ajustes'; limparTopo();
@@ -38,6 +40,7 @@ export function telaAjustes() {
     <p class="small muted" style="margin-top:8px">${esc(ESTILOS_SPRITE.find(e => e.id === estiloAtual)?.desc || '')} Se a imagem não existir pra algum Pokémon, cai de volta pro clássico sozinho.</p>
     <h3 class="passo"><span>C</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
+    ${htmlPresenca()}
     ${htmlAds()}
     ${htmlDev()}
   </main>`;
@@ -165,13 +168,23 @@ async function mostrarImagensAnimadas() {
 function htmlAds() {
   if (!adsConfigurado()) return '';
   const c = consentimento();
-  return `<h3 class="passo"><span>D</span> Cookies de anúncio</h3>
+  return `<h3 class="passo"><span>E</span> Cookies de anúncio</h3>
     <p class="small muted">Sua escolha atual: <b>${c === 'aceito' ? 'aceitou' : c === 'recusado' ? 'recusou' : 'ainda não escolheu'}</b>.
       Detalhes na <button type="button" class="link" data-act="privacidade" style="background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Política de Privacidade</button>.</p>
     <div class="subrow">
       <button class="btn ${c === 'aceito' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="aceito">Aceitar</button>
       <button class="btn ${c === 'recusado' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="recusado">Recusar</button>
     </div>`;
+}
+/* Presença global (js/presenca.js): o "🟢 X jogando agora" da tela inicial + o registro (sem PII) de visitante
+   sem conta. Só aparece com Supabase configurado — sem isso, presenca.js já é no-op e não tem o que desligar. */
+function htmlPresenca() {
+  if (!nuvemConfigurada()) return '';
+  const on = presencaLigada();
+  return `<h3 class="passo"><span>D</span> Presença global</h3>
+    <p class="small muted">O jogo conta, sem guardar quem você é, se você está jogando agora — é o "🟢 jogando
+      agora" da tela inicial. Detalhes na <button type="button" class="link" data-act="privacidade" style="background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Política de Privacidade</button>.</p>
+    <label class="check"><input type="checkbox" id="pv-presenca" ${on ? 'checked' : ''}> Contar minha presença</label>`;
 }
 /* 🧪 Painel de testes — só pra conta admin (dev.js explica o porquê e como virar admin).
    Existe pra validar mecânica sem jogar 1.000 batalhas: a Mega pede 1.000 golpes finais com a espécie, o que

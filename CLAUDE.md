@@ -62,7 +62,8 @@ Duas máquinas de dev, ambientes diferentes:
 | `js/roguelike.js` | Desbloqueios do Roguelike entre runs (puro, testado). |
 | `js/carreira.js` | Carreira = lista de jornadas terminadas (`pokerpg-carreira-v1`; migra o `pokerpg-recordes-v1` antigo). `calcularCarreira`, `mesclarJornadas`, `melhorDaEspecie`. Puro + `store`, testado. |
 | `js/config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (marcadores = jogo só local). |
-| `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. |
+| `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
+| `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
 | `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 163 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
@@ -189,16 +190,20 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
   principais? Mega/Tera/Z/Gigantamax quando desbloqueiam? a primeira batalha?), se é pulável, se guarda "já viu"
   por conta (Supabase) ou só neste navegador (localStorage, como a fonte), e o texto de cada passo.
-- **Pedido pelo usuário (28/09/2026), pra depois — três itens de backlog, ainda sem desenho:**
+- **Pedido pelo usuário (28/09/2026), pra depois:**
   1. **Layout pro celular em modo paisagem (horizontal)**: hoje o CSS mobile (`@media(max-width:880px)`, ver
      "Celular (batalha)" acima) assume retrato; precisa decidir o que muda com mais largura e menos altura
-     (cena fixa no topo deixa de fazer sentido do jeito que é hoje?).
-  2. **Marcador de jogadores online no momento**: não existe canal de presença GLOBAL hoje — só por sala
-     (`multiplayer.js`, presence do Realtime é por `pokerpg-sala-<código>`). Precisaria de um canal único
-     compartilhado só pra contar presença, sem vazar quem é quem.
-  3. **Dado de quantas pessoas jogam sem conta**: hoje o jogo não coleta nada de quem não loga (por design — ver
-     a tela 🔒 Privacidade). Adicionar essa métrica exige decidir COMO, com transparência na própria tela de
-     Privacidade (não pode virar telemetria silenciosa).
+     (cena fixa no topo deixa de fazer sentido do jeito que é hoje?). Ainda sem desenho.
+  2. ✅ FEITO — **Marcador de jogadores online no momento** e **estimativa de quantos jogam sem conta**:
+     `js/presenca.js` (ver tabela de arquivos acima). O canal de presença global mostra "🟢 X jogando agora" na
+     tela inicial pra QUALQUER jogador; o contador histórico de visitantes sem conta é ADMIN-ONLY (pedido
+     explícito do usuário: "essa estatística deve aparecer só pra mim admin") — aparece ao lado do marcador
+     ao vivo, só pra quem tem `perfis.admin`. Schema em
+     `supabase/migrations/20260928120000_visitantes_anonimos.sql` (tabela `visitantes_anonimos` + duas RPCs
+     SECURITY DEFINER: `registrar_visitante_anonimo` grava, `contagem_visitantes_anonimos` só devolve o total
+     pra admin). Divulgado na tela 🔒 Privacidade (passo 3) e com interruptor em ⚙ Ajustes — decisão própria
+     (não pedida explicitamente, mas coerente com "não pode virar telemetria silenciosa" já anotado aqui):
+     desligar tira o jogador do canal de presença E do registro de visitante, sem afetar o resto do jogo.
 - **Arceus como chefe de raide** (pedido do usuário, 28/09/2026, ligado aos "Pratos do Arceus" na seção 3 de
   badges com vantagem, abaixo): faz sentido temático — nos jogos ele carrega um Prato de cada tipo, item que
   acabou de entrar no jogo. Ainda sem desenho: precisa decidir se entra na rotação dos 14 chefes existentes

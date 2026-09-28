@@ -24,14 +24,14 @@ import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta } from '.
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
 import { megasDisponiveis } from './mega.js';
 import { desbloqueadas } from './roguelike.js';
-import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizarComRetentativa } from './nuvem.js';
+import { canalSala, fecharCanal, usuario, nuvem, nuvemConfigurada, meuIcone, convidarAmigo, sincronizarComRetentativa, idJogador } from './nuvem.js';
 import { htmlIcone, htmlInsigniaDe } from './conta.js';
 import { loadPokemon, loadMove } from './api.js';
 import { makeMon } from './pokemon.js';
 import { gainExp, gainExpAliado } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
 import { encerrarJornada } from './fim.js';
-import { esc, fmt, pick, rand, clamp, store, offline } from './util.js';
+import { esc, fmt, pick, rand, clamp, offline } from './util.js';
 
 export const MAX_JOGADORES = 6;
 const PRAZO_MS = 45000; // quem não escolher até aqui joga no automático (melhor golpe)
@@ -54,13 +54,9 @@ function especiesConvidado() {
 export function escolherEntrada(tipo) { if (tipo === 'run' && !temRun()) return; entrada = { tipo, id: tipo === 'run' ? null : entrada.id }; telaMultiplayer(); }
 export function escolherConvidado(id) { entrada = { tipo: 'convidado', id: +id }; telaMultiplayer(); }
 
-// id na sala: o da conta, ou um de visitante guardado neste navegador
-function meuId() {
-  const u = usuario(); if (u) return u.id;
-  let v = store.get('pokerpg-visitante');
-  if (!v) { v = 'v-' + Math.random().toString(36).slice(2, 10); store.set('pokerpg-visitante', v); }
-  return v;
-}
+// id na sala: o da conta, ou um de visitante guardado neste navegador (idJogador, nuvem.js — usado também
+// pela presença global, presenca.js, pra não ter duas fontes do mesmo id)
+const meuId = idJogador;
 const meuNome = () => nuvem.apelido || G.S?.player?.nick || (G.S ? fmt(G.S.player.name) : 'Treinador');
 // principal (slot 0) + até 2 aliados em pé e que não estão descansando (slot = índice em S.aliados + 1).
 // Convidado: só ele, marcado `convidado` (o anfitrião ajusta o nível dele; o resultado não vai pra save nenhum).

@@ -138,6 +138,9 @@ Quem criou a conta durante o Alpha ganha, para sempre, uma **Poké Ball dourada 
 ### 📜 Novidades (notas de atualização)
 Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, com as correções e uma piadinha por versão. Quando sai uma atualização nova, o botão fica marcado até você ler.
 
+### 🟢 Jogando agora
+A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer quem, só quantas. Dá pra desligar em ⚙ Ajustes (detalhes na Política de Privacidade).
+
 ### Telas e ajustes
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
 - **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
