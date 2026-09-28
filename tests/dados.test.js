@@ -2,7 +2,7 @@
 // que não quebraria nada na hora — só deixaria a mecânica inerte em silêncio.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, ITEM_SPR, espelhar, outroServidor } from '../js/dados.js';
+import { STATS, TYPE_PT, TC, CHART, NATURES, AIL_MSG, ST_SHORT, ITEMS, FIND_ITEMS, ZONES, FLAVOR, BOLAS, DIFICULDADES, CLASSES_TREINADOR, NOMES_TREINADOR, INICIAIS, MISSOES, REGIOES_INICIAIS, ORDENS, SPR, SPR_SHINY, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, ITEM_SPR, espelhar, outroServidor, PLACA_DO_TIPO } from '../js/dados.js';
 import { bolaPorNivel } from '../js/regras.js';
 
 const TIPOS = Object.keys(TYPE_PT);
@@ -104,6 +104,17 @@ test('petiscos de afinidade: cobrem os 18 tipos exatamente uma vez, e todos têm
   const tipos = petiscos.flatMap(it => it.afinidade);
   assert.deepEqual([...tipos].sort(), [...TIPOS].sort());
   for (const it of petiscos) assert.ok(it.price > 0, `${it.name} sem preço`);
+});
+
+test('pratos do Arceus (badges de tipo): cobrem os 18 tipos exatamente uma vez, itens existem e não têm preço', () => {
+  assert.deepEqual(Object.keys(PLACA_DO_TIPO).sort(), [...TIPOS].sort());
+  const ids = Object.values(PLACA_DO_TIPO);
+  assert.equal(new Set(ids).size, ids.length, 'prato repetido entre tipos');
+  for (const id of ids) {
+    assert.ok(ITEMS[id], `item "${id}" não existe`);
+    assert.equal(ITEMS[id].segurado, true, `"${id}" precisa ser segurado`);
+    assert.equal(ITEMS[id].price, undefined, `"${id}" só vem de badge, não deveria ter preço de loja`);
+  }
 });
 
 test('treinadores: toda bola sorteável existe em BOLAS; listas de nome não vazias', () => {

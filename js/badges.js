@@ -12,7 +12,7 @@
    muito antes de conquistar a Mega, ou o contrário. Cada uma conta sozinha, em qualquer ordem; o prêmio grande sai
    de uma TERCEIRA que só olha se as duas estão prontas. */
 import { ALVOS, MARCOS_ABATES } from './conquistas.js';
-import { TYPE_PT } from './dados.js';
+import { TYPE_PT, PLACA_DO_TIPO } from './dados.js';
 import { MAX_ALIADOS } from './regras.js';
 import { MAX_ESCONDIDOS } from './esconderijo.js';
 import { EVENTOS } from './evento.js';
@@ -22,16 +22,10 @@ export const ALVO_AMIGOS = 100;         // aliados recrutados na conta inteira
 export const ALVO_PERDIDOS = 15;        // parceiros perdidos de vez numa MESMA run (badge "Cemitério de parceiros")
 export const RAYQUAZA = 'rayquaza';
 
-// pedra de evolução ligada a cada tipo; tipo sem pedra ganha o petisco de afinidade (dados.ITEMS)
-const PEDRA_DO_TIPO = {
-  fire: 'fire-stone', water: 'water-stone', electric: 'thunder-stone', grass: 'leaf-stone',
-  fairy: 'moon-stone', psychic: 'dawn-stone', ghost: 'dusk-stone', ice: 'ice-stone', rock: 'sun-stone'
-};
-const PETISCO_DO_TIPO = {
-  normal: 'honey', fighting: 'honey', flying: 'honey', poison: 'tiny-mushroom', ground: 'hard-stone',
-  bug: 'honey', steel: 'hard-stone', dragon: 'mystic-water', dark: 'tiny-mushroom'
-};
-const premioDoTipo = t => PEDRA_DO_TIPO[t] ? { itens: { [PEDRA_DO_TIPO[t]]: 1 } } : { itens: { [PETISCO_DO_TIPO[t] || 'honey']: 2 } };
+// prato do Arceus daquele tipo (dados.PLACA_DO_TIPO): +20% de dano nesse tipo enquanto segurado. Trocou a
+// versão original (pedra de evolução/petisco de afinidade por tipo, 28/09/2026) — dava vantagem fraca ou
+// nenhuma pra vários tipos, e usava item de CAPTURA como prêmio de batalha (pedido do usuário pra corrigir).
+const premioDoTipo = t => ({ itens: { [PLACA_DO_TIPO[t]]: 1 } });
 
 const feito = (n, alvo) => ({ n: Math.min(n, alvo), alvo, completo: n >= alvo });
 

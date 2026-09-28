@@ -157,6 +157,24 @@ export function reviverNoEvento(estado, ref, dono) {
   return m;
 }
 
+/* Revive num companheiro caído SEM exigir que o time inteiro tenha caído (pedido do usuário, 28/09/2026, pra
+   Arena): a Arena é sempre solo (um `dono` só em `lados.A`), então a condição "o resto do grupo aguenta" de
+   `reviverNoEvento` nunca abre — pra ELE, "o time inteiro caiu" e "o dono não tem mais ninguém de pé" são a
+   MESMA coisa, e o `estado.fim` já teria fechado a luta antes de dar chance de reviver. Esta versão é só a regra
+   NORMAL de Revive de uma run de verdade (qualquer aliado caído, a qualquer momento, se você tem o item) —
+   restaura a paridade, não inventa poder novo. Continua exigindo pelo menos um Pokémon do dono de pé (senão a
+   luta já teria acabado) e o mesmo teto `MAX_REVIVES` por luta. */
+export function reviverCompanheiro(estado, ref, dono, pct = 50) {
+  if (!estado?.evento || estado.fim) return null;
+  const m = monMP(estado, ref);
+  if (!m || m.dono !== dono || m.hp > 0 || ladoDe(estado, m.ref) !== 'A') return null;
+  if (!estado.lados.A.some(x => x.dono === dono && x.hp > 0)) return null;
+  const usados = estado.revivesUsados?.[dono] || 0; if (usados >= MAX_REVIVES) return null;
+  m.hp = Math.max(1, Math.floor(m.stats.hp * pct / 100)); m.status = null; m.sleep = 0; m.caido = false; m.vol = freshVol();
+  (estado.revivesUsados ||= {})[dono] = usados + 1;
+  return m;
+}
+
 /* ---- balancear ---- */
 // mesmo Pokémon em outro nível: recalcula os stats (base/IVs/EVs/natureza) e mantém a FRAÇÃO de HP
 // `nivelReal` guarda o nível de verdade (só quem lutou no nível real leva XP/itens de volta pra run — naNivelReal)

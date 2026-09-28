@@ -209,6 +209,43 @@ export const ITENS_RAIDE_SEGURADOS = {
 };
 Object.assign(ITEMS, ITENS_RAIDE_SEGURADOS);
 
+/* Pratos do Arceus + Lenço de Seda (28/09/2026): vantagem de tipo das badges "Especialista em X" (badges.js) —
+   derrotar 1.000 Pokémon de um tipo dá o prato daquele tipo, +20% de dano nos golpes desse tipo enquanto
+   segurado (gancho `danoTipo`, o mesmo do Núcleo Eternamax, ver segurados.js). Item real dos jogos (Arceus
+   troca de tipo carregando um), nunca implementado aqui antes — trocou a escolha original (pedra de evolução/
+   petisco de afinidade por tipo), que dava vantagem fraca ou nenhuma pra vários tipos e usava item de CAPTURA
+   como prêmio de batalha (pedido do usuário pra corrigir). Normal é a única exceção real: nos jogos o Arceus
+   não tem prato Normal (a forma base dele já É Normal, sem prato nenhum), então usa o Lenço de Seda. Sem
+   `price`: só vêm da badge, não se compram na loja. `PLACA_DO_TIPO` é a MESMA tabela que badges.js usa pra
+   premiar — nunca desalinha qual prato é de qual tipo. */
+export const ITENS_VANTAGEM_TIPO = {
+  'prato-chama': { name: 'Prato Chama', desc: 'Golpes de Fogo batem 20% mais forte.', segurado: true },
+  'prato-aquatico': { name: 'Prato Aquático', desc: 'Golpes de Água batem 20% mais forte.', segurado: true },
+  'prato-eletrico': { name: 'Prato Elétrico', desc: 'Golpes Elétricos batem 20% mais forte.', segurado: true },
+  'prato-campo': { name: 'Prato Campo', desc: 'Golpes de Planta batem 20% mais forte.', segurado: true },
+  'prato-gelido': { name: 'Prato Gélido', desc: 'Golpes de Gelo batem 20% mais forte.', segurado: true },
+  'prato-punho': { name: 'Prato Punho', desc: 'Golpes de Lutador batem 20% mais forte.', segurado: true },
+  'prato-toxico': { name: 'Prato Tóxico', desc: 'Golpes Venenosos batem 20% mais forte.', segurado: true },
+  'prato-terra': { name: 'Prato Terra', desc: 'Golpes Terrestres batem 20% mais forte.', segurado: true },
+  'prato-ceu': { name: 'Prato Céu', desc: 'Golpes Voadores batem 20% mais forte.', segurado: true },
+  'prato-mente': { name: 'Prato Mente', desc: 'Golpes Psíquicos batem 20% mais forte.', segurado: true },
+  'prato-inseto': { name: 'Prato Inseto', desc: 'Golpes de Inseto batem 20% mais forte.', segurado: true },
+  'prato-pedra': { name: 'Prato Pedra', desc: 'Golpes de Pedra batem 20% mais forte.', segurado: true },
+  'prato-fantasma': { name: 'Prato Fantasma', desc: 'Golpes Fantasmas batem 20% mais forte.', segurado: true },
+  'prato-draconico': { name: 'Prato Dracônico', desc: 'Golpes de Dragão batem 20% mais forte.', segurado: true },
+  'prato-pavor': { name: 'Prato Pavor', desc: 'Golpes Sombrios batem 20% mais forte.', segurado: true },
+  'prato-ferro': { name: 'Prato Ferro', desc: 'Golpes de Aço batem 20% mais forte.', segurado: true },
+  'prato-fada': { name: 'Prato Fada', desc: 'Golpes de Fada batem 20% mais forte.', segurado: true },
+  'lenco-de-seda': { name: 'Lenço de Seda', desc: 'Golpes Normais batem 20% mais forte.', segurado: true }
+};
+Object.assign(ITEMS, ITENS_VANTAGEM_TIPO);
+export const PLACA_DO_TIPO = {
+  fire: 'prato-chama', water: 'prato-aquatico', electric: 'prato-eletrico', grass: 'prato-campo', ice: 'prato-gelido',
+  fighting: 'prato-punho', poison: 'prato-toxico', ground: 'prato-terra', flying: 'prato-ceu', psychic: 'prato-mente',
+  bug: 'prato-inseto', rock: 'prato-pedra', ghost: 'prato-fantasma', dragon: 'prato-draconico', dark: 'prato-pavor',
+  steel: 'prato-ferro', fairy: 'prato-fada', normal: 'lenco-de-seda'
+};
+
 /* Pedra Mega: conquistar a Mega da espécie NÃO basta — é preciso carregar a pedra, como nos jogos (pedido do
    usuário). Ela é um item SEGURADO: compra na loja e equipa no seu Pokémon.
    É um item só, e não 89: a pedra vale pra espécie que você está jogando, e a loja só a oferece quando aquela

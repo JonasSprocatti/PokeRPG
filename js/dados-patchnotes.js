@@ -8,7 +8,8 @@ export const PATCH_NOTES = [
   { versao: '2.57', data: '2026-09-28', titulo: 'Loja de preparo na Arena', piada: 'O saldo de conta chegou dizendo que 10% de tudo é um bom começo de poupança.',
     secoes: [
       { nome: 'Novidades', itens: [
-        'Toda jornada terminada deixa 10% do seu dinheiro máximo como <b>saldo de conta</b>, pra sempre. Na 🏟 Arena, esse saldo compra itens de raide direto na "Loja de preparo" (até 5 de cada guardados), sem precisar esperar cair de prêmio.'
+        'Toda jornada terminada deixa 10% do seu dinheiro máximo como <b>saldo de conta</b>, pra sempre. Na 🏟 Arena, esse saldo abre a "Loja de preparo": cura, revive, itens de stat e itens de segurar, pelo mesmo preço da loja normal — escolha quem equipa cada item de segurar antes de entrar na luta.',
+        'A Arena ganhou <b>Reviver</b> (traz um aliado caído de volta no meio da luta, sem esperar o time inteiro cair) e <b>usar item</b> durante o combate, igual numa jornada de verdade.'
       ] }
     ] },
   { versao: '2.56', data: '2026-09-28', titulo: '3 habilidades novas', piada: 'O Unnerve olha pra fruta do adversário e ela simplesmente perde a vontade de ser comida.',

@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem } from '../js/segurados.js';
-import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
+import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
 const mon = (o = {}) => ({ level: 50, ability: 'none', data: { types: ['normal'] }, status: null, vol: { stages: {} },
@@ -16,6 +16,12 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
   }
   // prêmios de raide (boss.js): mesma coisa, mas SEM preço — não vendem na loja, só vêm de vencer o chefe da semana
   for (const [k, it] of Object.entries(ITENS_RAIDE_SEGURADOS)) {
+    assert.ok(it.segurado && it.name && it.desc && !it.price, k);
+    assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
+    assert.ok(SEGURADOS[k], `${k} não tem gancho em SEGURADOS`);
+  }
+  // pratos do Arceus (badges.js): idem — só vêm da badge "Especialista em X", nunca da loja
+  for (const [k, it] of Object.entries(ITENS_VANTAGEM_TIPO)) {
     assert.ok(it.segurado && it.name && it.desc && !it.price, k);
     assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
     assert.ok(SEGURADOS[k], `${k} não tem gancho em SEGURADOS`);
@@ -67,6 +73,21 @@ test('prêmios de raide: Núcleo Eternamax (dano por tipo) e Escama do Céu/Cris
   const comCristalGelido = calcDamage(mon(), mon({ item: 'cristal-gelido' }), golpeGelo).dmg;
   assert.ok(comCristalGelido < semDefesaGelo, `Cristal Gélido devia reduzir o dano de Gelo: ${comCristalGelido} vs ${semDefesaGelo}`);
   assert.equal(calcDamage(mon(), mon({ item: 'cristal-gelido' }), normal).dmg, semItemNormal, 'Cristal Gélido não afeta golpe Normal');
+});
+
+test('pratos do Arceus: golpe do tipo certo bate mais forte, do tipo errado não muda', t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const fogo = { name: 'ember', type: 'fire', cls: 'special', power: 60, meta: {} };
+  const agua = { name: 'water-gun', type: 'water', cls: 'special', power: 60, meta: {} };
+  const semItem = calcDamage(mon(), mon(), fogo).dmg;
+  const comPrato = calcDamage(mon({ item: PLACA_DO_TIPO.fire }), mon(), fogo).dmg;
+  assert.ok(comPrato > semItem, `Prato Chama devia bater mais forte em Fogo: ${comPrato} vs ${semItem}`);
+  assert.equal(calcDamage(mon({ item: PLACA_DO_TIPO.fire }), mon(), agua).dmg, calcDamage(mon(), mon(), agua).dmg,
+    'Prato Chama não afeta golpe de Água');
+  // Lenço de Seda (a exceção sem prato de verdade): mesmo efeito, no tipo Normal
+  const normal = { name: 'tackle', type: 'normal', cls: 'physical', power: 60, meta: {} };
+  const comLenco = calcDamage(mon({ item: PLACA_DO_TIPO.normal }), mon(), normal).dmg;
+  assert.ok(comLenco > calcDamage(mon(), mon(), normal).dmg, `Lenço de Seda devia bater mais forte em Normal: ${comLenco}`);
 });
 
 test('frutas: comem sozinhas na hora certa', () => {

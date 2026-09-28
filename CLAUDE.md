@@ -189,6 +189,20 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
   tela, explica, avança). Precisa de desenho antes de codar: quais funcionalidades ganham tutorial (só as
   principais? Mega/Tera/Z/Gigantamax quando desbloqueiam? a primeira batalha?), se é pulável, se guarda "já viu"
   por conta (Supabase) ou só neste navegador (localStorage, como a fonte), e o texto de cada passo.
+- **Pedido pelo usuário (28/09/2026), pra depois — três itens de backlog, ainda sem desenho:**
+  1. **Layout pro celular em modo paisagem (horizontal)**: hoje o CSS mobile (`@media(max-width:880px)`, ver
+     "Celular (batalha)" acima) assume retrato; precisa decidir o que muda com mais largura e menos altura
+     (cena fixa no topo deixa de fazer sentido do jeito que é hoje?).
+  2. **Marcador de jogadores online no momento**: não existe canal de presença GLOBAL hoje — só por sala
+     (`multiplayer.js`, presence do Realtime é por `pokerpg-sala-<código>`). Precisaria de um canal único
+     compartilhado só pra contar presença, sem vazar quem é quem.
+  3. **Dado de quantas pessoas jogam sem conta**: hoje o jogo não coleta nada de quem não loga (por design — ver
+     a tela 🔒 Privacidade). Adicionar essa métrica exige decidir COMO, com transparência na própria tela de
+     Privacidade (não pode virar telemetria silenciosa).
+- **Arceus como chefe de raide** (pedido do usuário, 28/09/2026, ligado aos "Pratos do Arceus" na seção 3 de
+  badges com vantagem, abaixo): faz sentido temático — nos jogos ele carrega um Prato de cada tipo, item que
+  acabou de entrar no jogo. Ainda sem desenho: precisa decidir se entra na rotação dos 14 chefes existentes
+  (mudaria o `% 14` do calendário pra `% 15`, ver "Os 14 chefes") ou como um evento à parte.
 ### ✅ CORRIGIDO (27/09/2026) — shiny do jogador não desbloqueava o início-shiny da espécie
 Relato real: jogador começou (ou recrutou) um Weedle shiny, evoluiu pra Kakuna e depois Beedrill, e nenhuma das
 três espécies desbloqueou "✨ Começar shiny" (`criacao.opcaoShiny`) em jornadas futuras. Causa: `registrar(S,
@@ -400,21 +414,56 @@ O que sobrou e o que ficou combinado:
   exigiria threading de "é o turno 1" nos dois motores de ordenação); Emblema da Coroa vira +15% de dano fixo
   (sem depender de "lutar acompanhado" — mesma classe de problema que fez a habilidade Friend Guard ficar de
   fora da 5ª leva: `calcDamage` não recebe o roster de aliados do atacante).
-- **Loja de preparo da Arena** (28/09/2026, `progresso-conta.js` + `carreira.js` + `arena.js`): saldo de conta em
-  dinheiro, só usável ali — `FRACAO_SALDO_ARENA` (10%) de `maxDinheiro` de CADA jornada bancada (`porJornada[id].maxDinheiro`,
-  campo novo nessa entrada), somado pra sempre e nunca encolhe (mesmo princípio do resto de `progresso-conta.js`).
-  `saldoArenaGanho`/`saldoArenaDisponivel`/`gastarSaldoArena` são puras e testadas; `gastoArena` mescla pelo MAIOR
-  valor entre os dois lados (é gasto, não conquista — perder o controle de quanto já foi gasto deixaria comprar
-  de graça). `carreira.saldoArenaDaConta`/`gastarSaldoArenaDaConta` fazem a ponte com `localStorage`. Na tela da
-  Arena (`htmlLobby`), cada um dos 10 itens de raide (ver acima) tem um botão "Comprar ₽X" a `PRECO_BASE_RAIDE × 4`
-  (12.000 — preço-base é só uma referência interna, esses itens nunca tiveram preço de loja normal), que soma no
-  MESMO `inventarioRaide()` de sempre. **Simplificação assumida**: o teto de 5 por tipo (`MAX_ESTOQUE_RAIDE`) é um
-  ESTOQUE PERSISTENTE (quantos ficam guardados entre lutas), não uma seleção por tentativa — como a regra de uso
-  já limita a UM de cada tipo por luta independente de quantos você tem guardado, um teto de estoque cumpre o
-  mesmo papel prático ("não acumular indefinidamente") sem precisar de uma tela de "escolher o kit desta luta".
-  Fora do escopo aqui: itens comuns (Potion, X-itens) e itens segurados NÃO têm equipar/usar na Arena — ela roda
-  o motor do co-op sem `G.S` (ver acima), que não tem ação de usar item comum nem slot de equipar; só os 10
-  consumíveis de raide entram.
+- **Loja de preparo da Arena** (28/09/2026, `progresso-conta.js` + `carreira.js` + `arena.js` — revisada no MESMO
+  dia, ver abaixo): saldo de conta em dinheiro, só usável ali — `FRACAO_SALDO_ARENA` (10%) de `maxDinheiro` de
+  CADA jornada bancada (`porJornada[id].maxDinheiro`, campo novo nessa entrada), somado pra sempre e nunca encolhe
+  (mesmo princípio do resto de `progresso-conta.js`). `saldoArenaGanho`/`saldoArenaDisponivel`/`gastarSaldoArena`
+  são puras e testadas; `gastoArena` mescla pelo MAIOR valor entre os dois lados (é gasto, não conquista — perder
+  o controle de quanto já foi gasto deixaria comprar de graça). `carreira.saldoArenaDaConta`/`gastarSaldoArenaDaConta`
+  fazem a ponte com `localStorage`.
+
+  **Revisão do que a loja vende (mesmo dia, pedido do usuário: "não era pra comprar item de raide, e sim cura,
+  revive, stat e itens de segurar").** A primeira versão vendia os 10 itens de raide — **errado**, esses
+  continuam só de prêmio (`ITENS_DE_RAIDE`, exibidos como lista comum no lobby, sem botão de comprar). `htmlLoja`
+  agora vende, pelo MESMO preço da loja normal (`ITEMS[id].price`, pago com saldo em vez de dinheiro de run):
+  `CURA_ARENA` (16 itens: Potion…Full Restore, curas de status, Ether/Max Ether, **Revive e Max Revive juntos** —
+  o pedido incluía revive explicitamente), `STATS_ARENA` (os 5 X-itens) e os 13 `ITENS_SEGURADOS` clássicos
+  (Restos, Orbe da Vida…). **Pratos do Arceus e os 7 segurados de prêmio de raide NÃO entram** (continuam
+  exclusivos de badge/prêmio — não é o que foi pedido, e manteria a exclusividade que acabou de ser desenhada
+  pra eles). Cura/stat se compram QUANTAS vezes o saldo permitir (se gastam no uso, sem teto de estoque — como
+  a loja normal); item de segurar se compra **UMA vez só** (botão desliga com `inventarioRaide()[id] > 0`) porque
+  não se GASTA equipando, só ocupa um slot — ver abaixo.
+
+  **Equipar item de segurar** (`htmlEquipar`, entre "Seu Hall da Fama" e a Loja): pra cada Pokémon selecionado
+  pra luta, um `<select data-arena-equipar>` lista os segurados que a conta já possui; a escolha fica em
+  `equipamento[chave do Hall]` (memória, não localStorage — resetado em `arenaFim`), aplicada em `M.item` só na
+  hora de `reidratar()` (montar o Pokémon pra luta). Um item físico não pode estar em dois Pokémon ao mesmo
+  tempo: escolher o mesmo id pra outro automaticamente tira de quem tinha antes (`arenaEquipar`), e o `<option>`
+  avisa "(tira de Fulano)". **Simplificação assumida**: equipar NÃO gasta o item do estoque — a Arena não tem
+  onde guardar "quem está com o quê" entre tentativas (o Hall não tem campo de item, diferente da run), então a
+  saída mais simples é: comprado uma vez, reutilizável em toda luta futura, pra sempre. Isso vale até pra itens
+  que no jogo normal se GASTAM na batalha (Faixa de Foco, as frutas) — na Arena eles nunca desaparecem de
+  verdade, mais generoso que numa run de verdade, mas evita construir um sistema de "empréstimo por luta" só
+  pra cá. `main.js` liga o `change` do `<select>` (`data-arena-equipar`) — não existe handler genérico de
+  `data-act` pra `change`, então entrou como um `if` a mais no listener de `change` já existente (ao lado de
+  `data-ranking-especie`).
+
+  **Usar item comum em batalha** (`arenaUsarItem`): ocupa a vez de quem usar, exatamente como no multiplayer —
+  `botoesItemComum` filtra `inventarioRaide()` por `!SEM_BATALHA_MP.some(...)` (exportado de `multiplayer.js`
+  pra não duplicar a lista) e `regras.itemTemEfeito`, e a escolha vira `{ref, tipo:'item', item:id}` — o MESMO
+  formato de ação que `mp-motor.resolverTurnoMP` já processa (passo "0b" do motor, existia desde "Itens no
+  multiplayer" abaixo); **nenhuma linha nova no motor foi precisa** pra isso funcionar na Arena. Depois do turno
+  resolver, `resolverTurno()` desconta da Loja de preparo os ids que tinham `tipo:'item'` em `arena.escolhas`.
+
+  **Reviver um caído** (`arenaReviver`, ação LIVRE — não ocupa a vez de ninguém): `mp-motor.reviverCompanheiro`
+  é uma generalização de `reviverNoEvento` (o Revive de grupo do multiplayer) SEM a exigência de "o time inteiro
+  caiu" — essa exigência nunca abriria na Arena, que só tem UM `dono` em `lados.A` (pra ele, "o time caiu" e
+  "ele não tem mais ninguém de pé" são a MESMA condição, e a luta já teria terminado antes de dar chance de
+  reviver). `reviverCompanheiro` é, na prática, a regra NORMAL de Revive de uma run de verdade (qualquer aliado
+  caído, a qualquer momento, se você tem o item) — restaura paridade, não inventa poder novo; continua com o
+  mesmo teto `MAX_REVIVES` (3) por luta. Ganhou um 4º parâmetro `pct` (50 = Revive, 100 = Max Revive — `arenaReviver`
+  prefere Max Revive se tiver os dois em estoque). Testado em `tests/evento-coop.test.js` com um helper `timeSolo`
+  novo (3 Pokémon do MESMO dono, diferente de `luta()` que modela multiplayer — 1 Pokémon por jogador).
 - **Sucker Punch** (`soSeAlvoAtaca` em `especiais.js`): `vol.golpeEscolhido` é preenchido por `batalha.turn`/`mp-motor` antes de resolver o turno e apagado em `fimDaRodada`;
   falha se o alvo escolheu status, não escolheu golpe (item/fuga) ou já agiu (`primeiro` falso).
 - **Badges de parceiros** (`badges.js`, grupo `Parceiros`): `casa-cheia` (venceu com `equipeCheia && esconderijoCheio`, 2+30 parceiros),
@@ -540,7 +589,7 @@ impede o jogo de abrir.
 
 ## Decidido com o usuário, ainda NÃO implementado
 
-Ordem acordada: **1 ✅ contadores + telas** · **2 ✅ cada Gen é uma jornada** · **3 badges com vantagem** · **4 Mega** · **5 Tera** · **6 Z-Move** · **7 Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.
+Ordem acordada: **1 ✅ contadores + telas** · **2 ✅ cada Gen é uma jornada** · **3 ✅ badges com vantagem** · **4 ✅ Mega** · **5 ✅ Tera** · **6 ✅ Z-Move** · **7 ✅ Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.
 
 ### 2. ✅ FEITO — Cada Gen é uma jornada
 Implementado em atalha.vencerGen (a pergunta), egras.pontuacao + multContinuacao (a penalidade) e supabase/migrations/ (o servidor recalcula e RECUSA a jornada se a conta não bater — mudou num lado, muda no outro; 	ests/schema.test.js trava isso). S.continuacoes conta quantas vezes a jornada seguiu; estatisticasDaJornada leva isso e campeaoDe pro resumo. A tela de fim já propõe o mapa seguinte (G.gen).
@@ -550,11 +599,31 @@ Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémo
 - **Padrão**: fechar a Gen **encerra e pontua a jornada**; o Pokémon **se aposenta** (fica registrado na carreira como campeão daquela Gen) e você começa uma **jornada nova** no mapa seguinte, escolhendo outro Pokémon, **no nível 5 e com o mapa nos níveis normais** (2–62). Nada de mochila, dinheiro ou aliados atravessa.
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.
 
-### 3. Badges com vantagem permanente
-Toda missão de conta paga em **vantagem na próxima run** (ex.: 1.000 do tipo Planta → começa com Pedra da Folha). Regras fechadas:
-- **Só itens e dinheiro inicial** por enquanto; vantagens de regra (Centro mais barato, desmaio extra) ficam pra depois que virmos quanto tempo cada missão leva de verdade.
-- **Interruptor na criação**: quem desliga as vantagens ganha bônus de pontuação no ranking.
-- **Rayquaza — DUAS missões separadas, nunca uma só** (pedido explícito, pra não bugar): (a) encontrar/recrutar um Rayquaza **shiny** e (b) conquistar a **Mega** dele (os 1.000 golpes finais, regra igual à das outras Megas). As duas contam de forma independente e em qualquer ordem — dá pra ter o shiny muito antes da Mega. O prêmio (**todos os itens grátis na loja**) só sai quando as duas estiverem completas. A versão original pedia também 6 IVs perfeitos; foi descartada porque a chance combinada era de 1 em 4 bilhões e não existe item que melhore IV.
+### 3. ✅ FEITO — Badges com vantagem permanente
+Implementado em `js/badges.js` (~30 badges numa tabela única, puro, `tests/badges.test.js`) e ligado na criação
+(`criacao.renderVantagens`, `vantagensDe`) e na tela 🏅 Conquistas. Cada badge é medida do **progresso
+permanente** (nunca do histórico, que o jogador pode apagar — `contextoBadges` monta o `ctx` a partir de
+`progresso-conta.js`) e paga uma vantagem na PRÓXIMA jornada: itens (empilham) e/ou dinheiro inicial (soma),
+aplicados em `criacao.iniciarJornada` (`money: 500 + v.dinheiro`). **Interruptor na criação** (`G.semVantagens`)
+deixa jogar sem elas por `regras.BONUS_SEM_VANTAGENS` (+10%) na pontuação final (`pontuacao()`, e o mesmo peso
+no SQL — mudou aqui, muda em `supabase/migrations/`). **Rayquaza são DUAS badges separadas**, como pedido
+explicitamente pra não bugar: `rayquaza-shiny` (recrutar um shiny) e `rayquaza-mega` (1.000 golpes finais sendo
+ele) contam sozinhas, em qualquer ordem; uma terceira (`rayquaza-lenda`) só fecha quando as duas estão prontas
+e é a única que dá o prêmio grande (loja de graça pra sempre, `S.lojaGratis` em `regras.precoItem`).
+
+**Pratos do Arceus (28/09/2026) — revisão do item por tipo.** As 18 badges "Especialista em X" (`ALVO_TIPO` =
+1.000 abates daquele tipo, mesmo número do Mega/Vínculo) davam originalmente uma pedra de evolução (quando o
+tipo tinha uma) ou o petisco de afinidade (quando não tinha) — pedido do usuário pra trocar: pedra de evolução é
+vantagem fraca pra quem já escolheu o Pokémon, e petisco de afinidade é item de CAPTURA, não faz sentido como
+prêmio de vantagem em batalha. Viraram os **18 Pratos do Arceus + Lenço de Seda** (`dados.ITENS_VANTAGEM_TIPO` +
+`dados.PLACA_DO_TIPO`, item real dos jogos nunca implementado aqui antes): cada um dá **+20% de dano nos golpes
+daquele tipo** enquanto segurado, reaproveitando o gancho `danoTipo` que já existia (`segurados.js`, criado pro
+Núcleo Eternamax) — gerado direto de `PLACA_DO_TIPO` num `Object.fromEntries`, então nunca desalinha qual prato é
+de qual tipo. **Normal é a única exceção real**: nos jogos o Arceus não tem Prato Normal (a forma base dele já É
+Normal, sem prato nenhum equipado), então usa o Lenço de Seda. `badges.premioDoTipo` só lê `PLACA_DO_TIPO[t]`
+agora — as tabelas antigas `PEDRA_DO_TIPO`/`PETISCO_DO_TIPO` saíram. Sem `price`: só vêm da badge, não se compram.
+
+**Backlog anotado (28/09/2026): Arceus deveria ser um chefe de raide** — ver "Próximos passos combinados" acima.
 
 ### 4. ✅ FEITO — Mega Evolução
 Tabela gerada em `js/dados-megas.js` (96 formas, 93 espécies — `ferramentas/gerar-megas.ps1`), mecânica em `js/mega.js`.
@@ -653,8 +722,10 @@ Vida bate mais forte E cobra HP, Restos cura no fim do turno, tudo via `resolver
 **Item que se GASTA** (`aguentaCheio`, Faixa de Foco) muta só a cópia de rede (`fotoDoMon`), não `G.S.player`
 diretamente — por isso `finalizar()`/`aplicarCoop` agora sincronizam `item` de volta pra run igual já faziam com
 HP/status/PP (`final[...].item`, `M.item = f.item`), senão o jogador ganharia uma Faixa de Foco de graça a cada
-luta de sala. **Arena (Hall da Fama) fica de fora por enquanto**: o Hall não guarda o item que o Pokémon segurava
-ao se aposentar (`hall.js` não tem esse campo) — ver task "Loja de preparo da Arena" pra decidir de onde viria.
+luta de sala. **Arena (Hall da Fama) resolvido de outro jeito (28/09/2026)**: o Hall continua sem guardar o item que o Pokémon
+segurava ao se aposentar (`hall.js` sem esse campo), mas não precisou — a Loja de preparo da Arena (ver acima)
+tem sua PRÓPRIA "mochila" de conta, e o jogador ESCOLHE o que equipar em cada Pokémon do time a cada tentativa
+(`arena.equipamento`), independente do que ele carregava na run original.
 **PvP não sincroniza nada de volta** (nunca sincronizou HP/PP também), então não tem risco de duplicar item ali.
 
 **Itens comuns (Potion, X Attack, curas de status, Éter...)**: MUITO diferente de item segurado — é uma ESCOLHA DE

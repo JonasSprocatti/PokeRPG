@@ -3,22 +3,24 @@
    cada jornada Roguelike/Hardcore que terminou fica guardado com o nível que tinha, e aqui você leva de 1 a 3 deles contra o chefe de
    agora — sem passar por 8 Gens até o Eternatus.
    A luta usa o MESMO motor puro do co-op (mp-motor.js): um "lado A" com os seus Pokémon e um "lado B" com o chefe, sem nenhum save no
-   meio — por isso a Arena nunca mexe numa jornada em andamento (nem pode estragar o save dela). Diferenças pra luta dentro de uma run:
-   sem itens segurados, sem Mega/Tera/Z-Move/Gigantamax e sem Revive (o motor do co-op não tem isso). Perder não custa nada.
+   meio — por isso a Arena nunca mexe numa jornada em andamento (nem pode estragar o save dela). Cura, revive, itens de stat e itens de
+   segurar têm sua PRÓPRIA "mochila" de conta (Loja de preparo, comprada com saldo — ver htmlLoja/arenaComprarComum/arenaComprarSegurado),
+   já que não há run nenhuma com dinheiro/mochila de verdade por trás. Diferença pra luta dentro de uma run: sem Mega/Tera/Z-Move/
+   Gigantamax (o motor do co-op não tem isso). Perder não custa nada.
    Tentativa: a mesma de 8 horas do resto do evento. Prêmio: o Pokémon do chefe na Pokédex, a insígnia e o título (só na 1ª vitória), e
    os itens de raide do prêmio da semana (uma vez por semana) — dinheiro e Rare Candy ficam pras lutas DENTRO de uma run. */
 import { G } from './estado.js';
 import { $, limparTopo, logRaw } from './ui.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { SPR, SPR_SHINY, ITEMS, API, TC, TYPE_PT, CLS_PT } from './dados.js';
+import { SPR, SPR_SHINY, ITEMS, ITENS_SEGURADOS, API, TC, TYPE_PT, CLS_PT } from './dados.js';
 import { hallDaConta, registrarVitoriaDeEvento, saldoArenaDaConta, gastarSaldoArenaDaConta } from './carreira.js';
 import { EVENTOS, eventoDaSemana, jaComecou, idDaSemana, agoraDoEvento, esperaRestante, ultimaTentativaEfetiva, registrarTentativa, formatarEspera, dataBR,
   inventarioRaide, darItensDeRaide, gastarItemDeRaide, INICIO, BETA_SEM_ESPERA } from './evento.js';
-import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE, PRECO_BASE_RAIDE } from './boss.js';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento } from './mp-motor.js';
-import { cartao } from './multiplayer.js';
+import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento, reviverCompanheiro, MAX_REVIVES } from './mp-motor.js';
+import { cartao, SEM_BATALHA_MP } from './multiplayer.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
-import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe } from './regras.js';
+import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe, itemTemEfeito } from './regras.js';
 import { loadPokemon, loadMove, apiErr } from './api.js';
 import { makeMon } from './pokemon.js';
 import { sincronizarComRetentativa, usuario } from './nuvem.js';
@@ -26,8 +28,14 @@ import { esc, fmt } from './util.js';
 
 const MAX_TIME = 3;
 const DONO = 'eu';
-const MAX_ESTOQUE_RAIDE = 5;   // loja de preparo: quanto de cada item de raide dá pra ter guardado
+// Loja de preparo (pedido do usuário, 28/09/2026 — revisão do mesmo dia): NÃO vende os itens de raide (esses
+// continuam só de prêmio, ver ITENS_DE_RAIDE abaixo) — vende cura/revive, itens de stat e itens de segurar,
+// pagos com o saldo da conta, pro jogador levar pra luta.
+const CURA_ARENA = ['potion', 'super-potion', 'hyper-potion', 'mega-potion', 'max-potion', 'full-restore',
+  'antidote', 'paralyze-heal', 'awakening', 'burn-heal', 'ice-heal', 'full-heal', 'ether', 'max-ether', 'revive', 'max-revive'];
+const STATS_ARENA = ['x-attack', 'x-defense', 'x-sp-atk', 'x-sp-def', 'x-speed'];
 let selecao = [];            // chaves do Hall escolhidas (na ordem)
+let equipamento = {};        // chave do Hall → id do item de segurar escolhido pra ESTA equipe
 let arena = null;            // luta em andamento (ou terminada): { ev, estado, escolhas, log, fim, ocupado }
 
 /* ---------- montar a luta ---------- */
@@ -36,6 +44,9 @@ async function reidratar(e) {
   const m = await makeMon(await loadPokemon(e.id), e.nivel, { ivs: e.ivs, evs: e.evs, nature: e.nature, ability: e.ability, nick: e.nick, shiny: e.shiny });
   const golpes = (await Promise.all((e.moves || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(g => ({ ...g, ppLeft: g.pp }));
   if (golpes.length) m.moves = golpes;
+  // item de segurar escolhido na Loja de preparo pra esta equipe (equipamento[chave]) — a Arena não guarda
+  // equipamento entre lutas (o Hall não tem esse campo), então isto é decidido de novo a cada tentativa
+  if (equipamento[e.chave] && inventarioRaide()[equipamento[e.chave]] > 0) m.item = equipamento[e.chave];
   return m;
 }
 async function montarLuta(ev, entradas) {
@@ -83,18 +94,8 @@ function htmlLobby() {
     <p class="small muted">Esta Arena aqui é só você, com Pokémon do Hall da Fama — sem risco, mas sem outros jogadores. Pra enfrentar o chefe da semana <b>em grupo de verdade</b> (até 6 jogadores, 3 Pokémon cada), crie ou entre numa sala no Multiplayer: quem tiver uma run Roguelike ou Hardcore em andamento vê o botão "☄ Chefe da semana" lá dentro.</p>
     <button class="btn ghost" data-act="mp">Ir pro Multiplayer</button></div></section>`;
   const inv = inventarioRaide(), saldo = saldoArenaDaConta();
-  /* Loja de preparo (pedido do usuário, 28/09/2026): a Arena não tem run nenhuma pra ter mochila própria, então
-     os itens de raide vivem só nesse estoque de conta (`inventarioRaide`, evento.js — o MESMO que já recebia o
-     que sobrava de uma jornada terminada). Aqui dá pra completar até MAX_ESTOQUE_RAIDE de cada um comprando com
-     o saldo da conta (10% do dinheiro final de cada jornada, pra sempre — carreira.saldoArenaDaConta), a
-     PRECO_BASE_RAIDE×4 (esses itens nunca tiveram preço de loja normal, só vêm de prêmio). */
-  const precoCompra = PRECO_BASE_RAIDE * 4;
-  const linhaRaide = t => {
-    const id = ITEM_DO_RAIDE[t], qtd = inv[id] || 0, cheio = qtd >= MAX_ESTOQUE_RAIDE;
-    return `<li><span>${esc(ITEMS[id].name)} <b>×${qtd}</b></span>
-      <button class="btn ghost sm" data-act="arena-comprar-raide" data-v="${t}" ${cheio || saldo < precoCompra ? 'disabled' : ''} title="${cheio ? `Já tem o máximo (${MAX_ESTOQUE_RAIDE})` : saldo < precoCompra ? 'Saldo insuficiente' : esc(ITEMS[id].desc)}">Comprar ₽${precoCompra.toLocaleString('pt-BR')}</button></li>`;
-  };
-  const itens = ITENS_DE_RAIDE.map(linhaRaide).join('');
+  // itens de raide (boss.js): SÓ de prêmio, como sempre — não entram na Loja de preparo (pedido do usuário)
+  const itensRaide = ITENS_DE_RAIDE.map(t => `<li>${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} <b>×${inv[ITEM_DO_RAIDE[t]] || 0}</b></li>`).join('');
   const escolhidos = new Set(selecao);
   const cartaoHall = e => { const on = escolhidos.has(e.chave), cheio = !on && selecao.length >= MAX_TIME;
     return `<button class="hall-card ${on ? 'on' : ''}" data-act="arena-sel" data-v="${esc(e.chave)}" ${cheio ? 'disabled' : ''} aria-pressed="${on}">
@@ -110,10 +111,61 @@ function htmlLobby() {
       <p class="small muted">O Pokémon principal de cada jornada <b>Roguelike ou Hardcore</b> que você termina entra aqui, com o nível que tinha. Escolha de 1 a ${MAX_TIME} pra enfrentar o chefe. Não usa nenhuma jornada em andamento.</p>
       ${hall.length ? `<div class="hall-lista">${hall.map(cartaoHall).join('')}</div>`
         : '<p class="notice">Seu Hall da Fama está vazio. <b>Termine (ou encerre) uma jornada Roguelike ou Hardcore</b> e o Pokémon dela aparece aqui, pronto pra Arena.</p>'}</div></section>
-    <section class="pv conta"><div><h3>🎒 Loja de preparo — itens de raide</h3>
-      <p class="small muted">Só valem contra o chefe, um de cada tipo por luta (até ${MAX_ESTOQUE_RAIDE} de cada guardados). Vêm de prêmio dos chefes, do que sobra numa jornada que termina, ou <b>comprados aqui</b> com o saldo da conta — 10% do dinheiro final de cada jornada terminada, pra sempre. Saldo: <b>₽${saldo.toLocaleString('pt-BR')}</b>.</p>
-      <ul class="raide-lista">${itens}</ul></div></section>
+    ${htmlEquipar(hall)}
+    ${htmlLoja(saldo)}
+    <section class="pv conta"><div><h3>🏆 Itens de raide</h3>
+      <p class="small muted">Só valem contra o chefe, um de cada tipo por luta. Vêm de prêmio dos chefes, ou do que sobra numa jornada que termina — não se compram.</p>
+      <ul class="raide-lista">${itensRaide}</ul></div></section>
     <div class="subrow"><button class="btn big" data-act="arena-iniciar" ${podeIniciar ? '' : 'disabled'}>${rotuloBotao}</button></div>`;
+}
+
+/* Loja de preparo (pedido do usuário, 28/09/2026): compra com o saldo da conta (10% do dinheiro final de cada
+   jornada terminada, pra sempre — carreira.saldoArenaDaConta) itens de cura/revive, de stat e de segurar, pro
+   jogador levar pra Arena. NÃO vende os itens de raide (esses só vêm de prêmio, ver ITENS_DE_RAIDE). Preço =
+   o MESMO preço de loja normal desses itens (`ITEMS[id].price`), só que pago com saldo em vez de dinheiro da run.
+   Itens de segurar se compram UMA vez só (não se gastam equipando — ver `reidratar`/`htmlEquipar`): o botão
+   desliga assim que você tem 1. */
+function htmlLoja(saldo) {
+  const inv = inventarioRaide();
+  const linhaComum = id => {
+    const preco = ITEMS[id].price || 0;
+    return `<li><span>${esc(ITEMS[id].name)} <b>×${inv[id] || 0}</b></span>
+      <button class="btn ghost sm" data-act="arena-comprar-comum" data-v="${id}" ${saldo < preco ? 'disabled' : ''} title="${saldo < preco ? 'Saldo insuficiente' : esc(ITEMS[id].desc)}">Comprar ₽${preco.toLocaleString('pt-BR')}</button></li>`;
+  };
+  const linhaSegurado = id => {
+    const preco = ITEMS[id].price || 0, tem = (inv[id] || 0) > 0;
+    return `<li><span>${esc(ITEMS[id].name)} ${tem ? '✅' : ''}</span>
+      <button class="btn ghost sm" data-act="arena-comprar-segurado" data-v="${id}" ${tem || saldo < preco ? 'disabled' : ''} title="${tem ? 'Já tem — reutilizável em toda luta, escolha quem equipa abaixo' : saldo < preco ? 'Saldo insuficiente' : esc(ITEMS[id].desc)}">${tem ? 'Adquirido' : `Comprar ₽${preco.toLocaleString('pt-BR')}`}</button></li>`;
+  };
+  return `<section class="pv conta"><div><h3>🎒 Loja de preparo</h3>
+    <p class="small muted">Comprado aqui com o saldo da conta, pra levar pra Arena. Saldo: <b>₽${saldo.toLocaleString('pt-BR')}</b>.</p>
+    <h4>❤ Cura e revive</h4><ul class="raide-lista">${CURA_ARENA.map(linhaComum).join('')}</ul>
+    <h4>📈 Itens de stat</h4><ul class="raide-lista">${STATS_ARENA.map(linhaComum).join('')}</ul>
+    <h4>🎽 Itens de segurar</h4><ul class="raide-lista">${Object.keys(ITENS_SEGURADOS).map(linhaSegurado).join('')}</ul></div></section>`;
+}
+
+// Quem equipa qual item de segurar, entre os que você já comprou — só aparece com pelo menos 1 Pokémon escolhido
+function htmlEquipar(hall) {
+  if (!selecao.length) return '';
+  const inv = inventarioRaide();
+  const donos = Object.keys(ITENS_SEGURADOS).filter(id => (inv[id] || 0) > 0);
+  const linha = chave => {
+    const e = hall.find(x => x.chave === chave); if (!e) return '';
+    const atual = equipamento[chave] || '';
+    const opcao = id => {
+      const outroC = Object.keys(equipamento).find(c => equipamento[c] === id && c !== chave);
+      const outro = outroC ? hall.find(x => x.chave === outroC) : null;
+      return `<option value="${id}" ${atual === id ? 'selected' : ''}>${esc(ITEMS[id].name)}${outro ? ` (tira de ${esc(outro.nick || fmt(outro.nome))})` : ''}</option>`;
+    };
+    return `<label class="equip-linha">${esc(e.nick || fmt(e.nome))}
+      <select data-arena-equipar="${esc(chave)}">
+        <option value="">Nenhum item</option>
+        ${donos.map(opcao).join('')}
+      </select></label>`;
+  };
+  return `<section class="pv conta"><div><h3>🎽 Equipar item</h3>
+    <p class="small muted">${donos.length ? 'Opcional, vale a luta toda — compre na Loja de preparo abaixo pra ter o que escolher.' : 'Compre um item de segurar na Loja de preparo (abaixo) pra poder equipar.'}</p>
+    ${selecao.map(linha).join('')}</div></section>`;
 }
 
 function htmlLuta() {
@@ -133,7 +185,9 @@ function htmlLuta() {
     acoes = `<p class="muted small">Turno ${b.turno} · <b>Vez de ${esc(vez.nome)}</b></p>
       <div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="arena-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
         : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="arena-golpe" data-v="${i}" ${g.ppLeft <= 0 ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${mover(i, -1)}${mover(i, 1)}</span></div>`; }).join('')}</div>
+      ${botoesItemComum(vez)}
       ${botoesRaide(chefe)}
+      ${botoesReviver()}
       <div class="subrow"><button class="btn ghost" data-act="arena-desistir">Desistir</button></div>`;
   } else acoes = `<p class="muted">Resolvendo o turno…</p>`;
   return `${campo}<div class="textbox"><div id="log" class="log" aria-live="polite"></div></div><div class="actions">${acoes}</div>`;
@@ -144,22 +198,53 @@ function botoesRaide(chefe) {
   const l = ITENS_DE_RAIDE.filter(t => (inv[ITEM_DO_RAIDE[t]] || 0) > 0 && !chefe?.boss?.raide?.[t]);
   return l.length ? `<div class="subrow">${l.map(t => `<button class="btn ghost sm" data-act="arena-raide" data-v="${t}" title="${esc(ITEMS[ITEM_DO_RAIDE[t]].desc)}">🎒 ${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} ×${inv[ITEM_DO_RAIDE[t]]}</button>`).join('')}</div>` : '';
 }
+// item comum (Potion, X Attack, curas...) ocupa a vez de quem usar, igual à run — SEM_BATALHA_MP tira revive
+// (tem botão próprio, `botoesReviver`, porque o alvo é um CAÍDO, não quem está escolhendo)
+function botoesItemComum(vez) {
+  const inv = inventarioRaide();
+  const l = [...CURA_ARENA, ...STATS_ARENA].filter(id => (inv[id] || 0) > 0 && !SEM_BATALHA_MP.some(f => ITEMS[id][f]) && itemTemEfeito(ITEMS[id], vez));
+  return l.length ? `<details class="mp-itens"><summary>🎒 Usar item (${l.length})</summary><div class="bag-grid">${l.map(id => `<button class="item-btn sm" data-act="arena-usar-item" data-v="${id}" title="${esc(ITEMS[id].desc)}">${esc(ITEMS[id].name)} ×${inv[id]}</button>`).join('')}</div></details>` : '';
+}
+// reviver um caído (ação livre — não ocupa a vez de ninguém, mesmo estilo do item de raide): Revive/Max Revive
+function botoesReviver() {
+  const inv = inventarioRaide();
+  if (!(inv.revive > 0 || inv['max-revive'] > 0)) return '';
+  const usados = arena.estado.revivesUsados?.[DONO] || 0; if (usados >= MAX_REVIVES) return '';
+  const caidos = arena.estado.lados.A.filter(m => m.hp <= 0);
+  return caidos.length ? `<div class="subrow">${caidos.map(m => `<button class="btn ghost sm" data-act="arena-reviver" data-v="${m.ref}">❤ Reviver ${esc(m.nome)}</button>`).join('')}</div>` : '';
+}
 const registrar = (txt, cls = '') => { const l = { html: esc(txt), cls }; arena.log.push(l); logRaw(l); };
 
 /* ---------- ações (main.js liga cada data-act) ---------- */
-// Loja de preparo: compra 1 unidade de um item de raide com o saldo da conta (₽PRECO_BASE_RAIDE×4), até o teto
-export function arenaComprarRaide(tipo) {
-  if (arena || G.mode !== 'arena' || !ITEM_DO_RAIDE[tipo]) return;
-  const id = ITEM_DO_RAIDE[tipo], qtd = inventarioRaide()[id] || 0;
-  if (qtd >= MAX_ESTOQUE_RAIDE) return telaArena(`Já tem o máximo de ${ITEMS[id].name} guardado (${MAX_ESTOQUE_RAIDE}).`);
-  const preco = PRECO_BASE_RAIDE * 4;
+// Loja de preparo: cura/revive e stat compram várias vezes (se gastam no uso); segurado compra 1 vez só (não se gasta)
+export function arenaComprarComum(id) {
+  if (arena || G.mode !== 'arena' || !CURA_ARENA.includes(id) && !STATS_ARENA.includes(id)) return;
+  const preco = ITEMS[id]?.price || 0;
   if (!gastarSaldoArenaDaConta(preco)) return telaArena('Saldo insuficiente.');
   darItensDeRaide({ [id]: 1 });
   telaArena(`Comprou ${ITEMS[id].name} por ₽${preco.toLocaleString('pt-BR')}.`);
 }
+export function arenaComprarSegurado(id) {
+  if (arena || G.mode !== 'arena' || !ITENS_SEGURADOS[id]) return;
+  if (inventarioRaide()[id] > 0) return telaArena(`Já tem ${ITEMS[id].name}.`);
+  const preco = ITEMS[id]?.price || 0;
+  if (!gastarSaldoArenaDaConta(preco)) return telaArena('Saldo insuficiente.');
+  darItensDeRaide({ [id]: 1 });
+  telaArena(`Comprou ${ITEMS[id].name} por ₽${preco.toLocaleString('pt-BR')}. Escolha quem equipa em "🎽 Equipar item".`);
+}
+// item de segurar escolhido pra ESTA equipe (não gasta o item — pode trocar quantas vezes quiser até começar a
+// luta). Um item físico só pode estar num Pokémon por vez: escolher o mesmo pra outro tira de quem tinha antes.
+export function arenaEquipar(chave, id) {
+  if (arena || G.mode !== 'arena' || !selecao.includes(chave)) return;
+  if (id && !(inventarioRaide()[id] > 0)) return;
+  if (id) { for (const c of Object.keys(equipamento)) if (equipamento[c] === id) delete equipamento[c]; equipamento[chave] = id; }
+  else delete equipamento[chave];
+  renderArena();
+}
 export function arenaSelecionar(chave) {
   if (arena) return;
-  selecao = selecao.includes(chave) ? selecao.filter(c => c !== chave) : (selecao.length < MAX_TIME ? [...selecao, chave] : selecao);
+  if (selecao.includes(chave)) { selecao = selecao.filter(c => c !== chave); delete equipamento[chave]; }
+  else if (selecao.length < MAX_TIME) selecao = [...selecao, chave];
   renderArena();
 }
 export async function arenaIniciar() {
@@ -190,15 +275,27 @@ export async function arenaGolpe(i) {
   if (proximoSemEscolha()) return renderArena();   // ainda falta alguém do time escolher
   await resolverTurno();
 }
+// usar um item comum (cura, revive de estágio-X, PP...) EM VEZ de atacar — ocupa a vez, igual aos jogos e ao co-op
+export async function arenaUsarItem(id) {
+  if (!arena || arena.fim || arena.ocupado) return;
+  const m = proximoSemEscolha(); if (!m) return;
+  if (!(inventarioRaide()[id] > 0) || !itemTemEfeito(ITEMS[id], m)) return;
+  arena.escolhas[m.ref] = { ref: m.ref, tipo: 'item', item: id };
+  if (proximoSemEscolha()) return renderArena();
+  await resolverTurno();
+}
 async function resolverTurno() {
   arena.ocupado = true; renderArena();
   const b = arena.estado, boss = b.lados.B[0];
+  // itens comuns escolhidos neste turno (tipo:'item'): o motor já validou/aplicou — descontar da Loja de preparo
+  const usados = Object.values(arena.escolhas).filter(a => a.tipo === 'item').map(a => a.item);
   try {
     const ia = boss.hp > 0 ? [acaoDaIA(b, boss, Math.random, ESPERTEZA.chefe)] : [];
     const { estado, eventos } = await resolverTurnoMP(b, [...Object.values(arena.escolhas), ...ia]);
     arena.log.push({ html: esc(`— Turno ${b.turno} —`), cls: 'turno' });
     for (const e of eventos) arena.log.push({ html: esc(e.txt), cls: e.cls });
     arena.estado = estado; arena.escolhas = {};
+    for (const id of usados) gastarItemDeRaide(id);
     if (estado.fim) await finalizar(estado.fim);
   } catch (e) { console.error(e); registrar(`Algo deu errado neste turno: ${e.message}`, 'hit'); arena.escolhas = {}; }
   finally { arena.ocupado = false; renderArena(); }
@@ -213,12 +310,24 @@ export function arenaRaide(tipo) {
   for (const e of r.efeitos) if (e.dizer) arena.log.push({ html: esc(e.dizer), cls: e.cls || 'status' });
   renderArena();
 }
+// reviver um caído: ação livre, não ocupa a vez de ninguém. Prefere Max Revive (HP cheio) se tiver os dois.
+export function arenaReviver(ref) {
+  if (!arena || arena.fim || arena.ocupado) return;
+  const inv = inventarioRaide();
+  const usaMax = (inv['max-revive'] || 0) > 0, id = usaMax ? 'max-revive' : 'revive';
+  if (!(inv[id] > 0)) return;
+  const m = reviverCompanheiro(arena.estado, ref, DONO, usaMax ? 100 : 50);
+  if (!m) return;
+  gastarItemDeRaide(id);
+  arena.log.push({ html: esc(`❤ Você usou ${ITEMS[id].name} em ${m.nome}!`), cls: 'good' });
+  renderArena();
+}
 export function arenaDesistir() {
   if (!arena || arena.fim) return;
   arena.estado.fim = 'B'; arena.fim = 'B';
   registrar('Você desistiu da luta. A tentativa já foi gasta.', 'muted'); renderArena();
 }
-export function arenaFim() { arena = null; selecao = []; telaArena(); }
+export function arenaFim() { arena = null; selecao = []; equipamento = {}; telaArena(); }
 
 async function finalizar(fim) {
   arena.fim = fim;

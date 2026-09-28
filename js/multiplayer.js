@@ -495,7 +495,7 @@ export function usarRaideMP(tipo) {
    revive, evolução...) ou não fazem sentido em batalha (repelente, relembrar golpe).
    Usa uma vez o turno inteiro: é uma ESCOLHA (como golpe/fugir), não uma ação livre — por isso passa por
    `escolher()`, igual escolherGolpeMP, em vez de `registrarAcao` direto. */
-const SEM_BATALHA_MP = ['candy', 'afinidade', 'evo', 'troca', 'segurar', 'segurado', 'repelente', 'ensina', 'raide', 'revive'];
+export const SEM_BATALHA_MP = ['candy', 'afinidade', 'evo', 'troca', 'segurar', 'segurado', 'repelente', 'ensina', 'raide', 'revive'];
 function itensComunsDisponiveis() {
   const m = minhaVez(); if (!m || !temRun() || sala.convidado) return [];
   return Object.entries(G.S.bag || {}).filter(([k, n]) => n > 0 && ITEMS[k] && !SEM_BATALHA_MP.some(f => ITEMS[k][f]) && itemTemEfeito(ITEMS[k], m)).map(([k]) => k);

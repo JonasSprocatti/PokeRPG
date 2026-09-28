@@ -98,6 +98,7 @@ button.link{background:none;border:0;padding:0;font:inherit;color:#b45cff;text-d
 .run-perfil small{display:block}
 .raide-lista{list-style:none;padding:0;margin:6px 0;display:flex;flex-wrap:wrap;gap:8px}
 .raide-lista li{padding:4px 10px;border-radius:999px;border:2px solid var(--line);background:var(--panel2);display:flex;align-items:center;gap:8px}
+.equip-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
 .agenda-evento{margin:12px 0;padding:12px 14px;border-radius:12px;border:2px solid #b45cff;background:var(--panel)}
 .agenda-evento h4{margin:0 0 6px}
 .agenda-aviso{margin:6px 0 10px;padding:8px 10px;border-radius:10px;background:rgba(180,92,255,.18);border:1px solid #b45cff}

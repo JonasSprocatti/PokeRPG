@@ -1,7 +1,7 @@
 // Chefe da semana no CO-OP (js/mp-motor.js): o golpe carregado atinge o time todo, Revive no meio da luta e sem fuga.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, monMP, reviverNoEvento, MAX_REVIVES } from '../js/mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, monMP, reviverNoEvento, reviverCompanheiro, MAX_REVIVES } from '../js/mp-motor.js';
 import { prepararChefe, jogadoresEfetivos, AJUSTES } from '../js/boss.js';
 import { freshVol } from '../js/regras.js';
 
@@ -84,6 +84,43 @@ test('Revive só existe na luta do evento e só enquanto o grupo aguenta', () =>
   assert.equal(reviverNoEvento(e, 'A0', 'j0'), null, 'o grupo todo caiu: acabou');
   const acabou = luta([forte(), forte()]); acabou.fim = 'B'; monMP(acabou, 'A0').hp = 0;
   assert.equal(reviverNoEvento(acabou, 'A0', 'j0'), null, 'luta encerrada');
+});
+
+// reviverCompanheiro (Arena solo, 28/09/2026): a MESMA regra de Revive de uma run de verdade — qualquer aliado
+// caído, a qualquer momento, sem exigir que o time INTEIRO tenha caído (essa exigência de reviverNoEvento nunca
+// abriria na Arena, que só tem UM dono em lados.A).
+// Time solo com 3 Pokémon do MESMO dono (a Arena: um jogador só, até 3 no Hall) — diferente de `luta()`, que
+// modela multiplayer (um Pokémon por jogador).
+const timeSolo = (mons = [forte(), forte(), forte()], evento = 'eternatus-eternamax') =>
+  novaBatalhaMP(mons.map((m, i) => fotoDoMon(m, 'A' + i, 'j0', null, i)), [chefeFoto(1)], { evento });
+
+test('reviverCompanheiro: reanima mesmo com outro Pokémon do dono ainda de pé (diferente de reviverNoEvento)', () => {
+  const e = timeSolo();
+  monMP(e, 'A0').hp = 0;
+  // reviverNoEvento recusaria aqui (A1/A2 do MESMO dono ainda de pé); reviverCompanheiro não exige isso
+  assert.equal(reviverNoEvento(e, 'A0', 'j0'), null);
+  const m = reviverCompanheiro(e, 'A0', 'j0');
+  assert.ok(m); assert.equal(m.hp, 500); assert.equal(m.caido, false);
+  assert.equal(e.revivesUsados.j0, 1);
+});
+
+test('reviverCompanheiro: aceita a fração de HP (100 = Max Revive), recusa dono errado/vivo/limite/fora do evento', () => {
+  const e = timeSolo([forte(), forte()]);
+  monMP(e, 'A0').hp = 0;
+  assert.equal(reviverCompanheiro(e, 'A0', 'j1'), null, 'Pokémon de outro jogador');
+  const m = reviverCompanheiro(e, 'A0', 'j0', 100);
+  assert.equal(m.hp, 1000, 'Max Revive cura tudo');
+  assert.equal(reviverCompanheiro(e, 'A0', 'j0'), null, 'já está de pé');
+  monMP(e, 'A0').hp = 0;
+  e.revivesUsados.j0 = MAX_REVIVES;
+  assert.equal(reviverCompanheiro(e, 'A0', 'j0'), null, 'gastou todos os Revives da luta');
+  const comum = timeSolo([forte(), forte()], null);
+  monMP(comum, 'A0').hp = 0;
+  assert.equal(reviverCompanheiro(comum, 'A0', 'j0'), null, 'fora do evento não vale');
+  // sem ninguém do dono de pé: continua sem valer (é o caso "time inteiro caído" — a luta já teria acabado)
+  const acabou = timeSolo([forte()]);
+  monMP(acabou, 'A0').hp = 0;
+  assert.equal(reviverCompanheiro(acabou, 'A0', 'j0'), null, 'ninguém do dono de pé');
 });
 
 test('o Pokémon revivido volta a agir e o estado guarda o contador pro anfitrião publicar', async t => {

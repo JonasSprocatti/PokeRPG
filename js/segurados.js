@@ -22,7 +22,7 @@
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
-import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS } from './dados.js';
+import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO } from './dados.js';
 
 export const SEGURADOS = {
   leftovers: { curaFimTurno: 1 / 16 },
@@ -51,13 +51,16 @@ export const SEGURADOS = {
   'redea-espectral': { multStat: { speed: 1.2 } },
   'emblema-da-coroa': { multDano: 1.15 },
   'cristal-gelido': { resisteTipo: { tipos: ['ice'], mult: 0.5 } },
-  'presa-da-lua': { drenaDano: 0.1 }
+  'presa-da-lua': { drenaDano: 0.1 },
+  // Pratos do Arceus + Lenço de Seda (dados.PLACA_DO_TIPO, badges.js "Especialista em X"): +20% de dano no tipo
+  // correspondente, um prato por tipo. Gerado da MESMA tabela que a badge usa pra premiar — nunca desalinha.
+  ...Object.fromEntries(Object.entries(PLACA_DO_TIPO).map(([tipo, id]) => [id, { danoTipo: { tipos: [tipo], mult: 1.2 } }]))
 };
 // o que este Pokémon está segurando (objeto vazio = nada)
 export const seg = m => SEGURADOS[m?.item] || {};
 export const temSegurado = m => !!SEGURADOS[m?.item];
 // itens segurados que existem na mochila/loja (dados.js) — o teste confere que as duas listas batem
-export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS)];
+export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO)];
 
 // Multiplicador de dano do item de quem ataca. `ef` = eficácia de tipo (2, 1, 0.5…), `fisico` = golpe físico,
 // `tipo` = tipo do golpe (pro `danoTipo` do Núcleo Eternamax — independente do `multDano` genérico).

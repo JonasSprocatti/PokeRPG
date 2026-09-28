@@ -24,7 +24,8 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
-import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim, arenaComprarRaide } from './arena.js';
+import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim,
+  arenaComprarComum, arenaComprarSegurado, arenaEquipar, arenaUsarItem, arenaReviver } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem } from './itens.js';
@@ -107,11 +108,14 @@ document.addEventListener('click', async e => {
     case 'arena': if (G.busy || G.mode === 'battle') return; return telaArena();
     case 'amigo-perfil': if (G.busy || G.mode === 'battle') return; return telaPerfil(v);   // 👤 Ver perfil (perfil-amigo.js)
     case 'arena-sel': return arenaSelecionar(v);
-    case 'arena-comprar-raide': return arenaComprarRaide(v);
+    case 'arena-comprar-comum': return arenaComprarComum(v);
+    case 'arena-comprar-segurado': return arenaComprarSegurado(v);
     case 'arena-iniciar': return arenaIniciar();
     case 'arena-golpe': return arenaGolpe(v);
     case 'arena-golpe-mover': return arenaGolpeMover(+v, +b.dataset.dir);
+    case 'arena-usar-item': return arenaUsarItem(v);
     case 'arena-raide': return arenaRaide(v);
+    case 'arena-reviver': return arenaReviver(v);
     case 'arena-desistir': return arenaDesistir();
     case 'arena-fim': return arenaFim();
     case 'pokedex': if (G.busy || G.mode === 'battle') return; return telaPokedex();
@@ -302,6 +306,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', e => {
   if (e.target.matches?.('[data-ranking-especie]')) return telaRanking(e.target.value || null);
+  if (e.target.matches?.('[data-arena-equipar]')) return arenaEquipar(e.target.dataset.arenaEquipar, e.target.value);
   const cfg = e.target.dataset?.mpCfg; // configuração da sala (anfitrião): modo, porJogador, zona, balancear
   if (cfg) return configurarSala(cfg, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
   // ordem de aliado (vale a partir da próxima escolha de golpe — o turno em andamento já decidiu as ações)

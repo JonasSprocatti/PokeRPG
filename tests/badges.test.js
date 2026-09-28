@@ -42,9 +42,9 @@ test('há uma badge por tipo, e cada uma dá um item que existe', () => {
     const ctx = contextoBadges({ abates: { total: 0, tipoAlvo: { [t]: ALVO_TIPO }, especie: {} }, progresso: null, dex: null, conquistas: null });
     assert.equal(b.mede(ctx).completo, true);
   }
-  // o exemplo que o usuário deu: 1.000 do tipo Planta começa com a Pedra da Folha
+  // 1.000 do tipo Planta começa com o Prato Campo (Arceus, +20% de dano em Planta)
   const planta = BADGES.find(x => x.id === 'tipo-grass');
-  assert.equal(Object.keys(planta.recompensa.itens)[0], 'leaf-stone');
+  assert.equal(Object.keys(planta.recompensa.itens)[0], 'prato-campo');
 });
 
 test('Rayquaza: as duas missões contam SEPARADAS, em qualquer ordem', () => {
