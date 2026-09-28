@@ -144,6 +144,13 @@ export function gastarItemDeRaide(id) {
 export const ultimaTentativa = () => store.get(TENTATIVA_KEY) || 0;
 export const registrarTentativa = (agora = agoraDoEvento()) => store.set(TENTATIVA_KEY, agora);
 export const esperaRestante = (ultima, agora = agoraDoEvento()) => Math.max(0, (ultima || 0) + COOLDOWN_MS - agora);
+/* TEMPORÁRIO (pedido do usuário, beta testers, 28/09/2026): sem a espera de 8h entre tentativas, pra facilitar
+   testar as Raides com mais gente/composições. Reverter só isto (BETA_SEM_ESPERA = false) quando o beta acabar —
+   COOLDOWN_MS/esperaRestante continuam intactos e testados (tests/evento.test.js chama eles com `ultima` explícito,
+   nunca pelo padrão, então não enxergam esta flag). `ultimaTentativaEfetiva` é o único lugar que finge "nunca
+   tentou" quando a flag está ligada; `situacaoDoEvento` e a Arena usam ELE, não `ultimaTentativa()` direto. */
+export const BETA_SEM_ESPERA = true;
+export const ultimaTentativaEfetiva = () => BETA_SEM_ESPERA ? 0 : ultimaTentativa();
 export function formatarEspera(ms) {
   const min = Math.ceil(ms / 60000), h = Math.floor(min / 60), m = min % 60;
   return h ? `${h}h${m ? ` ${String(m).padStart(2, '0')}min` : ''}` : `${m}min`;
@@ -152,7 +159,7 @@ export function formatarEspera(ms) {
 /* Pode desafiar agora? Devolve { ok, evento?, esperaMs?, motivo? }:
      'em-breve'   o evento ainda não começou (o chefe da semana 0 já é conhecido: vem em `evento`, e o início em `inicio`);
      'sem-evento' esta Gen não tem chefe esta semana;  'modo' o modo de jogo não joga eventos;  'espera' as 8 horas ainda não passaram. */
-export function situacaoDoEvento({ dificuldade, gen }, agora = agoraDoEvento(), ultima = ultimaTentativa()) {
+export function situacaoDoEvento({ dificuldade, gen }, agora = agoraDoEvento(), ultima = ultimaTentativaEfetiva()) {
   if (!jaComecou(agora)) {
     const primeiro = EVENTOS[0];
     if (primeiro.gen !== gen) return { ok: false, motivo: 'sem-evento' };

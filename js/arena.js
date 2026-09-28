@@ -12,8 +12,8 @@ import { $, limparTopo, logRaw } from './ui.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { SPR, SPR_SHINY, ITEMS, API, TC, TYPE_PT, CLS_PT } from './dados.js';
 import { hallDaConta, registrarVitoriaDeEvento } from './carreira.js';
-import { EVENTOS, eventoDaSemana, jaComecou, idDaSemana, agoraDoEvento, esperaRestante, ultimaTentativa, registrarTentativa, formatarEspera, dataBR,
-  inventarioRaide, darItensDeRaide, gastarItemDeRaide, INICIO } from './evento.js';
+import { EVENTOS, eventoDaSemana, jaComecou, idDaSemana, agoraDoEvento, esperaRestante, ultimaTentativaEfetiva, registrarTentativa, formatarEspera, dataBR,
+  inventarioRaide, darItensDeRaide, gastarItemDeRaide, INICIO, BETA_SEM_ESPERA } from './evento.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento } from './mp-motor.js';
 import { cartao } from './multiplayer.js';
@@ -69,12 +69,18 @@ function renderArena() {
 
 function htmlLobby() {
   const agora = agoraDoEvento(), ev = eventoDaSemana(agora), hall = hallDaConta();
-  const comecou = jaComecou(agora), espera = esperaRestante(ultimaTentativa(), agora);
+  const comecou = jaComecou(agora), espera = esperaRestante(ultimaTentativaEfetiva(), agora);
   const alvo = ev || EVENTOS[0];
   const chefe = `<div class="chefe-box evento ${comecou ? '' : 'em-breve'}"><img src="${SPR(alvo.formaId)}" alt="">
     <div><b>${comecou ? '☄ CHEFE DA SEMANA' : '☄ EM BREVE'}: ${esc(alvo.nome)}</b> <span class="muted">Gen ${alvo.gen}</span>
     <small>${esc(alvo.resumo)}</small>
-    <small>${comecou ? 'Muda na próxima segunda-feira, meia-noite (Brasília).' : `O primeiro chefe chega em <b>${dataBR(INICIO)}</b>.`} Uma tentativa a cada 8 horas.</small></div></div>`;
+    <small>${comecou ? 'Muda na próxima segunda-feira, meia-noite (Brasília).' : `O primeiro chefe chega em <b>${dataBR(INICIO)}</b>.`} ${BETA_SEM_ESPERA ? '🧪 Modo beta: sem espera entre tentativas.' : 'Uma tentativa a cada 8 horas.'}</small></div></div>`;
+  // A Arena é só você (Hall da Fama, sem risco). Pra jogar em GRUPO de verdade — até 6 jogadores reais, 3 Pokémon
+  // cada — é outra tela (multiplayer.js): sala co-op, onde o botão "☄ Chefe da semana" aparece pra quem tem uma
+  // run Roguelike/Hardcore. Pedido do usuário (28/09/2026): deixar esse caminho claro a partir da própria Arena.
+  const chamarJogadores = `<section class="pv conta"><div><h3>👥 Jogar em grupo</h3>
+    <p class="small muted">Esta Arena aqui é só você, com Pokémon do Hall da Fama — sem risco, mas sem outros jogadores. Pra enfrentar o chefe da semana <b>em grupo de verdade</b> (até 6 jogadores, 3 Pokémon cada), crie ou entre numa sala no Multiplayer: quem tiver uma run Roguelike ou Hardcore em andamento vê o botão "☄ Chefe da semana" lá dentro.</p>
+    <button class="btn ghost" data-act="mp">Ir pro Multiplayer</button></div></section>`;
   const inv = inventarioRaide();
   const itens = ITENS_DE_RAIDE.map(t => `<li>${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} <b>×${inv[ITEM_DO_RAIDE[t]] || 0}</b></li>`).join('');
   const escolhidos = new Set(selecao);
@@ -86,6 +92,7 @@ function htmlLobby() {
   const podeIniciar = comecou && espera === 0 && selecao.length >= 1;
   const rotuloBotao = !comecou ? `🗓 O evento começa em ${dataBR(INICIO)}` : espera > 0 ? `⏳ Próxima tentativa em ${formatarEspera(espera)}` : selecao.length ? `☄ Enfrentar com ${selecao.length} Pokémon` : 'Escolha de 1 a 3 Pokémon do Hall';
   return `${chefe}
+    ${chamarJogadores}
     ${htmlComoFuncionam()}
     <section class="pv conta"><div><h3>Seu Hall da Fama</h3>
       <p class="small muted">O Pokémon principal de cada jornada <b>Roguelike ou Hardcore</b> que você termina entra aqui, com o nível que tinha. Escolha de 1 a ${MAX_TIME} pra enfrentar o chefe. Não usa nenhuma jornada em andamento.</p>
@@ -133,7 +140,7 @@ export function arenaSelecionar(chave) {
 export async function arenaIniciar() {
   if (arena || G.mode !== 'arena') return;
   const agora = agoraDoEvento(), ev = eventoDaSemana(agora);
-  if (!ev || !jaComecou(agora) || esperaRestante(ultimaTentativa(), agora) > 0) return telaArena();
+  if (!ev || !jaComecou(agora) || esperaRestante(ultimaTentativaEfetiva(), agora) > 0) return telaArena();
   const hall = hallDaConta(), entradas = selecao.map(c => hall.find(e => e.chave === c)).filter(Boolean);
   if (!entradas.length) return telaArena('Escolha pelo menos 1 Pokémon do Hall da Fama.');
   $('#arena-corpo').innerHTML = '<p class="loading">Chamando o time e o chefe…</p>';

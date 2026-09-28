@@ -336,6 +336,21 @@ O que sobrou e o que ficou combinado:
   `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
   (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
   `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. **Falta**: os outros chefes e os itens.
+  **⚠️ TEMPORÁRIO (pedido do usuário, beta testers, 28/09/2026): `evento.BETA_SEM_ESPERA = true` remove a espera de
+  8h entre tentativas** — Arena, run e sala. Implementado SEM tocar `COOLDOWN_MS`/`esperaRestante` (que continuam
+  puros e testados com os números reais): a flag entra só em `evento.ultimaTentativaEfetiva()` (finge "nunca
+  tentou" quando ligada) e no parâmetro PADRÃO de `situacaoDoEvento` — os testes chamam `situacaoDoEvento` sempre
+  com `ultima` explícito, então não veem a flag e continuam garantindo a regra de verdade. `arena.js` troca as duas
+  chamadas de `esperaRestante(ultimaTentativa()...)` por `ultimaTentativaEfetiva()` pelo mesmo motivo. **Pra
+  reverter**: só `BETA_SEM_ESPERA = false` em `evento.js` — nada mais precisa mudar. Textos que mencionavam "8
+  horas" de forma incondicional (`mundo.desafiarEvento`, `criacao.renderAgendaEvento`, `ajuda-chefes.js`,
+  `arena.htmlLobby`) agora checam a flag e mostram "🧪 Modo beta: sem espera" em vez de mentir sobre o cooldown.
+  **Convite pra jogar em grupo a partir da Arena** (mesmo pedido): a Arena (`arena.js`) é só single-player (Hall da
+  Fama, sem outros jogadores — nunca foi multiplayer de verdade). O usuário queria chamar gente de dentro dela;
+  como as duas telas são sistemas bem diferentes (Arena não usa sala/rede, co-op usa), a solução foi um cartão
+  "👥 Jogar em grupo" no topo do lobby da Arena com um botão `data-act="mp"` que leva direto pra tela de
+  Multiplayer — de lá, sala co-op já suportava isso (`MAX_JOGADORES` = 6, `porJogador` 1–3) sem precisar de
+  nenhuma mudança de código, só não estava óbvio que o caminho existia.
 - **Perfil de amigo** (`perfil-amigo.js` tela, `perfil-dados.js` contas puras; testes em `tests/perfil-amigo.test.js`): botão `data-act="amigo-perfil"` na lista de amigos (e "Ver meu perfil" na Conta) →
   `nuvem.perfilDoAmigo` → RPC `perfil_do_amigo(uuid)` (migração `20260925150000_perfil_do_amigo.sql`, SECURITY DEFINER): só devolve se a amizade está `aceita` (ou é o próprio) e só o que já é público no jogo
   (apelido, ícone, `badge_exibivel`, criado_em, ids dos chefes vencidos, contagem de espécies, números agregados das `jornadas` e as 5 últimas) — sem e-mail, código de amigo ou mochila (o teste confere o texto do SQL).

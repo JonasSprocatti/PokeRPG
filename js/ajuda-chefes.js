@@ -2,7 +2,7 @@
    Uma explicação só, mostrada em vários lugares (tela inicial, Arena do Chefe): `htmlComoFuncionam()` devolve um <details>
    recolhível. Os números (8 horas, 3 Revives…) vêm das constantes do jogo, então o texto não desatualiza sozinho.
    Sem DOM: só monta a string. */
-import { COOLDOWN_MS, INICIO, EVENTOS, dataBR } from './evento.js';
+import { COOLDOWN_MS, INICIO, EVENTOS, dataBR, BETA_SEM_ESPERA } from './evento.js';
 import { MAX_REVIVES } from './mp-motor.js';
 import { HALL_MAX } from './hall.js';
 
@@ -31,7 +31,7 @@ export function htmlComoFuncionam({ aberto = false } = {}) {
       <p class="small muted">Nos três caminhos valem as mesmas regras de tentativa, derrota e prêmio principal — abaixo.</p>
       <h5>Regras da luta</h5>
       <ul>
-        <li><b>Uma tentativa a cada ${horas} horas</b>, contada quando a luta começa (vença ou perca). Vale para a Arena, para a run e para a sala.</li>
+        <li>${BETA_SEM_ESPERA ? '🧪 <b>Modo beta: sem espera entre tentativas</b> (normalmente é uma a cada ' + horas + ' horas).' : `<b>Uma tentativa a cada ${horas} horas</b>`}, contada quando a luta começa (vença ou perca). Vale para a Arena, para a run e para a sala.</li>
         <li>O chefe é <b>imune a status</b> e <b>não dá pra fugir</b>. <b>Perder não custa nada</b>: nem a jornada, nem aliados.</li>
         <li>No co-op o HP dele cresce com o número de jogadores (mas menos que proporcional), e quem ficar sem Pokémon de pé pode usar um <b>Revive</b> (até ${MAX_REVIVES} por luta) enquanto o grupo segura.</li>
       </ul>

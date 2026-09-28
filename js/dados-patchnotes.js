@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.51', data: '2026-09-28', titulo: 'Modo beta da Raide: sem espera, e a Arena aponta pro grupo', piada: 'O Eternatus reclamou que agora não tem nem tempo de tomar um café entre uma surra e outra.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '🧪 <b>Modo beta temporário</b>: a espera de 8 horas entre tentativas contra o chefe da semana está DESLIGADA, pra facilitar os testes da Raid (Arena, dentro da run, ou em grupo). Volta a valer depois do período de teste.',
+        'A tela da <b>Arena do Chefe</b> agora tem um cartão "👥 Jogar em grupo" explicando que ela é só single-player (Hall da Fama) e levando direto pro Multiplayer, onde dá pra montar uma sala de até 6 jogadores (3 Pokémon cada) pra encarar o chefe de verdade em co-op.'
+      ] }
+    ] },
   { versao: '2.50', data: '2026-09-27', titulo: 'Pedras e cristais de verdade, GIFs sem esticar, 6 habilidades novas', piada: 'A Pedra-Chave sempre serviu pra qualquer Mega. Só faltava alguém te contar que ela existia.',
     secoes: [
       { nome: 'Novidades', itens: [

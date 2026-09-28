@@ -13,7 +13,7 @@ import { guardar } from './saves.js';
 import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta } from './carreira.js';
 import { pokedexDaConta } from './pokedex-conta.js';
 import { vantagensDe } from './badges.js';
-import { modoComEvento, eventoDaGen, agenda, agoraDoEvento, jaComecou, dataBR, INICIO } from './evento.js';
+import { modoComEvento, eventoDaGen, agenda, agoraDoEvento, jaComecou, dataBR, INICIO, BETA_SEM_ESPERA } from './evento.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
 import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
@@ -155,7 +155,7 @@ function renderAgendaEvento() {
     <ol class="agenda-lista">${lista.map(a => `<li class="${a.atual ? 'atual' : ''}"><img src="${SPR(a.evento.formaId)}" alt="" loading="lazy">
       <div><b>${esc(a.evento.nome)}</b> <span class="muted small">Gen ${a.evento.gen} · ${esc(dadosDaGen(a.evento.gen).regiao)}</span>
       <small>${a.atual ? '<b>Esta semana</b> · ' : ''}${dataBR(a.inicio)} a ${dataBR(a.fim - 1)}</small></div></li>`).join('')}</ol>
-    <p class="small muted">O chefe muda toda segunda-feira à meia-noite (horário de Brasília). Ele aparece na rota final da Gen dele, uma tentativa a cada 8 horas — ou na <b>Arena</b>, com os Pokémon do seu Hall da Fama.</p>
+    <p class="small muted">O chefe muda toda segunda-feira à meia-noite (horário de Brasília). Ele aparece na rota final da Gen dele${BETA_SEM_ESPERA ? ' (🧪 modo beta: sem espera entre tentativas)' : ', uma tentativa a cada 8 horas'} — ou na <b>Arena</b>, com os Pokémon do seu Hall da Fama.</p>
     <div class="subrow"><button class="btn" data-act="arena">🏟 Arena do Chefe</button></div>
     ${htmlComoFuncionam()}</section>`;
 }

@@ -6,7 +6,7 @@ import { rotaEsgotada } from './regras.js';
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { startBattle, startTrainerBattle, startBossBattle, startLendarios, startEvento } from './batalha.js';
-import { situacaoDoEvento } from './evento.js';
+import { situacaoDoEvento, BETA_SEM_ESPERA } from './evento.js';
 import { verificarEvolucoesPendentes } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
 import { addItem } from './itens.js';
@@ -64,7 +64,7 @@ export async function desafiarEvento() {
   const sit = situacaoDoEvento({ dificuldade: dificuldadeDe(G.S), gen: genDe(G.S) });
   if (!sit.ok) return;
   const ev = sit.evento;
-  const ok = await ask(`☄ Desafiar <b>${esc(ev.nome)}</b>?<br><br>É <b>muito difícil</b>: couraça de energia, golpe carregado e três fases. Não dá pra fugir, imune a status, e a tentativa gasta as <b>8 horas</b> de espera assim que a luta começa, vença ou perca. Perder não encerra a sua jornada.`,
+  const ok = await ask(`☄ Desafiar <b>${esc(ev.nome)}</b>?<br><br>É <b>muito difícil</b>: couraça de energia, golpe carregado e três fases. Não dá pra fugir, imune a status${BETA_SEM_ESPERA ? '' : ', e a tentativa gasta as <b>8 horas</b> de espera assim que a luta começa, vença ou perca'}. Perder não encerra a sua jornada.`,
     [{ label: '☄ Enfrentar', value: true }, { label: 'Agora não', value: false, ghost: true }]);
   if (!ok) return;
   G.busy = true; render();
