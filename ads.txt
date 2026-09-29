@@ -1,0 +1,7 @@
+# Quem pode vender o espaço de anúncio deste site (padrão ads.txt do IAB).
+# Serve pra duas coisas: provar ao AdSense que o domínio é nosso (Verificar a propriedade do site) e impedir
+# que alguém finja vender inventário do pokerpg.com.br. Sem ele, boa parte da verba de anunciante nem chega a
+# competir pelo espaço.
+# O último campo (f08c47fec0942fa0) é o identificador da Google no sistema do IAB, igual pra todo mundo — não
+# é segredo nem é nosso. O do meio é o nosso publisher ID, o mesmo de ADSENSE_CLIENT_ID em js/config.js.
+google.com, pub-9827780756194019, DIRECT, f08c47fec0942fa0

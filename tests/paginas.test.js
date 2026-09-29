@@ -37,6 +37,23 @@ test('o sitemap lista a raiz e todas as páginas, com endereço absoluto', () =>
   assert.ok(!/<loc>(?!https?:)/.test(xml), 'sitemap exige endereço absoluto');
 });
 
+/* O ads.txt é o que prova ao AdSense que o domínio é nosso. O publisher ID dele tem que ser o MESMO de
+   js/config.js — divergir não dá erro em lugar nenhum, só faz o anúncio não pagar (o Google ignora inventário
+   cujo ads.txt não bate) e é do tipo de coisa que passa meses sem ninguém notar. Enquanto ADSENSE_CLIENT_ID for
+   o marcador, só conferimos o formato do arquivo. */
+test('o ads.txt está no formato do IAB e bate com o publisher ID do config.js', async () => {
+  const linhas = ler('ads.txt').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  assert.ok(linhas.length, 'ads.txt sem nenhuma linha de verdade (só comentário)');
+  for (const l of linhas)
+    assert.match(l, /^[\w.-]+, *pub-\d+, *(DIRECT|RESELLER)(, *\w+)?$/, `linha fora do formato ads.txt: "${l}"`);
+
+  const { ADSENSE_CLIENT_ID } = await import('../js/config.js');
+  if (ADSENSE_CLIENT_ID.includes('XXXX')) return; // conta ainda não ligada: nada a comparar
+  const doConfig = ADSENSE_CLIENT_ID.replace(/^ca-/, '');
+  assert.ok(linhas.some(l => l.includes(`${doConfig},`)),
+    `ads.txt não lista ${doConfig}, que é o ADSENSE_CLIENT_ID de js/config.js`);
+});
+
 test('o robots.txt aponta pro sitemap certo e não bloqueia o site', () => {
   const t = ler('robots.txt');
   assert.match(t, new RegExp(`Sitemap: ${URL_SITE}/sitemap\\.xml`));
