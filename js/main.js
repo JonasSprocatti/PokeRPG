@@ -39,6 +39,7 @@ import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { store, esc, fmt, novoId } from './util.js';
 import { iniciarAds, definirConsentimento } from './ads.js';
+import { rodapeHTML } from './site.js';
 import { iniciarPresencaGlobal, registrarVisitanteAnonimo, definirPresenca } from './presenca.js';
 
 /* ============ eventos ============ */
@@ -482,6 +483,12 @@ iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
   else if (!tutorialVistoLocal()) telaTutorial();
   else showCreate();
 });
+/* Rodapé com os links do site (privacidade, termos, contato…). Vai FORA de `#app` porque render() reescreve o
+   `#app` inteiro a cada tela — dentro dele, o rodapé sumiria na primeira re-renderização. Injetado por JS, e
+   não escrito no index.html, pra não haver duas listas de links legais divergindo (js/site.js manda nas duas;
+   as páginas estáticas usam a mesma função). Em batalha o CSS o esconde. */
+document.body.insertAdjacentHTML('beforeend', rodapeHTML());
+
 iniciarAds(); // sem conta configurada (config.js), não faz nada; com conta, só carrega o script depois do consentimento
 aoMudarNuvem(renderChipConta);
 // presença global (marcador "jogando agora") e o registro de visitante sem conta esperam a sessão carregar

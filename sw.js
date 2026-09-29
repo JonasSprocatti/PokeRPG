@@ -10,7 +10,10 @@ const CACHE_JOGO = 'pokerpg-jogo-v1';
 const CACHE_EXTERNO = 'pokerpg-externo-v2';
 const PRECACHE = [
   './', './index.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
-  './js/ads.js', './js/tela-privacidade.js',
+  // páginas estáticas do site (GERADAS por ferramentas/gerar-paginas.mjs). Entram aqui porque o rodapé do jogo
+  // linka pra elas: offline, um link que leva a "não foi possível conectar" é pior que link nenhum.
+  './sobre.html', './guia.html', './privacidade.html', './termos.html', './contato.html',
+  './js/ads.js', './js/tela-privacidade.js', './js/texto-privacidade.js', './js/site.js',
   './js/ajuda-chefes.js', './js/itens-raide.js', './js/ajustes.js', './js/alpha.js', './js/arena.js', './js/boss.js', './js/evento.js', './js/hall.js', './js/perfil-amigo.js', './js/perfil-dados.js', './js/amizade.js', './js/api.js', './js/batalha.js', './js/carreira.js', './js/config.js', './js/conta.js',
   './js/criacao.js', './js/dados.js', './js/dados-mapas.js', './js/dados-megas.js', './js/dados-item-sprites.js', './js/dados-golpe-flags.js', './js/dados-evolucao-restante.js', './js/dev.js', './js/mega.js', './js/tera.js', './js/zmove.js', './js/dynamax.js', './js/esconderijo.js', './js/rastreio.js', './js/cenario.js', './js/dados-patchnotes.js', './js/efeitos.js', './js/especiais.js', './js/estado.js', './js/evolucao.js', './js/fim.js', './js/golpe.js', './js/habilidades.js', './js/itens.js',
   './js/layout.js', './js/loja-conta.js', './js/main.js', './js/mapas.js', './js/missoes.js', './js/mp-motor.js', './js/multiplayer.js', './js/mundo.js', './js/navegacao.js', './js/novidades.js', './js/offline.js', './js/nuvem.js', './js/paineis.js', './js/segurados.js', './js/tela-ajustes.js', './js/tela-patchnotes.js', './js/tela-conquistas.js', './js/conquistas.js', './js/tela-pokedex.js', './js/pokedex-conta.js', './js/progresso-conta.js', './js/badges.js',

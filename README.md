@@ -412,7 +412,15 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 
 Código-fonte disponível para leitura, mas **não é open source**: todos os direitos são reservados ao autor (ver [`LICENSE`](LICENSE)). Os dados de Pokémon vêm da [PokéAPI](https://pokeapi.co); Pokémon é marca da Nintendo/Game Freak/Creatures Inc. — este projeto não tem afiliação oficial com nenhuma delas.
 
+## Páginas do site
+
+Fora do jogo existem cinco páginas estáticas com endereço próprio — `sobre.html`, `guia.html`, `privacidade.html`, `termos.html` e `contato.html` —, linkadas do rodapé em toda tela (o rodapé some durante a batalha). Elas existem por dois motivos: o jogo inteiro é montado em JavaScript dentro de uma `<div>` vazia, numa URL só, então **sem elas não há nada que um buscador consiga ler** nem endereço pra dar pra política de privacidade; e o cadastro do AdSense pede esse endereço.
+
+São **geradas** por `ferramentas/gerar-paginas.mjs` a partir de `js/site.js` (constantes: e-mail de contato, aviso de marca, lista de páginas), `js/texto-privacidade.js` (a política, compartilhada com a tela de dentro do jogo) e `ferramentas/conteudo-site.mjs` (o texto das demais). Mexeu no texto-fonte → `node ferramentas/gerar-paginas.mjs`; `tests/paginas.test.js` falha se o publicado estiver desatualizado. `robots.txt` e `sitemap.xml` acompanham.
+
 ## Anúncios (Google AdSense)
+
+Antes de pedir a revisão do Google, ver **[`docs/adsense.md`](docs/adsense.md)**: levantamento do que a aprovação cobra e do que ainda falta (CMP certificada, `ads.txt`, fontes locais, posicionamento dos slots).
 
 Estrutura pronta em `js/ads.js`, desligada por padrão (mesmo padrão do Supabase em `js/config.js`: enquanto `ADSENSE_CLIENT_ID` for o marcador, nada roda). Pra ativar, depois que a conta AdSense estiver **aprovada**:
 
@@ -420,4 +428,4 @@ Estrutura pronta em `js/ads.js`, desligada por padrão (mesmo padrão do Supabas
 2. Crie uma unidade de anúncio (Anúncios → Por unidade de anúncio) e cole o id em `AD_SLOT_INICIO` (`js/criacao.js`). Repita pra outros slots que quiser adicionar em outras telas — cada um é uma chamada a `blocoAds(id)` seguida de `ativarSlots()` depois de desenhar a tela.
 3. Gere o `ads.txt` no painel do AdSense e publique na **raiz do domínio** (`https://seusite/ads.txt`) — não é obrigatório, mas sem ele muita verba de anunciante nem chega a competir pelo seu espaço.
 
-O jogo **nunca** carrega o script do Google antes do jogador aceitar: aparece um banner de cookies (GDPR) na primeira visita, e a escolha fica salva (`⚙ Ajustes` pra mudar depois). Tela **🔒 Política de Privacidade** já publicada, explicando o que cada serviço (Supabase, PokéAPI, AdSense) coleta.
+O jogo **nunca** carrega o script do Google antes do jogador aceitar: aparece um banner de cookies (GDPR) na primeira visita, e a escolha fica salva (`⚙ Ajustes` pra mudar depois). ⚠️ Esse banner é caseiro e **não** é uma CMP certificada pelo Google — sem uma, tráfego do EEE/Reino Unido/Suíça não recebe anúncio personalizado (ver `docs/adsense.md`). A **Política de Privacidade** está publicada em dois lugares com o mesmo texto: a tela 🔒 dentro do jogo e `privacidade.html`, explicando o que cada serviço (Supabase, PokéAPI, jsDelivr, Google Fonts, AdSense, Vercel) coleta.

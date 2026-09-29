@@ -83,6 +83,8 @@ Duas máquinas de dev:
 | `js/dados-patchnotes.js` / `js/tela-patchnotes.js` | 📜 Novidades. **Toda leva de mudanças vira uma versão nova aqui**, escrita à mão, mais nova primeiro. Texto PRA JOGADOR (nada de nome de arquivo/função) e cada versão leva uma piada. |
 | `js/config.js` | `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`ADSENSE_CLIENT_ID` (marcadores = aquela parte desligada). |
 | `js/ads.js` / `js/tela-privacidade.js` | AdSense desligado por padrão; **nunca carrega o script do Google antes do consentimento** (GDPR). |
+| `js/site.js` · `js/texto-privacidade.js` | Site fora do jogo: e-mail de contato, aviso de marca, `PAGINAS`, `rodapeHTML()` — e o texto da política. **Sem DOM** (o gerador os importa no Node). |
+| `sobre/guia/privacidade/termos/contato.html` · `sitemap.xml` | **GERADOS** por `ferramentas/gerar-paginas.mjs` (texto em `ferramentas/conteudo-site.mjs`) — não editar à mão. Mexeu no texto-fonte → rodar o gerador; `tests/paginas.test.js` cobra. Pendências em `docs/adsense.md`. |
 | `js/dados-megas.js` · `dados-golpe-flags.js` · `dados-evolucao-restante.js` · `dados-item-sprites.js` | **GERADOS** por `ferramentas/` — não editar à mão. |
 
 ## Armadilhas (o que já quebrou — detalhe em `docs/historico.md`)
@@ -192,13 +194,14 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 - **Frutas de aperto por tipo** (Occa, Passho…) — os outros itens segurados já entraram.
 
 **Revisões grandes pedidas (ainda não feitas)**
-- **Revisão do site pra entrar nas políticas do Google AdSense.** Varrer o que a aprovação cobra: conteúdo próprio e suficiente, navegação clara, privacidade/cookies/consentimento coerentes com o que o jogo faz de verdade (conta, nuvem, presença), uso de marca de terceiros (Pokémon/Nintendo é o ponto sensível), nada de conteúdo de terceiros sem crédito. Entregar a lista do que precisa mudar antes de pedir a revisão do Google. Ligado ao item de AdSense em "Precisa de ação do usuário".
+- **Revisão do site pra entrar nas políticas do Google AdSense** — **levantamento feito, em `docs/adsense.md`**; ler ANTES de mexer em qualquer coisa dessa área. Decisão do usuário (29/09/2026): seguir com os disclaimers, usando o **Pokémon Showdown como caso de uso** (roda AdSense há anos com o mesmo tipo de conteúdo; o site deles não tem aviso de marca em lugar nenhum — o que importa é ser gratuito e não vender nada da franquia). **Já entregue**: páginas estáticas com URL própria (o jogo era uma URL só, sem nada legível por buscador), política de privacidade reescrita, rodapé com links legais, `robots.txt`/`sitemap.xml`. **Falta**: guia por tema (várias páginas), CMP certificada, fontes locais, decidir posicionamento dos slots.
 - **Revisão e refatoração completa do multiplayer** (`multiplayer.js`, `mp-motor.js`, telas da sala): melhorar design e funcionalidades, não só limpar. `mp-motor` é puro e testado — a refatoração não pode quebrar a regra de que o motor do golpe é único (`golpe.js`) nem o anfitrião autoritativo. Ver `docs/features.md` ("Travas, IA e troca de Pokémon") e os itens de Roar/troca acima, que provavelmente caem nessa leva.
 - **Auditoria de segurança** contra invasão, ataque cibernético e roubo de ideias — e corrigir o que aparecer. Escopo: RLS e gatilhos do Supabase (pontuação é do servidor; `validar_jornada`), chave anônima exposta no `config.js`, salas por código (quem pode publicar estado), relatos com imagem (upload de 2 MB), `esc()` em todo texto de fora, presença sem identificar ninguém. Rodar `/security-review` como ponto de partida, não como resposta final.
 
 **Precisa de ação do usuário**
 - ⚠️ **`evento.BETA_SEM_ESPERA = true`** remove a espera de 8 h entre tentativas (beta testers). **Temporário** — reverter é trocar essa linha.
 - **AdSense**: `ADSENSE_CLIENT_ID` ainda é o marcador. Quando a conta for aprovada, preencher ele + `AD_SLOT_INICIO` (criacao.js) e publicar o `ads.txt`.
+- ⚠️ **Criar a conta de e-mail `EMAIL_CONTATO`** (`js/site.js`, hoje `pokerpg.contato@gmail.com`). Ela já é o contato oficial no rodapé, nas 5 páginas do site e na política de privacidade — enquanto não existir, é endereço morto, e "contato que não responde" é exatamente o que a revisão do AdSense procura. Nome diferente = trocar a constante e rodar o gerador.
 
 **Ideias soltas (nunca pedidas)**: mais missões por tipo/zona · recompensa de Alfa diferente por rota · rank/título de explorador · resumo de badges já calculado no perfil de amigo.
 

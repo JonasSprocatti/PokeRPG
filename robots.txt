@@ -1,0 +1,6 @@
+# PokéRPG — tudo aqui é público e pode ser indexado.
+User-agent: *
+Allow: /
+
+# O jogo guarda dados de Pokémon num cache local; nada disso vive em URL própria pra ser rastreado.
+Sitemap: https://poke-rpg-omega.vercel.app/sitemap.xml

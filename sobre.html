@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sobre o PokéRPG — PokéRPG</title>
+<meta name="description" content="O que é o PokéRPG: um RPG de navegador em que você não tem treinador — você é o Pokémon. Como foi feito e quem mantém.">
+<link rel="canonical" href="https://poke-rpg-omega.vercel.app/sobre.html">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+<meta name="theme-color" content="#161A33">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="PokéRPG">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Sobre o PokéRPG — PokéRPG">
+<meta property="og:description" content="O que é o PokéRPG: um RPG de navegador em que você não tem treinador — você é o Pokémon. Como foi feito e quem mantém.">
+<meta property="og:image" content="https://poke-rpg-omega.vercel.app/img/og-imagem.png">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para o jogo"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>RPG de texto</small></div>
+  <div class="top-r"><a class="btn" href="./">▶ Jogar</a></div>
+</header>
+<div id="app">
+<main class="create pagina">
+  <h1>Sobre o PokéRPG.</h1>
+
+  <p class="lead">O PokéRPG é um RPG de texto que roda no navegador, de graça, e parte de uma pergunta simples:
+    e se, em vez de treinar Pokémon, você <b>fosse</b> um?</p>
+
+  <h2>A ideia</h2>
+  <p>Nos jogos da franquia você comanda seis criaturas de fora da batalha. Aqui não existe treinador, não existe
+    Pokébola sua e não existe captura: você escolhe uma espécie inicial, nasce no nível 5 no meio da grama alta e
+    tem que sobreviver. Os outros Pokémon que você encontra pelo caminho são vizinhos, rivais ou possíveis
+    parceiros — e os treinadores humanos são uma ameaça, porque se um deles te capturar, a sua jornada acaba.</p>
+  <p>Essa inversão muda tudo de lugar. Curar não é abrir a mochila e usar um item em outro: é você buscando um
+    Centro Pokémon. Ficar mais forte não é distribuir experiência entre seis: é a sua curva de nível. Ter
+    companhia não é capturar: é oferecer comida a alguém e torcer pra ganhar confiança.</p>
+
+  <h2>Como funciona por dentro</h2>
+  <p>O jogo usa as fórmulas dos jogos originais, não aproximações: stats calculados a partir dos valores-base
+    com IVs, EVs e natureza; dano com bônus de mesmo tipo, tabela de efetividade e crítico; estágios de atributo
+    de -6 a +6; condições de status com as durações e imunidades corretas; experiência pela curva de crescimento
+    de cada espécie; evolução por nível, item, amizade, hora do dia e os casos especiais.</p>
+  <p>Os dados de Pokémon vêm da PokéAPI (pokeapi.co), projeto comunitário e gratuito. São as 1025 espécies, com os golpes que cada uma aprende, as habilidades, as árvores de
+    evolução e os sprites. Nada é digitado à mão: quando a PokéAPI ganha uma geração, o jogo ganha junto.</p>
+  <p>Tecnicamente é JavaScript puro em módulos ES — sem framework, sem etapa de build, sem dependência nenhuma.
+    O jogo salva no seu navegador e, depois da primeira visita, funciona inteiro sem internet.</p>
+
+  <h2>Quem faz</h2>
+  <p>Um projeto pessoal, escrito e mantido por uma pessoa só, sem empresa por trás e sem investidor. O
+    código-fonte fica público pra leitura no
+    <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">GitHub</a>, e o jogo é
+    ajustado toda semana — a tela 📜 Novidades, dentro do jogo, conta o que mudou em cada versão.</p>
+  <p>Bugs e sugestões vão pela tela 🐞 Bugs e sugestões, de dentro do jogo, que mostra o andamento do que você
+    relatou. Pra qualquer outro assunto, veja a página de <a href="contato.html">contato</a>.</p>
+
+  <h2>Aviso</h2>
+  <p class="small muted">Pokémon é marca registrada da Nintendo, Creatures Inc. e GAME FREAK inc. Este é um projeto de fã, sem fins lucrativos diretos e sem nenhuma afiliação, patrocínio ou aprovação dessas empresas.</p>
+</main>
+</div>
+<footer class="rodape-site">
+    <nav aria-label="Páginas do site">
+      <a href="./">Jogar</a>
+      <a href="guia.html">Guia</a>
+      <a href="privacidade.html">Privacidade</a>
+      <a href="termos.html">Termos</a>
+      <a href="contato.html">Contato</a>
+      <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <p class="small muted">© 2026 Jonas Sprocatti · <a href="mailto:pokerpg.contato@gmail.com">pokerpg.contato@gmail.com</a></p>
+    <p class="small muted">Pokémon é marca registrada da Nintendo, Creatures Inc. e GAME FREAK inc. Este é um projeto de fã, sem fins lucrativos diretos e sem nenhuma afiliação, patrocínio ou aprovação dessas empresas.</p>
+  </footer>
+</body>
+</html>

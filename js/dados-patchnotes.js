@@ -10,6 +10,18 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.22', data: '2026-09-29', titulo: 'O jogo ganhou as páginas que todo site tem', piada: 'A política de privacidade existia, mas morava numa tela que só aparecia se você já estivesse dentro. Como um aviso de incêndio trancado por dentro do prédio.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Cinco páginas novas, com endereço próprio e abertas a quem nem começou a jogar: <b>Sobre</b> (o que é o jogo e como ele foi feito), <b>Guia</b> (dificuldades, rotas e Alfas, batalha, clima, aliados, as quatro transformações e o progresso de carreira), <b>Privacidade</b>, <b>Termos de Uso</b> e <b>Contato</b>.',
+        'Todas elas ficam a um clique de qualquer tela, num <b>rodapé novo</b> — que some sozinho durante a batalha, porque ali ele só atrapalharia.',
+        'Agora existe um <b>e-mail de contato</b> de verdade, pra privacidade, direitos autorais ou qualquer assunto que não caiba em 🐞 Bugs e sugestões. Pra bug e sugestão a tela de dentro do jogo continua sendo o caminho mais rápido: ela aceita print, funciona sem internet e mostra o andamento.'
+      ] },
+      { nome: 'Correções', itens: [
+        'A <b>Política de Privacidade</b> contava menos do que o jogo realmente faz. Foi reescrita e ficou bem mais completa e honesta: agora fala do banco de dados local que guarda os Pokémon baixados, do que os outros veem de você numa sala de multiplayer, do que acontece com as imagens que você anexa num relato, e de todos os serviços que o jogo toca. Ganhou também data de atualização, seus direitos pela LGPD e pelo GDPR, por quanto tempo cada coisa fica guardada e pra onde escrever.',
+        'A política que aparece dentro do jogo e a da página pública passaram a ser <b>o mesmo texto</b>, escrito num lugar só — não tem como uma dizer uma coisa e a outra dizer outra.'
+      ] }
+    ] },
   { versao: '2.21', data: '2026-09-29', titulo: 'Agora dá pra saber no que deu', piada: 'Mandar relato era como jogar bilhete no mar. O mar respondia, mas só em pensamento.',
     secoes: [
       { nome: 'Novidades', itens: [

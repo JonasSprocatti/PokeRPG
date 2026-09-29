@@ -1,0 +1,107 @@
+/* ============ texto da Política de Privacidade ============ */
+/* Só o texto, sem nenhum DOM, porque ele é usado em DOIS lugares: a tela dentro do jogo
+   (js/tela-privacidade.js) e a página estática privacidade.html, gerada por ferramentas/gerar-paginas.mjs —
+   que roda no Node e não consegue importar nada que toque no documento. Duas cópias do mesmo texto divergem em
+   uma semana, e uma política que contradiz a outra é pior que nenhuma.
+   Mexeu aqui? Mexa em ATUALIZADO_EM (site.js) junto e rode `node ferramentas/gerar-paginas.mjs`. */
+import { ATUALIZADO_EM, EMAIL_CONTATO } from './site.js';
+
+export const TEXTO_PRIVACIDADE = `
+    <p class="lead">O PokéRPG é um projeto pessoal, sem empresa por trás. Esta página existe pra explicar, em
+      português claro, o que é guardado quando você joga.</p>
+    <p class="small muted">Última atualização: ${ATUALIZADO_EM}.</p>
+
+    <h2 class="passo"><span>1</span> O que fica só no seu aparelho</h2>
+    <p class="small">O jogo inteiro (jornada, equipe, mochila, progresso, ajustes) fica salvo no
+      <b>localStorage</b> do seu navegador — nunca sai daí, a menos que você crie conta e sincronize. Os dados de
+      Pokémon baixados da PokéAPI ficam guardados num banco local do navegador (IndexedDB) pra o jogo abrir
+      rápido e funcionar sem internet. Apagar os dados do site no navegador apaga tudo isso.</p>
+    <p class="small">localStorage e IndexedDB <b>não são cookies</b>: não acompanham você por outros sites e não
+      são enviados a servidor nenhum.</p>
+
+    <h2 class="passo"><span>2</span> Se você cria conta</h2>
+    <p class="small">A conta é opcional — o jogo inteiro funciona sem ela. Se você criar, o login é por Google ou
+      por link enviado ao seu e-mail, através do <b>Supabase</b> (nosso servidor de contas e banco de dados).
+      Ficam guardados: seu e-mail, o apelido e o ícone que você escolher, sua carreira (jornadas terminadas),
+      a jornada em andamento, conquistas, Pokédex, Hall da Fama e sua posição no ranking.</p>
+    <p class="small">Serve pra três coisas: sincronizar entre aparelhos, aparecer no ranking e deixar amigos
+      verem seu perfil. Apelido, ícone e resultados <b>aparecem publicamente</b> no ranking e no perfil; seu
+      e-mail <b>nunca</b> aparece pra outros jogadores.</p>
+
+    <h2 class="passo"><span>3</span> Marcador de "jogando agora" (mesmo sem conta)</h2>
+    <p class="small">A tela inicial mostra quantas pessoas estão jogando no momento. Pra isso, seu aparelho entra
+      num canal de presença do Supabase — sem enviar nome, e-mail, apelido nem nada que identifique você, só um
+      código aleatório gerado neste navegador (o mesmo já usado pra salas de multiplayer, guardado como
+      <code>pokerpg-visitante</code>). Ninguém vê QUEM está online, só QUANTOS. Se você não cria conta, esse
+      mesmo código também é usado uma vez, no banco, só pra contar quantas pessoas já jogaram sem conta ao longo
+      do tempo — um número que só quem mantém o jogo consegue ver, nunca aparece pra outros jogadores. Dá pra
+      desligar a presença em <b>⚙ Ajustes</b>.</p>
+
+    <h2 class="passo"><span>4</span> Multiplayer</h2>
+    <p class="small">Ao entrar numa sala, os outros participantes veem seu apelido (ou "Visitante"), seu ícone, o
+      Pokémon que você está usando e o que você escreve no chat da sala. As mensagens do chat existem só enquanto
+      a sala está aberta e não ficam guardadas depois.</p>
+
+    <h2 class="passo"><span>5</span> Bugs e sugestões</h2>
+    <p class="small">Quando você envia um relato pela tela <b>🐞 Bugs</b>, ficam guardados o título, a descrição,
+      as até 2 imagens que você anexar e — se você estiver logado — o vínculo com a sua conta, pra você poder
+      acompanhar a resposta. <b>Mande print só do que você quer mostrar</b>: a imagem sobe exatamente como você
+      anexou. Sem internet, o relato e as imagens esperam no seu aparelho e sobem quando a conexão voltar.</p>
+
+    <h2 class="passo"><span>6</span> Serviços de terceiros</h2>
+    <ul class="small" style="padding-left:20px">
+      <li><b>PokéAPI</b> (pokeapi.co) e <b>jsDelivr</b> (cdn.jsdelivr.net): fornecem os dados e as imagens de
+        Pokémon. Não recebem nenhuma informação sua além do que todo acesso à internet envia (o endereço de IP e
+        o tipo de navegador, necessários pra entregar o arquivo).</li>
+      <li><b>Supabase</b>: hospeda conta, saves, ranking, salas de multiplayer, relatos e o marcador de presença
+        (itens 2 a 5 acima).</li>
+      <li><b>Google Fonts</b>: entrega as fontes do jogo, e recebe seu endereço de IP ao fazer isso.</li>
+      <li><b>Google AdSense</b>: quando os anúncios estiverem ativos neste site (ver o item 7), a Google recebe
+        dados do seu acesso pra escolher o anúncio.</li>
+      <li><b>Vercel</b>: hospeda o site e mantém registros técnicos de acesso, como qualquer servidor web.</li>
+    </ul>
+
+    <h2 class="passo"><span>7</span> Cookies e anúncios</h2>
+    <p class="small"><b>Hoje este site não exibe anúncios e não usa cookie nenhum.</b> O texto abaixo vale a
+      partir do momento em que os anúncios forem ativados, e esta página será atualizada quando isso acontecer.</p>
+    <ul class="small" style="padding-left:20px">
+      <li>Fornecedores terceirizados, incluindo a Google, usam cookies para veicular anúncios com base em visitas
+        anteriores do usuário a este e a outros sites.</li>
+      <li>A Google usa o cookie DoubleClick para veicular anúncios com base nos interesses do usuário.</li>
+      <li>Você pode desativar a publicidade personalizada do Google em
+        <a href="https://adssettings.google.com" target="_blank" rel="noopener">adssettings.google.com</a>, e a de
+        várias empresas de uma vez em
+        <a href="https://optout.aboutads.info" target="_blank" rel="noopener">optout.aboutads.info</a> ou
+        <a href="https://www.youronlinechoices.eu" target="_blank" rel="noopener">youronlinechoices.eu</a>.</li>
+      <li>Como a Google usa os dados de sites que utilizam os serviços dela:
+        <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com/technologies/partner-sites</a>.</li>
+      <li>Antes de qualquer cookie de anúncio ser usado, aparece um aviso perguntando se você aceita. Sua escolha
+        fica salva e dá pra mudar a qualquer hora em <b>⚙ Ajustes</b>. Sem aceitar, nenhum cookie de anúncio é usado.</li>
+    </ul>
+
+    <h2 class="passo"><span>8</span> Seus direitos</h2>
+    <p class="small">Pela LGPD (Lei 13.709/2018) e pelo GDPR, você pode pedir a qualquer momento: confirmação de
+      que há dados seus, acesso a eles, correção, exclusão, portabilidade (uma cópia) e a revogação do
+      consentimento. A tela <b>👤 Conta</b> já permite apagar sua conta e todos os dados dela sozinho, na hora;
+      pra qualquer outro pedido, escreva pra <a href="mailto:${EMAIL_CONTATO}">${EMAIL_CONTATO}</a> e a resposta
+      sai em até 15 dias.</p>
+
+    <h2 class="passo"><span>9</span> Por quanto tempo guardamos</h2>
+    <p class="small">Os dados da conta ficam enquanto a conta existir. Quando você apaga a conta, conta, saves,
+      carreira, conquistas e presença no ranking são removidos. Relatos de bug e as imagens deles são mantidos
+      enquanto forem úteis pra corrigir o problema, e podem ser apagados a pedido. O que está só no seu aparelho
+      some quando você limpa os dados do site.</p>
+
+    <h2 class="passo"><span>10</span> Menores de idade</h2>
+    <p class="small">Este site é destinado ao público geral e não é direcionado a crianças. Não coletamos
+      intencionalmente dados de menores de 13 anos. Se um responsável identificar que uma criança criou conta
+      aqui, escreva pra <a href="mailto:${EMAIL_CONTATO}">${EMAIL_CONTATO}</a> e a conta será apagada.</p>
+
+    <h2 class="passo"><span>11</span> Mudanças nesta política</h2>
+    <p class="small">Quando algo mudar, a data no topo muda junto e a alteração é anunciada na tela
+      <b>📜 Novidades</b>. Mudança que exija novo consentimento faz o aviso de cookies aparecer de novo.</p>
+
+    <h2 class="passo"><span>12</span> Contato</h2>
+    <p class="small">Dúvida, pedido de remoção ou qualquer coisa sobre privacidade:
+      <a href="mailto:${EMAIL_CONTATO}">${EMAIL_CONTATO}</a>. Pra falar de bug ou sugestão, a tela
+      <b>🐞 Bugs e sugestões</b> é mais rápida — ela mostra o andamento do que você relatou.</p>`;

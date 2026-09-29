@@ -256,6 +256,29 @@ ul.rel-meus li.arquivado{border-left-color:var(--line)}
 .dot-viva{display:inline-block;animation:pulso-status 1.8s ease-in-out infinite}
 .rodape-creditos{margin:40px 0 0;text-align:center}
 .rodape-creditos a{color:inherit}
+
+/* Páginas de texto corrido (privacidade, termos, sobre, guia — a tela do jogo e o .html estático gerado por
+   ferramentas/gerar-paginas.mjs usam a MESMA marcação). Larguras de leitura: linha longa demais faz o olho
+   perder a volta, e estas páginas são as únicas do projeto com parágrafos de verdade. */
+.pagina h2{font:700 22px var(--display);color:var(--yellow);margin:32px 0 10px;max-width:40ch}
+.pagina h2.passo{color:var(--text)}  /* o numerado já tem a bolinha amarela; dois amarelos brigam */
+.pagina p,.pagina ul,.pagina ol{max-width:72ch}
+.pagina li{margin:4px 0}
+.pagina a{color:var(--yellow)}
+/* Nas páginas estáticas não há JS pra tratar clique, então o "▶ Jogar" do topo é um link de verdade usando
+   .btn — que foi escrito pra <button> e não traz nem display de bloco nem o sublinhado desligado. */
+a.btn{display:inline-block;text-decoration:none}
+
+/* Rodapé do site: os links legais (privacidade, termos, contato) precisam estar em toda página — é o que a
+   revisão do AdSense procura e o que um visitante perdido usa. Dentro do JOGO ele some: ver .game abaixo. */
+.rodape-site{max-width:1100px;margin:48px auto 0;padding:20px;border-top:2px solid var(--line);text-align:center}
+.rodape-site nav{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin-bottom:12px}
+.rodape-site a{color:var(--muted);text-decoration:none;border-bottom:1px solid transparent}
+.rodape-site a:hover{color:var(--yellow);border-bottom-color:currentColor}
+.rodape-site p{max-width:80ch;margin:6px auto 0}
+/* Em batalha o rodapé só atrapalha: cria rolagem embaixo dos painéis e põe link de "Termos" ao lado do botão de
+   atacar. `:has()` resolve sem JS — quem desenha a tela não precisa lembrar de nada. */
+#app:has(> .game) ~ .rodape-site{display:none}
 .passo{display:flex;align-items:center;gap:10px;font:700 20px var(--display);color:var(--text);margin:30px 0 12px}
 .passo > span:first-child{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--yellow);color:#1b1b2f;font-size:16px}
 .difs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
