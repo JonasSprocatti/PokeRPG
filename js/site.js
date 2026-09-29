@@ -9,8 +9,12 @@
 // muda em todo lugar (páginas estáticas, rodapé e política de privacidade).
 export const EMAIL_CONTATO = 'pokerpg.contato@gmail.com';
 
-// Endereço público do jogo. Usado nos links absolutos do sitemap.xml e nas tags de pré-visualização.
-export const URL_SITE = 'https://poke-rpg-omega.vercel.app';
+/* Endereço público do jogo, usado nos links absolutos do sitemap.xml, nos `canonical` e nas tags de
+   pré-visualização. COM `www` de propósito: o domínio sem www responde 308 e manda pro www, então é o www que
+   é o endereço final. Canonical apontando pra um endereço que redireciona é pedir confusão ao buscador —
+   e apontar pro domínio ANTIGO (poke-rpg-omega.vercel.app, que segue no ar) faria o Google indexar aquele e
+   ignorar este. O endereço da Vercel continua funcionando, mas não é mais o endereço do jogo. */
+export const URL_SITE = 'https://www.pokerpg.com.br';
 
 /* Aviso de marca. O jogo é um projeto de fã: usa nomes e imagens de uma franquia de terceiros e não tem
    autorização nenhuma delas. O Pokémon Showdown — que roda AdSense há anos com o mesmo tipo de conteúdo — não

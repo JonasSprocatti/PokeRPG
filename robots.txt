@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 
 # O jogo guarda dados de Pokémon num cache local; nada disso vive em URL própria pra ser rastreado.
-Sitemap: https://poke-rpg-omega.vercel.app/sitemap.xml
+Sitemap: https://www.pokerpg.com.br/sitemap.xml

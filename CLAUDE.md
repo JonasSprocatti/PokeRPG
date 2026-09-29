@@ -7,6 +7,12 @@ RPG de texto no navegador em que **você é o Pokémon** (sem treinador, sem cap
 > - **`docs/historico.md`** — post-mortems dos bugs já corrigidos (o relato do jogador, o que foi descartado no diagnóstico).
 > - `docs/auditoria-batalha.md` — ⚠️ **desatualizado** (parou na 2ª leva de habilidades). Não usar como fonte; a contagem certa é `IMPL.size`.
 
+## Onde o jogo está no ar
+
+**`https://www.pokerpg.com.br`** — domínio próprio, comprado em 29/09/2026. O apex (`pokerpg.com.br`) responde **308 e manda pro `www`**, então o endereço canônico é o com `www`: é ele que está em `URL_SITE` (`js/site.js`), de onde saem os `canonical`, o `sitemap.xml` e o `robots.txt`.
+
+O endereço antigo da Vercel (`poke-rpg-omega.vercel.app`) **continua no ar servindo o mesmo site**. Isso é conteúdo duplicado aos olhos do buscador — os `canonical` apontando pro domínio próprio é o que resolve. **Endereço absoluto novo sai de `URL_SITE`, nunca digitado à mão.**
+
 ## Como rodar
 
 Precisa de servidor HTTP (ES modules não carregam por `file://` — o `index.html` avisa nesse caso):

@@ -17,6 +17,17 @@ conteúdo derivado. O que o Showdown mostra, ao ser examinado:
   não vender nada da franquia. Mantemos o aviso mesmo assim — custa uma linha e ajuda com o
   revisor automático.
 
+## Dados da conta
+
+- **Domínio cadastrado no AdSense**: `pokerpg.com.br` (comprado em 29/09/2026). O site responde no
+  `www`; o apex redireciona 308 pra lá. O AdSense cobre o domínio e seus subdomínios, então o
+  cadastro sem `www` está correto.
+- **Publisher ID**: `ca-pub-9827780756194019`. Ainda **não** está em `js/config.js` — ver a
+  decisão sobre o snippet em D, abaixo.
+- **Estado**: "Precisa de revisão". Falta verificar a propriedade do site e pedir a revisão.
+- **Modelo de monetização**: só anúncio. Não há venda de nada no site, o que é exatamente o que
+  mantém o projeto na zona tolerada quanto ao A1.
+
 Estado do código: `ADSENSE_CLIENT_ID` é marcador, `AD_SLOT_INICIO` é marcador, nenhum anúncio
 carrega. Um banner de cookies próprio (`js/ads.js`) e a tela 🔒 Privacidade já existem.
 
