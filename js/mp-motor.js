@@ -215,6 +215,20 @@ const outro = l => (l === 'A' ? 'B' : 'A');
 const vivosMP = l => l.filter(m => m.hp > 0);
 export const monMP = (e, ref) => todosMP(e).find(m => m.ref === ref);
 
+/* O que uma "foto" de estado que chega significa pra quem está na sala. `turnoVisto` é o último turno JÁ processado
+   (null = nenhuma luta em andamento); `turno` é o da foto que chegou.
+   Existe como função pura por causa de um bug real (29/09/2026, Sala de Raide): a sala decidia "é turno novo?"
+   comparando com `sala.batalha`, que o ANFITRIÃO já tinha sobrescrito com o turno novo antes de publicar — davam
+   iguais, as escolhas do turno anterior nunca eram limpas e o jogador não conseguia mais atacar. Quem hospeda e quem
+   é convidado passam pela MESMA regra, e ela é testável sem DOM.
+   `limparEscolhas` é false na primeira foto de uma luta de propósito: a lista já nasce vazia, e limpar ali apagaria a
+   escolha recém-feita (num convidado isso deixaria escolher duas vezes). */
+export const leituraDoEstado = (turnoVisto, turno) => ({
+  novaLuta: turnoVisto == null,
+  turnoNovo: turnoVisto !== turno,
+  limparEscolhas: turnoVisto != null && turnoVisto !== turno
+});
+
 // IA do lado B (selvagem/Alfa): escolhe o golpe por regras.escolhaIA (acerta conforme a `esperteza`; sem PP = Struggle)
 // num alvo vivo aleatório do outro lado
 export function acaoDaIA(e, m, sorte = Math.random, esperteza = ESPERTEZA.selvagem) {

@@ -5,6 +5,12 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.71', data: '2026-09-29', titulo: 'Destravando a Raide', piada: 'O anfitrião estava tão ocupado organizando a luta que esqueceu de deixar a si mesmo jogar.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Quem criava a sala travava depois da primeira rodada</b>: dava pra atacar uma vez e nunca mais, a tela ficava em "Escolhas enviadas" e os turnos passavam sozinhos enquanto o chefe batia. Numa luta nova acontecia já no turno 1. Corrigido — e quem entrava numa sala dos outros nunca foi afetado.'
+      ] }
+    ] },
   { versao: '2.70', data: '2026-09-29', titulo: 'Item de raide com bula', piada: 'O Prisma de Luz descobriu que quase ninguém sabia para que ele servia. Agora vem com bula, e a bula tem endereço.',
     secoes: [
       { nome: 'Novidades', itens: [

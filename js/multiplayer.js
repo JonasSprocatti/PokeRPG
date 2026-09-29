@@ -25,7 +25,7 @@ import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comp
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas } from './regras.js';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, reviverCompanheiro, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, leituraDoEstado, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, reviverCompanheiro, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta, hallDaConta, saldoArenaDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
 import { megasDisponiveis } from './mega.js';
@@ -232,6 +232,7 @@ async function conectar(codigo, anfitriao) {
     // força 'hall' pra todo mundo — ver `entradaEfetiva()`. A seleção do Hall vem do que já foi marcado no menu.
     entradaTipo: hallOn ? 'hall' : conv ? 'convidado' : 'run',
     hallSel: { selecao: [...hallEscolha.selecao], equipamento: { ...hallEscolha.equipamento } }, hallMons: [], pronto: false,
+    turnoVisto: null,   // último turno que aoReceberEstado processou (decide quando limpar as escolhas) — ver lá
     mensagens: [], // chat da sala: só na memória, nunca persiste (some ao sair)
     config: { modo: anfitriao && !temRun() ? 'pvp' : 'coop', porJogador: 1, balancear: true }, time: anfitriao ? 'A' : 'B', entrouEm: Date.now(), encontrouAnfitriao: anfitriao };
   if (hallOn) await atualizarHallMons();   // reidrata a seleção do menu (rede) antes de anunciar pra sala
@@ -573,10 +574,21 @@ function finalizar(eventos) {
 function aoReceberEstado(p) {
   if (!sala) return;
   sala.conexao = 'ok'; sala.ultimoEvento = Date.now();
-  const luta = !sala.batalha;   // primeira vez que vejo esta luta
-  if (sala.batalha?.turno !== p.batalha.turno || !sala.batalha) { anotar(`← estado (turno ${p.batalha.turno})`); sala.escolhidos = new Set(); sala.gimmicksSel = {}; } // turno novo: escolhe de novo
+  /* "É turno novo?" é decidido por `sala.turnoVisto`, que SÓ esta função escreve — nunca comparando com `sala.batalha`.
+     Bug real (29/09/2026, relatado numa Sala de Raide): `resolver()` faz `sala.batalha = estado` ANTES de publicar, e
+     publicar termina chamando esta função. No ANFITRIÃO, então, `sala.batalha.turno` já era o turno novo quando a
+     comparação rodava: davam iguais, `escolhidos` nunca era limpo e `minhaVez()` não achava mais ninguém. Resultado:
+     depois de escolher a primeira rodada o jogador não conseguia mais atacar, a tela dizia "Escolhas enviadas" e os
+     turnos passavam no automático (autoCompletar) enquanto o chefe batia. Numa luta NOVA dava no mesmo já no turno 1,
+     porque as escolhas velhas continuavam lá. Só afetava quem hospeda (no convidado o estado chega pela rede, com o
+     `sala.batalha` ainda no turno anterior). `turnoVisto` volta a null no fim da luta, então turno 1 conta como novo. */
+  const { novaLuta, turnoNovo, limparEscolhas } = leituraDoEstado(sala.turnoVisto, p.batalha.turno);
+  if (turnoNovo) { anotar(`← estado (turno ${p.batalha.turno})`); sala.turnoVisto = p.batalha.turno; }
+  if (limparEscolhas) { sala.escolhidos = new Set(); sala.gimmicksSel = {}; }
   sala.batalha = p.batalha; sala.prazo = p.prazo; sala.acoesFeitas = p.acoesFeitas || []; sala.tipo = p.tipo; sala.zona = p.zona;
-  if (luta) { sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.itensComunsConsumidos = 0; sala.tentativaEvento = false; }
+  // contadores do que já descontei da mochila nesta luta (não mexer em `tentativaEvento`: o anfitrião já registrou a
+  // tentativa em iniciarBatalhaMP, e zerar aqui faria ele registrar de novo)
+  if (novaLuta) { sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.itensComunsConsumidos = 0; }
   // chefe da semana: a tentativa (8 h) conta pra TODOS assim que a luta começa, e cada Revive que o anfitrião aceitou sai da MINHA mochila
   if (p.tipo === 'evento' && !sala.tentativaEvento) { registrarTentativa(); sala.tentativaEvento = true; }
   consumirRevives(p.batalha);
@@ -820,6 +832,7 @@ async function aoReceberFim(p) {
   if (!sala) return;
   for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
   sala.batalha = null; sala.acoes = {}; sala.ocupado = true; clearTimeout(sala.timer); desligarPulso();
+  sala.turnoVisto = null; sala.tentativaEvento = false; sala.escolhidos = new Set(); sala.gimmicksSel = {};   // a próxima luta recomeça do zero (ver aoReceberEstado)
   renderSala();
   let acabouARun = false;
   try { acabouARun = await (p.pvp ? aplicarPvP(p) : aplicarCoop(p)); } catch (e) { console.error(e); }

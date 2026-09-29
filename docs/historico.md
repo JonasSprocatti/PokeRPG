@@ -136,3 +136,39 @@ Gravado direto na tabela `progresso` da conta dele — na próxima sincronizaç�
     Alfa (") vira falso positivo. A regra de maiúscula+colado separa os dois casos com ZERO exceção no código de
     hoje (toda a família `SPR`/`SPR_SHINY`/`ITEM_SPR`/`TYPE_PT` é assim; prosa sempre tem espaço antes do `(`).
   - **`resumoCfg`** (cabeçalho da sala) só sabia "PvP ou não", então anunciava a Sala de Raide como
+
+---
+
+## ✅ CORRIGIDO (29/09/2026) — quem hospedava a sala travava depois da primeira rodada
+
+Relato com dois prints: numa Sala de Raide com 3 Pokémon do Hall, o jogador atacou uma vez e não conseguiu mais
+escolher golpe; os turnos passavam sozinhos e o chefe batia. A tela dizia **"Escolhas enviadas"** enquanto o
+cabeçalho, logo acima, dizia **"esperando: Xongod"** — a mesma tela se contradizendo. Ao sair e entrar de novo,
+a luta nova já aparecia travada **no turno 1**.
+
+**Causa raiz**: `aoReceberEstado` decidia "é turno novo?" comparando `sala.batalha.turno` com o turno da foto que
+chegou. Mas `resolver()` faz `sala.batalha = estado` ANTES de `publicarEstado`, e `publicarEstado` termina
+chamando `aoReceberEstado(p)` (o broadcast não volta pra quem enviou). No **anfitrião**, então, `sala.batalha`
+já era o turno novo quando a comparação rodava: davam iguais, `sala.escolhidos` nunca era limpo, e
+`minhaVez()` — que pula quem está em `escolhidos` — não achava mais nenhum Pokémon. Daí "Escolhas enviadas"
+(nenhuma vez) ao lado de "esperando: Xongod" (o anfitrião ainda quer as ações). Os turnos continuavam porque o
+prazo de 45 s caía no `autoCompletar`. Na luta seguinte dava no mesmo já no turno 1, porque as escolhas velhas
+seguiam lá (`const luta = !sala.batalha` tinha o MESMO defeito, então os contadores de consumo também não
+zeravam). **Convidado nunca foi afetado**: pra ele o estado chega pela rede com o `sala.batalha` ainda no turno
+anterior.
+
+**Não era regressão** das levas de travas/IA/saída de campo: a comparação vinha de um commit bem anterior
+(`git log -S`). Passou despercebida porque quem hospeda e joga sozinho é o caso que mais expõe o defeito.
+
+**Correção**: a decisão passou a ter memória própria (`sala.turnoVisto`, escrita SÓ por `aoReceberEstado`) e a
+regra virou pura, em `mp-motor.leituraDoEstado(turnoVisto, turno)` — testável sem DOM e igual pros dois lados.
+`turnoVisto` volta a `null` em `aoReceberFim`, então o turno 1 da luta seguinte conta como novo. Detalhe que
+custou uma segunda rodada: **na primeira foto de uma luta não se limpa** — a lista já nasce vazia e limpar ali
+apagaria a escolha recém-feita (num convidado, isso abriria brecha pra escolher duas vezes se chegasse um pulso
+ainda sem a ação dele).
+
+**Como foi verificado**: harness em jsdom montando a sala de Raide do relato (3 Swampert do Hall, chefe
+Eternatus, anfitrião sozinho) e escolhendo golpe em sequência. Antes: `após A2 → vez=(nenhuma),
+escolhidos=[A0,A1,A2], turno=2` e a tela em "Escolhas enviadas". Depois: escolhe os 3 a cada turno, por 3 turnos
+seguidos. O segundo print (luta nova após derrota) foi reproduzido chamando o `aoReceberFim` de verdade: antes
+travava no turno 1, agora a vez volta pra A0. Regressão travada em `tests/mp-motor.test.js`.

@@ -1,7 +1,7 @@
 // Motor da batalha multiplayer (js/mp-motor.js): dois lados com N Pokémon, estado imutável, narração em texto.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, nivelarMon, balancearPvP, balancearCoop, naNivelReal, usarRaideNoEvento } from '../js/mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, nivelarMon, balancearPvP, balancearCoop, naNivelReal, usarRaideNoEvento, leituraDoEstado } from '../js/mp-motor.js';
 import { freshVol, calcStats } from '../js/regras.js';
 import { prepararChefe } from '../js/boss.js';
 
@@ -179,4 +179,25 @@ test('acaoDaIA: golpe com PP num alvo vivo do outro lado; sem PP = Struggle', as
   assert.deepEqual([a.golpe, a.alvo], [0, 'A1']);
   const semPP = batalha([pokemon()], [pokemon({ moves: [golpe({ ppLeft: 0 })] })]);
   assert.equal(acaoDaIA(semPP, monMP(semPP, 'B0')).golpe, -1);
+});
+
+/* leituraDoEstado: quando a sala limpa as escolhas do turno. Bug real (29/09/2026, relatado numa Sala de Raide):
+   a sala decidia "é turno novo?" comparando com `sala.batalha` — que o ANFITRIÃO já tinha sobrescrito com o turno
+   novo antes de publicar (resolver() faz `sala.batalha = estado` e só depois publica, e publicar termina chamando
+   quem processa o estado). Davam iguais, as escolhas do turno anterior nunca eram limpas, `minhaVez()` não achava
+   mais ninguém: o jogador atacava uma vez e nunca mais, a tela dizia "Escolhas enviadas" e os turnos passavam no
+   automático enquanto o chefe batia. Numa luta nova dava no mesmo já no turno 1. Só afetava quem hospeda. */
+test('leituraDoEstado: limpa as escolhas ao virar o turno, mas não na primeira foto da luta', () => {
+  // sem luta em andamento (turnoVisto null): é luta nova e NÃO limpa (a lista já nasce vazia; limpar apagaria a
+  // escolha recém-feita — num convidado isso deixaria escolher duas vezes)
+  assert.deepEqual(leituraDoEstado(null, 1), { novaLuta: true, turnoNovo: true, limparEscolhas: false });
+  // mesma foto de novo (pulso do anfitrião, 🔄 Sincronizar): nada muda, as escolhas ficam
+  assert.deepEqual(leituraDoEstado(1, 1), { novaLuta: false, turnoNovo: false, limparEscolhas: false });
+  // virou o turno: limpa
+  assert.deepEqual(leituraDoEstado(1, 2), { novaLuta: false, turnoNovo: true, limparEscolhas: true });
+  // luta NOVA na mesma sala depois de uma derrota (turnoVisto volta a null no fim): turno 1 conta como novo
+  assert.deepEqual(leituraDoEstado(null, 1).turnoNovo, true);
+  // o caso que quebrava: quem hospeda já tem o estado do turno novo em mãos. A regra não olha mais pra ele, então
+  // o resultado é o mesmo do convidado — o que importa é o turno que ESTA função processou por último.
+  assert.equal(leituraDoEstado(2, 3).limparEscolhas, true);
 });
