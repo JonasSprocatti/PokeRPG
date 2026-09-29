@@ -1,7 +1,7 @@
 // Motor da batalha multiplayer (js/mp-motor.js): dois lados com N Pokémon, estado imutável, narração em texto.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, nivelarMon, balancearPvP, balancearCoop, naNivelReal, usarRaideNoEvento, leituraDoEstado } from '../js/mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, nivelarMon, balancearPvP, balancearCoop, naNivelReal, usarRaideNoEvento, leituraDoEstado, numerarRepetidos } from '../js/mp-motor.js';
 import { freshVol, calcStats } from '../js/regras.js';
 import { prepararChefe } from '../js/boss.js';
 
@@ -200,4 +200,34 @@ test('leituraDoEstado: limpa as escolhas ao virar o turno, mas não na primeira 
   // o caso que quebrava: quem hospeda já tem o estado do turno novo em mãos. A regra não olha mais pra ele, então
   // o resultado é o mesmo do convidado — o que importa é o turno que ESTA função processou por último.
   assert.equal(leituraDoEstado(2, 3).limparEscolhas, true);
+});
+
+/* Narração do turno na sala (29/09/2026, pedido do usuário: "está muito automático, é interessante mostrar quem está
+   atacando"). O motor devolve o turno inteiro de uma vez e a sala despejava tudo no registro no mesmo instante — com
+   três Swampert do Hall da Fama no time, "Swampert usou Earthquake!" três vezes seguidas era ilegível. Duas partes: */
+test('numerarRepetidos: só os nomes repetidos ganham número, na ordem de entrada', () => {
+  const n = l => numerarRepetidos(l).map(m => m.nome);
+  assert.deepEqual(n([{ nome: 'Swampert' }, { nome: 'Swampert' }, { nome: 'Swampert' }]), ['Swampert 1', 'Swampert 2', 'Swampert 3']);
+  assert.deepEqual(n([{ nome: 'Swampert' }, { nome: 'Pikachu' }]), ['Swampert', 'Pikachu'], 'sem repetido, ninguém é numerado');
+  assert.deepEqual(n([{ nome: 'A' }, { nome: 'B' }, { nome: 'A' }]), ['A 1', 'B', 'A 2'], 'numera só quem repete');
+  assert.deepEqual(n([]), []);
+});
+
+test('cada evento do turno diz QUEM estava agindo (pra sala destacar o cartão certo)', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const a = fotoDoMon(pokemon({ nick: 'Um' }), 'A0', 'u1'), b = fotoDoMon(pokemon({ nick: 'Dois' }), 'A1', 'u1');
+  const e = fotoDoMon(pokemon({ nick: 'Inimigo' }), 'B0', 'ia');
+  const s = novaBatalhaMP([a, b], [e]);
+  const { eventos } = await resolverTurnoMP(s, [
+    { ref: 'A0', tipo: 'golpe', golpe: 0, alvo: 'B0' },
+    { ref: 'A1', tipo: 'golpe', golpe: 0, alvo: 'B0' },
+    { ref: 'B0', tipo: 'golpe', golpe: 0, alvo: 'A0' }
+  ]);
+  const deQuem = n => eventos.filter(x => x.txt.includes(n)).map(x => x.ref);
+  assert.ok(deQuem('Um usou').every(r => r === 'A0'), 'o golpe de A0 é creditado a A0');
+  assert.ok(deQuem('Dois usou').every(r => r === 'A1'));
+  assert.ok(deQuem('Inimigo usou').every(r => r === 'B0') && eventos.some(x => x.ref === 'B0'), 'o inimigo também é creditado');
+  assert.ok(eventos.every(x => x.ref), 'nenhum evento do turno fica sem autor');
+  // o texto continua sendo texto puro (quem exibe é que escapa) e o `ref` é só um dado a mais
+  for (const x of eventos) assert.ok(typeof x.txt === 'string' && !/[<>]/.test(x.txt), x.txt);
 });

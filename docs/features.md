@@ -1388,3 +1388,35 @@ Abissal (ele não ataca com Água). Olhando o item ninguém sabe se ele presta p
 - **Fragmento Tera** só faz sentido onde há Tera (run, ou sala co-op com run); a Arena e a Sala de Raide não têm gimmicks.
 - **Fora do escopo**: esconder/desabilitar o botão do item que não serve no chefe atual (hoje o botão aparece e o motor
   recusa com o motivo; o jogador agora sabe antes pela caixa do chefe), e a linha nova na caixa do chefe do co-op.
+
+---
+
+## Narração do turno na sala (29/09/2026)
+
+Pedido do usuário logo depois de destravar a Raide: "está muito automático a aplicação dos danos, é interessante
+mostrar exatamente quem está atacando, pra ter uma noção das ações".
+- **O problema**: `resolverTurnoMP` resolve o turno INTEIRO e devolve os eventos como texto; `aoReceberEstado` fazia
+  `for (const e of p.eventos) logRaw(...)` — tudo no mesmo instante. No single player nada disso acontece porque
+  `ui.say` espera entre as mensagens e `ctx.atacar` anima quem bate. Pior com três Swampert do Hall da Fama: o
+  registro dizia "Swampert usou Earthquake!" três vezes e não dava pra saber de quem era qual.
+- **Duas partes.** (1) O motor passou a dizer QUEM agiu: `let atuando` + `porConta(ref, fn)` em volta de cada
+  `usarGolpe`, do golpe extra do chefe, do item comum e do `fimDeTurno`; `say` põe isso em cada evento (`{txt, cls,
+  ref}`). (2) A sala revela as linhas com `PAUSA_NARRACAO` (260 ms) e destaca o cartão de quem age.
+- **Quem age é ESTADO, não classe solta**: `sala.atuandoRef`, lido por `cartao()` (que ganhou `data-ref`). A sala se
+  redesenha sozinha a cada pulso do anfitrião e a cada troca de presença — com a classe só no DOM, o destaque sumia
+  no meio da narração. Verificado forçando um redesenho no meio: o destaque se mantém.
+- **`renderSala()` vem ANTES de `narrar()`**: narrar mexe nos cartões que o render acabou de montar. Os botões de
+  golpe aparecem na hora, então dá pra escolher enquanto o registro corre atrás (o prazo de 45 s continua valendo).
+- **`sala.narrando` é um crachá**: se outra narração começar (ou a sala fechar), a anterior para na hora — senão duas
+  narrações escreveriam no registro ao mesmo tempo. Pulso republica com `eventos: []`, então não re-narra.
+- **`REDUCED`** (`prefers-reduced-motion`) recebe tudo de uma vez, como antes.
+- **Nomes repetidos**: `mp-motor.numerarRepetidos` (puro) numera só os iguais — "Swampert 1/2/3". Fica em mp-motor
+  pra ser testável; `montarLado` chama no fim.
+- **Limite honesto**: o HP dos cartões já é o do FIM do turno. A foto que chega do anfitrião não tem os passos
+  intermediários, então não dá pra animar a barra baixando a cada golpe como no single player — a narração mostra a
+  ORDEM e o AUTOR, não o HP caindo aos poucos. Para mudar isso o motor teria de mandar o HP de cada passo.
+- **Fora do escopo**: animação de ataque/dano nos cartões da sala (o `hit-flash`/FLIP do single player depende dos
+  ids `mon-p`/`mon-e`, que a sala não usa), e a linha "servem/não servem" da caixa do chefe no co-op.
+- Testes: `numerarRepetidos` e "todo evento tem autor" em `tests/mp-motor.test.js` (com mutação nos dois). A narração
+  em si (DOM) foi verificada em jsdom: 10 linhas saindo em ~5,6 s, destaque passando por A2 → A1 → A0 → chefe, nada
+  aceso no fim e o destaque sobrevivendo a um redesenho no meio.

@@ -700,6 +700,10 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 /* quem ataca "pula" um pouco (golpe.usarGolpe → ctx.atacar, no instante em que anuncia o golpe) */
 @keyframes atacando{0%,100%{transform:scale(1)}35%{transform:scale(1.08)}65%{transform:scale(.97)}}
 .mon.atacando{animation:atacando .35s ease-out}
+/* sala multiplayer: o cartão de quem está agindo AGORA (multiplayer.js narrar/marcarAtuando). O turno chega pronto
+   do motor, então a narração é o que mostra a ordem e o autor de cada ação — sem isso o dano "acontecia sozinho",
+   ainda mais com dois Pokémon de mesmo nome no time. Fica aceso enquanto durarem as linhas daquele Pokémon. */
+.mp-mon.atacando{animation:atacando .35s ease-out;outline:2px solid var(--yellow);outline-offset:1px;box-shadow:0 0 12px rgba(247,197,72,.55)}   /* outline, não border: o cartão da batalha não tem borda e uma nova deslocaria o layout */
 /* dano pisca vermelho, cura pisca verde — deduzido do sentido em que a barra de HP mudou (render.piscar) */
 @keyframes hit-flash{0%,100%{filter:none}25%{filter:brightness(1.7) saturate(.4) drop-shadow(0 0 6px #ff4d4d)}}
 .mon.hit-flash{animation:hit-flash .35s ease-out}

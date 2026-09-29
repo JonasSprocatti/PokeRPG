@@ -5,6 +5,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.72', data: '2026-09-29', titulo: 'Dá pra ver quem ataca', piada: 'Três Swampert com o mesmo nome atacando ao mesmo tempo: parecia um turno, era uma reunião de condomínio.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Na sala multiplayer o turno <b>não aparece mais todo de uma vez</b>: as linhas saem uma a uma e o cartão de <b>quem está agindo naquele momento</b> fica destacado. Dá pra acompanhar a ordem das ações em vez de ver o dano acontecer sozinho.',
+        'Pokémon de mesmo nome no seu time agora são <b>numerados</b> (Swampert 1, Swampert 2, Swampert 3) — sem isso o registro não dizia qual dos três tinha atacado.',
+        'Quem liga "reduzir animações" no aparelho continua recebendo o turno inteiro de uma vez, como antes.'
+      ] }
+    ] },
   { versao: '2.71', data: '2026-09-29', titulo: 'Destravando a Raide', piada: 'O anfitrião estava tão ocupado organizando a luta que esqueceu de deixar a si mesmo jogar.',
     secoes: [
       { nome: 'Correções', itens: [

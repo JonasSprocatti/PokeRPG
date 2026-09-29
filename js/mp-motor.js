@@ -223,6 +223,16 @@ export const monMP = (e, ref) => todosMP(e).find(m => m.ref === ref);
    é convidado passam pela MESMA regra, e ela é testável sem DOM.
    `limparEscolhas` é false na primeira foto de uma luta de propósito: a lista já nasce vazia, e limpar ali apagaria a
    escolha recém-feita (num convidado isso deixaria escolher duas vezes). */
+/* Dois Pokémon de mesmo nome no mesmo lado (3 Swampert do Hall da Fama) deixavam o registro ilegível: "Swampert usou
+   Earthquake!" três vezes, sem saber de quem era qual. Numera só os repetidos, na ordem em que entram. MUTA a lista
+   (ela acabou de ser montada por quem chamou) e devolve ela mesma, pra encaixar no `return` de montarLado. */
+export function numerarRepetidos(lista) {
+  const quantos = {}, vistos = {};
+  for (const m of lista) quantos[m.nome] = (quantos[m.nome] || 0) + 1;
+  for (const m of lista) if (quantos[m.nome] > 1) m.nome = `${m.nome} ${vistos[m.nome] = (vistos[m.nome] || 0) + 1}`;
+  return lista;
+}
+
 export const leituraDoEstado = (turnoVisto, turno) => ({
   novaLuta: turnoVisto == null,
   turnoNovo: turnoVisto !== turno,
@@ -244,7 +254,12 @@ export function acaoDaIA(e, m, sorte = Math.random, esperteza = ESPERTEZA.selvag
 // async: a narração do motor único (golpe.js) é async (o single player espera entre mensagens); aqui ela só coleta texto.
 export async function resolverTurnoMP(estado, acoes) {
   const s = structuredClone(estado), ev = [];
-  const say = (txt, cls = '') => ev.push({ txt, cls });
+  /* `atuando` = de quem é a ação que está sendo narrada agora. Vai em cada evento (`ref`) pra quem desenha a sala
+     poder destacar o cartão de quem age — sem isso o turno inteiro aparecia de uma vez, e com dois Pokémon de mesmo
+     nome no time ("Swampert usou Earthquake!" três vezes) não dava pra saber quem tinha feito o quê. */
+  let atuando = null;
+  const say = (txt, cls = '') => ev.push(atuando ? { txt, cls, ref: atuando } : { txt, cls });
+  const porConta = async (ref, fn) => { atuando = ref; try { return await fn(); } finally { atuando = null; } };
   s.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }; // batalha de uma versão anterior, sem campo
   const ctx = { nome: m => m.nome, golpe: g => fmt(g.name), say, refDe: m => m.ref, monPorRef: r => monMP(s, r), campo: s.campo, ladoDe: m => ladoDe(s, m.ref),
     aliadosDe: m => vivosMP(s.lados[ladoDe(s, m.ref)]).filter(x => x !== m) };   // Friend Guard
@@ -266,7 +281,7 @@ export async function resolverTurnoMP(estado, acoes) {
   for (const a of acoes.filter(x => x.tipo === 'item' && valida(x))) {
     const m = monMP(s, a.ref), it = ITEMS[a.item];
     if (!it || !itemTemEfeito(it, m)) continue;
-    await aplicarItemComum(m, it, ctx, say);
+    await porConta(m.ref, () => aplicarItemComum(m, it, ctx, say));
     ((s.itensUsados ||= {})[m.dono] ||= []).push(a.item);
   }
 
@@ -317,19 +332,19 @@ export async function resolverTurnoMP(estado, acoes) {
       ehZ = true; s.zIAUsado = true; say(`${a.m.nome} concentra a energia Z!`, 'hit');
     }
     if (ehZ) a.m.vol.zAtivo = true;
-    try { await usarGolpe(a.m, t, a.g, pos(t.ref) === -1 || i < pos(t.ref), ctx); }
+    try { await porConta(a.m.ref, () => usarGolpe(a.m, t, a.g, pos(t.ref) === -1 || i < pos(t.ref), ctx)); }
     finally { delete a.m.vol.zAtivo; }
     // o golpe carregado do chefe atinge o TIME INTEIRO (boss.antesDoChefeAgir → `todos`): os outros alvos levam o mesmo golpe
     if (a.m.boss?.soltouTodos) {
       a.m.boss.soltouTodos = false;
       const canhao = golpeCanhao(a.m.boss.id, a.m.boss.canhaoUltimoMult);   // o Escudo Astral (se usado) vale pro time inteiro
-      for (const x of vivosMP(s.lados[outro(ladoDe(s, a.m.ref))])) if (x !== t) await usarGolpe(a.m, x, canhao, true, ctx, { extra: true });
+      for (const x of vivosMP(s.lados[outro(ladoDe(s, a.m.ref))])) if (x !== t) await porConta(a.m.ref, () => usarGolpe(a.m, x, canhao, true, ctx, { extra: true }));
     }
     if (!vivosMP(s.lados.A).length || !vivosMP(s.lados.B).length) break;
   }
 
   // 3) fim de turno: queimadura/veneno, desmaios, quem venceu
-  if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { for (const m of vivosMP(todosMP(s))) await fimDeTurno(m, ctx); await passarClima(s.campo, ctx); await passarTerreno(s.campo, ctx); await passarLados(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
+  if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { for (const m of vivosMP(todosMP(s))) await porConta(m.ref, () => fimDeTurno(m, ctx)); await passarClima(s.campo, ctx); await passarTerreno(s.campo, ctx); await passarLados(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
   for (const m of todosMP(s)) if (passarDynamax(m) === 'acabou') say(`${m.nome} voltou ao tamanho normal.`, 'status');   // o gigante encolhe no fim da rodada
   for (const m of todosMP(s)) { fimDaRodada(m); if (m.hp <= 0 && !m.caido) { m.caido = true; say(`${m.nome} desmaiou!`, 'hit'); } }
   if (!vivosMP(s.lados.B).length) s.fim = 'A';

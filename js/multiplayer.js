@@ -16,7 +16,7 @@
 // recompensa (`entradaEfetiva()`/`semMochila()`).
 import { G, save, registrar, dificuldadeDe, rotasAtuais, centroPokemon, zerarDescontoCentro } from './estado.js';
 import { healFull } from './efeitos.js';
-import { $, limparTopo, logRaw, say, toast, ask } from './ui.js';
+import { $, limparTopo, logRaw, say, toast, ask, REDUCED } from './ui.js';
 import { spriteFrente } from './render.js';
 import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR, SPR_SHINY, ITEM_CRISTAL_Z } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
@@ -25,7 +25,7 @@ import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comp
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas } from './regras.js';
-import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, leituraDoEstado, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, reviverCompanheiro, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
+import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, leituraDoEstado, numerarRepetidos, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, reviverCompanheiro, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta, hallDaConta, saldoArenaDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
 import { megasDisponiveis } from './mega.js';
@@ -37,7 +37,7 @@ import { makeMon } from './pokemon.js';
 import { gainExp, gainExpAliado } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
 import { encerrarJornada } from './fim.js';
-import { esc, fmt, pick, rand, clamp, offline } from './util.js';
+import { esc, fmt, pick, rand, clamp, offline, sleep } from './util.js';
 
 export const MAX_JOGADORES = 6;
 const PRAZO_MS = 45000; // quem não escolher até aqui joga no automático (melhor golpe)
@@ -382,7 +382,7 @@ const monsDe = (m, lado, ini) => (m.mons || []).slice(0, sala.config.porJogador)
 function montarLado(membros, lado) {
   const out = [];
   for (const m of membros) out.push(...monsDe(m, lado, out.length));
-  return out;
+  return numerarRepetidos(out);   // 3 Swampert viram "Swampert 1/2/3" — senão o registro fica ilegível (mp-motor)
 }
 export async function iniciarBatalhaMP(tipo) {
   if (!sala?.anfitriao || sala.batalha || sala.ocupado) return;
@@ -571,6 +571,35 @@ function finalizar(eventos) {
 }
 
 /* ---------- todos: receber, escolher, aplicar ---------- */
+/* ---------- narrar o turno ----------
+   O motor devolve o turno inteiro de uma vez (texto puro), e a sala despejava tudo no registro no mesmo instante: o
+   dano "acontecia sozinho" e não dava pra ver quem tinha atacado. Agora as linhas saem com uma pausa e o cartão de
+   quem está agindo (`e.ref`, posto por mp-motor.resolverTurnoMP) pisca junto — a mesma ideia do single player, que
+   narra com `ui.say` e anima com `ctx.atacar`.
+   O HP dos cartões já é o do FIM do turno (o estado que chega é uma foto pronta, sem os passos intermediários): o
+   que a narração mostra é a ORDEM e o AUTOR de cada ação, não o HP baixando aos poucos.
+   `sala.narrando` é o crachá desta narração: se outra começar (ou a sala fechar), a antiga para na hora. */
+const PAUSA_NARRACAO = 260;
+/* Quem está agindo vira ESTADO (`sala.atuandoRef`), não só uma classe solta no DOM: a sala se redesenha sozinha a
+   cada pulso do anfitrião e a cada troca de presença, e o destaque tem de sobreviver a isso (`cartao` lê daqui). */
+function marcarAtuando(ref) {
+  if (!sala) return;
+  sala.atuandoRef = ref || null;
+  for (const el of document.querySelectorAll('.mp-mon[data-ref]')) el.classList.toggle('atacando', !!ref && el.dataset.ref === ref);
+}
+async function narrar(eventos) {
+  if (!eventos?.length || !sala) return;
+  if (REDUCED) { for (const e of eventos) logRaw({ html: esc(e.txt), cls: e.cls }); return; }   // quem pediu menos animação recebe tudo de uma vez
+  const cracha = sala.narrando = {};
+  for (const e of eventos) {
+    if (!sala || sala.narrando !== cracha) return;   // outra narração começou (ou a sala fechou): esta para aqui
+    if ((e.ref || null) !== (sala.atuandoRef || null)) marcarAtuando(e.ref);
+    logRaw({ html: esc(e.txt), cls: e.cls });
+    await sleep(PAUSA_NARRACAO);
+  }
+  if (sala?.narrando === cracha) { marcarAtuando(null); sala.narrando = null; }
+}
+
 function aoReceberEstado(p) {
   if (!sala) return;
   sala.conexao = 'ok'; sala.ultimoEvento = Date.now();
@@ -593,8 +622,8 @@ function aoReceberEstado(p) {
   if (p.tipo === 'evento' && !sala.tentativaEvento) { registrarTentativa(); sala.tentativaEvento = true; }
   consumirRevives(p.batalha);
   consumirItensComuns(p.batalha);
-  for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
   renderSala();
+  narrar(p.eventos);   // desenha primeiro: a narração destaca os cartões que renderSala acabou de montar
 }
 // o anfitrião conta os Revives e os itens de raide de cada jogador (`b.revivesUsados`, `b.raideUsados`); o que passou do que eu já
 // descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros)
@@ -830,10 +859,10 @@ const inimigosDe = m => { const b = sala.batalha; return b.lados[ladoDe(b, m.ref
 
 async function aoReceberFim(p) {
   if (!sala) return;
-  for (const e of p.eventos || []) logRaw({ html: esc(e.txt), cls: e.cls });
   sala.batalha = null; sala.acoes = {}; sala.ocupado = true; clearTimeout(sala.timer); desligarPulso();
   sala.turnoVisto = null; sala.tentativaEvento = false; sala.escolhidos = new Set(); sala.gimmicksSel = {};   // a próxima luta recomeça do zero (ver aoReceberEstado)
   renderSala();
+  await narrar(p.eventos);   // o último turno (e o resultado) também saem narrados, antes de aplicar o resultado
   let acabouARun = false;
   try { acabouARun = await (p.pvp ? aplicarPvP(p) : aplicarCoop(p)); } catch (e) { console.error(e); }
   if (acabouARun) { await sairSala(); encerrarJornada('desmaiou'); return; } // Roguelike: desmaiou no co-op = fim da run
@@ -986,7 +1015,7 @@ export function blocoChefeMP(m) {
 const marcasMP = m => [m.mega && `⚡ ${m.mega.forma?.nome || 'Mega'}`, m.tera && `💎 Tera ${TYPE_PT[m.tera] || m.tera}`, m.dyna && '🔴 Gigante'].filter(Boolean).join(' · ');
 export function cartao(m, legenda, destaque = false) {
   const marcas = marcasMP(m);
-  return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
+  return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''} ${sala?.atuandoRef === m.ref ? 'atacando' : ''}" data-ref="${esc(m.ref || '')}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
     <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${marcas ? ` <span class="small">${esc(marcas)}</span>` : ''}${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
 }
 const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' (você)' : ''}${sala.config.modo === 'raide' ? ` ${m.pronto ? '✅ pronto' : '⏳ escolhendo…'}` : ''}</b>
