@@ -46,8 +46,21 @@ carrega. Um banner de cookies próprio (`js/ads.js`) e a tela 🔒 Privacidade j
   menores e contato. Texto único entre a tela do jogo e a página pública.
 - **C**: a política declara público geral e não direcionado a crianças (ver a ressalva adiante).
 
-**Falta**: o guia por tema (A2), a CMP (A3), `ads.txt` (A4), fontes locais (B), posicionamento
-dos slots (D) — e criar a conta de e-mail `EMAIL_CONTATO`, que hoje é um endereço morto.
+- **A4**: `ads.txt` publicado, respondendo no apex e no `www`. Dos três métodos de verificação
+  oferecidos pelo painel, foi o escolhido por ser o único que não carrega script nenhum — a regra
+  de não pedir nada ao Google antes do consentimento segue de pé, e o arquivo é necessário depois
+  da aprovação de qualquer jeito.
+- **Domínio próprio** e os `canonical` apontando pra ele (o endereço da Vercel continua no ar
+  servindo o mesmo site, então sem `canonical` os dois competiriam).
+- **E-mail de contato** criado e ativo.
+
+**Falta**: o guia por tema (A2), a CMP (A3), fontes locais (B), o snippet com Consent Mode e o
+posicionamento dos slots (D).
+
+**Ordem combinada com o usuário (29/09/2026)**: verificar a propriedade agora pelo `ads.txt`,
+**escrever o guia por tema**, só então acrescentar o snippet e clicar em "Pedir revisão". Motivo:
+"conteúdo escasso" é o motivo nº 1 de reprovação e há espera entre tentativas — não vale gastar a
+primeira com cinco páginas.
 
 ---
 
