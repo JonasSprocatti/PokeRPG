@@ -126,6 +126,7 @@ Duas máquinas de dev:
 
 ### Batalha
 - **Aliados** (`S.aliados`, máx. `MAX_ALIADOS` = 2): recrutados com petisco (`amizade.js`), agem no turno (`ordenarAcoes`: prioridade → `rapido` (Garra Rápida) → `lento` → velocidade), têm `ORDENS` (livre/fraco/status/parado/fora).
+- **IA do inimigo**: `regras.escolhaIA(..., contexto)` → `notaDoGolpe(g, {u, alvo, campo, ladoU, ladoAlvo, nivel})`; a nota é ≈ "% do HP do alvo que o golpe vale". `nivelDaIA(esperteza)` dá o degrau: `simples` (selvagem, dano bruto como sempre), `basico` (treinador: dano + status que pega + cura), `completo` (Alfa/lendário/chefe: tudo). Sem `contexto` ou no degrau `simples`, é a IA antiga. **Golpe/efeito novo que a IA deve entender = uma linha em `notaDoGolpe`**; sem regra, vale `IGNORADO` (2) e só é escolhido se não houver nada melhor. Chamada em `batalha.chooseEnemyMove` e `mp-motor.acaoDaIA`, sempre sobre `golpesPermitidos`.
 - **Clima** (`regras.CLIMAS`, 5 turnos) e **terreno** (`TERRENOS`) vivem no `campo`, compartilhado pelos dois lados. Terreno **só afeta quem está no chão** (`noChao`). Rota pode ter clima/terreno padrão (`CLIMA_DA_ROTA`, opcional por jornada: `climaDasRotasAtivo(S)`).
 - **Lado do campo** (`campo.lados`): telas, salvaguarda, neblina, vento, armadilhas. `multTelas` recebe o lado de QUEM DEFENDE.
 - **Gimmicks**: Mega, Tera, Z-Move, Gigantamax — conquistadas na CARREIRA, uma por batalha, não gastam o turno (o Z **é** o turno). O inimigo também usa (regras em `docs/features.md`).
@@ -182,7 +183,7 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 - **Arceus como chefe de raide** — decidir se entra na rotação (mudaria o `% 14`) ou é evento à parte.
 - **Troca de verdade** entre dois jogadores (hoje só o Cabo de Conexão simulado).
 - **Missões próprias de cada mapa** (hoje as de espécie valem em qualquer Gen; a trilha de Alfas é só de Kanto) e **lendários no co-op**.
-- **IA de inimigo mais esperta** (nota por golpe com contexto) e **mecânicas que dependiam de trocar de Pokémon** (Roar/Whirlwind/Dragon Tail/Red Card, Regenerator/Natural Cure, Wimp Out, Mean Look…): desenho fechado com o usuário em 29/09/2026, detalhes em `docs/features.md` ("Travas, IA e troca"). As travas (Taunt/Encore/Disable/Torment) já estão prontas.
+- **Mecânicas que dependiam de trocar de Pokémon** (Roar/Whirlwind/Dragon Tail/Red Card, Regenerator/Natural Cure, Wimp Out, Mean Look…): desenho fechado com o usuário em 29/09/2026, detalhes em `docs/features.md` ("Travas, IA e troca", etapa 3). As travas (Taunt/Encore/Disable/Torment) e a IA com nota por golpe já estão prontas.
 - **Habilidades**: 209 de 314. Boa parte das 105 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
 - **Frutas de aperto por tipo** (Occa, Passho…) — os outros itens segurados já entraram.
 

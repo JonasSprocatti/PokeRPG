@@ -220,7 +220,10 @@ export const monMP = (e, ref) => todosMP(e).find(m => m.ref === ref);
 export function acaoDaIA(e, m, sorte = Math.random, esperteza = ESPERTEZA.selvagem) {
   const alvos = vivosMP(e.lados[outro(ladoDe(e, m.ref))]);
   const alvo = alvos[Math.floor(sorte() * alvos.length)];
-  const g = escolhaIA(golpesPermitidos(m), m.data.types, alvo?.data.types || [], esperteza, sorte); // pensa como no single player, só entre os golpes que as travas deixam
+  // pensa como no single player: só entre os golpes que as travas deixam, julgados com o contexto (quem apanha, o campo e os lados)
+  const lados = e.campo?.lados;
+  const contexto = alvo ? { u: m, alvo, campo: e.campo, ladoU: lados?.[ladoDe(e, m.ref)], ladoAlvo: lados?.[ladoDe(e, alvo.ref)] } : null;
+  const g = escolhaIA(golpesPermitidos(m), m.data.types, alvo?.data.types || [], esperteza, sorte, contexto);
   return { ref: m.ref, tipo: 'golpe', golpe: g ? m.moves.indexOf(g) : -1, alvo: alvo?.ref };
 }
 

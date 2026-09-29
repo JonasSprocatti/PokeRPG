@@ -44,7 +44,10 @@ function chooseEnemyMove(E) {
   const B = G.B;
   const esperteza = B?.chefe || B?.lendarios || B?.evento ? ESPERTEZA.chefe : B?.trainer ? ESPERTEZA.treinador : ESPERTEZA.selvagem;
   const alvo = vivos(emCampo())[0] || G.S.player;
-  return escolhaIA(golpesPermitidos(E), E.data.types, alvo.data.types, esperteza) || STRUGGLE;   // só o que as travas deixam (regras.golpesPermitidos)
+  // só o que as travas deixam (regras.golpesPermitidos), julgado com o CONTEXTO da luta (notaDoGolpe): quem apanha, o campo e os dois lados
+  const lados = B?.campo?.lados;
+  const contexto = { u: E, alvo, campo: B?.campo, ladoU: lados?.[CTX.ladoDe(E)], ladoAlvo: lados?.[CTX.ladoDe(alvo)] };
+  return escolhaIA(golpesPermitidos(E), E.data.types, alvo.data.types, esperteza, undefined, contexto) || STRUGGLE;
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 

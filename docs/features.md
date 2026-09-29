@@ -1282,14 +1282,37 @@ commit com teste. Decisões fechadas com o usuário (via pergunta):
 - **Fora do escopo por ora**: Heal Block, Imprison, Throat Chop, Magic Bounce refletindo Taunt, Mental Herb, e
   mostrar o "provocado/encore" do INIMIGO na placa dele (hoje só aparece narrado no log).
 
-### Etapa 2 — IA com nota por golpe (a fazer)
-`escolhaIA` deixa de ser "maior dano ou sorteio". Hoje `melhorGolpe` dá nota 0,1 a QUALQUER golpe de status, então o
-inimigo só usa Toxic/Reflect/Swords Dance por sorteio; `esperteza` (0,5 / 0,75 / 0,9) só decide "acerta o maior dano
-ou sorteia". Plano: nota por golpe com contexto (recebe os Pokémon, não só os tipos; continua pura e testável) —
-dano esperado × precisão (bônus se derruba, zero se imune); status só se o alvo está livre e não é imune; cura sobe
-com o HP baixo; setup só com HP alto e estágio baixo; Taunt contra quem tem muito status; Encore/Disable contra quem
-acabou de usar status ou buff; zero pra efeito já ativo (tela, clima, Leech Seed); proteção nunca duas seguidas.
-`esperteza` vira degrau: selvagem como hoje, treinador dano + status básico, chefe/lendário a tabela inteira.
+### Etapa 2 — IA com nota por golpe (FEITA)
+Antes: `escolhaIA` era "maior dano ou sorteio"; `melhorGolpe` dava nota 0,1 a QUALQUER golpe de status, então o inimigo
+só usava Toxic, Reflect ou Swords Dance por sorteio; `esperteza` (0,5 / 0,75 / 0,9) só decidia "acerta o maior dano ou
+sorteia". Agora `regras.escolhaIA(moves, tiposA, tiposAlvo, esperteza, sorte, contexto)` ganhou o parâmetro opcional
+`contexto = { u, alvo, campo, ladoU, ladoAlvo }`; com ele, cada golpe recebe uma nota (`notaDoGolpe`) e "pensar" é
+escolher a maior. **Sem contexto, ou no degrau `simples`, o comportamento é exatamente o antigo** (os testes antigos
+seguem valendo sem mexer).
+- **A escala**: ≈ "% do HP do alvo que o golpe vale". Dano = `min(1, dano/HP do alvo) × 100 × precisão`; status é
+  posto na mesma régua (dormir 55, paralisar 40 (+15 se o alvo é mais rápido), queimar 40 (+15 se o alvo bate físico),
+  veneno 30…). Assim dá pra comparar "atacar" com "paralisar" com "se curar" numa conta só.
+- **Dano esperado**: `calcDamage` ganhou o 7º parâmetro `esperado` (sem crítico, rolagem no meio, 92,5%). Sem isso
+  um crítico ou uma rolagem baixa mudaria a escolha de um turno pro outro.
+- **Três degraus** (`nivelDaIA(esperteza)`): `simples` = selvagem; `basico` = treinador (dano + status que pega + cura;
+  o resto vale `IGNORADO`); `completo` = Alfa, lendário e chefe (buffs/debuffs, telas, clima, terreno, Taunt/Encore/
+  Disable, proteção, Leech Seed, Toxic, Rest…). A esperteza continua sendo a **chance de pensar**; quando "se distrai" o
+  inimigo sorteia, mas só entre os golpes razoáveis (nota > −50): nunca um golpe imune ou uma tela repetida.
+- **Regras que a IA respeita**: imunidade de tipo/habilidade (Levitate, Volt Absorb, Soundproof…), status só em quem
+  não tem status e não é imune (e sem Safeguard), cura só com HP ≤ 65%, buff só até +2 e só com folga de HP, Ataque só
+  pra quem tem golpe físico, tela/clima/terreno que já está ativo vale −100, proteção nunca duas seguidas, Explosion
+  só se derruba, golpe de 2 turnos ×0,6, golpe que derruba ganha +40 (+30 se tem prioridade), Taunt só vale contra
+  quem tem golpe de status (e menos se ele acabou de bater), Encore só contra quem acabou de usar buff/golpe fraco.
+- **`esp.armadilha` vale −100**: do lado do jogador ninguém troca de Pokémon, então Stealth Rock/Spikes não pegam
+  ninguém — a IA sabe. Se um dia existir troca voluntária, é só tirar essa linha.
+- Empate de nota: sorteia entre os empatados (senão o inimigo seria sempre o primeiro golpe da lista).
+- **Chamadores**: `batalha.chooseEnemyMove` (single player) e `mp-motor.acaoDaIA` (sala), sempre sobre
+  `golpesPermitidos` (etapa 1). Aliados NÃO usam isso: continuam no `melhorGolpe`/`ordem` que o jogador escolhe.
+- Testes: `tests/ia.test.js` (21). Conferido por mutação (status voltando a valer 0,1, imunidade ignorada, buff sem
+  teto, treinador enxergando tudo). Simulei 60 lutas completas IA×IA no motor da sala com esperteza de chefe: 0 erros
+  e o uso saiu coerente. Isso achou um erro de desenho: o Taunt valia 12 pontos até contra quem só tem golpe de dano.
+- **Fora do escopo**: o inimigo não prevê o golpe do jogador (escolhe sem saber), não avalia recuo/HP próprio ao bater,
+  não conta golpes de vários acertos, e o alvo é sempre o primeiro do seu lado em pé.
 
 ### Etapa 3 — trocas (a fazer)
 Mapear cada dependência de troca ao evento equivalente que já existe (ver as decisões no topo). Pendente ainda:

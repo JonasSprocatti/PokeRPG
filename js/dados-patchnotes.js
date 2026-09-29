@@ -5,6 +5,16 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.68', data: '2026-09-29', titulo: 'Inimigos que pensam', piada: 'O treinador descobriu que existe vida além do golpe mais forte. Ainda não sabe o que fazer com ela, mas descobriu.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A IA dos inimigos foi refeita: em vez de "sempre o golpe de maior dano", cada golpe ganha uma <b>nota</b> pela situação da luta (quem apanha, o clima, as telas, o HP dos dois).',
+        '<b>Selvagens</b> continuam como eram: batem no que dói mais e erram bastante.',
+        '<b>Treinadores</b> agora contam o dano de verdade (precisão, imunidades, se o golpe derruba), <b>paralisam, queimam e põem pra dormir</b> quem ainda não tem status, e <b>se curam</b> quando estão no fim.',
+        '<b>Alfas, lendários e o chefe da semana</b> jogam com tudo: sobem atributos (sem exagerar além de +2), derrubam os seus, montam Reflect e Light Screen, mudam o clima, provocam quem depende de golpe de status, e nunca repetem o que já está ativo.',
+        'Eles também evitam bobagem: não usam golpe que o seu Pokémon é imune, não se curam com o HP cheio, não se explodem à toa e não gastam armadilha de entrada num lado onde ninguém troca de Pokémon.'
+      ] }
+    ] },
   { versao: '2.67', data: '2026-09-29', titulo: 'Golpes que travam', piada: 'Provocaram o Pokémon e ele, ofendidíssimo, esqueceu que tinha golpe de status. O inimigo aprendeu a fazer o mesmo com você.',
     secoes: [
       { nome: 'Novidades', itens: [

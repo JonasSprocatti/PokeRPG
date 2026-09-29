@@ -2,7 +2,7 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
-import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES } from './dados.js';
+import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem, multEviolite } from './segurados.js';
@@ -399,7 +399,9 @@ export function danoClima(clima, m) {
 export const PRECISAO_CLIMA = { thunder: { chuva: 100, sol: 50 }, hurricane: { chuva: 100, sol: 50 }, blizzard: { granizo: 100, neve: 100 } };
 
 // `ladoAlvo` = o lado do campo de quem defende (telas: Reflect, Light Screen, Aurora Veil)
-export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = null) {
+/* `esperado` = a média, sem sorteio: sem crítico e com a rolagem no meio da faixa (92,5%). É pra IA do inimigo
+   comparar golpes (notaDoGolpe) sem que um crítico ou uma rolagem baixa mude a escolha de um turno pro outro. */
+export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = null, esperado = false) {
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
   const hu = hab(u), ht = hab(t);
   let power = poderEspecial(u, t, move) ?? (move.power || 60);
@@ -415,14 +417,14 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   // Focus Energy e golpe de crítico garantido — é exatamente pra isso que a habilidade existe.
   // `focoBase` (Super Luck): a habilidade já nasce com um degrau de crítico, somado ao do golpe e ao Focus Energy
   // `critContraStatus` (Merciless): contra alvo com esse status o crítico é garantido (ainda respeitando o semCritico)
-  const crit = !ht.semCritico
+  const crit = !esperado && !ht.semCritico
     && ((hu.critContraStatus && t.status === hu.critContraStatus)
       || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0))]);
   // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
   const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno, !!ht.ignoraEstagios);
   const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno, !!hu.ignoraEstagios);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
-  let mod = (crit ? hu.critico || 1.5 : 1) * rand(85, 100) / 100;
+  let mod = (crit ? hu.critico || 1.5 : 1) * (esperado ? 92.5 : rand(85, 100)) / 100;
   mod *= multStab(u, move.type, hu.stab || 1.5);                                      // STAB (Adaptability = ×2; Tera muda a conta)
   const ef = typeEff(move.type, tiposDefensivos(t));                                  // terastalizado defende pelo tipo Tera
   mod *= ef;
@@ -675,14 +677,157 @@ export function resumoTravas(m) {
 }
 
 /* ---- IA do inimigo ----
-   Antes o inimigo sorteava qualquer golpe com PP — dava pra ganhar de Pokémon muito mais forte na sorte. Agora ele
-   acerta a escolha com a chance `esperteza`: selvagem erra bastante, treinador pensa melhor, Alfa e lendário quase
-   sempre acertam. Quando "pensa", usa o golpe de maior dano esperado (melhorGolpe: poder × eficácia × STAB).
+   Antes o inimigo sorteava qualquer golpe com PP — dava pra ganhar de Pokémon muito mais forte na sorte. Depois passou
+   a acertar a escolha com a chance `esperteza` (selvagem erra bastante, treinador pensa melhor, Alfa e lendário quase
+   sempre acertam), mas "acertar" era só o golpe de maior dano esperado (melhorGolpe: poder × eficácia × STAB) e
+   golpe de status valia 0,1 pra qualquer um — então o inimigo só usava Toxic, Reflect ou Swords Dance por sorteio.
+   Agora, com o CONTEXTO da luta (quem usa, quem apanha, o campo), cada golpe ganha uma nota (notaDoGolpe) e "pensar"
+   é escolher a maior. A esperteza segue sendo a chance de pensar; o que muda com quem é o inimigo é QUANTO ele
+   enxerga (nivelDaIA):
+     simples   selvagem — como sempre foi: dano bruto (melhorGolpe), status quase nunca
+     basico    treinador — dano de verdade (com dano esperado, precisão, imunidades e se derruba), status que pega
+               (paralisar, queimar, dormir…) e cura quando está no fim; o resto é ruído
+     completo  Alfa, lendário e chefe — tudo: buffs e debuffs, cura, clima, terreno, telas, Taunt/Encore/Disable,
+               proteção, Leech Seed… e sabe que armadilha de entrada não pega no lado do jogador
    `sorte` injetável = testável. Devolve o golpe (ou null = Struggle). */
 export const ESPERTEZA = { selvagem: 0.5, treinador: 0.75, chefe: 0.9 };
-export function escolhaIA(moves, tiposAtacante, tiposAlvo, esperteza = ESPERTEZA.selvagem, sorte = Math.random) {
+export const nivelDaIA = esperteza => esperteza >= ESPERTEZA.chefe ? 'completo' : esperteza >= ESPERTEZA.treinador ? 'basico' : 'simples';
+
+// valor de infligir cada status (na mesma escala do dano: ≈ % do HP do alvo que o golpe "vale")
+const VALOR_STATUS = { sleep: 55, paralysis: 40, burn: 40, freeze: 40, poison: 30, confusion: 25, infatuation: 15, trap: 15 };
+// quanto vale +1 degrau em cada atributo (Ataque/Ataque Esp. são ajustados pelo que o Pokémon realmente usa)
+const VALOR_ESTAGIO = { attack: 16, 'special-attack': 16, speed: 12, defense: 9, 'special-defense': 9, accuracy: 5, evasion: 8 };
+const TETO_BUFF_IA = 2;            // não empilha mais que +2 (Swords Dance duas vezes já resolve)
+const IGNORADO = 2;                // o que vale um golpe que o nível da IA nem considera
+const IMPOSSIVEL = -100;           // não faz nada / é pior que não fazer nada: nunca escolhido "pensando"
+
+// nota de UM golpe. c = { u: quem usa, alvo, campo, ladoU, ladoAlvo (os `campo.lados[...]` de cada um), nivel }
+export function notaDoGolpe(g, c) {
+  const { u, alvo, campo = null, ladoU = null, ladoAlvo = null } = c;
+  const completo = (c.nivel || 'completo') === 'completo';
+  const clima = campo ? climaDe(campo) : null, terreno = campo ? terrenoDe(campo) : null;
+  const esp = especial(g), hu = hab(u), ht = hab(alvo);
+  const acerto = g.acc == null ? 1 : clamp(chanceAcerto(g, u, alvo, clima), 0, 1);
+  const frac = m => m.hp / Math.max(1, m.stats.hp);
+  const usaFisico = u.moves.some(m => m.ppLeft > 0 && m.cls === 'physical'), usaEspecial = u.moves.some(m => m.ppLeft > 0 && m.cls === 'special');
+
+  // ---- golpe de dano ----
+  if (g.cls !== 'status') {
+    const ef = typeEff(g.type, tiposDefensivos(alvo));
+    if (ef === 0 || ht.imuneTipo === g.type || ht.absorve === g.type) return IMPOSSIVEL;      // imune, ou ainda cura o alvo
+    if (ht.imuneFlag && temFlag(g, ht.imuneFlag)) return IMPOSSIVEL;                          // Soundproof, Bulletproof
+    if (esp.soDormindo && alvo.status !== 'sleep') return IMPOSSIVEL;
+    if (esp.soPrimeiroTurno && u.vol?.golpesDados) return IMPOSSIVEL;
+    if (esp.ohko) return u.level < alvo.level ? IMPOSSIVEL : Math.min(90, 30 + u.level - alvo.level) * 0.9;
+    const { dmg } = calcDamage(u, alvo, g, clima, terreno, ladoAlvo, true);
+    let nota = Math.min(1, dmg / Math.max(1, alvo.hp)) * 100 * acerto;
+    if (dmg >= alvo.hp && acerto > 0.6) nota += 40 + ((g.priority || 0) > 0 ? 30 : 0);      // derruba: vence qualquer outra ideia (e a prioridade garante)
+    if (esp.soPrimeiroTurno) nota += 20;                                                     // Fake Out: o alvo perde a vez
+    if (esp.autoDesmaio && dmg < alvo.hp) nota -= 60;                                        // só compensa se levar o alvo junto
+    if (esp.recarga || esp.carga) nota *= esp.invulneravel ? 0.75 : 0.6;                     // gasta 2 turnos
+    if (esp.furia) nota *= 0.9;
+    if (esp.soSeAlvoAtaca) nota *= 0.7;
+    return nota;
+  }
+
+  // ---- golpe de status ----
+  const ailmentDe = (ail, extra = 0) => {                                                     // infligir um status no alvo
+    if (alvo.status && ail !== 'confusion') return IMPOSSIVEL;
+    if (ail === 'confusion' && alvo.vol?.conf > 0) return IMPOSSIVEL;
+    if (imuneAoStatusMon(alvo, ail) || ladoAlvo?.salvaguarda > 0) return IMPOSSIVEL;
+    let v = (VALOR_STATUS[ail] ?? 4) + extra;
+    if (ail === 'paralysis' && effStat(alvo, 'speed') > effStat(u, 'speed')) v += 15;        // tira a vez de quem é mais rápido
+    if (ail === 'burn' && (alvo.data.base?.attack ?? 0) > (alvo.data.base?.['special-attack'] ?? 0)) v += 15;
+    if (frac(alvo) < 0.25) v *= 0.3;                                                         // vai cair de qualquer jeito
+    return v * acerto;
+  };
+  const curaDe = fracCura => {                                                               // recuperar o próprio HP
+    const f = frac(u);
+    if (f > 0.65) return IMPOSSIVEL;                                                         // com o HP alto, curar é desperdício
+    return Math.min(fracCura, 1 - f) * 110;
+  };
+  if (esp.toxico) return alvo.status || imuneAoStatusMon(alvo, 'poison') || ladoAlvo?.salvaguarda > 0 ? IMPOSSIVEL : 45 * acerto;
+  if (esp.descanso) return frac(u) <= 0.4 && !imuneAoStatusMon(u, 'sleep') ? 60 : IMPOSSIVEL;
+  if (g.meta?.heal > 0 && SELF_TARGETS.has(g.target)) return curaDe(g.meta.heal / 100);
+  const ail = g.meta?.ailment;
+  if (ail && ail !== 'none' && !SELF_TARGETS.has(g.target) && !esp.trava) return ailmentDe(ail);
+  if (!completo) return IGNORADO;                                                            // treinador para por aqui
+
+  // ---- só o nível "completo" (Alfa, lendário, chefe) ----
+  if (esp.trava) {
+    if (falhaDaTrava(alvo, esp.trava)) return IMPOSSIVEL;
+    const ult = alvo.moves?.find(m => m.name === alvo.vol?.ultimo);
+    if (esp.trava === 'provocar') {                                                          // vale contra quem depende de golpe de status; contra quem só bate, não tira nada
+      const nStatus = alvo.moves.filter(m => m.ppLeft > 0 && m.cls === 'status').length;
+      const v = nStatus === 0 ? 1 : 10 + Math.min(4, nStatus) * 12;
+      return ult && ult.cls !== 'status' ? v * 0.4 : v;                                      // acabou de bater com dano: provocar não tira o que ele está fazendo
+    }
+    if (esp.trava === 'encore') return ult && (ult.cls === 'status' || (ult.power || 0) < 50) ? 45 : IMPOSSIVEL;                  // prender num golpe fraco/inútil
+    if (esp.trava === 'disable') return (ult?.power || 0) >= 70 ? 35 : 12;
+    return 15;                                                                                // Torment
+  }
+  if (esp.protege) return u.vol?.protSeguidas > 0 ? IMPOSSIVEL : alvo.vol?.carregando ? 55 : 5;   // esperar o golpe de 2 turnos passar; nunca duas seguidas
+  if (esp.aguentaTurno) return frac(u) <= 0.35 ? 25 : IMPOSSIVEL;
+  if (esp.foco) return u.vol?.foco ? IMPOSSIVEL : frac(u) > 0.6 ? 10 : 2;
+  if (esp.semente) return tiposDefensivos(alvo).includes('grass') || alvo.vol?.semente != null ? IMPOSSIVEL : 32 * acerto;
+  if (esp.armadilha) return IMPOSSIVEL;                                                     // do lado do jogador ninguém troca de Pokémon: não pega ninguém
+  if (esp.autoDesmaio) return -60;
+  if (esp.clima) {
+    if (clima === esp.clima) return IMPOSSIVEL;
+    return Math.max(5, 20 + (hu.multStatClima?.[esp.clima] ? 25 : 0) + (hu.curaClima?.[esp.clima] ? 20 : 0)
+      - (ht.multStatClima?.[esp.clima] ? 25 : 0) - (ht.curaClima?.[esp.clima] ? 20 : 0));
+  }
+  if (esp.terreno) return terreno === esp.terreno ? IMPOSSIVEL : 14;
+  if (esp.lado) {
+    if (ladoU?.[esp.lado] > 0) return IMPOSSIVEL;                                            // já está de pé
+    if (esp.soNoGelo && !['granizo', 'neve'].includes(clima)) return IMPOSSIVEL;
+    const alvoFisico = (alvo.data.base?.attack ?? 0) >= (alvo.data.base?.['special-attack'] ?? 0);
+    const v = { reflect: alvoFisico ? 34 : 14, luz: alvoFisico ? 14 : 34, veu: 30, salvaguarda: 12, neblina: 8,
+      vento: effStat(u, 'speed') <= effStat(alvo, 'speed') ? 30 : 15 }[esp.lado] ?? 12;
+    return frac(u) > 0.3 ? v : v * 0.4;                                                      // não monta tela pra quem está caindo
+  }
+  if (g.stats?.length) {
+    const eu = SELF_TARGETS.has(g.target), estagios = (eu ? u : alvo).vol?.stages || {};
+    let v = 0;
+    for (const { stat, change } of g.stats) {
+      const atual = estagios[stat] || 0, peso = VALOR_ESTAGIO[stat] ?? 6;
+      if (eu) {
+        if (change < 0) { v -= -change * peso * 0.5; continue; }                             // custo do próprio golpe (Curse, Shell Smash)
+        const espaco = Math.min(change, TETO_BUFF_IA - atual);
+        if (espaco <= 0) continue;
+        let p = peso;
+        if (stat === 'attack') p *= usaFisico ? 1 : 0.15;                                    // Ataque só serve a quem bate com golpe físico
+        else if (stat === 'special-attack') p *= usaEspecial ? 1 : 0.15;
+        else if (stat === 'speed') p *= effStat(u, 'speed') < effStat(alvo, 'speed') ? 1.5 : 0.5;
+        v += espaco * p;
+      } else {
+        if (change > 0) continue;                                                            // golpe que SOBE o atributo do inimigo? não
+        if (ht.semQueda === 'todas' || ht.semQueda?.includes?.(stat) || ladoAlvo?.neblina > 0) continue;
+        const espaco = Math.min(-change, 2 + Math.min(0, atual));
+        if (espaco > 0) v += espaco * peso * 0.7;
+      }
+    }
+    if (eu) v *= frac(u) >= 0.7 ? 1 : frac(u) >= 0.5 ? 0.5 : 0.1;                            // setup só com folga de HP
+    return v * acerto;
+  }
+  return IGNORADO;
+}
+
+export function escolhaIA(moves, tiposAtacante, tiposAlvo, esperteza = ESPERTEZA.selvagem, sorte = Math.random, contexto = null) {
   const comPP = moves.filter(m => m.ppLeft > 0);
   if (!comPP.length) return null;
+  const nivel = contexto?.nivel || nivelDaIA(esperteza);
+  if (contexto && nivel !== 'simples') {
+    const notas = comPP.map(m => ({ m, n: notaDoGolpe(m, { ...contexto, nivel }) }));
+    if (sorte() < esperteza) {                                       // pensa: a maior nota (empate = sorteio entre os empatados)
+      const topo = Math.max(...notas.map(x => x.n));
+      const top = notas.filter(x => x.n >= topo - 1e-9);
+      return top[Math.floor(sorte() * top.length)].m;
+    }
+    const razoaveis = notas.filter(x => x.n > IMPOSSIVEL / 2);       // distraído: sorteia, mas não algo absurdo (imune, tela repetida…)
+    const pool = razoaveis.length ? razoaveis : notas;
+    return pool[Math.floor(sorte() * pool.length)].m;
+  }
   if (sorte() < esperteza) return melhorGolpe(comPP, tiposAtacante, tiposAlvo) || comPP[0];
   return comPP[Math.floor(sorte() * comPP.length)];
 }
