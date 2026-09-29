@@ -51,6 +51,17 @@ function avisarErro(erro) {
   console.error(erro);
   toast(`⚠ Esta ação falhou: <b>${esc(erro?.message || String(erro))}</b>. Se continuar, mande pelo 🐞 Relatar.`, 8000);
 }
+/* Durante a batalha o menu tranca quase tudo: sair pra outra tela no meio da luta seria fuga, e o jogo já avisa
+   que "não dá pra escapar fechando o jogo". A trava é de propósito — o que faltava era DIZER isso. O botão
+   "Novo jogo" continua desenhado na batalha (render.js), ficava habilitado e o clique não fazia absolutamente
+   nada: relato #66, "enquanto você está em uma batalha você não consegue acessar o perfil, criar uma nova run".
+   `G.busy` trava calado de propósito: dura o tempo de uma ação e avisar a cada clique viraria ruído. */
+function travadoPelaBatalha(msg = 'Termine a batalha primeiro — no meio da luta não dá pra sair daqui.') {
+  if (G.busy) return true;
+  if (G.mode !== 'battle') return false;
+  toast(msg, 5000);
+  return true;
+}
 document.addEventListener('click', e => { aoClicar(e).catch(avisarErro); });
 async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
@@ -61,12 +72,12 @@ async function aoClicar(e) {
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
     case 'random': return sortearEspecie();
-    case 'carreira': if (G.busy || G.mode === 'battle') return; return telaCarreira();
+    case 'carreira': if (travadoPelaBatalha()) return; return telaCarreira();
     // navegação (navegacao.js): início e ajustes
-    case 'inicio': if (G.busy || G.mode === 'battle') return; G.PV = null; return showCreate();
-    case 'ajustes': if (G.busy || G.mode === 'battle') return; return telaAjustes();
+    case 'inicio': if (travadoPelaBatalha()) return; G.PV = null; return showCreate();
+    case 'ajustes': if (travadoPelaBatalha()) return; return telaAjustes();
     // ❓ Tutorial: tour guiado + demonstração (tela-tutorial.js). Sempre pode abrir de novo pra rever.
-    case 'tutorial': if (G.busy || G.mode === 'battle') return; return telaTutorial();
+    case 'tutorial': if (travadoPelaBatalha()) return; return telaTutorial();
     case 'tut-avancar': return tutAvancar();
     case 'tut-voltar': return tutVoltar();
     case 'tut-explorar': return tutExplorar();
@@ -74,7 +85,7 @@ async function aoClicar(e) {
     case 'tut-comprar': return tutComprar(v);
     case 'tut-revelar-captura': return tutRevelarCaptura();
     case 'tut-pular': case 'tut-fim': return tutSair();
-    case 'patch': if (G.busy || G.mode === 'battle') return; return telaPatchNotes();
+    case 'patch': if (travadoPelaBatalha()) return; return telaPatchNotes();
     case 'fonte': aplicarFonte(v); return telaAjustes();
     case 'ads-consentimento': definirConsentimento(v); return telaAjustes();
     case 'baixar-gen': return baixarMapaOffline(v);   // guarda um mapa pra jogar sem internet
@@ -101,7 +112,7 @@ async function aoClicar(e) {
     case 'voltar': if (naSala()) await sairSala(); return voltar();
     // multiplayer (co-op)
     // da run, da tela inicial ou de qualquer outra tela (sem run: entra com um Pokémon convidado)
-    case 'mp': if (G.busy || G.mode === 'battle') return; return telaMultiplayer();
+    case 'mp': if (travadoPelaBatalha()) return; return telaMultiplayer();
     case 'mp-entrada': return escolherEntrada(v);
     case 'mp-convidado': return escolherConvidado(v);
     case 'mp-entrada-sala': return escolherEntradaNaSala(v);       // trocar de Pokémon já dentro da sala (lobby)
@@ -134,10 +145,10 @@ async function aoClicar(e) {
     case 'mp-pronto': return alternarProntoMP();
     case 'mp-chat-enviar': return enviarChatMP();
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
-    case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
+    case 'conquistas': if (travadoPelaBatalha()) return; return telaConquistas();
     // 🏟 Arena do Chefe (arena.js): o chefe da semana com os Pokémon do Hall da Fama, sem mexer em nenhuma jornada
-    case 'arena': if (G.busy || G.mode === 'battle') return; return telaArena();
-    case 'amigo-perfil': if (G.busy || G.mode === 'battle') return; return telaPerfil(v);   // 👤 Ver perfil (perfil-amigo.js)
+    case 'arena': if (travadoPelaBatalha()) return; return telaArena();
+    case 'amigo-perfil': if (travadoPelaBatalha()) return; return telaPerfil(v);   // 👤 Ver perfil (perfil-amigo.js)
     case 'arena-sel': return arenaSelecionar(v);
     case 'arena-comprar-comum': return arenaComprarComum(v);
     case 'arena-comprar-segurado': return arenaComprarSegurado(v);
@@ -149,20 +160,20 @@ async function aoClicar(e) {
     case 'arena-reviver': return arenaReviver(v);
     case 'arena-desistir': return arenaDesistir();
     case 'arena-fim': return arenaFim();
-    case 'pokedex': if (G.busy || G.mode === 'battle') return; return telaPokedex();
+    case 'pokedex': if (travadoPelaBatalha()) return; return telaPokedex();
     case 'esconderijo-guardar': return mexerEsconderijo('guardar', +v);
     case 'esconderijo-trazer': return mexerEsconderijo('trazer', +v);
-    case 'dex-rota': if (G.busy || G.mode === 'battle') return; return abrirNaPokedex(v);   // da Pokedex da rota pra ficha
+    case 'dex-rota': if (travadoPelaBatalha()) return; return abrirNaPokedex(v);   // da Pokedex da rota pra ficha
     case 'dex-ver': return verNaPokedex(v);
-    case 'ranking': if (G.busy || G.mode === 'battle') return; return telaRanking();
+    case 'ranking': if (travadoPelaBatalha()) return; return telaRanking();
     // bugs e sugestões
-    case 'relatos': if (G.busy || G.mode === 'battle') return; return telaRelatos();
-    case 'privacidade': if (G.busy || G.mode === 'battle') return; return telaPrivacidade();
+    case 'relatos': if (travadoPelaBatalha()) return; return telaRelatos();
+    case 'privacidade': if (travadoPelaBatalha()) return; return telaPrivacidade();
     case 'rel-tipo': return escolherTipoRelato(v);
     case 'rel-enviar': return enviarRelatoTela();
     case 'rel-img-del': return removerImagemRelato(v);   // tira uma imagem do relato antes de enviar
     // conta / nuvem
-    case 'conta': if (G.busy || G.mode === 'battle') return; return telaConta();
+    case 'conta': if (travadoPelaBatalha()) return; return telaConta();
     case 'entrar-google': try { await entrarGoogle(); } catch (err) { telaConta(`Não deu pra entrar com o Google: ${esc(err.message)}`); } return;
     case 'entrar-email': {
       const email = ($('#email')?.value || '').trim();
@@ -204,7 +215,7 @@ async function aoClicar(e) {
     // convite de amigo pra sala (toast)
     case 'mp-convidar': try { await convidarAmigoMP(v); } catch (err) { console.error(err); } return;
     case 'mp-aceitar-convite': {
-      if (G.busy || G.mode === 'battle') return toast('Termine a batalha antes de entrar na sala.', 5000);
+      if (travadoPelaBatalha('Termine a batalha antes de entrar na sala.')) return;
       if (naSala()) await sairSala();
       return entrarSala(v);
     }
@@ -245,7 +256,7 @@ async function aoClicar(e) {
     }
     // Roguelike: venceu a Gen e escolheu seguir no Santuário — este botão fecha a run em vitória quando quiser
     case 'encerrar-vitoria': {
-      if (G.busy || G.mode === 'battle' || !G.S?.aposVitoria) return;
+      if (!G.S?.aposVitoria || travadoPelaBatalha()) return;
       const ok = await ask('Encerrar a jornada agora, <b>em vitória</b>? O que você conquistou no Santuário fica guardado na carreira.',
         [{ label: 'Encerrar em vitória', value: true }, { label: 'Continuar explorando', value: false, ghost: true }]);
       return ok ? encerrarJornada('venceu', { genVencida: G.S.genVencida }) : undefined;
@@ -316,7 +327,7 @@ async function aoClicar(e) {
     case 'run': return turn({ type: 'run' });
     case 'passar': return turn({ type: 'passar' });   // você foi tirado da luta: só deixa o turno correr
     case 'new': {
-      if (G.busy || G.mode === 'battle') return;
+      if (travadoPelaBatalha()) return;
       // guardar (continua depois, 💾 Jornadas salvas) ou encerrar (resultado vai pra carreira, fim.js)
       const r = await ask('Começar outra jornada? Você pode <b>guardar</b> esta pra continuar depois (💾 Jornadas salvas) ou <b>encerrar</b>: o resultado vai para a sua carreira e o save desta jornada é apagado (aqui e na nuvem).',
         [{ label: '💾 Guardar e começar outra', value: 'guardar' }, { label: 'Encerrar jornada', value: 'encerrar', ghost: true }, { label: 'Continuar jogando', value: null, ghost: true }]);
@@ -325,7 +336,7 @@ async function aoClicar(e) {
       return;
     }
     // 💾 jornadas salvas (saves.js / tela-saves.js)
-    case 'saves': if (G.busy || G.mode === 'battle') return; return telaSaves();
+    case 'saves': if (travadoPelaBatalha()) return; return telaSaves();
     case 'save-guardar': return guardarAtual();
     case 'save-continuar': return continuarGuardada(v);
     case 'save-excluir': {
@@ -399,7 +410,7 @@ function voltar() {
 }
 // tira a jornada atual da frente sem perder nada (vai pras guardadas) e volta pra tela inicial
 function guardarAtual() {
-  if (!G.S || G.busy || G.mode === 'battle') return;
+  if (!G.S || travadoPelaBatalha('Termine a batalha antes de guardar a jornada.')) return;
   if (naSala()) return toast('Saia da sala multiplayer antes de guardar a jornada.', 5000);
   save(); // grava o estado mais novo (e sobe pra nuvem) antes de guardar
   if (!guardar(G.S)) return telaSaves(`Você já tem ${MAX_GUARDADAS} jornadas guardadas. Continue ou exclua uma antes de guardar outra.`);
@@ -409,7 +420,7 @@ function guardarAtual() {
 }
 // continua uma guardada; a atual (se houver) vai pras guardadas no lugar dela
 function continuarGuardada(id) {
-  if (G.busy || G.mode === 'battle') return;
+  if (travadoPelaBatalha()) return;
   const S = guardadas()[id];
   if (!saveValido(S)) return telaSaves('Esse save está incompleto e não pôde ser aberto.');
   if (G.S && G.S.id !== id) { save(); if (!guardar(G.S)) return telaSaves(`Limite de ${MAX_GUARDADAS} jornadas guardadas: exclua uma antes.`); }

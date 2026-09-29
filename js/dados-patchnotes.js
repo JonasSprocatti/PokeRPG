@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.76', data: '2026-09-29', titulo: 'O jogo agora explica quando diz não', piada: 'O botão "Novo jogo" sabia perfeitamente que estava no meio de uma luta. Só achava deselegante comentar.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Clicar em <b>Novo jogo</b> durante uma batalha não fazia nada — nem abria, nem explicava. O botão fica na tela a luta inteira, então parecia defeito. Continua trancado de propósito (sair no meio da luta seria fuga), mas <b>agora ele diz isso</b>.',
+        'Vale pra todas as ações que a batalha tranca: em vez de ignorar o clique em silêncio, o jogo avisa que é preciso terminar a luta primeiro.'
+      ] }
+    ] },
   { versao: '2.75', data: '2026-09-29', titulo: 'O Alakazam voltou ao tamanho normal', piada: 'Ele megaevoluiu, desmaiou e resolveu que ia ficar assim na foto do desbloqueio. Para sempre.',
     secoes: [
       { nome: 'Correções', itens: [
