@@ -67,6 +67,7 @@
 //   analisa                ao entrar, sobe Ataque ou At. Esp. conforme a defesa do oponente (golpe.aoEntrarEmCampo) — Download
 //   intimidaSobe           Intimidate sobe o seu Ataque em vez de baixar (golpe.aoEntrarEmCampo) — Guard Dog
 //   imuneIntimidacao       Intimidate não te afeta (golpe.aoEntrarEmCampo) — Inner Focus, Own Tempo, Oblivious
+//   imuneTrava             lista de travas de golpe que não pegam (regras.falhaDaTrava): 'provocar' | 'encore' | 'disable' | 'tormento' — Oblivious (Taunt), Aroma Veil (as quatro)
 //   contato também aceita: sorteio [[status,peso]] (sorteia um), estagio [stat,n] (baixa quem encosta), po (não pega Grama/Overcoat)
 //   imunePo                não pega os pós do `contato` (Overcoat)
 //   toque: {status, chance}  golpe físico SEU pode causar esse status no alvo (golpe.js) — Poison Touch
@@ -206,7 +207,8 @@ export const HABILIDADES = {
   immunity: { imuneStatus: ['poison'] }, limber: { imuneStatus: ['paralysis'] },
   insomnia: { imuneStatus: ['sleep'] }, 'vital-spirit': { imuneStatus: ['sleep'] }, 'sweet-veil': { imuneStatus: ['sleep'] },
   'water-veil': { imuneStatus: ['burn'] }, 'magma-armor': { imuneStatus: ['freeze'] },
-  'own-tempo': { imuneStatus: ['confusion'], imuneIntimidacao: true }, oblivious: { imuneStatus: ['confusion'], imuneIntimidacao: true },
+  'own-tempo': { imuneStatus: ['confusion'], imuneIntimidacao: true }, oblivious: { imuneStatus: ['confusion'], imuneIntimidacao: true, imuneTrava: ['provocar'] },
+  'aroma-veil': { imuneTrava: ['provocar', 'encore', 'disable', 'tormento'] },
   'early-bird': { sonoRapido: true }, 'shed-skin': { curaStatusFimTurno: 0.3 },
   // atributos que não caem
   'clear-body': { semQueda: 'todas' }, 'white-smoke': { semQueda: 'todas' }, 'full-metal-body': { semQueda: 'todas' },

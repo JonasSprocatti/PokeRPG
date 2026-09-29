@@ -890,7 +890,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 208 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 209 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -1235,3 +1235,63 @@ porquê, em vez de simplesmente não acontecer nada — falha muda vira relato d
 - **Formas de Hisui ficam no Santuário de Galar** (Gen 8, como a PokéAPI classifica), não em Sinnoh.
 - **Paradoxo de Paldea** já aparecem sozinhos na Área Zero e na Borda da Grande Cratera, além do Santuário — não precisou de nada.
 
+
+---
+
+## Travas, IA e troca de Pokémon (desenho de 29/09/2026)
+
+Pedido do usuário: resolver os golpes que travam (Taunt/Encore/Disable), melhorar a IA dos inimigos pra usar isso, e
+achar uma solução pras habilidades, golpes e itens que dependem de TROCAR de Pokémon. Feito em 3 etapas, cada uma um
+commit com teste. Decisões fechadas com o usuário (via pergunta):
+
+- **Regenerator / Natural Cure** → agem **ao vencer a luta** (Regenerator recupera 1/3 do HP, Natural Cure tira o
+  status). É o equivalente de "sair de campo" pra quem joga sozinho.
+- **Roar / Whirlwind / Dragon Tail / Red Card** → contra selvagem, **encerra a luta**; contra treinador, **chama um
+  aleatório da equipe** (o atual sai sem contar como derrotado, sem XP dele); **contra o jogador, quem levou o golpe
+  SAI da luta e ela segue sem ele** (aliados continuam; se estava sozinho, a luta acaba como uma fuga, sem penalidade).
+- **Wimp Out / Emergency Exit / Eject Button** → só nos **inimigos e aliados**. Nos Pokémon principais do jogador
+  continuam sem efeito (uma habilidade sorteada no Hardcore não pode te tirar da luta contra a vontade).
+- Ordem: 1. travas · 2. IA · 3. trocas.
+
+### Etapa 1 — travas (FEITA)
+- **`regras.motivoBloqueio(m, g)` é a única fonte** do que um Pokémon pode escolher: Choice, Colete de Assalto, Taunt,
+  Encore, Disable, Torment e PP. `golpesPermitidos(m)` filtra; lista vazia = Struggle. Antes a trava do Choice estava
+  COPIADA em 4 lugares (render.js, arena.js, multiplayer.js e golpeDoAliado) e o motor confiava cegamente na tela;
+  com mais quatro travas isso viraria 16 cópias, e a IA não teria de onde ler o que o ALVO pode fazer. Agora as 3
+  telas, os aliados (`golpeDoAliado` recebe a lista já filtrada), a IA (`escolhaIA` idem) e o motor perguntam à
+  mesma função. O bônus: **Gorilla Tactics** deixa de ser bloqueada pelo problema das "3 telas" (ainda não feita).
+- **O motor confere também** (`golpe.usarGolpe`, no ponto onde ficava o cheque solto do Colete de Assalto),
+  porque a ordem do turno importa: o inimigo mais rápido que te provoca DEPOIS de você escolher um golpe de status
+  faz o seu golpe falhar (sem gastar PP). No **Encore** a escolha é TROCADA pelo golpe repetido (Gen 5+), e isso vale
+  também na ordem do turno (`batalha.turn` e `mp-motor` aplicam `golpeForcado` antes de calcular a prioridade).
+  Carga/fúria em andamento (`golpeTravado`) e Struggle ficam de fora.
+- **Estado em `m.vol`** (só dados simples: vai no save e pela rede): `ultimo` (último golpe usado, novo — nada
+  guardava isso), `provocado` (turnos), `encore {golpe, turnos}`, `desativado {golpe, turnos}`, `tormento`.
+  Prazos: Taunt 3, Encore 3, Disable 4, **+1 se o alvo já agiu neste turno** (o turno em que foi aplicado já passou).
+  Contam em `golpe.fimDeTurno` via `regras.passarTravas`, que devolve o que acabou pra narrar. Torment dura a batalha.
+- **Falhas** (`regras.falhaDaTrava`): chefe de evento é imune (como a status); já estar sob o efeito; Encore/Disable
+  sem golpe pra repetir; Encore num golpe sem PP; Encore de Encore/Mimic/Transform/Sketch/Mirror Move/Me First/Struggle.
+  **Encore suspende sozinho se o golpe repetido ficar sem PP** (`motivoBloqueio`) — senão o Pokémon ficaria sem golpe.
+- **Habilidades**: gancho novo `imuneTrava` (lista de travas que não pegam). Oblivious → `['provocar']`; **Aroma Veil**
+  (nova, 209 de 314) → as quatro. Testado em `tests/habilidades.test.js` (o teste do gancho valida contra `TRAVAS`).
+- UI: `regras.resumoTravas(m)` devolve as linhas "😤 Provocado por 2 turno(s)…" que as três telas mostram; o botão
+  bloqueado explica o motivo no `title`. O Colete de Assalto agora apaga os botões de status (antes o clique passava
+  e só o motor recusava).
+- Testes: `tests/travas.test.js` (18) — inclui os casos que SÓ o motor pega. Conferido por mutação: desligar a
+  conferência do motor, o `golpeForcado` ou o filtro da IA faz testes falharem.
+- **Fora do escopo por ora**: Heal Block, Imprison, Throat Chop, Magic Bounce refletindo Taunt, Mental Herb, e
+  mostrar o "provocado/encore" do INIMIGO na placa dele (hoje só aparece narrado no log).
+
+### Etapa 2 — IA com nota por golpe (a fazer)
+`escolhaIA` deixa de ser "maior dano ou sorteio". Hoje `melhorGolpe` dá nota 0,1 a QUALQUER golpe de status, então o
+inimigo só usa Toxic/Reflect/Swords Dance por sorteio; `esperteza` (0,5 / 0,75 / 0,9) só decide "acerta o maior dano
+ou sorteia". Plano: nota por golpe com contexto (recebe os Pokémon, não só os tipos; continua pura e testável) —
+dano esperado × precisão (bônus se derruba, zero se imune); status só se o alvo está livre e não é imune; cura sobe
+com o HP baixo; setup só com HP alto e estágio baixo; Taunt contra quem tem muito status; Encore/Disable contra quem
+acabou de usar status ou buff; zero pra efeito já ativo (tela, clima, Leech Seed); proteção nunca duas seguidas.
+`esperteza` vira degrau: selvagem como hoje, treinador dano + status básico, chefe/lendário a tabela inteira.
+
+### Etapa 3 — trocas (a fazer)
+Mapear cada dependência de troca ao evento equivalente que já existe (ver as decisões no topo). Pendente ainda:
+Mean Look/Block/Spider Web bloqueando `consegueFugir` (`vol.preso`), `vol.turnosEmCampo` (Stakeout, Slow Start),
+Baton Pass/Shed Tail passando pra um aliado em campo. U-turn/Volt Switch/Flip Turn já funcionam como dano puro.

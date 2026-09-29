@@ -14,11 +14,10 @@ import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
-import { seg } from './segurados.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
-  freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
+  freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
   prioridadeEfetiva, sempreUltimo
@@ -45,7 +44,7 @@ function chooseEnemyMove(E) {
   const B = G.B;
   const esperteza = B?.chefe || B?.lendarios || B?.evento ? ESPERTEZA.chefe : B?.trainer ? ESPERTEZA.treinador : ESPERTEZA.selvagem;
   const alvo = vivos(emCampo())[0] || G.S.player;
-  return escolhaIA(E.moves, E.data.types, alvo.data.types, esperteza) || STRUGGLE;
+  return escolhaIA(golpesPermitidos(E), E.data.types, alvo.data.types, esperteza) || STRUGGLE;   // só o que as travas deixam (regras.golpesPermitidos)
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 
@@ -401,6 +400,7 @@ export async function turn(action) {
       if (r === 'fim') { endBattle(); return; }
       G.panel = 'moves';
     } else pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
+    if (pm && pm !== STRUGGLE && !golpeTravado(P)) pm = golpeForcado(P) || pm;   // Encore: a escolha vira o golpe repetido — vale já na prioridade do turno
     /* Z-Move: liga a marca no `vol` (regras.calcDamage converte o poder) e gasta a vez da batalha. O flag é
        desligado no `finally` deste turno — um Z que "vazasse" pro turno seguinte dobraria o dano de graça. */
     if (action.z && pm) { P.vol.zAtivo = true; B.zUsado = true; await say(`<b>${esc(rotulo(P))} concentra a energia Z!</b>`, 'level'); }
@@ -413,7 +413,7 @@ export async function turn(action) {
     if (pm) acoes.push({ quem: P, golpe: pm, prio: prioridadeEfetiva(P, pm), vel: vel(P), rapido: ativouQuickClaw(P), lento: sempreUltimo(P) });
     // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
-      const d = golpeDoAliado(A.ordem || 'livre', A.moves, A.data.types, E.data.types, undefined, seg(A).choice ? A.vol.escolha : null);
+      const d = golpeDoAliado(A.ordem || 'livre', golpesPermitidos(A), A.data.types, E.data.types);   // já vem sem o que Choice/Taunt/Encore/Disable/Torment proíbem
       if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
       const g = d.golpe || STRUGGLE;
       acoes.push({ quem: A, golpe: g, prio: prioridadeEfetiva(A, g), vel: vel(A), rapido: ativouQuickClaw(A), lento: sempreUltimo(A) });

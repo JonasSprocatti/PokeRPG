@@ -595,6 +595,85 @@ export function melhorGolpe(moves, tiposAtacante, tiposAlvo) {
   return melhor;
 }
 
+/* ---- golpes que TRAVAM o que dá pra escolher ----
+   Choice (item), Colete de Assalto, Taunt, Encore, Disable e Torment restringem quais golpes um Pokémon pode usar.
+   Antes só a trava do Choice existia, e a regra estava COPIADA em 4 lugares (as 3 telas de golpe + golpeDoAliado),
+   com o motor confiando cegamente no que a tela mandava. Com mais quatro travas isso viraria 16 cópias — e a IA do
+   inimigo, que precisa saber o que o ALVO pode fazer, não teria de onde ler. Aqui é a única fonte: telas, aliados,
+   IA e o próprio motor (golpe.usarGolpe) perguntam à mesma função.
+   O motor precisa conferir também porque a ORDEM do turno importa: se o inimigo é mais rápido e te provoca DEPOIS
+   de você escolher um golpe de status, o seu golpe falha — filtrar só o menu não cobre isso.
+   Estado guardado em `m.vol` (só dados simples, vai no save e pela rede):
+     ultimo      nome do último golpe usado (Encore/Disable/Torment dependem dele)
+     provocado   turnos que faltam de Taunt
+     encore      { golpe, turnos } — só pode repetir esse
+     desativado  { golpe, turnos } — esse não pode
+     tormento    true — não pode repetir o golpe anterior (dura a batalha toda) */
+export const TRAVAS = ['provocar', 'encore', 'disable', 'tormento'];
+export const TURNOS_TRAVA = { provocar: 3, encore: 3, disable: 4 };
+const SEM_ENCORE = new Set(['encore', 'mimic', 'transform', 'sketch', 'mirror-move', 'me-first', 'struggle']);
+
+// Por que `g` NÃO pode ser usado por `m` agora — { causa, texto } — ou null se pode. Struggle nunca é bloqueado.
+export function motivoBloqueio(m, g) {
+  if (!m || !g || g.name === 'struggle') return null;
+  const v = m.vol || {}, s = seg(m), item = ITEMS[m.item]?.name || 'item';
+  if (s.choice && v.escolha && g.name !== v.escolha) return { causa: 'escolha', texto: `está travado em ${fmt(v.escolha)} pelo ${item}` };
+  // Encore só prende se o golpe repetido ainda tem PP — sem PP a trava fica suspensa, senão o Pokémon travaria sem nenhum golpe
+  const enc = v.encore && m.moves?.find(x => x.name === v.encore.golpe);
+  if (enc && enc.ppLeft > 0 && g.name !== enc.name) return { causa: 'encore', texto: `sob Encore, só pode repetir ${fmt(enc.name)}` };
+  if (v.provocado > 0 && g.cls === 'status') return { causa: 'provocado', texto: 'provocado, só pode usar golpes de dano' };
+  if (s.semStatus && g.cls === 'status') return { causa: 'colete', texto: `o ${item} não deixa usar golpes de status` };
+  if (v.desativado && g.name === v.desativado.golpe) return { causa: 'disable', texto: `${fmt(g.name)} está desativado` };
+  if (v.tormento && v.ultimo === g.name) return { causa: 'tormento', texto: 'atormentado, não pode repetir o golpe anterior' };
+  return null;
+}
+export const golpePermitido = (m, g) => g.ppLeft > 0 && !motivoBloqueio(m, g);
+// os golpes que `m` PODE escolher agora (com PP e sem trava). Lista vazia = Struggle.
+export const golpesPermitidos = m => (m.moves || []).filter(g => golpePermitido(m, g));
+// Encore: o golpe que a escolha vira, como nos jogos (a escolha é TROCADA, não recusada). null = sem Encore ativo
+export function golpeForcado(m) {
+  const e = m.vol?.encore;
+  return e ? m.moves?.find(x => x.name === e.golpe && x.ppLeft > 0) || null : null;
+}
+// Por que o alvo não pode ser travado (null = pode). Chefe de evento é imune, como a status.
+export function falhaDaTrava(alvo, tipo) {
+  const v = alvo.vol || {};
+  if (alvo.boss) return 'o chefe é imune';
+  if (hab(alvo).imuneTrava?.includes(tipo)) return `${fmt(alvo.ability)} protege`;
+  if (tipo === 'provocar' && v.provocado > 0) return 'já está provocado';
+  if (tipo === 'tormento' && v.tormento) return 'já está atormentado';
+  if (tipo === 'encore') {
+    if (v.encore) return 'já está sob Encore';
+    const g = v.ultimo && alvo.moves?.find(x => x.name === v.ultimo);
+    if (!g || SEM_ENCORE.has(g.name)) return 'não tem golpe pra repetir';
+    if (g.ppLeft <= 0) return 'o último golpe está sem PP';
+  }
+  if (tipo === 'disable') {
+    if (v.desativado) return 'já tem um golpe desativado';
+    if (!v.ultimo || !alvo.moves?.some(x => x.name === v.ultimo)) return 'ainda não usou golpe nenhum';
+  }
+  return null;
+}
+// Um turno passou: conta os prazos e devolve o que ACABOU (['provocado','encore','desativado']) pra quem narra avisar
+export function passarTravas(m) {
+  const v = m.vol; if (!v) return [];
+  const fim = [];
+  if (v.provocado > 0 && --v.provocado <= 0) { delete v.provocado; fim.push('provocado'); }
+  for (const k of ['encore', 'desativado']) if (v[k] && --v[k].turnos <= 0) { delete v[k]; fim.push(k); }
+  return fim;
+}
+// Linhas pra mostrar ao jogador o que está travando o Pokémon dele (as 3 telas de golpe usam a mesma)
+export function resumoTravas(m) {
+  const v = m.vol || {}, s = seg(m), item = ITEMS[m.item]?.name || 'item', l = [];
+  if (s.choice && v.escolha) l.push(`🔒 Travado em ${fmt(v.escolha)} pelo ${item} até desmaiar ou ser revivido.`);
+  if (s.semStatus) l.push(`🦺 O ${item} não deixa usar golpes de status.`);
+  if (v.provocado > 0) l.push(`😤 Provocado por ${v.provocado} turno(s): só golpes de dano.`);
+  if (v.encore) l.push(`🔁 Encore por ${v.encore.turnos} turno(s): só pode repetir ${fmt(v.encore.golpe)}.`);
+  if (v.desativado) l.push(`⛔ ${fmt(v.desativado.golpe)} desativado por ${v.desativado.turnos} turno(s).`);
+  if (v.tormento) l.push('😖 Atormentado: não pode repetir o golpe anterior.');
+  return l;
+}
+
 /* ---- IA do inimigo ----
    Antes o inimigo sorteava qualquer golpe com PP — dava pra ganhar de Pokémon muito mais forte na sorte. Agora ele
    acerta a escolha com a chance `esperteza`: selvagem erra bastante, treinador pensa melhor, Alfa e lendário quase

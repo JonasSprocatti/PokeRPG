@@ -5,6 +5,19 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.67', data: '2026-09-29', titulo: 'Golpes que travam', piada: 'Provocaram o Pokémon e ele, ofendidíssimo, esqueceu que tinha golpe de status. O inimigo aprendeu a fazer o mesmo com você.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Quatro golpes que <b>travam o que o alvo pode escolher</b> passaram a funcionar: <b>Taunt</b> (só golpes de dano), <b>Encore</b> (repete o último golpe), <b>Disable</b> (desativa o último golpe) e <b>Torment</b> (não deixa repetir o golpe anterior). Valem contra você, seus aliados e os inimigos.',
+        'Se você escolheu um golpe e o inimigo, mais rápido, te provoca antes de você agir, <b>o seu golpe falha</b> — como nos jogos. Sob Encore, a sua escolha é trocada pelo golpe repetido.',
+        'A tela de golpes agora mostra <b>o que está prendendo o seu Pokémon</b> (provocado, Encore, golpe desativado, atormentado, item que trava) e por quantos turnos. O botão bloqueado explica o motivo ao passar o dedo.',
+        'Habilidades: <b>Oblivious</b> passa a ficar imune ao Taunt, e <b>Aroma Veil</b> (nova) protege contra os quatro golpes.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O <b>Colete de Assalto</b> deixava você clicar num golpe de status e só depois recusava. Agora os botões de status já aparecem bloqueados.',
+        'Os inimigos e os aliados nunca escolhem um golpe que está proibido no momento, e caem no Struggle se não sobrar nenhum.'
+      ] }
+    ] },
   { versao: '2.66', data: '2026-09-29', titulo: 'Adeus, faixa branca', piada: 'As caixas de texto estavam vestidas de noiva no meio de um jogo roxo. Já trocaram de roupa.',
     secoes: [
       { nome: 'Correções', itens: [

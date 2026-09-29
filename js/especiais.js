@@ -26,6 +26,8 @@
 //   lado: campo      liga algo no SEU lado do campo (Reflect, Light Screen, Aurora Veil, Safeguard, Mist, Tailwind)
 //   soNoGelo         esse golpe só funciona com granizo ou neve (Aurora Veil)
 //   armadilha: tipo  põe Stealth Rock / Spikes / Toxic Spikes no lado do inimigo (pega quem entrar depois)
+//   trava: tipo      restringe os golpes do ALVO (regras.motivoBloqueio): provocar (Taunt: só dano), encore (repete o último),
+//                    disable (desativa o último), tormento (não repete o golpe anterior)
 export const GOLPES_ESPECIAIS = {
   /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
      FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
@@ -47,6 +49,7 @@ export const GOLPES_ESPECIAIS = {
   'dream-eater': { soDormindo: true },
   toxic: { toxico: true },
   'leech-seed': { semente: true },
+  taunt: { trava: 'provocar' }, encore: { trava: 'encore' }, disable: { trava: 'disable' }, torment: { trava: 'tormento' },
   'solar-beam': { carga: true }, 'solar-blade': { carga: true }, 'sky-attack': { carga: true }, 'razor-wind': { carga: true },
   'skull-bash': { carga: true }, 'meteor-beam': { carga: true }, 'freeze-shock': { carga: true }, 'ice-burn': { carga: true },
   fly: { carga: true, invulneravel: true }, dig: { carga: true, invulneravel: true }, dive: { carga: true, invulneravel: true },

@@ -20,13 +20,12 @@ import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, apli
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento, reviverCompanheiro, MAX_REVIVES } from './mp-motor.js';
 import { cartao, SEM_BATALHA_MP } from './multiplayer.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
-import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe, itemTemEfeito } from './regras.js';
+import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas } from './regras.js';
 import { loadPokemon, loadMove, apiErr } from './api.js';
 import { makeMon } from './pokemon.js';
 import { sincronizarComRetentativa, usuario } from './nuvem.js';
 import { esc, fmt } from './util.js';
 import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comprarSeguradoConta, reidratarHall, CURA_ARENA, STATS_ARENA } from './loja-conta.js';
-import { seg } from './segurados.js';
 
 const MAX_TIME = MAX_TIME_HALL;
 const DONO = 'eu';
@@ -124,18 +123,17 @@ function htmlLuta() {
     acoes = `<p class="${fim === 'A' ? 'selo-recorde' : 'notice'}">${fim === 'A' ? `🏆 ${esc(arena.ev.nome)} foi derrotado!` : `${esc(arena.ev.nome)} foi forte demais desta vez. Dá pra tentar de novo daqui a algumas horas — perder não custa nada.`}</p>
       <div class="subrow"><button class="btn big" data-act="arena-fim">Voltar à Arena</button></div>`;
   } else if (vez) {
-    // Faixa/Óculos/Lenço Escolha: trava no golpe BASE (mesma lógica de render.js) — se o travado ficar sem PP,
-    // Struggle sai igual, senão a Raide travaria sem nenhum botão clicável.
-    const travado = seg(vez).choice && vez.vol.escolha;
-    const ppDoTravado = travado && vez.moves.find(g => g.name === travado)?.ppLeft;
-    const semPP = vez.moves.every(g => g.ppLeft <= 0) || ppDoTravado <= 0;
+    // Golpes disponíveis: regras.golpesPermitidos (Choice, Colete, Taunt, Encore, Disable, Torment e PP) — a mesma
+    // função de render.js e da sala. Nenhum permitido = Struggle, senão a Raide travaria sem botão clicável.
+    const permitidos = golpesPermitidos(vez);
+    const semPP = !permitidos.length;
     // reordenar (▲▼) não gasta turno — muda só a ordem em vez.moves, fora do <button> de atacar (não dá pra
     // aninhar <button> dentro de <button>, então cada golpe vira um "mv-cel" com os dois lado a lado.
     const mover = (i, dir) => `<button class="btn ghost sm" data-act="arena-golpe-mover" data-v="${i}" data-dir="${dir}" ${(dir < 0 ? i === 0 : i === vez.moves.length - 1) ? 'disabled' : ''} title="${dir < 0 ? 'Subir' : 'Descer'}">${dir < 0 ? '▲' : '▼'}</button>`;
     acoes = `<p class="muted small">Turno ${b.turno} · <b>Vez de ${esc(vez.nome)}</b></p>
-      ${travado ? `<p class="small muted">🔒 Travado em <b>${esc(fmt(travado))}</b> até desmaiar ou ser revivido.</p>` : ''}
+      ${resumoTravas(vez).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
       <div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="arena-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
-        : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); const preso = travado && g0.name !== travado; return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="arena-golpe" data-v="${i}" ${g.ppLeft <= 0 || preso ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${mover(i, -1)}${mover(i, 1)}</span></div>`; }).join('')}</div>
+        : vez.moves.map((g0, i) => { const g = golpeDoClima(g0, climaDe(b.campo)); const preso = !permitidos.includes(g0); return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="arena-golpe" data-v="${i}" ${g.ppLeft <= 0 || preso ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${mover(i, -1)}${mover(i, 1)}</span></div>`; }).join('')}</div>
       ${botoesItemComum(vez)}
       ${botoesRaide(chefe)}
       ${botoesReviver()}

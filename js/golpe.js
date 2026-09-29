@@ -20,7 +20,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, maiorStatBase,
-  fazContato, temFlag } from './regras.js';
+  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -406,7 +406,7 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
 }
 
 // Golpes de status com regra própria (especiais.js). true = tratou (o genérico não roda).
-async function statusEspecial(u, t, g, esp, ctx) {
+async function statusEspecial(u, t, g, esp, ctx, primeiro) {
   const U = ctx.nome(u), T = ctx.nome(t);
   if (esp.clima) { if (!await mudarClima(esp.clima, ctx)) await ctx.say('Mas falhou!'); return true; }
   if (esp.terreno) { if (!await mudarTerreno(esp.terreno, ctx)) await ctx.say('Mas falhou!'); return true; }
@@ -470,6 +470,18 @@ async function statusEspecial(u, t, g, esp, ctx) {
     if (await aplicarStatus(t, 'poison', ctx, true) && !antes) { t.vol.toxico = 1; await ctx.say(`O veneno em ${T} é grave!`, 'status'); }
     return true;
   }
+  // Taunt / Encore / Disable / Torment (regras.motivoBloqueio decide o que fica proibido). Prazo: se o alvo ainda vai agir
+  // neste turno (`primeiro`) o efeito já o pega agora; se ele já agiu, ganha +1 pra compensar o turno que passou.
+  if (esp.trava) {
+    const falha = falhaDaTrava(t, esp.trava);
+    if (falha) { await ctx.say(`Mas falhou! (${falha})`); return true; }
+    const n = (TURNOS_TRAVA[esp.trava] || 0) + (primeiro ? 0 : 1), ult = t.vol.ultimo;
+    if (esp.trava === 'provocar') { t.vol.provocado = n; await ctx.say(`${T} foi provocado! Só poderá usar golpes de dano por ${n} turnos.`, 'status'); }
+    else if (esp.trava === 'encore') { t.vol.encore = { golpe: ult, turnos: n }; await ctx.say(`${T} sofreu Encore! Vai repetir ${fmt(ult)} por ${n} turnos.`, 'status'); }
+    else if (esp.trava === 'disable') { t.vol.desativado = { golpe: ult, turnos: n }; await ctx.say(`${fmt(ult)} de ${T} foi desativado por ${n} turnos!`, 'status'); }
+    else { t.vol.tormento = true; await ctx.say(`${T} foi atormentado! Não poderá repetir o mesmo golpe.`, 'status'); }
+    return true;
+  }
   if (esp.semente) {
     if (tiposDefensivos(t).includes('grass')) { await ctx.say(`Não afeta ${T}...`); return true; }
     if (t.vol.semente != null) { await ctx.say(`${T} já está semeado!`); return true; }
@@ -478,8 +490,8 @@ async function statusEspecial(u, t, g, esp, ctx) {
   return false;
 }
 
-async function golpeDeStatus(u, t, g, selfT, ctx) {
-  if (await statusEspecial(u, t, g, especial(g), ctx)) return;
+async function golpeDeStatus(u, t, g, selfT, ctx, primeiro) {
+  if (await statusEspecial(u, t, g, especial(g), ctx, primeiro)) return;
   const meta = g.meta || {}; let fez = false;
   if (meta.heal > 0) {
     fez = true;
@@ -530,7 +542,16 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
       if (Math.random() < 1 / 3) { interromper(u); const d = confDamage(u); u.hp = Math.max(0, u.hp - d); up(ctx); (ctx.tremer || nada)(u); await ctx.say(`Ele se machucou na confusão! (−${d})`, 'hit'); return; }
     }
   }
-  if (g.cls === 'status' && seg(u).semStatus) { await ctx.say(`${U} não consegue usar golpe de status segurando o Colete de Assalto!`); return; }
+  /* Travas de escolha (regras.motivoBloqueio): Choice, Colete de Assalto, Taunt, Encore, Disable e Torment. Conferir AQUI
+     e não só no menu porque o efeito pode chegar DEPOIS de escolhido o golpe: o inimigo mais rápido que te provoca faz o
+     seu golpe de status falhar; e no Encore, como nos jogos, o golpe escolhido é TROCADO pelo repetido. Carga/fúria em
+     andamento (`travado`) e Struggle ficam de fora. Falhar não gasta PP. */
+  if (!travado && g.name !== 'struggle') {
+    const forcado = golpeForcado(u);
+    if (forcado && forcado.name !== g.name) g = forcado;
+    const bloqueio = motivoBloqueio(u, g);
+    if (bloqueio) { await ctx.say(`${U} não consegue usar ${ctx.golpe(g)}: ${bloqueio.texto}!`); return; }
+  }
   // Campo Psíquico: golpe de prioridade não passa em quem está no chão
   const terr = terrenoDoCtx(ctx);
   if (TERRENOS[terr]?.semPrioridade && (g.priority || 0) > 0 && u !== t && noChao(t)) {
@@ -560,6 +581,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   // Faixa/Óculos/Lenço Escolha: trava no PRIMEIRO golpe de verdade usado (Struggle não conta — é golpe de
   // emergência, sem PP sobrando pra "escolher" nada) até desmaiar/ser revivido (`m.vol` reseta nos dois casos).
   if (seg(u).choice && !u.vol.escolha && g.name !== 'struggle') u.vol.escolha = g.name;
+  if (g.name !== 'struggle') u.vol.ultimo = g.name;                                   // Encore, Disable e Torment olham isto
   if (hu.preguica) u.vol.folga = true;                                                // Truant: o próximo turno é de folga
   // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)
   const primeiroGolpe = !u.vol.golpesDados;
@@ -618,7 +640,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (!selfT && g.acc != null && Math.random() > chanceAcerto(g, u, t, climaDoCtx(ctx))) { await ctx.say('Mas errou!'); return; }
   // Good As Gold: imune a QUALQUER golpe de status alheio (o próprio ainda pode usar golpe de status normalmente)
   if (g.cls === 'status' && !selfT && u !== t && ht.imuneGolpeStatus) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
-  if (g.cls === 'status') { await golpeDeStatus(u, t, g, selfT, ctx); up(ctx); return; }
+  if (g.cls === 'status') { await golpeDeStatus(u, t, g, selfT, ctx, primeiro); up(ctx); return; }
 
   // imunidades e absorções de tipo por habilidade
   if (ht.imuneTipo === g.type) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
@@ -780,6 +802,9 @@ async function executar(u, t, g, primeiro, ctx, esp) {
 export async function fimDeTurno(m, ctx) {
   if (m.hp <= 0) return;
   const h = hab(m), clima = climaDoCtx(ctx);
+  // Taunt, Encore e Disable contam turnos (regras.passarTravas devolve o que acabou agora)
+  const AVISO_TRAVA = { provocado: 'não está mais provocado.', encore: 'não está mais sob Encore.', desativado: 'pode usar o golpe desativado de novo.' };
+  for (const fim of passarTravas(m)) await ctx.say(`${ctx.nome(m)} ${AVISO_TRAVA[fim]}`, 'muted');
   if (clima) {
     // areia/granizo castigam quem não é do tipo certo; chuva/sol curam ou machucam quem tem a habilidade certa
     const dano = danoClima(clima, m);

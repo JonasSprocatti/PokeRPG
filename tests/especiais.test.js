@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';
 import { usarGolpe, fimDeTurno, fimDaRodada, golpeTravado } from '../js/golpe.js';
-import { freshVol, poderEspecial, chanceOhko, danoResidual } from '../js/regras.js';
+import { freshVol, poderEspecial, chanceOhko, danoResidual, TRAVAS } from '../js/regras.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
 const status = (name, o = {}) => golpe({ name, cls: 'status', power: null, acc: null, target: 'user', ...o });
@@ -22,11 +22,13 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'soSeAlvoAtaca',                          // Sucker Punch, Thunderclap: só funcionam contra quem vai usar golpe de dano
     'clima', 'terreno',                       // Rain Dance / Electric Terrain e cia.
     'lado', 'soNoGelo', 'armadilha',          // telas e armadilhas de entrada (Aurora Veil só no granizo/neve)
+    'trava',                                  // Taunt, Encore, Disable, Torment (regras.motivoBloqueio)
     'puneContato', 'voltaPostura']);          // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade']);
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {
     for (const k of Object.keys(e)) assert.ok(ok.has(k), `${n}: comportamento desconhecido "${k}"`);
     if (e.poder) assert.ok(formulas.has(e.poder), `${n}: fórmula "${e.poder}"`);
+    if (e.trava) assert.ok(TRAVAS.includes(e.trava), `${n}: trava "${e.trava}" não existe (regras.TRAVAS)`);
   }
 });
 

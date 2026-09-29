@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { HABILIDADES, IMPL } from '../js/habilidades.js';
 import { usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, aoEntrarEmCampo, comerFruta, desfazerTrace } from '../js/golpe.js';
-import { calcDamage, effStat, chanceAcerto, freshVol, FAMILIAS_GOLPE } from '../js/regras.js';
+import { calcDamage, effStat, chanceAcerto, freshVol, FAMILIAS_GOLPE, TRAVAS } from '../js/regras.js';
 import { TYPE_PT, AIL_MSG, STATS } from '../js/dados.js';
 import { FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
 
@@ -69,7 +69,7 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     // quarta leva (documentados no topo de habilidades.js)
     'danoTipo', 'danoTipoClima', 'golpesFamilia', 'recuo', 'superEfetivoCausado', 'critContraStatus', 'abaixoDeMetade', 'soStatus',
     'ignoraEstagios', 'inverteEstagios', 'dobraEstagios', 'espelhaQueda', 'aoSerBaixado', 'aoNocautear', 'aoSerAtingido', 'limitaStatus',
-    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima',
+    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imuneTrava', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima',
     // quinta leva
     'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance',
     // sexta leva
@@ -87,6 +87,7 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     for (const k of Object.keys(h)) assert.ok(ganchos.has(k), `${nome}: gancho desconhecido "${k}" (não faz nada no motor)`);
     for (const t of [h.pinch, h.imuneTipo, h.absorve, ...Object.keys(h.resiste || {}), ...Object.keys(h.danoTipo || {}), ...(h.prendeTipo || [])].filter(Boolean)) assert.ok(tipos.includes(t), `${nome}: tipo "${t}"`);
     for (const a of h.imuneStatus || []) assert.ok(AIL_MSG[a] || a === 'confusion', `${nome}: status "${a}"`);
+    for (const k of h.imuneTrava || []) assert.ok(TRAVAS.includes(k), `${nome}: trava "${k}" não existe (regras.TRAVAS)`);
     for (const s of Object.keys({ ...h.multStat, ...h.comStatus })) assert.ok(STATS.includes(s), `${nome}: atributo "${s}"`);
     if (h.imuneFlag) assert.ok(FLAGS_VALIDAS.includes(h.imuneFlag), `${nome}: flag de golpe "${h.imuneFlag}" não existe`);
     if (h.multFlag) assert.ok(FLAGS_VALIDAS.includes(h.multFlag.flag), `${nome}: flag de golpe "${h.multFlag.flag}" não existe`);
@@ -485,8 +486,9 @@ test('Orbe de Fogo/Tóxico se auto-infligem status no fim do turno (respeitando 
 
 /* Faixa/Óculos/Lenço Escolha (segurados.js `choice`): trava em `M.vol.escolha` no primeiro golpe DE VERDADE
    usado (golpe.usarGolpe seta isso logo depois de "X usou Y!"). A trava em si é reforçada pela UI (botões
-   desabilitados em render.js/arena.js/multiplayer.js) e por golpeDoAliado (aliados) — o motor não re-valida o
-   `g` recebido, mesmo padrão de confiança já usado pro PP (0 PP também só é travado pela UI). */
+   desabilitados em render.js/arena.js/multiplayer.js) e por golpeDoAliado (aliados), e TAMBÉM pelo motor
+   (regras.motivoBloqueio, conferido em usarGolpe) — desde as travas de Taunt/Encore/Disable o motor confere tudo
+   na hora de usar. Ver tests/travas.test.js. */
 test('itens Choice: +50% no atributo certo e trava no primeiro golpe usado (não em Struggle)', async () => {
   const banda = mon({ item: 'choice-band' });
   assert.equal(effStat(banda, 'attack'), 150);
@@ -494,9 +496,11 @@ test('itens Choice: +50% no atributo certo e trava no primeiro golpe usado (não
   assert.equal(banda.vol.escolha, undefined, 'ainda não usou nenhum golpe');
   await usarGolpe(banda, mon(), golpe({ name: 'ember' }), true, ctx());
   assert.equal(banda.vol.escolha, 'ember');
-  // usar outro golpe depois NÃO destrava sozinho (a UI que impede escolher outro; o motor confia nela)
-  await usarGolpe(banda, mon(), golpe({ name: 'tackle' }), true, ctx());
+  // tentar outro golpe depois NÃO destrava — e agora o motor também recusa (antes só a tela impedia)
+  const alvo2 = mon();
+  await usarGolpe(banda, alvo2, golpe({ name: 'tackle' }), true, ctx());
   assert.equal(banda.vol.escolha, 'ember', 'continua travado no primeiro');
+  assert.equal(alvo2.hp, 100, 'o golpe fora da trava nem chegou a acertar');
   // Struggle nunca trava (é golpe de emergência, sem PP sobrando pra "escolher" nada)
   const semTravar = mon({ item: 'choice-scarf' });
   assert.equal(effStat(semTravar, 'speed'), 150);
