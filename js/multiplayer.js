@@ -24,7 +24,7 @@ import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativ
 import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comprarSeguradoConta, reidratarHall } from './loja-conta.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, resumoDoChefe, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
-import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas } from './regras.js';
+import { zonaLiberada, xpPorVitoria, ganhoDeEVs, freshVol, statsDeChefe, premioChefe, melhorGolpe, ESPERTEZA, golpeDoClima, golpeDoTera, golpeDoBattleBond, climaDe, climaDasRotasAtivo, CLIMA_TURNOS, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas, tiposDefensivos, tiposOfensivos } from './regras.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, monMP, ladoDe, leituraDoEstado, numerarRepetidos, balancearPvP, balancearCoop, nivelarMon, nivelMedio, naNivelReal, reviverNoEvento, reviverCompanheiro, usarRaideNoEvento, MAX_REVIVES } from './mp-motor.js';
 import { carregarCarreira, registrarVitoriaDeEvento, conquistasDaConta, hallDaConta, saldoArenaDaConta } from './carreira.js';
 import { registrarAbate, megaLiberada, teraLiberada, gmaxLiberado, zLiberado } from './conquistas.js';
@@ -518,7 +518,7 @@ function registrarAcao(de, acao) {
 function autoCompletar() {
   const b = sala?.batalha; if (!b || !sala.anfitriao) return;
   for (const m of jogaveis(b).filter(x => !sala.acoes[x.ref])) {
-    const alvo = primeiroInimigo(b, m), g = melhorGolpe(m.moves, m.data.types, alvo?.data.types || []);
+    const alvo = primeiroInimigo(b, m), g = melhorGolpe(m.moves, tiposOfensivos(m), alvo ? tiposDefensivos(alvo) : []);
     sala.acoes[m.ref] = { ref: m.ref, tipo: 'golpe', golpe: g ? m.moves.indexOf(g) : -1, alvo: alvo?.ref };
   }
   resolver();

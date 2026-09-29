@@ -2,8 +2,11 @@
    `js/tera.js` em si é quase só o gatilho: o que importa testar é que terastalizar muda mesmo o dano, nos dois
    sentidos, e que a conta antiga continua valendo pra quem não terastalizou. */
 import { test } from 'node:test';
+import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { tiposDefensivos, multStab, typeEff, calcDamage, calcStats, freshVol, golpeDoTera } from '../js/regras.js';
+import { tiposDefensivos, tiposOfensivos, multStab, typeEff, calcDamage, calcStats, freshVol, golpeDoTera, melhorGolpe, escolhaIA, ESPERTEZA } from '../js/regras.js';
+import { fimDeTurnoDoItem } from '../js/segurados.js';
+import { acaoDaIA, novaBatalhaMP, fotoDoMon } from '../js/mp-motor.js';
 import { usarGolpe } from '../js/golpe.js';
 import { TYPE_PT } from '../js/dados.js';
 
@@ -130,4 +133,91 @@ test('Tera Blast muda de tipo de verdade dentro do motor do golpe', async t => {
   await usarGolpe(usuario, alvo, teraBlast, true, c);
   assert.equal(alvo.hp, 200, 'Tera Blast virou Normal: Fantasma é imune, não devia tirar HP nenhum');
   assert.ok(c.msgs.some(m => /não afeta/i.test(m)), 'e a narração precisa dizer que não afetou');
+});
+
+/* ---- os 3 resíduos do mesmo bug, encontrados ao reconferir os relatos #61/#64 em 29/09/2026 ----
+   O dano e a narração já respeitavam o Tera; estes três ainda liam `m.data.types` direto. */
+
+test('tiposOfensivos: o Tera SOMA STAB, não substitui (ao contrário do lado defensivo)', () => {
+  const dragaoTeraFogo = mon(['dragon'], { tera: 'fire' });
+  assert.deepEqual(tiposDefensivos(dragaoTeraFogo), ['fire'], 'defende só pelo Tera');
+  assert.deepEqual(tiposOfensivos(dragaoTeraFogo).sort(), ['dragon', 'fire'], 'mas ataca com STAB dos dois');
+  // e bate com multStab, que é quem faz a conta de verdade
+  assert.equal(multStab(dragaoTeraFogo, 'dragon'), 1.5, 'o tipo de origem NÃO perde o STAB');
+  assert.equal(multStab(dragaoTeraFogo, 'fire'), 1.5);
+  const fogoTeraFogo = mon(['fire'], { tera: 'fire' });
+  assert.deepEqual(tiposOfensivos(fogoTeraFogo), ['fire'], 'sem repetir quando o Tera é um tipo que já tinha');
+  assert.equal(multStab(fogoTeraFogo, 'fire'), 2, 'e aí o STAB é 2.0');
+  assert.deepEqual(tiposOfensivos(mon(['water'])), ['water'], 'sem Tera, são os tipos de origem');
+});
+
+test('a IA do selvagem escolhe pelo tipo Tera do alvo, não pelo de origem', () => {
+  /* O caso do relato: Mewtwo psíquico que virou Tera Água. Sombrio deixa de ser super efetivo e Elétrico passa a
+     ser. O atacante é Normal e os dois golpes têm o MESMO poder de propósito: sem isso o STAB do atacante decide
+     sozinho e o teste passaria mesmo com o bug (foi o que aconteceu na primeira versão dele). */
+  const mewtwoTeraAgua = mon(['psychic'], { tera: 'water' });
+  const atacante = ['normal'];
+  const golpes = [
+    { name: 'bite', type: 'dark', cls: 'physical', power: 60, ppLeft: 10 },
+    { name: 'thunder-shock', type: 'electric', cls: 'special', power: 60, ppLeft: 10 },
+  ];
+  const semTera = melhorGolpe(golpes, atacante, tiposDefensivos(mon(['psychic'])));
+  assert.equal(semTera.name, 'bite', 'contra o Mewtwo psíquico, Sombrio é a escolha certa');
+  const comTera = melhorGolpe(golpes, atacante, tiposDefensivos(mewtwoTeraAgua));
+  assert.equal(comTera.name, 'thunder-shock', 'contra Tera Água, o selvagem tem de largar o Sombrio');
+  // e pelo caminho que batalha.chooseEnemyMove usa de verdade (degrau `simples` = selvagem, sem contexto)
+  const escolhido = escolhaIA(golpes, atacante, tiposDefensivos(mewtwoTeraAgua), ESPERTEZA.selvagem, () => 0);
+  assert.equal(escolhido.name, 'thunder-shock');
+});
+
+test('Lodo Negro segue o tipo Tera: cura quem virou Veneno, machuca o Veneno que virou outra coisa', () => {
+  const comItem = (types, extra) => { const m = mon(types, { item: 'black-sludge', ...extra }); m.hp = Math.floor(m.stats.hp / 2); return m; };
+  const veneno = comItem(['poison']);
+  assert.ok(fimDeTurnoDoItem(veneno, tiposDefensivos(veneno)) > 0, 'Venenoso é curado, como sempre foi');
+  const normal = comItem(['normal']);
+  assert.ok(fimDeTurnoDoItem(normal, tiposDefensivos(normal)) < 0, 'quem não é Venenoso se machuca, como sempre foi');
+  const normalTeraVeneno = comItem(['normal'], { tera: 'poison' });
+  assert.ok(fimDeTurnoDoItem(normalTeraVeneno, tiposDefensivos(normalTeraVeneno)) > 0, 'Tera Veneno passa a ser CURADO');
+  const venenoTeraFogo = comItem(['poison'], { tera: 'fire' });
+  assert.ok(fimDeTurnoDoItem(venenoTeraFogo, tiposDefensivos(venenoTeraFogo)) < 0, 'e o Venenoso que vira Tera Fogo passa a se machucar');
+});
+
+/* O teste acima prova que `melhorGolpe`/`escolhaIA` obedecem aos tipos que RECEBEM — e isso já era verdade antes
+   da correção: o bug estava em quem CHAMA (passava `alvo.data.types`). `mp-motor.acaoDaIA` é o único chamador
+   puro (batalha.chooseEnemyMove precisa de DOM), então é por ele que dá pra travar o call site de verdade. */
+test('acaoDaIA (call site real) enxerga o Tera do alvo', () => {
+  const foto = (m, ref) => { const f = fotoDoMon(m, ref, 'ia', ref); if (m.tera) f.tera = m.tera; return f; };
+  const golpes = [
+    { name: 'bite', type: 'dark', cls: 'physical', power: 60, ppLeft: 10, pp: 10, meta: {}, stats: [] },
+    { name: 'thunder-shock', type: 'electric', cls: 'special', power: 60, ppLeft: 10, pp: 10, meta: {}, stats: [] },
+  ];
+  const atacante = mon(['normal'], { moves: golpes, name: 'x', nick: null });
+  const monte = alvoMon => novaBatalhaMP([foto(alvoMon, 'a1')], [foto(atacante, 'b1')]);
+  /* `ESPERTEZA.selvagem` de propósito: é o único degrau (`simples`) que NÃO passa por `notaDoGolpe` e cai no
+     `melhorGolpe` antigo, com os tipos que o chamador entrega. Com esperteza de chefe este teste passa mesmo
+     com o bug — `notaDoGolpe` já lia `tiposDefensivos` desde o conserto de 27/09. `sorte` fixa em 0 escolhe o
+     primeiro alvo e faz a IA "pensar" (0 < 0.5). */
+  const semTera = acaoDaIA(monte(mon(['psychic'], { moves: [], name: 'y', nick: null })), foto(atacante, 'b1'), () => 0, ESPERTEZA.selvagem);
+  assert.equal(golpes[semTera.golpe].name, 'bite', 'contra Psíquico puro, Sombrio');
+  const alvoTera = mon(['psychic'], { tera: 'water', moves: [], name: 'y', nick: null });
+  const comTera = acaoDaIA(monte(alvoTera), foto(atacante, 'b1'), () => 0, ESPERTEZA.selvagem);
+  assert.equal(golpes[comTera.golpe].name, 'thunder-shock', 'contra Tera Água, Elétrico — o call site tem de repassar o Tera');
+});
+
+/* `batalha.chooseEnemyMove` e `multiplayer.autoCompletar` são os outros dois chamadores e precisam de DOM, então
+   não dá pra exercitá-los aqui. Trava estática no lugar: quem pergunta à IA qual golpe usar tem de entregar os
+   tipos por `tiposOfensivos`/`tiposDefensivos`, nunca `.data.types` cru — é exatamente a forma que o bug tinha
+   nos três lugares. Mesmo espírito de tests/referencias.test.js: barato, estreito e sem dependência. */
+test('nenhum chamador de escolhaIA/melhorGolpe passa .data.types cru', () => {
+  const DIR = new URL('../js/', import.meta.url);
+  const erradas = [];
+  for (const arq of readdirSync(DIR).filter(f => f.endsWith('.js'))) {
+    const src = readFileSync(new URL(arq, DIR), 'utf8');
+    for (const m of src.matchAll(/\b(escolhaIA|melhorGolpe)\s*\(/g)) {
+      const args = src.slice(m.index, m.index + 260);           // a chamada cabe folgada nisso
+      if (!/\.data\.types/.test(args)) continue;
+      erradas.push(`${arq}:${src.slice(0, m.index).split('\n').length} → ${m[1]}() recebe .data.types (ignora o Tera)`);
+    }
+  }
+  assert.deepEqual(erradas, [], '\n' + erradas.join('\n'));
 });

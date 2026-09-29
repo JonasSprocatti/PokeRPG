@@ -5,6 +5,14 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.74', data: '2026-09-29', titulo: 'O Tera agora convence todo mundo', piada: 'O Pokémon selvagem via você virar de cristal, aplaudia educadamente e continuava batendo no tipo antigo.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Faltavam três cantos onde a <b>Terastalização</b> ainda era ignorada. O <b>Pokémon selvagem</b> escolhia o golpe olhando os seus tipos de origem: você virava Tera Água e ele continuava insistindo no golpe que era super efetivo contra o tipo antigo. Agora ele enxerga o tipo novo — terastalizar contra selvagem ficou de verdade mais perigoso pra ele e mais seguro pra você.',
+        'O <b>Lodo Negro</b> agora segue o tipo atual: quem vira <b>Tera Veneno</b> passa a ser curado por ele, e o Venenoso que vira Tera de outro tipo passa a se machucar — como nos jogos.',
+        'O <b>Ímã (Magnet Pull)</b> prendia pelo tipo de origem. Agora quem vira Tera Aço é preso, e o Aço que vira Tera de outro tipo consegue fugir.'
+      ] }
+    ] },
   { versao: '2.73', data: '2026-09-29', titulo: 'A caçada finalmente começa', piada: 'O botão da Caça Shiny sabia exatamente em que rota você estava. Só não sabia como perguntar.',
     secoes: [
       { nome: 'Correções', itens: [

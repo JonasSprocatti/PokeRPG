@@ -124,11 +124,15 @@ export function statusDoItem(m) {
   if (!s.statusFimTurno || m.status) return null;
   return s.statusFimTurno === 'toxic' ? 'poison' : s.statusFimTurno;
 }
-// fim de turno: quanto o item cura (>0) ou machuca (<0)
-export function fimDeTurnoDoItem(m) {
+/* Fim de turno: quanto o item cura (>0) ou machuca (<0).
+   `tiposAtuais` vem de fora (regras.tiposDefensivos, passado por golpe.js) porque este arquivo NÃO pode importar
+   regras.js — o grafo é o contrário, regras.js importa daqui. Sem isso o Lodo Negro olharia os tipos de origem e
+   ignoraria a Terastalização: quem vira Tera Veneno tem de passar a ser CURADO, e o Venenoso que vira Tera de
+   outro tipo passa a se machucar, como nos jogos. */
+export function fimDeTurnoDoItem(m, tiposAtuais = m?.data?.types || []) {
   const s = seg(m);
   if (!s.curaFimTurno) return 0;
-  const combina = !s.soTipo || m.data.types.includes(s.soTipo);
+  const combina = !s.soTipo || tiposAtuais.includes(s.soTipo);
   if (combina) return m.hp < m.stats.hp ? Math.max(1, Math.floor(m.stats.hp * s.curaFimTurno)) : 0;
   return -Math.max(1, Math.floor(m.stats.hp * (s.danoFimTurno || 0)));
 }

@@ -8,7 +8,7 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE, STATS, TYPE_PT, ITEMS } from './dados.js';
-import { novoCampo, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, sempreUltimo, prioridadeEfetiva, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, golpesPermitidos, golpeForcado, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO, noChao } from './regras.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, sempreUltimo, prioridadeEfetiva, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, golpesPermitidos, golpeForcado, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO, noChao, tiposDefensivos, tiposOfensivos } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
 import { aplicarForma, verboDaForma } from './mega.js';
@@ -247,7 +247,7 @@ export function acaoDaIA(e, m, sorte = Math.random, esperteza = ESPERTEZA.selvag
   // pensa como no single player: só entre os golpes que as travas deixam, julgados com o contexto (quem apanha, o campo e os lados)
   const lados = e.campo?.lados;
   const contexto = alvo ? { u: m, alvo, campo: e.campo, ladoU: lados?.[ladoDe(e, m.ref)], ladoAlvo: lados?.[ladoDe(e, alvo.ref)] } : null;
-  const g = escolhaIA(golpesPermitidos(m), m.data.types, alvo?.data.types || [], esperteza, sorte, contexto);
+  const g = escolhaIA(golpesPermitidos(m), tiposOfensivos(m), alvo ? tiposDefensivos(alvo) : [], esperteza, sorte, contexto);
   return { ref: m.ref, tipo: 'golpe', golpe: g ? m.moves.indexOf(g) : -1, alvo: alvo?.ref };
 }
 

@@ -881,7 +881,7 @@ export async function fimDeTurno(m, ctx) {
     await ctx.say(`${ctx.nome(m)} se recupera na grama alta. (+${n})`, 'good');
   }
   // item segurado: Restos curam, Lodo Negro cura Venenoso e machuca o resto (segurados.js)
-  const di = fimDeTurnoDoItem(m);
+  const di = fimDeTurnoDoItem(m, tiposDefensivos(m));
   if (di > 0 && m.hp > 0) { heal(m, di); up(ctx); await ctx.say(`${ctx.nome(m)} recuperou ${di} HP com ${nomeDoItem(m)}.`, 'good'); }
   else if (di < 0 && m.hp > 0 && !indireto(m)) { m.hp = Math.max(0, m.hp + di); up(ctx); await ctx.say(`${nomeDoItem(m)} machucou ${ctx.nome(m)}. (${di})`, 'hit'); }
   // Orbe de Fogo/Tóxico: tenta se auto-infligir o status a cada fim de turno sem status (aplicarStatus já cobre

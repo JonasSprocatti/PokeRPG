@@ -20,7 +20,7 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
@@ -47,7 +47,9 @@ function chooseEnemyMove(E) {
   // só o que as travas deixam (regras.golpesPermitidos), julgado com o CONTEXTO da luta (notaDoGolpe): quem apanha, o campo e os dois lados
   const lados = B?.campo?.lados;
   const contexto = { u: E, alvo, campo: B?.campo, ladoU: lados?.[CTX.ladoDe(E)], ladoAlvo: lados?.[CTX.ladoDe(alvo)] };
-  return escolhaIA(golpesPermitidos(E), E.data.types, alvo.data.types, esperteza, undefined, contexto) || STRUGGLE;
+  // tipos pelo Tera, não pelos de origem: sem isso o selvagem (degrau `simples`, que não passa por `notaDoGolpe`)
+  // escolhia o golpe como se você nunca tivesse terastalizado
+  return escolhaIA(golpesPermitidos(E), tiposOfensivos(E), tiposDefensivos(alvo), esperteza, undefined, contexto) || STRUGGLE;
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 
@@ -443,7 +445,7 @@ export async function turn(action) {
       await vez('p');
       const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
       // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão)
-      const preso = hab(E).prendeTipo?.some(t => P.data.types.includes(t))
+      const preso = hab(E).prendeTipo?.some(t => tiposDefensivos(P).includes(t))
         || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P)) || !!P.vol.preso;   // habilidade OU golpe (Mean Look, Block, Spider Web)
       if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability, undefined, preso)) {
         await say('Você fugiu em segurança!'); endBattle(); return;

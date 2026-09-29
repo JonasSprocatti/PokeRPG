@@ -82,6 +82,11 @@ export function vantagemDoGolpe(golpe, alvo) {
 }
 
 export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
+/* O lado OFENSIVO não é o espelho do defensivo: terastalizar troca o tipo com que você DEFENDE (passa a ser um
+   só), mas NÃO apaga o STAB dos tipos originais — quem vira Tera de um tipo novo ganha STAB no Tera e continua
+   com o dos antigos (é o que `multStab` calcula). Esta lista serve ao julgamento grosso da IA (`melhorGolpe`),
+   que só pergunta "esse golpe tem STAB?"; a conta de verdade do dano continua em `multStab`. */
+export const tiposOfensivos = m => m?.tera ? [...new Set([m.tera, ...(m?.data?.types || [])])] : (m?.data?.types || []);
 /* Tipo Tera SORTEADO do inimigo: qualquer um dos 18, do tipo dele ou não, com a mesma chance. O fator surpresa é
    não dar pra prever pra onde ele vira. `rnd` injetável pros testes. */
 export function sortearTipoTera(rnd = Math.random) {
