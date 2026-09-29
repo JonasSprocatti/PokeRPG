@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, rotaNaJornada, sortearDaRota, taxaNaRota, textoTaxa,
   somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL, lendariosDaGen,
-  formaRegionalDaGen } from '../js/mapas.js';
+  formaRegionalDaGen, idBaseDaEspecie, idDaEspecieNoRegistro } from '../js/mapas.js';
+import { MEGAS } from '../js/dados-megas.js';
 import { REGIOES_INICIAIS } from '../js/dados.js';
 import { zonaLiberada } from '../js/regras.js';
 
@@ -225,4 +226,38 @@ test('especiesDaGen: todo o mapa, sem repetir e sem mítico', () => {
   assert.equal(new Set(lista.map(p => p.id)).size, lista.length);
   assert.equal(lista.some(p => p.m), false);
   for (const p of lista) assert.equal(ehInicialDeRegiao(p.id), false);
+});
+
+/* ---- id da espécie no registro (relato #62: "desbloqueou o Mega Alakazam em vez do Alakazam") ----
+   `batalha.win()` gravava o id da forma Mega; corrigido em 27/09/2026, mas só pra frente — quem já tinha o id
+   errado na carreira continuava vendo a Mega, porque o progresso da conta nunca encolhe. A correção de leitura
+   (mapas.idDaEspecieNoRegistro) conserta a exibição sem tocar no que está gravado. */
+test('idDaEspecieNoRegistro troca id de Mega pelo da espécie e NÃO mexe em forma regional', () => {
+  assert.equal(idDaEspecieNoRegistro('alakazam', 10037), 65, 'Mega Alakazam vira Alakazam');
+  assert.equal(idDaEspecieNoRegistro('alakazam', 65), 65, 'id certo passa intacto');
+  assert.equal(idDaEspecieNoRegistro('raichu', 10100), 10100, 'Raichu de Alola é o id CERTO: não pode ser trocado');
+  assert.equal(idDaEspecieNoRegistro('bulbasaur', undefined), null, 'sem id, nada a mostrar');
+  assert.equal(idDaEspecieNoRegistro('naoexiste', 12345), 12345, 'espécie fora da tabela passa intacta');
+});
+
+test('toda espécie com Mega tem id base nos pools (senão a correção não teria pelo que trocar)', () => {
+  const sem = Object.keys(MEGAS).filter(e => !idBaseDaEspecie(e));
+  assert.deepEqual(sem, [], `sem id base: ${sem.join(', ')}`);
+  assert.ok(idBaseDaEspecie('alakazam') === 65 && idBaseDaEspecie('raichu') === 26);
+});
+
+/* A trava que sustenta a solução inteira: ela distingue "id errado" de "id certo" casando contra MEGAS, e isso só
+   é seguro enquanto nenhuma FORMA REGIONAL tiver o mesmo id de uma Mega da mesma espécie. Hoje são 0 colisões
+   (as Megas do Raichu são 10304/10305, o Raichu de Alola é 10100). `dados-mapas.js` e `dados-megas.js` são
+   GERADOS — se um dia o gerador trouxer uma colisão, é aqui que isso tem de estourar, não na carreira do jogador. */
+test('nenhuma forma regional colide com um id de Mega da mesma espécie', () => {
+  const colisoes = [];
+  for (const g of GENS) for (const z of g.rotas) for (const p of z.pool) {
+    if (!p.f) continue;
+    if ((MEGAS[p.n] || []).some(f => f.id === p.id)) colisoes.push(`${p.f} #${p.id} colide com uma Mega de ${p.n}`);
+  }
+  assert.deepEqual(colisoes, [], '\n' + colisoes.join('\n'));
+  // e a varredura precisa ter visto formas regionais de verdade, senão o teste não prova nada
+  const regionais = GENS.flatMap(g => g.rotas.flatMap(z => z.pool.filter(p => p.f)));
+  assert.ok(regionais.length >= 50, `só ${regionais.length} formas regionais varridas`);
 });

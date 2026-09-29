@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.75', data: '2026-09-29', titulo: 'O Alakazam voltou ao tamanho normal', piada: 'Ele megaevoluiu, desmaiou e resolveu que ia ficar assim na foto do desbloqueio. Para sempre.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Quem derrotou um Alfa que tinha <b>megaevoluído</b> ficava com a <b>forma Mega no lugar da espécie</b> na tela de desbloqueios, na Pokédex da conta e nas conquistas — "Alakazam #10037", com o sprite da Mega. O registro novo já saía certo desde a atualização passada, mas quem tinha o engano guardado continuava vendo a Mega, porque o progresso da conta nunca é apagado. Agora aparece o Pokémon certo, inclusive pra quem já tinha isso na carreira.',
+        'As <b>formas regionais</b> (Raichu de Alola, Marowak de Alola, os de Hisui…) continuam exatamente como estavam: elas têm sprite próprio de propósito, e nada nessa correção encosta nelas.'
+      ] }
+    ] },
   { versao: '2.74', data: '2026-09-29', titulo: 'O Tera agora convence todo mundo', piada: 'O Pokémon selvagem via você virar de cristal, aplaudia educadamente e continuava batendo no tipo antigo.',
     secoes: [
       { nome: 'Correções', itens: [

@@ -9,6 +9,7 @@
 // Puro (sem DOM): testado em tests/mapas.test.js.
 import { GENS } from './dados-mapas.js';
 import { REGIOES_INICIAIS } from './dados.js';
+import { MEGAS } from './dados-megas.js';
 import { clamp, fmt } from './util.js';
 
 /* ---- iniciais não aparecem nas rotas ----
@@ -111,6 +112,36 @@ export function sortearDaRota(z, filtro = null, sorte = Math.random) {
   for (const p of pool) { r -= p.p; if (r < 0) return p; }
   return pool[pool.length - 1];
 }
+/* ---- o id que representa uma espécie no registro (`registro.ids`) ----
+   Bug relatado em jogo (#62, 26/09/2026): a tela de desbloqueios do Roguelike mostrava "Alakazam #10037" com o
+   sprite da MEGA. `batalha.win()` gravava `E.id`, que vira o id da forma Mega enquanto ela está ativa, e o
+   inimigo nunca passa por `desfazerMega`. Isso foi corrigido em 27/09 — mas só pra frente: quem já tinha o id
+   errado na carreira continuava vendo a Mega pra sempre, porque o progresso da conta NUNCA ENCOLHE.
+   A correção aqui é de LEITURA, não do dado: nada é apagado nem reescrito no save. Quem mostra o sprite pergunta
+   qual id representa a espécie, e só quando o id guardado é EXATAMENTE uma forma Mega daquela espécie ele é
+   trocado pelo id nacional.
+   ⚠️ Por que casar contra `MEGAS` e não por faixa de id: as 57 FORMAS REGIONAIS do jogo são gravadas sob a
+   espécie base com o id da forma (`{ id: 10100, n: 'raichu', f: 'raichu-alola' }`), e esse id é o CERTO — é o
+   sprite do Raichu de Alola que tem de aparecer ali. Qualquer regra do tipo "id >= 10000 está errado" apagaria
+   as 57 (o usuário vetou essa ideia justamente por isso). Nenhuma forma regional colide com um id de Mega da
+   mesma espécie — as Megas do Raichu são 10304/10305 —, e tests/mapas.test.js trava isso pra sempre, porque os
+   dois arquivos de dados são GERADOS e podem mudar. */
+let idsBase = null;
+function indiceDeIdBase() {
+  if (idsBase) return idsBase;
+  idsBase = new Map();
+  // TODAS as rotas, inclusive o Santuário (`posVitoria`) e os míticos: aqui não se filtra conteúdo de jornada,
+  // só se quer saber o id nacional de cada espécie — as 1025 estão nos pools.
+  for (const g of GENS) for (const z of g.rotas || []) for (const p of z.pool || [])
+    if (!p.f && !idsBase.has(p.n)) idsBase.set(p.n, p.id);
+  return idsBase;
+}
+export const idBaseDaEspecie = nome => indiceDeIdBase().get(nome) ?? null;
+export function idDaEspecieNoRegistro(especie, id) {
+  if (!id || !MEGAS[especie]?.some(f => f.id === id)) return id || null;   // inclusive as formas regionais: passam intactas
+  return idBaseDaEspecie(especie) ?? id;                                    // sem id base conhecido, fica como estava
+}
+
 /* Todas as espécies do mapa (qualquer rota da Gen), sem repetir e sem míticos. É de onde os treinadores tiram parte
    da equipe: um treinador ANDA — ele estar na Rota 3 não quer dizer que criou só bicho da Rota 3. A rota dá o nível,
    não a lista de espécies. */

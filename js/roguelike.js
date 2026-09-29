@@ -5,6 +5,7 @@
 // Só jornadas Roguelike contam (não dá pra farmar no Fácil). A jornada em andamento conta quando termina.
 // Puro: recebe a lista de jornadas da carreira, devolve dados. Testado em tests/roguelike.test.js.
 import { DESBLOQUEIO, INICIAIS } from './dados.js';
+import { idDaEspecieNoRegistro } from './mapas.js';
 
 export const MODO_ROGUELIKE = 'roguelike';
 
@@ -22,7 +23,9 @@ export function progressoRoguelike(jornadas) {
   const especies = new Set(Object.values(soma).flatMap(o => Object.keys(o)));
   const out = [];
   for (const especie of especies) {
-    const id = ids[especie] || null;
+    // o id da forma Mega já vazou pro registro antes de 27/09/2026 (relato #62): corrigido na LEITURA, sem
+    // mexer no que está gravado — forma regional (raichu-alola e cia.) passa intacta (mapas.idDaEspecieNoRegistro)
+    const id = idDaEspecieNoRegistro(especie, ids[especie]);
     if (id && INICIAIS.includes(id)) continue;
     const derrotados = soma.derrotados[especie] || 0, amigos = soma.amigos[especie] || 0, evolucoes = soma.evolucoes[especie] || 0;
     const shinies = soma.shiniesAmigos[especie] || 0;   // recrutou um shiny daquela espécie

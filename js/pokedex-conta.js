@@ -4,6 +4,7 @@
    `derrotados`, `amigos` (recrutou) e `ids` (id da espécie, pro sprite). Aqui só se junta tudo por espécie.
    Puro: sem DOM e sem rede — testado em tests/pokedex-conta.test.js. Quem desenha é tela-pokedex.js. */
 import { GENS } from './dados-mapas.js';
+import { idDaEspecieNoRegistro } from './mapas.js';
 
 // lendários de todos os mapas, pelo nome: é o que a badge `Amizade impossível` mede (recrutar um lendário)
 const LENDARIOS = new Set(GENS.flatMap(g => g.rotas.flatMap(z => (z.lendarios || []).map(l => l.nome.toLowerCase().replace(/ /g, '-')))));
@@ -29,7 +30,7 @@ export function pokedexDaConta(jornadas, registroAtual) {
     }
     for (const [especie, id] of Object.entries(r.ids || {})) {
       const e = porNome[especie] ||= { especie, id: null, vistos: 0, derrotados: 0, amigos: 0, shiniesAmigos: 0 };
-      if (!e.id) e.id = id;
+      if (!e.id) e.id = idDaEspecieNoRegistro(especie, id);   // id de Mega vazado (relato #62) vira o da espécie
     }
   }
   const porId = new Map();

@@ -4,6 +4,7 @@
 // contadores) é o que deixa juntar local + nuvem de vários aparelhos sem contar nada em dobro (mesclarJornadas).
 // Puro + localStorage via `store` (que é no-op no Node) — testado em tests/carreira.test.js.
 import { store } from './util.js';
+import { idDaEspecieNoRegistro } from './mapas.js';
 import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, runsDeNivelDe, especiesDesbloqueadas, registrarEventoVencido, saldoArenaDisponivel, gastarSaldoArena } from './progresso-conta.js';
 import { desbloqueadas } from './roguelike.js';
 import { entradaDoHall, registrarNoHall, listaDoHall } from './hall.js';
@@ -95,7 +96,9 @@ export function calcularCarreira(jornadas) {
     const r = j.registro || {};
     for (const k of [...Object.keys(r.vistos || {}), ...Object.keys(r.derrotados || {})]) vistos.add(k);
     for (const k of Object.keys(r.amigos || {})) amigos.add(k);
-    Object.assign(ids, r.ids || {});
+    // idDaEspecieNoRegistro: id de forma Mega vazado pro registro antes de 27/09/2026 (relato #62) vira o da
+    // espécie na hora de MOSTRAR; forma regional continua com o id dela
+    for (const [e, id] of Object.entries(r.ids || {})) ids[e] = idDaEspecieNoRegistro(e, id);
     const pe = (porEspecie[j.especie] ||= { jornadas: 0, melhor: null });
     pe.jornadas++;
     if (!pe.melhor || (j.pontuacao || 0) > (pe.melhor.pontuacao || 0)) pe.melhor = j;

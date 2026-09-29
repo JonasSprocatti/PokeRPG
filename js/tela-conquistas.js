@@ -9,6 +9,7 @@ import { barraTelas } from './navegacao.js';
 import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta, badgesDaCarreira } from './carreira.js';
 import { vantagensDe } from './badges.js';
 import { MEGAS, megasDe } from './dados-megas.js';
+import { idDaEspecieNoRegistro } from './mapas.js';
 import { rastreada, rastrear, pararDeRastrear } from './rastreio.js';
 
 /* Clique no 📌 (main.js). Fixar de novo o que já está fixado desfixa — é UMA por jornada, então o botão é um
@@ -189,6 +190,6 @@ function secaoEspecies() {
 
 // sprite da espécie, quando a carreira souber o id dela (registro.ids guarda isso desde sempre)
 function spriteDaEspecie(jornadas, especie) {
-  for (const j of jornadas) { const id = j.registro?.ids?.[especie]; if (id) return SPR(id); }
+  for (const j of jornadas) { const id = idDaEspecieNoRegistro(especie, j.registro?.ids?.[especie]); if (id) return SPR(id); }
   return null;
 }
