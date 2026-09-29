@@ -1,9 +1,9 @@
 /* ============ conteúdo das páginas estáticas do site ============ */
-/* Texto das páginas que existem FORA do jogo (sobre, guia, termos, contato). Elas são o "conteúdo próprio" que
+/* Texto das páginas que existem FORA do jogo (sobre, termos, contato). Elas são o "conteúdo próprio" que
    a revisão do Google AdSense procura — e, independentemente disso, são a única parte do projeto que um
    buscador consegue ler, já que o jogo inteiro é montado em JavaScript dentro de uma <div> vazia.
-   A Política de Privacidade NÃO está aqui: o texto dela é compartilhado com a tela de dentro do jogo e mora em
-   js/texto-privacidade.js.
+   Dois textos NÃO estão aqui: a Política de Privacidade (compartilhada com a tela de dentro do jogo, em
+   js/texto-privacidade.js) e o guia, que virou seis capítulos e mora em ferramentas/conteudo-guia.mjs.
    Fica em ferramentas/ de propósito: é conteúdo longo que só o gerador lê, e não faz sentido todo jogador
    baixar junto com o jogo.
    Depois de mexer: `node ferramentas/gerar-paginas.mjs`. */
@@ -21,6 +21,8 @@ export const SOBRE = `
   <p>Essa inversão muda tudo de lugar. Curar não é abrir a mochila e usar um item em outro: é você buscando um
     Centro Pokémon. Ficar mais forte não é distribuir experiência entre seis: é a sua curva de nível. Ter
     companhia não é capturar: é oferecer comida a alguém e torcer pra ganhar confiança.</p>
+  <p>As regras disso tudo estão no <a href="guia.html">guia do jogo</a>, em seis capítulos — de como começar
+    até o que sobrevive quando a sua jornada acaba.</p>
 
   <h2>Como funciona por dentro</h2>
   <p>O jogo usa as fórmulas dos jogos originais, não aproximações: stats calculados a partir dos valores-base
@@ -42,67 +44,6 @@ export const SOBRE = `
 
   <h2>Aviso</h2>
   <p class="small muted">${AVISO_MARCA}</p>`;
-
-export const GUIA = `
-  <p class="lead">O que você precisa saber pra jogar bem. Esta página é uma visão geral; dentro do jogo, a tela
-    ❓ Tutorial dá um tour guiado e interativo pelas mesmas coisas.</p>
-
-  <h2>Escolher a dificuldade</h2>
-  <p>A dificuldade não muda só o quanto o inimigo bate — ela muda as regras do que acontece quando você perde.</p>
-  <ul>
-    <li><b>Roguelike</b> (o padrão): desmaiar três vezes encerra a jornada de vez, mas cada jornada terminada
-      desbloqueia coisas pra próxima. Ser capturado também acaba com a run. É o modo que dá mais pontos.</li>
-    <li><b>Fácil</b>: você nunca é capturado, o Centro Pokémon é de graça e você escolhe tudo. Pra conhecer o jogo.</li>
-    <li><b>Médio</b>: o Centro cobra, com desconto que cresce a cada vitória.</li>
-    <li><b>Difícil</b>: ser capturado te faz fugir sem a mochila e com metade do dinheiro.</li>
-    <li><b>Hardcore</b>: ser capturado é fim de jogo, ponto.</li>
-    <li><b>Randomizer</b>: até a sua espécie é sorteada.</li>
-  </ul>
-
-  <h2>O mundo</h2>
-  <p>Cada região tem dez rotas mais um Santuário. As rotas liberam por nível, e cada uma tem a própria lista de
-    espécies com taxas de aparição diferentes — encontrar dez de cada revela a Pokédex daquela rota.</p>
-  <p>Das rotas 1 a 9, cada uma guarda um <b>Alfa</b>: um exemplar da espécie local com valores individuais
-    perfeitos e atributos inflados, que dá um prêmio na primeira vitória. A décima rota tem os lendários da
-    região; vencê-los conclui o mapa e abre o próximo. O <b>Santuário</b> é a décima primeira área, liberada só
-    depois disso, e sorteia entre TODAS as espécies da região — é o que garante completar a Pokédex.</p>
-  <p>No Roguelike existe um limite de moagem: depois que você passa muito do nível previsto pra uma rota, ela
-    para de gerar encontros. A Pokédex dela continua valendo.</p>
-
-  <h2>A batalha</h2>
-  <p>Cada turno você ataca, usa um item, tenta fugir ou oferece comida. A ordem das ações sai da velocidade —
-    ajustada por estágios, por condição de status e pelo clima, então um Pokémon de Fogo sob chuva não é o mesmo
-    Pokémon.</p>
-  <p><b>Clima e terreno</b> duram cinco turnos e valem pros dois lados; o terreno só afeta quem está com os pés
-    no chão. Cada lado do campo tem o próprio conjunto de telas de proteção, salvaguardas e armadilhas.</p>
-  <p><b>Aliados</b>: oferecendo o petisco certo a um Pokémon selvagem, ele pode decidir andar com você. Cabem
-    dois, eles agem no turno junto com você e aceitam ordens — atacar livre, focar no mais fraco, priorizar
-    status ou ficar parado.</p>
-  <p>A inteligência do inimigo tem degraus. Um selvagem só pensa em dano bruto; um treinador já considera status
-    e cura; um Alfa, um lendário ou um chefe considera tudo.</p>
-
-  <h2>As quatro transformações</h2>
-  <p>Mega Evolução, Terastalização, Movimento Z e Gigantamax estão todas no jogo, uma por batalha, e nenhuma
-    gasta o seu turno (o Movimento Z <b>é</b> o turno). Elas não se conquistam dentro de uma jornada: são
-    conquistas da sua carreira, ou seja, você as ganha jogando e as leva pras jornadas seguintes. O inimigo
-    também usa, então tomar uma Mega na cara é questão de tempo.</p>
-
-  <h2>Progresso que sobrevive à jornada</h2>
-  <p>Quando uma jornada acaba — por vitória, derrota ou desistência — ela vira pontuação e entra na sua
-    <b>carreira</b>. A carreira nunca diminui: acumula espécies descobertas, conquistas, medalhas que dão
-    vantagem na próxima jornada e, nos modos elegíveis, um lugar no Hall da Fama. Com conta criada, tudo isso
-    sincroniza entre aparelhos e aparece no ranking.</p>
-
-  <h2>Jogar com outras pessoas</h2>
-  <p>Salas por código de quatro caracteres, até seis jogadores, sem precisar de login. Dá pra jogar em
-    cooperação na jornada de quem abriu a sala, em PvP de time contra time, ou juntar gente pra enfrentar o
-    chefe da semana numa raide com os Pokémon do seu Hall da Fama. Você pode entrar com o Pokémon da sua jornada,
-    como convidado de nível 5 ou com um time do Hall — e o jogo equilibra os níveis pra luta fazer sentido.</p>
-
-  <h2>Uma dica que não é óbvia</h2>
-  <p>Fugir é uma jogada legítima e quase sempre subestimada. A chance de escapar depende da velocidade e de
-    quantas vezes você já tentou, e um encontro perdido custa muito menos que uma jornada perdida — sobretudo
-    nos modos em que desmaiar tem preço definitivo.</p>`;
 
 export const TERMOS = `
   <p class="lead">Regras de uso do PokéRPG, em português claro.</p>

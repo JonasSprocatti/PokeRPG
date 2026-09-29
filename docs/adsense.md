@@ -33,11 +33,19 @@ carrega. Um banner de cookies próprio (`js/ads.js`) e a tela 🔒 Privacidade j
 
 ## O que já foi feito (29/09/2026)
 
-- **A2, a maior parte**: `sobre.html`, `guia.html`, `privacidade.html`, `termos.html` e
+- **A2, inteiro**: `sobre.html`, `guia.html`, `privacidade.html`, `termos.html` e
   `contato.html`, com URL própria, `<title>`/`description`/`canonical` distintos, mais
   `robots.txt` e `sitemap.xml`. Geradas por `ferramentas/gerar-paginas.mjs`; o texto sai de
   `js/site.js`, `js/texto-privacidade.js` e `ferramentas/conteudo-site.mjs`.
   `tests/paginas.test.js` falha se o publicado sair de sincronia com a fonte.
+- **O guia por tema** (o "conteúdo próprio de verdade" do A2): **seis capítulos** com URL
+  própria — `guia-comecar`, `guia-batalha`, `guia-mundo`, `guia-transformacoes`,
+  `guia-progresso`, `guia-multiplayer` —, cada um com `description` e `canonical` seus, mais o
+  índice em `guia.html` e navegação cruzada no pé de cada capítulo. A lista mora em
+  `CAPITULOS_GUIA` (`js/site.js`) e o texto em `ferramentas/conteudo-guia.mjs`; os capítulos
+  ficam **fora do rodapé** (`noRodape`) pra não afogar os links legais, que são o motivo do
+  rodapé existir. Total: 11 páginas estáticas, ~50 KB de texto escrito à mão, tudo no sitemap.
+  Onde os slots de anúncio devem entrar quando chegar a hora (D): **aqui**, não na tela de jogo.
 - **Rodapé** com os links legais em toda tela (`rodapeHTML()` em `js/site.js`, usado pelas
   páginas e injetado no jogo por `main.js`). Some em batalha, por CSS.
 - **B, inteiro**: política reescrita — data de atualização, IndexedDB, o que os outros veem no
@@ -54,20 +62,23 @@ carrega. Um banner de cookies próprio (`js/ads.js`) e a tela 🔒 Privacidade j
   servindo o mesmo site, então sem `canonical` os dois competiriam).
 - **E-mail de contato** criado e ativo.
 
-**Falta**: o guia por tema (A2), a CMP (A3), fontes locais (B), o snippet com Consent Mode e o
-posicionamento dos slots (D).
+**Falta**: a CMP (A3), fontes locais (B), o snippet com Consent Mode e o posicionamento dos
+slots (D).
 
-**Ordem combinada com o usuário (29/09/2026)**: verificar a propriedade agora pelo `ads.txt`,
-**escrever o guia por tema**, só então acrescentar o snippet e clicar em "Pedir revisão". Motivo:
-"conteúdo escasso" é o motivo nº 1 de reprovação e há espera entre tentativas — não vale gastar a
-primeira com cinco páginas.
+**Ordem combinada com o usuário (29/09/2026)**: verificar a propriedade pelo `ads.txt`,
+~~escrever o guia por tema~~ ✔, só então acrescentar o snippet e clicar em "Pedir revisão".
+Motivo: "conteúdo escasso" é o motivo nº 1 de reprovação e há espera entre tentativas — não vale
+gastar a primeira com cinco páginas. **Agora a próxima etapa é o snippet + os slots (D).**
 
 ---
 
 ## Veredito curto
 
+*(Veredito do levantamento original, mantido pra registro — o item (1) já foi resolvido pelas
+páginas estáticas e pelo guia; ver "O que já foi feito" acima.)*
+
 Pedir a revisão hoje é reprovação quase certa, por três motivos independentes:
-**(1)** o site é uma URL só, sem conteúdo em texto que o revisor consiga ler;
+**(1)** ~~o site é uma URL só, sem conteúdo em texto que o revisor consiga ler~~;
 **(2)** o banner de consentimento caseiro não vale como CMP certificada;
 **(3)** o conteúdo é inteiramente derivado de uma marca de terceiros — e esse é o item que
 não se resolve com código.

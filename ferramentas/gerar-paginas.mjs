@@ -1,6 +1,8 @@
 /* ============ gerador das páginas estáticas do site ============ */
-/* Escreve na raiz do projeto: sobre.html, guia.html, privacidade.html, termos.html, contato.html, sitemap.xml.
-   Rode depois de mexer em ferramentas/conteudo-site.mjs, js/texto-privacidade.js ou js/site.js:
+/* Escreve na raiz do projeto: sobre.html, guia.html, os seis capítulos do guia (guia-*.html),
+   privacidade.html, termos.html, contato.html e sitemap.xml.
+   Rode depois de mexer em ferramentas/conteudo-site.mjs, ferramentas/conteudo-guia.mjs,
+   js/texto-privacidade.js ou js/site.js:
 
        node ferramentas/gerar-paginas.mjs
 
@@ -16,10 +18,11 @@ import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { PAGINAS, URL_SITE, rodapeHTML } from '../js/site.js';
 import { TEXTO_PRIVACIDADE } from '../js/texto-privacidade.js';
-import { SOBRE, GUIA, TERMOS, CONTATO } from './conteudo-site.mjs';
+import { SOBRE, TERMOS, CONTATO } from './conteudo-site.mjs';
+import { GUIA, CORPO_GUIA } from './conteudo-guia.mjs';
 
 const RAIZ = new URL('../', import.meta.url);
-const CORPO = { sobre: SOBRE, guia: GUIA, privacidade: TEXTO_PRIVACIDADE, termos: TERMOS, contato: CONTATO };
+const CORPO = { sobre: SOBRE, guia: GUIA, ...CORPO_GUIA, privacidade: TEXTO_PRIVACIDADE, termos: TERMOS, contato: CONTATO };
 
 function pagina({ slug, titulo, descricao }) {
   return `<!doctype html>
@@ -73,7 +76,7 @@ ${urls.map(u => `  <url><loc>${u.loc}</loc><priority>${u.prio}</priority></url>`
 export function gerar() {
   const escritos = [];
   for (const p of PAGINAS) {
-    if (!CORPO[p.slug]) throw new Error(`sem conteúdo pra "${p.slug}" — acrescente em ferramentas/conteudo-site.mjs e no mapa CORPO`);
+    if (!CORPO[p.slug]) throw new Error(`sem conteúdo pra "${p.slug}" — acrescente em ferramentas/conteudo-site.mjs (ou -guia.mjs) e no mapa CORPO`);
     writeFileSync(new URL(`${p.slug}.html`, RAIZ), pagina(p));
     escritos.push(`${p.slug}.html`);
   }

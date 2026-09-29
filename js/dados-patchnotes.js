@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.23', data: '2026-09-29', titulo: 'O jogo ganhou um guia de verdade', piada: 'Até agora, a documentação oficial era um amigo seu dizendo "acho que é assim".',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'O <b>Guia</b> deixou de ser uma página só e virou <b>seis capítulos</b>, cada um com endereço próprio (dá pra mandar o link do tema certo pra quem está começando): <b>Como começar</b>, <b>A batalha</b>, <b>Mundo e rotas</b>, <b>Transformações</b>, <b>Progresso</b> e <b>Multiplayer</b>. Chega-se a ele pelo rodapé de qualquer tela.',
+        'Ele explica o que o jogo nunca teve espaço pra explicar: como a ordem do turno é decidida de verdade, por que clima e terreno mudam tanto uma luta, o que a Pokédex da rota está te dizendo, como cada uma das quatro transformações é conquistada, e — a parte que mais gente descobre tarde — <b>o que continua valendo depois de uma jornada perdida</b>.',
+        'Também responde o que costuma aparecer em 🐞 Bugs e sugestões: por que uma luta de multiplayer às vezes não dá XP (a resposta é "nível real"), por que uma rota parou de dar encontros e pra que serve o saldo que sobra de cada jornada.',
+        'Os capítulos se ligam entre si e ao índice, então dá pra ler em ordem ou pular direto pro assunto — e ficam guardados junto com o jogo, ou seja, <b>funcionam sem internet</b>, como o resto.'
+      ] }
+    ] },
   { versao: '2.22', data: '2026-09-29', titulo: 'O jogo ganhou as páginas que todo site tem', piada: 'A política de privacidade existia, mas morava numa tela que só aparecia se você já estivesse dentro. Como um aviso de incêndio trancado por dentro do prédio.',
     secoes: [
       { nome: 'Novidades', itens: [

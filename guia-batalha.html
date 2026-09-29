@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guia: a batalha — PokéRPG</title>
+<meta name="description" content="Como funciona a batalha do PokéRPG: ordem do turno, dano e tipos, status, estágios de atributo, clima, terreno, telas, armadilhas, aliados e a inteligência do inimigo.">
+<link rel="canonical" href="https://www.pokerpg.com.br/guia-batalha.html">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+<meta name="theme-color" content="#161A33">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="PokéRPG">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Guia: a batalha — PokéRPG">
+<meta property="og:description" content="Como funciona a batalha do PokéRPG: ordem do turno, dano e tipos, status, estágios de atributo, clima, terreno, telas, armadilhas, aliados e a inteligência do inimigo.">
+<meta property="og:image" content="https://www.pokerpg.com.br/img/og-imagem.png">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para o jogo"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>RPG de texto</small></div>
+  <div class="top-r"><a class="btn" href="./">▶ Jogar</a></div>
+</header>
+<div id="app">
+<main class="create pagina">
+  <h1>Guia: a batalha.</h1>
+  <p class="small"><a href="guia.html">← Guia do PokéRPG</a></p>
+
+  <p class="lead">A batalha é o coração do jogo e usa as contas dos jogos originais. Este capítulo explica o
+    que decide um turno — e o que você pode fazer a respeito.</p>
+
+  <h2>O turno</h2>
+  <p>A cada rodada você escolhe uma ação: <b>atacar</b>, <b>usar um item</b>, <b>oferecer um petisco</b> ou
+    <b>fugir</b>. Todo mundo em campo age no mesmo turno, e a ordem sai assim:</p>
+  <ol>
+    <li><b>Prioridade do golpe</b> — um golpe rápido passa na frente de qualquer velocidade.</li>
+    <li><b>Efeitos que furam a fila</b> — a Garra Rápida (e habilidades parecidas) dão chance de agir primeiro
+      dentro da mesma prioridade; outros itens e habilidades fazem o contrário.</li>
+    <li><b>Velocidade</b> — já ajustada por estágios, por paralisia e <b>pelo clima</b>. É por isso que um
+      Pokémon de Água sob chuva não é o mesmo Pokémon.</li>
+  </ol>
+
+  <h2>Dano, tipos e crítico</h2>
+  <p>O dano usa a fórmula dos jogos: poder do golpe, o seu atributo de ataque contra a defesa do alvo, o nível,
+    o bônus de golpe do mesmo tipo, a tabela de efetividade, uma variação aleatória pequena e o crítico. Duas
+    consequências práticas:</p>
+  <ul>
+    <li><b>Tipo pesa mais que poder.</b> Um golpe fraco super efetivo quase sempre bate mais que um forte
+      neutro — e um golpe do tipo errado pode simplesmente não afetar o alvo.</li>
+    <li><b>Físico e especial usam atributos diferentes.</b> Um golpe especial numa espécie de ataque físico é
+      desperdício de um dos seus quatro espaços.</li>
+  </ul>
+
+  <h2>Estágios de atributo</h2>
+  <p>Ataque, Defesa, At. Especial, Def. Especial, Velocidade, precisão e evasão sobem e descem em estágios, de
+    -6 a +6. Dois estágios de ataque dobram o seu dano; dois de defesa no inimigo cortam esse dano pela metade.
+    Os estágios valem só naquela batalha, e existem habilidades que impedem que os seus caiam.</p>
+
+  <h2>Status</h2>
+  <ul>
+    <li><b>Queimado</b>: dano por turno e metade do ataque físico.</li>
+    <li><b>Envenenado</b> (e veneno grave, que piora a cada turno): dano por turno.</li>
+    <li><b>Paralisado</b>: velocidade muito menor e chance de perder o turno.</li>
+    <li><b>Dormindo</b> e <b>congelado</b>: você não age até acordar ou descongelar.</li>
+    <li><b>Confuso</b>: chance de se acertar em vez de acertar o alvo.</li>
+  </ul>
+  <p>Cada tipo é imune ao status "dele" — não existe Pokémon de Fogo queimado nem Elétrico paralisado — e
+    várias habilidades dão imunidade a mais. Status é a jogada mais subestimada do jogo: veneno num inimigo de
+    HP alto ganha a luta sozinho.</p>
+
+  <h2>Clima</h2>
+  <p>Cinco climas, cinco turnos cada, mostrados no topo da luta com os turnos restantes. Valem pros dois
+    lados:</p>
+  <ul>
+    <li><b>☀ Sol forte</b>: Fogo mais forte, Água mais fraca, Solar Beam sem carregar.</li>
+    <li><b>🌧 Chuva</b>: Água mais forte, Fogo mais fraco, Thunder não erra.</li>
+    <li><b>🏜 Tempestade de areia</b> e <b>🧊 Granizo</b>: dano por turno em quem não é do tipo protegido.</li>
+    <li><b>❄ Neve</b>: defesa maior pros Pokémon de Gelo, Blizzard não erra.</li>
+  </ul>
+  <p>Climas entram por golpe, por habilidade de quem acabou de aparecer — ou já vêm com a rota: várias rotas
+    têm tempo permanente (neve nas geladas, areia nos desertos, sol nos vulcões). Um golpe troca por cinco
+    turnos e depois a rota volta ao padrão dela.</p>
+
+  <h2>Terreno</h2>
+  <p>Quatro terrenos, cinco turnos, e uma regra que decide tudo: <b>só afeta quem está no chão</b> — quem voa
+    ou levita fica de fora, inclusive da parte boa.</p>
+  <ul>
+    <li><b>⚡ Campo Elétrico</b>: golpes Elétricos mais fortes e ninguém dorme.</li>
+    <li><b>🌿 Campo de Grama</b>: golpes de Planta mais fortes e cura por turno.</li>
+    <li><b>🔮 Campo Psíquico</b>: golpes Psíquicos mais fortes e golpes de prioridade não passam.</li>
+    <li><b>🌫 Campo de Névoa</b>: dano de Dragão pela metade e nenhum status pega.</li>
+  </ul>
+
+  <h2>O seu lado do campo</h2>
+  <p>Cada lado tem os próprios efeitos, mostrados no alto da luta:</p>
+  <ul>
+    <li><b>Telas</b>: Reflect corta dano físico, Light Screen corta especial, Aurora Veil corta os dois (só no
+      granizo ou na neve).</li>
+    <li><b>Proteções</b>: Safeguard barra status vindo do inimigo, Mist impede que ele baixe seus atributos,
+      Tailwind dobra a sua velocidade por quatro turnos.</li>
+    <li><b>Armadilhas</b>: Stealth Rock, Spikes e Toxic Spikes machucam <b>quem entra em campo</b> — os
+      Pokémon de um treinador e a fila de lendários. Como você nunca troca de Pokémon, o jogo avisa quando uma
+      armadilha não teria em quem pegar, em vez de fingir que funcionou.</li>
+  </ul>
+
+  <h2>Habilidades e itens segurados</h2>
+  <p>Mais de duzentas habilidades têm efeito de verdade, e a ficha marca as que estão ativas. Elas mudam a
+    batalha inteira: absorvem um tipo, devolvem dano no contato, sobem um atributo ao entrar em campo, curam
+    status, mudam o clima.</p>
+  <p>Cada Pokémon da equipe pode segurar <b>um item</b>, que age sozinho — Restos curando por turno, Orbe da
+    Vida trocando o seu HP por dano, Faixa de Foco salvando você com 1 de HP, frutas que se comem na hora do
+    aperto, e os itens Escolha, que dão 50% num atributo mas travam o primeiro golpe usado.</p>
+
+  <h2>Aliados</h2>
+  <p>Ofereça em batalha um petisco que o tipo de um Pokémon selvagem goste e, com a amizade cheia, ele passa a
+    andar com você. Cabem <b>dois</b>. Eles agem no mesmo turno, ganham experiência, aprendem golpes e evoluem
+    como você — e aceitam ordens: à vontade, pegar leve (não derruba quem você quer fazer de amigo), só status,
+    não atacar ou descansar. No Roguelike, aliado que desmaia é perdido pra sempre.</p>
+
+  <h2>Como o inimigo pensa</h2>
+  <p>A inteligência do adversário tem degraus. Um <b>selvagem</b> pensa em dano bruto e erra escolhas. Um
+    <b>treinador</b> já considera status que pega e cura na hora certa. Um <b>Alfa</b>, um lendário ou o chefe
+    da semana consideram tudo: clima, telas, seus estágios, o que é imune. Ele também tem itens, habilidades e
+    a transformação dele — o capítulo <a href="guia-transformacoes.html">As quatro transformações</a> conta
+    quando ela vem.</p>
+
+  <h2>Seus quatro golpes</h2>
+  <p>Você carrega quatro golpes e, a cada nível, decide o que esquecer. Dois itens deixam voltar atrás, e
+    valem também pra qualquer aliado: a <b>Escama do Coração</b> faz relembrar um golpe de nível que você
+    deixou passar, e o <b>Disco Técnico</b> ensina um que a espécie só aprende por máquina, tutor ou herança —
+    cada disco usado deixa o próximo mais caro, então montar o conjunto perfeito no fim da jornada custa de
+    verdade.</p>
+
+  <h2>Uma dica que não é óbvia</h2>
+  <p>Antes de atacar, pergunte quanto vale o turno. Subir um atributo, aplicar um status ou pôr uma tela custa
+    um turno e paga em todos os seguintes; um golpe neutro paga uma vez. Em luta longa — Alfa, lendário, chefe
+    — quem gasta o primeiro turno preparando quase sempre ganha.</p>
+
+  <h2>Continuar no guia</h2>
+  <p><b>Próximo capítulo:</b> <a href="guia-mundo.html">Mundo e rotas</a> — Nove regiões, dez rotas cada, Alfas, lendários, o Santuário e quem quer te capturar.</p>
+  <ul class="indice">
+    <li><a href="guia-comecar.html">Como começar</a> <span class="small muted">A dificuldade, a espécie, os primeiros níveis e como o jogo guarda o seu progresso.</span></li>
+    <li><a href="guia-transformacoes.html">Transformações</a> <span class="small muted">Mega, Tera, Movimento Z e Gigantamax: como conquistar e quando usar cada uma.</span></li>
+    <li><a href="guia-progresso.html">Progresso</a> <span class="small muted">Experiência, evoluções, missões e tudo o que sobrevive ao fim de uma jornada.</span></li>
+    <li><a href="guia-multiplayer.html">Multiplayer</a> <span class="small muted">Salas por código, cooperação, PvP, raides e com qual Pokémon entrar.</span></li>
+  </ul>
+</main>
+</div>
+<footer class="rodape-site">
+    <nav aria-label="Páginas do site">
+      <a href="./">Jogar</a>
+      <a href="sobre.html">Sobre</a>
+      <a href="guia.html">Guia</a>
+      <a href="privacidade.html">Privacidade</a>
+      <a href="termos.html">Termos</a>
+      <a href="contato.html">Contato</a>
+      <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <p class="small muted">© 2026 Jonas Sprocatti · <a href="mailto:pokerpg.contato@gmail.com">pokerpg.contato@gmail.com</a></p>
+    <p class="small muted">Pokémon é marca registrada da Nintendo, Creatures Inc. e GAME FREAK inc. Este é um projeto de fã, sem fins lucrativos diretos e sem nenhuma afiliação, patrocínio ou aprovação dessas empresas.</p>
+  </footer>
+</body>
+</html>

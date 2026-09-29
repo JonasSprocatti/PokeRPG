@@ -265,6 +265,13 @@ ul.rel-meus li.arquivado{border-left-color:var(--line)}
 .pagina p,.pagina ul,.pagina ol{max-width:72ch}
 .pagina li{margin:4px 0}
 .pagina a{color:var(--yellow)}
+.pagina h3{font:700 17px var(--display);color:var(--text);margin:24px 0 6px}
+/* Índice do guia (guia.html e o pé de cada capítulo): são links de navegação, não itens de texto corrido, então
+   viram cartão em vez de lista com marcador — num celular o alvo de toque fica do tamanho do cartão. */
+.pagina ul.indice{list-style:none;padding:0;display:grid;gap:10px}
+.pagina ul.indice li{margin:0;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--panel)}
+.pagina ul.indice a{display:block;font:700 18px var(--display);text-decoration:none}
+.pagina ul.indice a:hover{text-decoration:underline}
 /* Nas páginas estáticas não há JS pra tratar clique, então o "▶ Jogar" do topo é um link de verdade usando
    .btn — que foi escrito pra <button> e não traz nem display de bloco nem o sublinhado desligado. */
 a.btn{display:inline-block;text-decoration:none}
