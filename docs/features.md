@@ -10,6 +10,7 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Habilidades: as 7 levas
 - Gimmicks (Mega, Tera, Z-Move, Gigantamax) e as do inimigo/co-op
 - Itens no multiplayer · Reordenar golpes · Vínculo de Batalha
+- A revisão do multiplayer (29/09/2026)
 - Sprites, animações e microinterações
 - Anúncios e privacidade
 
@@ -1420,3 +1421,81 @@ mostrar exatamente quem está atacando, pra ter uma noção das ações".
 - Testes: `numerarRepetidos` e "todo evento tem autor" em `tests/mp-motor.test.js` (com mutação nos dois). A narração
   em si (DOM) foi verificada em jsdom: 10 linhas saindo em ~5,6 s, destaque passando por A2 → A1 → A0 → chefe, nada
   aceso no fim e o destaque sobrevivendo a um redesenho no meio.
+
+---
+
+## A revisão do multiplayer (29/09/2026)
+
+Pedido do usuário: *"revisar e refazer todo o multiplayer, está muito ruim o design atual, quero uma otimização e
+uma evolução no multiplayer, que seja fácil, prático, bom e bonito"*. Era o item "revisão e refatoração completa do
+multiplayer" do backlog. Feito em quatro levas, cada uma commitada e testada em separado.
+
+### O ponto de partida (o que estava errado, medido)
+`multiplayer.js` tinha **1190 linhas** com menu, rede, autoridade do anfitrião, aplicação no save e todo o HTML
+juntos. **Nenhum teste** o cobria — inclusive `aplicarCoop`, que grava XP/HP/dinheiro no save. O lobby era uma pilha
+de seções com `<select>` nativos; a escolha do Pokémon existia em **dois lugares** (menu e lobby, com quatro funções
+quase iguais); a luta eram cartões de 64 px **sem status nem estágios** (dava pra passar a luta envenenado sem ver);
+o prazo do turno era um número em texto. Na rede, o anfitrião publicava a **batalha inteira a cada 4 s** e a cada
+escolha de qualquer jogador, e cada pacote recebido reescrevia `#mp-topo` e `#mp-acoes` por completo.
+
+### Como ficou dividido
+| Arquivo | Papel | DOM | Rede |
+|---|---|---|---|
+| `mp-regras.js` | decisões puras: entrada, quem falta, mochila, "por que não dá pra começar" | não | não |
+| `mp-rede.js` | canal, envio com fila, pulso, presença, diagnóstico | não | sim |
+| `mp-cartao.js` | cartão, placa e a CENA (a Arena importa daqui) | sim | não |
+| `mp-resultado.js` | aplicar o fim da luta no save e descontar a mochila | pouco | não |
+| `mp-telas.js` | todo o HTML | sim | não |
+| `multiplayer.js` | orquestração: entrar/sair, autoridade do anfitrião, ações do `data-act` | — | — |
+
+Três decisões de arquitetura que sustentam isso:
+- **A sala mora em `G.sala`**, não num `let sala` de módulo — é a regra do projeto ("estado compartilhado sempre via
+  `G.*`") e é o que deixa mp-telas/mp-resultado enxergarem a sala sem importar o orquestrador.
+- **A rede nunca importa a tela**: `mp-rede.ligarRender(fn)` recebe o `renderSala` no boot da sala e a rede só chama
+  `redesenhar()`. Sem isso haveria ciclo.
+- **As telas nunca importam as ações**: quem despacha `data-act` é o `main.js`. Por isso `mp-telas` pode ser o penúltimo
+  da cadeia (`mp-regras → mp-rede → mp-cartao → mp-telas → multiplayer`), verificado por `tests/imports.test.js`.
+
+### O que mudou pra quem joga
+- **Menu**: duas portas (criar / entrar com código). A escolha do Pokémon **saiu daqui** — acontece no lobby, onde já
+  se vê o modo e quem chegou. Morreram `escolherEntrada`, `escolherConvidado` e o `hallEscolha` do menu.
+- **Convite**: `📋 código` e `🔗 convite` (link `?sala=XXXX`, montado a partir de `URL_SITE`). O `main.js` lê o
+  parâmetro no boot, limpa a barra de endereço com `replaceState` e entra **depois de `iniciarNuvem()`** (antes disso
+  não há canal pra abrir). Sem `navigator.clipboard` (http, permissão negada), mostra o texto pra copiar na mão.
+- **Espectador** (`entradaTipo: 'espectador'`): `minhasFotos()` devolve `[]`, então a pessoa não entra em lado nenhum;
+  `semMochila()` já a cobria de graça; `todosProntos`/`motivoParaNaoComecar` a ignoram de propósito — senão um
+  espectador segurava a sala inteira.
+- **"Pronto" em todos os modos** (era só da Raide) e **o botão de começar diz por que está apagado**
+  (`motivoParaNaoComecar`, puro e testado): quem falta escolher, qual time está vazio, falta de run pro co-op.
+- **Config em botões-cartão** e **visível pra quem não é anfitrião** (travada). Antes ele não via configuração nenhuma.
+- **Cena de batalha**: `.scene.battle` + `.mon`/`.spr`/`.plate` reaproveitados do single player, em FILAS (até 6×3 não
+  caberia no layout de duas colunas de lá) e encolhendo sozinho (`apertada`/`lotada`). Trouxe de graça o que faltava:
+  **tipos, status e estágios** na placa (`chipsFor`/`badgesDeTipo` viraram exports de `render.js`).
+- **Turno**: barra de prazo (só `style.width`, atualizada pelo relógio — nunca re-render), fichas ✓/⏳ por jogador e
+  `📜 turnos anteriores` (`sala.historico`, últimos `MAX_HISTORICO` = 5, só na memória).
+
+### Otimização de rede e render
+- **`ping`**: broadcast novo e magro (`turno`, `acoesFeitas`, `prazo`) nas batidas do pulso e a cada escolha. O estado
+  completo sai em turno novo, ao sincronizar e a cada `ESTADO_CHEIO_MS` (15 s) como rede de segurança.
+  **Compatível com versão antiga**: um cliente que não conhece `ping` ignora o evento e continua se acertando pelo
+  estado completo periódico — por isso o pulso leve virou um evento NOVO em vez de um `estado` mais magro (mandar
+  `estado` sem `batalha` faria o cliente velho gravar `undefined`).
+- **Render por região** (`pintado.topo`/`pintado.acoes`): se o HTML montado é igual ao que está lá, o DOM não é tocado.
+- **`renderSala` virou transação**: monta as duas partes e só então escreve. Antes, um erro no meio deixava
+  `#mp-topo` novo com `#mp-acoes` velho (o bug do `SPR_SHINY`); o `try/catch` só reportava.
+- **`enviar()` com fila**: uma mensagem por vez, pra seis jogadores agindo juntos não virarem rajada.
+
+### O que ficou de fora (de propósito)
+- **Troca de Pokémon entre jogadores** — o usuário não a marcou nesta leva; segue no backlog.
+- **Roar & cia. em sala**: `ctx.forcarSaida` continua só no single player. Mexeria no `mp-motor`, que está estável e
+  testado, e a refatoração era de arquitetura/telas — misturar as duas coisas na mesma leva seria diagnóstico ruim
+  depois. Os itens de "Travas, IA e troca de Pokémon" continuam valendo.
+- **Animar o HP baixando durante a narração**: continua impossível pelo mesmo motivo de sempre (a foto que chega é o
+  fim do turno). A cena nova não muda isso.
+- **jsdom não virou teste do CI**: o projeto não tem `node_modules` nem build. O smoke mora em
+  `ferramentas/smoke-multiplayer.mjs` e se explica sozinho quando falta o jsdom.
+
+### Como conferir
+`node --test` (653 casos, incluindo `tests/mp-regras.test.js` e `tests/imports.test.js`) e o smoke:
+`JSDOM=/caminho/node_modules/jsdom/lib/api.js node ferramentas/smoke-multiplayer.mjs`. O teste de verdade continua
+sendo duas abas com `python3 -m http.server 3000`.

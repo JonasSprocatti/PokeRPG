@@ -221,7 +221,7 @@ Duram 5 turnos e **só valem para quem está no chão** (Voador e Levitate flutu
 - **📊 Carreira:** Pokémon favorito, Pokédex (quantos já viraram amigos e quantos faltam dos 1025, além dos vistos), shinies, maior quantia de dinheiro, mais missões numa jornada, nível máximo, tempo total e o melhor resultado por espécie.
 
 ### 👥 Multiplayer: co-op e PvP
-Um jogador cria a sala e passa o **código de 4 letras**; até 6 entram com ele. Não precisa de conta. O anfitrião escolhe:
+Um jogador cria a sala e passa o **código de 4 letras** — ou manda o **🔗 link do convite**, que já abre o jogo dentro da sala. Até 6 entram. Não precisa de conta. O anfitrião escolhe:
 - **Modo:**
   - **Co-op:** chama amigos para a sua run. Todos juntos contra selvagens (um por jogador) ou contra o **Alfa** da zona (que aguenta o grupo todo).
   - **PvP:** cada um escolhe o **Time A** ou o **Time B**. Dá para fazer 1×1, 2×2, 3×3, 2×1, 3×2…
@@ -231,16 +231,16 @@ Um jogador cria a sala e passa o **código de 4 letras**; até 6 entram com ele.
   - **PvP:** todos no nível médio da luta, e o time em menor número ganha HP extra.
   - **Desligado:** níveis reais. No co-op os inimigos acompanham o mais forte do grupo, então é mais difícil.
 
-**Com qual Pokémon entrar:** o **da sua run** (a luta conta para ela), um **convidado** ou os **seus Pokémon do Hall da Fama**. O convidado é escolhido entre os iniciais, Pikachu, Eevee e as espécies desbloqueadas no Roguelike (Nv. 5, emprestado só para a sala). A opção do Hall leva de 1 a 3 campeões de jornadas Roguelike/Hardcore já terminadas, no nível de verdade deles — pra jogar (co-op ou PvP) sem precisar de uma run em andamento nem se contentar com um Nv. 5. Os dois são emprestados só para a sala: não mexem em nenhum save e não ganham recompensa. Sem run em andamento, dá para entrar direto com um convidado ou com o Hall da Fama.
+**Com qual Pokémon entrar** (escolhido **dentro da sala**, no lobby, onde você já vê o tipo de luta e quem chegou — dá para trocar de ideia até marcar ✅ Pronto): o **da sua run** (a luta conta para ela), um **convidado**, os **seus Pokémon do Hall da Fama** ou **👁 só assistir**. O convidado é escolhido entre os iniciais, Pikachu, Eevee e as espécies desbloqueadas no Roguelike (Nv. 5, emprestado só para a sala). A opção do Hall leva de 1 a 3 campeões de jornadas Roguelike/Hardcore já terminadas, no nível de verdade deles — pra jogar sem precisar de uma run em andamento nem se contentar com um Nv. 5. Os dois são emprestados só para a sala: não mexem em nenhum save e não ganham recompensa. Quem entra como espectador fica na sala, vê a luta e usa o chat, sem entrar em time nenhum. Pokémon desmaiado não impede de entrar: o **Centro Pokémon** está dentro da sala.
 
-A escolha aparece em **dois lugares**: na tela do Multiplayer, antes de criar ou entrar na sala, **e dentro da própria sala**, no lobby — então dá para trocar entre run, Hall da Fama e convidado a qualquer momento antes da luta começar, sem sair e perder o código.
+**O lobby** mostra o código em destaque (com **📋 copiar código** e **🔗 copiar convite**), um cartão por jogador com o que ele trouxe e **em que pé está** — 👑 anfitrião, ✅ pronto, ⏳ escolhendo, 👁 assistindo. O **✅ Pronto vale em todos os modos**, e quando o botão de começar está apagado ele **diz por quê** (quem ainda está escolhendo, qual time está vazio…).
 
 **Ganhos da run de outra pessoa:** se você lutou no **seu nível real**, **XP, EVs, dinheiro, itens** (35% de chance por vitória) e prêmios de Alfa **voltam com você** para a sua run. Se o Balancear ajustou o seu nível, a luta vale como diversão e não leva ganhos.
 
-Cada um escolhe o golpe e o alvo de cada Pokémon seu. O turno sai quando todos escolherem, ou em 45 segundos, no automático.
+**A luta** acontece numa cena de batalha como a do jogo sozinho: campo ao fundo, sprites grandes (o seu de costas), placa com tipos, HP, status e mudanças de atributo. Cada um escolhe o golpe e o alvo de cada Pokémon seu; o turno sai quando todos escolherem, ou em 45 segundos, no automático — com **barra de tempo**, **fichas de quem já escolheu** (✓ / ⏳) e **📜 turnos anteriores** pra reler o que passou.
 - **Itens**: o item segurado do seu Pokémon (Restos, Orbe da Vida, Faixa de Foco, Sino-Concha, Elmo Rochoso, Vínculo de Batalha…) funciona normalmente em qualquer luta de sala. Também dá para usar um item comum da mochila (Potion, X Attack, curas de status, Éter…) na sua vez — ocupa o turno, sempre em você mesmo (sem escolher aliado). Ambos descontam da sua própria mochila depois da luta.
 - **Co-op:** XP, EVs e dinheiro vão para a jornada de cada um, e o HP e o PP gastos voltam junto. Fora do Roguelike, desmaiar volta com 1 de HP; **no Roguelike, desmaiar conta de verdade**.
-- **Sala firme:** cada mensagem é reenviada se falhar, o anfitrião repete o estado da luta de tempos em tempos e há um botão **🔄 Sincronizar**. Trocar de aba não derruba ninguém, e a sala mostra o estado da conexão com um diagnóstico das últimas mensagens.
+- **Sala firme e leve:** cada mensagem é reenviada se falhar (uma de cada vez), o anfitrião dá um sinal de vida curto de tempos em tempos e reenvia a luta inteira só quando precisa, e há um botão **🔄 Sincronizar**. Trocar de aba não derruba ninguém, a sala mostra o estado da conexão com um diagnóstico das últimas mensagens, e a tela só é redesenhada quando algo muda de verdade (não pisca nem apaga o que você está digitando no chat).
 - **Centro Pokémon na sala:** dá para curar a equipe entre as lutas sem sair.
 - **PvP:** é amistoso. Não gasta HP nem PP, só conta vitórias e derrotas. Dá para **desistir**.
 
@@ -351,7 +351,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/navegacao.js`, `js/ajustes.js`, `js/tela-ajustes.js` | Barra de navegação das telas, escolha de fonte e a tela de ajustes |
 | `js/evolucao.js` | Condições de evolução (pedra, troca, vínculo, hora, golpe…) e as regras equivalentes dos casos raros |
 | `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
-| `js/mp-motor.js`, `js/multiplayer.js` | Motor da batalha multiplayer (puro, testado) e salas |
+| `js/mp-motor.js`, `js/mp-regras.js`, `js/mp-rede.js`, `js/mp-cartao.js`, `js/mp-telas.js`, `js/mp-resultado.js`, `js/multiplayer.js` | Multiplayer: motor do turno e regras da sala (puros, testados), rede, desenho dos Pokémon, telas, resultado no save e a orquestração da sala |
 | `sw.js` | Modo offline |
 | `supabase/` | Banco (`schema.sql`) e passo a passo de configuração |
 | `CLAUDE.md` | Mapa técnico detalhado (para quem mexe no código) |
@@ -397,6 +397,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Roguelike sem segunda chance (permadeath de você e dos aliados)
 - [x] Entrar numa sala com um Pokémon convidado; ganhos da run de outra pessoa voltam com você (no nível real)
 - [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
+- [x] Multiplayer refeito (29/09/2026): convite por link, escolha do Pokémon dentro da sala, espectador, cena de batalha de verdade, barra de tempo, histórico do turno e sala que não pisca mais
 - [x] Motor de golpes único (single player e multiplayer) com mais de 200 habilidades — as parciais (Download, Guard Dog, Sand Force, Effect Spore, Water Bubble, Toxic/Flare Boost, Magic Guard) foram completadas
 - [x] Tela de bugs e sugestões (funciona sem conta e offline), com até 2 imagens de 2 MB
 - [x] 💰 Carteira: dinheiro em pílula no topo (fora do menu ☰), na barra de turno da batalha e na loja, com aviso de +₽/−₽

@@ -10,6 +10,21 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.25', data: '2026-09-29', titulo: 'O multiplayer foi refeito (e a luta em grupo virou uma batalha de verdade)', piada: 'A luta em sala era uma lista de fichinhas de 64 pixels. Acompanhar aquilo era como assistir a um jogo de futebol lendo a tabela de escanteios.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'A <b>luta em sala virou uma cena de verdade</b>: campo ao fundo, sprites grandes (o seu de costas, como manda a tradição), placa de papel com tipos, HP e — finalmente — <b>status e mudanças de atributo</b>. Antes dava pra passar a luta inteira envenenado sem ver isso em lugar nenhum. Com muita gente em campo, tudo encolhe sozinho pra caber.',
+        '<b>🔗 Convite por link</b>: um toque copia um endereço que já entra na sua sala. Quem receber cai direto no lobby, sem digitar nada. O <b>📋 código</b> continua ali, agora em letras garrafais pra ditar sem erro.',
+        '<b>👁 Só assistir</b>: dá pra entrar numa sala sem entrar no time, acompanhar a luta e conversar no chat. Bom pra ver a Raide dos amigos sem atrapalhar.',
+        'O lobby mostra <b>em que pé cada um está</b> — 👑 anfitrião, ✅ pronto, ⏳ escolhendo, 👁 assistindo — e o <b>✅ Pronto passou a valer em todos os modos</b>, não só na Sala de Raide. Quando o botão de começar está apagado, agora ele <b>diz por quê</b>, com nome e tudo.',
+        'Durante o turno: <b>barra de tempo</b> que esvazia (e fica vermelha na reta final), <b>fichas de quem já escolheu</b> no lugar de uma frase com nomes, e <b>📜 turnos anteriores</b>, pra reler o que passou voando.',
+        'Escolher com o que você entra (jornada, Hall da Fama, convidado ou só assistir) agora acontece <b>dentro da sala</b>, onde você já vê o tipo de luta e quem chegou. E <b>Pokémon desmaiado não impede mais de entrar</b>: o Centro Pokémon está ali no lobby.'
+      ] },
+      { nome: 'Correções', itens: [
+        'A sala <b>parou de piscar</b>. O anfitrião mandava a batalha inteira de quatro em quatro segundos e a cada escolha de qualquer um, e cada pacote desses redesenhava a tela toda. Agora o que viaja é um sinal curtinho, e o que não mudou não é redesenhado: menos internet gasta, menos tremedeira, e o que você está digitando no chat fica onde estava.',
+        'Se algo der errado ao desenhar a sala, ela não fica mais <b>meia velha e meia nova</b> contando duas histórias diferentes: ou aparece inteira, ou aparece o erro.'
+      ] }
+    ] },
   { versao: '2.24', data: '2026-09-29', titulo: 'Aquele aviso de cookies apareceu (e ainda não tem anúncio nenhum)', piada: 'O jogo pede permissão pra uma coisa que ainda não faz. É o equivalente a pedir licença antes de entrar num quarto onde você já mora.',
     secoes: [
       { nome: 'Novidades', itens: [
