@@ -326,7 +326,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/dados.js` | Tabelas: tipos, naturezas, itens, missões, dificuldades, iniciais, ordens |
 | `js/mapas.js`, `js/dados-mapas.js` | Mapas por Gen: rotas, taxas de aparição, Alfas, lendários, Pokédex da rota. `dados-mapas.js` é **gerado** da PokéAPI por `ferramentas/gerar-mapas.ps1` (não editar à mão) |
 | `js/golpe.js`, `js/habilidades.js`, `js/especiais.js` | Motor único dos golpes, a tabela de habilidades e a de golpes especiais (Protect, Rest, Explosion, carga/recarga…) |
-| `docs/auditoria-batalha.md` | Auditoria de todos os golpes e habilidades contra o motor: o que funciona, o que é aproximado e o que falta |
+| `docs/auditoria-batalha.md` | Auditoria de golpes e habilidades contra o motor. ⚠️ **Desatualizada** (parou na 2ª leva de habilidades): não reflete nem o total nem o que já está implementado. Para a contagem de verdade, vale `IMPL.size` em `js/habilidades.js` |
 | `js/relatos.js` | Bugs e sugestões |
 | `js/batalha.js`, `js/amizade.js`, `js/progressao.js`, `js/itens.js`, `js/missoes.js`, `js/mundo.js` | Regras narradas do jogo |
 | `js/render.js`, `js/paineis.js`, `js/layout.js` | Tela e painéis modulares |
@@ -351,10 +351,10 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
   1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela — hoje 208 de 314). Ficaram de fora as que não têm como ser fiéis: Regenerator/Natural Cure (agem ao trocar, e você nunca troca), as que ignoram a habilidade do alvo (Mold Breaker e família), Stakeout/Dancer (precisam de um estado de turno que o motor não guarda), Neutralizing Gas (suprimiria toda habilidade em campo) e as formas dinâmicas de espécie única (Ice Face, Gulp Missile, Zen Mode…).
   2. ~~Clima~~ ✔ (sol, chuva, areia, granizo e neve, com as habilidades ligadas a eles).
   3. ~~Terrenos~~ ✔ (elétrico, grama, psíquico e névoa, com as habilidades Surge).
-  4. ~~Itens segurados~~ ✔ (13 itens; faltam os Choice, que travam o golpe, e frutas de aperto por tipo).
+  4. ~~Itens segurados~~ ✔ (46 no total: 21 na loja — incluindo os **Choice**, que travam o golpe, Garra Rápida, Bola de Ferro e Eviolite —, 7 de prêmio de raide, mais Pedra Mega, Cristal Z, Vínculo de Batalha e os 18 Pratos do Arceus). Ainda faltam as **frutas de aperto por tipo** (Occa, Passho e companhia).
   5. ~~IA de inimigo~~ ✔ (escolhe o golpe mais eficaz; selvagem erra mais, Alfa quase não erra).
   6. ~~Golpes de lado do campo~~ ✔ (telas, Safeguard, Mist, Tailwind e as armadilhas de entrada).
-  7. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…). Faltam os de lado do campo (Light Screen, Stealth Rock), os que travam golpes (Taunt, Encore, Disable), os de troca (Roar, Baton Pass) e uma IA de inimigo mais esperta. A lista completa está em `docs/auditoria-batalha.md`.
+  7. **Golpes especiais:** a primeira leva já está feita (proteção, dois turnos, recarga, fúria, nocaute de um golpe, poder variável…) e os de **lado do campo** também (Light Screen, Reflect, Safeguard, Mist, Tailwind, Stealth Rock, Spikes, Toxic Spikes). Faltam os que **travam golpes** (Taunt, Encore, Disable) e uma **IA de inimigo mais esperta**. Os de **troca** (Roar, Whirlwind, Baton Pass) provavelmente não entram: do seu lado ninguém troca de Pokémon, então não teriam o que fazer.
   8. ~~Mecânicas especiais~~ ✔ (Mega Evolução, Terastalização, Z-Move e Gigantamax: no single player, no inimigo e no co-op). As formas **Mega Z** de Absol, Garchomp e Lucario já entram. Ficou de fora só a Mega e a Tera do Alfa **no co-op** (lá só o Alfa com Z). A Tera e o Gigantamax do inimigo só aparecem em rotas de **nível 30+**.
 - [ ] **Mapas por Gen, próximos passos:** missões próprias de cada mapa (hoje as de espécie valem em qualquer mapa, e a trilha de Alfas é só de Kanto) e a luta dos lendários no co-op (hoje é só no single player).
 - [ ] Acabamento: sons, animações e instalação como app (PWA).

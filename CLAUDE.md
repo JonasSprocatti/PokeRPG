@@ -430,7 +430,7 @@ O que sobrou e o que ficou combinado:
   e recebe o prêmio em `premiarEventoMP` só se a SUA run é Roguelike/Hardcore. A insígnia exibida vai no payload de presença (`meuPayload().badge`) e, nas listas persistentes, pelas RPCs `meus_amigos()` e `ranking()` (coluna `badge_exibida`, migração
   `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
   (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
-  `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. **Falta**: os outros chefes e os itens.
+  `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. ~~**Falta**: os outros chefes e os itens.~~ **✅ COMPLETO** (conferido em 29/09/2026 rodando o código: `EVENTOS.length` = 14, `Object.keys(boss.CHEFES).length` = 14, itens com `raide` em `ITEMS` = 10). Os 14 chefes estão em "Os 14 chefes" e os 10 itens em "Itens de raide", as duas seções logo abaixo.
   **⚠️ TEMPORÁRIO (pedido do usuário, beta testers, 28/09/2026): `evento.BETA_SEM_ESPERA = true` remove a espera de
   8h entre tentativas** — Arena, run e sala. Implementado SEM tocar `COOLDOWN_MS`/`esperaRestante` (que continuam
   puros e testados com os números reais): a flag entra só em `evento.ultimaTentativaEfetiva()` (finge "nunca
@@ -849,7 +849,7 @@ Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémo
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.
 
 ### 3. ✅ FEITO — Badges com vantagem permanente
-Implementado em `js/badges.js` (~30 badges numa tabela única, puro, `tests/badges.test.js`) e ligado na criação
+Implementado em `js/badges.js` (53 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 29/09/2026: Tipos 18, Eventos 14, Caçada 4, Coleção/Laços/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2) e ligado na criação
 (`criacao.renderVantagens`, `vantagensDe`) e na tela 🏅 Conquistas. Cada badge é medida do **progresso
 permanente** (nunca do histórico, que o jogador pode apagar — `contextoBadges` monta o `ctx` a partir de
 `progresso-conta.js`) e paga uma vantagem na PRÓXIMA jornada: itens (empilham) e/ou dinheiro inicial (soma),
@@ -875,7 +875,7 @@ agora — as tabelas antigas `PEDRA_DO_TIPO`/`PETISCO_DO_TIPO` saíram. Sem `pri
 **Backlog anotado (28/09/2026): Arceus deveria ser um chefe de raide** — ver "Próximos passos combinados" acima.
 
 ### 4. ✅ FEITO — Mega Evolução
-Tabela gerada em `js/dados-megas.js` (96 formas, 93 espécies — `ferramentas/gerar-megas.ps1`), mecânica em `js/mega.js`.
+Tabela gerada em `js/dados-megas.js` (95 formas, 89 espécies — `ferramentas/gerar-megas.ps1`; 6 espécies têm 2 formas: Charizard e Mewtwo X/Y, e as Mega Z de Absol, Garchomp, Lucario e Raichu. O texto antigo dizia "96 formas, 93 espécies" e contradizia o "89 Megas" mais abaixo neste arquivo — conferido rodando em 29/09/2026), mecânica em `js/mega.js`.
 Decisões fechadas com o usuário: **só o jogador** megaevolui (aliado nunca); **uma por batalha** e **não gasta o turno**;
 **Alfa, lendários e treinadores** também megaevoluem, ao cair a **metade do HP** (`HP_MEGA_INIMIGO`); **Primal**
 (Groudon/Kyogre) entra na mesma mecânica com outro nome. As formas são PRÉ-CARREGADAS em `iniciar()` — buscar no meio
@@ -1256,8 +1256,18 @@ Prioridade 4 (a última) da mesma leva, fechando o ciclo "mais vivo". `render.js
 ### 4b. Mega Evolução (desenho original)
 1.000 golpes finais **sendo a espécie que megaevolui de fato** (Charizard, não Charmander). **Uma missão por Mega**: com X e Y, a tela de Conquistas tem um botão "contar para a X", trocável a qualquer momento, e o que foi acumulado numa não migra pra outra. Desbloqueada, a Pedra **ocupa a vaga de item segurado**. 1× por batalha. As ~30 habilidades que as Megas concedem entram JUNTO, senão metade das Megas nasce inerte.
 
-### Anti-grind: rota esgotada (só no Roguelike)
-Quando o seu nível passa do **dobro do teto da rota**, aquela rota deixa de dar caçada — nada de farmar em rota de nível baixo. Você continua **entrando e vendo a Pokédex dela** (quem vive ali, taxas, Alfa); o que some é o encontro. **Só no Roguelike**: nos outros modos a rota velha continua valendo.
+### ✅ FEITO — Anti-grind: rota esgotada (só no Roguelike)
+(Estava listado aqui como "ainda NÃO implementado" até 29/09/2026, quando conferi rodando: já estava pronto havia
+tempo. Mesmo tipo de nota esquecida que o Gigantamax do inimigo — ver o item de 28/09 em "Decidido com o usuário".)
+
+`regras.rotaEsgotada(z, nivel, dificuldade)` (pura, `tests/regras.test.js`): quando o seu nível passa do limite da
+rota, ela deixa de dar caçada — nada de farmar em rota fraca. Você continua **entrando e vendo a Pokédex dela**
+(quem vive ali, taxas, Alfa); o que some é só o encontro. **Só no Roguelike** (compara a dificuldade direto).
+O limite é `limiteDaRota(z)` = `max(z.max * FATOR_ESGOTADA, z.max + MARGEM_ESGOTADA)` — o **dobro do teto** (2), mas
+com um piso de **+15 níveis**: sem essa margem, a 1ª rota (teto 6) esgotaria no nível 13, cedo demais pra quem
+ainda está montando a equipe. Só muda rotas de teto abaixo de 15; do meio do mapa pra frente o dobro é que manda.
+Lido em `mundo.explore` (bloqueia o encontro) e em `render.js` (o botão vira "✔ Rota esgotada" e a rota explica o
+porquê, em vez de simplesmente não acontecer nada — falha muda vira relato de bug).
 
 ### Outras decisões
 - **XP por Gen fica canônico** (Paldea dá ~20% mais XP por ponto de força que Kanto): é dado da franquia, não erro nosso.
