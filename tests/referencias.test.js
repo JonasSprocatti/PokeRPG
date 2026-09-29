@@ -38,8 +38,11 @@ function declarados(src) {
   /* Qualquer identificador que RECEBE valor também existe. Cobre a lista de declaradores separados por vírgula
      (`const r = x, desc = s => ...`), onde a regra de `const` acima só enxerga o primeiro nome — foi exatamente
      o falso positivo que este teste deu na estreia, acusando `desc()` em main.js. O `(?![=>])` evita confundir
-     com comparação (`x ==`) e com arrow (`x =>`). */
-  for (const m of src.matchAll(/([A-Za-z_$][\w$]*)\s*=(?![=>])/g)) nomes.add(m[1]);
+     com comparação (`x ==`) e com arrow (`x =>`).
+     ⚠️ O `(^|[^.\w$])` no começo é o que separa NOME de PROPRIEDADE, e a falta dele custou um bug em produção
+     (29/09/2026): `G.S.zone = v` em main.js fazia o teste dar `zone` por declarada, e o `case 'caca'` chamava
+     `zone()` sem importar — o botão da Caça Shiny estourava ReferenceError e não fazia nada. */
+  for (const m of src.matchAll(/(^|[^.\w$])([A-Za-z_$][\w$]*)\s*=(?![=>])/g)) nomes.add(m[2]);
   return nomes;
 }
 

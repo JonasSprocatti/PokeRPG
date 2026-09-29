@@ -7,6 +7,41 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (29/09/2026) — o botão da 🎯 Caça Shiny não fazia nada
+
+Relatado **duas vezes** (relatos #63 em 26/09 e #67 em 28/09), com print: "apareceu o botão de caçada shiny,
+pedindo para selecionar um pokemon, porém nada acontece ao clicar". A caixa desenhava certo (9/9 revelados,
+os 9 botões de espécie ali), e clicar não mudava nada.
+
+**A primeira tentativa de correção foi um diagnóstico errado, e por isso o relato voltou.** Em 27/09 (`95e3fbe`)
+uma reprodução em jsdom concluiu que o clique "sempre atualizou o estado e o DOM corretamente" e que o problema
+era só falta de feedback visível — foi adicionado um `toast`. O relato #67 chegou no dia seguinte, com o jogo já
+atualizado. O que aquela reprodução fez foi disparar o clique num botão montado à mão e conferir o handler de
+perto; nunca chegou a **desenhar a tela do jogo inteira e clicar no botão de verdade**. Lição: reprodução que
+não passa pelo caminho completo do jogador pode "passar" e confirmar a hipótese errada.
+
+**Causa raiz**: `main.js`, no `case 'caca'`, chamava `zone()` — e **`main.js` nunca importou `zone`** de
+`estado.js`. Todo clique estourava `ReferenceError: zone is not defined` na primeira linha do case, antes de
+gravar a escolha. O `log`/`toast` de confirmação vinham depois, então nem o "fix" de 27/09 aparecia.
+
+**Por que era invisível**: o handler de clique é `async`. Um `throw` lá dentro não vira erro de JavaScript na
+página — vira uma **promise rejeitada que ninguém pega**. Sem mensagem na tela, sem linha no console: o botão
+apenas não faz nada. É a mesma família de falha silenciosa do resto deste arquivo.
+
+**Por que o teste não pegou**: `tests/referencias.test.js` tem justamente a regra "ajudante exportado por outro
+módulo e chamado aqui tem de estar importado", e ela cobria este caso. Mas o ajudante `declarados()` considerava
+declarado **qualquer identificador que recebe valor**, com a regex `([A-Za-z_$][\w$]*)\s*=`, sem distinguir nome
+de **propriedade**. Em `main.js` existe `G.S.zone = v` (o botão de trocar de rota) — o `zone` daquela linha é uma
+propriedade, mas o teste leu como declaração e liberou o arquivo inteiro. A regex agora exige `(^|[^.\w$])`
+antes do nome. Com isso o teste acusa o bug sozinho, e continua sem nenhum falso positivo na árvore de hoje.
+
+**Corrigido em 3 camadas**: (1) o import que faltava; (2) a regra do teste, que estava furada; (3) o handler de
+clique agora é `aoClicar(e).catch(avisarErro)` — qualquer ação que falhe mostra o erro num toast em vez de
+sumir. A terceira é a que importa a longo prazo: sem ela, o próximo import esquecido também vira "clico e não
+acontece nada".
+
+---
+
 ### ✅ CORRIGIDO (27/09/2026) — shiny do jogador não desbloqueava o início-shiny da espécie
 Relato real: jogador começou (ou recrutou) um Weedle shiny, evoluiu pra Kakuna e depois Beedrill, e nenhuma das
 três espécies desbloqueou "✨ Começar shiny" (`criacao.opcaoShiny`) em jornadas futuras. Causa: `registrar(S,

@@ -1,7 +1,7 @@
 /* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
-import { G, SAVE_KEY, save, nm, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
+import { G, SAVE_KEY, save, nm, zone, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
 import { render, buildGame, spriteItem } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
@@ -42,7 +42,17 @@ import { iniciarAds, definirConsentimento } from './ads.js';
 import { iniciarPresencaGlobal, registrarVisitanteAnonimo, definirPresenca } from './presenca.js';
 
 /* ============ eventos ============ */
-document.addEventListener('click', async e => {
+/* Toda ação da UI passa por este handler, e ele é `async` — ou seja, um erro lá dentro vira uma promise
+   rejeitada que NINGUÉM pega: o botão simplesmente não faz nada, sem erro na tela e sem nada no console.
+   Foi assim que o botão da Caça Shiny ficou quebrado por dias (chamava `zone()` sem ter importado): o jogador
+   relatou duas vezes "clico e não acontece nada" e não havia uma pista sequer pra seguir. `avisarErro`
+   transforma toda falha dessas em erro VISÍVEL — a mesma regra que já vale pro render (CLAUDE.md). */
+function avisarErro(erro) {
+  console.error(erro);
+  toast(`⚠ Esta ação falhou: <b>${esc(erro?.message || String(erro))}</b>. Se continuar, mande pelo 🐞 Relatar.`, 8000);
+}
+document.addEventListener('click', e => { aoClicar(e).catch(avisarErro); });
+async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
@@ -325,7 +335,7 @@ document.addEventListener('click', async e => {
       return telaSaves('Jornada excluída.');
     }
   }
-});
+}
 document.addEventListener('change', e => {
   if (e.target.matches?.('[data-ranking-especie]')) return telaRanking(e.target.value || null);
   if (e.target.matches?.('[data-arena-equipar]')) return arenaEquipar(e.target.dataset.arenaEquipar, e.target.value);

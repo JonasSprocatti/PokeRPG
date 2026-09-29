@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.73', data: '2026-09-29', titulo: 'A caçada finalmente começa', piada: 'O botão da Caça Shiny sabia exatamente em que rota você estava. Só não sabia como perguntar.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>O botão da 🎯 Caça Shiny não fazia nada.</b> Você revelava a rota inteira, a lista de Pokémon aparecia, você clicava — e nada acontecia, nem escolha, nem aviso, nem erro. O clique estourava por dentro e morria em silêncio. Corrigido: escolher (e parar) a caça funciona, e só o escolhido aparece na rota.',
+        'De quebra, <b>ação que falhar agora avisa na tela</b> em vez de fingir que você não clicou. Se algum botão der erro, você vê o motivo — e dá pra mandar pelo 🐞 Relatar com a informação que faltava.'
+      ] }
+    ] },
   { versao: '2.72', data: '2026-09-29', titulo: 'Dá pra ver quem ataca', piada: 'Três Swampert com o mesmo nome atacando ao mesmo tempo: parecia um turno, era uma reunião de condomínio.',
     secoes: [
       { nome: 'Novidades', itens: [
