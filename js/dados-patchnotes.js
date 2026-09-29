@@ -5,6 +5,13 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.66', data: '2026-09-29', titulo: 'Adeus, faixa branca', piada: 'As caixas de texto estavam vestidas de noiva no meio de um jogo roxo. Já trocaram de roupa.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'Caixas de texto e seletores apareciam com o <b>fundo branco padrão do navegador</b> — uma faixa clara no meio da tela escura, e com o texto quase ilegível por cima. Acontecia no "Equipar item" da Sala de Raide, na busca de Pokémon da criação, no campo do chat da sala, no código da sala e no apelido. Agora todo campo do jogo já nasce com a cara do resto.',
+        'A lista de "Equipar item" virou um cartão por Pokémon, no mesmo estilo das outras listas da tela.'
+      ] }
+    ] },
   { versao: '2.65', data: '2026-09-29', titulo: 'Hall da Fama no Multiplayer', piada: 'Um Pokémon shiny aposentado entrou na sala e derrubou a tela inteira. Agora ele só entra e luta, como todo mundo.',
     secoes: [
       { nome: 'Correções', itens: [

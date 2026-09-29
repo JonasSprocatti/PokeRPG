@@ -11,6 +11,23 @@
 html,body{margin:0}
 body{background:var(--ink);color:var(--text);font:16px/1.5 var(--body);min-height:100vh;font-variant-numeric:tabular-nums}
 button,input,select{font:inherit;color:inherit}
+/* Base de TODO campo de texto e seletor do jogo. Sem isso o navegador desenha o padrão DELE (fundo branco) e o
+   `color:inherit` da linha acima põe texto claro em cima do branco — quase ilegível, e uma faixa branca no meio
+   de uma tela escura. Relato do usuário (29/09/2026): "uma faixa branca no meio do colorido", no Equipar item da
+   Sala de Raide e na busca de Pokémon da criação. Antes cada tela estilizava o próprio campo à mão (uma dúzia de
+   regras), então bastava esquecer uma pra nascer branca de novo — a regra abaixo é o piso pra todas, incluindo
+   as telas que ainda nem existem.
+   O `:where()` é o detalhe que faz isto ser PISO e não teto: ele NÃO soma especificidade, então a regra toda
+   pesa (0,0,1) e qualquer regra por classe ganha dela (as ~13 que já existem, tipo `.search input`, seguem
+   mandando na largura/padding delas). Com `:not()` solto pesaria (0,3,1) — MAIS que `.search input` —, e eu
+   teria quebrado justamente os campos que já estavam certos.
+   Caixa de marcar, rádio e botão de arquivo ficam de fora: têm desenho nativo que não se quer sobrescrever. */
+input:where(:not([type=checkbox]):not([type=radio]):not([type=file])),select,textarea{
+  background:var(--panel2);color:var(--text);border:2px solid var(--line);border-radius:10px;padding:9px 12px}
+/* o menu que abre ao tocar num <select>: sem isto, alguns navegadores desenham a lista clara e herdam o texto
+   claro do `color` acima, deixando a opção ilegível no exato momento de escolher */
+select option{background:var(--panel2);color:var(--text)}
+::placeholder{color:var(--muted);opacity:1}
 /* microinteração global (pedido do usuário, 28/09/2026 — "mais vivo"): quase todo clicável do jogo É um
    <button> de verdade (o padrão data-act), então uma transição + um "afundar" no clique aqui cobre botão,
    golpe (.mv), carta de Pokémon (.pick/.hall-card), item da mochila etc. de graça, sem enumerar cada classe. */
@@ -102,7 +119,13 @@ button.link{background:none;border:0;padding:0;font:inherit;color:#b45cff;text-d
 .run-perfil small{display:block}
 .raide-lista{list-style:none;padding:0;margin:6px 0;display:flex;flex-wrap:wrap;gap:8px}
 .raide-lista li{padding:4px 10px;border-radius:999px;border:2px solid var(--line);background:var(--panel2);display:flex;align-items:center;gap:8px}
-.equip-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
+/* "Equipar item": cada Pokémon numa linha só (nome + seletor). Era um flex solto sem moldura, o que deixava o
+   seletor boiando no meio do painel — com o fundo branco padrão do navegador em cima disso, virou "uma faixa
+   branca no meio do colorido" (relato do usuário, 29/09/2026). Agora cada linha é um cartão com a MESMA moldura
+   dos outros da tela (.hall-card / .raide-lista li), e o seletor ocupa o espaço que sobra em vez de esticar. */
+.equip-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding:8px 10px;
+  border:2px solid var(--line);border-radius:12px;background:var(--panel2);font-weight:700}
+.equip-linha select{flex:1;min-width:0;max-width:62%;background:var(--panel);font-weight:400}
 .agenda-evento{margin:12px 0;padding:12px 14px;border-radius:12px;border:2px solid #b45cff;background:var(--panel)}
 .agenda-evento h4{margin:0 0 6px}
 .agenda-aviso{margin:6px 0 10px;padding:8px 10px;border-radius:10px;background:rgba(180,92,255,.18);border:1px solid #b45cff}
