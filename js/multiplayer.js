@@ -183,6 +183,7 @@ async function conectar(codigo, anfitriao) {
     sala.canal = canal;
     canal.on('presence', { event: 'sync' }, aoMudarPresenca)
       .on('broadcast', { event: 'estado' }, ({ payload }) => aoReceberEstado(payload))
+      .on('broadcast', { event: 'ping' }, ({ payload }) => aoReceberPing(payload))   // sinal de vida magro do anfitrião
       .on('broadcast', { event: 'acao' }, ({ payload }) => { if (G.sala?.anfitriao) registrarAcao(payload.de, payload.acao); })
       .on('broadcast', { event: 'chat' }, ({ payload }) => aoReceberChat(payload))
       .on('broadcast', { event: 'fim' }, ({ payload }) => aoReceberFim(payload))
@@ -190,7 +191,7 @@ async function conectar(codigo, anfitriao) {
       .on('broadcast', { event: 'sincronizar' }, () => { // alguém pediu o estado de novo
         if (!G.sala?.anfitriao) return;
         anotar('← pedido de sincronização');
-        if (G.sala.batalha) enviar('estado', pacoteEstado()); else publicarLobby();
+        if (G.sala.batalha) publicarCheio(); else publicarLobby();
       });
     canal.subscribe(async status => {
       anotar('canal: ' + status, !['SUBSCRIBED', 'CLOSED'].includes(status));
@@ -198,7 +199,7 @@ async function conectar(codigo, anfitriao) {
       if (status === 'SUBSCRIBED') {
         G.sala.conexao = 'ok'; G.sala.tentativas = 0;
         await canal.track(meuPayload());
-        if (G.sala.anfitriao) { publicarLobby(); if (G.sala.batalha) enviar('estado', pacoteEstado()); }
+        if (G.sala.anfitriao) { publicarLobby(); if (G.sala.batalha) publicarCheio(); }
         else enviar('sincronizar', { de: meuId() }); // voltei: me manda o que está valendo agora
         renderSala();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -267,7 +268,7 @@ export function sincronizarSala() {
   const sala = G.sala;
   if (!sala) return;
   anotar('🔄 sincronizando');
-  if (sala.anfitriao) { if (sala.batalha) enviar('estado', pacoteEstado()); else publicarLobby(); }
+  if (sala.anfitriao) { if (sala.batalha) publicarCheio(); else publicarLobby(); }
   else enviar('sincronizar', { de: meuId() });
   renderSala();
 }
@@ -360,13 +361,48 @@ export async function iniciarBatalhaMP(tipo) {
 /* ---------- anfitrião: juntar as escolhas e resolver o turno ---------- */
 // pacote do estado atual (sem mexer no prazo) — usado pelo pulso e por quem pede pra sincronizar
 const pacoteEstado = (eventos = []) => ({ batalha: G.sala.batalha, eventos, prazo: G.sala.prazo, acoesFeitas: Object.keys(G.sala.acoes), tipo: G.sala.tipo, zona: G.sala.zona });
+/* O pulso mandava a BATALHA INTEIRA a cada 4 s — dezenas de KB por batida, e cada pacote recebido reescrevia a
+   tela toda. Agora a batida normal é um 'ping' magro (turno, quem já escolheu, prazo), e o estado completo sai só
+   em turno novo, quando alguém pede pra sincronizar e a cada ESTADO_CHEIO_MS como rede de segurança.
+   Compatível com versão antiga: quem não conhece 'ping' simplesmente ignora e continua se acertando pelo estado
+   completo periódico. */
+const ESTADO_CHEIO_MS = 15000;
+let ultimoEstadoCheio = 0;
+function baterPulso() {
+  const sala = G.sala; if (!sala?.anfitriao || !sala.batalha) return;
+  if (Date.now() - ultimoEstadoCheio >= ESTADO_CHEIO_MS) return publicarCheio();
+  enviar('ping', { turno: sala.batalha.turno, acoesFeitas: Object.keys(sala.acoes), prazo: sala.prazo }, 1);
+}
+function publicarCheio() {
+  ultimoEstadoCheio = Date.now();
+  return enviar('estado', pacoteEstado(), 1);
+}
 function publicarEstado(eventos, novoTurno) {
   const sala = G.sala;
   if (novoTurno) { sala.prazo = Date.now() + PRAZO_MS; clearTimeout(sala.timer); sala.timer = setTimeout(autoCompletar, PRAZO_MS); }
   const p = pacoteEstado(eventos);
+  ultimoEstadoCheio = Date.now();
   enviar('estado', p);
-  ligarPulso(() => (G.sala ? pacoteEstado() : null)); // enquanto a batalha rola, o anfitrião repete o estado de tempos em tempos
+  ligarPulso(baterPulso); // enquanto a batalha rola, o anfitrião dá sinal de vida de tempos em tempos
   aoReceberEstado(p); // broadcast não volta pra quem enviou
+}
+// alguém escolheu e o turno segue: avisa a sala com um ping e se atualiza (o broadcast não volta pro remetente)
+function avisarEscolhas() {
+  const sala = G.sala; if (!sala?.batalha) return;
+  const acoesFeitas = Object.keys(sala.acoes);
+  enviar('ping', { turno: sala.batalha.turno, acoesFeitas, prazo: sala.prazo }, 1);
+  sala.acoesFeitas = acoesFeitas;
+  renderSala();
+}
+/* Chegou um 'ping': se eu estou no mesmo turno, só atualizo o que é barato (quem já escolheu, o prazo) e redesenho
+   — é isso que faz as fichas ✓/⏳ andarem ao vivo. Se estou em outro turno, perdi um estado: peço o completo. */
+function aoReceberPing(p) {
+  const sala = G.sala;
+  if (!sala || sala.anfitriao) return;
+  sala.conexao = 'ok'; sala.ultimoEvento = Date.now();
+  if (!sala.batalha || sala.batalha.turno !== p.turno) { anotar('← ping de outro turno: pedindo o estado', true); enviar('sincronizar', { de: meuId() }); return; }
+  sala.acoesFeitas = p.acoesFeitas || []; sala.prazo = p.prazo;
+  renderSala();
 }
 // Revive no meio da luta do chefe (o anfitrião valida e aplica NA HORA: o Pokémon volta e já escolhe neste turno)
 function registrarRevive(de, acao) {
@@ -404,7 +440,9 @@ function registrarAcao(de, acao) {
   if (!m || m.dono !== de || m.hp <= 0) { anotar(`← escolha ignorada (${acao.ref}): não é dela ou já caiu`, true); return; } // só o dono escolhe pelos próprios
   anotar(`← escolha de ${m.nome} (${acao.tipo})`);
   sala.acoes[acao.ref] = acao;
-  if (jogaveis(b).some(x => !sala.acoes[x.ref])) publicarEstado([], false); else resolver();
+  // Falta gente? A BATALHA não mudou, só a lista de quem já escolheu — isso cabe num 'ping'. Antes cada escolha
+  // republicava o estado inteiro: numa sala de seis, seis cópias da batalha por turno, à toa.
+  if (jogaveis(b).some(x => !sala.acoes[x.ref])) avisarEscolhas(); else resolver();
 }
 function autoCompletar() {
   const sala = G.sala, b = sala?.batalha; if (!b || !sala.anfitriao) return;

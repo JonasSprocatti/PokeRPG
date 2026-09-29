@@ -88,6 +88,7 @@ export function telaSala() {
       <span class="subrow"><input id="mp-chat-input" maxlength="200" placeholder="Mensagem pra sala..." autocomplete="off"><button class="btn ghost sm" data-act="mp-chat-enviar">Enviar</button></span>
     </section></main>`;
   const sala = G.sala;
+  esquecerPintura();   // o #mp-topo/#mp-acoes acabaram de nascer vazios
   clearInterval(sala.relogio);
   /* O relógio mexe SÓ no texto e na largura da barra, nunca redesenha a sala: um re-render por segundo apagaria o
      que estivesse sendo digitado no chat e piscaria a cena inteira. */
@@ -134,13 +135,30 @@ function barraConexao() {
     <details class="mp-diag"><summary>Diagnóstico</summary><ul>${diarioMP().map(l => `<li class="${l.ruim ? 'err' : ''}">${new Date(l.t).toLocaleTimeString('pt-BR')} · ${esc(l.txt)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul></details>
   </div>`;
 }
+/* O que já está pintado em cada região. Duas razões: (1) o anfitrião republica o estado de tempos em tempos e a
+   presença muda sozinha — sem isto, a sala inteira era reescrita a cada pulso, piscando a cena e derrubando o
+   foco de quem estivesse mexendo em algo; (2) se nada mudou, não se toca no DOM. `telaSala` zera. */
+const pintado = { topo: null, acoes: null };
+export const esquecerPintura = () => { pintado.topo = pintado.acoes = null; };
+function aplicar(sel, chave, html) {
+  if (pintado[chave] === html) return;
+  const el = $(sel); if (!el) return;
+  pintado[chave] = html; el.innerHTML = html;
+}
 export function renderSala() {
-  try { desenharSala(); }
-  catch (e) {
+  try {
+    /* TRANSAÇÃO: monta as DUAS partes primeiro e só então escreve. Se montar estourar no meio, nada é aplicado —
+       antes o `#mp-topo` novo convivia com o `#mp-acoes` velho e as metades contavam histórias diferentes (o bug
+       do `SPR_SHINY`, 29/09/2026: cabeçalho de Sala de Raide sem o seletor do Hall em lugar nenhum). */
+    const partes = desenharSala();
+    if (!partes) return;
+    aplicar('#mp-topo', 'topo', partes.topo);
+    aplicar('#mp-acoes', 'acoes', partes.acoes);
+  } catch (e) {
     console.error('renderSala', e);
     const el = $('#mp-acoes');
-    if (el) el.innerHTML = `<p class="notice">Algo quebrou ao desenhar esta parte da sala: <b>${esc(e.message)}</b>.<br>Manda esse texto em 🐞 Bugs e sugestões, por favor — dá pra sair e entrar de novo na sala enquanto isso.</p>
-      <div class="subrow"><button class="btn ghost" data-act="mp-sair">Sair da sala</button></div>`;
+    if (el) { pintado.acoes = null; el.innerHTML = `<p class="notice">Algo quebrou ao desenhar esta parte da sala: <b>${esc(e.message)}</b>.<br>Manda esse texto em 🐞 Bugs e sugestões, por favor — dá pra sair e entrar de novo na sala enquanto isso.</p>
+      <div class="subrow"><button class="btn ghost" data-act="mp-sair">Sair da sala</button></div>`; }
   }
 }
 /* O alto da sala: o código GRANDE (é o que todo mundo precisa ler e ditar), os dois botões de convite e o resumo
@@ -169,16 +187,16 @@ function desenharSala() {
   if (!sala || G.mode !== 'mp' || !$('#mp-topo')) return;
   const b = sala.batalha, cfg = sala.config, pvp = cfg.modo === 'pvp', z = ZONES.find(x => x.id === sala.zona) || ZONES[0];
   const cabecalho = heroDaSala();
-  if (!b) return renderLobby(cabecalho, pvp, z);
+  if (!b) return renderLobby(cabecalho, pvp, z);   // devolve { topo, acoes }
   const dono = id => id === 'ia' ? '' : (membroDe(id)?.nome || 'jogador que saiu') + (id === meuId() ? ' (você)' : '');
   const vez = minhaVez();
-  $('#mp-topo').innerHTML = cabecalho + cenaMP(b, { legendaDe: m => dono(m.dono), vezRef: vez?.ref }) + fichasDoTurno(b) + historicoDoTurno();
+  const topo = cabecalho + cenaMP(b, { legendaDe: m => dono(m.dono), vezRef: vez?.ref }) + fichasDoTurno(b) + historicoDoTurno();
   const status = barraDoTurno(b);
   const sair = `<button class="btn ghost" data-act="mp-sair">Sair da sala</button>`;
   if (!jogaveis(b).some(m => m.dono === meuId())) {
-    $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${botoesReviver(b)}${botoesRaide(b)}<div class="subrow">${sair}</div>`; return;
+    return { topo, acoes: status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${botoesReviver(b)}${botoesRaide(b)}<div class="subrow">${sair}</div>` };
   }
-  if (!vez) { $('#mp-acoes').innerHTML = status + `<p class="muted">Escolhas enviadas.</p>${botoesRaide(b)}${botoesReviver(b)}<div class="subrow">${sair}</div>`; return; }
+  if (!vez) return { topo, acoes: status + `<p class="muted">Escolhas enviadas.</p>${botoesRaide(b)}${botoesReviver(b)}<div class="subrow">${sair}</div>` };
   const alvos = inimigosDe(b, vez); if (!alvos.some(e => e.ref === sala.alvo)) sala.alvo = alvos[0]?.ref;
   // Golpes disponíveis: regras.golpesPermitidos (Choice, Colete, Taunt, Encore, Disable, Torment e PP) — a mesma
   // função de render.js/arena.js. Nenhum permitido = Struggle, senão a sala travaria sem botão clicável.
@@ -187,14 +205,14 @@ function desenharSala() {
   const gd = gimmicksDisponiveisMP(b, vez), zLigado = !!(gd && sala.gimmicksSel?.z);   // com o Z ligado, só os golpes que podem virar Z ficam clicáveis
   // reordenar (▲▼) não gasta turno; fica fora do <button> de atacar (não dá pra aninhar <button> em <button>)
   const moverMP = (i, dir) => `<button class="btn ghost sm" data-act="mp-golpe-mover" data-v="${i}" data-dir="${dir}" ${(dir < 0 ? i === 0 : i === vez.moves.length - 1) ? 'disabled' : ''} title="${dir < 0 ? 'Subir' : 'Descer'}">${dir < 0 ? '▲' : '▼'}</button>`;
-  $('#mp-acoes').innerHTML = status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` + resumoTravas(vez).map(t => `<p class="small muted">${esc(t)}</p>`).join('') + botoesGimmickMP(gd) +
+  return { topo, acoes: status + `<p class="mp-quem">Vez de <b>${esc(vez.nome)}</b></p>` + resumoTravas(vez).map(t => `<p class="small muted">${esc(t)}</p>`).join('') + botoesGimmickMP(gd) +
     (alvos.length > 1 ? `<div class="subrow">Alvo: ${alvos.map(m => `<button class="btn ${m.ref === sala.alvo ? '' : 'ghost'} sm" data-act="mp-mirar" data-v="${m.ref}">${esc(m.nome)}</button>`).join('')}</div>` : '') +
     `<div class="moves">${semPP ? '<button class="mv" style="--c:#A8A77A" data-act="mp-golpe" data-v="-1"><b>Struggle</b><small>Sem PP.</small></button>'
       : vez.moves.map((g0, i) => { const g = golpeDoBattleBond(golpeDoTera(golpeDoClima(g0, climaDe(b.campo)), vez), vez); const preso = !permitidos.includes(g0); return `<div class="mv-cel"><button class="mv" style="--c:${TC[g.type] || '#888'}" data-act="mp-golpe" data-v="${i}" ${g.ppLeft <= 0 || preso || (zLigado && !golpeZ(gd.p, g)) ? 'disabled' : ''}><b>${esc(fmt(g.name))}</b><small>${TYPE_PT[g.type] || g.type}, ${CLS_PT[g.cls]}, poder ${g.power ?? '—'}</small><span class="pp">PP ${g.ppLeft}/${g.pp}</span></button><span class="mv-ordem">${moverMP(i, -1)}${moverMP(i, 1)}</span></div>`; }).join('')}</div>
     ${botoesItemComum()}
     ${botoesRaide(b)}
     ${botoesReviver(b)}
-    <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
+    <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>` };
 }
 
 /* ---------- o andamento do turno ----------
@@ -359,7 +377,7 @@ function renderLobby(cabecalho, pvp, z) {
   const sala = G.sala, cfg = sala.config, dis = sala.ocupado ? 'disabled' : '', raide = cfg.modo === 'raide';
   const time = t => sala.membros.filter(m => (m.time || 'B') === t);
   // a "mesa": quem está na sala e o que cada um trouxe
-  $('#mp-topo').innerHTML = cabecalho + (pvp
+  const topo = cabecalho + (pvp
     ? `<div class="mp-times">${['A', 'B'].map(t => `<div class="mp-time"><h3>Time ${t} <small class="muted">(${time(t).length})</small></h3>${time(t).map(cartaoMembro).join('') || '<p class="small muted">Ninguém ainda.</p>'}</div>`).join('')}</div>`
     : `<div class="mp-grupo">${sala.membros.map(cartaoMembro).join('')}</div>`);
   const trocarTime = pvp ? `<div class="subrow mp-troca-time"><span class="small muted">Seu time:</span> ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
@@ -371,10 +389,7 @@ function renderLobby(cabecalho, pvp, z) {
     ? `<div class="mp-convites"><b>Chamar amigos:</b> ${amigosFora.map(a => `<button class="btn ghost sm" data-act="mp-convidar" data-v="${a.amigo}">${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')} ${esc(a.apelido)}${htmlInsigniaDe(a.badge_exibida)}</button>`).join('')}</div>`
     : usuario() ? '' : '<p class="small muted">Entre na conta pra chamar amigos direto (sem precisar passar o código).</p>') : '';
   const comum = configDaSala() + trocarTime + convites + centroNaSala() + htmlMinhaEntrada();
-  if (!sala.anfitriao) {
-    $('#mp-acoes').innerHTML = comum + `<p class="muted">${sala.ocupado ? 'Um instante…' : 'Quando todo mundo estiver pronto, o anfitrião começa.'}</p><div class="subrow">${sair}</div>`;
-    return;
-  }
+  if (!sala.anfitriao) return { topo, acoes: comum + `<p class="muted">${sala.ocupado ? 'Um instante…' : 'Quando todo mundo estiver pronto, o anfitrião começa.'}</p><div class="subrow">${sair}</div>` };
   // Por que o botão está apagado? A resposta vai escrita, não só no title (regra pura: mp-regras.motivoParaNaoComecar)
   const motivo = motivoParaNaoComecar(sala, { temRun: temRun() });
   const trava = motivo ? 'disabled' : dis;
@@ -383,8 +398,8 @@ function renderLobby(cabecalho, pvp, z) {
     : pvp
       ? `<button class="btn big" data-act="mp-pvp" ${trava} title="${esc(motivo)}">⚔ Começar PvP</button>`
       : `<button class="btn big" data-act="mp-explorar" ${trava} title="${esc(motivo)}">🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${trava} title="${esc(motivo)}">⚔ Desafiar o Alfa (${esc(z.chefe.nome)})</button>` : ''}${botaoEventoMP(trava)}`;
-  $('#mp-acoes').innerHTML = comum + `<div class="subrow mp-comecar">${comecar}${sair}</div>
-    ${motivo ? `<p class="small muted mp-motivo">⏳ ${esc(motivo)}</p>` : ''}`;
+  return { topo, acoes: comum + `<div class="subrow mp-comecar">${comecar}${sair}</div>
+    ${motivo ? `<p class="small muted mp-motivo">⏳ ${esc(motivo)}</p>` : ''}` };
 }
 // ☄ o chefe da semana no co-op: mesma trava do single player (só Roguelike/Hardcore da run do anfitrião, rota final liberada, 8 h entre tentativas)
 function botaoEventoMP(dis) {

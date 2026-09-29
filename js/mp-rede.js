@@ -65,15 +65,15 @@ async function enviarAgora(event, payload, tentativas) {
 }
 
 /* ---------- pulso do anfitrião ----------
-   `fazerPacote()` devolve o que republicar agora, ou null pra pular esta batida. */
-export function ligarPulso(fazerPacote) {
+   Uma batida a cada PULSO_MS enquanto a luta rola; QUEM decide o que mandar é o multiplayer.js (um 'ping' magro
+   quase sempre, o estado inteiro de vez em quando). Aqui só mora o timer. */
+export function ligarPulso(bater) {
   const sala = G.sala;
   if (!sala?.anfitriao) return;
   clearInterval(sala.pulso);
   sala.pulso = setInterval(() => {
     if (!G.sala?.anfitriao || !G.sala.batalha || G.sala.resolvendo) return;
-    const p = fazerPacote();
-    if (p) enviar('estado', p, 1);
+    bater();
   }, PULSO_MS);
 }
 export const desligarPulso = () => { if (G.sala) clearInterval(G.sala.pulso); };
