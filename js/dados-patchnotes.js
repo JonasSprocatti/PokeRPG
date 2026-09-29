@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.24', data: '2026-09-29', titulo: 'Aquele aviso de cookies apareceu (e ainda não tem anúncio nenhum)', piada: 'O jogo pede permissão pra uma coisa que ainda não faz. É o equivalente a pedir licença antes de entrar num quarto onde você já mora.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Você vai ver um <b>aviso de cookies</b> no pé da tela, uma vez. Explicação honesta: o jogo é de graça e a ideia é sustentar ele com anúncio, e pra isso o Google precisa analisar o site antes — o que exige que o código dele esteja aqui. <b>Nenhum anúncio é exibido ainda</b>, e nada mudou no jogo.',
+        'Antes de você responder qualquer coisa, o jogo já diz ao Google que o consentimento está <b>negado</b>: nada de cookie de anúncio e nada de personalização. <b>Recusar não limita absolutamente nada</b> — e a escolha pode ser mudada quando quiser em <b>⚙ Ajustes → Cookies de anúncio</b>.',
+        'Quando os anúncios existirem de verdade, eles vão ficar nas <b>páginas do guia</b> e no <b>fim da tela inicial</b>. Nunca perto dos botões de batalha: além de ser irritante, clique acidental é o jeito mais rápido de o projeto perder a conta de anúncios.',
+        'A <b>Política de Privacidade</b> foi atualizada junto pra contar exatamente esse estado — ela já dizia o que aconteceria; agora diz também o que já acontece.'
+      ] }
+    ] },
   { versao: '2.23', data: '2026-09-29', titulo: 'O jogo ganhou um guia de verdade', piada: 'Até agora, a documentação oficial era um amigo seu dizendo "acho que é assim".',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -170,6 +170,7 @@ function htmlAds() {
   const c = consentimento();
   return `<h3 class="passo"><span>E</span> Cookies de anúncio</h3>
     <p class="small muted">Sua escolha atual: <b>${c === 'aceito' ? 'aceitou' : c === 'recusado' ? 'recusou' : 'ainda não escolheu'}</b>.
+      Recusar não limita nada no jogo: só impede que o anúncio seja personalizado.
       Detalhes na <button type="button" class="link" data-act="privacidade" style="background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Política de Privacidade</button>.</p>
     <div class="subrow">
       <button class="btn ${c === 'aceito' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="aceito">Aceitar</button>

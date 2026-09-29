@@ -22,9 +22,8 @@ import { blocoAds, ativarSlots } from './ads.js';
 import { aoMudarOnline, onlineAgora, contagemAnonimos } from './presenca.js';
 import { ehAdmin } from './nuvem.js';
 
-// "Ad slot" da tela inicial: crie em adsense.google.com → Anúncios → Por unidade de anúncio, depois de aprovado.
-// Enquanto for o marcador abaixo, blocoAds() não desenha nada (mesmo com ADSENSE_CLIENT_ID já preenchido).
-const AD_SLOT_INICIO = 'SEU-AD-SLOT-AQUI';
+// "Ad slot" da tela inicial. Mora em config.js junto com os outros: vazio = blocoAds() não desenha nada.
+import { AD_SLOT_INICIO } from './config.js';
 import { rand, pick, esc, fmt, novoId } from './util.js';
 
 const livres = () => DIFICULDADES[G.dif].especiesLivres;

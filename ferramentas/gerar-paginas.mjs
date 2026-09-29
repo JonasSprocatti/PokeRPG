@@ -18,11 +18,35 @@ import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { PAGINAS, URL_SITE, rodapeHTML } from '../js/site.js';
 import { TEXTO_PRIVACIDADE } from '../js/texto-privacidade.js';
+import { ADSENSE_CLIENT_ID, AD_SLOT_GUIA } from '../js/config.js';
 import { SOBRE, TERMOS, CONTATO } from './conteudo-site.mjs';
 import { GUIA, CORPO_GUIA } from './conteudo-guia.mjs';
 
 const RAIZ = new URL('../', import.meta.url);
 const CORPO = { sobre: SOBRE, guia: GUIA, ...CORPO_GUIA, privacidade: TEXTO_PRIVACIDADE, termos: TERMOS, contato: CONTATO };
+
+/* Páginas que NÃO recebem anúncio: as legais. Anúncio ao lado do texto que explica o que se faz com os dados de
+   quem lê é de mau gosto, e a página de privacidade é justamente a que a revisão do Google abre com atenção. */
+const SEM_ANUNCIO = new Set(['privacidade', 'termos', 'contato']);
+const adsLigado = !!ADSENSE_CLIENT_ID && !ADSENSE_CLIENT_ID.includes('XXXX');
+
+/* O snippet do AdSense no <head>, igual ao de index.html e na MESMA ordem: consent.js (síncrono, põe o
+   consentimento em "denied" — Consent Mode v2) antes do script do Google, que de outro modo não veria o estado.
+   Com ADSENSE_CLIENT_ID no marcador, sai string vazia: marcador = essa parte desligada, como no resto do jogo. */
+const cabecaAds = () => adsLigado ? `
+<!-- Google AdSense: js/consent.js (Consent Mode v2) PRECISA vir antes. Gerado de js/config.js — não editar aqui. -->
+<script src="js/consent.js"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>` : '';
+
+/* O slot, no fim do conteúdo e antes do rodapé. Estas páginas não têm botão nenhum no corpo, então aqui não
+   existe o risco de clique acidental que impede pôr anúncio junto dos botões de batalha.
+   Sem unidade de anúncio criada (AD_SLOT_GUIA vazio, o caso de hoje: a conta ainda não foi aprovada), não sai
+   <ins> nenhum — o site carrega o código do AdSense e não exibe anúncio, que é o estado certo pra pedir a
+   revisão. O push fica inline porque estas páginas não carregam o JS do jogo. */
+const blocoAdsEstatico = slug => (adsLigado && AD_SLOT_GUIA && !SEM_ANUNCIO.has(slug)) ? `
+<div class="ads-slot"><ins class="adsbygoogle" style="display:block" data-ad-client="${ADSENSE_CLIENT_ID}"
+  data-ad-slot="${AD_SLOT_GUIA}" data-ad-format="auto" data-full-width-responsive="true"></ins></div>
+<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>` : '';
 
 function pagina({ slug, titulo, descricao }) {
   return `<!doctype html>
@@ -32,7 +56,7 @@ function pagina({ slug, titulo, descricao }) {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${titulo} — PokéRPG</title>
 <meta name="description" content="${descricao}">
-<link rel="canonical" href="${URL_SITE}/${slug}.html">
+<link rel="canonical" href="${URL_SITE}/${slug}.html">${cabecaAds()}
 <link rel="stylesheet" href="css/estilo.css">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
@@ -52,7 +76,7 @@ function pagina({ slug, titulo, descricao }) {
 <div id="app">
 <main class="create pagina">
   <h1>${titulo}.</h1>
-${CORPO[slug]}
+${CORPO[slug]}${blocoAdsEstatico(slug)}
 </main>
 </div>
 ${rodapeHTML(slug)}

@@ -54,6 +54,42 @@ test('o ads.txt está no formato do IAB e bate com o publisher ID do config.js',
     `ads.txt não lista ${doConfig}, que é o ADSENSE_CLIENT_ID de js/config.js`);
 });
 
+/* O snippet do AdSense vive em três lugares que precisam concordar: js/config.js (o que o jogo lê), o <head> de
+   index.html (literal, porque o snippet tem de estar no HTML servido pra revisão do Google achar) e o ads.txt.
+   Divergir não dá erro em lugar nenhum: o anúncio só não paga. */
+test('o publisher ID é o mesmo em config.js, index.html e ads.txt', async () => {
+  const { ADSENSE_CLIENT_ID } = await import('../js/config.js');
+  if (ADSENSE_CLIENT_ID.includes('XXXX')) return; // AdSense desligado: nada a comparar
+  const html = ler('index.html');
+  assert.ok(html.includes(`adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`),
+    'o <head> de index.html não traz o snippet com o publisher ID de js/config.js');
+  assert.ok(ler('ads.txt').includes(`${ADSENSE_CLIENT_ID.replace(/^ca-/, '')},`),
+    'ads.txt não lista o publisher ID de js/config.js');
+});
+
+/* Ordem que não pode inverter: js/consent.js é síncrono e põe o consentimento em "denied" (Consent Mode v2). Se
+   o script do Google rodar antes dele, o estado chega tarde e o site vira "anúncio personalizado sem
+   consentimento" — o problema de GDPR que o consent.js existe pra evitar. */
+test('em toda página, o consent.js vem ANTES do script do AdSense', async () => {
+  const { ADSENSE_CLIENT_ID } = await import('../js/config.js');
+  if (ADSENSE_CLIENT_ID.includes('XXXX')) return;
+  for (const f of ['index.html', ...PAGINAS.map(p => `${p.slug}.html`)]) {
+    const html = ler(f);
+    const consent = html.indexOf('js/consent.js');
+    const google = html.indexOf('adsbygoogle.js?client=');
+    assert.ok(consent >= 0, `${f} carrega anúncio sem js/consent.js`);
+    assert.ok(google >= 0, `${f} sem o snippet do AdSense (a revisão precisa achar o código em todas as páginas)`);
+    assert.ok(consent < google, `${f}: o consent.js tem de vir antes do script do Google`);
+  }
+});
+
+/* Anúncio na página que explica o que se faz com os dados de quem está lendo, não. É também a página que a
+   revisão abre com mais atenção. */
+test('as páginas legais não recebem slot de anúncio', () => {
+  for (const slug of ['privacidade', 'termos', 'contato'])
+    assert.ok(!ler(`${slug}.html`).includes('<ins class="adsbygoogle"'), `${slug}.html com slot de anúncio`);
+});
+
 test('o robots.txt aponta pro sitemap certo e não bloqueia o site', () => {
   const t = ler('robots.txt');
   assert.match(t, new RegExp(`Sitemap: ${URL_SITE}/sitemap\\.xml`));

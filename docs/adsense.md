@@ -62,13 +62,31 @@ carrega. Um banner de cookies próprio (`js/ads.js`) e a tela 🔒 Privacidade j
   servindo o mesmo site, então sem `canonical` os dois competiriam).
 - **E-mail de contato** criado e ativo.
 
-**Falta**: a CMP (A3), fontes locais (B), o snippet com Consent Mode e o posicionamento dos
-slots (D).
+- **D, a parte do código**: `js/consent.js` (Consent Mode v2, script clássico e síncrono) + o
+  script do AdSense no `<head>` de `index.html` e das 11 páginas estáticas, com
+  `ADSENSE_CLIENT_ID` preenchido em `js/config.js`. O `ads.js` foi reescrito: o script não é mais
+  carregado por ele, o banner passou a emitir `gtag('consent','update')` e `blocoAds` deixou de
+  depender do consentimento (passou a depender de haver unidade de anúncio). A política de
+  privacidade e a tela ⚙ Ajustes foram ajustadas pra dizer a verdade nova: o código carrega
+  sempre, o aceite controla cookie e personalização. `tests/paginas.test.js` cobra a ordem
+  (consent antes do Google) em todas as páginas, o publisher ID igual nos três lugares
+  (config.js, `index.html`, `ads.txt`) e a ausência de slot nas páginas legais.
+  **`AD_SLOT_INICIO` e `AD_SLOT_GUIA` seguem vazios de propósito**: unidade de anúncio só existe
+  depois da aprovação, e "código no site, nenhum anúncio exibido" é exatamente o estado pedido
+  pela revisão.
 
-**Ordem combinada com o usuário (29/09/2026)**: verificar a propriedade pelo `ads.txt`,
-~~escrever o guia por tema~~ ✔, só então acrescentar o snippet e clicar em "Pedir revisão".
-Motivo: "conteúdo escasso" é o motivo nº 1 de reprovação e há espera entre tentativas — não vale
-gastar a primeira com cinco páginas. **Agora a próxima etapa é o snippet + os slots (D).**
+**Falta**: pedir a revisão (usuário), a CMP (A3), fontes locais (B) e criar/preencher as unidades
+de anúncio depois de aprovado.
+
+⚠️ **Anúncios automáticos: deixar DESLIGADOS no painel.** Eles inserem anúncio onde o Google
+quiser — inclusive junto dos botões de batalha, que é o caminho curto pra clique acidental,
+tráfego inválido e banimento da conta. Os slots deste projeto são manuais e ficam nas páginas de
+conteúdo e no fim da tela inicial.
+
+**Ordem combinada com o usuário (29/09/2026)**: ~~verificar a propriedade pelo `ads.txt`~~ ✔,
+~~escrever o guia por tema~~ ✔, ~~acrescentar o snippet~~ ✔, **clicar em "Pedir revisão"** ←
+está aqui. Motivo da ordem: "conteúdo escasso" é o motivo nº 1 de reprovação e há espera entre
+tentativas — não valia gastar a primeira com cinco páginas.
 
 ---
 
@@ -204,9 +222,15 @@ se declara para público geral (e o texto muda), ou se declara infantil (e o có
 
 ---
 
-## D. Código do AdSense: o que muda em `js/ads.js`
+## D. Código do AdSense: o que muda em `js/ads.js` — ✔ FEITO (29/09/2026)
 
-O `ads.js` hoje é "tudo ou nada": sem consentimento, o script do Google **não carrega** e o
+*O diagnóstico abaixo é o original; a reescrita foi feita exatamente assim. Estado de hoje:
+`js/consent.js` (Consent Mode v2, síncrono no `<head>`) → script do Google no `<head>` de
+`index.html` e das 11 páginas estáticas → `ads.js` cuida do banner, do
+`gtag('consent','update')` e dos slots. Slots ainda sem unidade de anúncio (só existem depois da
+aprovação).*
+
+O `ads.js` era "tudo ou nada": sem consentimento, o script do Google **não carregava** e o
 `<ins>` **não é desenhado**. Isso é mais restritivo que o exigido e atrapalha em dois pontos:
 
 - **Na revisão**: o Google precisa encontrar o código do AdSense no site pra avaliar. Se o

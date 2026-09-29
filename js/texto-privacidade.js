@@ -56,14 +56,18 @@ export const TEXTO_PRIVACIDADE = `
       <li><b>Supabase</b>: hospeda conta, saves, ranking, salas de multiplayer, relatos e o marcador de presença
         (itens 2 a 5 acima).</li>
       <li><b>Google Fonts</b>: entrega as fontes do jogo, e recebe seu endereço de IP ao fazer isso.</li>
-      <li><b>Google AdSense</b>: quando os anúncios estiverem ativos neste site (ver o item 7), a Google recebe
-        dados do seu acesso pra escolher o anúncio.</li>
+      <li><b>Google AdSense</b>: o código de anúncios da Google é carregado nas páginas deste site. Ele recebe
+        dados do seu acesso (como o endereço de IP, que qualquer conexão envia) e, <b>somente se você aceitar</b>,
+        pode usar cookies pra personalizar anúncio. Ver o item 7.</li>
       <li><b>Vercel</b>: hospeda o site e mantém registros técnicos de acesso, como qualquer servidor web.</li>
     </ul>
 
     <h2 class="passo"><span>7</span> Cookies e anúncios</h2>
-    <p class="small"><b>Hoje este site não exibe anúncios e não usa cookie nenhum.</b> O texto abaixo vale a
-      partir do momento em que os anúncios forem ativados, e esta página será atualizada quando isso acontecer.</p>
+    <p class="small"><b>Hoje este site ainda não exibe nenhum anúncio.</b> O que já existe é o <b>código do
+      Google AdSense</b> carregado nas páginas — ele é necessário pra que a conta de anúncios possa ser
+      analisada. Esse código começa com o consentimento <b>negado</b> (o "Consent Mode" da Google): sem você
+      aceitar, não há cookie de anúncio nem personalização. Quando os anúncios forem ligados de fato, valem as
+      regras abaixo e esta página é atualizada junto.</p>
     <ul class="small" style="padding-left:20px">
       <li>Fornecedores terceirizados, incluindo a Google, usam cookies para veicular anúncios com base em visitas
         anteriores do usuário a este e a outros sites.</li>
@@ -76,7 +80,8 @@ export const TEXTO_PRIVACIDADE = `
       <li>Como a Google usa os dados de sites que utilizam os serviços dela:
         <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com/technologies/partner-sites</a>.</li>
       <li>Antes de qualquer cookie de anúncio ser usado, aparece um aviso perguntando se você aceita. Sua escolha
-        fica salva e dá pra mudar a qualquer hora em <b>⚙ Ajustes</b>. Sem aceitar, nenhum cookie de anúncio é usado.</li>
+        fica salva neste navegador e dá pra mudar a qualquer hora em <b>⚙ Ajustes</b>. Sem aceitar, nenhum cookie
+        de anúncio é usado e nenhum anúncio é personalizado; recusar não limita nada no jogo.</li>
     </ul>
 
     <h2 class="passo"><span>8</span> Seus direitos</h2>

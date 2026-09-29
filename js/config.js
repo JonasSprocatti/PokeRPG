@@ -6,9 +6,26 @@ export const SUPABASE_URL = 'https://pttbipcrqbbwhhtbsyoy.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0dGJpcGNycWJid2hodGJzeW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNTQzMDUsImV4cCI6MjEwNTYzMDMwNX0.gNaQdQvoQYjB5bopsgWFtdn5VXfcDDn5JHYd9SbLseU';
 
 /* ============ configuração de anúncios (Google AdSense) ============ */
-// Preencha com o Publisher ID de DEPOIS que a conta AdSense estiver aprovada (formato "ca-pub-xxxxxxxxxxxxxxxx",
-// em adsense.google.com → Conta → Informações da conta). Enquanto estiver com o marcador abaixo, js/ads.js não
-// carrega o script do Google nem mostra nenhum slot — mesmo padrão do Supabase acima: marcador = jogo sem essa
-// parte, sem quebrar nada. O jogo NUNCA carrega o script de anúncio antes de o jogador aceitar no banner de
-// cookies (js/ads.js pedirConsentimento) — é o que a política de consentimento da UE (GDPR) exige.
-export const ADSENSE_CLIENT_ID = 'ca-pub-XXXXXXXXXXXXXXXX';
+/* Publisher ID da conta (adsense.google.com → Conta → Informações da conta). Com ele preenchido, o script do
+   Google é carregado no <head> de index.html e de toda página estática, SEMPRE — mas com o consentimento em
+   "denied" por padrão (js/consent.js, Consent Mode v2): sem cookie de anúncio e sem personalização até o
+   jogador aceitar no banner. Foi o que trocou em relação ao padrão antigo ("script só depois do aceite"), por
+   dois motivos: a revisão do AdSense precisa encontrar o código no site, e é assim que o Google recomenda hoje.
+
+   ⚠️ O ID aparece em TRÊS lugares que precisam concordar: aqui, no <head> de index.html (literal, porque o
+   snippet tem de estar no HTML servido) e no ads.txt. Divergir não dá erro em lugar nenhum — só faz o anúncio
+   não pagar. `tests/paginas.test.js` compara os três.
+
+   Voltar a desligar tudo = trocar por 'ca-pub-XXXXXXXXXXXXXXXX' aqui, tirar os dois <script> do <head> do
+   index.html e rodar `node ferramentas/gerar-paginas.mjs` (o gerador respeita o marcador sozinho). */
+export const ADSENSE_CLIENT_ID = 'ca-pub-9827780756194019';
+
+/* Unidades de anúncio ("ad slot", um número só, criado em adsense.google.com → Anúncios → Por unidade de
+   anúncio). Só existem DEPOIS da conta aprovada, então hoje são marcadores e nenhum <ins> é desenhado: o site
+   carrega o código do AdSense sem exibir anúncio nenhum, que é exatamente o estado necessário pra pedir a
+   revisão. Preencher = o slot aparece.
+   ONDE ELES ESTÃO, e por quê: `guia` fica nas páginas de conteúdo (sobre, guia e os seis capítulos), longe de
+   qualquer botão; `inicio` fica no fim da tela inicial. NADA perto dos botões de batalha — clique acidental
+   vira tráfego inválido, e tráfego inválido é banimento da conta, não bronca. */
+export const AD_SLOT_INICIO = '';
+export const AD_SLOT_GUIA = '';
