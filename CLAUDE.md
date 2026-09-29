@@ -379,6 +379,8 @@ Desbloqueado..."), então a conta fica clara na hora, sem precisar ir a outra te
 
 `tests/*.test.js` com `node:test` — rodar com `node --test` **sem caminho**. CI em `.github/workflows/testes.yml` roda a cada push/PR (aba Actions do GitHub).
 
+**`tests/docs-numeros.test.js` trava os números DESTE arquivo e do README contra o código** (29/09/2026). Motivo: um levantamento do backlog achou 6 afirmações erradas de uma vez — "~30 badges" quando são 53, "96 formas, 93 espécies" de Mega quando são 95/89 (contradizendo o "89 Megas" escrito algumas linhas abaixo), e coisas dadas como pendentes que já estavam prontas. O usuário planeja em cima destes textos; número velho aqui custa tempo de verdade. São três testes: dois com frases-âncora (badges, Megas, habilidades, flags de golpe, `AINDA_EVOLUI`, itens de raide, nº de chefes e o `% N` do calendário) e um genérico que varre **toda** ocorrência de `` `CONSTANTE` = N `` nos dois .md e compara com o valor exportado de verdade — esse pega de graça o que ninguém lembrou de travar à mão. Ele entende as formas que a prosa usa (`1.000` com ponto de milhar, `20%` para um `0.2` no código), então escrever normal não dá alarme falso. **Mudou o número no código → atualize a frase no .md**; se a FRASE foi reescrita, o teste diz qual âncora não achou nada, de propósito, pra não passar batido.
+
 ## Supabase: schema sobe sozinho (integração nativa)
 
 > ⚠️ **Ficou mudo por dias por causa de um campo mal preenchido (24/09/2026).** Duas migrations de teste foram
