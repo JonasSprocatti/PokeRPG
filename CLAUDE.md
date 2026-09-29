@@ -74,7 +74,7 @@ Duas máquinas de dev, ambientes diferentes:
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 165 de 307 habilidades da PokéAPI — `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva, contava 64/307; sem gerador salvo no repo pra refazer a auditoria por completo, mas a contagem real é `IMPL.size`, testada em `tests/habilidades.test.js`). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 208 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -682,8 +682,56 @@ O que sobrou e o que ficou combinado:
   Guard, em vez de quebrar. **Ficaram de fora** (mais complexas ainda, precisam de mais projeto): Mold Breaker
   (ignora habilidade do ALVO — precisaria auditar todo gancho de imunidade/defesa do motor pra saber quais
   "furar"), Damp (bloquear autodestruição do OUTRO lado — cross-side igual Friend Guard, mas em cima de uma
-  mecânica, autoDesmaio, que ainda não devolve controle pro motor decidir "deixar acontecer ou não"), Aftermath
-  (precisa de um gancho novo "ao desmaiar por contato", que não existe).
+  mecânica, autoDesmaio, que ainda não devolve controle pro motor decidir "deixar acontecer ou não"). (Aftermath
+  ganhou o gancho "ao desmaiar por contato" que faltava aqui na 7ª leva, abaixo.)
+  **7ª leva** (28/09/2026, pedido do usuário: "coloque todas as habilidades pokémons que ainda não estão
+  configuradas") — a maior leva até aqui: 43 habilidades novas (165→208 de 314 reais; a contagem "307" das notas
+  antigas estava errada, a certa é `abilities.csv` filtrado por `is_main_series`). Pesquisado direto do CSV-fonte
+  da PokéAPI (o mesmo usado pelas flags de golpe) pra achar TODA habilidade real que faltava, sem depender do
+  `docs/auditoria-batalha.md` (confirmado de novo: desatualizado). Ganchos novos (documentados no topo de
+  `habilidades.js`): `multFlag`/`resisteFlag` (dano por FLAG do golpe — Tough Claws, Mega Launcher, Punk Rock),
+  `converteTipo` (Aerilate/Pixilate/Refrigerate/Galvanize/Normalize, `regras.golpeDaConversaoDeTipo` — roda ANTES
+  do Tera/Battle Bond em `executar`, senão Weather Ball sem clima ficaria Normal em vez de virar o tipo
+  convertido), `evasaoConfuso` (Tangled Feet), `acaoRapida`/`sempreLento` (Quick Draw/Stall, a MESMA fila de
+  prioridade da Garra Rápida — `regras.ordenarAcoes` ganhou o degrau `lento`, sempre por último dentro da própria
+  prioridade), `prankster`/`prioridadeVoador`/`prioridadeCura` (`regras.prioridadeEfetiva`, soma com a prioridade
+  nativa do golpe), `prendeQualquer` (Shadow Tag/Arena Trap, resolvido em batalha.js/mp-motor ao lado do Magnet
+  Pull que já existia), `semContato` (Long Reach: `encostou = fazContato(g) && !hu.semContato`, variável nova que
+  substituiu as 4 chamadas cruas de `fazContato(g)` no meio do golpe — Elmo Rochoso, o bloco de contato inteiro e
+  Poison Touch), `aliadoBoost` (Battery/Power Spot/Steely Spirit/Plus-Minus, reforça o golpe de um ALIADO —
+  mesmo padrão do Friend Guard só que multiplicando em vez de cortar), `aoNocautearMaior` (Beast Boost, usa
+  `regras.maiorStatBase` em vez de um atributo fixo), `aftermath`/`aoDesmaiarDanoAtacante` (Aftermath só com
+  contato, Innards Out com qualquer nocaute — os dois usam `hpAntesDoGolpe`, o HP do alvo capturado ANTES do
+  laço de acertos, pra saber quanto ele tinha ao cair), `dreno:'inverte'` (Liquid Ooze inverte o bloco de
+  `meta.drain`), `roubaItem`/`protegeItem` (Pickpocket só contato, Magician qualquer golpe de dano, Sticky Hold
+  bloqueia os dois), `imuneGolpeStatus` (Good As Gold, checado ANTES de despachar pra `golpeDeStatus`),
+  `podeEnvenenarQualquer` (Corrosion ignora a imunidade de TIPO ao veneno em `aplicarStatus`, mas não a de
+  habilidade — Immunity continua protegendo), `protegeAliadoStatus` (Flower Veil, novo helper
+  `protegidoPorFlores(m, ctx)` — Grama no lado de quem tem a habilidade, ela mesma incluída, não perde atributo
+  nem pega status de fora, em `mudarEstagios` E `aplicarStatus`), `copiaHabilidadeAoEntrar` (Trace, em
+  `aoEntrarEmCampo`), `avisaGolpeForte`/`revelaItem` (Forewarn/Frisk, só narração), `moody` (em `fimDeTurno`;
+  sorteia o atributo que SOBE, tira ele da lista e só então sorteia o que DESCE — nunca sorteia de novo até dar
+  diferente, que travaria pra sempre com `Math.random` mockado num valor fixo, como em teste), `ripen`/
+  `curaBerryExtra` (Ripen dobra a cura, Cheek Pouch cura extra com QUALQUER fruta — os dois em `comerFruta`),
+  `semItemEmBatalha` (Klutz: `segurados.seg(m)` — o ÚNICO ponto por onde toda leitura de item passa — devolve
+  `{}` inteiro quando a habilidade está ligada, então nenhum gancho de item precisou saber de Klutz),
+  `algodaoCai` (Cotton Down), `trocaHabilidadeContato` (Mummy/Lingering Aroma = contágio, a sua vira a de quem
+  encostou; Wandering Spirit = TROCA as duas). **Trace e a troca/contágio de habilidade compartilham o mesmo
+  desfazer** (`golpe.desfazerTrace`, chamado em `batalha.endBattle` pra TODO o lado do jogador — sem isso a
+  habilidade roubada/copiada ficava pra sempre no save) e a MESMA trava (`ABILIDADE_TRAVADA`, hoje só
+  `stance-change`): nem Trace copia Mudança de Postura de um Aegislash oponente, nem Mummy consegue apagar a
+  Mudança de Postura de um Aegislash que ataca — ela é a única habilidade da tabela que mexe com mecânica PRÓPRIA
+  do motor (a troca de forma), então é a única que precisa dessa proteção; qualquer outra habilidade copiada sem
+  gancho aqui simplesmente não faz nada, sem risco. No multiplayer `m.ability` muda só na CÓPIA de rede
+  (`fotoDoMon`), descartada no fim da luta — só o single player precisa desfazer. **Ficou de fora, com razão
+  anotada em `habilidades.js`**: Regenerator/Natural Cure (agem ao TROCAR de Pokémon, que você nunca faz), Mold
+  Breaker & cia. (furar a habilidade do alvo em TODO cálculo do motor), Stakeout/Dancer (pedem um estado de turno
+  — "acabou de entrar", "outro usou golpe de dança" — que o motor não rastreia), Neutralizing Gas (suprimiria
+  TODO mundo em campo, invasivo demais), as formas dinâmicas de espécie única (Ice Face, Gulp Missile, Schooling,
+  Shields Down, Hunger Switch, Zen Mode, Power Construct, Comatose, Disguise), Screen Cleaner e Mimicry (ficaram
+  pra uma leva futura, sem gancho novo hoje) e Gorilla Tactics (a trava de golpe único hoje só olha item,
+  `seg(m).choice`, em TRÊS telas — render.js, arena.js, multiplayer.js —, e mexer nas três sem poder testar
+  visualmente numa sessão sem navegador era risco alto demais pra esta leva).
 - ✅ FEITO (28/09/2026) — **"Flags" de golpe** (Contato, Som, Projétil/Bola e mais). A PokéAPI pública
   (`pokeapi.co/api/v2`) não expõe isso, mas o repositório-fonte que a GERA tem, em CSV puro sem chave nenhuma:
   `move_flags.csv` (21 flags), `move_flag_map.csv` (golpe → flag, por id) e `moves.csv` (id → nome kebab-case,

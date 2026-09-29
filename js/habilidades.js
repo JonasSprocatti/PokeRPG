@@ -94,6 +94,73 @@
 //                          turno, simplificação: ver CLAUDE.md) — Unnerve
 //   friendGuard             dano recebido por um ALIADO vivo cai 25% (golpe.executar, via `ctx.aliadosDe`, novo
 //                          nos dois ctx — sem isso a habilidade fica inerte) — Friend Guard
+//
+//   ---- 7ª leva: os ganchos abaixo entram com o restante das habilidades reais que faltavam (regras.js/golpe.js/
+//   segurados.js). O que ficou de fora por exigir mecânica que o jogo não tem (troca de Pokémon, redirecionamento
+//   forçado, Transform, peso) está documentado no fim da tabela. ----
+//   multFlag: {flag, mult}  golpe com essa FLAG de verdade (dados-golpe-flags.js) que VOCÊ usa ×mult (calcDamage)
+//                          — Tough Claws (contact), Mega Launcher (pulse), Punk Rock (sound)
+//   resisteFlag: {flag, mult}  golpe com essa flag que você RECEBE ×mult (calcDamage) — Punk Rock (sound, ×0,5)
+//   converteTipo: {de, para, mult}  golpe do tipo `de` (ou `'*'` = qualquer) vira `para`, poder ×mult (regras.
+//                          golpeDaConversaoDeTipo, roda ANTES do Tera/Battle Bond) — Aerilate, Pixilate,
+//                          Refrigerate, Galvanize (Normal→outro tipo, ×1,3), Normalize (qualquer→Normal, sem bônus)
+//   evasaoConfuso           evasão × 2 em quem está confuso (chanceAcerto) — Tangled Feet
+//   acaoRapida              30% de agir primeiro dentro da própria prioridade, como a Garra Rápida (regras.
+//                          ativouQuickClaw/ordenarAcoes) — Quick Draw
+//   sempreLento             sempre age por ÚLTIMO dentro da própria prioridade (regras.ordenarAcoes) — Stall
+//   prankster               +1 de prioridade em golpe de STATUS (regras.prioridadeEfetiva) — Prankster
+//   prioridadeVoador        +1 de prioridade em golpe Voador com HP cheio (regras.prioridadeEfetiva) — Gale Wings
+//   prioridadeCura          +3 de prioridade em golpe que cura HP (regras.prioridadeEfetiva) — Triage
+//   prendeQualquer: true|'chao'  Pokémon selvagem não consegue fugir de você: `true` = todo mundo (Shadow Tag),
+//                          `'chao'` = só quem está no chão (regras.consegueFugir, resolvido em batalha.js/mp-motor
+//                          antes de chamar) — Arena Trap
+//   semContato              seus PRÓPRIOS golpes nunca fazem contato, mesmo os que têm a flag de verdade
+//                          (golpe.executar, `encostou`) — Long Reach
+//   aliadoBoost: 'especial'|'qualquer'|'aco'|'plusminus'  reforça o golpe de um ALIADO vivo (multiplicativo com
+//                          mais de um): 'especial' golpe especial ×1,3 (Battery), 'qualquer' ×1,3 (Power Spot),
+//                          'aco' golpe de Aço ×1,5 (Steely Spirit), 'plusminus' golpe especial ×1,5 (Plus, Minus)
+//   aoNocautearMaior        como `aoNocautear`, mas sobe o MAIOR atributo BASE de quem derrubou (regras.
+//                          maiorStatBase) em vez de um fixo — Beast Boost
+//   aftermath: fração       ao ser derrubado por um golpe que fez CONTATO, quem derrubou perde essa fração do
+//                          próprio HP máximo (golpe.executar) — Aftermath
+//   aoDesmaiarDanoAtacante  ao ser derrubado por QUALQUER golpe de dano (contato ou não), quem derrubou perde HP
+//                          igual ao HP que este tinha um instante antes de cair (golpe.executar) — Innards Out
+//   dreno: 'inverte'        um dreno (Giga Drain e cia.) de quem te ataca vira DANO nele em vez de cura pra ele
+//                          (golpe.executar, no bloco de `meta.drain`) — Liquid Ooze
+//   roubaItem: 'contato'|'ataque'  rouba o item de quem foi atingido, se você estiver sem item: 'contato' só em
+//                          golpe que encosta (Pickpocket), 'ataque' em qualquer golpe de dano que acertou
+//                          (Magician) — Sticky Hold (`protegeItem`) do alvo bloqueia (golpe.executar)
+//   protegeItem              seu item não pode ser roubado por Pickpocket/Magician (golpe.executar) — Sticky Hold
+//   imuneGolpeStatus         imune a QUALQUER golpe de status usado por outro Pokémon (golpe.executar, antes de
+//                          golpeDeStatus) — Good As Gold
+//   podeEnvenenarQualquer    seus próprios golpes/toque venenoso ignoram a imunidade de TIPO ao veneno
+//                          (Venenoso/Aço) do alvo — não a de habilidade, tipo Immunity (golpe.aplicarStatus) —
+//                          Corrosion
+//   protegeAliadoStatus      Pokémon de tipo Grama no seu lado (você incluído) não perde atributo nem pega status
+//                          por ação de outro Pokémon (golpe.mudarEstagios/aplicarStatus, `protegidoPorFlores`) —
+//                          Flower Veil
+//   copiaHabilidadeAoEntrar  ao entrar em campo, copia a habilidade de um oponente vivo (nunca uma que mexe com
+//                          mecânica própria do motor, como a troca de forma do Aegislash; desfeito no fim da
+//                          batalha, `golpe.desfazerTrace`) — Trace
+//   avisaGolpeForte          ao entrar, avisa qual é o golpe de maior poder entre os oponentes (só narra, sem
+//                          efeito mecânico) (golpe.aoEntrarEmCampo) — Forewarn
+//   revelaItem               ao entrar, avisa o item que um oponente está segurando (só narra) (golpe.
+//                          aoEntrarEmCampo) — Frisk
+//   moody                    todo fim de turno, +2 num atributo sorteado e −1 em outro sorteado (golpe.fimDeTurno)
+//                          — Moody
+//   ripen                    a fruta que cura HP (Oran, Sitrus…) cura o DOBRO ao ser comida (golpe.comerFruta) —
+//                          Ripen
+//   curaBerryExtra: fração   comer QUALQUER fruta (mesmo as que não curam HP, como a Lum) recupera essa fração
+//                          extra do HP máximo (golpe.comerFruta) — Cheek Pouch
+//   semItemEmBatalha         o item continua segurado (pode ser roubado, aparece pro Frisk) mas não tem NENHUM
+//                          efeito em batalha (segurados.seg, único ponto por onde toda leitura de item passa) —
+//                          Klutz
+//   algodaoCai               quem acerta você perde 1 de Velocidade (golpe.executar; simplificação: só quem
+//                          acertou diretamente, não "todo mundo em campo" como no jogo de verdade) — Cotton Down
+//   trocaHabilidadeContato: 'contagio'|'troca'  ao ser atingido por golpe que faz CONTATO, a habilidade de quem
+//                          encostou muda: 'contagio' = vira a SUA (Mummy, Lingering Aroma), 'troca' = as duas
+//                          trocam de lugar (Wandering Spirit) (golpe.executar; desfeito no fim da batalha,
+//                          `golpe.desfazerTrace`, mesmo mecanismo do Trace)
 export const HABILIDADES = {
   // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
   drizzle: { climaAoEntrar: 'chuva' }, drought: { climaAoEntrar: 'sol' }, 'sand-stream': { climaAoEntrar: 'areia' }, 'snow-warning': { climaAoEntrar: 'neve' },
@@ -248,12 +315,69 @@ export const HABILIDADES = {
   'hadron-engine': { terrenoAoEntrar: 'eletrico', multStatTerreno: { eletrico: { 'special-attack': 1.33 } } },
   'orichalcum-pulse': { climaAoEntrar: 'sol', multStatClima: { sol: { attack: 1.33 } } },
   // Castform: a forma (tipos e sprite) acompanha o tempo — inclusive o padrão da rota (golpe.ajustarForma)
-  forecast: { formaDoClima: true }
-  /* FICARAM DE FORA de propósito, por não ter como ser fiel: Sticky Hold protege o item segurado, mas nenhum golpe do
-     jogo rouba ou derruba item; Regenerator e Natural Cure agem ao TROCAR de Pokémon, e você nunca troca; Beast Boost
-     e Analytic precisam de leitura (maior atributo, ordem do turno) que o motor não expõe; Mold Breaker & cia. pedem
-     ignorar a habilidade do alvo em todo cálculo. Habilidade sem efeito fiel fica como descrição: a ficha só promete
-     "✓ ativa em batalha" pra quem está aqui. */
+  forecast: { formaDoClima: true },
+
+  /* ---- 7ª leva: o restante das habilidades reais que tinham gancho fiel disponível. Cada gancho novo está
+     documentado no topo do arquivo; o que ainda ficou de fora está no comentário depois da tabela. ---- */
+  // prende o selvagem (regras.consegueFugir, via `preso` resolvido em batalha.js/mp-motor)
+  'shadow-tag': { prendeQualquer: true }, 'arena-trap': { prendeQualquer: 'chao' },
+  // Trace: copia a habilidade de um oponente ao entrar em campo
+  trace: { copiaHabilidadeAoEntrar: true },
+  // reforço a um aliado (multiplicativo com mais de um)
+  plus: { aliadoBoost: 'plusminus' }, minus: { aliadoBoost: 'plusminus' },
+  battery: { aliadoBoost: 'especial' }, 'power-spot': { aliadoBoost: 'qualquer' }, 'steely-spirit': { aliadoBoost: 'aco' },
+  // itens
+  'sticky-hold': { protegeItem: true }, klutz: { semItemEmBatalha: true },
+  pickpocket: { roubaItem: 'contato' }, magician: { roubaItem: 'ataque' },
+  // Liquid Ooze: dreno de quem te ataca vira dano nele
+  'liquid-ooze': { dreno: 'inverte' },
+  // Tangled Feet: evasão em dobro confuso
+  'tangled-feet': { evasaoConfuso: true },
+  // conversão de tipo do golpe (Aerilate e cia. dão ×1,3; Normalize não reforça — é assim mesmo desde a Gen 4-6)
+  aerilate: { converteTipo: { de: 'normal', para: 'flying', mult: 1.3 } },
+  pixilate: { converteTipo: { de: 'normal', para: 'fairy', mult: 1.3 } },
+  refrigerate: { converteTipo: { de: 'normal', para: 'ice', mult: 1.3 } },
+  galvanize: { converteTipo: { de: 'normal', para: 'electric', mult: 1.3 } },
+  normalize: { converteTipo: { de: '*', para: 'normal' } },
+  // dano por FLAG do golpe (dados-golpe-flags.js), não por tipo
+  'tough-claws': { multFlag: { flag: 'contact', mult: 1.3 } }, 'mega-launcher': { multFlag: { flag: 'pulse', mult: 1.5 } },
+  'punk-rock': { multFlag: { flag: 'sound', mult: 1.3 }, resisteFlag: { flag: 'sound', mult: 0.5 } },
+  // prioridade (regras.prioridadeEfetiva)
+  prankster: { prankster: true }, 'gale-wings': { prioridadeVoador: true }, triage: { prioridadeCura: true },
+  // Garra Rápida embutida na habilidade (Quick Draw) e o oposto (Stall)
+  'quick-draw': { acaoRapida: true }, stall: { sempreLento: true },
+  // Long Reach: os próprios golpes nunca fazem contato
+  'long-reach': { semContato: true },
+  // ao derrubar o alvo: Beast Boost lê o MAIOR atributo base, não um fixo
+  'beast-boost': { aoNocautearMaior: true },
+  // reação a ser derrubado
+  aftermath: { aftermath: 1 / 4 }, 'innards-out': { aoDesmaiarDanoAtacante: true },
+  // Cotton Down: quem acerta perde Velocidade
+  'cotton-down': { algodaoCai: true },
+  // troca/contágio de habilidade ao encostar
+  mummy: { trocaHabilidadeContato: 'contagio' }, 'lingering-aroma': { trocaHabilidadeContato: 'contagio' },
+  'wandering-spirit': { trocaHabilidadeContato: 'troca' },
+  // status
+  'good-as-gold': { imuneGolpeStatus: true }, corrosion: { podeEnvenenarQualquer: true }, 'flower-veil': { protegeAliadoStatus: true },
+  // entrada em campo, só narração
+  forewarn: { avisaGolpeForte: true }, frisk: { revelaItem: true },
+  // fruta
+  ripen: { ripen: true }, 'cheek-pouch': { curaBerryExtra: 1 / 3 },
+  // fim de turno
+  moody: { moody: true }
+  /* FICARAM DE FORA de propósito, por não ter como ser fiel: Regenerator e Natural Cure agem ao TROCAR de
+     Pokémon, e você nunca troca; Mold Breaker & cia. pedem ignorar a habilidade do alvo em TODO cálculo do motor;
+     Stakeout (dobra o dano em quem "acabou de entrar") e Dancer (reagir a golpe de dança de OUTRO Pokémon) pedem
+     um estado de turno que o motor não rastreia igual nos dois lados; Neutralizing Gas suprimiria a habilidade de
+     TODO mundo em campo — invasivo demais pra entrar como mais uma linha; Ice Face, Gulp Missile, Schooling,
+     Shields Down, Hunger Switch, Zen Mode, Battle Bond (já existe aqui como item, não habilidade), Power
+     Construct, Comatose e Disguise são formas dinâmicas de UMA espécie só, cada uma exigiria sprite e regra
+     própria; Screen Cleaner (remove telas dos dois lados ao entrar) e Mimicry (tipo muda com o terreno, como o
+     Forecast do Castform) ficaram pra uma leva futura, sem gancho novo hoje; Gorilla Tactics (trava no primeiro
+     golpe, +50% de Ataque) precisaria mexer no MESMO cheque de trava que hoje só olha item (`seg(m).choice`) em
+     TRÊS telas diferentes (render.js, arena.js, multiplayer.js) — arriscado sem poder testar visualmente numa
+     sessão sem navegador. Habilidade sem efeito fiel fica como descrição: a ficha só promete "✓ ativa em
+     batalha" pra quem está aqui. */
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
 /* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).

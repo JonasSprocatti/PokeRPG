@@ -360,6 +360,15 @@ export function golpeDoBattleBond(g, u) {
   if (g?.name !== 'water-shuriken' || !u?.ashGreninja) return g;
   return { ...g, power: 20, meta: { ...g.meta, minHits: 3, maxHits: 3 } };
 }
+/* Aerilate/Pixilate/Refrigerate/Galvanize (Normal vira Voador/Fada/Gelo/Elétrico, ×1,3) e Normalize (QUALQUER
+   golpe vira Normal — `de: '*'`, sem reforço de poder): entra ANTES de calcDamage, igual golpeDoClima/golpeDoTera.
+   De propósito ANTES do Tera/Battle Bond na ordem de `executar()`: Weather Ball sem clima ativo continua Normal
+   (golpeDoClima não mexeu nele) e É convertido aqui — igual nos jogos de verdade (Pixilate + Weather Ball sem
+   tempo vira golpe de Fada). Com o Tera ativo, o tipo do Tera já venceria de qualquer jeito (roda depois). */
+export function golpeDaConversaoDeTipo(g, u) {
+  const c = hab(u).converteTipo; if (!c || !g || (c.de !== '*' && g.type !== c.de) || g.type === c.para) return g;
+  return { ...g, type: c.para, power: g.power ? Math.floor(g.power * (c.mult || 1)) : g.power };
+}
 export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
 // quem está no chão sente o terreno; Voador e Levitate flutuam
 export const noChao = m => !m.data.types.includes('flying') && hab(m).imuneTipo !== 'ground';
@@ -424,6 +433,8 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (hu.sheerForce && temSecundario(move)) mod *= 1.3;                              // Sheer Force: mais forte, mas perde o efeito (golpe.js)
   const dc = hu.danoTipoClima?.[clima]; if (dc?.tipos.includes(move.type)) mod *= dc.mult; // Sand Force na areia
   mod *= multFamilia(hu, move.name);                                                 // Iron Fist, Strong Jaw, Sharpness
+  if (hu.multFlag && temFlag(move, hu.multFlag.flag)) mod *= hu.multFlag.mult;       // Tough Claws (contato), Mega Launcher (pulse), Punk Rock (som)
+  if (ht.resisteFlag && temFlag(move, ht.resisteFlag.flag)) mod *= ht.resisteFlag.mult; // Punk Rock: quem tem leva metade de golpe de som
   if (hu.recuo && move.meta?.drain < 0) mod *= hu.recuo;                             // Reckless: golpe com recuo
   if (phys && u.status === 'burn' && !(hu.comStatus?.attack && statusVale(hu, 'burn')) && move.name !== 'facade') mod *= 0.5; // Guts e Facade ignoram a queimadura
   if (hu.pinch === move.type && u.hp <= u.stats.hp / 3) mod *= 1.5;                 // Overgrow, Blaze, Torrent, Swarm
@@ -454,7 +465,8 @@ export function chanceAcerto(move, user, target, clima = null) {
   let acc = PRECISAO_CLIMA[move.name]?.[clima] ?? move.acc;                          // Thunder na chuva, Blizzard no gelo…
   if (acc != null && ht.limitaStatus && move.cls === 'status') acc = Math.min(acc, ht.limitaStatus); // Wonder Skin: golpe de status alheio, no máx. 50%
   const esconde = clima && ht.escondeNoClima?.includes(clima) ? 0.8 : 1;             // Sand Veil, Snow Cloak
-  return acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n)) * (h.precisao || 1) * (move.cls === 'physical' ? h.precisaoFisica || 1 : 1) * esconde;
+  const confuso = ht.evasaoConfuso && target.vol?.conf > 0 ? 0.5 : 1;                // Tangled Feet: evasão em dobro confuso
+  return acc / 100 * (n >= 0 ? (3 + n) / 3 : 3 / (3 - n)) * (h.precisao || 1) * (move.cls === 'physical' ? h.precisaoFisica || 1 : 1) * esconde * confuso;
 }
 
 // imunidades de tipo a status (Elétrico não paralisa, Fogo não queima, Gelo não congela, Venenoso/Aço não envenenam)
@@ -541,18 +553,34 @@ export const xpPorVitoria = (E, deTreinador = false) =>
 
 /* ---- batalha com vários Pokémon do mesmo lado (aliados agora, multiplayer depois) ---- */
 
-// Garra Rápida: 20% de chance, sorteada de novo a cada turno, de agir primeiro DENTRO da própria prioridade —
-// não fura quem tem prioridade maior, só ganha de quem está na mesma faixa (mesmo sendo mais lento). Se os dois
-// lados tiverem a Garra e os dois ativarem, a velocidade ainda decide entre eles (ver `ordenarAcoes`).
-export const CHANCE_QUICK_CLAW = 0.2;
-export const ativouQuickClaw = (m, sorte = Math.random()) => !!seg(m).quickClaw && sorte < CHANCE_QUICK_CLAW;
-// Ordena as ações do turno: prioridade maior primeiro, depois quem ativou a Garra Rápida (`rapido`), depois
-// velocidade maior; empate = moeda. Cada ação: { prio, vel, rapido?, ... } (o resto passa intacto). Não muta a
-// lista recebida.
+// Garra Rápida (item, 20%) e Quick Draw (habilidade, 30%): chance, sorteada de novo a cada turno, de agir
+// primeiro DENTRO da própria prioridade — não fura quem tem prioridade maior, só ganha de quem está na mesma
+// faixa (mesmo sendo mais lento). Se dois lados ativarem, a velocidade ainda decide entre eles (`ordenarAcoes`).
+export const CHANCE_QUICK_CLAW = 0.2, CHANCE_QUICK_DRAW = 0.3;
+export function ativouQuickClaw(m, sorte = Math.random()) {
+  if (seg(m).quickClaw) return sorte < CHANCE_QUICK_CLAW;
+  if (hab(m).acaoRapida) return sorte < CHANCE_QUICK_DRAW;
+  return false;
+}
+// Stall: sempre age por ÚLTIMO dentro da própria prioridade (o oposto da Garra Rápida/Quick Draw) — nunca sorteia,
+// é sempre assim.
+export const sempreUltimo = m => !!hab(m).sempreLento;
+// Ordena as ações do turno: prioridade maior primeiro; dentro dela, quem ativou Garra Rápida/Quick Draw
+// (`rapido`) primeiro e quem tem Stall (`lento`) por último; entre os do meio, velocidade maior; empate = moeda.
+// Cada ação: { prio, vel, rapido?, lento?, ... } (o resto passa intacto). Não muta a lista recebida.
 export function ordenarAcoes(acoes, sorte = Math.random) {
   return acoes.map(a => ({ a, k: sorte() }))
-    .sort((x, y) => (y.a.prio - x.a.prio) || ((y.a.rapido ? 1 : 0) - (x.a.rapido ? 1 : 0)) || (y.a.vel - x.a.vel) || (x.k - y.k))
+    .sort((x, y) => (y.a.prio - x.a.prio) || ((y.a.rapido ? 1 : 0) - (x.a.rapido ? 1 : 0)) || ((x.a.lento ? 1 : 0) - (y.a.lento ? 1 : 0)) || (y.a.vel - x.a.vel) || (x.k - y.k))
     .map(x => x.a);
+}
+// Prankster (+1 golpe de status), Gale Wings (+1 golpe Voador com HP cheio), Triage (+3 golpe de cura)
+export function prioridadeEfetiva(m, g) {
+  let p = g.priority || 0;
+  const h = hab(m);
+  if (h.prankster && g.cls === 'status') p += 1;
+  if (h.prioridadeVoador && g.type === 'flying' && m.hp >= m.stats.hp) p += 1;
+  if (h.prioridadeCura && g.meta?.heal > 0) p += 3;
+  return p;
 }
 
 // IA simples de aliado: o golpe com mais dano esperado (poder × eficácia × STAB) entre os que têm PP.

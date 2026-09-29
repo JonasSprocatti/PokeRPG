@@ -32,6 +32,7 @@
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
 import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO } from './dados.js';
 import { AINDA_EVOLUI } from './dados-evolucao-restante.js';
+import { hab } from './habilidades.js';
 
 export const SEGURADOS = {
   leftovers: { curaFimTurno: 1 / 16 },
@@ -77,8 +78,10 @@ export const SEGURADOS = {
   // correspondente, um prato por tipo. Gerado da MESMA tabela que a badge usa pra premiar — nunca desalinha.
   ...Object.fromEntries(Object.entries(PLACA_DO_TIPO).map(([tipo, id]) => [id, { danoTipo: { tipos: [tipo], mult: 1.2 } }]))
 };
-// o que este Pokémon está segurando (objeto vazio = nada)
-export const seg = m => SEGURADOS[m?.item] || {};
+// o que este Pokémon está segurando (objeto vazio = nada). Klutz (semItemEmBatalha): o item continua segurado
+// (pode ser roubado, aparece pro Frisk…), só não tem NENHUM efeito em batalha — por isso é aqui, no único lugar
+// por onde toda leitura de item passa, e não em cada gancho separado.
+export const seg = m => (hab(m).semItemEmBatalha ? {} : SEGURADOS[m?.item] || {});
 export const temSegurado = m => !!SEGURADOS[m?.item];
 // itens segurados que existem na mochila/loja (dados.js) — o teste confere que as duas listas batem
 export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO)];

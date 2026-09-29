@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { HABILIDADES, IMPL } from '../js/habilidades.js';
-import { usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, aoEntrarEmCampo } from '../js/golpe.js';
+import { usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, aoEntrarEmCampo, comerFruta, desfazerTrace } from '../js/golpe.js';
 import { calcDamage, effStat, chanceAcerto, freshVol, FAMILIAS_GOLPE } from '../js/regras.js';
 import { TYPE_PT, AIL_MSG, STATS } from '../js/dados.js';
 import { FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
@@ -74,8 +74,13 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance',
     // sexta leva
     'sheerForce', 'unnerve', 'friendGuard',
-    // sétima leva: flag de golpe de verdade (dados-golpe-flags.js)
-    'imuneFlag']);
+    // sétima leva: flag de golpe de verdade (dados-golpe-flags.js) + o restante das habilidades reais
+    'imuneFlag', 'multFlag', 'resisteFlag', 'converteTipo', 'evasaoConfuso', 'acaoRapida', 'sempreLento',
+    'prankster', 'prioridadeVoador', 'prioridadeCura', 'prendeQualquer', 'semContato', 'aliadoBoost',
+    'aoNocautearMaior', 'aftermath', 'aoDesmaiarDanoAtacante', 'dreno', 'roubaItem', 'protegeItem',
+    'imuneGolpeStatus', 'podeEnvenenarQualquer', 'protegeAliadoStatus', 'copiaHabilidadeAoEntrar',
+    'avisaGolpeForte', 'revelaItem', 'moody', 'ripen', 'curaBerryExtra', 'semItemEmBatalha', 'algodaoCai',
+    'trocaHabilidadeContato']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
@@ -84,6 +89,17 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     for (const a of h.imuneStatus || []) assert.ok(AIL_MSG[a] || a === 'confusion', `${nome}: status "${a}"`);
     for (const s of Object.keys({ ...h.multStat, ...h.comStatus })) assert.ok(STATS.includes(s), `${nome}: atributo "${s}"`);
     if (h.imuneFlag) assert.ok(FLAGS_VALIDAS.includes(h.imuneFlag), `${nome}: flag de golpe "${h.imuneFlag}" não existe`);
+    if (h.multFlag) assert.ok(FLAGS_VALIDAS.includes(h.multFlag.flag), `${nome}: flag de golpe "${h.multFlag.flag}" não existe`);
+    if (h.resisteFlag) assert.ok(FLAGS_VALIDAS.includes(h.resisteFlag.flag), `${nome}: flag de golpe "${h.resisteFlag.flag}" não existe`);
+    if (h.converteTipo) {
+      assert.ok(h.converteTipo.de === '*' || tipos.includes(h.converteTipo.de), `${nome}: tipo "${h.converteTipo.de}"`);
+      assert.ok(tipos.includes(h.converteTipo.para), `${nome}: tipo "${h.converteTipo.para}"`);
+    }
+    if (h.aliadoBoost) assert.ok(['especial', 'qualquer', 'aco', 'plusminus'].includes(h.aliadoBoost), `${nome}: aliadoBoost "${h.aliadoBoost}"`);
+    if (h.roubaItem) assert.ok(['contato', 'ataque'].includes(h.roubaItem), `${nome}: roubaItem "${h.roubaItem}"`);
+    if (h.trocaHabilidadeContato) assert.ok(['contagio', 'troca'].includes(h.trocaHabilidadeContato), `${nome}: trocaHabilidadeContato "${h.trocaHabilidadeContato}"`);
+    if (h.prendeQualquer) assert.ok(h.prendeQualquer === true || h.prendeQualquer === 'chao', `${nome}: prendeQualquer "${h.prendeQualquer}"`);
+    if (h.dreno) assert.ok(h.dreno === 'inverte', `${nome}: dreno "${h.dreno}"`);
     // ganchos da quarta leva: tipo, status, atributo e família existem de verdade (typo aqui deixaria a habilidade inerte)
     for (const a of [...(h.soStatus || []), h.critContraStatus, h.toque?.status, ...(h.contato?.sorteio || []).map(x => x[0]), ...(typeof h.contato?.status === 'string' ? [h.contato.status] : [])].filter(Boolean)) assert.ok(AIL_MSG[a], `${nome}: status "${a}"`);
     for (const s of [...Object.keys(h.abaixoDeMetade || {}), h.aoSerBaixado?.[0], h.aoNocautear?.[0], h.contato?.estagio?.[0]].filter(Boolean)) stat(nome, s);
@@ -644,4 +660,217 @@ test('Friend Guard: reduz o dano que um ALIADO recebe', async t => {
   const comGuarda = 100 - alvoComGuarda.hp, semGuarda = 100 - alvoSemGuarda.hp;
   assert.ok(comGuarda < semGuarda, `Friend Guard devia reduzir o dano: ${comGuarda} vs ${semGuarda}`);
   assert.ok(Math.abs(comGuarda - semGuarda * 0.75) <= 1, `~25% de redução: ${comGuarda} vs ${semGuarda * 0.75}`);
+});
+
+test('Battery/Steely Spirit: reforçam o golpe de um ALIADO vivo (Battery só especial, Steely Spirit só Aço)', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const especial = golpe({ cls: 'special', type: 'psychic' });
+  const semAliado = mon(), alvo1 = mon();
+  await usarGolpe(semAliado, alvo1, especial, true, ctx());
+  const danoBase = 100 - alvo1.hp;
+  const comBattery = mon(), alvo2 = mon();
+  const ctxBattery = { ...ctx(), aliadosDe: m => m === comBattery ? [mon({ ability: 'battery' })] : [] };
+  await usarGolpe(comBattery, alvo2, especial, true, ctxBattery);
+  assert.equal(100 - alvo2.hp, Math.floor(danoBase * 1.3));
+
+  const aco = golpe({ cls: 'physical', type: 'steel' });
+  const semAliado2 = mon(), alvoAco1 = mon();
+  await usarGolpe(semAliado2, alvoAco1, aco, true, ctx());
+  const danoAcoBase = 100 - alvoAco1.hp;
+  const comSteely = mon(), alvoAco2 = mon();
+  const ctxSteely = { ...ctx(), aliadosDe: m => m === comSteely ? [mon({ ability: 'steely-spirit' })] : [] };
+  await usarGolpe(comSteely, alvoAco2, aco, true, ctxSteely);
+  assert.equal(100 - alvoAco2.hp, Math.floor(danoAcoBase * 1.5));
+});
+
+test('Aftermath: quem derruba com CONTATO perde 1/4 do próprio HP máximo; sem contato, nada', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const atacante = mon();
+  await usarGolpe(atacante, mon({ ability: 'aftermath', hp: 1 }), golpe({ power: 200 }), true, ctx()); // tackle: contato
+  assert.equal(atacante.hp, 75);
+  const atacante2 = mon();
+  await usarGolpe(atacante2, mon({ ability: 'aftermath', hp: 1 }), golpe({ name: 'ember', cls: 'special', power: 200 }), true, ctx());
+  assert.equal(atacante2.hp, 100, 'sem contato, Aftermath não ativa');
+});
+
+test('Innards Out: ao derrubar (contato ou não), quem derrubou perde HP igual ao que o alvo tinha antes de cair', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const atacante = mon();
+  await usarGolpe(atacante, mon({ ability: 'innards-out', hp: 7 }), golpe({ name: 'ember', cls: 'special', power: 200 }), true, ctx());
+  assert.equal(atacante.hp, 93);
+});
+
+test('Beast Boost: ao derrubar o alvo, sobe o MAIOR atributo BASE de quem derrubou', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const atacante = mon({ ability: 'beast-boost', data: { types: ['normal'], base: { attack: 50, defense: 50, 'special-attack': 130, 'special-defense': 50, speed: 90 } } });
+  await usarGolpe(atacante, mon({ hp: 1 }), golpe({ power: 200 }), true, ctx());
+  assert.equal(atacante.vol.stages['special-attack'], 1);
+});
+
+test('Liquid Ooze: o dreno de quem te ataca vira DANO nele, em vez de cura', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const golpeDreno = golpe({ meta: { drain: 50 } });
+  const atacante = mon({ hp: 50 });
+  await usarGolpe(atacante, mon({ ability: 'liquid-ooze' }), golpeDreno, true, ctx());
+  assert.ok(atacante.hp < 50, `Liquid Ooze devia machucar quem drenou: ${atacante.hp}`);
+  const atacanteNormal = mon({ hp: 50 });
+  await usarGolpe(atacanteNormal, mon(), golpeDreno, true, ctx());
+  assert.ok(atacanteNormal.hp > 50, 'sem Liquid Ooze, o dreno cura normalmente');
+});
+
+test('Pickpocket rouba ao encostar; Magician rouba com qualquer golpe de dano; Sticky Hold bloqueia', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const ladrao = mon({ ability: 'pickpocket' });
+  await usarGolpe(ladrao, mon({ item: 'leftovers' }), golpe(), true, ctx()); // tackle: contato
+  assert.equal(ladrao.item, 'leftovers');
+
+  const mago = mon({ ability: 'magician' });
+  await usarGolpe(mago, mon({ item: 'leftovers' }), golpe({ name: 'ember', cls: 'special' }), true, ctx()); // sem contato
+  assert.equal(mago.item, 'leftovers', 'Magician não precisa de contato');
+
+  const ladrao2 = mon({ ability: 'pickpocket' });
+  const protegida = mon({ item: 'leftovers', ability: 'sticky-hold' });
+  await usarGolpe(ladrao2, protegida, golpe(), true, ctx());
+  assert.ok(!ladrao2.item, 'Sticky Hold bloqueia o roubo');
+  assert.equal(protegida.item, 'leftovers');
+
+  const ladraoComItem = mon({ ability: 'pickpocket', item: 'quick-claw' });
+  await usarGolpe(ladraoComItem, mon({ item: 'leftovers' }), golpe(), true, ctx());
+  assert.equal(ladraoComItem.item, 'quick-claw', 'já com item, não rouba');
+});
+
+test('Cotton Down: quem acerta perde 1 de Velocidade', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const atacante = mon();
+  await usarGolpe(atacante, mon({ ability: 'cotton-down' }), golpe(), true, ctx());
+  assert.equal(atacante.vol.stages.speed, -1);
+});
+
+test('Mummy/Lingering Aroma: contágio (sua habilidade vira a do dono); Wandering Spirit TROCA as duas', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const atacante = mon({ ability: 'blaze' });
+  await usarGolpe(atacante, mon({ ability: 'mummy' }), golpe(), true, ctx());
+  assert.equal(atacante.ability, 'mummy'); assert.equal(atacante.abilityAntes, 'blaze');
+
+  const atacante2 = mon({ ability: 'blaze' });
+  const dono = mon({ ability: 'wandering-spirit' });
+  await usarGolpe(atacante2, dono, golpe(), true, ctx());
+  assert.equal(atacante2.ability, 'wandering-spirit'); assert.equal(dono.ability, 'blaze');
+});
+
+test('Mummy: nunca sobrescreve uma habilidade que mexe com mecânica própria do motor (Stance Change)', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const baseAegislash = { hp: 60, attack: 50, defense: 150, 'special-attack': 50, 'special-defense': 150, speed: 60 };
+  const zero = { hp: 0, attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0 };
+  const aegislash = mon({ ability: 'stance-change', nature: 'hardy', ivs: zero, evs: zero, data: { types: ['steel', 'ghost'], base: baseAegislash } });
+  await usarGolpe(aegislash, mon({ ability: 'mummy' }), golpe(), true, ctx());
+  assert.equal(aegislash.ability, 'stance-change', 'habilidade travada não é sobrescrita, mesmo formando a Lâmina');
+});
+
+test('desfazerTrace: restaura a habilidade original depois da troca/contágio', () => {
+  const m = { ability: 'mummy', abilityAntes: 'blaze' };
+  assert.equal(desfazerTrace(m), true);
+  assert.equal(m.ability, 'blaze'); assert.equal(m.abilityAntes, undefined);
+  assert.equal(desfazerTrace({ ability: 'blaze' }), false);
+});
+
+test('Trace: copia a habilidade de um oponente ao entrar (nunca uma travada, como Stance Change)', async () => {
+  const tracer = mon({ ability: 'trace' });
+  const oponente = mon({ ability: 'blaze' });
+  await aoEntrarEmCampo([tracer], m => (m === tracer ? [oponente] : [tracer]), ctx());
+  assert.equal(tracer.ability, 'blaze'); assert.equal(tracer.abilityAntes, 'trace');
+
+  const tracer2 = mon({ ability: 'trace' });
+  const aegislash = mon({ ability: 'stance-change' });
+  await aoEntrarEmCampo([tracer2], m => (m === tracer2 ? [aegislash] : [tracer2]), ctx());
+  assert.equal(tracer2.ability, 'trace', 'não copia Stance Change');
+});
+
+test('Forewarn e Frisk: só narram, sem efeito mecânico', async () => {
+  const c = ctx();
+  const golpeForte = golpe({ name: 'hyper-beam', power: 150 });
+  const forewarn = mon({ ability: 'forewarn', moves: [golpe()] });
+  const oponente = mon({ moves: [golpeForte] });
+  await aoEntrarEmCampo([forewarn], m => (m === forewarn ? [oponente] : [forewarn]), c);
+  assert.ok(c.msgs.some(msg => msg.includes('hyper-beam')));
+
+  const c2 = ctx();
+  const frisk = mon({ ability: 'frisk' });
+  const comItem = mon({ item: 'leftovers' });
+  await aoEntrarEmCampo([frisk], m => (m === frisk ? [comItem] : [frisk]), c2);
+  assert.ok(c2.msgs.some(msg => msg.toLowerCase().includes('restos')));
+});
+
+test('Moody: no fim do turno, +2 num atributo sorteado e −1 em outro (nunca o mesmo)', async t => {
+  t.mock.method(Math, 'random', () => 0.3); // fixo de propósito: confere que não trava num loop infinito
+  const m = mon({ ability: 'moody' });
+  await fimDeTurno(m, ctx());
+  const stages = Object.values(m.vol.stages);
+  assert.equal(stages.filter(v => v === 2).length, 1);
+  assert.equal(stages.filter(v => v === -1).length, 1);
+});
+
+test('Ripen dobra a cura da fruta; Cheek Pouch cura HP extra com QUALQUER fruta, mesmo as que só curam status', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const semHab = mon({ item: 'oran-berry', hp: 40 });
+  await comerFruta(semHab, ctx());
+  const curaNormal = semHab.hp - 40;
+
+  const comRipen = mon({ item: 'oran-berry', hp: 40, ability: 'ripen' });
+  await comerFruta(comRipen, ctx());
+  assert.equal(comRipen.hp - 40, curaNormal * 2);
+
+  const comCheek = mon({ item: 'lum-berry', status: 'paralysis', hp: 50, ability: 'cheek-pouch' });
+  await comerFruta(comCheek, ctx());
+  assert.equal(comCheek.status, null);
+  assert.ok(comCheek.hp > 50, 'Cheek Pouch cura HP mesmo com uma fruta que só cura status');
+});
+
+test('Klutz: o item continua segurado mas não tem NENHUM efeito em batalha', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const semKlutz = mon({ item: 'leftovers', hp: 50 });
+  await fimDeTurno(semKlutz, ctx());
+  assert.ok(semKlutz.hp > 50, 'sem Klutz, Restos cura normal');
+
+  const comKlutz = mon({ item: 'leftovers', hp: 50, ability: 'klutz' });
+  await fimDeTurno(comKlutz, ctx());
+  assert.equal(comKlutz.hp, 50, 'com Klutz, Restos não faz nada');
+  assert.equal(comKlutz.item, 'leftovers', 'mas o item continua lá');
+});
+
+test('Good As Gold: imune a QUALQUER golpe de status usado por outro Pokémon', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const alvo = mon({ ability: 'good-as-gold' });
+  await usarGolpe(mon(), alvo, golpe({ cls: 'status', stats: [{ stat: 'attack', change: -2 }], meta: {} }), true, ctx());
+  assert.equal(alvo.vol.stages.attack, 0);
+});
+
+test('Corrosion: ignora a imunidade de TIPO ao veneno; a de HABILIDADE (Immunity) continua valendo', async () => {
+  const atacante = mon({ ability: 'corrosion' });
+  const alvoAco = mon({ data: { types: ['steel'] } });
+  await aplicarStatus(alvoAco, 'poison', ctx(), true, atacante);
+  assert.equal(alvoAco.status, 'poison');
+
+  const semCorrosion = mon({ data: { types: ['steel'] } });
+  await aplicarStatus(semCorrosion, 'poison', ctx(), true, mon());
+  assert.equal(semCorrosion.status, null, 'sem Corrosion, Aço continua imune');
+
+  const comImmunity = mon({ ability: 'immunity' });
+  await aplicarStatus(comImmunity, 'poison', ctx(), true, atacante);
+  assert.equal(comImmunity.status, null, 'Immunity continua protegendo mesmo contra Corrosion');
+});
+
+test('Flower Veil: Grama no lado (você ou aliado) não perde atributo nem pega status vindo de fora', async () => {
+  const guarda = mon({ ability: 'flower-veil' });
+  const grama = mon({ data: { types: ['grass'] } });
+  const c = { ...ctx(), aliadosDe: m => (m === grama ? [guarda] : []) };
+  await mudarEstagios(grama, [{ stat: 'attack', change: -1 }], c, mon());
+  assert.equal(grama.vol.stages.attack, 0);
+  await aplicarStatus(grama, 'poison', c, true, mon());
+  assert.equal(grama.status, null);
+
+  const naoGrama = mon({ data: { types: ['normal'] } });
+  const c2 = { ...ctx(), aliadosDe: m => (m === naoGrama ? [guarda] : []) };
+  await mudarEstagios(naoGrama, [{ stat: 'attack', change: -1 }], c2, mon());
+  assert.equal(naoGrama.vol.stages.attack, -1, 'sem ser Grama, o Véu de Flores não protege');
 });

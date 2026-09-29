@@ -67,7 +67,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
 - As **barras de HP e XP animam** ao mudar de valor, e o **PP pisca** quando muda — nada salta direto pro número novo (respeita a preferência de "reduzir animações" do aparelho).
 - **Cena mais viva**: quem ataca dá um pulo, quem apanha pisca vermelho, quem se cura pisca verde, e status (queimado, envenenado, paralisado, congelado) e mudanças de atributo pulsam sutilmente enquanto durarem.
-- **Mais de 160 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
+- **Mais de 200 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
   - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Toxic Boost, Flare Boost, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head, Reckless, Neuroforce, Merciless, Defeatist, Iron Fist, Strong Jaw, Sharpness, Steelworker, Transistor, Dragon's Maw, Rocky Payload, Water Bubble, Sand Force.
   - **Defesa:** Thick Fat, Filter, Multiscale, Sturdy, Wonder Guard, Unaware, Wonder Skin, Dazzling/Queenly Majesty/Armor Tail (barram golpe de prioridade), Pressure, Soundproof (imune a golpe sonoro), Bulletproof (imune a golpe de bala/bola).
   - **Absorção de tipo:** Levitate, Flash Fire, Volt/Water Absorb, Lightning Rod, Motor Drive, Sap Sipper.
@@ -77,7 +77,8 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
   - **Contato:** Static, Flame Body, Rough Skin, Effect Spore (sono, paralisia ou veneno), Gooey, Tangling Hair, Poison Touch.
   - **Ao derrubar:** Moxie, Chilling Neigh, Grim Neigh.
   - **Ao entrar em campo:** Intimidate (com Guard Dog, Inner Focus, Own Tempo e Oblivious reagindo), Download (lê a defesa do oponente), Hadron Engine, Orichalcum Pulse, Anticipation (avisa se algum oponente tem golpe perigoso).
-  - **Fim de turno:** Speed Boost, Shed Skin. **Clima/terreno com maior atributo:** Protosynthesis (sol), Quark Drive (Campo Elétrico). **Outras:** Truant, Run Away, Magnet Pull (prende quem é do tipo Aço), Synchronize (devolve queimadura/paralisia/veneno pra quem causou), Stench (chance extra de fazer recuar), Sheer Force (golpe com efeito secundário bate mais forte, mas perde o efeito), Unnerve (trava a fruta que o oponente comeria sozinho), Friend Guard (reduz o dano que um aliado recebe).
+  - **Fim de turno:** Speed Boost, Shed Skin, Moody (sorteia um atributo que sobe e outro que cai). **Clima/terreno com maior atributo:** Protosynthesis (sol), Quark Drive (Campo Elétrico). **Outras:** Truant, Run Away, Magnet Pull (prende quem é do tipo Aço), Shadow Tag/Arena Trap (prendem qualquer um, Arena Trap só quem está no chão), Synchronize (devolve queimadura/paralisia/veneno pra quem causou), Stench (chance extra de fazer recuar), Sheer Force (golpe com efeito secundário bate mais forte, mas perde o efeito), Unnerve (trava a fruta que o oponente comeria sozinho), Friend Guard (reduz o dano que um aliado recebe).
+  - **Leva de 28/09/2026 (43 habilidades):** Tough Claws/Mega Launcher/Punk Rock (dano extra por golpe de contato/aura/som), Aerilate/Pixilate/Refrigerate/Galvanize (viram golpe Normal noutro tipo, com bônus de poder) e Normalize (tudo vira Normal), Tangled Feet (dobra a evasão confuso), Prankster/Gale Wings/Triage (prioridade extra em status/Voador com HP cheio/cura), Quick Draw e Stall (agem primeiro ou por último dentro da própria prioridade, como a Garra Rápida ao contrário), Long Reach (nunca faz contato), Battery/Power Spot/Steely Spirit/Plus/Minus (reforçam o golpe de um aliado), Beast Boost (sobe o maior atributo ao derrubar), Aftermath e Innards Out (quem derruba sofre também), Liquid Ooze (dreno vira dano em quem drenou), Pickpocket/Magician/Sticky Hold (roubam item ao acertar, ou protegem o seu), Good As Gold (imune a golpe de status alheio), Corrosion (envenena até Aço/Venenoso), Flower Veil (protege aliados de tipo Grama de queda de atributo e status), Trace (copia a habilidade do oponente ao entrar), Forewarn/Frisk (avisam o golpe mais forte/o item do oponente), Ripen/Cheek Pouch (fruta cura mais), Klutz (item sem efeito nenhum em batalha), Cotton Down (quem te acerta perde Velocidade), Mummy/Lingering Aroma/Wandering Spirit (contagiam ou trocam habilidade ao encostar).
 
   A ficha marca quais estão ativas.
 
@@ -345,7 +346,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 
 - [ ] **Troca de verdade** entre dois jogadores no multiplayer (hoje a troca é simulada pelo Cabo de Conexão).
 - [ ] **Batalha mais completa**, nesta ordem:
-  1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela). Ficaram de fora as que não têm como ser fiéis: Sticky Hold (nenhum golpe rouba item), Regenerator/Natural Cure (agem ao trocar, e você nunca troca), Beast Boost, Analytic e as que ignoram a habilidade do alvo (Mold Breaker).
+  1. ~~Habilidades~~ ✔ (mais delas vão entrando aos poucos: cada uma é uma linha na tabela — hoje 208 de 314). Ficaram de fora as que não têm como ser fiéis: Regenerator/Natural Cure (agem ao trocar, e você nunca troca), as que ignoram a habilidade do alvo (Mold Breaker e família), Stakeout/Dancer (precisam de um estado de turno que o motor não guarda), Neutralizing Gas (suprimiria toda habilidade em campo) e as formas dinâmicas de espécie única (Ice Face, Gulp Missile, Zen Mode…).
   2. ~~Clima~~ ✔ (sol, chuva, areia, granizo e neve, com as habilidades ligadas a eles).
   3. ~~Terrenos~~ ✔ (elétrico, grama, psíquico e névoa, com as habilidades Surge).
   4. ~~Itens segurados~~ ✔ (13 itens; faltam os Choice, que travam o golpe, e frutas de aperto por tipo).
@@ -375,7 +376,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Roguelike sem segunda chance (permadeath de você e dos aliados)
 - [x] Entrar numa sala com um Pokémon convidado; ganhos da run de outra pessoa voltam com você (no nível real)
 - [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
-- [x] Motor de golpes único (single player e multiplayer) com mais de 120 habilidades — as parciais (Download, Guard Dog, Sand Force, Effect Spore, Water Bubble, Toxic/Flare Boost, Magic Guard) foram completadas
+- [x] Motor de golpes único (single player e multiplayer) com mais de 200 habilidades — as parciais (Download, Guard Dog, Sand Force, Effect Spore, Water Bubble, Toxic/Flare Boost, Magic Guard) foram completadas
 - [x] Tela de bugs e sugestões (funciona sem conta e offline), com até 2 imagens de 2 MB
 - [x] 💰 Carteira: dinheiro em pílula no topo (fora do menu ☰), na barra de turno da batalha e na loja, com aviso de +₽/−₽
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail

@@ -8,7 +8,7 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { healFull, CTX } from './efeitos.js';
-import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem } from './itens.js';
@@ -20,7 +20,8 @@ import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR
 import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
-  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera
+  statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
+  prioridadeEfetiva, sempreUltimo
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
@@ -382,7 +383,9 @@ export async function turn(action) {
       B.runs++;
       await vez('p');
       const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
-      const preso = hab(E).prendeTipo?.some(t => P.data.types.includes(t));   // Magnet Pull
+      // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão)
+      const preso = hab(E).prendeTipo?.some(t => P.data.types.includes(t))
+        || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P));
       if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability, undefined, preso)) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
@@ -407,16 +410,16 @@ export async function turn(action) {
     const acoes = [], clima = climaDe(B.campo), terreno = terrenoDe(B.campo); // clima e terreno entram na velocidade
     // Vento de Cauda (Tailwind) dobra a velocidade do lado dele (regras.multVento)
     const vel = m => effStat(m, 'speed', false, true, clima, terreno) * multVento(B.campo.lados?.[CTX.ladoDe(m)]);
-    if (pm) acoes.push({ quem: P, golpe: pm, prio: pm.priority || 0, vel: vel(P), rapido: ativouQuickClaw(P) });
+    if (pm) acoes.push({ quem: P, golpe: pm, prio: prioridadeEfetiva(P, pm), vel: vel(P), rapido: ativouQuickClaw(P), lento: sempreUltimo(P) });
     // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
       const d = golpeDoAliado(A.ordem || 'livre', A.moves, A.data.types, E.data.types, undefined, seg(A).choice ? A.vol.escolha : null);
       if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
       const g = d.golpe || STRUGGLE;
-      acoes.push({ quem: A, golpe: g, prio: g.priority || 0, vel: vel(A), rapido: ativouQuickClaw(A) });
+      acoes.push({ quem: A, golpe: g, prio: prioridadeEfetiva(A, g), vel: vel(A), rapido: ativouQuickClaw(A), lento: sempreUltimo(A) });
     }
     const ea = acaoDoInimigo(E, P);
-    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: ea.move.priority || 0, vel: vel(E), rapido: ativouQuickClaw(E) });
+    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: prioridadeEfetiva(E, ea.move), vel: vel(E), rapido: ativouQuickClaw(E), lento: sempreUltimo(E) });
     // o que cada um vai usar neste turno (Sucker Punch olha isso: só funciona contra quem vai atacar). Golpe travado (carga/fúria) vale.
     for (const m of [...ladoJogador(), E]) delete m.vol.golpeEscolhido;
     for (const a of acoes) if (a.golpe) a.quem.vol.golpeEscolhido = golpeTravado(a.quem) || a.golpe;
@@ -625,7 +628,7 @@ async function serCapturado() {
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
   G.B = null; G.mode = 'explore'; G.panel = 'main';
-  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); m.vol = freshVol(); }
+  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); desfazerTrace(m); m.vol = freshVol(); }
 }
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----

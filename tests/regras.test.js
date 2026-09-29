@@ -10,7 +10,8 @@ import {
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda,
-  caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW
+  caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW,
+  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo
 } from '../js/regras.js';
 import { CHART, ITEMS } from '../js/dados.js';
 import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
@@ -339,6 +340,70 @@ test('ativouQuickClaw: só com o item, 20% de chance', () => {
   assert.equal(ativouQuickClaw(m, 0.99), false);
   assert.equal(ativouQuickClaw({ item: 'leftovers' }, 0.1), false, 'item errado');
   assert.equal(ativouQuickClaw({}, 0.1), false, 'sem item');
+});
+
+test('ordenarAcoes: Stall (lento) sempre por ÚLTIMO dentro da própria prioridade', () => {
+  const acoes = [{ id: 'normal', prio: 0, vel: 50 }, { id: 'devagar', prio: 0, vel: 200, lento: true }, { id: 'prioridade-lenta', prio: 1, vel: 1, lento: true }];
+  assert.deepEqual(ordenarAcoes(acoes).map(a => a.id), ['prioridade-lenta', 'normal', 'devagar']);
+});
+
+test('ativouQuickClaw: Quick Draw (habilidade) — 30%, sem precisar de item', () => {
+  assert.equal(CHANCE_QUICK_DRAW, 0.3);
+  assert.equal(ativouQuickClaw({ ability: 'quick-draw' }, 0.2), true);
+  assert.equal(ativouQuickClaw({ ability: 'quick-draw' }, 0.3), false);
+  assert.equal(ativouQuickClaw({ ability: 'stall' }, 0.1), false, 'Stall não é Quick Draw');
+});
+
+test('sempreUltimo: só quem tem Stall', () => {
+  assert.equal(sempreUltimo({ ability: 'stall' }), true);
+  assert.equal(sempreUltimo({ ability: 'none' }), false);
+  assert.equal(sempreUltimo({}), false);
+});
+
+test('prioridadeEfetiva: Prankster (+1 status), Gale Wings (+1 Voador com HP cheio), Triage (+3 cura), soma com a prioridade nativa', () => {
+  const status = golpe({ cls: 'status', priority: 0 });
+  assert.equal(prioridadeEfetiva({ ability: 'prankster' }, status), 1);
+  assert.equal(prioridadeEfetiva({ ability: 'none' }, status), 0);
+  const voador = golpe({ cls: 'physical', type: 'flying', priority: 0 });
+  assert.equal(prioridadeEfetiva({ ability: 'gale-wings', hp: 100, stats: { hp: 100 } }, voador), 1);
+  assert.equal(prioridadeEfetiva({ ability: 'gale-wings', hp: 50, stats: { hp: 100 } }, voador), 0, 'só com HP cheio');
+  const cura = golpe({ cls: 'status', priority: 0, meta: { heal: 50 } });
+  assert.equal(prioridadeEfetiva({ ability: 'triage' }, cura), 3);
+  const rapido = golpe({ cls: 'status', priority: 1 });
+  assert.equal(prioridadeEfetiva({ ability: 'prankster' }, rapido), 2);
+});
+
+test('golpeDaConversaoDeTipo: Aerilate reforça Normal→Voador; Normalize converte QUALQUER tipo sem reforçar', () => {
+  const normal = golpe({ name: 'tackle', type: 'normal', power: 40 });
+  const aero = golpeDaConversaoDeTipo(normal, mon({ ability: 'aerilate' }));
+  assert.equal(aero.type, 'flying'); assert.equal(aero.power, Math.floor(40 * 1.3));
+  const fogo = golpe({ name: 'ember', type: 'fire', power: 40 });
+  assert.equal(golpeDaConversaoDeTipo(fogo, mon({ ability: 'aerilate' })).type, 'fire', 'só converte golpe Normal');
+  const norm = golpeDaConversaoDeTipo(fogo, mon({ ability: 'normalize' }));
+  assert.equal(norm.type, 'normal'); assert.equal(norm.power, 40, 'Normalize não reforça poder');
+  assert.equal(golpeDaConversaoDeTipo(normal, mon()).type, 'normal', 'sem a habilidade, nada muda');
+});
+
+test('chanceAcerto: Tangled Feet dobra a evasão só quando o alvo está confuso', () => {
+  const atacante = mon(), alvo = mon({ ability: 'tangled-feet' });
+  const semConf = chanceAcerto(golpe({ acc: 100 }), atacante, alvo);
+  alvo.vol.conf = 2;
+  assert.equal(chanceAcerto(golpe({ acc: 100 }), atacante, alvo), semConf * 0.5);
+  const semHab = mon(); semHab.vol.conf = 2;
+  assert.equal(chanceAcerto(golpe({ acc: 100 }), atacante, semHab), semConf, 'confuso sem a habilidade não muda nada');
+});
+
+test('calcDamage: Tough Claws (contato), Mega Launcher (pulse) e Punk Rock (som) multiplicam por FLAG do golpe, não por classe', t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const agua = { data: { base: { hp: 100 }, types: ['water'] } };   // tipo neutro aos golpes de teste, sem STAB
+  const base = calcDamage(mon(agua), mon(agua), golpe({ name: 'tackle', type: 'normal' })).dmg;
+  assert.equal(base, 46);
+  assert.equal(calcDamage(mon({ ...agua, ability: 'tough-claws' }), mon(agua), golpe({ name: 'tackle', type: 'normal' })).dmg, 59);
+  // Earthquake é físico mas NÃO tem a flag contact — Tough Claws não pega
+  assert.equal(calcDamage(mon({ ...agua, ability: 'tough-claws' }), mon(agua), golpe({ name: 'earthquake', type: 'ground' })).dmg, base);
+  assert.equal(calcDamage(mon({ ...agua, ability: 'mega-launcher' }), mon(agua), golpe({ name: 'dragon-pulse', type: 'dragon' })).dmg, 69);
+  assert.equal(calcDamage(mon({ ...agua, ability: 'punk-rock' }), mon(agua), golpe({ name: 'hyper-voice', type: 'normal', cls: 'special' })).dmg, 59);
+  assert.equal(calcDamage(mon(agua), mon({ ...agua, ability: 'punk-rock' }), golpe({ name: 'hyper-voice', type: 'normal', cls: 'special' })).dmg, 23);
 });
 
 test('melhorGolpe: dano esperado (poder × eficácia × STAB), ignora sem PP', () => {
