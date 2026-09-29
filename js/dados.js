@@ -124,16 +124,16 @@ export const ITEMS = {
   'rare-candy': { name: 'Rare Candy', desc: 'Sobe um nível na hora.', candy: true },
   // Itens de RAIDE (boss.usarItemDeRaide): só valem na luta contra o chefe da semana, e um de cada tipo por luta. Não se compra:
   // vêm de prêmio de chefe (evento.js). Usar gasta o turno no single player; no co-op é uma ação livre do jogador.
-  'cristal-de-ruptura': { name: 'Cristal de Ruptura', desc: 'Só na luta do chefe da semana: estilhaça a defesa dele na hora (Ruptura: dano ×1,5 por 3 ações). Um por luta.', battle: true, raide: 'ruptura' },
-  'selo-de-interrupcao': { name: 'Selo de Interrupção', desc: 'Só na luta do chefe da semana: corta o golpe que ele está carregando (e o expõe). Só funciona enquanto ele carrega. Um por luta.', battle: true, raide: 'interrupcao' },
-  'escudo-astral': { name: 'Escudo Astral', desc: 'Só na luta do chefe da semana: o PRÓXIMO golpe carregado dele causa só metade do dano no time todo. Um por luta.', battle: true, raide: 'escudo' },
-  'cinza-vulcanica': { name: 'Cinza Vulcânica', desc: 'Só na luta do chefe da semana: o time resiste a golpes de Fogo por 3 turnos. Um por luta.', battle: true, raide: 'cinza' },
-  'escama-abissal': { name: 'Escama Abissal', desc: 'Só na luta do chefe da semana: o time resiste a golpes de Água por 3 turnos. Um por luta.', battle: true, raide: 'abissal' },
-  'prisma-de-luz': { name: 'Prisma de Luz', desc: 'Só na luta do chefe da semana: quebra a armadura de ponto fraco dele na hora, deixando-o exposto. Só funciona em chefes com ponto fraco. Um por luta.', battle: true, raide: 'prisma' },
-  'espelho-reverso': { name: 'Espelho Reverso', desc: 'Só na luta do chefe da semana: inverte a tabela de tipos a seu favor por 3 ações dele. Um por luta.', battle: true, raide: 'espelho' },
-  'relogio-de-areia': { name: 'Relógio de Areia', desc: 'Só na luta do chefe da semana: acelera quem usou (Velocidade +2 na hora). Um por luta.', battle: true, raide: 'relogio' },
-  'fragmento-tera': { name: 'Fragmento Tera', desc: 'Só na luta do chefe da semana: recarrega o Tera, mesmo já tendo usado nesta luta. Um por luta.', battle: true, raide: 'fragmento' },
-  'celula-zygarde': { name: 'Célula Zygarde', desc: 'Só na luta do chefe da semana: elimina uma célula, desligando a regeneração dele pelo resto da luta. Só funciona em chefes que regeneram. Um por luta.', battle: true, raide: 'celula' },
+  'cristal-de-ruptura': { name: 'Cristal de Ruptura', desc: 'Só na luta do chefe da semana: estilhaça a defesa dele na hora e o deixa exposto (dano ×1,5 por 3 ações). Se ele tem couraça, ela cai junto. Um por luta. Serve contra: todos os chefes.', battle: true, raide: 'ruptura' },
+  'selo-de-interrupcao': { name: 'Selo de Interrupção', desc: 'Só na luta do chefe da semana: corta o golpe devastador que ele está carregando (o golpe falha) e ainda o expõe. Só funciona enquanto ele carrega, então use no turno do aviso. Um por luta. Serve contra: todos os chefes.', battle: true, raide: 'interrupcao' },
+  'escudo-astral': { name: 'Escudo Astral', desc: 'Só na luta do chefe da semana: o PRÓXIMO golpe carregado dele causa só metade do dano no time todo. Use antes de ele soltar o golpe. Um por luta. Serve contra: todos os chefes.', battle: true, raide: 'escudo' },
+  'cinza-vulcanica': { name: 'Cinza Vulcânica', desc: 'Só na luta do chefe da semana: o time recebe metade do dano de golpes de Fogo por 3 turnos. Um por luta. Serve contra: Eternatus Eternamax e Groudon Primal.', battle: true, raide: 'cinza' },
+  'escama-abissal': { name: 'Escama Abissal', desc: 'Só na luta do chefe da semana: o time recebe metade do dano de golpes de Água por 3 turnos. Um por luta. Serve contra: Kyogre Primal.', battle: true, raide: 'abissal' },
+  'prisma-de-luz': { name: 'Prisma de Luz', desc: 'Só na luta do chefe da semana: quebra a armadura de ponto fraco dele na hora e o deixa exposto. Só funciona em chefes com ponto fraco. Um por luta. Serve contra: Mega Rayquaza, Mega Mewtwo, Necrozma Ultra e Kyurem Negro.', battle: true, raide: 'prisma' },
+  'espelho-reverso': { name: 'Espelho Reverso', desc: 'Só na luta do chefe da semana: inverte a tabela de tipos nos golpes que VOCÊ dá nele, por 3 ações dele — o que ele resiste vira super efetivo e o que ele teme vira resistido. Vale quando ele resiste aos seus tipos; se ele é fraco a eles, atrapalha. Um por luta. Serve contra: todos os chefes (depende dos tipos do seu time).', battle: true, raide: 'espelho' },
+  'relogio-de-areia': { name: 'Relógio de Areia', desc: 'Só na luta do chefe da semana: acelera quem usou (Velocidade +2 na hora). Um por luta. Serve contra: todos os chefes.', battle: true, raide: 'relogio' },
+  'fragmento-tera': { name: 'Fragmento Tera', desc: 'Só na luta do chefe da semana: recarrega o Tera de quem usou, mesmo já tendo usado nesta luta. Só faz sentido onde há Tera: numa run ou numa sala co-op com run (a Arena e a Sala de Raide não têm). Um por luta. Serve contra: todos os chefes.', battle: true, raide: 'fragmento' },
+  'celula-zygarde': { name: 'Célula Zygarde', desc: 'Só na luta do chefe da semana: elimina uma célula, desligando a regeneração dele pelo resto da luta. Só funciona em chefes que regeneram. Um por luta. Serve contra: Zygarde Completo.', battle: true, raide: 'celula' },
   // Revive: em você é gasto sozinho ao desmaiar (depois dos desmaios livres do modo); num aliado desmaiado, reanima com metade do HP
   revive: { name: 'Revive', desc: 'Reanima um aliado desmaiado com metade do HP. Do Médio pra cima, te salva do Game Over depois do 3º desmaio.', revive: true, price: 1500 },
   // Max Revive: só num aliado desmaiado, com o HP cheio. (Em você o que é gasto sozinho ao desmaiar continua sendo o Revive comum.)
@@ -210,13 +210,13 @@ Object.assign(ITEMS, ITENS_SEGURADOS);
    — ver evento.js). Sem `price`: não vendem na loja, só vêm de vencer o chefe da semana (como os outros 3). Ao
    contrário deles, estes são PASSIVOS e valem em qualquer batalha, não só contra o chefe. */
 export const ITENS_RAIDE_SEGURADOS = {
-  'nucleo-eternamax': { name: 'Núcleo Eternamax', desc: 'Golpes de Dragão e Venenoso batem 20% mais forte, mas sua Defesa cai 20%.', segurado: true },
-  'escama-do-ceu': { name: 'Escama do Céu', desc: 'Reduz em 25% o dano recebido de golpes Voadores e Dragão.', segurado: true },
-  'cristal-psiquico': { name: 'Cristal Psíquico', desc: 'Reduz em 40% o dano recebido de golpes Psíquicos.', segurado: true },
-  'redea-espectral': { name: 'Rédea Espectral', desc: 'Velocidade +20%.', segurado: true },
-  'emblema-da-coroa': { name: 'Emblema da Coroa', desc: 'Todos os seus golpes de dano batem 15% mais forte.', segurado: true },
-  'cristal-gelido': { name: 'Cristal Gélido', desc: 'Reduz pela metade o dano recebido de golpes de Gelo.', segurado: true },
-  'presa-da-lua': { name: 'Presa da Lua', desc: 'Recupera 10% do dano que você causa.', segurado: true }
+  'nucleo-eternamax': { name: 'Núcleo Eternamax', desc: 'Golpes de Dragão e Venenoso batem 20% mais forte, mas sua Defesa cai 20%. Serve contra: todos os chefes (se o seu time bate com Dragão ou Veneno).', segurado: true },
+  'escama-do-ceu': { name: 'Escama do Céu', desc: 'Reduz em 25% o dano recebido de golpes Voadores e Dragão. Serve contra: Eternatus Eternamax, Mega Rayquaza, Necrozma Ultra, Kyurem Negro, Giratina Origem, Dialga Origem e Zygarde Completo.', segurado: true },
+  'cristal-psiquico': { name: 'Cristal Psíquico', desc: 'Reduz em 40% o dano recebido de golpes Psíquicos. Serve contra: Mega Mewtwo, Necrozma Ultra e Calyrex Cavaleiro Espectral.', segurado: true },
+  'redea-espectral': { name: 'Rédea Espectral', desc: 'Velocidade +20%. Serve contra: todos os chefes.', segurado: true },
+  'emblema-da-coroa': { name: 'Emblema da Coroa', desc: 'Todos os seus golpes de dano batem 15% mais forte. Serve contra: todos os chefes.', segurado: true },
+  'cristal-gelido': { name: 'Cristal Gélido', desc: 'Reduz pela metade o dano recebido de golpes de Gelo. Serve contra: Kyogre Primal, Kyurem Negro e Terapagos Estelar.', segurado: true },
+  'presa-da-lua': { name: 'Presa da Lua', desc: 'Recupera 10% do dano que você causa. Serve contra: todos os chefes.', segurado: true }
 };
 Object.assign(ITEMS, ITENS_RAIDE_SEGURADOS);
 

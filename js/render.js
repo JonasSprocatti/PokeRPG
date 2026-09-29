@@ -21,6 +21,7 @@ import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
 import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
 import { resumoDoChefe, nivelDoChefe } from './boss.js';
+import { linhaItensDoChefe } from './itens-raide.js';
 import { progressoRastreado } from './rastreio.js';
 import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
@@ -141,7 +142,9 @@ function blocoEvento(g) {
   const botao = sit.ok ? `<button class="btn sm" data-act="evento" ${G.busy ? 'disabled' : ''}>☄ Desafiar</button>`
     : `<button class="btn ghost sm" disabled title="Uma tentativa a cada 8 horas">⏳ ${formatarEspera(sit.esperaMs || 0)}</button>`;
   return `<div class="chefe-box evento"><img src="${SPR(ev.formaId)}" alt=""><div><b>☄ EVENTO DA SEMANA: ${esc(ev.nome)}</b> <span class="muted">Nv. ${nivelDoChefe(G.S.player.level)}</span>
-    <small>${esc(ev.resumo)} Muito difícil, sem fuga. Vencer dá ${esc(fmt(ev.especie))} na Pokédex, a insígnia ${esc(ev.badge.nome)} e um prêmio.${sit.ok ? '' : ' Uma tentativa a cada 8 horas.'}
+    <small>${esc(ev.resumo)}</small>
+    ${linhaItensDoChefe(ev, G.S.bag)}
+    <small>Muito difícil, sem fuga. Vencer dá ${esc(fmt(ev.especie))} na Pokédex, a insígnia ${esc(ev.badge.nome)} e um prêmio.${sit.ok ? '' : ' Uma tentativa a cada 8 horas.'}
     Sem estar nesta Gen? Use a <button class="link" data-act="arena" ${G.busy ? 'disabled' : ''}>🏟 Arena do Chefe</button> com os Pokémon do seu Hall da Fama.</small></div>${botao}</div>`;
 }
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())

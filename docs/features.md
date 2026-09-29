@@ -1356,3 +1356,35 @@ sabe o que "sair" quer dizer. Sem o método no ctx (multiplayer) o golpe falha c
 Também nasceu do trabalho desta etapa: um terceiro teste em `tests/referencias.test.js` — todo ajudante que OUTRO módulo
 exporta e que este arquivo chama tem de estar importado. O `nm()` esquecido no render.js (dentro de um `esc(...)`) seria
 o segundo `ReferenceError` mudo da semana, depois do `SPR_SHINY` da Sala de Raide.
+
+---
+
+## Itens de raide: "serve contra quem?" (29/09/2026)
+
+Pedido do usuário: descrever o que os itens de raide fazem e para quais bosses servem. O achado que motivou o desenho:
+**o prêmio dos chefes é um rodízio (`evento.ev()`), não temático** — o Groudon dá Prisma de Luz (só serve contra chefe com
+ponto fraco; ele não tem), o Calyrex dá Célula Zygarde (só serve contra a regeneração do Zygarde), o Rayquaza dá Escama
+Abissal (ele não ataca com Água). Olhando o item ninguém sabe se ele presta pra luta de hoje.
+- **A fonte é o código.** `js/itens-raide.js` responde "serve contra quem?" lendo `boss.CHEFES` (ponto fraco, regeneração,
+  golpe carregado) e `evento.EVENTOS` (os 4 golpes de cada chefe). Como o evento guarda golpes só como NOMES e a resposta
+  tem de sair sem rede, `TIPO_DO_GOLPE` mapeia cada golpe de chefe ao tipo; o teste falha se um chefe novo usar golpe fora
+  da tabela. Regra de cada item em `SERVE`: "todos" (Ruptura, Interrupção, Escudo, Espelho, Relógio, Fragmento e os
+  passivos), por tipo de golpe (Cinza=Fogo, Escama Abissal=Água, Escama do Céu=Voador/Dragão, Cristal Psíquico, Cristal
+  Gélido), ponto fraco (Prisma) ou regeneração (Célula).
+- **A descrição do item (dados.js) leva o resultado**: `… Um por luta. Serve contra: A, B e C.` É a fonte única mostrada
+  na dica dos botões (Arena e sala), na mochila da run e na tabela da ajuda. O texto é ESTÁTICO (dados.js não pode importar
+  evento.js: ciclo), mas `tests/itens-raide.test.js` confere descrição × derivado para os 17 itens — mecânica nova de
+  chefe que mude a resposta faz o CI acusar o texto velho. Verificado dando um ponto fraco ao Groudon em memória: a lista
+  derivada muda e a descrição passaria a mentir.
+- **Ajuda dos chefes** (`ajuda-chefes.js` → `htmlItensDeRaide`): duas tabelas (consumíveis e segurados de prêmio) com
+  item, o que faz, contra quem serve e quem dá de prêmio (lido de `recompensa` dos chefes).
+- **Caixa do chefe** (`linhaItensDoChefe`, Arena e run): separa os itens de raide que VOCÊ tem em "servem" e "não servem
+  contra ele". Em co-op/sala a caixa do chefe é outra tela e não ganhou a linha.
+- **Erro achado no caminho**: a descrição do Espelho Reverso dizia "inverte a tabela de tipos a seu favor". O motor
+  (`boss.danoNoChefe`) aplica a MESMA inversão do Mundo Reverso ao dano que você dá (net ×1/ef): contra quem resiste vira
+  super efetivo, mas contra quem é fraco vira resistido. A descrição agora avisa que atrapalha, e um teste prova a
+  afirmação no motor. Imunidades (ef 0) não mudam. Contra o Giratina, que já alterna o próprio Mundo Reverso, o item é
+  a mesma inversão (não soma).
+- **Fragmento Tera** só faz sentido onde há Tera (run, ou sala co-op com run); a Arena e a Sala de Raide não têm gimmicks.
+- **Fora do escopo**: esconder/desabilitar o botão do item que não serve no chefe atual (hoje o botão aparece e o motor
+  recusa com o motivo; o jogador agora sabe antes pela caixa do chefe), e a linha nova na caixa do chefe do co-op.

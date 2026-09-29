@@ -92,7 +92,8 @@ test('o texto de ajuda dos chefes usa os números do jogo e cita a Arena e o Hal
   const h = htmlComoFuncionam();
   for (const trecho of ['segunda-feira', 'Arena do Chefe', 'Hall da Fama', '8 horas', 'Revive', 'Ruptura', 'Itens de raide', 'não dá pra fugir',
     '3 caminhos', 'Dentro de uma run', 'Em grupo', 'O que precisa', 'O que muda', 'Não precisa']) assert.ok(h.includes(trecho), `falta "${trecho}"`);
-  assert.equal((h.match(/<tr>/g) || []).length, 4, 'cabeçalho + os 3 caminhos');
+  const primeiraTabela = h.slice(h.indexOf('<table'), h.indexOf('</table>'));   // as tabelas de itens de raide vêm depois
+  assert.equal((primeiraTabela.match(/<tr>/g) || []).length, 4, 'cabeçalho + os 3 caminhos');
   assert.ok(h.includes('<details') && !h.includes(' open'), 'começa recolhido');
   assert.ok(htmlComoFuncionam({ aberto: true }).includes(' open'));
 });

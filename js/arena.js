@@ -20,6 +20,7 @@ import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, apli
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento, reviverCompanheiro, MAX_REVIVES } from './mp-motor.js';
 import { cartao, SEM_BATALHA_MP } from './multiplayer.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
+import { linhaItensDoChefe } from './itens-raide.js';
 import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas } from './regras.js';
 import { loadPokemon, loadMove, apiErr } from './api.js';
 import { makeMon } from './pokemon.js';
@@ -73,6 +74,7 @@ function htmlLobby() {
   const chefe = `<div class="chefe-box evento ${comecou ? '' : 'em-breve'}"><img src="${SPR(alvo.formaId)}" alt="">
     <div><b>${comecou ? '☄ CHEFE DA SEMANA' : '☄ EM BREVE'}: ${esc(alvo.nome)}</b> <span class="muted">Gen ${alvo.gen}</span>
     <small>${esc(alvo.resumo)}</small>
+    ${linhaItensDoChefe(alvo, inventarioRaide())}
     <small>${comecou ? 'Muda na próxima segunda-feira, meia-noite (Brasília).' : `O primeiro chefe chega em <b>${dataBR(INICIO)}</b>.`} ${BETA_SEM_ESPERA ? '🧪 Modo beta: sem espera entre tentativas.' : 'Uma tentativa a cada 8 horas.'}</small></div></div>`;
   // A Arena é só você (Hall da Fama, sem risco). Pra jogar em GRUPO de verdade — até 6 jogadores reais, 3 Pokémon
   // cada — é outra tela (multiplayer.js): sala co-op, onde o botão "☄ Chefe da semana" aparece pra quem tem uma
@@ -82,7 +84,7 @@ function htmlLobby() {
     <button class="btn ghost" data-act="mp">Ir pro Multiplayer</button></div></section>`;
   const inv = inventarioRaide(), saldo = saldoArenaDaConta();
   // itens de raide (boss.js): SÓ de prêmio, como sempre — não entram na Loja de preparo (pedido do usuário)
-  const itensRaide = ITENS_DE_RAIDE.map(t => `<li>${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} <b>×${inv[ITEM_DO_RAIDE[t]] || 0}</b></li>`).join('');
+  const itensRaide = ITENS_DE_RAIDE.map(t => `<li title="${esc(ITEMS[ITEM_DO_RAIDE[t]].desc)}">${esc(ITEMS[ITEM_DO_RAIDE[t]].name)} <b>×${inv[ITEM_DO_RAIDE[t]] || 0}</b></li>`).join('');
   const escolhidos = new Set(selecao);
   const cartaoHall = e => { const on = escolhidos.has(e.chave), cheio = !on && selecao.length >= MAX_TIME;
     return `<button class="hall-card ${on ? 'on' : ''}" data-act="arena-sel" data-v="${esc(e.chave)}" ${cheio ? 'disabled' : ''} aria-pressed="${on}">

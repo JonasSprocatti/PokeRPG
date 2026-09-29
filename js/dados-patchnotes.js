@@ -5,6 +5,17 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.70', data: '2026-09-29', titulo: 'Item de raide com bula', piada: 'O Prisma de Luz descobriu que quase ninguém sabia para que ele servia. Agora vem com bula, e a bula tem endereço.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Todo <b>item de raide</b> agora diz <b>o que faz</b> e <b>contra quais chefes serve</b>, na dica do botão, na mochila e numa tabela nova em <b>❓ Como funcionam os chefes da semana</b> (que também mostra quem dá cada item de prêmio).',
+        'O prêmio dos chefes gira em rodízio e não combina com o chefe: o Groudon dá Prisma de Luz (que só serve contra chefe com ponto fraco, e ele não tem), e o Calyrex dá Célula Zygarde (que só serve contra o Zygarde). Por isso, na caixa do chefe da semana, uma linha separa os seus itens em <b>servem</b> e <b>não servem contra ele</b>, pra você não gastar à toa.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O <b>Espelho Reverso</b> dizia que inverte os tipos "a seu favor". Na verdade ele inverte a tabela nos golpes que <b>você</b> dá: ajuda contra quem resiste aos seus tipos e <b>atrapalha</b> contra quem é fraco a eles. A descrição agora avisa.',
+        'A ajuda dos chefes só citava 3 dos 10 itens de raide. Agora lista todos.'
+      ] }
+    ] },
   { versao: '2.69', data: '2026-09-29', titulo: 'Pra fora da luta', piada: 'O Roar descobriu que existe um jeito educado de dispensar alguém. É gritar.',
     secoes: [
       { nome: 'Novidades', itens: [

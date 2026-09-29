@@ -5,6 +5,7 @@
 import { COOLDOWN_MS, INICIO, EVENTOS, dataBR, BETA_SEM_ESPERA } from './evento.js';
 import { MAX_REVIVES } from './mp-motor.js';
 import { HALL_MAX } from './hall.js';
+import { htmlItensDeRaide } from './itens-raide.js';
 
 const horas = COOLDOWN_MS / 3600000;
 
@@ -41,10 +42,11 @@ export function htmlComoFuncionam({ aberto = false } = {}) {
         <li><b>Golpe carregado</b>: a cada 4 ações ele carrega um golpe devastador, com aviso. Dá pra <b>interromper</b> causando dano suficiente no mesmo turno (e ainda o expõe). Solto, atinge o time inteiro.</li>
         <li><b>Ponto fraco</b> que muda de tipo, <b>clima permanente</b>, tipos <b>anulados</b>, <b>Mundo Reverso</b>, adaptação de tipo, dreno, regeneração… o resumo de cada chefe aparece na caixa dele.</li>
       </ul>
+      ${htmlItensDeRaide()}
       <h5>Prêmios</h5>
       <ul>
         <li>O <b>Pokémon do chefe</b> fica liberado na Pokédex e para começar novas jornadas, e você ganha a <b>insígnia</b> e o <b>título</b> dele (escolha uma pra mostrar ao lado do nome, na tela 👤 Conta).</li>
-        <li><b>Itens de raide</b> (Cristal de Ruptura, Selo de Interrupção, Escudo Astral): só valem na luta contra o chefe, um de cada por luta. Os que sobram numa jornada que termina vão para a sua conta.</li>
+        <li><b>Itens de raide</b> (tabela acima): só valem na luta contra o chefe. Os que sobram numa jornada que termina vão para a sua conta. Cada chefe dá dois de um tipo e um de outro, e o rodízio não combina com o chefe: <b>confira em quem cada um serve</b>.</li>
         <li>Dentro de uma run também vem dinheiro e Rare Candy. O prêmio da semana só sai <b>uma vez por semana</b> por chefe; a insígnia e o Pokémon, só na primeira vitória.</li>
       </ul>
     </div></details>`;
