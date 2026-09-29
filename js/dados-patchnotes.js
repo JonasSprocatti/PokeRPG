@@ -5,6 +5,17 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.77', data: '2026-09-29', titulo: 'Agora dá pra saber no que deu', piada: 'Mandar relato era como jogar bilhete no mar. O mar respondia, mas só em pensamento.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        'Em <b>🐞 Relatar</b>, a lista "Seus relatos" agora mostra <b>a situação de cada um</b>: ⏳ Aguardando, 👀 Em análise, <b>✅ Atendido</b> ou 📦 Arquivado — e, quando houver, um recado de quem cuida do jogo dizendo o que foi feito. Antes aparecia só uma palavra solta do banco de dados, que não dizia nada.',
+        'Dá pra acompanhar sem perguntar: se o seu bug já virou correção, ele aparece como <b>Atendido</b> — e o que mudou está em 📜 Novidades.',
+        'Isso só funciona pra quem envia <b>com a conta aberta</b> (é o que permite ligar o relato a você depois). Sem conta o envio continua igual, e a tela agora explica isso em vez de não mostrar nada.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Todos os relatos abertos foram respondidos</b> — os de bug viraram correção, e os pedidos que já existiam no jogo foram marcados como atendidos. Obrigado a quem mandou. 💛'
+      ] }
+    ] },
   { versao: '2.76', data: '2026-09-29', titulo: 'O jogo agora explica quando diz não', piada: 'O botão "Novo jogo" sabia perfeitamente que estava no meio de uma luta. Só achava deselegante comentar.',
     secoes: [
       { nome: 'Correções', itens: [

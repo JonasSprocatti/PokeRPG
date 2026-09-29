@@ -403,7 +403,8 @@ export async function enviarFilaRelatos() {
 }
 export async function meusRelatos() {
   const c = await sb(); if (!c || !usuario()) return [];
-  const { data, error } = await c.from('relatos').select('id, tipo, titulo, status, criado_em').order('criado_em', { ascending: false }).limit(20);
+  // `resposta` é a nota curta de quem mantém o jogo ("corrigido na versão 2.73"), mostrada junto da situação
+  const { data, error } = await c.from('relatos').select('id, tipo, titulo, status, resposta, criado_em').order('criado_em', { ascending: false }).limit(20);
   if (error) throw error;
   return data;
 }

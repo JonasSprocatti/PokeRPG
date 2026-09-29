@@ -10,6 +10,13 @@
 //   node ferramentas/relatos-admin.mjs            puxa relatos com status 'novo', baixa prints, marca como 'lido'
 //   node ferramentas/relatos-admin.mjs --manter   mesma coisa, mas não marca como lido (deixa pra próxima puxada)
 //   node ferramentas/relatos-admin.mjs --todos    puxa TODOS os relatos (qualquer status); não marca nada
+//   node ferramentas/relatos-admin.mjs --resolver 57,58 --nota "Corrigido na versão 2.73"
+//                                                 fecha esses relatos como ATENDIDOS (status 'resolvido'), com
+//                                                 uma nota opcional que o jogador lê na tela 🐞 Relatar
+//   node ferramentas/relatos-admin.mjs --arquivar 59 --nota "..."   fecha SEM virar mudança
+//
+// Status possíveis (CHECK no banco, supabase/migrations/20260929140000_relatos_status.sql):
+// novo → lido → resolvido | arquivado. O jogador vê a tradução disso (dados.STATUS_RELATO), não o valor cru.
 //
 // Salva em relatos-baixados/ (git-ignorado): index.json (dados crus, acumulado entre puxadas) e RESUMO.md (leitura humana).
 
@@ -53,6 +60,16 @@ const cabecalhos = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`
 const args = process.argv.slice(2);
 const todos = args.includes('--todos');
 const manter = args.includes('--manter') || todos;
+// valor que vem DEPOIS da opção (`--nota "texto"`); null = opção ausente
+const valorDe = nome => { const i = args.indexOf(nome); return i === -1 ? null : (args[i + 1] ?? ''); };
+const nota = valorDe('--nota');
+const paraFechar = (opcao) => {
+  const v = valorDe(opcao);
+  if (v === null) return null;
+  const ids = v.split(',').map(x => x.trim()).filter(x => /^\d+$/.test(x)).map(Number);
+  if (!ids.length) { console.error(`✗ ${opcao} precisa de ids separados por vírgula (ex.: ${opcao} 57,58).`); process.exit(1); }
+  return ids;
+};
 
 async function buscarRelatos() {
   const filtro = todos ? '' : '&status=eq.novo';
@@ -80,6 +97,22 @@ async function marcarComoLido(ids) {
   if (!r.ok) throw new Error(`Falha ao marcar como lido: ${r.status} ${await r.text()}`);
 }
 
+/* Fecha relatos: 'resolvido' (virou mudança no jogo) ou 'arquivado' (analisado, mas não vira mudança).
+   `resposta` é o que o jogador lê junto do rótulo — vale muito mais que o status sozinho. */
+async function fechar(ids, status, resposta) {
+  const corpo = { status, resolvido_em: new Date().toISOString() };
+  if (resposta) corpo.resposta = resposta;
+  const url = `${SUPABASE_URL}/rest/v1/relatos?id=in.(${ids.join(',')})&select=id`;
+  const r = await fetch(url, {
+    method: 'PATCH',
+    headers: { ...cabecalhos, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(corpo),
+  });
+  if (!r.ok) throw new Error(`Falha ao fechar relatos: ${r.status} ${await r.text()}`);
+  const feitos = await r.json();   // representation: confirma QUAIS linhas mudaram de verdade
+  return feitos.map(x => x.id);
+}
+
 const indiceAtual = () => (existsSync(ARQ_INDEX) ? JSON.parse(readFileSync(ARQ_INDEX, 'utf8')) : {});
 
 function gerarResumo(indice) {
@@ -97,6 +130,21 @@ function gerarResumo(indice) {
 }
 
 const indice = indiceAtual();
+/* --resolver / --arquivar: fecham relatos e encerram aqui (não puxam nada). Separado do fluxo de leitura de
+   propósito — fechar é a única coisa que este script faz que o jogador VÊ na tela dele. */
+const aResolver = paraFechar('--resolver'), aArquivar = paraFechar('--arquivar');
+if (aResolver || aArquivar) {
+  for (const [ids, status] of [[aResolver, 'resolvido'], [aArquivar, 'arquivado']]) {
+    if (!ids) continue;
+    const feitos = await fechar(ids, status, nota);
+    const faltaram = ids.filter(i => !feitos.includes(i));
+    console.log(`✓ ${feitos.length} relato(s) marcados como '${status}'${nota ? ` com a nota "${nota}"` : ''}: ${feitos.join(', ') || '—'}`);
+    if (faltaram.length) console.warn(`  ⚠ não encontrados (nada mudou): ${faltaram.join(', ')}`);
+  }
+  console.log('O jogador vê isso em 🐞 Relatar → "Seus relatos".');
+  process.exit(0);
+}
+
 console.log(todos ? 'Puxando TODOS os relatos…' : 'Puxando relatos novos…');
 const relatos = await buscarRelatos();
 console.log(`${relatos.length} relato(s) encontrados.`);

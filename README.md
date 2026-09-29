@@ -265,7 +265,16 @@ order by criado_em desc
 limit 50;
 ```
 
-O campo `status` começa em `'novo'` e é seu para usar (`'lido'`, `'resolvido'`…): o jogo nunca deixa alguém mudar isso de fora. Não existe tela de administração dentro do jogo — é de propósito, para não haver caminho pelo navegador que leia relato de outra pessoa.
+O campo `status` tem um vocabulário fechado por CHECK no banco (`20260929140000_relatos_status.sql`): **`novo`** (recebido) → **`lido`** (na fila) → **`resolvido`** (virou mudança no jogo) ou **`arquivado`** (analisado, mas não vira mudança). O `INSERT` continua preso a `'novo'` — o jogo nunca deixa alguém mudar isso de fora. Há ainda `resposta` (uma nota curta sua, que o jogador lê) e `resolvido_em`. Não existe tela de administração dentro do jogo — é de propósito, para não haver caminho pelo navegador que leia relato de outra pessoa.
+
+**Acompanhar o próprio relato:** quem envia **com a conta aberta** vê, na própria tela 🐞 Relatar, a seção **"Seus relatos"** com a situação de cada um — ⏳ Aguardando, 👀 Em análise, ✅ Atendido ou 📦 Arquivado — mais a sua nota, quando houver. Sem conta o envio funciona igual, mas não há como ligar o relato à pessoa depois (a regra do banco é "cada conta lê só os próprios"), e a tela explica isso em vez de aparecer vazia.
+
+Para fechar relatos sem abrir o painel:
+
+```
+node ferramentas/relatos-admin.mjs --resolver 57,58 --nota "Corrigido na versão 2.73"
+node ferramentas/relatos-admin.mjs --arquivar 59 --nota "Fora do escopo por enquanto"
+```
 
 ### 📖 Pokédex
 As 1025 espécies do jogo: as que você já encontrou aparecem com sprite e nome, as outras ficam como "?". Toque em quem você conhece para abrir a ficha completa — tipos, todos os atributos base, habilidades com descrição, e quantas vezes você já viu, derrotou e recrutou aquela espécie.

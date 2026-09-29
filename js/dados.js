@@ -465,3 +465,18 @@ export const ORDENS = {
 // Roguelike: quanto precisa, SOMANDO as jornadas Roguelike terminadas, pra uma espécie virar opção inicial.
 // Forma do meio = ainda evolui; forma final = não evolui mais (anotado em registro.formas na hora de evoluir).
 export const DESBLOQUEIO = { derrotados: 10, amigos: 5, evolucaoMeio: 5, evolucaoFinal: 10 };
+
+/* ---- situação de um relato de bug/sugestão (🐞 Relatar) ----
+   O banco guarda `status` (supabase/migrations/20260929140000_relatos_status.sql) e a tela mostrava o valor CRU:
+   quem relatava lia "novo" ou "lido" e não descobria se o problema já tinha sido resolvido. Aqui mora a tradução
+   pro que o jogador precisa saber: já foi atendido, ou ainda está na fila.
+   `desconhecido` cobre um status que o banco venha a ter e esta tabela ainda não — a tela mostra algo em vez de
+   um espaço vazio. O vocabulário é fechado por CHECK no banco, e tests/relatos-status.test.js confere os dois. */
+export const STATUS_RELATO = {
+  novo:      { rotulo: '⏳ Aguardando', classe: 'aguardando', desc: 'Recebido. Ainda não foi analisado.' },
+  lido:      { rotulo: '👀 Em análise', classe: 'analise',    desc: 'Já foi lido e está na fila.' },
+  resolvido: { rotulo: '✅ Atendido',   classe: 'atendido',   desc: 'Virou correção ou novidade no jogo.' },
+  arquivado: { rotulo: '📦 Arquivado',  classe: 'arquivado',  desc: 'Analisado, mas não virou mudança.' },
+};
+export const STATUS_RELATO_PADRAO = { rotulo: '• Em andamento', classe: 'aguardando', desc: 'Situação ainda sendo acompanhada.' };
+export const situacaoDoRelato = s => STATUS_RELATO[s] || STATUS_RELATO_PADRAO;

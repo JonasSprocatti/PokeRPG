@@ -8,6 +8,7 @@ import { enviarRelato, enviarFilaRelatos, relatosNaFila, meusRelatos, usuario, n
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, offline } from './util.js';
 import { MAX_IMAGENS, MAX_BYTES_IMAGEM, TIPOS_IMAGEM, mb, motivoDeRecusa, comprimirImagem } from './imagens-relato.js';
+import { situacaoDoRelato } from './dados.js';
 
 let tipo = 'bug';
 let rascunho = { titulo: '', texto: '', passos: '', anexar: true };
@@ -102,11 +103,28 @@ export async function telaRelatos(msg = '') {
     telaRelatos(`📤 ${r.enviados} relato(s) que estavam guardados foram enviados agora. 💛`);
   }).catch(e => console.warn('relatos', e));
 
-  // os seus relatos já enviados (com conta)
+  /* Os seus relatos já enviados, com a SITUAÇÃO de cada um (dados.situacaoDoRelato): antes esta lista mostrava o
+     status cru do banco ("novo", "lido") e quem relatava não descobria se o problema já tinha sido resolvido.
+     Pedido do usuário. Só dá pra mostrar com conta: a regra do banco é "cada conta lê os PRÓPRIOS relatos", e
+     quem mandou sem entrar não tem como provar que o relato é dele — nesse caso a tela DIZ isso, em vez de
+     simplesmente não mostrar nada (some sem explicação é o que confunde). */
   if (usuario() && !offline()) meusRelatos().then(lista => {
     if (!lista.length || G.mode !== 'relatos') return;
-    $('#rel-meus').innerHTML = `<h3 class="passo">Seus relatos</h3><ul class="amigos">${lista.map(r => `<li>${r.tipo === 'bug' ? '🐞' : '💡'} <b>${esc(r.titulo)}</b><small class="muted">${new Date(r.criado_em).toLocaleDateString('pt-BR')} · ${esc(r.status)}</small></li>`).join('')}</ul>`;
+    const item = r => {
+      const s = situacaoDoRelato(r.status);
+      return `<li class="rel-meu ${s.classe}">
+        <div class="rel-meu-topo"><span>${r.tipo === 'bug' ? '🐞' : '💡'} <b>${esc(r.titulo)}</b></span><span class="rel-situacao ${s.classe}">${s.rotulo}</span></div>
+        <small class="muted">${new Date(r.criado_em).toLocaleDateString('pt-BR')} · ${esc(s.desc)}</small>
+        ${r.resposta ? `<small class="rel-resposta">💬 ${esc(r.resposta)}</small>` : ''}</li>`;
+    };
+    $('#rel-meus').innerHTML = `<h3 class="passo">Seus relatos</h3>
+      <p class="small muted">Acompanhe o que aconteceu com cada um. <b>✅ Atendido</b> quer dizer que já virou correção ou novidade no jogo — vale conferir em 📜 Novidades.</p>
+      <ul class="rel-meus">${lista.map(item).join('')}</ul>`;
   }).catch(() => {});
+  // sem conta o banco não tem como saber que os relatos são seus: explica em vez de deixar o espaço vazio
+  if (!usuario() && nuvemConfigurada()) {
+    $('#rel-meus').innerHTML = `<p class="small muted rel-sem-conta">Quer acompanhar se o seu relato foi atendido? <b>Entre na sua conta</b> antes de enviar: aí esta tela passa a mostrar a situação de cada um. Sem conta o envio funciona igual, só não dá pra ligar o relato a você depois.</p>`;
+  }
 }
 
 export async function enviarRelatoTela() {
