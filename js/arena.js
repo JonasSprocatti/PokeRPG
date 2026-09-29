@@ -18,7 +18,8 @@ import { EVENTOS, eventoDaSemana, jaComecou, idDaSemana, agoraDoEvento, esperaRe
   inventarioRaide, darItensDeRaide, gastarItemDeRaide, INICIO, BETA_SEM_ESPERA } from './evento.js';
 import { prepararChefe, nivelDoChefe, jogadoresEfetivos, habilidadeDoChefe, aplicarClimaDoChefe, ITENS_DE_RAIDE, ITEM_DO_RAIDE } from './boss.js';
 import { fotoDoMon, novaBatalhaMP, resolverTurnoMP, acaoDaIA, usarRaideNoEvento, reviverCompanheiro, MAX_REVIVES } from './mp-motor.js';
-import { cartao, SEM_BATALHA_MP } from './multiplayer.js';
+import { cartao } from './mp-cartao.js';             // o mesmo cartão da sala (a Arena roda o motor do co-op sozinha)
+import { SEM_BATALHA_MP } from './mp-regras.js';     // categorias de item que não servem em batalha
 import { htmlComoFuncionam } from './ajuda-chefes.js';
 import { linhaItensDoChefe } from './itens-raide.js';
 import { CLIMA_TURNOS, ESPERTEZA, golpeDoClima, climaDe, moverGolpe, itemTemEfeito, golpesPermitidos, resumoTravas } from './regras.js';
