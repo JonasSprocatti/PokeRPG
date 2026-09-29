@@ -20,7 +20,7 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate } from './conquistas.js';
@@ -98,6 +98,62 @@ async function intimidar(E, soInimigo = false) {
   const lado = vivos(emCampo());
   await aoEntrarEmCampo(soInimigo ? [E] : [...lado, E], m => (m === E ? lado : [E]), CTX);
 }
+/* ---- sair de campo sem desmaiar ----
+   Roar, Whirlwind, Dragon Tail, Circle Throw e Red Card empurram alguém pra fora; Wimp Out e Emergency Exit fazem o
+   Pokémon sair por conta própria. Nos jogos isso é "trocar de Pokémon" — aqui você é o Pokémon e nunca troca, então
+   cada caso vira o evento equivalente que já existe (decisão do usuário, 29/09/2026):
+     inimigo selvagem   foge: a luta ACABA, sem XP nem dinheiro
+     inimigo de treinador   o treinador manda outro (`aleatorio`: Roar & cia. sorteiam; Wimp Out manda o próximo da fila);
+                        o que saiu NÃO conta como derrotado e volta depois se ainda estiver de pé
+     Alfa, lendários, chefe da semana   não saem: o golpe falha (não dá pra pular um chefe)
+     seu lado           quem levou sai da luta e ela segue sem ele; se era o último em campo, acaba como uma fuga.
+                        Wimp Out/Emergency Exit NÃO tiram o seu Pokémon principal (uma habilidade sorteada não pode te
+                        expulsar contra a vontade) — só os aliados.
+   Devolve true se alguém saiu. Quem chama é o motor do golpe (ctx.forcarSaida), no meio de uma ação: por isso aqui só se
+   MARCA o fim (`B.saidaForcada`) e o `turn()` encerra depois, em vez de chamar endBattle no meio do golpe. */
+async function forcarSaida(m, { motivo = 'forcada' } = {}) {
+  const B = G.B; if (!B) return false;
+  const P = G.S.player, T = B.trainer, voluntaria = motivo === 'medo';
+  if (m === B.enemy) {
+    if (B.chefe || B.evento || B.lendarios || m.boss) return false;
+    if (T) {
+      const i = proximoDoTreinador(T.equipe, T.atual, !voluntaria);
+      if (i < 0) return false;                                            // não tem ninguém pra mandar no lugar
+      m.vol = freshVol(); m.vol.retirado = true;                          // o turno dele acaba aqui (turn() pula quem tem `retirado`)
+      T.atual = i; const novo = T.equipe[i]; novo.vol = freshVol(); novo.vol.recemEntrou = true;
+      B.enemy = novo; registrarVisto(novo); render();
+      await say(`${voluntaria ? `${nm(m)} perde a coragem e sai de campo!` : `${nm(m)} foi arrastado pra fora da luta!`}`, 'status');
+      await say(`${esc(T.nome)} envia <b>${esc(fmt(novo.name))}</b> (Nv. ${novo.level})!${novo.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
+      await aplicarArmadilhas(novo, CTX);                                 // Stealth Rock e cia. pegam quem entra
+      await anunciarQuedas();
+      if (novo.hp > 0) await intimidar(novo, true);                       // se caiu só com as armadilhas, o turn() resolve como vitória
+      return true;
+    }
+    m.vol.retirado = true; B.saidaForcada = 'inimigo';
+    await say(voluntaria ? `${nm(m)} foge assustado!` : `${nm(m)} foi afugentado!`, 'status');
+    return true;
+  }
+  if (!ladoJogador().includes(m)) return false;
+  if (voluntaria && m === P) return false;                                // nos SEUS principais isso não vale
+  const outros = vivos(emCampo()).filter(x => x !== m);
+  m.vol.retirado = true;
+  if (!outros.length) { B.saidaForcada = 'jogador'; await say(`${nm(m)} foi arrastado pra fora da luta! A luta termina.`, 'status'); return true; }
+  await say(`${nm(m)} ${voluntaria ? 'foge da luta!' : 'foi arrastado pra fora da luta!'} ${m === P ? 'Seus aliados seguem sem você.' : 'A luta segue sem ele.'}`, 'status');
+  render();
+  return true;
+}
+CTX.forcarSaida = forcarSaida;
+
+// Regenerator / Natural Cure: nos jogos agem ao trocar de Pokémon. Aqui, "sair" é o fim da luta vencida — vale pra todo o
+// seu lado que ficou de pé, inclusive quem foi arrastado pra fora no meio (regras.efeitosAoVencer).
+async function habilidadesAoVencer() {
+  for (const m of vivos(ladoJogador())) {
+    const r = efeitosAoVencer(m);
+    if (r.cura) { m.hp += r.cura; await say(`${nm(m)} recuperou ${r.cura} HP ao sair da luta. (${fmt(m.ability)})`, 'good'); }
+    if (r.limpaStatus) { m.status = null; m.sleep = 0; delete m.vol.toxico; await say(`${nm(m)} se curou do status ao sair da luta. (${fmt(m.ability)})`, 'good'); }
+  }
+}
+
 export async function startBattle(z) {
   const E = await novoOponente(z);
   // no Santuário existe encontro selvagem com lendário/mítico: marca aqui, que é onde se sabe de que pool ele veio
@@ -372,7 +428,8 @@ async function gmaxDoInimigo() {
 export async function turn(action) {
   if (G.busy || !G.B) return;
   G.busy = true;
-  const B = G.B, S = G.S, P = S.player, E = B.enemy;
+  const B = G.B, S = G.S, P = S.player;
+  let E = B.enemy;   // muda no meio do turno se o treinador manda outro (Roar…): sempre reler de B.enemy depois de uma ação
   // item sem efeito cancela o turno sem avançar B.turn — não repetir o divisor na próxima tentativa
   if (B.turnoNoLog !== B.turn) { log(`Turno ${B.turn}`, 'turno'); B.turnoNoLog = B.turn; }
   try {
@@ -387,7 +444,7 @@ export async function turn(action) {
       const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
       // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão)
       const preso = hab(E).prendeTipo?.some(t => P.data.types.includes(t))
-        || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P));
+        || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P)) || !!P.vol.preso;   // habilidade OU golpe (Mean Look, Block, Spider Web)
       if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability, undefined, preso)) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
@@ -402,7 +459,9 @@ export async function turn(action) {
       if (r === 'cancelado') return;
       if (r === 'fim') { endBattle(); return; }
       G.panel = 'moves';
-    } else pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
+    } else if (action.type === 'passar') { /* você foi tirado da luta: só assiste os aliados */ }
+    else pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
+    if (P.vol.retirado) pm = null;
     if (pm && pm !== STRUGGLE && !golpeTravado(P)) pm = golpeForcado(P) || pm;   // Encore: a escolha vira o golpe repetido — vale já na prioridade do turno
     /* Z-Move: liga a marca no `vol` (regras.calcDamage converte o poder) e gasta a vez da batalha. O flag é
        desligado no `finally` deste turno — um Z que "vazasse" pro turno seguinte dobraria o dano de graça. */
@@ -430,12 +489,14 @@ export async function turn(action) {
     const posicao = m => ordem.findIndex(a => a.quem === m); // -1 = não age neste turno
     for (let i = 0; i < ordem.length; i++) {
       const a = ordem[i];
-      if (P.hp <= 0 || E.hp <= 0 || B.capturado) break;
-      if (a.quem.hp <= 0) continue;
+      E = B.enemy;
+      if (P.hp <= 0 || E.hp <= 0 || B.capturado || B.saidaForcada) break;
+      if (a.quem.hp <= 0 || a.quem.vol?.retirado) continue;   // caiu, ou foi tirado da luta antes de agir
       if (a.bola) { await vez('t'); await lancarBola(P); continue; }
       if (a.parado) { await vez(idVez(a.quem)); await say(`${nm(a.quem)} ${a.parado}`, 'muted'); continue; }
       if (a.quem === E) {
         const alvo = pick(vivos(emCampo()));
+        if (!alvo) continue;   // ninguém em campo pra apanhar (você foi tirado e os aliados caíram)
         // recuo (flinch) só vale em quem ainda não agiu neste turno
         await vez('e');
         /* Z-Move do inimigo (zmove.inimigoUsaZAgora): só treinador e Alfa, uma vez por luta. Mesma marca do seu Z
@@ -458,7 +519,9 @@ export async function turn(action) {
       // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra
       try { await megaDoInimigo(); await teraDoInimigo(); await gmaxDoInimigo(); } catch (e) { console.error('virada do inimigo', e); }
     }
+    E = B.enemy;
     if (B.capturado) { await serCapturado(); return; }
+    if (B.saidaForcada) { endBattle(); return; }   // selvagem afugentado, ou o último do seu lado arrastado: acaba como uma fuga, sem XP nem penalidade
     if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
     // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
@@ -466,6 +529,7 @@ export async function turn(action) {
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (E.hp <= 0) await win();
+    else if (!vivos(emCampo()).length) { await say('Não sobrou ninguém em campo: a luta termina.', 'muted'); endBattle(); }   // você foi tirado e os aliados caíram
   } catch (e) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
   } finally {
@@ -484,8 +548,8 @@ async function win() {
   await say(`${nm(E)} desmaiou!`, 'good');
   const mult = multShiny(S); // segredo do brilho: shiny ganha XP e dinheiro em dobro (regras.js)
   const xp = xpPorVitoria(E, !!T) * mult;
-  const gained = [];
-  for (const [s, add] of ganhoDeEVs(P.evs, E.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
+  const gained = [], fora = !!P.vol?.retirado;   // arrastado pra fora no meio da luta: não lutou até o fim, sem XP nem EVs
+  if (!fora) for (const [s, add] of ganhoDeEVs(P.evs, E.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
   const money = T ? 0 : E.level * rand(8, 14) * mult; // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
@@ -498,16 +562,17 @@ async function win() {
      Sem `B.abate` o inimigo caiu de veneno/armadilha/recuo: a equipe venceu, mas não há golpe pra creditar. */
   registrarAbate(S, { porMim: !!B.abate?.porMim, tiposDoAlvo: E.data.types, minhaEspecie: P.data.speciesName, golpe: B.abate?.golpe, modo: dificuldadeDe(S) });
   B.abate = null;
-  await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`);
-  await gainExp(xp);
+  if (fora) await say(`${nm(P)} estava fora da luta e não ganhou XP.${money ? ` Vocês acharam ₽${money}.` : ''}`, 'muted');
+  else { await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`); await gainExp(xp); }
   // aliados em pé ganham o mesmo XP e EVs (como o Exp. Share dos jogos novos)
   for (const A of vivos(emCampo()).filter(m => m !== P)) { // quem está descansando não ganha XP
     for (const [s, add] of ganhoDeEVs(A.evs, E.data.effort)) A.evs[s] += add;
     await say(`${nm(A)} ganhou ${xp} de XP.`, 'muted');
     await gainExpAliado(A, xp);
   }
-  if (T && T.atual < T.equipe.length - 1) {
-    T.atual++; B.enemy = T.equipe[T.atual]; registrarVisto(B.enemy); render();
+  const proximo = T ? proximoDoTreinador(T.equipe, T.atual) : -1;   // o primeiro de pé (Roar pode ter deixado um pra trás)
+  if (T && proximo >= 0) {
+    T.atual = proximo; B.enemy = T.equipe[T.atual]; B.enemy.vol = freshVol(); B.enemy.vol.recemEntrou = true; registrarVisto(B.enemy); render();
     await say(T.lendarios ? `Outro lendário surge: <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Shiny!' : ''}`
       : `${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
     await aplicarArmadilhas(B.enemy, CTX); // Stealth Rock e cia. pegam quem entra
@@ -517,6 +582,7 @@ async function win() {
     await intimidar(B.enemy, true);
     return;
   }
+  await habilidadesAoVencer();   // a luta acabou de verdade (não é o próximo da fila): Regenerator e Natural Cure
   if (B.lendarios) { await vencerGen(); return; }
   if (B.evento) { await vencerEvento(); return; }
   if (B.chefe && !S.chefes?.[B.chefe]) {

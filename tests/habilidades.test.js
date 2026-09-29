@@ -69,7 +69,7 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     // quarta leva (documentados no topo de habilidades.js)
     'danoTipo', 'danoTipoClima', 'golpesFamilia', 'recuo', 'superEfetivoCausado', 'critContraStatus', 'abaixoDeMetade', 'soStatus',
     'ignoraEstagios', 'inverteEstagios', 'dobraEstagios', 'espelhaQueda', 'aoSerBaixado', 'aoNocautear', 'aoSerAtingido', 'limitaStatus',
-    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imuneTrava', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima',
+    'analisa', 'intimidaSobe', 'imuneIntimidacao', 'imuneTrava', 'curaAoVencer', 'limpaStatusAoVencer', 'saiComPoucoHp', 'inicioLento', 'emboscada', 'imunePo', 'toque', 'semDanoIndireto', 'curaComVeneno', 'pressao', 'preguica', 'bloqueiaPrioridade', 'formaDoClima',
     // quinta leva
     'multMaiorStatClima', 'multMaiorStatTerreno', 'prendeTipo', 'anticipa', 'sincroniza', 'flinchChance',
     // sexta leva

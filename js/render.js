@@ -1,6 +1,6 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
-import { G, zone, rotulo, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
+import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
 import { $, REDUCED } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_SPR_MEGA, ITEM_SPR_Z, ITEM_SPR_VINCULO, ITEM_PEDRA_MEGA, ITEM_CRISTAL_Z, ITEM_VINCULO, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { estiloSpriteAtual } from './ajustes.js';
@@ -157,7 +157,7 @@ function turnoBar(B, P, E) {
   // treinador: equipe (● em pé / ○ derrotado) e bolas que ainda restam
   // lendários (luta final do mapa) usam a mesma sequência do treinador, mas sem bolas
   const bolas = T && !T.lendarios ? ` <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}` : '';
-  const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : 'Pokémon e bolas do treinador'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map((m, i) => i < T.atual || m.hp <= 0 ? '○' : '●').join('')}</span>${bolas}</span>` : '';
+  const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : 'Pokémon e bolas do treinador'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map(m => m.hp <= 0 ? '○' : '●').join('')}</span>${bolas}</span>` : '';
   // clima do campo (regras.CLIMAS): ícone + quantos turnos faltam
   const cl = climaDe(B.campo), te = terrenoDe(B.campo);
   const clima = cl ? `<span class="clima-selo" title="${esc(CLIMAS[cl].nome)}">${CLIMAS[cl].icone} ${esc(CLIMAS[cl].nome)} · ${B.campo.climaFixo ? 'da rota' : B.campo.turnos}</span>` : '';
@@ -433,6 +433,11 @@ function renderActions() {
   const S = G.S, a = $('#actions'), dis = G.busy ? 'disabled' : '';
   if (G.mode === 'battle' && G.B) {
     const P = S.player;
+    // arrastado pra fora da luta (Roar & cia.) com aliados ainda lutando: não há o que escolher, só assistir o turno
+    if (P.vol?.retirado) {
+      a.innerHTML = `<p class="small muted">${nm(P)} foi tirado da luta. Os aliados continuam sem você.</p><div class="subrow"><button class="btn big" data-act="passar" ${dis}>⏭ Assistir o turno</button></div>`;
+      return;
+    }
     if (G.panel === 'bag') {
       const E = G.B.enemy, T = G.B.trainer;
       const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy && !ITEMS[k].afinidade && !ITEMS[k].evo && !ITEMS[k].troca && !ITEMS[k].segurar);

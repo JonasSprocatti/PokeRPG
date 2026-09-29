@@ -27,6 +27,7 @@
 //                 (golpe.usarGolpe seta; render.js/arena.js/multiplayer.js desabilitam os outros botões)
 //   eviolite      Defesa/Def. Especial ×1.5 SÓ se a espécie ainda evolui (dados-evolucao-restante.js) — lido por
 //                 `multEviolite`, não por `multStat` (o multiplicador do Eviolite depende da espécie, não é fixo)
+//   cartaoVermelho  quem te acerta é tirado de campo e o item se gasta (Cartão Vermelho) — golpe.executar → ctx.forcarSaida
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
@@ -41,6 +42,7 @@ export const SEGURADOS = {
   'focus-sash': { aguentaCheio: true, gastaNoUso: true },
   'shell-bell': { drenaDano: 1 / 8 },
   'rocky-helmet': { espetos: 1 / 6 },
+  'red-card': { cartaoVermelho: true },
   'expert-belt': { multDano: 1.2, soSuperEfetivo: true },
   'muscle-band': { multDano: 1.1, soFisico: true },
   'wise-glasses': { multDano: 1.1, soEspecial: true },

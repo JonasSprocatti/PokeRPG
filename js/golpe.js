@@ -103,7 +103,7 @@ export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || nul
 // Algo impediu de agir: carga e fúria se perdem (como nos jogos)
 function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.vol.furia; }
 // Fim da rodada (depois de todos agirem): proteções de um turno só acabam
-export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; }
+export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; }
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
 /* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
@@ -482,6 +482,28 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro) {
     else { t.vol.tormento = true; await ctx.say(`${T} foi atormentado! Não poderá repetir o mesmo golpe.`, 'status'); }
     return true;
   }
+  // Roar / Whirlwind: o alvo sai de campo (batalha.forcarSaida decide o que isso quer dizer)
+  if (esp.forcaSaida) {
+    const r = await sairDeCampo(t, ctx, 'forcada');
+    if (r === undefined) await ctx.say('Mas falhou! (este golpe não funciona em luta de sala)');
+    else if (!r) await ctx.say('Mas falhou!');
+    return true;
+  }
+  // Mean Look / Block / Spider Web: o alvo não consegue mais fugir (Fantasma é imune, como nos jogos). Vale a luta toda.
+  if (esp.prende) {
+    if (tiposDefensivos(t).includes('ghost')) { await ctx.say(`Não afeta ${T}...`); return true; }
+    if (t.vol.preso) { await ctx.say('Mas falhou! (já está preso)'); return true; }
+    t.vol.preso = true; await ctx.say(`${T} não consegue mais fugir!`, 'status'); return true;
+  }
+  // Baton Pass: como você nunca troca de Pokémon, os estágios vão para um aliado em campo (quem usa volta ao zero)
+  if (esp.passaBonus) {
+    const aliado = (ctx.aliadosDe?.(u) || []).find(a => a.hp > 0 && !a.vol?.retirado);
+    if (!aliado) { await ctx.say('Mas falhou! (não há aliado em campo pra receber)'); return true; }
+    aliado.vol.stages = { ...u.vol.stages }; if (u.vol.foco) aliado.vol.foco = u.vol.foco;
+    for (const k of Object.keys(u.vol.stages)) u.vol.stages[k] = 0;
+    delete u.vol.foco; up(ctx);
+    await ctx.say(`${U} passou os seus bônus para ${ctx.nome(aliado)}!`, 'good'); return true;
+  }
   if (esp.semente) {
     if (tiposDefensivos(t).includes('grass')) { await ctx.say(`Não afeta ${T}...`); return true; }
     if (t.vol.semente != null) { await ctx.say(`${T} já está semeado!`); return true; }
@@ -505,6 +527,12 @@ async function golpeDeStatus(u, t, g, selfT, ctx, primeiro) {
   }
   if (!fez) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted');
 }
+
+/* Tirar um Pokémon de campo SEM desmaiar (Roar, Whirlwind, Dragon Tail, Circle Throw, Red Card, Wimp Out, Emergency Exit).
+   O motor não sabe COMO: quem tem a batalha (batalha.forcarSaida no single player) decide o que "sair" quer dizer —
+   selvagem foge, treinador manda outro, aliado sai da luta. `ctx.forcarSaida` é opcional: sem ele (multiplayer) devolve
+   `undefined`, e quem chamou diz que o golpe não funciona ali. Devolve true/false quando o ctx sabe responder. */
+async function sairDeCampo(m, ctx, motivo) { return ctx.forcarSaida ? !!(await ctx.forcarSaida(m, { motivo })) : undefined; }
 
 // `primeiro` = u agiu antes de t neste turno (recuo só vale assim)
 /* `opcoes.extra` = o mesmo golpe do chefe caindo em OUTRO alvo (o golpe carregado atinge o time inteiro no co-op — mp-motor): não
@@ -794,6 +822,18 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   }
   // Poison Touch: o golpe de quem tem a habilidade envenena ao ENCOSTAR (Shield Dust protege)
   if (encostou && hu.toque && t.hp > 0 && !t.status && !ht.semSecundario && Math.random() * 100 < hu.toque.chance) await aplicarStatus(t, hu.toque.status, ctx, false, u);
+  /* Sair de campo por causa do golpe (o que nos jogos seria trocar de Pokémon). Cada um só acontece se o ctx souber tirar
+     alguém de campo (single player) — e na ordem em que valem: o golpe que empurra, o item, a habilidade de quem apanhou. */
+  if (esp.forcaSaida && total > 0 && t.hp > 0 && u.hp > 0) await sairDeCampo(t, ctx, 'forcada');           // Dragon Tail, Circle Throw
+  if (total > 0 && t.hp > 0 && u.hp > 0 && seg(t).cartaoVermelho && u !== t) {                              // Red Card: quem atacou sai; o cartão se gasta
+    t.item = null; up(ctx);
+    await ctx.say(`${T} mostrou o Cartão Vermelho para ${U}!`, 'status');
+    await sairDeCampo(u, ctx, 'forcada');
+  }
+  // Wimp Out / Emergency Exit: cruzou a metade do HP por causa deste golpe → sai (nos SEUS Pokémon principais não vale)
+  if (total > 0 && t.hp > 0 && ht.saiComPoucoHp && hpAntesDoGolpe > t.stats.hp * ht.saiComPoucoHp && t.hp <= t.stats.hp * ht.saiComPoucoHp) {
+    await sairDeCampo(t, ctx, 'medo');                                                                      // quem narra é o ctx ("X foge assustado!")
+  }
   return 'acertou';
 }
 
@@ -805,6 +845,7 @@ export async function fimDeTurno(m, ctx) {
   // Taunt, Encore e Disable contam turnos (regras.passarTravas devolve o que acabou agora)
   const AVISO_TRAVA = { provocado: 'não está mais provocado.', encore: 'não está mais sob Encore.', desativado: 'pode usar o golpe desativado de novo.' };
   for (const fim of passarTravas(m)) await ctx.say(`${ctx.nome(m)} ${AVISO_TRAVA[fim]}`, 'muted');
+  m.vol.turnosEmCampo = (m.vol.turnosEmCampo || 0) + 1;                                // Slow Start
   if (clima) {
     // areia/granizo castigam quem não é do tipo certo; chuva/sol curam ou machucam quem tem a habilidade certa
     const dano = danoClima(clima, m);

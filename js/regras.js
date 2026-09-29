@@ -179,6 +179,7 @@ export function effStat(m, stat, crit = false, attacking = true, clima = null, t
   let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
   v *= multStatClima(m, stat, clima) * multStatTerreno(m, stat, terreno);         // clima e terreno
   v *= multEviolite(m, stat);                                                     // Eviolite: só se a espécie ainda evolui
+  if (h.inicioLento && (stat === 'attack' || stat === 'speed') && (m.vol?.turnosEmCampo || 0) < h.inicioLento) v *= 0.5;   // Slow Start: metade do Ataque e da Velocidade nos primeiros turnos
   if (h.abaixoDeMetade?.[stat] && m.hp <= m.stats.hp / 2) v *= h.abaixoDeMetade[stat]; // Defeatist
   if (m.status && h.comStatus?.[stat] && statusVale(h, m.status)) v *= h.comStatus[stat]; // Guts, Quick Feet, Marvel Scale, Toxic/Flare Boost
   else if (stat === 'speed' && m.status === 'paralysis') v *= 0.5;                 // (Quick Feet ignora a queda)
@@ -432,6 +433,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (ef < 1 && hu.poucoEfetivo) mod *= hu.poucoEfetivo;                            // Tinted Lens
   if (ef > 1 && hu.superEfetivoCausado) mod *= hu.superEfetivoCausado;              // Neuroforce
   mod *= hu.danoTipo?.[move.type] || 1;                                              // Steelworker, Transistor, Water Bubble…
+  if (hu.emboscada && t.vol?.recemEntrou) mod *= hu.emboscada;                       // Stakeout: dobra o dano em quem acabou de entrar em campo
   if (hu.sheerForce && temSecundario(move)) mod *= 1.3;                              // Sheer Force: mais forte, mas perde o efeito (golpe.js)
   const dc = hu.danoTipoClima?.[clima]; if (dc?.tipos.includes(move.type)) mod *= dc.mult; // Sand Force na areia
   mod *= multFamilia(hu, move.name);                                                 // Iron Fist, Strong Jaw, Sharpness
@@ -830,6 +832,27 @@ export function escolhaIA(moves, tiposAtacante, tiposAlvo, esperteza = ESPERTEZA
   }
   if (sorte() < esperteza) return melhorGolpe(comPP, tiposAtacante, tiposAlvo) || comPP[0];
   return comPP[Math.floor(sorte() * comPP.length)];
+}
+
+/* ---- sair de campo sem desmaiar ----
+   Nos jogos várias coisas dependem de TROCAR de Pokémon (Roar, Regenerator, Wimp Out…). Aqui você é o Pokémon e nunca
+   troca, então cada uma foi ligada ao evento equivalente que já existe: o fim da luta vencida, a fuga, o próximo
+   Pokémon do treinador. As contas ficam aqui (puras); quem tira o Pokémon de campo é batalha.forcarSaida. */
+// Quem o treinador manda em seguida. `aleatorio` = arrastado à força (Roar…), senão o primeiro vivo da fila
+// (desistência dele mesmo). -1 = ninguém sobrou. O atual nunca é candidato; quem já caiu (hp 0) também não.
+export function proximoDoTreinador(equipe, atual, aleatorio = false, sorte = Math.random) {
+  const vivos = equipe.map((m, i) => i).filter(i => i !== atual && equipe[i].hp > 0);
+  if (!vivos.length) return -1;
+  return aleatorio ? vivos[Math.floor(sorte() * vivos.length)] : vivos[0];
+}
+// O que as habilidades de "saída" fazem quando a luta é vencida (o jogador nunca troca, então a saída é o fim da luta):
+// Regenerator recupera parte do HP, Natural Cure tira o status. Devolve o que vai acontecer, sem mexer em nada.
+export function efeitosAoVencer(m) {
+  const h = hab(m), r = { cura: 0, limpaStatus: false };
+  if (!m || m.hp <= 0) return r;
+  if (h.curaAoVencer && m.hp < m.stats.hp) r.cura = Math.min(m.stats.hp - m.hp, Math.max(1, Math.floor(m.stats.hp * h.curaAoVencer)));
+  if (h.limpaStatusAoVencer && m.status) r.limpaStatus = true;
+  return r;
 }
 
 // O que o aliado faz neste turno, pela ordem dele (ORDENS em dados.js):

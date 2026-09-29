@@ -95,3 +95,33 @@ test('todo ajudante em MAIÚSCULA chamado existe (pega o que o teste acima não 
   }
   assert.deepEqual(faltando, [], '\n' + faltando.join('\n'));
 });
+
+/* Terceiro cinto de segurança, e o mais geral: o ajudante que OUTRO módulo exporta e este arquivo usa sem importar.
+   Os dois testes acima só olham formatos específicos (`${nome(` e NOME_EM_MAIÚSCULA(`); já escaparam duas vezes:
+   `SPR_SHINY(` num ternário (Sala de Raide sem escolha de Pokémon, 29/09/2026) e `nm(P)` dentro de `esc(...)` no
+   render.js, na mesma semana — as duas só estourariam quando a tela fosse desenhada, no navegador.
+   A regra: se o nome é EXPORTADO por algum módulo de js/ e aparece chamado neste arquivo (`nome(` sem `.` na frente),
+   então o arquivo tem de declará-lo ou importá-lo. Comentários são ignorados (citam `save()` e `turn()` à vontade);
+   o que sobra na árvore de hoje é zero, então qualquer acusação é bug de verdade. */
+test('todo ajudante exportado por outro módulo e chamado aqui está importado', () => {
+  const arqs = readdirSync(DIR).filter(f => f.endsWith('.js'));
+  const semComentarios = s => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[\s;,({])\/\/.*$/gm, '$1');
+  const exportados = new Map();   // nome -> arquivos que o exportam
+  for (const a of arqs) {
+    const src = semComentarios(readFileSync(new URL(a, DIR), 'utf8'));
+    for (const m of src.matchAll(/^export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+      if (!exportados.has(m[1])) exportados.set(m[1], new Set());
+      exportados.get(m[1]).add(a);
+    }
+  }
+  const faltando = [];
+  for (const a of arqs) {
+    const src = semComentarios(readFileSync(new URL(a, DIR), 'utf8')), tem = declarados(src);
+    for (const m of src.matchAll(/(^|[^.\w$'"`])([A-Za-z_$][\w$]*)\(/gm)) {
+      const n = m[2];
+      if (!exportados.has(n) || tem.has(n)) continue;
+      faltando.push(`${a}:${src.slice(0, m.index).split('\n').length} → ${n}() não está importado (vem de ${[...exportados.get(n)].join(', ')})`);
+    }
+  }
+  assert.deepEqual([...new Set(faltando)], [], '\n' + [...new Set(faltando)].join('\n'));
+});

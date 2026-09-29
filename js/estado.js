@@ -43,7 +43,9 @@ export const rotulo = m => !m ? ''
 export const ladoJogador = () => [G.S.player, ...(G.S.aliados || [])];
 export const vivos = lista => lista.filter(m => m.hp > 0);
 // quem participa da batalha: você + aliados que não estão com a ordem "Descansar" (A.ordem === 'fora')
-export const emCampo = () => ladoJogador().filter(m => m.ordem !== 'fora');
+// `vol.retirado` = saiu desta luta sem desmaiar (arrastado por Roar & cia., ou fugiu de medo): não age, não é alvo, não ganha XP.
+// Vive em `vol`, que é zerado ao começar e ao acabar toda batalha — nunca vaza pro save.
+export const emCampo = () => ladoJogador().filter(m => m.ordem !== 'fora' && !m.vol?.retirado);
 
 // Centro Pokémon: se alguém da equipe precisa de cura e quanto custa no modo atual (grátis no Fácil; no Médio,
 // cada vitória desde a última visita — S.vitoriasDesdeCentro — tira 10%). `cheio` = preço sem desconto, pra mostrar.

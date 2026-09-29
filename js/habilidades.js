@@ -67,6 +67,11 @@
 //   analisa                ao entrar, sobe Ataque ou At. Esp. conforme a defesa do oponente (golpe.aoEntrarEmCampo) — Download
 //   intimidaSobe           Intimidate sobe o seu Ataque em vez de baixar (golpe.aoEntrarEmCampo) — Guard Dog
 //   imuneIntimidacao       Intimidate não te afeta (golpe.aoEntrarEmCampo) — Inner Focus, Own Tempo, Oblivious
+//   curaAoVencer           fração do HP que volta ao vencer a luta (batalha.win) — Regenerator (no lugar de "ao trocar")
+//   limpaStatusAoVencer    tira o status ao vencer a luta — Natural Cure
+//   saiComPoucoHp          fração do HP abaixo da qual sai de campo, por causa de um golpe (golpe.executar → ctx.forcarSaida) — Wimp Out, Emergency Exit. Só inimigos e aliados
+//   inicioLento            turnos em campo com Ataque e Velocidade pela metade (regras.effStat) — Slow Start
+//   emboscada              multiplicador de dano em quem acabou de entrar em campo (regras.calcDamage) — Stakeout
 //   imuneTrava             lista de travas de golpe que não pegam (regras.falhaDaTrava): 'provocar' | 'encore' | 'disable' | 'tormento' — Oblivious (Taunt), Aroma Veil (as quatro)
 //   contato também aceita: sorteio [[status,peso]] (sorteia um), estagio [stat,n] (baixa quem encosta), po (não pega Grama/Overcoat)
 //   imunePo                não pega os pós do `contato` (Overcoat)
@@ -209,6 +214,10 @@ export const HABILIDADES = {
   'water-veil': { imuneStatus: ['burn'] }, 'magma-armor': { imuneStatus: ['freeze'] },
   'own-tempo': { imuneStatus: ['confusion'], imuneIntimidacao: true }, oblivious: { imuneStatus: ['confusion'], imuneIntimidacao: true, imuneTrava: ['provocar'] },
   'aroma-veil': { imuneTrava: ['provocar', 'encore', 'disable', 'tormento'] },
+  // o que nos jogos acontece ao TROCAR de Pokémon, ligado ao evento equivalente daqui (você nunca troca)
+  regenerator: { curaAoVencer: 1 / 3 }, 'natural-cure': { limpaStatusAoVencer: true },
+  'wimp-out': { saiComPoucoHp: 0.5 }, 'emergency-exit': { saiComPoucoHp: 0.5 },
+  'slow-start': { inicioLento: 5 }, stakeout: { emboscada: 2 },
   'early-bird': { sonoRapido: true }, 'shed-skin': { curaStatusFimTurno: 0.3 },
   // atributos que não caem
   'clear-body': { semQueda: 'todas' }, 'white-smoke': { semQueda: 'todas' }, 'full-metal-body': { semQueda: 'todas' },

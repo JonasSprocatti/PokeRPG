@@ -5,6 +5,20 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.69', data: '2026-09-29', titulo: 'Pra fora da luta', piada: 'O Roar descobriu que existe um jeito educado de dispensar alguém. É gritar.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Roar, Whirlwind, Dragon Tail e Circle Throw</b> passam a funcionar. Contra um <b>selvagem</b> a luta acaba (sem XP nem dinheiro). Contra um <b>treinador</b> ele manda outro Pokémon da equipe — o que saiu não conta como derrotado e pode voltar depois. Os seus Pokémon também podem ser arrastados: quem levou o golpe sai e <b>a luta segue sem ele</b>; se era o último em campo, acaba como uma fuga. Alfas, lendários e o chefe da semana não saem.',
+        'Se você foi tirado da luta com aliados ainda lutando, a tela mostra o botão <b>⏭ Assistir o turno</b>. Quem ficou de fora não ganha XP.',
+        'Novo item: <b>Cartão Vermelho</b> (loja, ₽3.000). Quem acerta o portador é expulso da luta, e o cartão se gasta.',
+        '<b>Regenerator</b> (recupera 1/3 do HP) e <b>Natural Cure</b> (tira o status) agora funcionam ao <b>vencer a luta</b>. <b>Wimp Out</b> e <b>Emergency Exit</b> fazem inimigos e aliados saírem ao cair da metade do HP (no seu Pokémon principal não valem, pra uma habilidade sorteada não te expulsar da luta).',
+        '<b>Mean Look, Block e Spider Web</b> impedem o alvo de fugir. <b>Baton Pass</b> passa os seus bônus para um aliado em campo. <b>Slow Start</b> (Regigigas) e <b>Stakeout</b> ficaram ativas.'
+      ] },
+      { nome: 'Correções', itens: [
+        'O treinador podia mostrar bolinhas erradas na equipe restante quando um Pokémon saía e voltava. Agora só conta quem ainda está de pé.',
+        'Em luta de sala (multiplayer) esses golpes ainda não valem: eles avisam que não funcionam ali, em vez de fingir.'
+      ] }
+    ] },
   { versao: '2.68', data: '2026-09-29', titulo: 'Inimigos que pensam', piada: 'O treinador descobriu que existe vida além do golpe mais forte. Ainda não sabe o que fazer com ela, mas descobriu.',
     secoes: [
       { nome: 'Novidades', itens: [

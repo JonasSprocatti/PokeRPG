@@ -28,7 +28,7 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
   }
   const ganchos = new Set(['multDano', 'soFisico', 'soEspecial', 'soSuperEfetivo', 'multStat', 'semStatus', 'recuoPorGolpe', 'drenaDano',
     'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus', 'danoTipo', 'resisteTipo', 'statusFimTurno',
-    'quickClaw', 'choice', 'eviolite']);
+    'quickClaw', 'choice', 'eviolite', 'cartaoVermelho']);
   for (const [k, s] of Object.entries(SEGURADOS)) {
     for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);
     for (const t of [...(s.danoTipo?.tipos || []), ...(s.resisteTipo?.tipos || [])]) assert.ok(TYPE_PT[t], `${k}: tipo "${t}"`);

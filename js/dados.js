@@ -185,6 +185,7 @@ export const ITENS_SEGURADOS = {
   'focus-sash': ter('Faixa de Foco', 'Com o HP cheio, sobrevive a um golpe que derrubaria com 1 de HP. Gasta-se no uso.', 2500),
   'shell-bell': ter('Sino-Concha', 'Recupera 1/8 do dano que você causa.', 2000),
   'rocky-helmet': ter('Elmo Rochoso', 'Quem te acerta com um golpe físico perde 1/6 do HP máximo.', 2500),
+  'red-card': ter('Cartão Vermelho', 'Quando um golpe te acerta, quem atacou é expulso da luta (o selvagem foge, o treinador manda outro). Gasta-se no uso.', 3000),
   'expert-belt': ter('Cinto do Perito', 'Golpes super efetivos batem 20% mais forte.', 2500),
   'muscle-band': ter('Faixa Muscular', 'Golpes físicos batem 10% mais forte.', 1800),
   'wise-glasses': ter('Óculos do Sábio', 'Golpes especiais batem 10% mais forte.', 1800),

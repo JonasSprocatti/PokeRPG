@@ -890,7 +890,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 209 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 215 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -1314,7 +1314,45 @@ seguem valendo sem mexer).
 - **Fora do escopo**: o inimigo não prevê o golpe do jogador (escolhe sem saber), não avalia recuo/HP próprio ao bater,
   não conta golpes de vários acertos, e o alvo é sempre o primeiro do seu lado em pé.
 
-### Etapa 3 — trocas (a fazer)
-Mapear cada dependência de troca ao evento equivalente que já existe (ver as decisões no topo). Pendente ainda:
-Mean Look/Block/Spider Web bloqueando `consegueFugir` (`vol.preso`), `vol.turnosEmCampo` (Stakeout, Slow Start),
-Baton Pass/Shed Tail passando pra um aliado em campo. U-turn/Volt Switch/Flip Turn já funcionam como dano puro.
+### Etapa 3 — trocas (FEITA, só no single player)
+Cada dependência de troca foi ligada ao evento equivalente que já existia. **A primitiva é `ctx.forcarSaida(m, {motivo})`**,
+implementada em `batalha.forcarSaida`; o motor (`golpe.js`, via `sairDeCampo`) só PEDE, porque quem tem a batalha é que
+sabe o que "sair" quer dizer. Sem o método no ctx (multiplayer) o golpe falha com aviso.
+- **Selvagem**: foge, a luta acaba (`B.saidaForcada = 'inimigo'`), sem XP nem dinheiro. **Treinador**: manda outro
+  (`regras.proximoDoTreinador`: Roar & cia. SORTEIAM; Wimp Out manda o próximo da fila); o que saiu ganha `vol.retirado`
+  e NÃO conta como derrotado — volta depois se ainda estiver de pé. **Alfa, lendários, chefe da semana**: falha.
+- **Seu lado**: quem levou o golpe ganha `vol.retirado` e some de `emCampo()`; a luta segue com os outros. Se era o
+  último em campo, `B.saidaForcada = 'jogador'` e acaba como fuga. Você (principal) arrastado com aliados vivos vê só
+  o botão **⏭ Assistir o turno** (`turn({type:'passar'})`); se eles caírem, a luta termina (`turn()` confere no fim).
+  **Wimp Out/Emergency Exit NÃO tiram o seu principal** (decisão do usuário: uma habilidade sorteada não pode te expulsar).
+- **`vol.retirado` vive no `vol`**, que `iniciar()` e `endBattle()` zeram: não vaza pro save nem contamina a próxima luta.
+- **Decisões de desenho que valem lembrar**: (1) NUNCA chamar `endBattle()` de dentro de um golpe — `turn()` continua
+  usando `B` depois; por isso só se MARCA `B.saidaForcada` e o loop para. (2) O inimigo pode ser trocado no meio do turno,
+  então `E` virou `let` e é relido de `B.enemy` a cada ação; a ação pendente de quem saiu é pulada (`vol.retirado`) —
+  sem isso o Pokémon que saiu bateria no que acabou de entrar. (3) `win()` deixou de fazer `T.atual++`: o próximo é o
+  primeiro de pé (`proximoDoTreinador`), senão um Roar deixaria um Pokémon vivo para trás e a fila reencontraria os mortos.
+  As bolinhas da equipe (render.js) passaram a contar só `hp > 0`.
+- **Regenerator / Natural Cure** agem ao **vencer a luta** (`batalha.habilidadesAoVencer`, chamada quando cai o ÚLTIMO
+  da fila, antes de `vencerGen`/`vencerEvento`), em todo o seu lado de pé — inclusive quem foi arrastado. Regenerator
+  1/3 do HP (`regras.efeitosAoVencer`, sem passar do máximo).
+- **Cartão Vermelho** (`red-card`, ₽3.000, gancho `cartaoVermelho` em segurados.js): quem acerta o portador sai; o
+  cartão se gasta. **Eject Button/Eject Pack NÃO foram feitos**: com a saída voluntária vetada no seu principal só
+  serviriam a aliados. **Shed Tail** também não (não existe Substitute).
+- **Mean Look / Block / Spider Web** (`prende`): `vol.preso` bloqueia o "Fugir" (single e sala); Fantasma é imune.
+- **Baton Pass** (`passaBonus`): os estágios (e o Focus Energy) vão para o primeiro aliado em campo e quem usou volta a
+  zero; sem aliado, falha. Como você nunca troca, a semântica é "transferir", não "sair e passar".
+- **Slow Start** (`inicioLento: 5`, lê `vol.turnosEmCampo`, contado em `fimDeTurno`) e **Stakeout** (`emboscada: 2`, lê
+  `vol.recemEntrou`, posto quando o treinador manda outro e limpo em `fimDaRodada`). Stakeout só dobra contra o
+  inimigo que ACABOU de entrar — você nunca "entra".
+- **Habilidades novas** (209 → 215): regenerator, natural-cure, wimp-out, emergency-exit, slow-start, stakeout.
+- **Testes**: `tests/saida.test.js` (13; o ctx é um espião que prova QUANDO o motor pede a saída) + conferência por
+  mutação. `batalha.js` não é testável em `node:test` (depende de DOM): foi validada em jsdom com um harness descartável —
+  a saída de campo em todos os casos, `turn()` inteiro com o `render()` real (Roar trocando o inimigo no meio do turno,
+  você fora e os aliados lutando, luta sem ninguém em campo, vitória com Regenerator) e a quebra proposital da proteção
+  `retirado` (o Pokémon que saiu passa a bater no novo: HP 63 em vez de 100).
+- **Fora do escopo**: multiplayer (Roar & cia., Regenerator, Wimp Out não valem lá), Eject Button, Shed Tail, Dancer, e a
+  IA do inimigo ainda não USA Roar/Mean Look de propósito (vale `IGNORADO` em `notaDoGolpe`).
+
+Também nasceu do trabalho desta etapa: um terceiro teste em `tests/referencias.test.js` — todo ajudante que OUTRO módulo
+exporta e que este arquivo chama tem de estar importado. O `nm()` esquecido no render.js (dentro de um `esc(...)`) seria
+o segundo `ReferenceError` mudo da semana, depois do `SPR_SHINY` da Sala de Raide.

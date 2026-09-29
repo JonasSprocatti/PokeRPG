@@ -26,6 +26,10 @@
 //   lado: campo      liga algo no SEU lado do campo (Reflect, Light Screen, Aurora Veil, Safeguard, Mist, Tailwind)
 //   soNoGelo         esse golpe só funciona com granizo ou neve (Aurora Veil)
 //   armadilha: tipo  põe Stealth Rock / Spikes / Toxic Spikes no lado do inimigo (pega quem entrar depois)
+//   forcaSaida       tira o alvo de campo sem derrubá-lo (Roar, Whirlwind, Dragon Tail, Circle Throw): selvagem foge, treinador
+//                    manda outro, no seu lado quem levou sai da luta (batalha.forcarSaida; em sala o golpe falha)
+//   prende           o alvo não consegue mais fugir (Mean Look, Block, Spider Web); Fantasma é imune
+//   passaBonus       passa os estágios de quem usa para um aliado em campo (Baton Pass) — ninguém troca de Pokémon aqui
 //   trava: tipo      restringe os golpes do ALVO (regras.motivoBloqueio): provocar (Taunt: só dano), encore (repete o último),
 //                    disable (desativa o último), tormento (não repete o golpe anterior)
 export const GOLPES_ESPECIAIS = {
@@ -49,6 +53,8 @@ export const GOLPES_ESPECIAIS = {
   'dream-eater': { soDormindo: true },
   toxic: { toxico: true },
   'leech-seed': { semente: true },
+  roar: { forcaSaida: true }, whirlwind: { forcaSaida: true }, 'dragon-tail': { forcaSaida: true }, 'circle-throw': { forcaSaida: true },
+  'mean-look': { prende: true }, block: { prende: true }, 'spider-web': { prende: true }, 'baton-pass': { passaBonus: true },
   taunt: { trava: 'provocar' }, encore: { trava: 'encore' }, disable: { trava: 'disable' }, torment: { trava: 'tormento' },
   'solar-beam': { carga: true }, 'solar-blade': { carga: true }, 'sky-attack': { carga: true }, 'razor-wind': { carga: true },
   'skull-bash': { carga: true }, 'meteor-beam': { carga: true }, 'freeze-shock': { carga: true }, 'ice-burn': { carga: true },

@@ -265,7 +265,7 @@ export async function resolverTurnoMP(estado, acoes) {
     const inimigoRapido = Math.max(...vivosMP(s.lados.B).map(m => effStat(m, 'speed')));
     // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão): qualquer inimigo vivo com a habilidade prende
     const preso = vivosMP(s.lados.B).some(m => hab(m).prendeTipo?.some(t => quem.data.types.includes(t))
-      || hab(m).prendeQualquer === true || (hab(m).prendeQualquer === 'chao' && noChao(quem)));
+      || hab(m).prendeQualquer === true || (hab(m).prendeQualquer === 'chao' && noChao(quem))) || !!quem.vol?.preso;   // ou um golpe (Mean Look, Block, Spider Web)
     if (consegueFugir(effStat(quem, 'speed'), inimigoRapido, s.fugas, quem.ability, undefined, preso)) {
       say(`${quem.nome} achou uma saída e todo mundo fugiu!`, 'good');
       s.fim = 'fuga'; return { estado: s, eventos: ev };

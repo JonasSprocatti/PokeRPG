@@ -49,7 +49,7 @@ Duas máquinas de dev:
 | `js/pokemon.js` | `makeMon(data, level, opt)` — instância jogável. |
 | `js/efeitos.js` | `changeStats`, `inflict`, `healFull` + `CTX` (narração do single player). |
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
-| `js/habilidades.js` | Tabela de ganchos + `hab(m)`, `IMPL`. **Só o que está na tabela tem efeito** (hoje 209 de 314 reais). Gancho novo = código no motor + teste. |
+| `js/habilidades.js` | Tabela de ganchos + `hab(m)`, `IMPL`. **Só o que está na tabela tem efeito** (hoje 215 de 314 reais). Gancho novo = código no motor + teste. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Sem imports. |
 | `js/segurados.js` | **Itens segurados** (puro): `M.item` = id em ITEMS; `SEGURADOS` = tabela de ganchos. `seg(m)` é o ÚNICO ponto por onde toda leitura de item passa. |
 | `js/batalha.js` | `turn(action)` (único ponto de entrada da UI), `useMove`, `startBattle`/`startTrainerBattle`/`startBossBattle`/`startEvento`, vitória/derrota/captura, `endBattle`. |
@@ -98,6 +98,7 @@ Duas máquinas de dev:
 - **`baixarGen` precisa trazer TUDO o que uma jornada pede** (Pokémon, learnset, curva de XP, árvore de evolução, sprites). Já faltou duas vezes. Ao acrescentar qualquer busca nova num fluxo, perguntar: **isso está no `baixarGen`?** Cresceu a lista → subir **`VERSAO_DOWNLOAD`**.
 - **Celular: não reintroduzir "esconder painel por aba".** As abas ⚔/💬/📋 foram removidas a pedido de quem joga (cada uma escondia dois terços da tela). O problema que resolviam já está resolvido pela cena presa no topo.
 - **Golpe que restringe a escolha (Taunt, Encore, Disable, Torment, Choice, Colete) passa SEMPRE por `regras.golpesPermitidos`/`motivoBloqueio`.** As 3 telas de golpe, os aliados, a IA (`escolhaIA` recebe a lista já filtrada) e o motor (`usarGolpe`) leem a mesma função — nunca reimplementar a regra numa tela. O motor precisa conferir também: o efeito pode chegar DEPOIS de escolhido o golpe (o inimigo mais rápido que te provoca faz o seu status falhar; sob Encore a escolha é TROCADA).
+- **Saída de campo sem desmaiar** (Roar, Red Card, Wimp Out…) passa por `ctx.forcarSaida(m, {motivo})`, implementado em `batalha.forcarSaida`; o motor (`golpe.js`) só PEDE. Quem saiu ganha `vol.retirado` (zerado em todo início/fim de batalha, nunca vaza pro save) e `emCampo()` o exclui. **Dentro de `turn()`, releia `E = B.enemy` depois de qualquer ação** — o inimigo pode ter sido trocado no meio, e o loop pula quem tem `retirado`. Nunca chame `endBattle()` de dentro de um golpe: marque `B.saidaForcada` e o `turn()` encerra.
 - **Nunca assumir "só 1 do meu lado"** — é a base do multiplayer e dos aliados.
 - **Do lado do jogador ninguém troca de Pokémon**, então armadilha de entrada ali é inerte (o golpe avisa em vez de fingir). Roar/Baton Pass provavelmente nunca entram por isso.
 - **Ler rota por `zone()`/`rotasAtuais()`**, nunca `ZONES` direto na jornada (elas aplicam `rotaNaJornada`, com níveis escalados).
@@ -183,8 +184,8 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 - **Arceus como chefe de raide** — decidir se entra na rotação (mudaria o `% 14`) ou é evento à parte.
 - **Troca de verdade** entre dois jogadores (hoje só o Cabo de Conexão simulado).
 - **Missões próprias de cada mapa** (hoje as de espécie valem em qualquer Gen; a trilha de Alfas é só de Kanto) e **lendários no co-op**.
-- **Mecânicas que dependiam de trocar de Pokémon** (Roar/Whirlwind/Dragon Tail/Red Card, Regenerator/Natural Cure, Wimp Out, Mean Look…): desenho fechado com o usuário em 29/09/2026, detalhes em `docs/features.md` ("Travas, IA e troca", etapa 3). As travas (Taunt/Encore/Disable/Torment) e a IA com nota por golpe já estão prontas.
-- **Habilidades**: 209 de 314. Boa parte das 105 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
+- **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
+- **Habilidades**: 215 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
 - **Frutas de aperto por tipo** (Occa, Passho…) — os outros itens segurados já entraram.
 
 **Precisa de ação do usuário**

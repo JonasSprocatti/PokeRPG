@@ -304,6 +304,7 @@ document.addEventListener('click', async e => {
     case 'zmove': return usarZ();
     case 'gmax': return usarGigantamax();   // nao gasta o turno; dura 3 turnos e encolhe sozinho   // este SIM gasta o turno: o Z-Move e o ataque da rodada
     case 'run': return turn({ type: 'run' });
+    case 'passar': return turn({ type: 'passar' });   // você foi tirado da luta: só deixa o turno correr
     case 'new': {
       if (G.busy || G.mode === 'battle') return;
       // guardar (continua depois, 💾 Jornadas salvas) ou encerrar (resultado vai pra carreira, fim.js)
