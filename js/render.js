@@ -50,7 +50,7 @@ export const spriteFrente = m => {
 };
 // "home" (3D) não tem sprite de costas: cai pra null, e quem chama já sabe cair pra frente + flip. O animado
 // (showdown) TEM costas de verdade, então usa a própria.
-const sprCostas = m => {
+export const sprCostas = m => {
   const estilo = estiloSpriteAtual();
   if (estilo === 'animado') return m.shiny ? SPR_ANIM_SHINY_COSTAS(m.formaSprite || m.id) : SPR_ANIM_COSTAS(m.formaSprite || m.id);
   if (estilo === '3d') return null;
@@ -60,7 +60,7 @@ const sprCostas = m => {
    bloqueado na rede de quem joga; (2) a sprite normal — cobre shiny que não existe pra aquela forma. Sem o
    primeiro, uma falha do servidor deixava o Pokémon como ícone quebrado mesmo com a imagem disponível ali ao
    lado, no outro endereço. `dataset.f` marca que a primeira tentativa já foi feita. */
-const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${outroServidor(src)}'}else{this.onerror=null;this.src='${espelhar(m.data.sprite)}'}">`;
+export const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${outroServidor(src)}'}else{this.onerror=null;this.src='${espelhar(m.data.sprite)}'}">`;
 const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
 /* Botão ⚡ da Mega Evolução: só aparece pra quem já conquistou a Pedra Mega daquela espécie (conquistas.js) e
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
@@ -95,7 +95,7 @@ function hpbar(m, chave = null) {
   const pct = clamp(m.hp / m.stats.hp * 100, 0, 100), col = pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E';
   return `<div class="hp"><span>HP</span><div class="bar"><div class="fill${chave ? ' fill-hp' : ''}" ${chave ? `id="hp-fill-${chave}"` : ''} style="width:${pct}%;background:${col}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`;
 }
-function chipsFor(m) {
+export function chipsFor(m) {
   let h = m.status ? `<span class="st st-${m.status}">${m.status === 'poison' && m.vol?.toxico ? 'TÓX' : ST_SHORT[m.status]}</span>` : '';
   if (m.vol?.conf) h += '<span class="st">CONF</span>';
   // golpes especiais (especiais.js): carga, recarga, fúria, semente, foco

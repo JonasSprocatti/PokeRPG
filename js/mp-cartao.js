@@ -4,7 +4,7 @@
    1190 linhas com rede dentro entrava no grafo por causa de um cartãozinho. */
 import { G } from './estado.js';
 import { TYPE_PT } from './dados.js';
-import { spriteFrente } from './render.js';
+import { spriteFrente, sprCostas, imgMon, chipsFor, badgesDeTipo } from './render.js';
 import { resumoDoChefe } from './boss.js';
 import { esc, clamp } from './util.js';
 
@@ -33,4 +33,34 @@ export function cartao(m, legenda, destaque = false) {
   const marcas = marcasMP(m);
   return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''} ${G.sala?.atuandoRef === m.ref ? 'atacando' : ''}" data-ref="${esc(m.ref || '')}"><img src="${spriteFrente(m)}" alt="" onerror="this.onerror=null;this.src='${m.data.sprite}'">
     <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${m.level}</span>${marcas ? ` <span class="small">${esc(marcas)}</span>` : ''}${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
+}
+
+/* ---------- a CENA da luta em sala (29/09/2026) ----------
+   Antes a batalha multiplayer era uma lista de cartõezinhos de 64 px: dava pra ler, mas não parecia uma batalha —
+   e, pior, não mostrava status nem estágios (o jogador não via que estava envenenado). Agora é a mesma cena do
+   jogo sozinho: fundo de campo, sprite grande (de costas do seu lado, como manda a série) e placa de papel com
+   tipos, HP e condições. Reaproveita `.scene.battle`, `.mon`, `.spr`, `.plate` e as animações que já existem.
+   Com muita gente (até 6 × 3) os sprites encolhem sozinhos, como os aliados do single player. */
+export function unidadeMP(m, { costas = false, legenda = '', destaque = false } = {}) {
+  const costasSrc = costas ? sprCostas(m) : null;
+  const src = costasSrc || spriteFrente(m);
+  const cls = `spr ${costas ? 'back' : ''} ${costas && !costasSrc ? 'flip' : ''}`;   // sem sprite de costas: espelha a de frente
+  return `<div class="mp-unidade ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''} ${G.sala?.atuandoRef === m.ref ? 'atacando' : ''}" data-ref="${esc(m.ref || '')}">
+    <div class="mon ${m.hp <= 0 ? 'fainted' : ''} ${m.dyna ? 'gigante' : ''}"><div class="pad"></div>${imgMon(m, cls, src)}</div>
+    <div class="plate">${placaMP(m, legenda)}</div></div>`;
+}
+function placaMP(m, legenda) {
+  const marcas = marcasMP(m);
+  return `<div class="pl-top"><span>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</span><span>Nv. ${m.level}</span></div>
+    <div class="types pl-tipos">${badgesDeTipo(m)}</div>
+    ${marcas ? `<div class="small mp-marcas">${esc(marcas)}</div>` : ''}
+    ${legenda ? `<div class="small muted mp-dono">${esc(legenda)}</div>` : ''}
+    ${barra(m)}${blocoChefeMP(m)}${chipsFor(m)}`;
+}
+export function cenaMP(b, { legendaDe = () => '', vezRef = null } = {}) {
+  const total = b.lados.A.length + b.lados.B.length;
+  const fila = (lado, costas) => `<div class="mp-fila ${costas ? 'me' : 'foe'}">${b.lados[lado]
+    .map(m => unidadeMP(m, { costas, legenda: legendaDe(m), destaque: vezRef === m.ref })).join('')}</div>`;
+  return `<div class="scene battle mp-cena ${total > 4 ? 'apertada' : ''} ${total > 7 ? 'lotada' : ''}">
+    ${fila('B', false)}${fila('A', true)}</div>`;
 }

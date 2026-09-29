@@ -733,6 +733,42 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-mons{display:grid;gap:6px}
 .mp-grupo{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
 .mp-times{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* a CENA da luta em sala: mesma linguagem do jogo sozinho (.scene.battle/.mon/.spr/.plate), mas em FILAS, porque
+   aqui podem ser até seis jogadores de cada lado — o layout de duas colunas do single player não caberia */
+.mp-cena{grid-template-rows:auto auto;gap:10px;min-height:0}
+.mp-fila{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:flex-end}
+.mp-unidade{display:grid;justify-items:center;gap:4px;width:min(270px,46vw)}
+.mp-unidade.caido{opacity:.5}
+.mp-unidade.vez .plate{outline:3px solid var(--yellow);outline-offset:2px}
+.mp-unidade .plate{width:100%}
+.mp-unidade .mon{width:150px;height:118px}
+.mp-marcas{color:#7a4ad6;font-weight:700}
+.mp-dono{margin-top:-2px}
+/* mais de 4 em campo: tudo encolhe sozinho, como os aliados do single player */
+.mp-cena.apertada .mp-unidade{width:min(210px,44vw)}
+.mp-cena.apertada .mon{width:104px;height:88px}
+.mp-cena.apertada .spr{width:92px;height:92px}
+.mp-cena.apertada .spr.back{width:104px;height:104px}
+.mp-cena.lotada .mp-unidade{width:min(170px,30vw)}
+.mp-cena.lotada .mon{width:78px;height:70px}
+.mp-cena.lotada .spr,.mp-cena.lotada .spr.back{width:70px;height:70px}
+.mp-cena.lotada .plate{padding:6px 8px}
+.mp-cena.lotada .pl-top{font-size:13px}
+@media(max-width:640px){.mp-unidade{width:min(200px,46vw)}.mp-unidade .mon{width:104px;height:92px}.mp-unidade .spr{width:96px;height:96px}.mp-unidade .spr.back{width:104px;height:104px}}
+/* andamento do turno: quanto falta, quem a sala espera e o que já aconteceu */
+.mp-turno{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 6px}
+.mp-prazo{flex:1;min-width:120px;height:10px;background:var(--panel2);border:2px solid var(--line);border-radius:999px;overflow:hidden}
+.mp-prazo-fill{height:100%;background:var(--grass);transition:width 1s linear}
+.mp-prazo-fill.urgente{background:var(--red)}
+.mp-relogio{font:700 16px var(--display);min-width:3ch;text-align:right}
+.mp-fichas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mp-ficha{display:flex;align-items:center;gap:4px;font-size:13px;border:2px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--panel2)}
+.mp-ficha.ok{border-color:var(--grass);color:var(--grass)}
+.mp-ficha.esperando{border-color:var(--yellow);color:var(--yellow)}
+.mp-historico{margin-top:8px;font-size:14px}
+.mp-historico summary{cursor:pointer;font:600 14px var(--display);color:var(--muted)}
+.mp-hist-turno{margin-top:6px;background:var(--panel2);border-radius:10px;padding:6px 10px}
+.mp-hist-turno ul{margin:4px 0 0;padding-left:18px;display:grid;gap:2px;color:var(--muted)}
 .mp-itens{margin-top:8px}
 .mp-itens summary{cursor:pointer;font:600 14px var(--display)}
 .mp-itens .bag-grid{margin-top:6px}

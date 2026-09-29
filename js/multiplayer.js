@@ -35,7 +35,7 @@ import { encerrarJornada } from './fim.js';
 import { FIND_ITEMS } from './dados.js';
 import { URL_SITE } from './site.js';   // o link do convite sai daqui — endereço absoluto nunca é digitado à mão
 import { esc, fmt, pick, rand, clamp, offline, sleep } from './util.js';
-import { MAX_JOGADORES, PRAZO_MS, raideSemRun, entradaEfetiva, jogaveis, primeiroInimigo,
+import { MAX_JOGADORES, PRAZO_MS, MAX_HISTORICO, raideSemRun, entradaEfetiva, jogaveis, primeiroInimigo,
   inimigosDe, minhaVezDe, todosProntos, montarLado, raideDisponiveis, itensComunsDisponiveis, podeReviver } from './mp-regras.js';
 import { meuId, membroDe, novoCodigo, codigoValido, anotar, enviar, ligarPulso, desligarPulso,
   abrirCanal, retrack as retrackCanal, membrosDaPresenca, fecharSala, ligarRender, ESPERA_ANFITRIAO_MS } from './mp-rede.js';
@@ -474,7 +474,8 @@ const PAUSA_NARRACAO = 260;
 function marcarAtuando(ref) {
   if (!G.sala) return;
   G.sala.atuandoRef = ref || null;
-  for (const el of document.querySelectorAll('.mp-mon[data-ref]')) el.classList.toggle('atacando', !!ref && el.dataset.ref === ref);
+  // vale pra cena da luta (.mp-unidade) e pros cartões do lobby (.mp-mon)
+  for (const el of document.querySelectorAll('[data-ref]')) el.classList.toggle('atacando', !!ref && el.dataset.ref === ref);
 }
 async function narrar(eventos) {
   if (!eventos?.length || !G.sala) return;
@@ -508,6 +509,11 @@ function aoReceberEstado(p) {
   if (p.tipo === 'evento' && !sala.tentativaEvento) { registrarTentativa(); sala.tentativaEvento = true; }
   consumirRevives(p.batalha);
   consumirItensComuns(p.batalha);
+  /* 📜 histórico: o turno passa rápido e a narração some no registro. Guarda os últimos MAX_HISTORICO turnos SÓ na
+     memória da sala (nada persiste), pra dar pra reler quem fez o quê. Só o que tem texto entra — estado
+     republicado pelo pulso chega sem eventos. */
+  if (novaLuta) sala.historico = [];
+  if (p.eventos?.length) sala.historico = [...(sala.historico || []), { turno: p.batalha.turno, linhas: p.eventos.map(e => e.txt) }].slice(-MAX_HISTORICO);
   renderSala();
   narrar(p.eventos);   // desenha primeiro: a narração destaca os cartões que renderSala acabou de montar
 }

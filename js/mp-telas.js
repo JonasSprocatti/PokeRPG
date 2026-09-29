@@ -23,11 +23,11 @@ import { megasDisponiveis } from './mega.js';
 import { desbloqueadas } from './roguelike.js';
 import { nuvem, nuvemConfigurada, usuario } from './nuvem.js';
 import { htmlIcone, htmlInsigniaDe } from './conta.js';
-import { cartao } from './mp-cartao.js';
+import { cartao, cenaMP } from './mp-cartao.js';
 import { meuId, membroDe, diarioMP } from './mp-rede.js';
 import { minhaMochila, ctxDaSala } from './mp-resultado.js';
-import { MAX_JOGADORES, raideSemRun, entradaEfetiva, usaRun, minhaVezDe, jogaveis, inimigosDe, seloDoMembro,
-  motivoParaNaoComecar, raideDisponiveis, itensComunsDisponiveis, podeReviver, revivesRestantes, resumoDaConfig } from './mp-regras.js';
+import { MAX_JOGADORES, PRAZO_MS, raideSemRun, entradaEfetiva, usaRun, minhaVezDe, jogaveis, inimigosDe, seloDoMembro,
+  motivoParaNaoComecar, quemFalta, raideDisponiveis, itensComunsDisponiveis, podeReviver, revivesRestantes, resumoDaConfig } from './mp-regras.js';
 import { esc, fmt, offline } from './util.js';
 
 const temRun = () => !!G.S?.player;
@@ -89,7 +89,15 @@ export function telaSala() {
     </section></main>`;
   const sala = G.sala;
   clearInterval(sala.relogio);
-  sala.relogio = setInterval(() => { const el = $('#mp-relogio'); if (el && G.sala?.prazo) el.textContent = Math.max(0, Math.ceil((G.sala.prazo - Date.now()) / 1000)) + 's'; }, 1000);
+  /* O relógio mexe SÓ no texto e na largura da barra, nunca redesenha a sala: um re-render por segundo apagaria o
+     que estivesse sendo digitado no chat e piscaria a cena inteira. */
+  sala.relogio = setInterval(() => {
+    if (!G.sala?.prazo) return;
+    const resta = Math.max(0, G.sala.prazo - Date.now());
+    const el = $('#mp-relogio'); if (el) el.textContent = Math.ceil(resta / 1000) + 's';
+    const barra = $('#mp-prazo-fill');
+    if (barra) { barra.style.width = `${resta / PRAZO_MS * 100}%`; barra.classList.toggle('urgente', resta < 10000); }
+  }, 1000);
   renderChat();
   renderSala();
 }
@@ -164,11 +172,8 @@ function desenharSala() {
   if (!b) return renderLobby(cabecalho, pvp, z);
   const dono = id => id === 'ia' ? '' : (membroDe(id)?.nome || 'jogador que saiu') + (id === meuId() ? ' (você)' : '');
   const vez = minhaVez();
-  $('#mp-topo').innerHTML = cabecalho + `
-    <div class="mp-campo"><div class="mp-lado inimigo">${b.lados.B.map(m => cartao(m, dono(m.dono), vez?.ref === m.ref)).join('')}</div>
-    <div class="mp-lado">${b.lados.A.map(m => cartao(m, dono(m.dono), vez?.ref === m.ref)).join('')}</div></div>`;
-  const esperando = [...new Set(jogaveis(b).filter(m => !sala.acoesFeitas.includes(m.ref)).map(m => membroDe(m.dono)?.nome || '?'))];
-  const status = `<p class="muted small">Turno ${b.turno} · ${esperando.length ? `esperando: ${esperando.map(esc).join(', ')}` : 'resolvendo…'} · <span id="mp-relogio">${Math.max(0, Math.ceil((sala.prazo - Date.now()) / 1000))}s</span></p>`;
+  $('#mp-topo').innerHTML = cabecalho + cenaMP(b, { legendaDe: m => dono(m.dono), vezRef: vez?.ref }) + fichasDoTurno(b) + historicoDoTurno();
+  const status = barraDoTurno(b);
   const sair = `<button class="btn ghost" data-act="mp-sair">Sair da sala</button>`;
   if (!jogaveis(b).some(m => m.dono === meuId())) {
     $('#mp-acoes').innerHTML = status + `<p class="muted">Seus Pokémon estão fora da luta; ${b.evento ? 'o grupo segura enquanto você volta com um Revive, ou torça pelo seu time!' : 'torça pelo seu time!'}</p>${botoesReviver(b)}${botoesRaide(b)}<div class="subrow">${sair}</div>`; return;
@@ -190,6 +195,35 @@ function desenharSala() {
     ${botoesRaide(b)}
     ${botoesReviver(b)}
     <div class="subrow">${b.pvp ? '<button class="btn ghost" data-act="mp-desistir">Desistir</button>' : b.evento ? '' : '<button class="btn ghost" data-act="mp-fugir">Fugir</button>'}${sair}</div>`;
+}
+
+/* ---------- o andamento do turno ----------
+   Três coisas que faltavam e que todo mundo perguntava no chat: quanto tempo ainda tenho, quem a sala está
+   esperando, e o que aconteceu no turno que passou voando. */
+// fichas de quem já escolheu: um rosto por jogador, com ✓ ou ⏳ (antes era uma frase "esperando: fulano, ciclano")
+function fichasDoTurno(b) {
+  const sala = G.sala, faltam = new Set(quemFalta(sala));
+  const donos = [...new Set([...b.lados.A, ...b.lados.B].filter(m => m.dono !== 'ia').map(m => m.dono))];
+  if (donos.length < 2) return '';
+  return `<div class="mp-fichas">${donos.map(id => {
+    const m = membroDe(id), falta = faltam.has(id);
+    return `<span class="mp-ficha ${falta ? 'esperando' : 'ok'}" title="${falta ? 'ainda escolhendo' : 'já escolheu'}">${htmlIcone(m?.icone, 'icone-mini')}${esc(m?.nome || 'jogador')}${falta ? ' ⏳' : ' ✓'}</span>`;
+  }).join('')}</div>`;
+}
+// barra de prazo: o número sozinho ("45s") não dá o susto certo. A largura é atualizada pelo relógio de telaSala.
+function barraDoTurno(b) {
+  const sala = G.sala, resta = Math.max(0, sala.prazo - Date.now());
+  return `<div class="mp-turno">
+    <span class="turno-n">Turno <b>${b.turno}</b></span>
+    <div class="mp-prazo" title="Quem não escolher até o fim joga no automático"><div class="mp-prazo-fill" id="mp-prazo-fill" style="width:${Math.round(resta / PRAZO_MS * 100)}%"></div></div>
+    <span id="mp-relogio" class="mp-relogio">${Math.ceil(resta / 1000)}s</span></div>`;
+}
+// 📜 o que aconteceu antes: o turno passa rápido e a narração some no registro. Só na memória (some ao sair).
+function historicoDoTurno() {
+  const h = G.sala.historico || [];
+  if (!h.length) return '';
+  return `<details class="mp-historico"><summary>📜 Turnos anteriores (${h.length})</summary>
+    ${[...h].reverse().map(t => `<div class="mp-hist-turno"><b>Turno ${t.turno}</b><ul>${t.linhas.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`).join('')}</details>`;
 }
 
 /* ---------- botões de item durante a luta ---------- */
