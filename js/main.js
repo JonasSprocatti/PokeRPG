@@ -22,7 +22,7 @@ import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
-  raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP } from './multiplayer.js';
+  raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP, enviarChatMP } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
@@ -119,6 +119,7 @@ document.addEventListener('click', async e => {
     case 'mp-raide-comprar-comum': return raideComprarComum(v);
     case 'mp-raide-comprar-segurado': return raideComprarSegurado(v);
     case 'mp-pronto': return alternarProntoMP();
+    case 'mp-chat-enviar': return enviarChatMP();
     case 'mp-centro': return centroMP();        // curar a equipe sem sair da sala
     case 'conquistas': if (G.busy || G.mode === 'battle') return; return telaConquistas();
     // 🏟 Arena do Chefe (arena.js): o chefe da semana com os Pokémon do Hall da Fama, sem mexer em nenhuma jornada
@@ -354,6 +355,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   if (e.target.id === 'q') previewSearch(e.target.value);
   if (e.target.id === 'mp-codigo') entrarSala(e.target.value);
+  if (e.target.id === 'mp-chat-input') enviarChatMP();
   if (e.target.id === 'icone-busca') mudarIconeEdit(e.target.value);
   if (e.target.id === 'amigo-codigo') $('[data-act="amigo-add"]')?.click();
 });

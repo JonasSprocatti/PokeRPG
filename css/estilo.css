@@ -637,6 +637,11 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-diag ul{margin:6px 0 0;padding-left:18px;display:grid;gap:2px}
 .mp-diag li.err{color:#ffab91}
 .mp-centro{margin:10px 0}
+.mp-chat{margin:16px 0 4px;width:100%}
+.mp-chat h3{margin:0 0 6px;font:700 16px var(--display)}
+.mp-chat .log{height:130px}
+.mp-chat .log p{display:flex;align-items:center;gap:4px}
+.mp-chat .subrow input{flex:1;min-width:120px}
 .mp-time{display:grid;gap:8px;align-content:start;background:var(--panel2);border-radius:14px;padding:10px}
 .mp-time h3{margin:0;font:700 16px var(--display);color:var(--yellow)}
 .mp-config{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;width:100%}

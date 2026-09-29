@@ -584,6 +584,27 @@ O que sobrou e o que ficou combinado:
   nenhuma, só o Pokémon; a única coisa que mudou foi QUAL mochila o CLIENTE lê pra mostrar o botão e descontar
   depois.
 
+  **✅ FEITO (28/09/2026) — chat da sala.** Pedido do usuário ao descrever o fluxo completo da Sala de Raide do
+  jeito que ele imaginava: criar a sala, chamar amigos/passar código, cada um escolher os 3 do Hall da Fama,
+  comprar e equipar, **poder escrever num chat pra quem está na sala**, e só começar quando todos confirmarem
+  "pronto". Investigado antes de mexer: tudo o resto da descrição **já existia** (convite por amigo/código,
+  seleção do Hall com `MAX_TIME_HALL`=3, Loja de preparo, `todosProntosParaRaide()` travando o botão de começar)
+  — só o chat faltava. Broadcast novo no MESMO canal da sala (`pokerpg-sala-<código>`, ao lado de
+  `estado`/`acao`/`fim`/`lobby`/`sincronizar`): evento `'chat'`, payload `{de, nome, icone, texto, t}`, sem
+  persistir em lugar nenhum — só `sala.mensagens` (memória, até 100 linhas, some ao sair da sala). Não é exclusivo
+  da Raide: mora em `telaSala()`, então vale em QUALQUER modo (coop/pvp/raide) e em QUALQUER estado (lobby ou já
+  lutando) — a mesma sala serve pra combinar estratégia no meio de um turno. **Cuidado que motivou ficar FORA de
+  `#mp-topo`/`#mp-acoes`**: essas duas divs são recriadas inteiras (`innerHTML =`) por `renderSala()`, chamada a
+  cada troca de presença e a cada pulso do anfitrião (`PULSO_MS`, ligado o tempo todo em luta) — se o campo de
+  texto morasse ali dentro, digitar uma frase enquanto alguém entra na sala apagaria o que já foi escrito no meio
+  da digitação. Por isso o chat ganhou sua própria seção em `telaSala()` (criada uma vez só) e `renderChat()` só
+  escreve dentro de `#mp-chat-msgs`, nunca no campo de texto. `enviarChatMP()` lê e LIMPA `#mp-chat-input`
+  direto (mesmo padrão de outros pontos do arquivo que já leem DOM sem passar por main.js, ex. `#mp-relogio`),
+  soma a própria mensagem no `sala.mensagens` NA HORA (o broadcast do Supabase não devolve pro remetente,
+  `broadcast:{self:false}` em `nuvem.canalSala`) e só then manda pra rede — sem isso quem escreve não veria a
+  própria mensagem até alguém responder. Tecla Enter no campo funciona pelo MESMO padrão do resto do jogo
+  (`main.js`, listener de `keydown` por `e.target.id`, igual `#mp-codigo`/`#q`/`#icone-busca`).
+
   **Usar item comum em batalha** (`arenaUsarItem`): ocupa a vez de quem usar, exatamente como no multiplayer —
   `botoesItemComum` filtra `inventarioRaide()` por `!SEM_BATALHA_MP.some(...)` (exportado de `multiplayer.js`
   pra não duplicar a lista) e `regras.itemTemEfeito`, e a escolha vira `{ref, tipo:'item', item:id}` — o MESMO

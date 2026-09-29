@@ -182,6 +182,7 @@ async function conectar(codigo, anfitriao) {
   sala = { codigo, anfitriao, canal: null, membros: [], zona: G.S?.zone || ZONES[0].id, batalha: null, acoes: {}, acoesFeitas: [], escolhidos: new Set(),
     convidado, // anfitrião sem run: só PvP (co-op é jogar a run de alguém)
     hallSel: { selecao: [], equipamento: {} }, hallMons: [], pronto: false, // Sala de Raide (modo 'raide')
+    mensagens: [], // chat da sala: só na memória, nunca persiste (some ao sair)
     config: { modo: anfitriao && !temRun() ? 'pvp' : 'coop', porJogador: 1, balancear: true }, time: anfitriao ? 'A' : 'B', entrouEm: Date.now(), encontrouAnfitriao: anfitriao };
   try {
     const canal = await canalSala(codigo, meuId());
@@ -189,6 +190,7 @@ async function conectar(codigo, anfitriao) {
     canal.on('presence', { event: 'sync' }, aoMudarPresenca)
       .on('broadcast', { event: 'estado' }, ({ payload }) => aoReceberEstado(payload))
       .on('broadcast', { event: 'acao' }, ({ payload }) => { if (sala?.anfitriao) registrarAcao(payload.de, payload.acao); })
+      .on('broadcast', { event: 'chat' }, ({ payload }) => aoReceberChat(payload))
       .on('broadcast', { event: 'fim' }, ({ payload }) => aoReceberFim(payload))
       .on('broadcast', { event: 'lobby' }, ({ payload }) => { anotar('← lobby'); if (sala && !sala.anfitriao) { sala.zona = payload.zona; sala.config = payload.config; renderSala(); } })
       .on('broadcast', { event: 'sincronizar' }, () => { // alguém pediu o estado de novo
@@ -712,6 +714,34 @@ export function moverGolpeMP(i, dir) {
 export function fugirMP() { escolher({ tipo: 'fugir' }); }
 export function desistirMP() { escolher({ tipo: 'desistir' }); }
 export function mirarMP(ref) { if (sala) { sala.alvo = ref; renderSala(); } }
+
+/* ---------- chat da sala: vale em qualquer modo, no lobby E na luta (broadcast 'chat', sem persistir em lugar
+   nenhum — só na memória de `sala.mensagens`, até 100 linhas). Fica FORA de `#mp-topo`/`#mp-acoes` de propósito:
+   essas duas divs são recriadas inteiras por `renderSala()` (a cada troca de presença, cada pulso do anfitrião…),
+   e se o campo de texto morasse ali dentro, digitar uma mensagem enquanto alguém entra na sala apagaria o que
+   você estava escrevendo no meio da frase. `renderChat()` só mexe em `#mp-chat-msgs`. ---------- */
+function aoReceberChat(p) {
+  if (!sala || !p?.texto) return;
+  sala.mensagens.push(p); if (sala.mensagens.length > 100) sala.mensagens.shift();
+  renderChat();
+}
+function renderChat() {
+  const el = $('#mp-chat-msgs'); if (!el || !sala) return;
+  el.innerHTML = sala.mensagens.length
+    ? sala.mensagens.map(m => `<p>${htmlIcone(m.icone, 'icone-mini')}<b>${esc(m.nome)}:</b> ${esc(m.texto)}</p>`).join('')
+    : '<p class="muted">Ninguém escreveu nada ainda. Diga oi!</p>';
+  el.scrollTop = el.scrollHeight;
+}
+export async function enviarChatMP() {
+  const el = $('#mp-chat-input');
+  const texto = String(el?.value || '').trim().slice(0, 200);
+  if (!sala || !texto) return;
+  if (el) el.value = '';
+  const msg = { de: meuId(), nome: meuNome(), icone: meuIcone(), texto, t: Date.now() };
+  sala.mensagens.push(msg); if (sala.mensagens.length > 100) sala.mensagens.shift();
+  renderChat();
+  await enviar('chat', msg);
+}
 // Centro Pokémon sem sair da sala (mesma conta e mesmas regras do jogo sozinho)
 export function centroMP() {
   if (!sala || sala.batalha || !temRun()) return;
@@ -858,9 +888,14 @@ function telaSala() {
   $('#app').innerHTML = `<main class="create mp">
     <div id="mp-topo"></div>
     <div class="textbox"><div id="log" class="log" aria-live="polite"></div></div>
-    <div id="mp-acoes" class="actions"></div></main>`;
+    <div id="mp-acoes" class="actions"></div>
+    <section class="mp-chat"><h3>💬 Chat da sala</h3>
+      <div class="textbox"><div id="mp-chat-msgs" class="log" aria-live="polite"></div></div>
+      <span class="subrow"><input id="mp-chat-input" maxlength="200" placeholder="Mensagem pra sala..." autocomplete="off"><button class="btn ghost sm" data-act="mp-chat-enviar">Enviar</button></span>
+    </section></main>`;
   clearInterval(sala.relogio);
   sala.relogio = setInterval(() => { const el = $('#mp-relogio'); if (el && sala?.prazo) el.textContent = Math.max(0, Math.ceil((sala.prazo - Date.now()) / 1000)) + 's'; }, 1000);
+  renderChat();
   renderSala();
 }
 export const barra = m => { const pct = clamp(m.hp / m.stats.hp * 100, 0, 100); return `<div class="hp"><span>HP</span><div class="bar"><div class="fill" style="width:${pct}%;background:${pct > 50 ? '#5FB36A' : pct > 20 ? '#F7C548' : '#E4572E'}"></div></div><span>${m.hp}/${m.stats.hp}</span></div>`; };
