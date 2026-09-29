@@ -326,6 +326,9 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/dados.js` | Tabelas: tipos, naturezas, itens, missões, dificuldades, iniciais, ordens |
 | `js/mapas.js`, `js/dados-mapas.js` | Mapas por Gen: rotas, taxas de aparição, Alfas, lendários, Pokédex da rota. `dados-mapas.js` é **gerado** da PokéAPI por `ferramentas/gerar-mapas.ps1` (não editar à mão) |
 | `js/golpe.js`, `js/habilidades.js`, `js/especiais.js` | Motor único dos golpes, a tabela de habilidades e a de golpes especiais (Protect, Rest, Explosion, carga/recarga…) |
+| `CLAUDE.md` | Guia de quem mexe no código: como rodar, arquitetura, armadilhas e convenções. Mantido **curto de propósito** (é lido por inteiro a cada sessão de trabalho) |
+| `docs/features.md` | Como cada coisa foi construída: o que foi considerado, o que foi simplificado de propósito, o que ficou de fora — mais o detalhe por arquivo |
+| `docs/historico.md` | Post-mortems dos bugs já corrigidos: o relato do jogador, o que foi descartado no diagnóstico e a lição |
 | `docs/auditoria-batalha.md` | Auditoria de golpes e habilidades contra o motor. ⚠️ **Desatualizada** (parou na 2ª leva de habilidades): não reflete nem o total nem o que já está implementado. Para a contagem de verdade, vale `IMPL.size` em `js/habilidades.js` |
 | `js/relatos.js` | Bugs e sugestões |
 | `js/batalha.js`, `js/amizade.js`, `js/progressao.js`, `js/itens.js`, `js/missoes.js`, `js/mundo.js` | Regras narradas do jogo |

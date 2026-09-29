@@ -18,19 +18,28 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 
 const texto = arq => readFileSync(new URL('../' + arq, import.meta.url), 'utf8');
-const CLAUDE = texto('CLAUDE.md'), README = texto('README.md');
 
-// pega os números de uma frase-âncora; falha com mensagem útil se a frase sumiu/foi reescrita
-function daFrase(doc, nomeDoc, re, oque) {
-  const m = doc.match(re);
-  assert.ok(m, `Não achei no ${nomeDoc} a frase que declara "${oque}" (${re}).\n` +
-    'Se o texto foi reescrito, atualize a âncora em tests/docs-numeros.test.js.');
-  return m.slice(1).map(Number);
+/* Varre TODOS os .md, não um arquivo fixo: em 29/09/2026 o CLAUDE.md foi enxugado de ~50k pra ~6k tokens e
+   metade das frases migrou pra docs/features.md — um teste preso a um arquivo só quebraria a cada faxina, o que
+   ensina a desligar o teste em vez de corrigir o texto. O que importa é que a afirmação exista em ALGUM lugar da
+   documentação e esteja certa. */
+const DOCS = ['CLAUDE.md', 'README.md',
+  ...readdirSync(new URL('../docs/', import.meta.url)).filter(f => f.endsWith('.md')).map(f => 'docs/' + f)];
+const CORPUS = DOCS.map(a => [a, texto(a)]);
+
+// pega os números de uma frase-âncora em qualquer doc; falha com mensagem útil se a frase sumiu/foi reescrita
+function daFrase(re, oque) {
+  for (const [arq, doc] of CORPUS) {
+    const m = doc.match(re);
+    if (m) return m.slice(1).map(Number);
+  }
+  assert.fail(`Não achei em documentação nenhuma (${DOCS.join(', ')}) a frase que declara "${oque}" (${re}).\n` +
+    'Se o texto foi reescrito ou apagado, atualize a âncora em tests/docs-numeros.test.js.');
 }
 
 const mod = async n => import('../js/' + n + '.js');
 
-test('CLAUDE.md: contagens declaradas em prosa batem com o código', async () => {
+test('contagens declaradas em prosa (qualquer .md) batem com o código', async () => {
   const { BADGES } = await mod('badges');
   const { MEGAS } = await mod('dados-megas');
   const { IMPL } = await mod('habilidades');
@@ -42,50 +51,50 @@ test('CLAUDE.md: contagens declaradas em prosa batem com o código', async () =>
 
   const tamanho = x => Array.isArray(x) || typeof x === 'string' ? x.length : x instanceof Set || x instanceof Map ? x.size : Object.keys(x).length;
 
-  const [badges] = daFrase(CLAUDE, 'CLAUDE.md', /\((\d+) badges numa tabela única/, 'quantas badges existem');
-  assert.equal(badges, tamanho(BADGES), 'nº de badges no texto x js/badges.js');
+  const [badges] = daFrase(/\((\d+) badges numa tabela única/, 'quantas badges existem');
+  assert.equal(badges, tamanho(BADGES), 'nº de badges na documentação x js/badges.js');
 
-  const [formas, especies] = daFrase(CLAUDE, 'CLAUDE.md', /\((\d+) formas, (\d+) espécies —/, 'formas/espécies de Mega');
+  const [formas, especies] = daFrase(/\((\d+) formas, (\d+) espécies —/, 'formas/espécies de Mega');
   assert.equal(especies, Object.keys(MEGAS).length, 'espécies com Mega no texto x js/dados-megas.js');
   assert.equal(formas, Object.values(MEGAS).reduce((a, x) => a + (Array.isArray(x) ? x.length : 1), 0),
     'formas Mega no texto x js/dados-megas.js');
 
-  const [impl] = daFrase(CLAUDE, 'CLAUDE.md', /hoje (\d+) de \d+ habilidades reais/, 'habilidades implementadas');
+  const [impl] = daFrase(/hoje (\d+) de \d+ habilidades reais/, 'habilidades implementadas');
   assert.equal(impl, IMPL.size, 'habilidades implementadas no texto x IMPL.size');
 
-  const [flags] = daFrase(CLAUDE, 'CLAUDE.md', /`GOLPE_FLAGS` \((\d+) golpes mapeados\)/, 'golpes com flag');
+  const [flags] = daFrase(/`GOLPE_FLAGS` \((\d+) golpes mapeados\)/, 'golpes com flag');
   assert.equal(flags, tamanho(GOLPE_FLAGS), 'golpes mapeados no texto x js/dados-golpe-flags.js');
 
-  const [evolui] = daFrase(CLAUDE, 'CLAUDE.md', /`AINDA_EVOLUI`, (\d+) espécies/, 'espécies que ainda evoluem');
+  const [evolui] = daFrase(/`AINDA_EVOLUI`, (\d+) espécies/, 'espécies que ainda evoluem');
   assert.equal(evolui, tamanho(AINDA_EVOLUI), 'AINDA_EVOLUI no texto x js/dados-evolucao-restante.js');
 
-  const [raide] = daFrase(CLAUDE, 'CLAUDE.md', /`boss\.usarItemDeRaide`\): (\d+) consumíveis/, 'itens de raide');
+  const [raide] = daFrase(/`boss\.usarItemDeRaide`\): (\d+) consumíveis/, 'itens de raide');
   assert.equal(raide, Object.values(ITEMS).filter(i => i.raide).length, 'itens de raide no texto x dados.ITEMS');
 
   // "Os 14 chefes" aparece nos dois arquivos, e o calendário gira com "% 14": os três têm de andar juntos
-  const [chefesTxt] = daFrase(CLAUDE, 'CLAUDE.md', /\*\*Os (\d+) chefes\*\* \(`evento\.EVENTOS`/, 'nº de chefes');
+  const [chefesTxt] = daFrase(/\*\*Os (\d+) chefes\*\* \(`evento\.EVENTOS`/, 'nº de chefes');
   assert.equal(chefesTxt, EVENTOS.length, 'chefes no texto x evento.EVENTOS');
   assert.equal(chefesTxt, Object.keys(CHEFES).length, 'chefes no texto x boss.CHEFES');
-  const [mod14] = daFrase(CLAUDE, 'CLAUDE.md', /semana N = `N % (\d+)`/, 'o divisor do calendário');
+  const [mod14] = daFrase(/semana N = `N % (\d+)`/, 'o divisor do calendário');
   assert.equal(mod14, EVENTOS.length, 'o `% N` do calendário tem de ser o nº de chefes');
 });
 
-test('README.md: contagens declaradas em prosa batem com o código', async () => {
+test('contagens do README em prosa batem com o código', async () => {
   const { IMPL } = await mod('habilidades');
   const { SEGURADOS } = await mod('segurados');
   const { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS } = await mod('dados');
   const { EVENTOS } = await mod('evento');
 
-  const [impl] = daFrase(README, 'README.md', /hoje (\d+) de \d+\)/, 'habilidades implementadas');
+  const [impl] = daFrase(/hoje (\d+) de \d+\)/, 'habilidades implementadas');
   assert.equal(impl, IMPL.size, 'habilidades implementadas no README x IMPL.size');
 
-  const [total, loja, premio] = daFrase(README, 'README.md',
+  const [total, loja, premio] = daFrase(
     /✔ \((\d+) no total: (\d+) na loja.*?(\d+) de prêmio de raide/s, 'itens segurados');
   assert.equal(total, Object.keys(SEGURADOS).length, 'itens segurados no README x segurados.SEGURADOS');
   assert.equal(loja, Object.keys(ITENS_SEGURADOS).length, 'segurados de loja no README x dados.ITENS_SEGURADOS');
   assert.equal(premio, Object.keys(ITENS_RAIDE_SEGURADOS).length, 'segurados de prêmio no README x dados.ITENS_RAIDE_SEGURADOS');
 
-  const [chefes] = daFrase(README, 'README.md', /\*\*Os (\d+) chefes\*\*/, 'nº de chefes');
+  const [chefes] = daFrase(/\*\*Os (\d+) chefes\*\*/, 'nº de chefes');
   assert.equal(chefes, EVENTOS.length, 'chefes no README x evento.EVENTOS');
 });
 
@@ -121,7 +130,7 @@ test('constantes citadas com valor na documentação têm o valor real', async (
     return c;
   };
   const erros = [];
-  for (const [nomeDoc, doc] of [['CLAUDE.md', CLAUDE], ['README.md', README]])
+  for (const [nomeDoc, doc] of CORPUS)
     for (const m of doc.matchAll(/`([A-Z][A-Z0-9_]*)`\s*=\s*(\d+(?:[.,]\d+)?)(%?)/g)) {
       const achados = valores.get(m[1]);
       if (!achados) continue;                                   // não é constante exportada: não é da nossa conta
