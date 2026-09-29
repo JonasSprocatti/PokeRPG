@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { entradaEfetiva, raideSemRun, semMochila, usaRun, soAssistindo, hallEmprestado, jogaveis, minhaVezDe,
   quemFalta, jaEscolheu, todosProntos, montarLado, podeReviver, raideDisponiveis, itensComunsDisponiveis,
-  revivesRestantes, resumoDaConfig, inimigosDe } from '../js/mp-regras.js';
+  revivesRestantes, resumoDaConfig, inimigosDe, motivoParaNaoComecar, seloDoMembro } from '../js/mp-regras.js';
 
 const sala = (entradaTipo, modo = 'coop') => ({ entradaTipo, config: { modo, porJogador: 1, balancear: true } });
 
@@ -69,6 +69,27 @@ test('todosProntos: espectador não segura a sala, e sem Pokémon ninguém está
   assert.equal(todosProntos([{ pronto: true, mons: [1] }, { pronto: true, mons: [] }]), false);
   assert.equal(todosProntos([{ pronto: true, mons: [1] }, { pronto: true, mons: [1] }]), true);
   assert.equal(todosProntos([{ pronto: true, mons: [1] }, { entradaTipo: 'espectador', pronto: false }]), true);
+});
+
+test('motivoParaNaoComecar diz POR QUE o botão está apagado (e some quando dá pra começar)', () => {
+  const m = (id, extra = {}) => ({ id, nome: id, mons: [{ hp: 10 }], pronto: true, time: 'A', ...extra });
+  const sala = (modo, membros) => ({ config: { modo }, membros });
+  assert.match(motivoParaNaoComecar(sala('coop', [m('eu')]), { temRun: false }), /jornada em andamento/);
+  assert.match(motivoParaNaoComecar(sala('coop', [m('eu'), m('ana', { mons: [] })]), { temRun: true }), /Ainda escolhendo o Pokémon: ana/);
+  assert.match(motivoParaNaoComecar(sala('coop', [m('eu'), m('ana', { pronto: false })]), { temRun: true }), /Falta ficar pronto: ana/);
+  assert.match(motivoParaNaoComecar(sala('pvp', [m('eu'), m('ana')]), {}), /Cada time precisa/);
+  assert.match(motivoParaNaoComecar(sala('raide', [{ id: 'a', nome: 'A', entradaTipo: 'espectador' }]), {}), /Ninguém entrou pra jogar/);
+  assert.equal(motivoParaNaoComecar(sala('coop', [m('eu'), m('ana')]), { temRun: true }), '');
+  assert.equal(motivoParaNaoComecar(sala('pvp', [m('eu'), m('ana', { time: 'B' })]), {}), '');
+  // espectador não segura ninguém, mesmo sem Pokémon e sem "pronto"
+  assert.equal(motivoParaNaoComecar(sala('coop', [m('eu'), { id: 'x', nome: 'X', entradaTipo: 'espectador' }]), { temRun: true }), '');
+});
+
+test('seloDoMembro resume o estado de cada um no lobby', () => {
+  assert.equal(seloDoMembro({ entradaTipo: 'espectador' }).cls, 'assiste');
+  assert.equal(seloDoMembro({ mons: [] }).cls, 'escolhendo');
+  assert.equal(seloDoMembro({ mons: [1], pronto: false }).cls, 'escolhendo');
+  assert.equal(seloDoMembro({ mons: [1], pronto: true }).cls, 'pronto');
 });
 
 test('montarLado respeita o teto de Pokémon por jogador, pula os caídos e numera repetidos', () => {

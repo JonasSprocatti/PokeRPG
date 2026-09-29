@@ -26,8 +26,8 @@ import { htmlIcone, htmlInsigniaDe } from './conta.js';
 import { cartao } from './mp-cartao.js';
 import { meuId, membroDe, diarioMP } from './mp-rede.js';
 import { minhaMochila, ctxDaSala } from './mp-resultado.js';
-import { MAX_JOGADORES, raideSemRun, entradaEfetiva, usaRun, minhaVezDe, jogaveis, inimigosDe, todosProntos,
-  raideDisponiveis, itensComunsDisponiveis, podeReviver, revivesRestantes, resumoDaConfig } from './mp-regras.js';
+import { MAX_JOGADORES, raideSemRun, entradaEfetiva, usaRun, minhaVezDe, jogaveis, inimigosDe, seloDoMembro,
+  motivoParaNaoComecar, raideDisponiveis, itensComunsDisponiveis, podeReviver, revivesRestantes, resumoDaConfig } from './mp-regras.js';
 import { esc, fmt, offline } from './util.js';
 
 const temRun = () => !!G.S?.player;
@@ -40,36 +40,39 @@ export function especiesConvidado() {
   return lista;
 }
 
-/* ---------- menu (fora da sala) ---------- */
-export function telaMenuMP(msg = '', menu = { entrada: { tipo: 'run', id: null }, hallEscolha: { selecao: [], equipamento: {} } }) {
+/* ---------- menu (fora da sala) ----------
+   Duas portas e nada mais: criar ou entrar. A escolha do Pokémon MUDOU DE LUGAR (29/09/2026) — ela acontece
+   dentro da sala, no lobby, onde você já vê o modo, quem chegou e dá pra trocar de ideia. Antes existia nos dois
+   lugares, com quatro funções quase iguais, e obrigava a decidir antes de saber pra que tipo de luta era. */
+export function telaMenuMP(msg = '') {
   G.mode = 'mp'; limparTopo();
-  const entrada = menu.entrada;
   const bloqueio = !nuvemConfigurada() ? 'O multiplayer precisa do modo online, que ainda não foi configurado neste site (<code>js/config.js</code>).'
     : offline() ? '📴 Sem internet: o multiplayer volta quando a conexão voltar.' : '';
-  const P = G.S?.player, conv = entrada.tipo === 'convidado', hall = entrada.tipo === 'hall';
-  const opcaoRun = temRun()
-    ? `<button class="abil ${entrada.tipo === 'run' ? 'on' : ''}" data-act="mp-entrada" data-v="run" aria-pressed="${entrada.tipo === 'run'}"><b>🎒 O Pokémon da minha run</b><small>${esc(P.nick || fmt(P.name))}, Nv. ${P.level}${(G.S.aliados || []).length ? ` (+ aliados, se a sala pedir)` : ''}. A luta mexe na run: XP, HP${DIFICULDADES[dificuldadeDe(G.S)].permadeath ? ', e desmaiar acaba a run (Roguelike)' : ''}.</small></button>`
-    : '<p class="small muted">Sem run em andamento: escolha um Pokémon convidado ou do Hall da Fama.</p>';
-  const escolha = `<h3>Com qual Pokémon?</h3>
-    <div class="abils">${opcaoRun}
-      <button class="abil ${conv ? 'on' : ''}" data-act="mp-entrada" data-v="convidado" aria-pressed="${conv}"><b>✨ Um Pokémon convidado</b><small>Emprestado só pra sala: não mexe na sua run, não ganha recompensa, sem risco. Os iniciais, Pikachu, Eevee e o que você desbloqueou no Roguelike.</small></button>
-      <button class="abil ${hall ? 'on' : ''}" data-act="mp-entrada" data-v="hall" aria-pressed="${hall}"><b>🏟 Meus Pokémon do Hall da Fama</b><small>Até ${MAX_TIME_HALL} campeões de jornadas Roguelike/Hardcore já terminadas, no nível de verdade deles. Como o convidado: não mexe em run nenhuma nem ganha recompensa — mas sem ser um Nv. 5.</small></button></div>
-    ${conv ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${entrada.id === e.id ? 'on' : ''}" data-act="mp-convidado" data-v="${e.id}" aria-pressed="${entrada.id === e.id}"><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : ''}
-    ${hall ? `<div style="margin-top:10px">${htmlHallPicker(menu.hallEscolha)}</div>` : ''}`;
+  const P = G.S?.player;
+  const modo = (emoji, nome, txt) => `<div class="mp-modo"><b>${emoji} ${nome}</b><small>${txt}</small></div>`;
   $('#app').innerHTML = `<main class="create">
     ${barraTelas('mp')}
     <h1>Multiplayer.</h1>
-    <p class="lead">Chame amigos pra sua run (co-op contra selvagens e Alfas) ou lute contra eles (PvP: 1×1, 2×2, 3×3, 2×1…), com seus aliados. Por padrão o nível de todo mundo é balanceado.</p>
+    <p class="lead">Jogue junto com quem você quiser: uma sala, um código de quatro letras, e pronto. Dá pra entrar com o Pokémon da sua jornada, com um campeão do Hall da Fama, com um convidado de Nv. 5 — ou só pra assistir.</p>
     ${msg ? `<p class="notice">${msg}</p>` : ''}
     ${bloqueio ? `<div class="notice">${bloqueio}</div>` : `
-    <section class="pv conta"><div>
-      ${escolha}
-      <h3 style="margin-top:22px">Criar uma sala</h3>
-      <p class="muted">Você vira o anfitrião: escolhe co-op ou PvP, quantos Pokémon cada um leva e se balanceia.${temRun() ? '' : ' Sem run em andamento, a sala só pode ser PvP (co-op é jogar a run de alguém).'}</p>
-      <button class="btn big" data-act="mp-criar">Criar sala</button>
-      <h3 style="margin-top:22px">Entrar com código</h3>
-      <span class="subrow"><input id="mp-codigo" maxlength="4" placeholder="EX.: K7Q2" autocomplete="off" aria-label="Código da sala" style="text-transform:uppercase"><button class="btn ghost" data-act="mp-entrar">Entrar</button></span>
-    </div></section>`}
+    <div class="mp-portas">
+      <section class="mp-porta"><h2>Criar uma sala</h2>
+        <p class="muted">Você vira o anfitrião: escolhe o tipo de luta, quantos Pokémon cada um leva e quando começa.</p>
+        <button class="btn big" data-act="mp-criar">➕ Criar sala</button>
+        ${temRun() ? `<p class="small muted">Sua jornada: ${esc(P.nick || fmt(P.name))}, Nv. ${P.level}.</p>` : '<p class="small muted">Sem jornada em andamento dá pra criar PvP ou Sala de Raide.</p>'}
+      </section>
+      <section class="mp-porta"><h2>Entrar com código</h2>
+        <p class="muted">Recebeu um código (ou um link) de quem criou a sala? É aqui.</p>
+        <span class="subrow"><input id="mp-codigo" class="mp-codigo-campo" maxlength="4" placeholder="K7Q2" autocomplete="off" inputmode="latin" aria-label="Código da sala"><button class="btn big" data-act="mp-entrar">Entrar</button></span>
+      </section>
+    </div>
+    <h3 style="margin-top:26px">O que dá pra fazer numa sala</h3>
+    <div class="mp-modos">
+      ${modo('🌿', 'Co-op', 'Explorar a rota do anfitrião, encarar um Alfa ou o chefe da semana — todo mundo do mesmo lado. Quem entrou com a própria run leva XP, itens e dinheiro pra ela.')}
+      ${modo('⚔', 'PvP', 'Time A contra Time B, de 1×1 a 3×3 (com aliados). Amistoso: ninguém perde HP nem item de verdade.')}
+      ${modo('☄', 'Sala de Raide', 'O chefe da semana com até três campeões do seu Hall da Fama, sem precisar de jornada nenhuma. Perder não custa nada.')}
+    </div>`}
     <div class="subrow" style="margin-top:22px"><button class="btn" data-act="voltar">${rotuloVoltar()}</button></div></main>`;
 }
 
@@ -101,8 +104,17 @@ export function renderChat() {
   el.scrollTop = el.scrollHeight;
 }
 
-const cartaoMembro = m => `<div class="mp-membro"><b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '👑 ' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' (você)' : ''}${G.sala.config.modo === 'raide' ? ` ${m.pronto ? '✅ pronto' : '⏳ escolhendo…'}` : ''}</b>
-  <div class="mp-mons">${(m.mons || []).slice(0, G.sala.config.porJogador).map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : x.hall ? '🏟 Hall da Fama' : '')).join('')}</div></div>`;
+/* Cartão de jogador no lobby: quem é, o que trouxe e — a novidade — em que pé está (👑 anfitrião, ✅ pronto,
+   ⏳ escolhendo, 👁 assistindo). Antes só a Sala de Raide mostrava "pronto", e nos outros modos não dava pra saber
+   se a pessoa ainda estava montando o time ou tinha travado. */
+const cartaoMembro = m => {
+  const selo = seloDoMembro(m), mons = (m.mons || []).slice(0, G.sala.config.porJogador);
+  return `<div class="mp-membro ${selo.cls}">
+    <b class="mp-nome">${htmlIcone(m.icone, 'icone-mini')}${m.anfitriao ? '<span class="mp-coroa" title="anfitrião">👑</span>' : ''}${esc(m.nome)}${iconeDaBadge(m.badge)}${m.id === meuId() ? ' <span class="small muted">(você)</span>' : ''}
+      <span class="mp-selo ${selo.cls}">${selo.txt}</span></b>
+    <div class="mp-mons">${mons.map(x => cartao(x, x.convidado ? '✨ convidado (não é da run)' : x.hall ? '🏟 Hall da Fama' : '')).join('')
+      || `<p class="small muted">${(m.entradaTipo || 'run') === 'espectador' ? 'Veio só olhar.' : 'Ainda escolhendo o Pokémon…'}</p>`}</div></div>`;
+};
 // Linha de conexão + diagnóstico: some quando está tudo bem? Não — fica sempre, porque saber se a sala está viva
 // é metade do problema num jogo em rede. Mostra o estado, há quanto tempo chegou algo, o 🔄 e o detalhe escondido.
 function barraConexao() {
@@ -123,13 +135,32 @@ export function renderSala() {
       <div class="subrow"><button class="btn ghost" data-act="mp-sair">Sair da sala</button></div>`;
   }
 }
+/* O alto da sala: o código GRANDE (é o que todo mundo precisa ler e ditar), os dois botões de convite e o resumo
+   do que esta sala é. O convite por link resolve o pedido mais antigo aqui: ditar quatro letras por chamada de voz
+   funcionava, mas mandar um link funciona melhor. */
+function heroDaSala() {
+  const sala = G.sala, z = ZONES.find(x => x.id === sala.zona) || ZONES[0];
+  return `<div class="mp-hero">
+    <div class="mp-hero-codigo">
+      <span class="small muted">Código da sala</span>
+      <b class="mp-codigo-grande">${esc(sala.codigo)}</b>
+      <div class="subrow">
+        <button class="btn ghost sm" data-act="mp-copiar" data-v="codigo" title="Copiar só as quatro letras">📋 Código</button>
+        <button class="btn ghost sm" data-act="mp-copiar" data-v="link" title="Copiar um link que já entra nesta sala">🔗 Convite</button>
+      </div>
+    </div>
+    <div class="mp-hero-info">
+      <p class="mp-hero-modo">${resumoDaConfig(sala.config, z.name)}</p>
+      <p class="small muted">${sala.membros.length}/${MAX_JOGADORES} na sala · ${sala.anfitriao ? 'você é o anfitrião' : 'quem criou a sala é quem começa'}</p>
+      ${barraConexao()}
+    </div>
+  </div>`;
+}
 function desenharSala() {
   const sala = G.sala;
   if (!sala || G.mode !== 'mp' || !$('#mp-topo')) return;
   const b = sala.batalha, cfg = sala.config, pvp = cfg.modo === 'pvp', z = ZONES.find(x => x.id === sala.zona) || ZONES[0];
-  const cabecalho = `<div class="mp-cab"><h1>Sala <span class="codigo">${esc(sala.codigo)}</span></h1>
-    <p class="muted">${sala.anfitriao ? 'Você é o anfitrião. Passe o código pros amigos.' : 'O anfitrião configura e começa.'} · ${sala.membros.length}/${MAX_JOGADORES} jogadores · ${resumoDaConfig(cfg, z.name)}</p>
-    ${barraConexao()}</div>`;
+  const cabecalho = heroDaSala();
   if (!b) return renderLobby(cabecalho, pvp, z);
   const dono = id => id === 'ia' ? '' : (membroDe(id)?.nome || 'jogador que saiu') + (id === meuId() ? ' (você)' : '');
   const vez = minhaVez();
@@ -222,9 +253,8 @@ function centroNaSala() {
     title="${!precisa ? 'Sua equipe já está curada' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">🏥 Centro Pokémon${!precisa ? ' (equipe curada)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}`}</button>
     <span class="small muted">₽${G.S.money.toLocaleString('pt-BR')}</span></div>`;
 }
-/* Minha seleção do Hall da Fama + Loja de preparo, usada em DOIS lugares: dentro da Sala de Raide (`sala.hallSel`)
-   e no menu, antes de criar/entrar, quando a entrada é 'hall' (`hallEscolha`) — cada um mexe só na PRÓPRIA conta
-   (hallDaConta/saldoArenaDaConta já são locais, sem run nenhuma). */
+/* Minha seleção do Hall da Fama + Loja de preparo (`sala.hallSel`), pra quem entra com os próprios campeões —
+   na Sala de Raide ou em co-op/PvP. Mexe só na PRÓPRIA conta (hallDaConta/saldoArenaDaConta são locais, sem run). */
 export function htmlHallPicker(sel, ocupado = false) {
   const hall = hallDaConta(), saldo = saldoArenaDaConta();
   const escolhidos = new Set(sel.selecao);
@@ -240,69 +270,87 @@ export function htmlHallPicker(sel, ocupado = false) {
     ${htmlEquiparConta(entradas, sel.equipamento, 'data-mp-equipar')}
     ${htmlLojaConta(saldo, 'mp-raide-comprar-comum', 'mp-raide-comprar-segurado')}`;
 }
-function htmlRaideSelecao() {
+/* ---------- com o que EU entro nesta sala ----------
+   Vive só aqui desde 29/09/2026 (antes existia também no menu, com funções duplicadas): a decisão acontece onde
+   você já vê o modo da sala e quem chegou, e dá pra trocar de ideia até marcar "pronto". A Sala de Raide só
+   oferece Hall ou assistir — lá ninguém usa run. */
+function htmlMinhaEntrada() {
   const sala = G.sala;
-  return htmlHallPicker(sala.hallSel, sala.ocupado) +
-    `<div class="subrow"><button class="btn ${sala.pronto ? '' : 'ghost'} big" data-act="mp-pronto" ${sala.ocupado ? 'disabled' : ''}>${sala.pronto ? '✅ Pronto! (toque pra voltar a escolher)' : 'Marcar como pronto'}</button></div>`;
-}
-/* "Com qual Pokémon?" DENTRO da sala (lobby, co-op e PvP). A mesma escolha do menu, repetida aqui porque foi
-   exatamente o que faltou: quem já tinha criado/entrado na sala não tinha como chegar na opção do Hall da Fama e
-   ficava preso ao convidado de Nv. 5. Não existe na Sala de Raide (lá o Hall é obrigatório pra todos). */
-function htmlEntradaNaSala() {
-  const sala = G.sala;
-  if (sala.batalha || raideSemRun(sala)) return '';
-  const t = entradaEfetiva(sala), dis = sala.ocupado ? 'disabled' : '';
+  if (sala.batalha) return '';
+  const t = entradaEfetiva(sala), dis = sala.ocupado ? 'disabled' : '', raide = raideSemRun(sala);
   const op = (v, rotulo, dica, off = false) => `<button class="abil ${t === v ? 'on' : ''}" data-act="mp-entrada-sala" data-v="${v}" aria-pressed="${t === v}" ${off || dis ? 'disabled' : ''}><b>${rotulo}</b><small>${dica}</small></button>`;
-  return `<section class="pv conta"><div><h3>Com qual Pokémon você entra?</h3>
-    <div class="abils">
-      ${op('run', '🎒 O da minha run', temRun() ? `${esc(G.S.player.nick || fmt(G.S.player.name))}, Nv. ${G.S.player.level}. A luta conta pra sua jornada (XP, HP, itens).` : 'Você não tem nenhuma jornada em andamento.', !temRun())}
-      ${op('hall', '🏟 Meus Pokémon do Hall da Fama', `Até ${MAX_TIME_HALL} campeões de jornadas já terminadas, no nível de verdade. Não mexe em save nenhum.`)}
-      ${op('convidado', '✨ Um Pokémon convidado', 'Emprestado só pra sala, Nv. 5. Não mexe em save nenhum.')}
-    </div>
-    ${t === 'convidado' ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${sala.convidado?.data?.id === e.id ? 'on' : ''}" data-act="mp-convidado-sala" data-v="${e.id}" ${dis}><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : ''}
-    </div></section>
-    ${t === 'hall' ? htmlHallPicker(sala.hallSel, sala.ocupado) : ''}`;
+  const opcoes = raide
+    ? op('hall', '🏟 Meus campeões do Hall da Fama', `Até ${MAX_TIME_HALL}, no nível de verdade, com os itens que você comprar aqui.`)
+      + op('espectador', '👁 Só assistir', 'Fica na sala, acompanha a luta e o chat sem entrar no time.')
+    : op('run', '🎒 O da minha jornada', temRun() ? `${esc(G.S.player.nick || fmt(G.S.player.name))}, Nv. ${G.S.player.level}. A luta conta pra ela: XP, HP, itens${DIFICULDADES[dificuldadeDe(G.S)].permadeath ? ' — e desmaiar acaba a jornada (Roguelike)' : ''}.` : 'Você não tem nenhuma jornada em andamento.', !temRun())
+      + op('hall', '🏟 Meus campeões do Hall da Fama', `Até ${MAX_TIME_HALL} de jornadas já terminadas, no nível de verdade. Não mexe em save nenhum.`)
+      + op('convidado', '✨ Um Pokémon convidado', 'Emprestado só pra sala, Nv. 5. Não mexe em save nenhum, não ganha recompensa.')
+      + op('espectador', '👁 Só assistir', 'Fica na sala, acompanha a luta e o chat sem entrar no time.');
+  // desmaiado não trava mais a entrada: dá pra curar no Centro sem sair da sala (o botão está logo abaixo)
+  const avisoRun = t === 'run' && temRun() && G.S.player.hp <= 0
+    ? '<p class="notice">Seu Pokémon está desmaiado — cure no Centro Pokémon aqui embaixo, senão você fica de fora da luta.</p>' : '';
+  const escolhaDoConvidado = t === 'convidado'
+    ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${sala.convidado?.data?.id === e.id ? 'on' : ''}" data-act="mp-convidado-sala" data-v="${e.id}" ${dis}><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : '';
+  const pronto = t === 'espectador' ? '' : `<div class="subrow"><button class="btn ${sala.pronto ? '' : 'ghost'} big" data-act="mp-pronto" ${dis}>${sala.pronto ? '✅ Pronto! (toque pra voltar a escolher)' : 'Estou pronto'}</button></div>`;
+  return `<section class="pv conta"><div><h3>Você entra com…</h3>
+    <div class="abils">${opcoes}</div>${avisoRun}${escolhaDoConvidado}</div></section>
+    ${t === 'hall' ? htmlHallPicker(sala.hallSel, sala.ocupado) : ''}${pronto}`;
+}
+/* ---------- a configuração da sala ----------
+   Botões-cartão no lugar dos <select>: dá pra ler tudo de uma vez e o toque é do tamanho do dedo. Quem NÃO é
+   anfitrião vê exatamente a mesma coisa, só travada — antes ele não via configuração nenhuma e tinha de deduzir
+   pelo resumo lá em cima. */
+function configDaSala() {
+  const sala = G.sala, cfg = sala.config, manda = sala.anfitriao && !sala.batalha && !sala.ocupado;
+  const chip = (campo, valor, rotulo, dica, off = false) => `<button class="mp-chip ${String(cfg[campo]) === String(valor) ? 'on' : ''}" data-act="mp-cfg" data-v="${campo}:${valor}" aria-pressed="${String(cfg[campo]) === String(valor)}" ${manda && !off ? '' : 'disabled'} title="${esc(dica)}">${rotulo}</button>`;
+  const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level, G.S)) : [];
+  const grupo = (titulo, conteudo, dica = '') => `<div class="mp-cfg-grupo"><h4>${titulo}</h4>${conteudo}${dica ? `<small class="muted">${dica}</small>` : ''}</div>`;
+  const zonaAtual = ZONES.find(x => x.id === sala.zona);
+  return `<section class="mp-config">
+    ${grupo('Tipo de luta', `<div class="mp-chips">
+      ${chip('modo', 'coop', '🌿 Co-op', temRun() ? 'Todo mundo do mesmo lado, na jornada do anfitrião.' : 'Precisa de uma jornada em andamento.', !temRun())}
+      ${chip('modo', 'pvp', '⚔ PvP', 'Time A contra Time B, amistoso.')}
+      ${chip('modo', 'raide', '☄ Raide', 'O chefe da semana com o Hall da Fama, sem jornada nenhuma.')}</div>`)}
+    ${grupo('Pokémon por jogador', `<div class="mp-chips">${[1, 2, 3].map(n => chip('porJogador', n, String(n), n === 1 ? 'Só o principal.' : 'Com aliados (ou mais campeões do Hall).')).join('')}</div>`)}
+    ${cfg.modo === 'raide' ? '' : grupo('Níveis', `<div class="mp-chips">
+      ${chip('balancear', true, '⚖ Balancear', cfg.modo === 'pvp' ? 'Todos no nível médio; o time menor ganha HP extra.' : 'O grupo todo no nível do anfitrião.')}
+      ${chip('balancear', false, '🔥 Níveis reais', cfg.modo === 'pvp' ? 'Cada um com o nível que tem.' : 'Cada um leva pra própria jornada o que ganhar — e os inimigos acompanham o mais forte.')}</div>`,
+      cfg.balancear ? 'Quem tiver o nível ajustado joga por diversão: não leva XP nem itens pra própria jornada.' : 'Mais difícil, e o que cair vale pra valer.')}
+    ${cfg.modo === 'coop' ? grupo('Onde', sala.anfitriao
+      ? `<label class="campo"><select data-mp-cfg="zona" ${manda ? '' : 'disabled'}>${zonas.map(x => `<option value="${x.id}" ${x.id === sala.zona ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>`
+      : `<p class="mp-cfg-leitura">${esc(zonaAtual?.name || '—')}</p>`) : ''}
+  </section>`;
 }
 function renderLobby(cabecalho, pvp, z) {
   const sala = G.sala, cfg = sala.config, dis = sala.ocupado ? 'disabled' : '', raide = cfg.modo === 'raide';
   const time = t => sala.membros.filter(m => (m.time || 'B') === t);
+  // a "mesa": quem está na sala e o que cada um trouxe
   $('#mp-topo').innerHTML = cabecalho + (pvp
     ? `<div class="mp-times">${['A', 'B'].map(t => `<div class="mp-time"><h3>Time ${t} <small class="muted">(${time(t).length})</small></h3>${time(t).map(cartaoMembro).join('') || '<p class="small muted">Ninguém ainda.</p>'}</div>`).join('')}</div>`
     : `<div class="mp-grupo">${sala.membros.map(cartaoMembro).join('')}</div>`);
-  const trocarTime = pvp ? `<div class="subrow">Seu time: ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
+  const trocarTime = pvp ? `<div class="subrow mp-troca-time"><span class="small muted">Seu time:</span> ${['A', 'B'].map(t => `<button class="btn ${sala.time === t ? '' : 'ghost'} sm" data-act="mp-time" data-v="${t}" ${dis}>Time ${t}</button>`).join('')}</div>` : '';
   const sair = '<button class="btn ghost" data-act="mp-sair">Sair da sala</button>';
-  if (!sala.anfitriao) {
-    if (raide) { $('#mp-acoes').innerHTML = htmlRaideSelecao() + `<p class="muted">${sala.ocupado ? 'Buscando os Pokémon…' : 'Esperando todo mundo ficar pronto e o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
-    $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + htmlEntradaNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return;
-  }
-  const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level, G.S)) : []; // rotas do mapa (Gen) da run
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
   const naSalaIds = new Set(sala.membros.map(m => m.id));
   const amigosFora = usuario() ? nuvem.amigos.filter(a => a.status === 'aceita' && !naSalaIds.has(a.amigo)) : [];
-  const convites = amigosFora.length ? `<div class="mp-convites"><b>Chamar amigos:</b> ${amigosFora.map(a => `<button class="btn ghost sm" data-act="mp-convidar" data-v="${a.amigo}">${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')} ${esc(a.apelido)}${htmlInsigniaDe(a.badge_exibida)}</button>`).join('')}</div>`
-    : usuario() ? '' : '<p class="small muted">Entre na conta pra chamar amigos direto (sem precisar passar o código).</p>';
-  const podePvp = time('A').length && time('B').length;
-  if (raide) {
-    const prontos = todosProntos(sala.membros);
-    $('#mp-acoes').innerHTML = `<div class="mp-config">
-        <label class="campo">Modo<select data-mp-cfg="modo" ${dis}><option value="coop" ${temRun() ? '' : 'disabled'}>Co-op (contra selvagens / Alfa)${temRun() ? '' : ' — precisa de uma run'}</option><option value="pvp">PvP (Time A × Time B)</option><option value="raide" selected>☄ Sala de Raide (Hall da Fama, sem run)</option></select></label>
-        <label class="campo">Pokémon por jogador<select data-mp-cfg="porJogador" ${dis}>${[1, 2, 3].map(n => `<option value="${n}" ${cfg.porJogador === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-      </div>
-      <p class="small muted">Cada jogador escolhe do PRÓPRIO Hall da Fama, compra e equipa da PRÓPRIA Loja de preparo. Quando todo mundo estiver ✅ pronto, comece a Raide.</p>
-      ${convites}${htmlRaideSelecao()}
-      <div class="subrow"><button class="btn big" data-act="mp-evento" ${dis || !prontos ? 'disabled' : ''} title="${prontos ? '' : 'Espere todo mundo escolher os Pokémon e marcar \'pronto\''}">☄ Começar a Raide</button>${sair}</div>`;
+  const convites = sala.anfitriao ? (amigosFora.length
+    ? `<div class="mp-convites"><b>Chamar amigos:</b> ${amigosFora.map(a => `<button class="btn ghost sm" data-act="mp-convidar" data-v="${a.amigo}">${htmlIcone({ id: a.icone_id, shiny: a.icone_shiny }, 'icone-mini')} ${esc(a.apelido)}${htmlInsigniaDe(a.badge_exibida)}</button>`).join('')}</div>`
+    : usuario() ? '' : '<p class="small muted">Entre na conta pra chamar amigos direto (sem precisar passar o código).</p>') : '';
+  const comum = configDaSala() + trocarTime + convites + centroNaSala() + htmlMinhaEntrada();
+  if (!sala.anfitriao) {
+    $('#mp-acoes').innerHTML = comum + `<p class="muted">${sala.ocupado ? 'Um instante…' : 'Quando todo mundo estiver pronto, o anfitrião começa.'}</p><div class="subrow">${sair}</div>`;
     return;
   }
-  $('#mp-acoes').innerHTML = `<div class="mp-config">
-      <label class="campo">Modo<select data-mp-cfg="modo" ${dis}><option value="coop" ${!pvp ? 'selected' : ''} ${temRun() ? '' : 'disabled'}>Co-op (contra selvagens / Alfa)${temRun() ? '' : ' — precisa de uma run'}</option><option value="pvp" ${pvp ? 'selected' : ''}>PvP (Time A × Time B)</option><option value="raide">☄ Sala de Raide (Hall da Fama, sem run)</option></select></label>
-      <label class="campo">Pokémon por jogador<select data-mp-cfg="porJogador" ${dis}>${[1, 2, 3].map(n => `<option value="${n}" ${cfg.porJogador === n ? 'selected' : ''}>${n}${n === 1 ? ' (só o principal)' : ' (com aliados)'}</option>`).join('')}</select></label>
-      ${pvp ? '' : `<label class="campo">Zona<select data-mp-cfg="zona" ${dis}>${zonas.map(x => `<option value="${x.id}" ${x.id === sala.zona ? 'selected' : ''}>${x.name}</option>`).join('')}</select></label>`}
-      <label class="check"><input type="checkbox" data-mp-cfg="balancear" ${cfg.balancear ? 'checked' : ''} ${dis}> Balancear níveis
-        <small class="muted">${pvp ? 'Todos no nível médio da luta; o time menor ganha HP extra.' : 'O grupo todo no nível do seu Pokémon. Quem tiver o nível ajustado joga por diversão: não leva XP nem itens pra própria run.'} Desligado: níveis reais${pvp ? '' : ', cada um leva o que ganhar pra própria run, e os inimigos acompanham o mais forte'} (mais difícil).</small></label>
-    </div>${trocarTime}${centroNaSala()}${convites}${htmlEntradaNaSala()}
-    <div class="subrow">${pvp
-      ? `<button class="btn big" data-act="mp-pvp" ${dis || !podePvp ? 'disabled' : ''} title="${podePvp ? '' : 'Cada time precisa de pelo menos um jogador'}">⚔ Começar PvP</button>`
-      : `<button class="btn big" data-act="mp-explorar" ${dis}>🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${dis}>⚔ Desafiar o Alfa (${z.chefe.nome})</button>` : ''}${botaoEventoMP(dis)}`}${sair}</div>`;
+  // Por que o botão está apagado? A resposta vai escrita, não só no title (regra pura: mp-regras.motivoParaNaoComecar)
+  const motivo = motivoParaNaoComecar(sala, { temRun: temRun() });
+  const trava = motivo ? 'disabled' : dis;
+  const comecar = raide
+    ? `<button class="btn big" data-act="mp-evento" ${trava} title="${esc(motivo)}">☄ Começar a Raide</button>`
+    : pvp
+      ? `<button class="btn big" data-act="mp-pvp" ${trava} title="${esc(motivo)}">⚔ Começar PvP</button>`
+      : `<button class="btn big" data-act="mp-explorar" ${trava} title="${esc(motivo)}">🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${trava} title="${esc(motivo)}">⚔ Desafiar o Alfa (${esc(z.chefe.nome)})</button>` : ''}${botaoEventoMP(trava)}`;
+  $('#mp-acoes').innerHTML = comum + `<div class="subrow mp-comecar">${comecar}${sair}</div>
+    ${motivo ? `<p class="small muted mp-motivo">⏳ ${esc(motivo)}</p>` : ''}`;
 }
 // ☄ o chefe da semana no co-op: mesma trava do single player (só Roguelike/Hardcore da run do anfitrião, rota final liberada, 8 h entre tentativas)
 function botaoEventoMP(dis) {

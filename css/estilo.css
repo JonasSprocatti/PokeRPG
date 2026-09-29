@@ -675,10 +675,51 @@ ul.quase .fill{background:var(--grass)}
 ul.quase small{color:var(--muted);font-size:12px}
 .desbloq-novo{margin:8px 0 12px;padding:10px 12px;border:2px solid var(--grass);border-radius:12px;background:var(--panel2)}
 .desbloq-novo .picks{margin-top:8px}
+/* multiplayer — menu: duas portas (criar / entrar) e o que dá pra fazer numa sala */
+.mp-portas{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.mp-porta{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:8px;align-content:start}
+.mp-porta h2{margin:0;font:700 20px var(--display);color:var(--yellow)}
+.mp-porta p{margin:0}
+.mp-codigo-campo{font:700 26px var(--display);letter-spacing:.3em;text-align:center;text-transform:uppercase;width:5.5em;max-width:100%}
+.mp-modos{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:8px}
+.mp-modo{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:4px}
+.mp-modo b{font:700 17px var(--display)}
+.mp-modo small{color:var(--muted);line-height:1.45}
+@media(max-width:640px){.mp-portas{grid-template-columns:1fr}}
 /* multiplayer (sala) */
 .mp .textbox{margin:14px 0}
 .mp-cab h1{margin-bottom:4px}
 .mp-cab .codigo{font-family:var(--display);letter-spacing:.12em;background:var(--yellow);color:#1b1b2f;border-radius:10px;padding:0 12px}
+/* o alto da sala: o código é o que todo mundo precisa ler e ditar, então é ele que manda no tamanho */
+.mp-hero{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:12px}
+.mp-hero-codigo{display:grid;gap:4px;justify-items:center}
+.mp-codigo-grande{font:700 40px/1 var(--display);letter-spacing:.14em;background:var(--yellow);color:#1b1b2f;border-radius:12px;padding:6px 16px}
+.mp-hero-info{display:grid;gap:2px;min-width:0}
+.mp-hero-modo{margin:0;font:700 18px var(--display);color:var(--yellow)}
+.mp-hero-info p{margin:0}
+.mp-hero .mp-conexao{margin-top:6px}
+@media(max-width:640px){.mp-hero{grid-template-columns:1fr}.mp-codigo-grande{font-size:32px}}
+/* cartão de jogador: quem é, o que trouxe e em que pé está */
+.mp-selo{font:600 12px var(--body);border-radius:999px;padding:1px 8px;margin-left:auto;white-space:nowrap}
+.mp-selo.pronto{background:rgba(95,179,106,.2);color:var(--grass)}
+.mp-selo.escolhendo{background:rgba(247,197,72,.16);color:var(--yellow)}
+.mp-selo.assiste{background:rgba(163,166,200,.16);color:var(--muted)}
+.mp-membro.pronto{border-color:var(--grass)}
+.mp-membro.assiste{opacity:.75}
+.mp-coroa{margin-right:4px}
+/* configuração da sala em botões-cartão (os <select> saíram: dava pra ler menos e acertar pior no celular) */
+.mp-cfg-grupo{display:grid;gap:6px;align-content:start;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:10px}
+.mp-cfg-grupo h4{margin:0;font:700 14px var(--display);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mp-cfg-grupo small{line-height:1.4}
+.mp-cfg-leitura{margin:0;font:700 16px var(--display)}
+.mp-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mp-chip{background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:999px;padding:6px 12px;font:600 14px var(--body);cursor:pointer}
+.mp-chip.on{border-color:var(--yellow);background:rgba(247,197,72,.14);color:var(--yellow)}
+.mp-chip:disabled{cursor:default;opacity:.65}
+.mp-chip.on:disabled{opacity:.9}
+.mp-troca-time{align-items:center;margin:10px 0}
+.mp-motivo{margin:6px 0 0}
+.mp-comecar{margin-top:12px}
 .mp-grupo,.mp-lado{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
 .mp-campo{display:grid;gap:12px;background:linear-gradient(#34428a 0 50%,#3d6a4b 50%);border-radius:14px;padding:12px}
 .mp-mon{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:8px 12px}
@@ -711,7 +752,7 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-chat .subrow input{flex:1;min-width:120px}
 .mp-time{display:grid;gap:8px;align-content:start;background:var(--panel2);border-radius:14px;padding:10px}
 .mp-time h3{margin:0;font:700 16px var(--display);color:var(--yellow)}
-.mp-config{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;width:100%}
+.mp-config{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;width:100%;margin-bottom:12px}
 .check{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;font-size:14px}
 .check small{grid-column:2}
 .mp-quem{margin:4px 0;width:100%}

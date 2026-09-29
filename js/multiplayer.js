@@ -33,6 +33,7 @@ import { loadPokemon, loadMove } from './api.js';
 import { makeMon } from './pokemon.js';
 import { encerrarJornada } from './fim.js';
 import { FIND_ITEMS } from './dados.js';
+import { URL_SITE } from './site.js';   // o link do convite sai daqui — endereço absoluto nunca é digitado à mão
 import { esc, fmt, pick, rand, clamp, offline, sleep } from './util.js';
 import { MAX_JOGADORES, PRAZO_MS, raideSemRun, entradaEfetiva, jogaveis, primeiroInimigo,
   inimigosDe, minhaVezDe, todosProntos, montarLado, raideDisponiveis, itensComunsDisponiveis, podeReviver } from './mp-regras.js';
@@ -49,19 +50,15 @@ const temRun = () => !!G.S?.player;
 const minhaVez = () => minhaVezDe(G.sala, meuId());
 const meuNome = () => nuvem.apelido || G.S?.player?.nick || (G.S ? fmt(G.S.player.name) : 'Treinador');
 
-/* ---------- com qual Pokémon eu entro (menu, antes de criar/entrar) ---------- */
-let entrada = { tipo: 'run', id: null };
-let hallEscolha = { selecao: [], equipamento: {} };
-export function telaMultiplayer(msg = '') {
-  if (!temRun() && entrada.tipo === 'run') entrada.tipo = 'convidado';
-  telaMenuMP(msg, { entrada, hallEscolha });
-}
-export function escolherEntrada(tipo) { if (tipo === 'run' && !temRun()) return; entrada = { tipo, id: tipo === 'run' ? null : entrada.id }; telaMultiplayer(); }
-export function escolherConvidado(id) { entrada = { tipo: 'convidado', id: +id }; telaMultiplayer(); }
-// Trocar de entrada JÁ DENTRO da sala (lobby, antes da luta): remonta os Pokémon e reavisa os outros pela presença
+export const telaMultiplayer = (msg = '') => telaMenuMP(msg);
+/* ---------- com qual Pokémon eu entro ----------
+   Só DENTRO da sala (mudou em 29/09/2026). Antes a escolha existia também no menu, com um par de funções quase
+   iguais pra cada caso — e obrigava a decidir antes de saber pra que tipo de luta era a sala. Na Sala de Raide as
+   opções são Hall ou assistir; nos outros modos entram run e convidado. */
 export async function escolherEntradaNaSala(tipo) {
   const sala = G.sala;
-  if (!sala || sala.batalha || raideSemRun(sala) || !['run', 'convidado', 'hall'].includes(tipo)) return;
+  if (!sala || sala.batalha || !['run', 'convidado', 'hall', 'espectador'].includes(tipo)) return;
+  if (raideSemRun(sala) && !['hall', 'espectador'].includes(tipo)) return;   // na Raide não existe run nem convidado
   if (tipo === 'run' && !temRun()) return;
   sala.entradaTipo = tipo; sala.pronto = false;
   if (tipo === 'hall') return atualizarHallMons();
@@ -76,9 +73,8 @@ export async function escolherConvidadoNaSala(id) {
   catch (e) { console.error(e); toast(`Não consegui buscar o Pokémon convidado: ${esc(e.message)}`, 5000); }
   finally { if (G.sala) { G.sala.ocupado = false; await retrack(); renderSala(); } }
 }
-// A MESMA tela do Hall serve o menu e o lobby: aqui se decide em qual seleção mexer.
-const hallSelAtual = () => G.sala ? G.sala.hallSel : hallEscolha;
-const podeMexerNoHall = () => G.sala ? (!G.sala.batalha && entradaEfetiva(G.sala) === 'hall') : entrada.tipo === 'hall';
+const hallSelAtual = () => G.sala?.hallSel;
+const podeMexerNoHall = () => !!G.sala && !G.sala.batalha && entradaEfetiva(G.sala) === 'hall';
 let atualizandoHall = false;
 async function atualizarHallMons() {
   const sala = G.sala;
@@ -97,22 +93,22 @@ export function raideSelecionarHall(chave) {
   if (sel.selecao.includes(chave)) { sel.selecao = sel.selecao.filter(c => c !== chave); delete sel.equipamento[chave]; }
   else if (sel.selecao.length < MAX_TIME_HALL) sel.selecao = [...sel.selecao, chave];
   else return;
-  if (G.sala) { G.sala.pronto = false; atualizarHallMons(); } else telaMultiplayer();
+  G.sala.pronto = false; atualizarHallMons();
 }
 export function raideEquiparHall(chave, id) {
   if (!podeMexerNoHall()) return;
   const sel = hallSelAtual(); if (!sel.selecao.includes(chave)) return;
   const eq = sel.equipamento;
   if (id) { for (const c of Object.keys(eq)) if (eq[c] === id) delete eq[c]; eq[chave] = id; } else delete eq[chave];
-  if (G.sala) atualizarHallMons(); else telaMultiplayer();
+  atualizarHallMons();
 }
 export function raideComprarComum(id) {
   const r = comprarComumConta(id); if (!r.ok) return toast(r.motivo || 'Não deu.', 4000);
-  if (G.sala) renderSala(); else telaMultiplayer();
+  renderSala();
 }
 export function raideComprarSegurado(id) {
   const r = comprarSeguradoConta(id); if (!r.ok) return toast(r.motivo || 'Não deu.', 4000);
-  if (G.sala) renderSala(); else telaMultiplayer();
+  renderSala();
 }
 // "pronto" — o anfitrião só consegue começar quando todo mundo está pronto (com Pokémon escolhido)
 export async function alternarProntoMP() {
@@ -125,6 +121,7 @@ export async function alternarProntoMP() {
 // principal (slot 0) + até 2 aliados em pé e que não estão descansando (slot = índice em S.aliados + 1).
 function minhasFotos() {
   const eu = meuId(), S = G.S, sala = G.sala;
+  if (sala && entradaEfetiva(sala) === 'espectador') return [];   // quem veio olhar não entra em lado nenhum
   // Hall da Fama (Sala de Raide OU entrada 'hall'): reidratados no nível real por `atualizarHallMons`, cada um já
   // com o item da Loja de preparo (reidratarHall), sem tocar em nenhuma run.
   if (sala && entradaEfetiva(sala) === 'hall') return (sala.hallMons || []).map((m, i) => ({ ...fotoDoMon(m, '', eu, null, i), hall: true }));
@@ -137,6 +134,21 @@ function minhasFotos() {
 const meuPayload = () => ({ id: meuId(), nome: meuNome(), icone: meuIcone(), anfitriao: G.sala.anfitriao, time: G.sala.time,
   entrouEm: G.sala.entrouEm, mons: minhasFotos(), badge: nuvem.badgeExibida || null, pronto: !!G.sala.pronto, entradaTipo: entradaEfetiva(G.sala) });
 const retrack = () => retrackCanal(meuPayload());
+/* Convite em um toque: o código sozinho (pra ditar) ou um link que já cai na sala (`?sala=XXXX`, lido no boot do
+   main.js). O endereço sai de `URL_SITE` (site.js) — endereço absoluto nunca é digitado à mão aqui. A área de
+   transferência pode estar bloqueada (http, permissão negada): nesse caso mostramos o texto pra copiar na mão,
+   em vez de falhar calado. */
+export async function copiarConviteMP(oQue = 'codigo') {
+  const sala = G.sala; if (!sala) return;
+  const texto = oQue === 'link' ? `${URL_SITE}/?sala=${sala.codigo}` : sala.codigo;
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast(oQue === 'link' ? '🔗 Link do convite copiado! É só mandar pra quem você quer chamar.' : `📋 Código <b>${esc(sala.codigo)}</b> copiado!`, 4000);
+  } catch (e) {
+    console.warn('copiar', e);
+    toast(`Não consegui copiar sozinho. O ${oQue === 'link' ? 'link' : 'código'} é: <b>${esc(texto)}</b>`, 9000);
+  }
+}
 // anfitrião chama um amigo: aviso aparece pra ele em qualquer tela (nuvem.convidarAmigo → canal pessoal do amigo)
 export async function convidarAmigoMP(amigoId) {
   if (!G.sala) return;
@@ -155,25 +167,17 @@ export function entrarSala(codigo) {
 async function conectar(codigo, anfitriao) {
   if (G.sala) await sairSala();
   if (!nuvemConfigurada() || offline()) return telaMultiplayer();
-  const hallOn = entrada.tipo === 'hall', conv = (entrada.tipo === 'convidado' || !temRun()) && !hallOn;
-  if (conv && !entrada.id) return telaMultiplayer('Escolha o Pokémon convidado antes.');
-  if (!conv && !hallOn && G.S.player.hp <= 0) return telaMultiplayer('Seu Pokémon está desmaiado. Cure no Centro antes.');
-  let convidado = null;
-  if (conv) {
-    try { convidado = await makeMon(await loadPokemon(entrada.id), 5); }
-    catch (e) { console.error(e); return telaMultiplayer(`Não consegui buscar o Pokémon convidado: ${esc(e.message)}`); }
-  }
   G.sala = { codigo, anfitriao, canal: null, membros: [], zona: G.S?.zone || ZONES[0].id, batalha: null, acoes: {}, acoesFeitas: [], escolhidos: new Set(),
-    convidado,
-    // Com qual Pokémon EU entro (dá pra trocar no lobby: escolherEntradaNaSala). A Sala de Raide ignora isso e
-    // força 'hall' pra todo mundo — ver `entradaEfetiva()`. A seleção do Hall vem do que já foi marcado no menu.
-    entradaTipo: hallOn ? 'hall' : conv ? 'convidado' : 'run',
-    hallSel: { selecao: [...hallEscolha.selecao], equipamento: { ...hallEscolha.equipamento } }, hallMons: [], pronto: false,
+    convidado: null,
+    /* Com qual Pokémon EU entro. Entra-se primeiro e escolhe-se depois, no lobby (`escolherEntradaNaSala`): quem
+       tem jornada já começa com ela, quem não tem começa "escolhendo" e a sala mostra isso pros outros. Pokémon
+       desmaiado não impede mais de entrar — o Centro Pokémon está dentro da sala. */
+    entradaTipo: temRun() ? 'run' : 'convidado',
+    hallSel: { selecao: [], equipamento: {} }, hallMons: [], pronto: false,
     turnoVisto: null,   // último turno que aoReceberEstado processou (decide quando limpar as escolhas) — ver lá
     mensagens: [], // chat da sala: só na memória, nunca persiste (some ao sair)
     config: { modo: anfitriao && !temRun() ? 'pvp' : 'coop', porJogador: 1, balancear: true }, time: anfitriao ? 'A' : 'B', entrouEm: Date.now(), encontrouAnfitriao: anfitriao };
   const sala = G.sala;
-  if (hallOn) await atualizarHallMons();   // reidrata a seleção do menu (rede) antes de anunciar pra sala
   try {
     const canal = await abrirCanal(codigo);
     sala.canal = canal;

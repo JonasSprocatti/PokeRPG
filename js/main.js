@@ -21,7 +21,7 @@ import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
-import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
+import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, convidarAmigoMP, copiarConviteMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
   raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP, enviarChatMP,
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
@@ -114,12 +114,12 @@ async function aoClicar(e) {
     // multiplayer (co-op)
     // da run, da tela inicial ou de qualquer outra tela (sem run: entra com um Pokémon convidado)
     case 'mp': if (travadoPelaBatalha()) return; return telaMultiplayer();
-    case 'mp-entrada': return escolherEntrada(v);
-    case 'mp-convidado': return escolherConvidado(v);
-    case 'mp-entrada-sala': return escolherEntradaNaSala(v);       // trocar de Pokémon já dentro da sala (lobby)
+    case 'mp-entrada-sala': return escolherEntradaNaSala(v);       // com o que eu entro (só existe dentro da sala)
     case 'mp-convidado-sala': return escolherConvidadoNaSala(v);
     case 'mp-criar': return criarSala();
     case 'mp-entrar': return entrarSala($('#mp-codigo')?.value);
+    case 'mp-copiar': return copiarConviteMP(v);                   // 📋 código ou 🔗 link que já entra na sala
+    case 'mp-cfg': { const [campo, valor] = String(v).split(':'); return configurarSala(campo, campo === 'balancear' ? valor === 'true' : valor); }
     case 'mp-sair': await sairSala(); return voltar();
     case 'mp-explorar': return iniciarBatalhaMP('selvagem');
     case 'mp-alfa': return iniciarBatalhaMP('alfa');
@@ -474,6 +474,11 @@ iniciarPaineis(); // listeners de arrastar/▲▼/divisória, uma vez só
 iniciarMenu();    // ☰ do topo no celular
 // O índice do cache (api.iniciarCache) precisa estar lido ANTES de abrir a jornada: é ele que diz o que dá pra
 // jogar offline. Se falhar, abre do mesmo jeito — só sem saber o que está guardado.
+/* Link de convite (`?sala=K7Q2`, gerado pelo 🔗 Convite dentro da sala): guarda o código, limpa o endereço na
+   barra (senão um F5 mais tarde tentaria entrar de novo numa sala que já acabou) e entra assim que a nuvem estiver
+   de pé — lá embaixo, no `iniciarNuvem().then`. Antes disso não há canal pra abrir. */
+const salaDoLink = new URLSearchParams(location.search).get('sala');
+if (salaDoLink) history.replaceState(null, '', location.pathname);
 iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
   const s = store.get(SAVE_KEY);
   if (saveValido(s)) abrirJornada(s, 'Jogo carregado deste navegador.');
@@ -493,4 +498,7 @@ iniciarAds(); // sem conta configurada (config.js), não faz nada; com conta, s�
 aoMudarNuvem(renderChipConta);
 // presença global (marcador "jogando agora") e o registro de visitante sem conta esperam a sessão carregar
 // primeiro — senão um jogador logado apareceria como "sem conta" por uma fração de segundo
-iniciarNuvem().then(() => { iniciarPresencaGlobal(); registrarVisitanteAnonimo(); }).catch(e => console.error(e)); // sem config: não faz nada
+iniciarNuvem().then(() => {
+  iniciarPresencaGlobal(); registrarVisitanteAnonimo();
+  if (salaDoLink) entrarSala(salaDoLink);   // veio por link de convite: cai direto no lobby da sala
+}).catch(e => console.error(e)); // sem config: não faz nada

@@ -55,10 +55,32 @@ export const quemFalta = sala => {
 };
 export const jaEscolheu = (sala, id) => !!sala?.batalha && !quemFalta(sala).includes(id);
 // "pronto" no lobby: todo mundo marcou E tem pelo menos um Pokémon (quem só assiste não conta nem atrapalha)
+export const jogadoresDaSala = (membros = []) => membros.filter(m => (m.entradaTipo || 'run') !== 'espectador');
 export const todosProntos = (membros = []) => {
-  const jogando = membros.filter(m => m.entradaTipo !== 'espectador');
+  const jogando = jogadoresDaSala(membros);
   return jogando.length > 0 && jogando.every(m => m.pronto && m.mons?.length);
 };
+/* Por que o botão de começar está apagado? Texto único, mostrado no `title` e embaixo do botão — antes o
+   anfitrião só via um botão morto e tinha de adivinhar (ou pior: a sala começava sem alguém que ainda estava
+   escolhendo). '' = dá pra começar. */
+export function motivoParaNaoComecar(sala, { temRun } = {}) {
+  const cfg = sala?.config || {}, jogando = jogadoresDaSala(sala?.membros);
+  if (!jogando.length) return 'Ninguém entrou pra jogar ainda (só espectadores).';
+  if (cfg.modo === 'coop' && !temRun) return 'Co-op é jogar a run de alguém: você precisa de uma jornada em andamento.';
+  const semMon = jogando.filter(m => !m.mons?.length);
+  if (semMon.length) return `Ainda escolhendo o Pokémon: ${semMon.map(m => m.nome).join(', ')}.`;
+  if (cfg.modo === 'pvp' && !['A', 'B'].every(t => jogando.some(m => (m.time || 'B') === t)))
+    return 'Cada time precisa de pelo menos um jogador.';
+  const faltaPronto = jogando.filter(m => !m.pronto);
+  if (faltaPronto.length) return `Falta ficar pronto: ${faltaPronto.map(m => m.nome).join(', ')}.`;
+  return '';
+}
+// o selo que aparece no cartão de cada jogador do lobby (é o "quem está fazendo o quê" da sala)
+export function seloDoMembro(m) {
+  if ((m.entradaTipo || 'run') === 'espectador') return { txt: '👁 assistindo', cls: 'assiste' };
+  if (!m.mons?.length) return { txt: '⏳ escolhendo', cls: 'escolhendo' };
+  return m.pronto ? { txt: '✅ pronto', cls: 'pronto' } : { txt: '⏳ escolhendo', cls: 'escolhendo' };
+}
 
 /* ---------- montar os lados (anfitrião) ---------- */
 // lista de Pokémon de um jogador pra luta: os primeiros `porJogador` em pé, com ref/dono/slot
