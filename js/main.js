@@ -22,7 +22,8 @@ import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, escolherEntrada, escolherConvidado, convidarAmigoMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
-  raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP, enviarChatMP } from './multiplayer.js';
+  raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP, enviarChatMP,
+  escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
 import { telaPerfil } from './perfil-amigo.js';
@@ -93,6 +94,8 @@ document.addEventListener('click', async e => {
     case 'mp': if (G.busy || G.mode === 'battle') return; return telaMultiplayer();
     case 'mp-entrada': return escolherEntrada(v);
     case 'mp-convidado': return escolherConvidado(v);
+    case 'mp-entrada-sala': return escolherEntradaNaSala(v);       // trocar de Pokémon já dentro da sala (lobby)
+    case 'mp-convidado-sala': return escolherConvidadoNaSala(v);
     case 'mp-criar': return criarSala();
     case 'mp-entrar': return entrarSala($('#mp-codigo')?.value);
     case 'mp-sair': await sairSala(); return voltar();

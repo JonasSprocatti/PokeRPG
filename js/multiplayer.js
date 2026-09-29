@@ -9,11 +9,16 @@
 // pelos próprios Pokémon), prazo de 45 s com golpe automático, roda o motor puro (mp-motor.js) e publica.
 // Resultado: co-op aplica na jornada de cada um (HP proporcional, PP, XP, EVs, dinheiro; Roguelike = permadeath, fora
 // dele desmaio volta com 1 HP); PvP é amistoso (não mexe em HP/PP, só conta vitórias/derrotas em S.pvp).
+// Entrada de cada jogador (independente do `modo` da sala, escolhida no menu antes de criar/entrar): a run em
+// andamento, um convidado (Nv. 5) ou de 1 a MAX_TIME_HALL Pokémon do PRÓPRIO Hall da Fama (jornadas Roguelike/
+// Hardcore já terminadas, no nível de verdade) — pedido do usuário: jogar sem precisar de run nem se contentar
+// com um Nv. 5. Convidado e Hall são iguais no que importa pro resultado: não mexem em run nenhuma, não ganham
+// recompensa (`entradaEfetiva()`/`semMochila()`).
 import { G, save, registrar, dificuldadeDe, rotasAtuais, centroPokemon, zerarDescontoCentro } from './estado.js';
 import { healFull } from './efeitos.js';
 import { $, limparTopo, logRaw, say, toast, ask } from './ui.js';
 import { spriteFrente } from './render.js';
-import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR, ITEM_CRISTAL_Z } from './dados.js';
+import { API, ZONES, TYPE_PT, TC, CLS_PT, DIFICULDADES, ITEMS, FIND_ITEMS, REGIOES_INICIAIS, SPR, SPR_SHINY, ITEM_CRISTAL_Z } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativa, agoraDoEvento, idDaSemana, modoComEvento, dataBR, formatarEspera, EVENTO_SEM_PERMADEATH, darItensDeRaide, inventarioRaide, gastarItemDeRaide } from './evento.js';
 import { MAX_TIME_HALL, htmlLojaConta, htmlEquiparConta, comprarComumConta, comprarSeguradoConta, reidratarHall } from './loja-conta.js';
@@ -43,14 +48,34 @@ const novoCodigo = () => Array.from({ length: 4 }, () => LETRAS[rand(0, LETRAS.l
 let sala = null;
 export const naSala = () => !!sala;
 
-// Com qual Pokémon entrar (escolhido no menu, antes de criar/entrar): 'run' = o da jornada atual (a luta mexe nela);
-// 'convidado' = um emprestado só pra sala (iniciais + desbloqueados do Roguelike, Nv. 5), que não mexe em save nenhum.
+/* Com qual Pokémon entrar. Três opções, e a escolha é de CADA JOGADOR (não do anfitrião — ele só manda no `modo`
+   da sala): 'run' = o da jornada atual (a luta mexe nela); 'convidado' = um emprestado só pra sala (iniciais +
+   desbloqueados do Roguelike, Nv. 5), que não mexe em save nenhum; 'hall' = de 1 a MAX_TIME_HALL Pokémon do
+   PRÓPRIO Hall da Fama (jornadas Roguelike/Hardcore já terminadas), no nível de verdade deles.
+   O 'hall' foi pedido várias vezes pelo usuário: jogar co-op/PvP sem precisar de uma run em andamento e sem se
+   contentar com um Nv. 5. Pro RESULTADO da luta ele é igual ao convidado (não mexe em save nenhum, não ganha
+   recompensa) — só que com Pokémon de verdade.
+   Dá pra escolher nos DOIS lugares: no menu, antes de criar/entrar (`entrada`/`hallEscolha`, locais desta tela) e
+   DENTRO da sala, no lobby, antes da luta começar (`sala.entradaTipo`/`sala.hallSel`) — foi o que faltou da
+   primeira vez: a opção existia só no menu, e quem já estava na sala não tinha como chegar nela.
+   A Sala de Raide (`modo === 'raide'`) não é uma quarta opção: ela simplesmente FORÇA 'hall' pra todo mundo
+   (`entradaEfetiva()`), porque lá ninguém usa run. */
 let entrada = { tipo: 'run', id: null };
+let hallEscolha = { selecao: [], equipamento: {} };
 const temRun = () => !!G.S?.player;
 // Sala de Raide (modo 'raide'): ninguém tem run nenhuma pra mexer — `sala.config` já chega sincronizado a todo
 // mundo pela 'lobby' antes da luta começar, então checar o modo é o bastante (sem precisar de um campo à parte
 // no estado da batalha, nem broadcast extra).
 const raideSemRun = () => sala?.config?.modo === 'raide';
+// a entrada que VALE agora: na Sala de Raide é sempre o Hall; fora dela, o que este jogador escolheu
+const entradaEfetiva = () => raideSemRun() ? 'hall' : (sala?.entradaTipo || 'run');
+// Hall usado FORA da Sala de Raide = emprestado como o convidado: sem mochila, sem recompensa, sem gimmick.
+// (Dentro da Raide o Hall tem a mochila da CONTA, que é o ponto dela — por isso a distinção.)
+const hallEmprestado = () => entradaEfetiva() === 'hall' && !raideSemRun();
+// entrei com Pokémon emprestado (convidado ou Hall fora da Raide): não tenho mochila nenhuma nesta luta
+const semMochila = () => entradaEfetiva() === 'convidado' || hallEmprestado();
+// a luta mexe na minha jornada? (só quando entrei com o Pokémon da run)
+const usaRun = () => entradaEfetiva() === 'run';
 // espécies que dá pra levar como convidado: a mesma regra da criação (iniciais + desbloqueadas no Roguelike)
 function especiesConvidado() {
   const lista = REGIOES_INICIAIS.flatMap(r => r.ids.map((id, i) => ({ id, nome: r.nomes[i] })));
@@ -58,6 +83,27 @@ function especiesConvidado() {
   return lista;
 }
 export function escolherEntrada(tipo) { if (tipo === 'run' && !temRun()) return; entrada = { tipo, id: tipo === 'run' ? null : entrada.id }; telaMultiplayer(); }
+// Trocar de entrada JÁ DENTRO da sala (lobby, antes da luta): remonta os Pokémon e reavisa os outros pela presença
+export async function escolherEntradaNaSala(tipo) {
+  if (!sala || sala.batalha || raideSemRun() || !['run', 'convidado', 'hall'].includes(tipo)) return;
+  if (tipo === 'run' && !temRun()) return;
+  sala.entradaTipo = tipo; sala.pronto = false;
+  if (tipo === 'hall') return atualizarHallMons();
+  if (tipo === 'convidado' && !sala.convidado) return renderSala();   // ainda falta escolher a espécie
+  await retrack(); renderSala();
+}
+export async function escolherConvidadoNaSala(id) {
+  if (!sala || sala.batalha || raideSemRun()) return;
+  sala.ocupado = true; sala.entradaTipo = 'convidado'; renderSala();
+  try { sala.convidado = await makeMon(await loadPokemon(+id), 5); }
+  catch (e) { console.error(e); toast(`Não consegui buscar o Pokémon convidado: ${esc(e.message)}`, 5000); }
+  finally { if (sala) { sala.ocupado = false; await retrack(); renderSala(); } }
+}
+// Seleção do Hall da Fama: a MESMA tela e as MESMAS funções servem o menu e o lobby — `hallSelAtual()` decide se
+// mexe em `hallEscolha` (menu, ainda sem sala) ou em `sala.hallSel` (dentro da sala).
+const hallSelAtual = () => sala ? sala.hallSel : hallEscolha;
+// posso mexer na seleção do Hall agora? (no menu: só se a entrada escolhida é 'hall'; na sala: antes da luta)
+const podeMexerNoHall = () => sala ? (!sala.batalha && entradaEfetiva() === 'hall') : entrada.tipo === 'hall';
 export function escolherConvidado(id) { entrada = { tipo: 'convidado', id: +id }; telaMultiplayer(); }
 
 // id na sala: o da conta, ou um de visitante guardado neste navegador (idJogador, nuvem.js — usado também
@@ -68,10 +114,10 @@ const meuNome = () => nuvem.apelido || G.S?.player?.nick || (G.S ? fmt(G.S.playe
 // Convidado: só ele, marcado `convidado` (o anfitrião ajusta o nível dele; o resultado não vai pra save nenhum).
 function minhasFotos() {
   const eu = meuId(), S = G.S;
-  // Sala de Raide (modo 'raide'): Pokémon do Hall da Fama, reidratados no nível real — ver `atualizarHallMons`.
-  // Cada um já sai com o item da Loja de preparo (reidratarHall), sem tocar em nenhuma run.
-  if (sala?.config?.modo === 'raide') return (sala.hallMons || []).map((m, i) => ({ ...fotoDoMon(m, '', eu, null, i), hall: true }));
-  if (sala?.convidado) return [{ ...fotoDoMon(sala.convidado, '', eu, null, 0), convidado: true }];
+  // Hall da Fama (Sala de Raide OU entrada 'hall' em co-op/PvP): reidratados no nível real por `atualizarHallMons`,
+  // cada um já com o item da Loja de preparo (reidratarHall), sem tocar em nenhuma run.
+  if (sala && entradaEfetiva() === 'hall') return (sala.hallMons || []).map((m, i) => ({ ...fotoDoMon(m, '', eu, null, i), hall: true }));
+  if (sala && entradaEfetiva() === 'convidado' && sala.convidado) return [{ ...fotoDoMon(sala.convidado, '', eu, null, 0), convidado: true }];
   const aliados = (S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.hp > 0 && A.ordem !== 'fora').slice(0, 2);
   return [fotoDoMon(S.player, '', eu, null, 0), ...aliados.map(([A, i]) => fotoDoMon(A, '', eu, null, i + 1))];
 }
@@ -137,15 +183,17 @@ export function telaMultiplayer(msg = '') {
   G.mode = 'mp'; limparTopo();
   const bloqueio = !nuvemConfigurada() ? 'O multiplayer precisa do modo online, que ainda não foi configurado neste site (<code>js/config.js</code>).'
     : offline() ? '📴 Sem internet: o multiplayer volta quando a conexão voltar.' : '';
-  if (!temRun()) entrada.tipo = 'convidado';
-  const P = G.S?.player, conv = entrada.tipo === 'convidado';
+  if (!temRun() && entrada.tipo === 'run') entrada.tipo = 'convidado';
+  const P = G.S?.player, conv = entrada.tipo === 'convidado', hall = entrada.tipo === 'hall';
   const opcaoRun = temRun()
-    ? `<button class="abil ${!conv ? 'on' : ''}" data-act="mp-entrada" data-v="run" aria-pressed="${!conv}"><b>🎒 O Pokémon da minha run</b><small>${esc(P.nick || fmt(P.name))}, Nv. ${P.level}${(G.S.aliados || []).length ? ` (+ aliados, se a sala pedir)` : ''}. A luta mexe na run: XP, HP${DIFICULDADES[dificuldadeDe(G.S)].permadeath ? ', e desmaiar acaba a run (Roguelike)' : ''}.</small></button>`
-    : '<p class="small muted">Sem run em andamento: escolha um Pokémon convidado.</p>';
+    ? `<button class="abil ${entrada.tipo === 'run' ? 'on' : ''}" data-act="mp-entrada" data-v="run" aria-pressed="${entrada.tipo === 'run'}"><b>🎒 O Pokémon da minha run</b><small>${esc(P.nick || fmt(P.name))}, Nv. ${P.level}${(G.S.aliados || []).length ? ` (+ aliados, se a sala pedir)` : ''}. A luta mexe na run: XP, HP${DIFICULDADES[dificuldadeDe(G.S)].permadeath ? ', e desmaiar acaba a run (Roguelike)' : ''}.</small></button>`
+    : '<p class="small muted">Sem run em andamento: escolha um Pokémon convidado ou do Hall da Fama.</p>';
   const escolha = `<h3>Com qual Pokémon?</h3>
     <div class="abils">${opcaoRun}
-      <button class="abil ${conv ? 'on' : ''}" data-act="mp-entrada" data-v="convidado" aria-pressed="${conv}"><b>✨ Um Pokémon convidado</b><small>Emprestado só pra sala: não mexe na sua run, não ganha recompensa, sem risco. Os iniciais, Pikachu, Eevee e o que você desbloqueou no Roguelike.</small></button></div>
-    ${conv ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${entrada.id === e.id ? 'on' : ''}" data-act="mp-convidado" data-v="${e.id}" aria-pressed="${entrada.id === e.id}"><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : ''}`;
+      <button class="abil ${conv ? 'on' : ''}" data-act="mp-entrada" data-v="convidado" aria-pressed="${conv}"><b>✨ Um Pokémon convidado</b><small>Emprestado só pra sala: não mexe na sua run, não ganha recompensa, sem risco. Os iniciais, Pikachu, Eevee e o que você desbloqueou no Roguelike.</small></button>
+      <button class="abil ${hall ? 'on' : ''}" data-act="mp-entrada" data-v="hall" aria-pressed="${hall}"><b>🏟 Meus Pokémon do Hall da Fama</b><small>Até ${MAX_TIME_HALL} campeões de jornadas Roguelike/Hardcore já terminadas, no nível de verdade deles. Como o convidado: não mexe em run nenhuma nem ganha recompensa — mas sem ser um Nv. 5.</small></button></div>
+    ${conv ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${entrada.id === e.id ? 'on' : ''}" data-act="mp-convidado" data-v="${e.id}" aria-pressed="${entrada.id === e.id}"><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : ''}
+    ${hall ? `<div style="margin-top:10px">${htmlHallPicker(hallEscolha)}</div>` : ''}`;
   $('#app').innerHTML = `<main class="create">
     ${barraTelas('mp')}
     <h1>Multiplayer.</h1>
@@ -171,19 +219,23 @@ export function entrarSala(codigo) {
 async function conectar(codigo, anfitriao) {
   if (sala) await sairSala();
   if (!nuvemConfigurada() || offline()) return telaMultiplayer();
-  const conv = entrada.tipo === 'convidado' || !temRun();
+  const hallOn = entrada.tipo === 'hall', conv = (entrada.tipo === 'convidado' || !temRun()) && !hallOn;
   if (conv && !entrada.id) return telaMultiplayer('Escolha o Pokémon convidado antes.');
-  if (!conv && G.S.player.hp <= 0) return telaMultiplayer('Seu Pokémon está desmaiado. Cure no Centro antes.');
+  if (!conv && !hallOn && G.S.player.hp <= 0) return telaMultiplayer('Seu Pokémon está desmaiado. Cure no Centro antes.');
   let convidado = null;
   if (conv) {
     try { convidado = await makeMon(await loadPokemon(entrada.id), 5); }
     catch (e) { console.error(e); return telaMultiplayer(`Não consegui buscar o Pokémon convidado: ${esc(e.message)}`); }
   }
   sala = { codigo, anfitriao, canal: null, membros: [], zona: G.S?.zone || ZONES[0].id, batalha: null, acoes: {}, acoesFeitas: [], escolhidos: new Set(),
-    convidado, // anfitrião sem run: só PvP (co-op é jogar a run de alguém)
-    hallSel: { selecao: [], equipamento: {} }, hallMons: [], pronto: false, // Sala de Raide (modo 'raide')
+    convidado,
+    // Com qual Pokémon EU entro (dá pra trocar no lobby: escolherEntradaNaSala). A Sala de Raide ignora isso e
+    // força 'hall' pra todo mundo — ver `entradaEfetiva()`. A seleção do Hall vem do que já foi marcado no menu.
+    entradaTipo: hallOn ? 'hall' : conv ? 'convidado' : 'run',
+    hallSel: { selecao: [...hallEscolha.selecao], equipamento: { ...hallEscolha.equipamento } }, hallMons: [], pronto: false,
     mensagens: [], // chat da sala: só na memória, nunca persiste (some ao sair)
     config: { modo: anfitriao && !temRun() ? 'pvp' : 'coop', porJogador: 1, balancear: true }, time: anfitriao ? 'A' : 'B', entrouEm: Date.now(), encontrouAnfitriao: anfitriao };
+  if (hallOn) await atualizarHallMons();   // reidrata a seleção do menu (rede) antes de anunciar pra sala
   try {
     const canal = await canalSala(codigo, meuId());
     sala.canal = canal;
@@ -277,6 +329,11 @@ export async function escolherTime(t) {
    local, na conta de cada um, igual à Arena. Quando os dois lados estão prontos (`pronto`), o anfitrião começa.
    `sala.hallSel` (seleção + equipamento) é só desta pessoa; `sala.hallMons` é a reidratação PRONTA (rede, async)
    que `minhasFotos()` usa pra montar a "foto" que viaja pela sala — igual ao `sala.convidado`, só que plural. */
+// As mesmas funções abaixo atendem DOIS lugares (`hallSelAtual()`, definida lá em cima, perto de `hallEscolha`):
+// dentro de uma Sala de Raide (`sala.hallSel`, com "pronto" e reidratação ao vivo pra presença) e no menu ANTES
+// de criar/entrar numa sala, quando a entrada escolhida é 'hall' (`hallEscolha`, sem "pronto" — a reidratação só
+// acontece uma vez, em `conectar()`, igual ao convidado). Sem sala nenhuma, não tem `sala.config.modo` pra checar,
+// então a trava vira "só deixa mexer se a entrada é 'hall'".
 let atualizandoHall = false;
 async function atualizarHallMons() {
   if (!sala || atualizandoHall) return;
@@ -289,28 +346,27 @@ async function atualizarHallMons() {
   finally { atualizandoHall = false; if (sala) { await retrack(); renderSala(); } }
 }
 export function raideSelecionarHall(chave) {
-  if (!sala || sala.batalha || sala.config.modo !== 'raide') return;
-  const sel = sala.hallSel;
+  if (!podeMexerNoHall()) return;
+  const sel = hallSelAtual();
   if (sel.selecao.includes(chave)) { sel.selecao = sel.selecao.filter(c => c !== chave); delete sel.equipamento[chave]; }
   else if (sel.selecao.length < MAX_TIME_HALL) sel.selecao = [...sel.selecao, chave];
   else return;
-  sala.pronto = false; atualizarHallMons();
+  if (sala) { sala.pronto = false; atualizarHallMons(); } else telaMultiplayer();
 }
 export function raideEquiparHall(chave, id) {
-  if (!sala || sala.batalha || sala.config.modo !== 'raide' || !sala.hallSel.selecao.includes(chave)) return;
-  const eq = sala.hallSel.equipamento;
+  if (!podeMexerNoHall()) return;
+  const sel = hallSelAtual(); if (!sel.selecao.includes(chave)) return;
+  const eq = sel.equipamento;
   if (id) { for (const c of Object.keys(eq)) if (eq[c] === id) delete eq[c]; eq[chave] = id; } else delete eq[chave];
-  atualizarHallMons();
+  if (sala) atualizarHallMons(); else telaMultiplayer();
 }
 export function raideComprarComum(id) {
-  if (!sala) return;
   const r = comprarComumConta(id); if (!r.ok) return toast(r.motivo || 'Não deu.', 4000);
-  renderSala();
+  if (sala) renderSala(); else telaMultiplayer();
 }
 export function raideComprarSegurado(id) {
-  if (!sala) return;
   const r = comprarSeguradoConta(id); if (!r.ok) return toast(r.motivo || 'Não deu.', 4000);
-  renderSala();
+  if (sala) renderSala(); else telaMultiplayer();
 }
 // "pronto" — o anfitrião só consegue começar a Raide quando TODO MUNDO na sala está pronto (com Pokémon escolhido)
 export async function alternarProntoMP() {
@@ -532,7 +588,7 @@ function aoReceberEstado(p) {
 // o anfitrião conta os Revives e os itens de raide de cada jogador (`b.revivesUsados`, `b.raideUsados`); o que passou do que eu já
 // descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros)
 function consumirRevives(b) {
-  if (!b?.evento || sala?.convidado || (!raideSemRun() && !temRun())) return;
+  if (!b?.evento || semMochila() || (!raideSemRun() && !temRun())) return;
   const eu = meuId(); let mexeu = false;
   // Sala de Raide desconta do INVENTÁRIO DE CONTA (evento.gastarItemDeRaide); fora dela, da mochila da run.
   const gastar = (id, n) => { for (let i = 0; i < n; i++) if (raideSemRun() ? gastarItemDeRaide(id) : gastarDaRun(id)) mexeu = true; };
@@ -554,7 +610,7 @@ function consumirRevives(b) {
 // mochila nenhuma. `itensUsados[dono]` é uma LISTA que só cresce (cada uso vira um item novo no array);
 // `itensComunsConsumidos` lembra até onde eu já descontei, pra não gastar de novo a cada estado que chega.
 function consumirItensComuns(b) {
-  if (!b || sala?.convidado || (!raideSemRun() && !temRun())) return;
+  if (!b || semMochila() || (!raideSemRun() && !temRun())) return;
   const eu = meuId(), usados = b.itensUsados?.[eu] || [], ja = sala.itensComunsConsumidos || 0;
   if (usados.length <= ja) return;
   for (const id of usados.slice(ja)) {
@@ -571,7 +627,7 @@ function consumirItensComuns(b) {
 const minhaMochila = () => raideSemRun() ? inventarioRaide() : (G.S?.bag || {});
 // Itens de raide que posso usar agora: tenho (na mochila certa) e o grupo ainda não usou aquele tipo nesta luta
 const raideDisponiveis = b => {
-  if (!b?.evento || sala.convidado || (!raideSemRun() && !temRun())) return [];
+  if (!b?.evento || semMochila() || (!raideSemRun() && !temRun())) return [];
   const bag = minhaMochila();
   return ITENS_DE_RAIDE.filter(tipo => (bag[ITEM_DO_RAIDE[tipo]] || 0) > 0 && !b.lados.B.some(m => m.boss?.raide?.[tipo]));
 };
@@ -597,7 +653,7 @@ export function usarRaideMP(tipo) {
    `escolher()`, igual escolherGolpeMP, em vez de `registrarAcao` direto. */
 export const SEM_BATALHA_MP = ['candy', 'afinidade', 'evo', 'troca', 'segurar', 'segurado', 'repelente', 'ensina', 'raide', 'revive'];
 function itensComunsDisponiveis() {
-  const m = minhaVez(); if (!m || sala.convidado || (!raideSemRun() && !temRun())) return [];
+  const m = minhaVez(); if (!m || semMochila() || (!raideSemRun() && !temRun())) return [];
   return Object.entries(minhaMochila()).filter(([k, n]) => n > 0 && ITEMS[k] && !SEM_BATALHA_MP.some(f => ITEMS[k][f]) && itemTemEfeito(ITEMS[k], m)).map(([k]) => k);
 }
 export function usarItemComumMP(id) {
@@ -608,7 +664,7 @@ export function usarItemComumMP(id) {
    de sempre). Dentro dela: igual à Arena (reviverCompanheiro) — reviver com o time ainda lutando, contanto que
    tenha pelo menos um de pé (`m.hp > 0` do mesmo dono) e um caído; aceita Max Revive. */
 const podeReviver = b => {
-  if (!b?.evento || sala.convidado || (b.revivesUsados?.[meuId()] || 0) >= MAX_REVIVES) return false;
+  if (!b?.evento || semMochila() || (b.revivesUsados?.[meuId()] || 0) >= MAX_REVIVES) return false;
   const meusCaidos = b.lados.A.some(m => m.dono === meuId() && m.hp <= 0);
   if (raideSemRun()) {
     const bag = minhaMochila();
@@ -642,7 +698,7 @@ const minhaVez = () => { const b = sala?.batalha; return b && jogaveis(b).find(m
 const golpeZ = (p, g) => !!g && !!p && g.cls !== 'status' && g.power > 0 && g.ppLeft > 0 && g.name !== 'struggle' && zLiberado(p, g);
 // o que o meu Pokémon principal pode usar agora; null = não se aplica (PvP, convidado, aliado, sem run)
 function gimmicksDisponiveisMP(b, m) {
-  if (!b || b.pvp || !m || m.slot !== 0 || m.convidado || sala.convidado || !temRun() || raideSemRun()) return null;
+  if (!b || b.pvp || !m || m.slot !== 0 || m.convidado || m.hall || !usaRun() || !temRun()) return null;
   const M = G.S.player, usou = b.gimmicksUsados?.[meuId()] || {}, p = conquistasDaConta(G.S.registro);
   return {
     p,
@@ -778,7 +834,7 @@ async function aplicarPvP(p) {
   const eu = meuId(), meuTime = p.times.A.includes(eu) ? 'A' : p.times.B.includes(eu) ? 'B' : null;
   if (!meuTime) return false; // estava só olhando
   const ganhei = p.fim === meuTime;
-  if (sala.convidado || !temRun()) { await say(ganhei ? '🏆 Seu time venceu o PvP!' : 'Seu time perdeu o PvP.', ganhei ? 'good' : 'muted'); return false; } // convidado: não conta na run
+  if (!usaRun() || !temRun()) { await say(ganhei ? '🏆 Seu time venceu o PvP!' : 'Seu time perdeu o PvP.', ganhei ? 'good' : 'muted'); return false; } // convidado/Hall: não conta na run
   const S = G.S;
   S.pvp = { vitorias: (S.pvp?.vitorias || 0) + (ganhei ? 1 : 0), derrotas: (S.pvp?.derrotas || 0) + (ganhei ? 0 : 1) };
   await say(ganhei ? '🏆 Seu time venceu o PvP!' : 'Seu time perdeu o PvP. Foi uma luta amistosa: seus Pokémon voltam como estavam.', ganhei ? 'good' : 'muted');
@@ -788,7 +844,7 @@ async function aplicarPvP(p) {
 // co-op: devolve true se a run acabou (Roguelike, principal desmaiado)
 async function aplicarCoop(p) {
   if (raideSemRun()) return aplicarRaideSemRun(p);   // Hall da Fama, sem run nenhuma — ver a Sala de Raide, acima
-  if (sala.convidado || !temRun()) { await say(p.fim === 'A' ? '🏆 Vitória do grupo! (Pokémon convidado: a luta não mexe na sua run.)' : 'Pokémon convidado: a luta não mexe na sua run.', 'muted'); return false; }
+  if (!usaRun() || !temRun()) { await say(p.fim === 'A' ? '🏆 Vitória do grupo! (Pokémon emprestado: a luta não mexe na sua run.)' : 'Pokémon emprestado: a luta não mexe na sua run.', 'muted'); return false; }
   // luta do chefe da semana: perder não é permadeath (evento.EVENTO_SEM_PERMADEATH), como no single player
   const S = G.S, eu = meuId(), permadeath = DIFICULDADES[dificuldadeDe(S)].permadeath && !(p.evento && EVENTO_SEM_PERMADEATH);
   for (const v of p.vistos || []) { registrar(S, 'vistos', v.especie, v.id); if (v.shiny) registrar(S, 'shinies', v.especie, v.id); }
@@ -934,10 +990,29 @@ function barraConexao() {
     <details class="mp-diag"><summary>Diagnóstico</summary><ul>${diarioMP().map(l => `<li class="${l.ruim ? 'err' : ''}">${new Date(l.t).toLocaleTimeString('pt-BR')} · ${esc(l.txt)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul></details>
   </div>`;
 }
+/* A tela da sala é desenhada em DUAS partes (`#mp-topo` e `#mp-acoes`). Se montar a segunda estourar no meio, o
+   `#mp-acoes` fica com o HTML VELHO e as duas metades passam a contar histórias diferentes — sem erro nenhum na
+   cara de quem joga. Foi exatamente isso que escondeu o bug do `SPR_SHINY` (29/09/2026): o cabeçalho já dizia
+   "Sala de Raide", o seletor do Hall da Fama nunca aparecia, e o jogador ficou preso achando que a opção não
+   existia. Mesma lição do `gimmicksNaLoja` (carreira.js): falha silenciosa vira diagnóstico errado. Agora
+   qualquer erro aqui aparece NA TELA e no console, em vez de deixar meia tela velha. */
 function renderSala() {
+  try { desenharSala(); }
+  catch (e) {
+    console.error('renderSala', e);
+    const el = $('#mp-acoes');
+    if (el) el.innerHTML = `<p class="notice">Algo quebrou ao desenhar esta parte da sala: <b>${esc(e.message)}</b>.<br>Manda esse texto em 🐞 Bugs e sugestões, por favor — dá pra sair e entrar de novo na sala enquanto isso.</p>
+      <div class="subrow"><button class="btn ghost" data-act="mp-sair">Sair da sala</button></div>`;
+  }
+}
+function desenharSala() {
   if (!sala || G.mode !== 'mp' || !$('#mp-topo')) return;
   const b = sala.batalha, cfg = sala.config, pvp = cfg.modo === 'pvp', z = ZONES.find(x => x.id === sala.zona) || ZONES[0];
-  const resumoCfg = `${pvp ? 'PvP' : 'Co-op'} · ${cfg.porJogador} Pokémon por jogador · ${cfg.balancear ? 'balanceado' : 'sem balancear'}${pvp ? '' : ' · ' + esc(z.name)}`;
+  // o resumo precisa conhecer os TRÊS modos: antes só sabia "PvP ou não", então a Sala de Raide se anunciava como
+  // "Co-op ... · Rota 1" (rota que ela nem usa) e contradizia o próprio seletor de Modo logo abaixo
+  const raideAqui = cfg.modo === 'raide';
+  const nomeModo = raideAqui ? '☄ Sala de Raide' : pvp ? 'PvP' : 'Co-op';
+  const resumoCfg = `${nomeModo} · ${cfg.porJogador} Pokémon por jogador${raideAqui ? '' : ` · ${cfg.balancear ? 'balanceado' : 'sem balancear'}`}${pvp || raideAqui ? '' : ' · ' + esc(z.name)}`;
   const cabecalho = `<div class="mp-cab"><h1>Sala <span class="codigo">${esc(sala.codigo)}</span></h1>
     <p class="muted">${sala.anfitriao ? 'Você é o anfitrião. Passe o código pros amigos.' : 'O anfitrião configura e começa.'} · ${sala.membros.length}/${MAX_JOGADORES} jogadores · ${resumoCfg}</p>
     ${barraConexao()}</div>`;
@@ -975,20 +1050,21 @@ function renderSala() {
 // Centro Pokémon sem sair da sala: no co-op a equipe se machuca de verdade, e antes era preciso sair, curar e voltar.
 // Mesmo preço e mesma regra do jogo sozinho (estado.centroPokemon); só aparece entre as lutas, com uma run em andamento.
 function centroNaSala() {
-  if (!temRun() || sala.batalha || sala.convidado || sala.config?.modo === 'raide') return '';
+  if (!temRun() || sala.batalha || !usaRun()) return '';
   const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = G.S.money < custo;
   const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s>` : '';
   return `<div class="subrow mp-centro"><button class="btn ghost" data-act="mp-centro" ${!precisa || semGrana || sala.ocupado ? 'disabled' : ''}
     title="${!precisa ? 'Sua equipe já está curada' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">🏥 Centro Pokémon${!precisa ? ' (equipe curada)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}`}</button>
     <span class="small muted">₽${G.S.money.toLocaleString('pt-BR')}</span></div>`;
 }
-// Sala de Raide: minha própria seleção do Hall da Fama + Loja de preparo + "pronto" — igual pra anfitrião e
-// convidado, cada um mexe só na PRÓPRIA conta (hallDaConta/saldoArenaDaConta já são locais, sem run nenhuma).
-function htmlRaideSelecao() {
-  const hall = hallDaConta(), sel = sala.hallSel, saldo = saldoArenaDaConta();
+// Minha própria seleção do Hall da Fama + Loja de preparo, usada em DOIS lugares (ver `raideSelecionarHall`
+// acima): dentro da Sala de Raide (`sala.hallSel`) e no menu, antes de criar/entrar, quando a entrada é 'hall'
+// (`hallEscolha`) — cada um mexe só na PRÓPRIA conta (hallDaConta/saldoArenaDaConta já são locais, sem run nenhuma).
+function htmlHallPicker(sel, ocupado = false) {
+  const hall = hallDaConta(), saldo = saldoArenaDaConta();
   const escolhidos = new Set(sel.selecao);
   const cartaoHall = e => { const on = escolhidos.has(e.chave), cheio = !on && sel.selecao.length >= MAX_TIME_HALL;
-    return `<button class="hall-card ${on ? 'on' : ''}" data-act="mp-raide-sel" data-v="${esc(e.chave)}" ${cheio || sala.ocupado ? 'disabled' : ''} aria-pressed="${on}">
+    return `<button class="hall-card ${on ? 'on' : ''}" data-act="mp-raide-sel" data-v="${esc(e.chave)}" ${cheio || ocupado ? 'disabled' : ''} aria-pressed="${on}">
       <img src="${e.shiny ? SPR_SHINY(e.id) : SPR(e.id)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${SPR(e.id)}'">
       <b>${e.shiny ? '✨ ' : ''}${esc(e.nick || fmt(e.nome))}</b><span class="muted small">Nv. ${e.nivel} · Gen ${e.gen}</span></button>`; };
   const entradas = sel.selecao.map(c => hall.find(e => e.chave === c)).filter(Boolean).map(e => ({ chave: e.chave, rotulo: e.nick || fmt(e.nome) }));
@@ -997,8 +1073,28 @@ function htmlRaideSelecao() {
     ${hall.length ? `<div class="hall-lista">${hall.map(cartaoHall).join('')}</div>`
       : '<p class="notice">Seu Hall da Fama está vazio. Termine (ou encerre) uma jornada Roguelike ou Hardcore pra ter Pokémon aqui.</p>'}</div></section>
     ${htmlEquiparConta(entradas, sel.equipamento, 'data-mp-equipar')}
-    ${htmlLojaConta(saldo, 'mp-raide-comprar-comum', 'mp-raide-comprar-segurado')}
-    <div class="subrow"><button class="btn ${sala.pronto ? '' : 'ghost'} big" data-act="mp-pronto" ${sala.ocupado ? 'disabled' : ''}>${sala.pronto ? '✅ Pronto! (toque pra voltar a escolher)' : 'Marcar como pronto'}</button></div>`;
+    ${htmlLojaConta(saldo, 'mp-raide-comprar-comum', 'mp-raide-comprar-segurado')}`;
+}
+function htmlRaideSelecao() {
+  return htmlHallPicker(sala.hallSel, sala.ocupado) +
+    `<div class="subrow"><button class="btn ${sala.pronto ? '' : 'ghost'} big" data-act="mp-pronto" ${sala.ocupado ? 'disabled' : ''}>${sala.pronto ? '✅ Pronto! (toque pra voltar a escolher)' : 'Marcar como pronto'}</button></div>`;
+}
+/* "Com qual Pokémon?" DENTRO da sala (lobby, co-op e PvP). A mesma escolha do menu, repetida aqui porque foi
+   exatamente o que faltou: quem já tinha criado/entrado na sala não tinha como chegar na opção do Hall da Fama e
+   ficava preso ao convidado de Nv. 5. Não existe na Sala de Raide (lá o Hall é obrigatório pra todos). */
+function htmlEntradaNaSala() {
+  if (sala.batalha || raideSemRun()) return '';
+  const t = entradaEfetiva(), dis = sala.ocupado ? 'disabled' : '';
+  const op = (v, rotulo, dica, off = false) => `<button class="abil ${t === v ? 'on' : ''}" data-act="mp-entrada-sala" data-v="${v}" aria-pressed="${t === v}" ${off || dis ? 'disabled' : ''}><b>${rotulo}</b><small>${dica}</small></button>`;
+  return `<section class="pv conta"><div><h3>Com qual Pokémon você entra?</h3>
+    <div class="abils">
+      ${op('run', '🎒 O da minha run', temRun() ? `${esc(G.S.player.nick || fmt(G.S.player.name))}, Nv. ${G.S.player.level}. A luta conta pra sua jornada (XP, HP, itens).` : 'Você não tem nenhuma jornada em andamento.', !temRun())}
+      ${op('hall', '🏟 Meus Pokémon do Hall da Fama', `Até ${MAX_TIME_HALL} campeões de jornadas já terminadas, no nível de verdade. Não mexe em save nenhum.`)}
+      ${op('convidado', '✨ Um Pokémon convidado', 'Emprestado só pra sala, Nv. 5. Não mexe em save nenhum.')}
+    </div>
+    ${t === 'convidado' ? `<div class="picks" style="margin-top:10px">${especiesConvidado().map(e => `<button class="pick ${sala.convidado?.data?.id === e.id ? 'on' : ''}" data-act="mp-convidado-sala" data-v="${e.id}" ${dis}><img src="${SPR(e.id)}" alt="" loading="lazy">${esc(e.nome)}</button>`).join('')}</div>` : ''}
+    </div></section>
+    ${t === 'hall' ? htmlHallPicker(sala.hallSel, sala.ocupado) : ''}`;
 }
 function renderLobby(cabecalho, pvp, z) {
   const cfg = sala.config, dis = sala.ocupado ? 'disabled' : '', raide = cfg.modo === 'raide';
@@ -1010,7 +1106,7 @@ function renderLobby(cabecalho, pvp, z) {
   const sair = '<button class="btn ghost" data-act="mp-sair">Sair da sala</button>';
   if (!sala.anfitriao) {
     if (raide) { $('#mp-acoes').innerHTML = htmlRaideSelecao() + `<p class="muted">${sala.ocupado ? 'Buscando os Pokémon…' : 'Esperando todo mundo ficar pronto e o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return; }
-    $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return;
+    $('#mp-acoes').innerHTML = trocarTime + centroNaSala() + htmlEntradaNaSala() + `<p class="muted">${sala.ocupado ? 'Aplicando o resultado…' : 'Esperando o anfitrião começar.'}</p><div class="subrow">${sair}</div>`; return;
   }
   const zonas = temRun() ? rotasAtuais().filter(x => zonaLiberada(x, G.S.player.level, G.S)) : []; // rotas do mapa (Gen) da run
   // amigos (com conta) que ainda não estão na sala: um toque manda o convite
@@ -1036,7 +1132,7 @@ function renderLobby(cabecalho, pvp, z) {
       ${pvp ? '' : `<label class="campo">Zona<select data-mp-cfg="zona" ${dis}>${zonas.map(x => `<option value="${x.id}" ${x.id === sala.zona ? 'selected' : ''}>${x.name}</option>`).join('')}</select></label>`}
       <label class="check"><input type="checkbox" data-mp-cfg="balancear" ${cfg.balancear ? 'checked' : ''} ${dis}> Balancear níveis
         <small class="muted">${pvp ? 'Todos no nível médio da luta; o time menor ganha HP extra.' : 'O grupo todo no nível do seu Pokémon. Quem tiver o nível ajustado joga por diversão: não leva XP nem itens pra própria run.'} Desligado: níveis reais${pvp ? '' : ', cada um leva o que ganhar pra própria run, e os inimigos acompanham o mais forte'} (mais difícil).</small></label>
-    </div>${trocarTime}${centroNaSala()}${convites}
+    </div>${trocarTime}${centroNaSala()}${convites}${htmlEntradaNaSala()}
     <div class="subrow">${pvp
       ? `<button class="btn big" data-act="mp-pvp" ${dis || !podePvp ? 'disabled' : ''} title="${podePvp ? '' : 'Cada time precisa de pelo menos um jogador'}">⚔ Começar PvP</button>`
       : `<button class="btn big" data-act="mp-explorar" ${dis}>🌿 Explorar juntos</button>${z.chefe ? `<button class="btn" data-act="mp-alfa" ${dis}>⚔ Desafiar o Alfa (${z.chefe.nome})</button>` : ''}${botaoEventoMP(dis)}`}${sair}</div>`;

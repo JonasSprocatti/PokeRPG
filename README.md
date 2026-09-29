@@ -229,7 +229,9 @@ Um jogador cria a sala e passa o **código de 4 letras**; até 6 entram com ele.
   - **PvP:** todos no nível médio da luta, e o time em menor número ganha HP extra.
   - **Desligado:** níveis reais. No co-op os inimigos acompanham o mais forte do grupo, então é mais difícil.
 
-**Com qual Pokémon entrar:** o **da sua run** (a luta conta para ela) ou um **convidado**. O convidado é escolhido entre os iniciais, Pikachu, Eevee e as espécies desbloqueadas no Roguelike; é emprestado só para a sala e não mexe em nada. Sem run em andamento, dá para entrar com um convidado direto da tela inicial.
+**Com qual Pokémon entrar:** o **da sua run** (a luta conta para ela), um **convidado** ou os **seus Pokémon do Hall da Fama**. O convidado é escolhido entre os iniciais, Pikachu, Eevee e as espécies desbloqueadas no Roguelike (Nv. 5, emprestado só para a sala). A opção do Hall leva de 1 a 3 campeões de jornadas Roguelike/Hardcore já terminadas, no nível de verdade deles — pra jogar (co-op ou PvP) sem precisar de uma run em andamento nem se contentar com um Nv. 5. Os dois são emprestados só para a sala: não mexem em nenhum save e não ganham recompensa. Sem run em andamento, dá para entrar direto com um convidado ou com o Hall da Fama.
+
+A escolha aparece em **dois lugares**: na tela do Multiplayer, antes de criar ou entrar na sala, **e dentro da própria sala**, no lobby — então dá para trocar entre run, Hall da Fama e convidado a qualquer momento antes da luta começar, sem sair e perder o código.
 
 **Ganhos da run de outra pessoa:** se você lutou no **seu nível real**, **XP, EVs, dinheiro, itens** (35% de chance por vitória) e prêmios de Alfa **voltam com você** para a sua run. Se o Balancear ajustou o seu nível, a luta vale como diversão e não leva ganhos.
 

@@ -5,6 +5,18 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }]. */
 export const PATCH_NOTES = [
+  { versao: '2.65', data: '2026-09-29', titulo: 'Hall da Fama no Multiplayer', piada: 'Um Pokémon shiny aposentado entrou na sala e derrubou a tela inteira. Agora ele só entra e luta, como todo mundo.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        'A ☄ Sala de Raide não abria a escolha de Pokémon pra quem tinha um <b>shiny</b> no Hall da Fama: a tela quebrava na metade, o topo já dizia "Sala de Raide" e a parte de baixo continuava mostrando as opções de Co-op. Sem nenhum aviso. Corrigido.',
+        'Quando algo quebra ao desenhar a sala, agora aparece o erro na tela em vez de ficar meia tela velha fingindo que está tudo certo.',
+        'O resumo no topo da sala dizia "Co-op" (e mostrava uma rota) mesmo no modo Sala de Raide.'
+      ] },
+      { nome: 'Novidades', itens: [
+        'Agora dá pra entrar numa sala (Co-op ou PvP) com os seus <b>Pokémon do Hall da Fama</b> — sem precisar de uma jornada em andamento e sem se contentar com um convidado de nível 5.',
+        'A escolha "Com qual Pokémon você entra?" também aparece <b>dentro da sala</b>, no lobby: dá pra trocar entre a sua run, o Hall da Fama e um convidado a qualquer momento antes da luta começar, sem sair e perder o código.'
+      ] }
+    ] },
   { versao: '2.64', data: '2026-09-28', titulo: 'Saldo da Arena consertado', piada: 'O saldo estava fazendo greve de fome. Agora come a carreira inteira, não só a jornada de hoje.',
     secoes: [
       { nome: 'Correções', itens: [

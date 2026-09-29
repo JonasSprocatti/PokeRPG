@@ -156,7 +156,45 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - Decisão do usuário: **os dois formatos**, **sala por código** (4 caracteres, sem lista pública). Até `MAX_JOGADORES` = 6. Funciona sem login (id de visitante em `pokerpg-visitante`), só precisa do Supabase configurado (Realtime).
 - Config da sala (anfitrião, broadcast `lobby`): `modo` 'coop'|'pvp', `porJogador` 1–3 (principal + aliados em pé e não "Descansar"; `slot` 0 = principal, k = `S.aliados[k-1]`), `balancear` (padrão **ligado**, pedido do usuário). PvP: cada jogador escolhe `time` A/B (presença). Balancear: co-op → `balancearCoop` (todos no nível do principal do anfitrião = "chamar alguém pra sua run"); PvP → `balancearPvP` (nível médio + HP × (maior/menor) pro time menor). Desligado: níveis reais; co-op com inimigos no nível do mais forte (Alfa +5).
 - Escolha é **por Pokémon** (`minhaVez` = próximo Pokémon meu sem ação no turno; `sala.escolhidos` zera a cada turno). Resultado volta por `"dono:slot"` com **fração** de HP (o nível pode ter sido balanceado). PvP é amistoso: só `S.pvp {vitorias, derrotas}`; `desistir` (motor) tira o time inteiro; ninguém foge (`estado.pvp`).
-- **Entrada na sala** (`entrada` em multiplayer.js, escolhida no menu): `'run'` (Pokémon da jornada atual, com aliados) ou `'convidado'` (`makeMon` Nv. 5 de `especiesConvidado()` = iniciais + desbloqueados do Roguelike; foto com `convidado: true`; resultado NÃO mexe em save nenhum, nem PvP conta). Sem run: só convidado; anfitrião sem run só abre PvP. Convidado sem balancear: nível do anfitrião (co-op) / média dos outros (PvP).
+- **Entrada na sala** (`entrada` em multiplayer.js, escolhida no menu): `'run'` (Pokémon da jornada atual, com aliados), `'convidado'` (`makeMon` Nv. 5 de `especiesConvidado()` = iniciais + desbloqueados do Roguelike; foto com `convidado: true`; resultado NÃO mexe em save nenhum, nem PvP conta) ou `'hall'` (ver abaixo). Sem run: convidado ou Hall; anfitrião sem run só abre PvP (coop continua exigindo run do anfitrião, dono da zona). Convidado sem balancear: nível do anfitrião (co-op) / média dos outros (PvP).
+- **✅ CORRIGIDO (29/09/2026) — Hall da Fama no multiplayer: o bug era um `ReferenceError` mudo.**
+  Relato real, repetido SEIS vezes pelo usuário: "pra iniciar uma run multiplayer ainda preciso escolher um
+  Pokémon inicial de nível baixo; onde eu escolho os do meu Hall da Fama?". **A causa raiz não era falta de
+  recurso** — a ☄ Sala de Raide já fazia isso desde 28/09. Era um bug: `htmlRaideSelecao` usava **`SPR_SHINY`
+  sem importar** em multiplayer.js. Como a chamada está dentro de um ternário
+  (`${e.shiny ? SPR_SHINY(e.id) : SPR(e.id)}`), só estourava pra quem tivesse **um shiny no Hall** — que é o caso
+  dele. E o estrago era invisível: `renderSala` escreve `#mp-topo` e DEPOIS `#mp-acoes`, então o cabeçalho já
+  trocava pra "Sala de Raide" e o `#mp-acoes` ficava com o **HTML VELHO do Co-op**. A tela contava duas histórias
+  ao mesmo tempo (foi assim que o print do usuário denunciou: cartão de membro com "⏳ escolhendo…", que só existe
+  no modo raide, ao lado de "3 (com aliados)"/"Balancear níveis", que só existem fora dele). Reproduzido em jsdom
+  antes e depois: HEAD dá `ReferenceError: SPR_SHINY is not defined`, a versão corrigida desenha o Hall inteiro.
+  Três consertos, além do import:
+  - **`renderSala` virou um try/catch** (`desenharSala` faz o trabalho): erro ao desenhar agora aparece NA TELA e
+    no console, em vez de deixar meia tela velha. Mesma lição já anotada pro `gimmicksNaLoja` (carreira.js):
+    falha silenciosa em render vira diagnóstico errado e semanas de relato perdido.
+  - **`tests/referencias.test.js` ganhou um segundo teste** que pega essa classe de bug: nome que COMEÇA COM
+    MAIÚSCULA e está COLADO no `(`, varrendo o arquivo inteiro. O teste antigo só olhava a chamada colada no
+    `${`, então não via `SPR_SHINY` no meio do ternário. Tentei generalizar o teste antigo pra varrer a
+    interpolação inteira e **não deu**: prosa em português dentro do HTML ("Termine (ou encerre)", "Desafiar o
+    Alfa (") vira falso positivo. A regra de maiúscula+colado separa os dois casos com ZERO exceção no código de
+    hoje (toda a família `SPR`/`SPR_SHINY`/`ITEM_SPR`/`TYPE_PT` é assim; prosa sempre tem espaço antes do `(`).
+  - **`resumoCfg`** (cabeçalho da sala) só sabia "PvP ou não", então anunciava a Sala de Raide como
+    "Co-op · ... · Rota 1" — rota que ela nem usa. Agora conhece os três modos.
+  **Recurso novo junto (o pedido original):** `entradaTipo` = `'run' | 'convidado' | 'hall'`, **por jogador** e
+  independente do `modo` da sala — dá pra entrar em co-op OU PvP com até `MAX_TIME_HALL` (3) Pokémon do Hall, no
+  nível real. `entradaEfetiva()` é o ÚNICO ponto que decide (a Sala de Raide não é um quarto tipo: ela força
+  `'hall'` pra todo mundo). Dois ajudantes derivados evitam espalhar a regra: `semMochila()` (convidado ou Hall
+  FORA da raide = sem itens/Revive/gimmick) e `usaRun()` (a luta só mexe na jornada quando entrei com ela) —
+  substituíram os `sala.convidado || ...` espalhados por `aplicarPvP`, `aplicarCoop`, itens/Revive de evento,
+  gimmicks e Centro na sala. Dentro da raide o Hall CONTINUA com a mochila da conta (é o ponto dela), por isso
+  `hallEmprestado()` distingue os dois.
+  **A escolha aparece nos DOIS lugares**, e isso foi o que faltou na primeira tentativa de consertar: só no menu
+  (antes de criar/entrar) não resolvia, porque quem já estava na sala não tinha como chegar nela — era
+  literalmente a pergunta do usuário ("onde eu escolho?"). Agora `htmlEntradaNaSala()` repete a escolha no lobby
+  (co-op e PvP, some na raide), com `escolherEntradaNaSala`/`escolherConvidadoNaSala` remontando os Pokémon e
+  reavisando os outros pela presença. `htmlHallPicker` (extraído de `htmlRaideSelecao`) é a MESMA tela nos dois
+  lugares, e `hallSelAtual()`/`podeMexerNoHall()` fazem `raideSelecionarHall`/`raideEquiparHall`/
+  `raideComprar*` atenderem menu (`hallEscolha`) e sala (`sala.hallSel`) sem duplicar nada.
 - **Ganhos voltam só no nível real** (pedido do usuário): `nivelarMon` guarda `nivelReal`; `naNivelReal(m)` vai no `final` de cada Pokémon. Co-op: XP, EVs, dinheiro, item (35% por jogador, `FIND_ITEMS`), vitória e prêmio de Alfa só entram na run se o principal lutou no nível real (aliado idem pro XP dele). Balanceado com nível ajustado = diversão (HP e permadeath continuam valendo).
 - **Roguelike no co-op**: principal desmaiado = `encerrarJornada('desmaiou')` (sai da sala antes); aliado desmaiado = removido de `S.aliados` (do maior slot pro menor). Fora do Roguelike, desmaio no co-op volta com 1 HP.
 - **Sala resistente a rede ruim** (relato real: escolhas não chegavam e o turno só saía no prazo de 45 s; alt-tab derrubava a sala). `enviar()` confere o retorno do `send` ('ok' | 'timed out' | 'error') e tenta de novo; o anfitrião republica o estado a cada `PULSO_MS` enquanto espera escolhas (`ligarPulso`); evento `sincronizar` + botão 🔄 pedem o estado atual; `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED` **não** fecham mais a sala (reinscreve até 5×, `sala.conexao`); anfitrião sumido da presença só encerra a sala depois de `ESPERA_ANFITRIAO_MS`. Tudo registra em `diario`/`anotar()` (console `[mp]` + `barraConexao()` na tela). `centroMP()` cura a equipe sem sair da sala.
@@ -801,7 +839,8 @@ impede o jogo de abrir.
 Ordem acordada: **1 ✅ contadores + telas** · **2 ✅ cada Gen é uma jornada** · **3 ✅ badges com vantagem** · **4 ✅ Mega** · **5 ✅ Tera** · **6 ✅ Z-Move** · **7 ✅ Dynamax** · **8 habilidades restantes**. A reforma das jornadas (2) vem ANTES das vantagens (3) porque reescreve a criação e o fim de jornada, que é exatamente onde as vantagens se penduram.
 
 ### 2. ✅ FEITO — Cada Gen é uma jornada
-Implementado em atalha.vencerGen (a pergunta), egras.pontuacao + multContinuacao (a penalidade) e supabase/migrations/ (o servidor recalcula e RECUSA a jornada se a conta não bater — mudou num lado, muda no outro; 	ests/schema.test.js trava isso). S.continuacoes conta quantas vezes a jornada seguiu; estatisticasDaJornada leva isso e campeaoDe pro resumo. A tela de fim já propõe o mapa seguinte (G.gen).
+Implementado em atalha.vencerGen (a pergunta), 
+egras.pontuacao + multContinuacao (a penalidade) e supabase/migrations/ (o servidor recalcula e RECUSA a jornada se a conta não bater — mudou num lado, muda no outro; 	ests/schema.test.js trava isso). S.continuacoes conta quantas vezes a jornada seguiu; estatisticasDaJornada leva isso e campeaoDe pro resumo. A tela de fim já propõe o mapa seguinte (G.gen).
 
 #### O desenho acordado era:
 Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémon** pro mapa seguinte, com os níveis escalados (foi assim que um testador chegou a Hoenn começando no nível 90). Passa a ser:

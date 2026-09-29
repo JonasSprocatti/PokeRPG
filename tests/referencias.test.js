@@ -47,6 +47,13 @@ const GLOBAIS = new Set(['String', 'Number', 'Boolean', 'Object', 'Array', 'Math
   'Promise', 'Error', 'RegExp', 'parseInt', 'parseFloat', 'isNaN', 'encodeURIComponent', 'decodeURIComponent',
   'document', 'window', 'navigator', 'location', 'console', 'fetch', 'structuredClone']);
 
+// os construtores/globais em maiúscula que o segundo teste pode encontrar (o primeiro já cobre os minúsculos)
+const GLOBAIS_MAIUSCULAS = new Set(['String', 'Number', 'Boolean', 'Object', 'Array', 'Math', 'JSON', 'Date',
+  'Set', 'Map', 'Promise', 'Error', 'RegExp', 'Function', 'Intl', 'WeakMap', 'WeakSet', 'URL', 'Image', 'Audio',
+  'Event', 'CustomEvent', 'FormData', 'Blob', 'File', 'FileReader', 'Response', 'Request', 'Headers',
+  'AbortController', 'ResizeObserver', 'MutationObserver', 'IntersectionObserver', 'TextEncoder', 'TextDecoder',
+  'Proxy', 'Reflect', 'Symbol', 'BigInt', 'ArrayBuffer', 'Uint8Array']);
+
 test('toda função chamada dentro de template literal existe', () => {
   const faltando = [];
   for (const arq of readdirSync(DIR).filter(f => f.endsWith('.js'))) {
@@ -55,6 +62,33 @@ test('toda função chamada dentro de template literal existe', () => {
     for (const m of src.matchAll(/\$\{\s*([A-Za-z_$][\w$]*)\s*\(/g)) {
       const nome = m[1];
       if (tem.has(nome) || GLOBAIS.has(nome)) continue;
+      const linha = src.slice(0, m.index).split('\n').length;
+      faltando.push(`${arq}:${linha} → ${nome}() não está definida nem importada`);
+    }
+  }
+  assert.deepEqual(faltando, [], '\n' + faltando.join('\n'));
+});
+
+/* O teste acima só enxerga a chamada COLADA no `${` — e foi por isso que ele deixou passar um bug real
+   (29/09/2026): `${e.shiny ? SPR_SHINY(e.id) : SPR(e.id)}` em multiplayer.js usava `SPR_SHINY` sem importar.
+   A chamada está no meio da expressão, não logo depois do `${`, então a regex não batia. Resultado: a ☄ Sala de
+   Raide montava o cabeçalho, quebrava com ReferenceError na hora de desenhar o seletor do Hall da Fama, e a
+   metade de baixo da tela ficava com o HTML VELHO — quem tinha um shiny no Hall nunca conseguia escolher
+   Pokémon nenhum, sem nenhum erro visível.
+   Tentei generalizar o primeiro teste pra varrer a interpolação inteira e não deu: prosa em português dentro do
+   HTML ("Termine (ou encerre)", "Desafiar o Alfa (") vira falso positivo, e um teste que grita à toa é pior que
+   um estreito. A regra abaixo é a que separa os dois casos sem exceção nenhuma no código de hoje: nome que
+   COMEÇA COM MAIÚSCULA e está COLADO no `(`. Toda a família de ajudantes de dado/sprite é assim (`SPR`,
+   `SPR_SHINY`, `ITEM_SPR`, `TYPE_PT`…), e texto em prosa sempre tem espaço antes do parêntese. Varre o arquivo
+   inteiro, não só template literal — chamada dessas fora de template é tão bug quanto dentro. */
+test('todo ajudante em MAIÚSCULA chamado existe (pega o que o teste acima não vê)', () => {
+  const faltando = [];
+  for (const arq of readdirSync(DIR).filter(f => f.endsWith('.js'))) {
+    const src = readFileSync(new URL(arq, DIR), 'utf8');
+    const tem = declarados(src);
+    for (const m of src.matchAll(/(^|[^.\w$])([A-Z][\w$]*)\(/gm)) {
+      const nome = m[2];
+      if (tem.has(nome) || GLOBAIS_MAIUSCULAS.has(nome)) continue;
       const linha = src.slice(0, m.index).split('\n').length;
       faltando.push(`${arq}:${linha} → ${nome}() não está definida nem importada`);
     }
