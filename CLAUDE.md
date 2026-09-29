@@ -191,6 +191,11 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 - **Habilidades**: 215 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
 - **Frutas de aperto por tipo** (Occa, Passho…) — os outros itens segurados já entraram.
 
+**Revisões grandes pedidas (ainda não feitas)**
+- **Revisão do site pra entrar nas políticas do Google AdSense.** Varrer o que a aprovação cobra: conteúdo próprio e suficiente, navegação clara, privacidade/cookies/consentimento coerentes com o que o jogo faz de verdade (conta, nuvem, presença), uso de marca de terceiros (Pokémon/Nintendo é o ponto sensível), nada de conteúdo de terceiros sem crédito. Entregar a lista do que precisa mudar antes de pedir a revisão do Google. Ligado ao item de AdSense em "Precisa de ação do usuário".
+- **Revisão e refatoração completa do multiplayer** (`multiplayer.js`, `mp-motor.js`, telas da sala): melhorar design e funcionalidades, não só limpar. `mp-motor` é puro e testado — a refatoração não pode quebrar a regra de que o motor do golpe é único (`golpe.js`) nem o anfitrião autoritativo. Ver `docs/features.md` ("Travas, IA e troca de Pokémon") e os itens de Roar/troca acima, que provavelmente caem nessa leva.
+- **Auditoria de segurança** contra invasão, ataque cibernético e roubo de ideias — e corrigir o que aparecer. Escopo: RLS e gatilhos do Supabase (pontuação é do servidor; `validar_jornada`), chave anônima exposta no `config.js`, salas por código (quem pode publicar estado), relatos com imagem (upload de 2 MB), `esc()` em todo texto de fora, presença sem identificar ninguém. Rodar `/security-review` como ponto de partida, não como resposta final.
+
 **Precisa de ação do usuário**
 - ⚠️ **`evento.BETA_SEM_ESPERA = true`** remove a espera de 8 h entre tentativas (beta testers). **Temporário** — reverter é trocar essa linha.
 - **AdSense**: `ADSENSE_CLIENT_ID` ainda é o marcador. Quando a conta for aprovada, preencher ele + `AD_SLOT_INICIO` (criacao.js) e publicar o `ads.txt`.
