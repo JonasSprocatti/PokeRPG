@@ -21,6 +21,7 @@ import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resol
 import { blocoAds, ativarSlots } from './ads.js';
 import { aoMudarOnline, onlineAgora, contagemAnonimos } from './presenca.js';
 import { ehAdmin } from './nuvem.js';
+import { tocarMusica } from './som.js';
 
 // "Ad slot" da tela inicial. Mora em config.js junto com os outros: vazio = blocoAds() não desenha nada.
 import { AD_SLOT_INICIO } from './config.js';
@@ -37,7 +38,7 @@ function permitidos() {
 
 // Passo 1 = dificuldade (sempre visível no topo), passo 2 = escolher o Pokémon — ou, no Randomizer, um botão só.
 export function showCreate() {
-  G.mode = 'create'; limparTopo();
+  G.mode = 'create'; limparTopo(); tocarMusica('menu');
   $('#app').innerHTML = `<main class="create">
     ${barraTelas('create')}
     <h1>Escolha quem você vai ser.</h1>
@@ -320,7 +321,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   // Segredo do brilho (regras.bonusShiny): registra NA HORA pra "✨ Começar shiny" (opcaoShiny) já valer nesta
   // espécie em jornadas futuras — bug corrigido em 27/09/2026, antes só recrutar um ALIADO shiny registrava isso.
   if (mon.shiny) registrar(G.S, 'shiniesAmigos', data.speciesName, data.id);
-  G.mode = 'explore'; G.panel = 'main';
+  G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar');
   buildGame();
   log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
   if (anterior) log(`💾 A jornada de ${esc(anterior.player.nick || fmt(anterior.player.name))} foi guardada: dá pra voltar nela em Jornadas salvas.`, 'muted');

@@ -14,6 +14,7 @@ import { esc, offline } from './util.js';
 import { adsConfigurado, consentimento } from './ads.js';
 import { presencaLigada } from './presenca.js';
 import { nuvemConfigurada } from './nuvem.js';
+import { somLigado } from './som.js';
 
 export function telaAjustes() {
   G.mode = 'ajustes'; limparTopo();
@@ -38,7 +39,10 @@ export function telaAjustes() {
     <h3 class="passo"><span>B</span> Sprites</h3>
     <div class="subrow">${ESTILOS_SPRITE.map(e => `<button class="btn ${e.id === estiloAtual ? '' : 'ghost'} sm" data-act="estilo-sprite" data-v="${e.id}" aria-pressed="${e.id === estiloAtual}">${esc(e.nome)}${e.id === estiloAtual ? ' ✓' : ''}</button>`).join('')}</div>
     <p class="small muted" style="margin-top:8px">${esc(ESTILOS_SPRITE.find(e => e.id === estiloAtual)?.desc || '')} Se a imagem não existir pra algum Pokémon, cai de volta pro clássico sozinho.</p>
-    <h3 class="passo"><span>C</span> Jogar offline</h3>
+    <h3 class="passo"><span>C</span> Som</h3>
+    <p class="small muted">Desligado por padrão. Liga o grito de quem aparece na luta e uma música gerada na hora (nunca é arquivo pronto — o jogo não usa trilha de terceiros).</p>
+    <label class="check"><input type="checkbox" id="pv-som" ${somLigado() ? 'checked' : ''}> Som ligado</label>
+    <h3 class="passo"><span>D</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
     ${htmlPresenca()}
     ${htmlAds()}
@@ -168,7 +172,7 @@ async function mostrarImagensAnimadas() {
 function htmlAds() {
   if (!adsConfigurado()) return '';
   const c = consentimento();
-  return `<h3 class="passo"><span>E</span> Cookies de anúncio</h3>
+  return `<h3 class="passo"><span>F</span> Cookies de anúncio</h3>
     <p class="small muted">Sua escolha atual: <b>${c === 'aceito' ? 'aceitou' : c === 'recusado' ? 'recusou' : 'ainda não escolheu'}</b>.
       Recusar não limita nada no jogo: só impede que o anúncio seja personalizado.
       Detalhes na <button type="button" class="link" data-act="privacidade" style="background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Política de Privacidade</button>.</p>
@@ -182,7 +186,7 @@ function htmlAds() {
 function htmlPresenca() {
   if (!nuvemConfigurada()) return '';
   const on = presencaLigada();
-  return `<h3 class="passo"><span>D</span> Presença global</h3>
+  return `<h3 class="passo"><span>E</span> Presença global</h3>
     <p class="small muted">O jogo conta, sem guardar quem você é, se você está jogando agora — é o "🟢 jogando
       agora" da tela inicial. Detalhes na <button type="button" class="link" data-act="privacidade" style="background:none;border:0;color:var(--yellow);text-decoration:underline;cursor:pointer;font:inherit;padding:0">Política de Privacidade</button>.</p>
     <label class="check"><input type="checkbox" id="pv-presenca" ${on ? 'checked' : ''}> Contar minha presença</label>`;

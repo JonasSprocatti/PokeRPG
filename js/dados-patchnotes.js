@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.28', data: '2026-09-30', titulo: 'O jogo ganhou som (desligado, até você ligar)', piada: 'O compositor da casa não sabe tocar nenhum instrumento de verdade. Ele só sabe fazer um computador fingir que sabe, 16 vezes por segundo, pra sempre.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Som, em ⚙ Ajustes → Som — desligado por padrão.</b> Liga o grito de quem aparece na luta (o mesmo grito dos jogos de verdade, vindo da PokéAPI) e uma música que toca sozinha.',
+        'A música não é arquivo nenhum: o jogo <b>compõe ela na hora</b>, com uma faixa diferente pra tela inicial, pra exploração, pra batalha comum, pra batalha de chefe/lendário, e uma fanfarra curta quando você vence. Nunca se repete nota por nota — é gerada de novo a cada vez, dentro de uma escala que combina com o clima da tela.',
+        'Sem trilha pronta de propósito: música de verdade dos jogos é direito autoral de outra empresa. O jeito era compor, não tocar.'
+      ] }
+    ] },
   { versao: '2.27', data: '2026-09-29', titulo: 'Anexar print num relato agora pede conta', piada: 'A caixa de prints era um contêiner aberto na calçada com uma placa escrita "coloque o que quiser". Surpreendentemente, ninguém abusou. Mas a placa saiu.',
     secoes: [
       { nome: 'Correções', itens: [

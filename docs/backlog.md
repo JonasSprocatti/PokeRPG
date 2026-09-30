@@ -7,7 +7,6 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 
 ## Pedido, ainda não construído
 
-- **Som no jogo.** Os *cries* existem na PokéAPI (mesmo repositório dos sprites, `pokemon.cries`) e dá pra usar `espelhar`. **Música a PokéAPI não tem** — precisaria de outra fonte, e aí vira decisão de risco (trilha original = direito autoral). Falta decidir: ligado por padrão? quais eventos tocam cry?
 - **Arceus como chefe de raide** — decidir se entra na rotação (mudaria o `% 14`) ou é evento à parte.
 - **Troca de verdade** entre dois jogadores (hoje só o Cabo de Conexão simulado).
 - **Missões próprias de cada mapa** (hoje as de espécie valem em qualquer Gen; a trilha de Alfas é só de Kanto) e **lendários no co-op**.

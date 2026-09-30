@@ -52,7 +52,7 @@ const GLOBAIS = new Set(['String', 'Number', 'Boolean', 'Object', 'Array', 'Math
 
 // os construtores/globais em maiúscula que o segundo teste pode encontrar (o primeiro já cobre os minúsculos)
 const GLOBAIS_MAIUSCULAS = new Set(['String', 'Number', 'Boolean', 'Object', 'Array', 'Math', 'JSON', 'Date',
-  'Set', 'Map', 'Promise', 'Error', 'RegExp', 'Function', 'Intl', 'WeakMap', 'WeakSet', 'URL', 'URLSearchParams', 'Image', 'Audio',
+  'Set', 'Map', 'Promise', 'Error', 'RegExp', 'Function', 'Intl', 'WeakMap', 'WeakSet', 'URL', 'URLSearchParams', 'Image', 'Audio', 'AudioContext',
   'Event', 'CustomEvent', 'FormData', 'Blob', 'File', 'FileReader', 'Response', 'Request', 'Headers',
   'AbortController', 'ResizeObserver', 'MutationObserver', 'IntersectionObserver', 'TextEncoder', 'TextDecoder',
   'Proxy', 'Reflect', 'Symbol', 'BigInt', 'ArrayBuffer', 'Uint8Array']);

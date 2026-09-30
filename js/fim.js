@@ -16,6 +16,7 @@ import { GENS, TOTAL_GENS, genDe, dadosDaGen, gensLiberadasRoguelike , lendarios
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, fmt, store, novoId } from './util.js';
 import { equipeCheia, esconderijoCheio } from './esconderijo.js';
+import { tocarMusica, pararMusica } from './som.js';
 
 // resumo de uma jornada (a atual, ainda em andamento, ou a que está terminando)
 export function montarResumo(S, motivo, extra = {}) {
@@ -70,6 +71,7 @@ const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jo
 
 function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
   G.mode = 'fim'; limparTopo();
+  r.motivo === 'venceu' ? tocarMusica('vitoria') : pararMusica();
   const f = (l, v) => l[2] ? l[2](v || 0) : n(v);
   $('#app').innerHTML = `<main class="create fim">
     <h1>${TITULO[r.motivo]}.</h1>

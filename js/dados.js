@@ -33,6 +33,9 @@ export const SPR_ANIM = id => `${SPRITES}/pokemon/other/showdown/${id}.gif`;
 export const SPR_ANIM_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/${id}.gif`;
 export const SPR_ANIM_SHINY = id => `${SPRITES}/pokemon/other/showdown/shiny/${id}.gif`;
 export const SPR_ANIM_SHINY_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/shiny/${id}.gif`;
+/* Grito (pedido do usuário, som.js): repositório IRMÃO do de sprites (PokeAPI/cries), mesmo espelho jsDelivr e
+   mesma regra — montado pelo id, sem precisar buscar o Pokémon de novo pra achar a URL. */
+export const CRY = id => `https://cdn.jsdelivr.net/gh/PokeAPI/cries@main/cries/pokemon/latest/${id}.ogg`;
 export const ITEM_SPR = n => `${SPRITES}/items/${n}.png`;
 /* Alguns itens novos (Gen 8/9) simplesmente NÃO têm imagem no repositório de sprites da PokéAPI — Coroa Galárica,
    Armadura Auspiciosa, Pote Rachado... Antes a figura quebrada era escondida (visibility:hidden) e sobrava um buraco:

@@ -161,6 +161,7 @@ A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer qu
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
 - **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
 - **⚙ Ajustes → Fonte:** escolha entre 6 fontes (padrão, Atkinson Hyperlegible para máxima legibilidade, Lexend, Andika, Nunito e uma monoespaçada). Cada opção é mostrada já na própria fonte, vale para o jogo inteiro e fica salva neste navegador.
+- **⚙ Ajustes → Som:** **desligado por padrão.** Liga o grito de quem aparece na luta (da PokéAPI) e uma música que o próprio jogo COMPÕE na hora, sem tocar arquivo nenhum — uma faixa diferente pra tela inicial, pra exploração, pra batalha comum e pra batalha de chefe/lendário, e uma fanfarra curta na vitória.
 
 ### 📀 Mexer nos golpes (Escama do Coração e Disco Técnico)
 Um Pokémon carrega **4 golpes**, e a cada nível você decide o que esquecer. Dois itens deixam você voltar atrás — e valem tanto para você quanto para **qualquer aliado** (você escolhe em quem usar e qual golpe ele esquece):
@@ -349,6 +350,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/segurados.js` | Efeito de cada item segurado (Restos, Orbe da Vida, frutas…) |
 | `js/dados-patchnotes.js`, `js/tela-patchnotes.js`, `js/novidades.js` | Notas de atualização e o aviso de novidade |
 | `js/navegacao.js`, `js/ajustes.js`, `js/tela-ajustes.js` | Barra de navegação das telas, escolha de fonte e a tela de ajustes |
+| `js/som.js` | Cries e música procedural (Web Audio API, desligado por padrão) |
 | `js/evolucao.js` | Condições de evolução (pedra, troca, vínculo, hora, golpe…) e as regras equivalentes dos casos raros |
 | `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
 | `js/mp-motor.js`, `js/mp-sanear.js`, `js/mp-regras.js`, `js/mp-rede.js`, `js/mp-cartao.js`, `js/mp-telas.js`, `js/mp-resultado.js`, `js/multiplayer.js` | Multiplayer: motor do turno, conferência do que chega pela rede e regras da sala (puros, testados), rede, desenho dos Pokémon, telas, resultado no save e a orquestração da sala |
@@ -408,6 +410,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
 - [x] Estrutura de anúncios (Google AdSense) desligada por padrão, banner de consentimento de cookies (GDPR) e tela de Política de Privacidade
 - [x] Três estilos de sprite (Clássico, 3D "home", Animado do Showdown), com download à parte pro modo offline
+- [x] Som (desligado por padrão): grito de quem aparece na luta e música procedural (composta na hora com a Web Audio API, não é arquivo pronto)
 - [x] Barra de HP anima ao tomar dano/curar (técnica FLIP, respeita "reduzir animações")
 
 ## Licença

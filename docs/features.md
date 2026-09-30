@@ -13,6 +13,7 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - A revisão do multiplayer (29/09/2026)
 - A auditoria de segurança (29/09/2026)
 - Sprites, animações e microinterações
+- Som: cries e música procedural (30/09/2026)
 - Anúncios e privacidade
 
 ---
@@ -913,6 +914,51 @@ Prioridade 4 (a última) da mesma leva, fechando o ciclo "mais vivo". `render.js
   tanto valor piscar toda vez que o painel reabre.
 - Ambos cobertos pelo `prefers-reduced-motion` global — nenhum tratamento extra precisou, igual o resto da leva.
 
+
+---
+
+## Som: cries e música procedural (30/09/2026)
+Item do backlog ("Som no jogo"). Decisão de arquitetura tomada com o usuário antes de escrever qualquer código:
+Strudel/TidalCycles (a inspiração original do pedido) ficaram de fora — são bibliotecas de live coding, e o
+projeto é JS puro sem build nem dependência; carregar uma delas por CDN funcionaria, mas ainda seria uma
+dependência de verdade (biblioteca grande, precisaria entrar no service worker pra funcionar offline). Em vez
+disso: `js/som.js`, um compositor pequeno escrito do zero com a Web Audio API, na MESMA camada de `ajustes.js`
+(só importa `util.js`/`dados.js` — importável de qualquer lugar acima no grafo).
+
+**Desligado por padrão** (`SOM_KEY='pokerpg-som'`, `somLigado()`), como as outras preferências de `ajustes.js`.
+`⚙ Ajustes → Som` (seção C, antes de "Jogar offline" — as seções D/E/F foram reletradas) tem um checkbox só;
+ligar não pediu confirmação nem aviso: é reversível na hora. As demais seções (D Jogar offline, E Presença, F
+Cookies) só mudaram de letra.
+
+**Cries**: `dados.CRY(id)` monta a URL pelo id, no MESMO padrão de `SPR`/`SPR_SHINY` — espelhado no jsDelivr
+(`cdn.jsdelivr.net/gh/PokeAPI/cries@main/...`), repositório IRMÃO do de sprites, já coberto pelo `cachePrimeiro`
+genérico do `sw.js` (a lista `EXTERNOS` casa por HOST, não por caminho — nenhuma linha nova precisou entrar lá).
+`tocarCry(id)` usa `new Audio(url).play().catch(()=>{})`: falha de rede ou autoplay bloqueado é silêncio, não erro
+— é decoração, não crítico como as imagens.
+
+**Música**: sem arquivo nenhum, sempre GERADA. Um objeto `HUMORES` por tela (`menu`/`explorar`/`batalha`/`chefe`),
+cada um com escala (pentatônica maior/menor ou menor harmônica — soam "certas" com nota quase aleatória, o que
+dispensa um gerador de melodia mais esperto), uma progressão de acordes por compasso, andamento e o tipo de onda
+do oscilador (`triangle`/`square`/`sawtooth` — o timbre chiptune). O agendamento segue o padrão clássico de
+"olhar à frente" (agendar no relógio do `AudioContext`, não confiar no `setTimeout` por nota — ele atrasa sob
+carga): `agendador()` roda a cada 25 ms e agenda todo passo de 16 que cair dentro da janela de 100 ms à frente.
+
+**Vitória** é uma fanfarra curta (arpejo maior ascendente, uma vez só, sem loop) — `tocarStinger()`, sem passar
+pelo agendador.
+
+**Onde troca de música**: nos pontos que já eram o choque único de cada transição (nenhuma tela nova precisou
+saber de música sozinha) — `criacao.showCreate` (menu), depois de `G.mode='explore'` no início da jornada
+(explorar), `batalha.iniciar` (batalha/chefe, + `tocarCry` do inimigo — é o único momento de grito: o jogo não
+tem captura de Pokémon selvagem, é o TREINADOR que tenta capturar VOCÊ, então não existe "grito de quem foi
+capturado"), `batalha.endBattle` (de volta pra explorar) e `fim.telaFim` (fanfarra na vitória, silêncio nos
+outros motivos). `main.abrirJornada` religa a trilha certa ao retomar um save (F5 no meio de uma batalha não
+troca de música à toa). `alternarSom` guarda o último humor pedido (`contexto`) mesmo com o som desligado, pra
+religar sozinho assim que o jogador ativa.
+
+**Ficou de fora, por escolha**: volume ajustável (só liga/desliga — o pedido era esse), música durante as telas
+de menu fora do fluxo de jogo (Carreira, Conquistas etc. — não são "humor" de jogo, ficam em silêncio ou com o
+que já estava tocando), qualquer coisa que dependesse de arquivo de áudio publicado (tudo é sintetizado).
+`tests/referencias.test.js`: `AudioContext` entrou em `GLOBAIS_MAIUSCULAS` (mesma lista que já tinha `Audio`).
 
 ---
 

@@ -41,6 +41,7 @@ import { store, esc, fmt, novoId } from './util.js';
 import { iniciarAds, definirConsentimento } from './ads.js';
 import { rodapeHTML } from './site.js';
 import { iniciarPresencaGlobal, registrarVisitanteAnonimo, definirPresenca } from './presenca.js';
+import { alternarSom, tocarMusica } from './som.js';
 
 /* ============ eventos ============ */
 /* Toda ação da UI passa por este handler, e ele é `async` — ou seja, um erro lá dentro vira uma promise
@@ -361,6 +362,7 @@ document.addEventListener('change', e => {
     log(`${nm(A)}: ${ORDENS[A.ordem].nome}.`, 'muted'); save(); return render();
   }
   if (e.target.id === 'pv-presenca') { definirPresenca(e.target.checked); return; } // ⚙ Ajustes → presença global
+  if (e.target.id === 'pv-som') { alternarSom(e.target.checked); return; } // ⚙ Ajustes → som (som.js)
   if (e.target.id === 'pv-clima') { G.climaRotas = e.target.checked; return; } // 🌦 clima/terreno das rotas (só opcional fora do Roguelike/Hardcore)
   if (e.target.id === 'pv-caca') { G.cacaShiny = e.target.checked; return; } // vale mesmo sem prévia de Pokémon
   if (!G.PV) return;
@@ -397,6 +399,7 @@ function abrirJornada(s, aviso) {
   G.B = restaurarBatalha(s.batalha);
   if (G.B) { G.mode = 'battle'; G.panel = 'moves'; }
   else for (const m of ladoJogador()) m.vol = freshVol();
+  tocarMusica(G.B ? (G.B.chefe || G.B.evento || G.B.lendarios ? 'chefe' : 'batalha') : 'explorar');
   G.S.ultimoTick = Date.now(); // tempo de jogo recomeça a contar agora (não conta o tempo com o jogo fechado)
   if (G.S.escolhendoGen) return telaEscolherGen(); // fechou uma Gen e ainda não escolheu o próximo mapa
   buildGame();
