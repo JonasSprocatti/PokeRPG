@@ -251,7 +251,7 @@ Um jogador cria a sala e passa o **código de 4 letras** — ou manda o **🔗 l
 ### 🐞 Bugs e sugestões
 Na tela inicial e no topo do jogo. Escolha **Bug** ou **Sugestão**, dê um título e descreva. Não precisa de conta. Os bugs podem levar um **anexo técnico** (versão, navegador, tela, Pokémon, últimas linhas do registro, **nada pessoal**), que você vê antes de enviar. Sem internet, fica guardado e é enviado depois.
 
-**Imagens:** dá para anexar até **2 imagens de até 2 MB cada** (o tamanho de 2 prints de celular ou de computador — PNG, JPG ou WebP; no computador, cole com Ctrl+V). O jogo reduz o print antes de enviar. Quem mantém vê os arquivos no painel do Supabase em **Storage → `relatos-imagens`** (bucket privado); a coluna `imagens` da tabela `relatos` guarda os caminhos. Precisa da migração `20260925160000_relatos_imagens.sql` (a integração com o GitHub aplica sozinha ao dar merge no `main`); sem ela, relato com imagem cai na fila e relato sem imagem continua funcionando.
+**Imagens (com conta):** dá para anexar até **2 imagens de até 2 MB cada** (o tamanho de 2 prints de celular ou de computador — PNG, JPG ou WebP; no computador, cole com Ctrl+V). O jogo reduz o print antes de enviar. **Anexar exige estar na conta** — enviar o relato, não: sem conta não há a quem amarrar o envio, e a caixa de prints aceitava arquivo de qualquer um sem limite (auditoria de segurança, 29/09/2026). Sem conta a tela explica isso no lugar do seletor, com o botão de entrar ao lado. Quem mantém vê os arquivos no painel do Supabase em **Storage → `relatos-imagens`** (bucket privado); a coluna `imagens` da tabela `relatos` guarda os caminhos. Precisa da migração `20260925160000_relatos_imagens.sql` (a integração com o GitHub aplica sozinha ao dar merge no `main`); sem ela, relato com imagem cai na fila e relato sem imagem continua funcionando.
 
 **Para quem mantém o jogo — onde ler os relatos:** eles caem na tabela `relatos` do Supabase. Pela regra de acesso (RLS), cada conta só enxerga os próprios relatos **pelo jogo**; quem mantém lê tudo no painel do Supabase, que trabalha como administrador:
 
@@ -400,7 +400,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Ícone do jogador (qualquer Pokémon, normal ou shiny), amigos por código e convite direto para a sala
 - [x] Multiplayer refeito (29/09/2026): convite por link, escolha do Pokémon dentro da sala, espectador, cena de batalha de verdade, barra de tempo, histórico do turno e sala que não pisca mais
 - [x] Motor de golpes único (single player e multiplayer) com mais de 200 habilidades — as parciais (Download, Guard Dog, Sand Force, Effect Spore, Water Bubble, Toxic/Flare Boost, Magic Guard) foram completadas
-- [x] Tela de bugs e sugestões (funciona sem conta e offline), com até 2 imagens de 2 MB
+- [x] Tela de bugs e sugestões (funciona sem conta e offline), com até 2 imagens de 2 MB (anexar print pede conta)
 - [x] 💰 Carteira: dinheiro em pílula no topo (fora do menu ☰), na barra de turno da batalha e na loja, com aviso de +₽/−₽
 - [x] Menu ☰ no celular e tela de login com Google / link por e-mail
 - [x] Mega, Tera, Z-Move e Gigantamax jogáveis; inimigo gigantamaxa (só treinador) e usa Z (treinador e Alfa); as quatro gimmicks no co-op; conquistas da Mega auditadas (`tests/gimmicks-coop-inimigo.test.js`)

@@ -335,9 +335,16 @@ export const relatosNaFila = () => (store.get(FILA_RELATOS) || []).length;
 /* Imagens do relato (até 2, já comprimidas — imagens-relato.js): vão pro bucket `relatos-imagens` do Storage e a linha do
    relato guarda só os CAMINHOS (`relatos.imagens`, supabase/migrations/20260925160000_relatos_imagens.sql). O campo só entra
    no insert quando há imagem: relato sem imagem continua funcionando mesmo se a migração ainda não foi aplicada. */
+/* ANEXAR IMAGEM EXIGE CONTA (29/09/2026, auditoria de segurança — imagens-relato.MOTIVO_PRECISA_CONTA). Sem
+   conta não há a quem amarrar o envio, e a política do bucket passou a recusar. Aqui a checagem é repetida por um
+   motivo prático: a FILA OFFLINE pode ter um relato guardado com imagem de antes desta mudança, ou guardado com
+   conta e enviado depois de sair dela. Se isso fosse simplesmente tentar e falhar, o relato ficaria preso na fila
+   PRA SEMPRE, tentando de novo a cada abertura da tela — o texto da pessoa nunca chegaria. Então: sem conta, as
+   imagens ficam de fora e o relato vai mesmo assim, com a tela avisando quantas caíram. */
 const BUCKET_RELATOS = 'relatos-imagens';
 async function subirImagensRelato(c, imagens) {
-  const pasta = `${usuario()?.id ?? 'anonimo'}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  if (!usuario()) return null;   // null ≠ []: quem chama precisa distinguir "não tinha imagem" de "não pude subir"
+  const pasta = `${usuario().id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const caminhos = [];
   for (const [i, im] of imagens.entries()) {
     const ext = im.tipo === 'image/png' ? 'png' : im.tipo === 'image/webp' ? 'webp' : 'jpg';
@@ -363,8 +370,9 @@ export async function enviarRelato(relato, imagens = []) {
   else if (!offline()) {
     try {
       const caminhos = imagens.length ? await subirImagensRelato(c, imagens) : [];
-      const { error } = await c.from('relatos').insert({ ...relato, ...(caminhos.length ? { imagens: caminhos } : {}), user_id: usuario()?.id ?? null });
-      if (!error) return { estado: 'enviado' };
+      const { error } = await c.from('relatos').insert({ ...relato, ...(caminhos?.length ? { imagens: caminhos } : {}), user_id: usuario()?.id ?? null });
+      // sem conta as imagens não sobem (ver subirImagensRelato): o relato vai, e a tela diz quantas ficaram de fora
+      if (!error) return { estado: 'enviado', semImagens: caminhos === null ? imagens.length : 0 };
       if (error.code === '23514') throw new Error('Título (3 a 120 letras) e descrição (5 a 4000) precisam estar preenchidos.'); // check do banco
       console.warn('relato: vai pra fila', error);
       motivo = error.message || 'erro no servidor';
@@ -388,18 +396,20 @@ export async function enviarFilaRelatos() {
   const c = await sb().catch(() => null);
   if (!c) return { enviados: 0, sobraram: fila.length, motivo: 'sem-config' };
   const sobra = [];
-  let motivo;
+  let motivo, semImagem = 0;
   for (const r of fila) {
     const { imagensFila, semImagens, ...dados } = r;   // esses dois campos são só da fila, não existem na tabela
     try {
       const imagens = imagensFila?.length ? await Promise.all(imagensFila.map(async i => ({ tipo: i.tipo, blob: await dataUrlParaBlob(i.dataUrl) }))) : [];
       const caminhos = imagens.length ? await subirImagensRelato(c, imagens) : [];
-      const { error } = await c.from('relatos').insert({ ...dados, ...(caminhos.length ? { imagens: caminhos } : {}), user_id: usuario()?.id ?? null });
+      const { error } = await c.from('relatos').insert({ ...dados, ...(caminhos?.length ? { imagens: caminhos } : {}), user_id: usuario()?.id ?? null });
       if (error && error.code !== '23514') { sobra.push(r); motivo = error.message || 'erro no servidor'; }
+      // relato da fila que trazia imagem e subiu sem ela (a pessoa não está na conta): conta pra tela avisar
+      else if (caminhos === null) semImagem += imagens.length;
     } catch (e) { sobra.push(r); motivo = e.message || 'erro no servidor'; }
   }
   store.set(FILA_RELATOS, sobra);
-  return { enviados: fila.length - sobra.length, sobraram: sobra.length, motivo };
+  return { enviados: fila.length - sobra.length, sobraram: sobra.length, motivo, semImagem };
 }
 export async function meusRelatos() {
   const c = await sb(); if (!c || !usuario()) return [];

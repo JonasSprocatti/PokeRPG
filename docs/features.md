@@ -710,9 +710,24 @@ gratuito é o jogo sair do ar:
   uma por id inventado. Ganhou checagem de formato e teto por hora (com índice em `primeira_vez`, senão o teto
   vira varredura da tabela a cada boot).
 
-O teto de upload é **quebra-molas, não tranca**: um atacante decidido ainda sobe 20 arquivos por hora sem conta
-nenhuma. A tranca seria exigir conta pra anexar imagem — decisão de produto (a tela promete "não precisa de
-conta"), deixada pro usuário escolher.
+O teto de upload sozinho é **quebra-molas, não tranca**: sem conta não existe a quem amarrar o envio, então
+nenhum teto vale — um atacante decidido continuava subindo 20 arquivos de 2 MB por hora, de graça, pra sempre.
+Era decisão de produto (a tela promete "não precisa de conta"), e o usuário escolheu a tranca: **anexar imagem
+exige conta** (`20260929210000_imagem_de_relato_so_com_conta.sql`; `anon` saiu da política, o caminho tem de
+começar pelo id de quem envia, e o teto por hora ficou como o que sobra se uma conta for usada pra abuso ou
+roubada). **Enviar relato continua sem conta** — isso é promessa da tela e não foi tocado.
+
+Do lado do jogo a regra é cobrada em **três camadas**, e não por paranoia: é pra ninguém descobrir a regra só
+quando o envio falha. A tela não desenha o seletor sem conta (e **diz o motivo, com o botão de entrar ao lado** —
+espaço que some sem explicação parece funcionalidade faltando, não regra); `adicionarArquivos` recusa também o
+Ctrl+V, que não passa por botão nenhum; e `subirImagensRelato` devolve **`null`, não `[]`**.
+
+Essa distinção entre `null` e `[]` é o detalhe que evita um bug chato: a **fila offline** pode ter um relato
+guardado com print de antes desta regra (ou guardado com conta e enviado depois de sair dela). Se o envio
+simplesmente tentasse e falhasse, o relato ficaria **preso na fila pra sempre**, tentando de novo a cada abertura
+da tela, e o texto da pessoa nunca chegaria. Com `null`, quem chama sabe diferenciar "não tinha imagem" de "não
+pude subir": o texto vai, a imagem fica de fora, e a tela avisa quantas caíram — com o motivo certo, porque as
+duas causas pedem atitudes diferentes (sem conta → entrar e reenviar; grande demais pra fila → esperar internet).
 
 ### Revisado e considerado OK
 

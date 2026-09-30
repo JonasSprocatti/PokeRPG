@@ -43,10 +43,14 @@ export const TEXTO_PRIVACIDADE = `
       a sala está aberta e não ficam guardadas depois.</p>
 
     <h2 class="passo"><span>5</span> Bugs e sugestões</h2>
-    <p class="small">Quando você envia um relato pela tela <b>🐞 Bugs</b>, ficam guardados o título, a descrição,
-      as até 2 imagens que você anexar e — se você estiver logado — o vínculo com a sua conta, pra você poder
-      acompanhar a resposta. <b>Mande print só do que você quer mostrar</b>: a imagem sobe exatamente como você
-      anexou. Sem internet, o relato e as imagens esperam no seu aparelho e sobem quando a conexão voltar.</p>
+    <p class="small">Quando você envia um relato pela tela <b>🐞 Bugs</b>, ficam guardados o título, a descrição
+      e — se você estiver logado — o vínculo com a sua conta, pra você poder acompanhar a resposta.
+      <b>Enviar relato não exige conta.</b> <b>Anexar print exige</b>: são até 2 imagens, e elas ficam numa pasta
+      identificada pela sua conta. Isso não é pra te identificar melhor — é porque, sem conta, não há como
+      limitar quem enche o espaço do jogo de arquivos. <b>Mande print só do que você quer mostrar</b>: a imagem
+      sobe exatamente como você anexou. Sem internet, o relato e as imagens esperam no seu aparelho e sobem
+      quando a conexão voltar (se nesse momento você não estiver mais logado, o texto sobe e a imagem fica de
+      fora, com aviso na tela).</p>
 
     <h2 class="passo"><span>6</span> Serviços de terceiros</h2>
     <ul class="small" style="padding-left:20px">

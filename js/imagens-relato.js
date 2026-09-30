@@ -14,6 +14,17 @@ export const MAX_BYTES_FILA = 1.5 * 1024 * 1024;
 
 export const mb = bytes => (bytes / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' MB';
 
+/* ---------- anexar imagem exige conta (29/09/2026, auditoria de segurança) ----------
+   O RELATO continua sem precisar de conta — isso é promessa da tela e não mudou. O que passou a exigir conta é
+   ANEXAR IMAGEM, e o motivo não é privacidade: a política do bucket aceitava envio de qualquer um, sem teto, e
+   2 MB por requisição enchem o plano gratuito em umas 500 chamadas. Sem conta não existe a quem amarrar o envio,
+   então não existe limite que valha; com conta, o caminho é o da própria pessoa e o abuso tem dono.
+   Decisão do usuário, escolhida entre "quebra-molas por hora" e esta.
+   `MOTIVO_PRECISA_CONTA` é UM texto só, usado na tela, no aviso do seletor e quando a fila offline sobe um
+   relato antigo que tinha imagem: dizer isso de três jeitos diferentes é como o jogador desconfia do aviso. */
+export const MOTIVO_PRECISA_CONTA = 'Pra anexar print é preciso estar na sua conta — é o que deixa o envio ter dono. O relato em si continua funcionando sem conta.';
+export const podeAnexarImagem = temConta => !!temConta;
+
 /* Pode entrar? `arquivo` = { type, size, name? }; `jaTem` = quantas imagens já estão na lista. Devolve null (ok) ou o texto
    do motivo, pronto pra mostrar. */
 export function motivoDeRecusa(arquivo, jaTem = 0) {

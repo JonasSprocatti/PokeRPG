@@ -7,7 +7,7 @@ import { $, limparTopo } from './ui.js';
 import { enviarRelato, enviarFilaRelatos, relatosNaFila, meusRelatos, usuario, nuvemConfigurada } from './nuvem.js';
 import { barraTelas, rotuloVoltar } from './navegacao.js';
 import { esc, offline } from './util.js';
-import { MAX_IMAGENS, MAX_BYTES_IMAGEM, TIPOS_IMAGEM, mb, motivoDeRecusa, comprimirImagem } from './imagens-relato.js';
+import { MAX_IMAGENS, MAX_BYTES_IMAGEM, TIPOS_IMAGEM, mb, motivoDeRecusa, comprimirImagem, podeAnexarImagem, MOTIVO_PRECISA_CONTA } from './imagens-relato.js';
 import { situacaoDoRelato } from './dados.js';
 
 let tipo = 'bug';
@@ -23,6 +23,10 @@ export function removerImagemRelato(i) {
 // escolhidas no seletor ou coladas (Ctrl+V): valida cada uma, comprime e junta ao que já tem
 async function adicionarArquivos(arquivos) {
   guardar();
+  /* Sem conta nem chega a comprimir: o bucket recusa (auditoria de 29/09/2026) e deixar a pessoa escolher, ver a
+     miniatura e só descobrir no envio seria a pior das ordens. O Ctrl+V cai aqui também — por isso a checagem é
+     AQUI e não só no botão, que a tela nem desenha nesse caso. */
+  if (!podeAnexarImagem(usuario())) return telaRelatos(esc(MOTIVO_PRECISA_CONTA));
   const avisos = [];
   for (const a of arquivos) {
     const motivo = motivoDeRecusa(a, imagens.length);
@@ -62,6 +66,9 @@ const guardar = () => { // mantém o que foi digitado ao trocar de tipo / re-ren
 export async function telaRelatos(msg = '') {
   G.mode = 'relatos'; limparTopo();
   const bug = tipo === 'bug', fila = relatosNaFila();
+  // anexar print exige conta desde 29/09/2026 (auditoria: bucket aberto sem teto). O relato em si, não.
+  const anexavel = podeAnexarImagem(usuario());
+  if (!anexavel && imagens.length) limparImagens();   // saiu da conta com print escolhido: não segura o que não vai subir
   $('#app').innerHTML = `<main class="create relatos">
     ${barraTelas('relatos')}
     <h1>Bugs e sugestões.</h1>
@@ -81,10 +88,15 @@ export async function telaRelatos(msg = '') {
         <small class="muted">Ajuda a achar o problema. Nada pessoal (sem e-mail nem nome da conta). <details><summary>Ver o que vai junto</summary><pre class="rel-ctx">${esc(JSON.stringify(contextoTecnico(), null, 2))}</pre></details></small></label>` : ''}
       <div class="campo rel-imagens">
         <span>Imagens (opcional)</span>
-        <small class="muted">Até ${MAX_IMAGENS} imagens de até ${mb(MAX_BYTES_IMAGEM)} cada — o tamanho de ${MAX_IMAGENS} prints de celular ou de computador. PNG, JPG ou WebP. No computador dá pra colar com Ctrl+V.${offline() ? ' Sem internet as imagens ficam guardadas aqui e sobem junto com o relato.' : ''}</small>
+        ${anexavel
+          ? `<small class="muted">Até ${MAX_IMAGENS} imagens de até ${mb(MAX_BYTES_IMAGEM)} cada — o tamanho de ${MAX_IMAGENS} prints de celular ou de computador. PNG, JPG ou WebP. No computador dá pra colar com Ctrl+V.${offline() ? ' Sem internet as imagens ficam guardadas aqui e sobem junto com o relato.' : ''}</small>
         ${imagens.length ? `<div class="rel-thumbs">${imagens.map((im, i) => `<figure class="rel-thumb"><img src="${im.url}" alt="Imagem ${i + 1} do relato"><figcaption>${esc(im.nome.slice(-24))} · ${mb(im.blob.size)}</figcaption>
           <button type="button" class="btn ghost sm" data-act="rel-img-del" data-v="${i}" aria-label="Tirar a imagem ${i + 1}">✕ Tirar</button></figure>`).join('')}</div>` : ''}
-        ${imagens.length < MAX_IMAGENS ? `<label class="btn ghost sm rel-add">📎 Adicionar imagem<input type="file" id="rel-img" accept="${TIPOS_IMAGEM.join(',')}" multiple hidden></label>` : ''}
+        ${imagens.length < MAX_IMAGENS ? `<label class="btn ghost sm rel-add">📎 Adicionar imagem<input type="file" id="rel-img" accept="${TIPOS_IMAGEM.join(',')}" multiple hidden></label>` : ''}`
+          /* Sem conta o seletor não existe — e a tela DIZ o motivo com o botão de entrar ao lado, em vez de
+             simplesmente esconder. Espaço que some sem explicação parece funcionalidade faltando, não regra. */
+          : `<small class="muted">🔒 ${esc(MOTIVO_PRECISA_CONTA)}</small>
+        <div class="subrow"><button class="btn ghost sm" data-act="conta">👤 Entrar na conta</button></div>`}
       </div>
       <button class="btn big" data-act="rel-enviar">Enviar ${bug ? 'bug' : 'sugestão'}</button>
     </section>
@@ -100,7 +112,10 @@ export async function telaRelatos(msg = '') {
      ficar preso indefinidamente com a tela dizendo que estava "esperando internet". */
   if (fila && !offline()) enviarFilaRelatos().then(r => {
     if (!r.enviados || G.mode !== 'relatos') return;
-    telaRelatos(`📤 ${r.enviados} relato(s) que estavam guardados foram enviados agora. 💛`);
+    // relato guardado de antes da regra nova podia trazer print: ele sobe sem a imagem em vez de ficar preso pra
+    // sempre na fila, e a pessoa fica sabendo — silêncio aqui seria uma imagem sumindo sem explicação
+    const semImg = r.semImagem ? `<br>⚠ ${r.semImagem === 1 ? 'Uma imagem' : `${r.semImagem} imagens`} de relato guardado não subiu${r.semImagem === 1 ? '' : 'ram'}: ${esc(MOTIVO_PRECISA_CONTA)}` : '';
+    telaRelatos(`📤 ${r.enviados} relato(s) que estavam guardados foram enviados agora. 💛${semImg}`);
   }).catch(e => console.warn('relatos', e));
 
   /* Os seus relatos já enviados, com a SITUAÇÃO de cada um (dados.situacaoDoRelato): antes esta lista mostrava o
@@ -138,7 +153,10 @@ export async function enviarRelatoTela() {
     const r = await enviarRelato(relato, imagens.map(({ blob, tipo: t }) => ({ blob, tipo: t })));
     rascunho = { titulo: '', texto: '', passos: '', anexar: true };
     limparImagens();
-    const semImg = r.semImagens ? `<br>⚠ ${r.semImagens === 1 ? 'A imagem' : `As ${r.semImagens} imagens`} não coube${r.semImagens === 1 ? '' : 'ram'} na fila offline e ficou${r.semImagens === 1 ? '' : 'ram'} de fora: se puder, envie de novo quando tiver internet.` : '';
-    telaRelatos(r.estado === 'enviado' ? `Obrigado! ${bug ? 'Bug' : 'Sugestão'} enviado(a). 💛` : textoDaFila(r.motivo) + semImg);
+    /* Imagem que ficou de fora tem DUAS causas e cada uma pede uma atitude diferente de quem relata: sem conta,
+       entrar e reenviar resolve; grande demais pra fila offline, esperar internet resolve. Um texto só pra ambas
+       mandaria metade das pessoas pro caminho errado. */
+    const semImg = r.semImagens ? `<br>⚠ ${r.semImagens === 1 ? 'A imagem ficou' : `As ${r.semImagens} imagens ficaram`} de fora: ${usuario() ? 'não cabia na fila offline — se puder, envie de novo quando tiver internet.' : esc(MOTIVO_PRECISA_CONTA)}` : '';
+    telaRelatos((r.estado === 'enviado' ? `Obrigado! ${bug ? 'Bug' : 'Sugestão'} enviado(a). 💛` : textoDaFila(r.motivo)) + semImg);
   } catch (e) { telaRelatos(`Não deu pra enviar: ${esc(e.message)}`); }
 }

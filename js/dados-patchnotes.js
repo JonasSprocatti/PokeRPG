@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.27', data: '2026-09-29', titulo: 'Anexar print num relato agora pede conta', piada: 'A caixa de prints era um contêiner aberto na calçada com uma placa escrita "coloque o que quiser". Surpreendentemente, ninguém abusou. Mas a placa saiu.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Anexar imagem num relato agora exige estar na sua conta.</b> Mandar o relato continua <b>sem precisar de conta</b> — isso não mudou e não vai mudar. O que precisa de conta é o print.',
+        'O porquê, sem enrolação: a caixa onde os prints ficam guardados aceitava envio de qualquer pessoa, sem limite nenhum. Uns poucos milhares de arquivos de 2 MB e o espaço do jogo acabava — e sem conta não tem como saber de quem veio pra segurar. Com conta, cada envio tem dono, e aí dá pra limitar.',
+        'A tela não esconde isso: sem conta, o lugar do print <b>explica o motivo</b> e deixa o botão de entrar ali do lado, em vez de simplesmente não aparecer.',
+        'Se você tinha um relato guardado esperando internet e ele levava print, ele <b>sobe do mesmo jeito</b> — sem a imagem, e a tela avisa. Antes de mais nada o seu texto chega; era o que importava.'
+      ] }
+    ] },
   { versao: '2.26', data: '2026-09-29', titulo: 'A sala parou de acreditar em tudo que os outros mandam', piada: 'A sala era aquele porteiro que deixa entrar qualquer um que chegue de terno. Agora ela confere o terno, o crachá, e se a pessoa cabe na porta.',
     secoes: [
       { nome: 'Correções', itens: [
