@@ -1192,6 +1192,45 @@ batalha nos jogos (pedras, Melhoria, Protetor, Escama de Dragão na era moderna�
 Testes em `tests/soak-itens.test.js`, todos pelo motor de verdade. O do Endeavor foi conferido contra a versão
 antiga: ele **reprova** o comportamento que estava no ar, que é o que faz dele um teste de regressão de verdade.
 
+### Achar os itens novos explorando (30/09/2026)
+Pedido, logo depois: *"as berrys adicionadas, quero se seja possível pegar explorando, outros itens pertinentes
+também"*. O problema real era de descoberta: a leva acima entregou 20 frutas e 25 segurados permanentes, e todos
+**só existiam na loja**. Quem não tem o hábito de passar na loja — ou quem está numa run sem dinheiro sobrando —
+nunca encostava na mecânica. As 17 frutas de aperto por tipo eram o pior caso: são justamente o item que se
+entende ACHANDO ("por que eu tenho uma Fruta Yache?") e não lendo uma linha de preço.
+
+**Nada de lista escrita à mão.** `FIND_ITEMS` continua sendo o saco ponderado de sempre (repetição = peso), e as
+duas listas novas em `dados.js` são **derivadas** — fruta ou segurado novo na tabela já cai nelas sozinho:
+- `FRUTAS_ACHADAS` = tudo que termina em `-berry` em `ITENS_SEGURADOS` + `ITENS_FRUTA_TIPO` (20 itens).
+- `SEGURADOS_ACHADOS` = o resto de `ITENS_SEGURADOS` (25 itens permanentes).
+
+A varredura é nessas duas tabelas e **não em `ITEMS`**, de propósito: `ITENS_RAIDE_SEGURADOS` também é
+`segurado`, e achar um Núcleo Eternamax no chão tiraria o motivo de enfrentar o chefe da semana. É o que
+`tests/segurados.test.js` trava, junto com "as duas listas cobrem a tabela inteira, sem sobra" e "todo item
+achável tem efeito em `SEGURADOS`".
+
+**Dois degraus, pelo preço.** Fruta é barata (₽300–1200) e de uso único, então sai em QUALQUER rota — é o mesmo
+raciocínio que já tinha posto a `oran-berry` no `FIND_ITEMS`. Segurado permanente é caro e pra sempre, então
+entra no degrau que já existia pros itens de evolução: **da 4ª rota em diante**. Um teste guarda a fronteira
+(nenhum permanente pode custar menos que a fruta mais cara) — senão o degrau deixa de significar alguma coisa.
+
+**A ORDEM dos ramos do sorteio é comportamento, não estética.** Cada `Math.random()` do encadeado sorteia sobre o
+que o anterior deixou passar, então a primeira versão — com a fruta antes do item de evolução — **derrubou a
+chance do item de evolução de 19,4% pra 15,8%** sem ninguém pedir. Só apareceu porque eu simulei a distribuição
+antes de fechar; o comentário que eu tinha escrito afirmava o contrário ("a chance do item de evolução ficou
+intacta") e estava errado. Corrigido pondo o degrau já calibrado primeiro: escama (3%) → evolução → segurado →
+fruta → comum. Hoje é ~17% de fruta nas rotas rasas e ~11% nas fundas, com evolução e escama exatamente onde
+estavam.
+
+**Também corrigido de passagem**: a mensagem do achado dizia "(item de evolução)" testando `evo || segurar`, e
+`segurado` não tinha rótulo nenhum — um Orbe da Vida achado apareceria como item qualquer. Agora existe
+"(dá pra segurar)", e o rótulo de evolução vem primeiro porque o item `duplo` (Pedra do Rei e cia.) tem as duas
+flags.
+
+**Ficou de fora**: os consumíveis CAROS que a loja vende e ninguém acha (Full Restore, Max Potion, Revive, Max
+Ether). Não fazem parte da leva que o pedido cita, e o degrau pra eles seria por PREÇO — uma terceira regra no
+mesmo encadeado, que já tem cinco ramos. Entra se for pedido.
+
 ---
 
 ## Anúncios (AdSense) e privacidade

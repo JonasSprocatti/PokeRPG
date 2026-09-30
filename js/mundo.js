@@ -10,11 +10,13 @@ import { situacaoDoEvento, BETA_SEM_ESPERA } from './evento.js';
 import { verificarEvolucoesPendentes } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
 import { addItem } from './itens.js';
-import { ITEMS, FIND_ITEMS, FLAVOR, ITENS_EVO_ACHADOS } from './dados.js';
+import { ITEMS, FIND_ITEMS, FLAVOR, ITENS_EVO_ACHADOS, FRUTAS_ACHADAS, SEGURADOS_ACHADOS } from './dados.js';
 import { apiErr } from './api.js';
 import { rand, pick, esc } from './util.js';
 
-export const CHANCE_ESCAMA = 0.03; // fatia dos itens achados que sai Escama do Coração (ver o sorteio de item)
+export const CHANCE_ESCAMA = 0.03;  // fatia dos itens achados que sai Escama do Coração (ver o sorteio de item)
+export const CHANCE_FRUTA = 0.18;   // …que sai uma fruta, do que sobrou dos degraus caros (qualquer rota; são 20, cada uma continua rara)
+export const CHANCE_SEGURADO = 0.2; // …que sai um segurado permanente, só da 4ª rota em diante (como o de evolução)
 
 export async function explore() {
   if (G.busy) return;
@@ -42,9 +44,22 @@ export async function explore() {
     else if (r < 0.83) {
       // 3% dos achados é uma Escama do Coração (relembrar golpe): raríssima de propósito — na loja ela custa ₽5.000,
       // então achar uma é sorte, não o caminho normal. Da 4ª rota em diante, 1 em 5 achados é um item de evolução.
+      /* Da 4ª rota em diante entram os dois degraus caros: item de evolução e segurado permanente. A fruta é
+         barata e de uso único, então sai em QUALQUER rota (`dados.FRUTAS_ACHADAS` explica o porquê de cada degrau).
+         A ORDEM importa, e não é estética: cada ramo sorteia sobre o que o anterior deixou passar, então pôr a
+         fruta antes do item de evolução derrubaria a chance DELE de 20% pra 16% sem ninguém pedir. O item de
+         evolução vem primeiro porque a taxa dele já estava calibrada; a fruta fica com o resto (~17% das rotas
+         rasas, ~11% das fundas), e são 20 frutas, então cada uma continua sendo sorte. */
+      const fundo = rotasAtuais().findIndex(x => x.id === z.id) >= 3;
       const it = Math.random() < CHANCE_ESCAMA ? 'heart-scale'
-        : rotasAtuais().findIndex(x => x.id === z.id) >= 3 && Math.random() < 0.2 ? pick(ITENS_EVO_ACHADOS) : pick(FIND_ITEMS);
-      addItem(it, 1); await say(`Você encontrou <b>${ITEMS[it].name}</b>!${ITEMS[it].evo || ITEMS[it].segurar ? ' (item de evolução)' : ''}`, 'good');
+        : fundo && Math.random() < 0.2 ? pick(ITENS_EVO_ACHADOS)
+        : fundo && Math.random() < CHANCE_SEGURADO ? pick(SEGURADOS_ACHADOS)
+        : Math.random() < CHANCE_FRUTA ? pick(FRUTAS_ACHADAS)
+        : pick(FIND_ITEMS);
+      // `segurar` (a evolução pede o item na mochila) e `segurado` (efeito em batalha) são coisas diferentes, e o
+      // item `duplo` tem as duas — por isso o rótulo de evolução vem primeiro.
+      const etiqueta = ITEMS[it].evo || ITEMS[it].segurar ? ' (item de evolução)' : ITEMS[it].segurado ? ' (dá pra segurar)' : '';
+      addItem(it, 1); await say(`Você encontrou <b>${ITEMS[it].name}</b>!${etiqueta}`, 'good');
     }
     else if (r < 0.9) { const m = rand(20, 80); G.S.money += m; await say(`Você achou ₽${m} caídos no chão.`, 'good'); }
     else await say(pick(FLAVOR[z.id] || FLAVOR.default));

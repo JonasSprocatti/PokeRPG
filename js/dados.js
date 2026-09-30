@@ -379,6 +379,23 @@ export const IDS_EVO_EM_BATALHA = Object.keys(ITENS_EVO).filter(k => ITENS_EVO[k
 // o que dá pra achar explorando (as pedras também; o Cabo de Conexão só na loja)
 export const ITENS_EVO_ACHADOS = Object.keys(ITENS_EVO).filter(k => k !== 'linking-cord');
 Object.assign(ITEMS, ITENS_EVO); // mochila, loja e sprites tratam igual aos outros itens
+/* O que dá pra ACHAR explorando além da lista comum, DERIVADO em vez de escrito: fruta ou segurado novo na
+   tabela já cai aqui sozinho (pedido do usuário — as frutas e os segurados da leva de 30/09/2026 só existiam na
+   loja, e quem não passa na loja nunca encostava na mecânica).
+     `FRUTAS_ACHADAS`     — toda fruta. Baratas (₽300–1200) e de uso único, então valem em QUALQUER rota: é o
+                            mesmo motivo do 'oran-berry' que já estava em `FIND_ITEMS`, topar com a mecânica cedo.
+                            As 17 de aperto por tipo são o caso que mais precisava disso: achar a Fruta Yache no
+                            chão ensina o que ela faz melhor que uma linha de loja.
+     `SEGURADOS_ACHADOS`  — os segurados PERMANENTES (Restos, Orbe da Vida, Faixa Escolha…). Caros e pra sempre,
+                            então entram no mesmo degrau dos itens de evolução: da 4ª rota em diante
+                            (`mundo.explore`). Achar um Orbe da Vida na rota 1 esvaziaria a loja.
+   A varredura é em `ITENS_SEGURADOS` + `ITENS_FRUTA_TIPO`, NÃO em `ITEMS`, e isso é de propósito: os segurados
+   de prêmio de raide (`ITENS_RAIDE_SEGURADOS`, sem `price`) ficam de fora — são o prêmio de vencer o chefe da
+   semana, e achá-los no chão tiraria o motivo de lutar com ele. */
+const ehFruta = k => k.endsWith('-berry');
+export const FRUTAS_ACHADAS = Object.keys({ ...ITENS_SEGURADOS, ...ITENS_FRUTA_TIPO }).filter(ehFruta);
+export const SEGURADOS_ACHADOS = Object.keys(ITENS_SEGURADOS).filter(k => !ehFruta(k));
+
 // itens achados explorando — inclui uma fruta pra segurar, pra todo mundo topar com a mecânica cedo
 export const FIND_ITEMS = ['oran-berry','potion', 'potion', 'potion', 'super-potion', 'super-potion', 'hyper-potion', 'mega-potion', 'antidote', 'paralyze-heal', 'awakening', 'burn-heal', 'ice-heal', 'ether', 'x-attack', 'x-defense', 'x-sp-atk', 'x-sp-def', 'x-speed', 'rare-candy', 'charcoal', 'mystic-water', 'honey', 'hard-stone', 'magnet', 'tiny-mushroom'];
 

@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.36', data: '2026-09-30', titulo: 'Frutas e itens de segurar agora caem no chão', piada: 'Os itens estavam todos trancados na loja. O lojista alegou que “é assim que funciona o comércio”, mas ninguém explicou por que havia uma Fruta Yache atrás do balcão e nenhuma no mato.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>As frutas agora aparecem explorando, em qualquer rota.</b> São 20 no total — Oran, Sitrus, Lum e as 17 de aperto por tipo (Occa pro fogo, Yache pro gelo, Shuca pra terra…) —, e cerca de 1 em cada 6 itens achados é uma delas. Como são muitas, cada fruta específica continua sendo sorte: achar a Yache justo antes de encarar um Pokémon de Gelo é o tipo de coisa que dá vontade de contar pra alguém.',
+        '<b>Os itens de segurar permanentes também caem, da 4ª rota em diante.</b> Restos, Orbe da Vida, Faixa de Foco, Faixa Escolha, Eviolite, Balão de Ar e companhia entram no mesmo degrau dos itens de evolução — quem não passa na loja não fica mais sem conhecer a mecânica.',
+        '<b>Os itens de prêmio de raide continuam sendo só de prêmio.</b> Achar um Núcleo Eternamax no chão tiraria o motivo de enfrentar o chefe da semana.',
+        'A chance de <b>item de evolução</b> e de <b>Escama do Coração</b> ficou exatamente onde estava: o que mudou foi o que apareceria como item comum.'
+      ] }
+    ] },
   { versao: '2.35', data: '2026-09-30', titulo: 'Cada golpe tem o seu som (e a sua cor) ao acertar', piada: 'Antes todo golpe fazia o mesmo nada. O Charizard reclamou que a labareda dele soava igual a um tapa do Snorlax — tinha razão, soava igual porque não soava.',
     secoes: [
       { nome: 'Novidades', itens: [

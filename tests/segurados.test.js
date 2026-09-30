@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem, statusDoItem } from '../js/segurados.js';
-import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_EVO, IDS_EVO_EM_BATALHA, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
+import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_EVO, IDS_EVO_EM_BATALHA, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, FRUTAS_ACHADAS, SEGURADOS_ACHADOS, FRUTA_DO_TIPO, TYPE_PT } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
 const mon = (o = {}) => ({ level: 50, ability: 'none', data: { types: ['normal'] }, status: null, vol: { stages: {} },
@@ -145,6 +145,30 @@ test('a loja mostra os itens pra segurar (é por onde o jogador conhece a mecân
   for (const [k] of seg.itens) assert.ok(ITEMS[k].segurado && ITEMS[k].price > 0, k);
   // uma fruta pra segurar também é achada explorando: a mecânica aparece sem precisar de dinheiro
   assert.ok(FIND_ITEMS.some(k => ITEMS[k]?.segurado), 'nenhum item pra segurar aparece explorando');
+});
+
+/* Achar explorando (`mundo.explore`). As duas listas são DERIVADAS das tabelas, então o que apodrece em silêncio
+   é o contrário do de sempre: não "faltou item na lista", mas "entrou item que não devia". O caso concreto é o
+   prêmio de raide — ele é `segurado` igual aos outros e, se a varredura fosse em `ITEMS` em vez de
+   `ITENS_SEGURADOS`, começaria a cair no chão e o chefe da semana perderia o motivo de existir. */
+test('achados explorando: toda fruta e todo segurado permanente entram, e nenhum prêmio de raide', () => {
+  // as duas listas juntas cobrem a tabela de segurados inteira, sem sobra nem repetição
+  assert.deepEqual([...FRUTAS_ACHADAS, ...SEGURADOS_ACHADOS].filter(k => ITENS_SEGURADOS[k]).sort(),
+    Object.keys(ITENS_SEGURADOS).sort(), 'segurado da tabela que não dá pra achar (nem como fruta, nem como permanente)');
+  // as 17 frutas de aperto por tipo são o motivo do pedido: nenhuma pode ficar de fora
+  for (const [tipo, [id]] of Object.entries(FRUTA_DO_TIPO))
+    assert.ok(FRUTAS_ACHADAS.includes(id), `a fruta de ${tipo} (${id}) não dá pra achar explorando`);
+  for (const k of [...FRUTAS_ACHADAS, ...SEGURADOS_ACHADOS]) {
+    assert.ok(ITEMS[k]?.segurado, `${k} não é item pra segurar`);
+    assert.ok(ITEMS[k].price > 0, `${k} não tem preço: é prêmio de raide e não pode ser achado no chão`);
+    assert.ok(SEGURADOS[k], `${k} é achável mas não tem efeito na tabela de segurados`);
+  }
+  for (const k of Object.keys(ITENS_RAIDE_SEGURADOS))
+    assert.ok(!FRUTAS_ACHADAS.includes(k) && !SEGURADOS_ACHADOS.includes(k), `${k} é prêmio de raide e vazou pros achados`);
+  // fruta é o degrau BARATO (vale em qualquer rota) e permanente é o CARO (só da 4ª em diante): se um segurado
+  // permanente ficasse mais barato que a fruta mais cara, o degrau deixaria de fazer sentido
+  const maisCaraFruta = Math.max(...FRUTAS_ACHADAS.map(k => ITEMS[k].price));
+  for (const k of SEGURADOS_ACHADOS) assert.ok(ITEMS[k].price > maisCaraFruta, `${k} (₽${ITEMS[k].price}) é mais barato que uma fruta`);
 });
 
 test('divisões da mochila: todo item cai em exatamente uma, e as vazias somem', () => {
