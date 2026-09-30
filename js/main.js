@@ -31,7 +31,7 @@ import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, 
   arenaComprarComum, arenaComprarSegurado, arenaEquipar, arenaUsarItem, arenaReviver } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { healFull } from './efeitos.js';
-import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem } from './itens.js';
+import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem, marcarRapido } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem, precoVenda, moverGolpe } from './regras.js';
@@ -326,6 +326,7 @@ async function aoClicar(e) {
     }
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
+    case 'rapido': return marcarRapido(v);   // ⚡ na mochila: liga/desliga o atalho (regras.alternarRapido)
     case 'move': return turn({ type: 'move', idx: +v });
     // nenhum dos dois passa por `turn`: megaevoluir e terastalizar não gastam o turno
     case 'mega': return usarMega();
@@ -386,6 +387,14 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !['explore', 'battle', 'create'].includes(G.mode) && !document.querySelector('.modal')) {
     $('.nav-voltar, [data-act="voltar"]')?.click();
     return;
+  }
+  /* Hotkey dos ⚡ itens rápidos: 1 e 2 clicam no próprio botão da barra de ações (render.barraRapidos), então a
+     tecla e o clique passam pelo mesmo caminho — incluindo o `disabled` de quando o jogo está ocupado. Só
+     explorando ou em batalha, e nunca enquanto se digita ou com um modal aberto (aí a tecla é do campo/da caixa). */
+  if ((e.key === '1' || e.key === '2') && ['explore', 'battle'].includes(G.mode)
+      && !e.target.matches?.('input,textarea,select') && !document.querySelector('.modal')) {
+    const b = $(`[data-rapido="${e.key}"]`);
+    if (b) { e.preventDefault(); b.click(); return; }
   }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'q') previewSearch(e.target.value);

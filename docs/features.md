@@ -1231,6 +1231,34 @@ flags.
 Ether). Não fazem parte da leva que o pedido cita, e o degrau pra eles seria por PREÇO — uma terceira regra no
 mesmo encadeado, que já tem cinco ramos. Entra se for pedido.
 
+### ⚡ Itens rápidos, com hotkey (30/09/2026)
+O relato **#68** pediu *"um botão para subir ou descer os itens"* na mochila, igual ao que existe pros golpes. O
+usuário trocou o pedido na hora: **"no lugar de botões de subir/descer, quero configurar uma Hotkey para itens
+rápidos, onde você pode escolher no máximo 2 itens que vão ficar perto dos botões principais da tela"**. A troca
+é melhor pelo motivo que o pedido original já dizia sem dizer: o incômodo não era a ORDEM da lista, era **abrir a
+mochila e caçar a Poção a cada turno**. Reordenar encurta a caçada; um atalho fixo elimina.
+
+**Como é**: na mochila (explorando), cada item ganha um botão **⚡**. Marcado, ele aparece como cartão na barra de
+ações — junto de *Explorar/Centro/Loja* fora da luta e de *Mochila/Fugir* dentro dela — e responde às teclas
+**1** e **2**. São no máximo 2 (`regras.MAX_RAPIDOS`), e a marca vive em **`S.rapidos`**, na jornada: os itens são
+da run.
+
+**Decisões**:
+- **`regras.alternarRapido` é a regra, e é pura** (testada em `tests/regras.test.js`): marcar de novo desmarca, e
+  lista cheia devolve **`null`** em vez de trocar o item mais antigo. Trocar sozinho seria "o jogo mexeu na minha
+  escolha"; `itens.marcarRapido` mostra um toast pedindo pra tirar um antes.
+- **A tecla clica no BOTÃO** (`$('[data-rapido="1"]').click()`), não chama a ação. Assim tecla e dedo passam pelo
+  mesmo caminho — inclusive o `disabled` de quando o jogo está ocupado, que de outro jeito eu teria de repetir no
+  handler de teclado. Não vale com modal aberto nem com foco num campo de texto (ali o "1" é do campo).
+- **Item que não serve no momento continua na barra**, habilitado. `useItem` já responde "esse item só funciona
+  durante uma batalha" / "não dá pra evoluir no meio de uma batalha", e o `turn()` não gasta o turno quando o item
+  falha (`if (!(await useItem(...))) return`). Filtrar por contexto exigiria repetir em `render.js` a lista de
+  flags que o `useItem` já conhece — duas fontes da mesma verdade, pra ganhar um botão cinza.
+- **Item que acabou sai da barra e a marca fica.** `rapidosAtivos()` filtra por `bag[k] > 0`: comprou outra Poção,
+  o atalho volta sozinho. Desmarcar por ter acabado o estoque faria o jogador reconfigurar a cada compra.
+- **Só 2, e não N configuráveis**: é o que o pedido diz, e é o que caber em duas teclas garante. Subir o teto é
+  mexer em `MAX_RAPIDOS` e em mais nada.
+
 ---
 
 ## Anúncios (AdSense) e privacidade

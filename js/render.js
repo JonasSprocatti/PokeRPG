@@ -11,7 +11,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
+import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -335,7 +335,16 @@ function renderMochila() {
     const preco = precoVenda(k, S);
     return `<button class="btn ghost sm" data-act="vender" data-v="${k}" ${G.busy ? 'disabled' : ''}>${preco ? `Vender ₽${preco}` : 'Jogar fora'}</button>`;
   };
-  const linha = ([k, n]) => `<li><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span><div class="bag-acoes">${botao(k)}${botaoVender(k)}</div></li>`;
+  /* ⚡ item rápido: marca o item pra ele aparecer junto dos botões principais (barra de ações), com a tecla 1/2
+     como atalho. Pedido de quem joga, no lugar de "subir e descer itens na mochila": o que incomodava era abrir
+     a mochila e caçar a Poção no meio da lista a cada turno, não a ordem dela. */
+  const botaoRapido = k => {
+    if (G.mode !== 'explore') return '';
+    const i = rapidosAtivos().indexOf(k), on = i >= 0;
+    return `<button class="btn ghost sm ${on ? 'on' : ''}" data-act="rapido" data-v="${k}" ${G.busy ? 'disabled' : ''}
+      title="${on ? `Tirar dos itens rápidos (hoje é a tecla ${i + 1})` : `Deixar à mão na barra de ações (até ${MAX_RAPIDOS})`}">⚡${on ? ` ${i + 1}` : ''}</button>`;
+  };
+  const linha = ([k, n]) => `<li><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span><div class="bag-acoes">${botaoRapido(k)}${botao(k)}${botaoVender(k)}</div></li>`;
   $('#p-mochila').innerHTML = bag.length
     ? porCategoria(bag).map(c => `<h4 class="bag-div">${c.nome} <span class="muted">(${c.itens.length})</span></h4><ul class="bag">${c.itens.map(linha).join('')}</ul>`).join('')
     : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
@@ -437,6 +446,18 @@ function pokedexRota(z) {
     </ul>
     <div class="dexr-grade">${dex.map(item).join('')}</div></div>`;
 }
+/* Os itens rápidos que valem AGORA: marcados na mochila (S.rapidos) e que ainda estão nela. Item que acabou sai
+   da barra sozinho e volta se você comprar outro — a marca continua gravada. */
+const rapidosAtivos = () => (G.S?.rapidos || []).filter(k => ITEMS[k] && G.S.bag?.[k] > 0);
+/* A barra de atalho: vai junto dos botões principais (Explorar/Centro/Loja e Mochila/Fugir), e as teclas 1 e 2
+   clicam nesses mesmos botões (main.js). Item que não serve no momento não é escondido nem desabilitado: quem
+   usa recebe o aviso de `useItem` ("só funciona durante uma batalha") e, em batalha, o turno NÃO é gasto. */
+function barraRapidos(dis) {
+  const lista = rapidosAtivos(); if (!lista.length) return '';
+  const act = G.mode === 'battle' ? 'item-b' : 'item';
+  return `<div class="subrow rapidos">${lista.map((k, i) => `<button class="item-btn rapido" data-act="${act}" data-v="${k}" data-rapido="${i + 1}" ${dis}
+    title="${esc(ITEMS[k].desc)}"><img src="${spriteItem(k, G.S.player)}" alt="" onerror="${ITEM_ERRO}"><b>${ITEMS[k].name}</b><small>×${G.S.bag[k]} · tecla ${i + 1}</small></button>`).join('')}</div>`;
+}
 function renderActions() {
   const S = G.S, a = $('#actions'), dis = G.busy ? 'disabled' : '';
   if (G.mode === 'battle' && G.B) {
@@ -479,6 +500,7 @@ function renderActions() {
       }).join('')}</div>
       ${resumoTravas(P).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
       ${botaoMega(dis)}
+      ${barraRapidos(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila
@@ -512,7 +534,8 @@ function renderActions() {
     a.innerHTML = `<button class="btn big" data-act="explore" ${dis || esgotada ? 'disabled' : ''} title="${esgotada ? 'Você está forte demais pra esta rota: nada mais aparece aqui' : ''}">${esgotada ? '✔ Rota esgotada' : `Explorar ${zone().name}`}</button>
       <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">Centro Pokémon${!precisa ? ' (todos saudáveis)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}${semGrana ? ' (sem dinheiro)' : ''}`}</button>
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>
-      ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}`;
+      ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}
+      ${barraRapidos(dis)}`;
   }
 }
 /* ---- carteira ----

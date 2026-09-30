@@ -9,7 +9,7 @@ import {
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
-  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda,
+  golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda, alternarRapido, MAX_RAPIDOS,
   caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW,
   CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo
 } from '../js/regras.js';
@@ -102,6 +102,15 @@ test('precoVenda: metade do preço de compra, arredondado pra baixo; sem preço,
   assert.equal(precoVenda('rare-candy', null), 0, 'item sem price: venda 0 (a mochila oferece "Jogar fora")');
   assert.equal(precoVenda('tm-normal', { discosUsados: 2 }), Math.floor(precoItem('tm-normal', { discosUsados: 2 }) / 2), 'segue o preço dinâmico do Disco');
   assert.equal(precoVenda('potion', { lojaGratis: true }), 0, 'loja grátis: preço de compra 0, venda também 0');
+});
+
+test('alternarRapido: marca, desmarca e recusa passar de MAX_RAPIDOS', () => {
+  assert.deepEqual(alternarRapido(undefined, 'potion'), ['potion'], 'save antigo (sem a lista) começa do zero');
+  assert.deepEqual(alternarRapido(['potion'], 'revive'), ['potion', 'revive']);
+  assert.deepEqual(alternarRapido(['potion', 'revive'], 'potion'), ['revive'], 'marcar de novo desmarca');
+  assert.equal(alternarRapido(['potion', 'revive'], 'ether'), null, 'cheio: devolve null pra quem chama avisar');
+  assert.deepEqual(alternarRapido(['potion', null], 'revive'), ['potion', 'revive'], 'buraco na lista não ocupa vaga');
+  assert.equal(MAX_RAPIDOS, 2);
 });
 
 test('stageMul: estágios −6..+6', () => {

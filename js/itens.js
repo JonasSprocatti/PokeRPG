@@ -2,14 +2,14 @@
 // Mochila (G.S.bag = { idDoItem: qtd }). useItem devolve true se o item foi gasto (em batalha, gasta o turno).
 // Funciona em você e nos aliados: com mais de um alvo possível, pergunta "Usar em quem?" (itemTemEfeito decide quem conta).
 import { G, nm, rotulo, ladoJogador, zone, save } from './estado.js';
-import { say, ask } from './ui.js';
+import { say, ask, toast } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
 import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.js';
 import { ITEMS, ST_SHORT } from './dados.js';
 import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, LADO_VAZIO } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO } from './regras.js';
 import { guardar, trazer } from './esconderijo.js';
 import { usarItemDeRaide } from './boss.js';
 import { loadPokemon } from './api.js';
@@ -29,6 +29,16 @@ export function venderItem(k, qtd) {
   const total = precoVenda(k, G.S) * n;
   G.S.money += total;
   return total;
+}
+
+/* ⚡ Itens rápidos: o atalho na barra de ações. A regra de quantos cabem é pura (regras.alternarRapido); aqui
+   só grava e avisa. Guardado na JORNADA (S), não na conta: os itens são da run. */
+export function marcarRapido(id) {
+  const nova = alternarRapido(G.S.rapidos, id);
+  if (!nova) { toast(`Só ${MAX_RAPIDOS} itens rápidos. Tire um antes (⚡ na mochila).`); return; }
+  G.S.rapidos = nova;
+  toast(nova.includes(id) ? `${ITEMS[id].name} virou item rápido (tecla ${nova.indexOf(id) + 1}).` : `${ITEMS[id].name} saiu dos itens rápidos.`);
+  save(); render();
 }
 
 // Itens SEGURADOS (segurados.js): cada um da equipe segura no máximo um. Equipar tira da mochila; trocar devolve o

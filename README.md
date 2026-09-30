@@ -122,6 +122,9 @@ Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Pa
 ### Mochila e loja em divisões
 Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para segurar · 💎 Evolução · 🍖 Petiscos · ✨ Especiais, tanto na mochila quanto na loja.
 
+### ⚡ Itens rápidos (até 2, com atalho de teclado)
+Na mochila, o botão **⚡** de um item o coloca **junto dos botões principais da tela** — ao lado de *Explorar* fora da luta, ao lado de *Mochila* e *Fugir* dentro dela. Dá para marcar **até dois**, e eles respondem às teclas **1** e **2**. Serve para não abrir a mochila e procurar a Poção a cada turno. A escolha vale para a jornada e some se o item acabar (volta sozinha quando você comprar outro).
+
 ### Comprar em quantidade
 Tocar num item da loja abre um pequeno HUD: **−10 / − / campo / + / +10 / Máx**, com o **total e o troco** atualizando na hora (limite de 99 ou o que o dinheiro alcança). Ao confirmar, aparece um aviso 🛒 "Comprou N× item" com quantos você tem na mochila. `Enter` confirma, `Esc` ou tocar fora cancela.
 

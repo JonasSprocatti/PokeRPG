@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.38', data: '2026-09-30', titulo: '⚡ Dois itens rápidos, nas teclas 1 e 2', piada: 'A Poção estava no fundo da mochila, embaixo de dezessete frutas e uma pedra. Agora ela mora na porta, como manda o bom senso de qualquer geladeira.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Marque até 2 itens como rápidos e eles ficam junto dos botões principais.</b> Na mochila, cada item tem um botão <b>⚡</b>: marcado, ele aparece do lado de <i>Explorar</i> fora da luta e do lado de <i>Mochila</i> e <i>Fugir</i> dentro dela. Chega de abrir a mochila e caçar a Poção a cada turno.',
+        '<b>E eles têm atalho de teclado: 1 e 2.</b> O primeiro item rápido é o 1, o segundo é o 2 — o próprio botão mostra qual tecla é a dele.',
+        'A escolha vale pra <b>jornada</b> (os itens são seus, dessa run). Se o item acabar, o atalho some da barra e <b>volta sozinho</b> quando você comprar outro — não precisa reconfigurar.',
+        'Isso nasceu de um pedido de "botões pra subir e descer os itens da mochila". O que incomodava não era a ordem da lista, era a procura: um atalho fixo resolve sem mexer na mochila.'
+      ] }
+    ] },
   { versao: '2.37', data: '2026-09-30', titulo: 'A Mega Evolução voltou a trazer o clima dela', piada: 'O Mega Charizard Y vinha aparecendo em campo com o sol no bolso. Dizia que estava “guardando pra depois”. Não estava.',
     secoes: [
       { nome: 'Correções', itens: [

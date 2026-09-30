@@ -928,6 +928,10 @@ button.dexr:hover{border-color:var(--yellow);transform:translateY(-1px)}
 .item-btn img{grid-row:span 2;width:30px;height:30px;image-rendering:pixelated}
 .item-btn small{color:var(--muted);font-size:12px}
 .item-btn:hover:not(:disabled){border-color:var(--yellow)}
+/* ⚡ itens rápidos (render.barraRapidos): o mesmo cartão da mochila, em destaque junto dos botões principais.
+   O ⚡ da mochila usa o .on amarelo das outras listas selecionáveis. */
+.rapidos .rapido{flex:1;min-width:150px;border-color:var(--yellow)}
+.bag-acoes .btn.on{border-color:var(--yellow);color:var(--yellow)}
 
 .modal{position:fixed;inset:0;background:rgba(10,12,30,.72);display:grid;place-items:center;padding:20px;z-index:10}
 .box{background:var(--panel);border:2px solid var(--yellow);border-radius:14px;padding:20px;max-width:520px;width:100%;max-height:90vh;overflow:auto}

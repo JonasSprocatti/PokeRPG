@@ -540,6 +540,16 @@ export const precoItem = (id, S) => S?.lojaGratis ? 0 : id === 'tm-normal'
 // (achado explorando, prêmio de Alfa…) devolve 0 — a mochila oferece "Jogar fora" nesse caso, não "Vender".
 export const precoVenda = (id, S) => Math.floor(precoItem(id, S) / 2);
 
+/* Itens rápidos (S.rapidos): até MAX_RAPIDOS atalhos que aparecem junto dos botões principais da tela, com as
+   teclas 1 e 2 como hotkey. Marcar de novo desmarca; cheio e item novo devolve `null` (quem chama avisa que
+   precisa tirar um antes, em vez de trocar por conta própria e derrubar a escolha de quem joga). */
+export const MAX_RAPIDOS = 2;
+export function alternarRapido(lista, id, max = MAX_RAPIDOS) {
+  const atual = (Array.isArray(lista) ? lista : []).filter(Boolean);
+  if (atual.includes(id)) return atual.filter(x => x !== id);
+  return atual.length >= max ? null : [...atual, id];
+}
+
 /* O que um item de golpe (ITENS_GOLPE) oferece pra este Pokémon, sem repetir o que ele já sabe:
    'relembrar' (Escama do Coração) = golpes da lista POR NÍVEL até o nível atual — o que você deixou passar;
    'pokedex'   (Disco Técnico)     = golpes de MT/tutor/herança (learnset.extras, montado em api.buildLearnset).
