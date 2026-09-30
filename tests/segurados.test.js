@@ -13,6 +13,12 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
   for (const [k, it] of Object.entries(ITENS_SEGURADOS)) {
     assert.ok(it.segurado && it.name && it.desc && it.price > 0, k);
     assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
+    /* O id não pode COLIDIR com item de outra tabela. `ITEMS` é montado por `Object.assign` em cascata, então
+       quem é atribuído por último vence em silêncio — e aconteceu de verdade: a Pedra do Rei foi acrescentada
+       aqui sem se notar que `kings-rock` já era item de EVOLUÇÃO (Poliwhirl/Slowpoke). O `ITENS_EVO` é aplicado
+       depois, o item da loja virava o de evolução e o efeito segurado ficava morto — sem nenhum teste reclamar. */
+    assert.equal(ITEMS[k].name, it.name, `${k}: o id colide com outro item e ITEMS ficou com o outro`);
+    assert.ok(ITEMS[k].segurado, `${k}: perdeu o \`segurado\` em ITEMS (id colidindo com outra tabela?)`);
   }
   // prêmios de raide (boss.js): mesma coisa, mas SEM preço — não vendem na loja, só vêm de vencer o chefe da semana
   for (const [k, it] of Object.entries(ITENS_RAIDE_SEGURADOS)) {
@@ -28,10 +34,12 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
   }
   const ganchos = new Set(['multDano', 'soFisico', 'soEspecial', 'soSuperEfetivo', 'multStat', 'semStatus', 'recuoPorGolpe', 'drenaDano',
     'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus', 'danoTipo', 'resisteTipo', 'statusFimTurno',
-    'quickClaw', 'choice', 'eviolite', 'cartaoVermelho']);
+    'quickClaw', 'choice', 'eviolite', 'cartaoVermelho',
+    'balao', 'subeAoLevarSE', 'critExtra',                   // Balão de Ar, Apólice de Fraqueza, Lente de Mira
+    'desfazQueda', 'livraTrava', 'pulaCarga', 'resisteSE']); // Erva Branca/Mental/do Poder e as frutas de aperto por tipo
   for (const [k, s] of Object.entries(SEGURADOS)) {
     for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);
-    for (const t of [...(s.danoTipo?.tipos || []), ...(s.resisteTipo?.tipos || [])]) assert.ok(TYPE_PT[t], `${k}: tipo "${t}"`);
+    for (const t of [...(s.danoTipo?.tipos || []), ...(s.resisteTipo?.tipos || []), ...(s.resisteSE ? [s.resisteSE.tipo] : [])]) assert.ok(TYPE_PT[t], `${k}: tipo "${t}"`);
   }
   assert.equal(temSegurado(mon()), false);
   assert.equal(temSegurado(mon({ item: 'leftovers' })), true);

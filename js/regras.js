@@ -81,12 +81,19 @@ export function vantagemDoGolpe(golpe, alvo) {
   return { mult, ...VANTAGENS.find(v => mult >= v.min) };
 }
 
-export const tiposDefensivos = m => m?.tera ? [m.tera] : (m?.data?.types || []);
+/* O tipo ATUAL na batalha. `vol.tipos` é o tipo TROCADO por um golpe (Soak: o alvo vira Água pura) e mora no
+   `vol` de propósito: `m.data` vem do cache e é COMPARTILHADO por todos da espécie — escrever tipo lá
+   contaminaria todo Poliwag do jogo e ainda iria junto no save. Como todo `vol`, some no fim da batalha.
+   Esta é a fonte ÚNICA pra regra: quem decide dano, imunidade, status, clima ou terreno lê DAQUI, nunca de
+   `data.types`. Ficam de fora, de propósito, os leitores de IDENTIDADE da espécie (petisco por tipo em
+   amizade.js, condição de evolução em evolucao.js, a ficha em render.js): quem levou Soak não mudou de espécie. */
+export const tiposDe = m => m?.vol?.tipos || m?.data?.types || [];
+export const tiposDefensivos = m => m?.tera ? [m.tera] : tiposDe(m);
 /* O lado OFENSIVO não é o espelho do defensivo: terastalizar troca o tipo com que você DEFENDE (passa a ser um
    só), mas NÃO apaga o STAB dos tipos originais — quem vira Tera de um tipo novo ganha STAB no Tera e continua
    com o dos antigos (é o que `multStab` calcula). Esta lista serve ao julgamento grosso da IA (`melhorGolpe`),
    que só pergunta "esse golpe tem STAB?"; a conta de verdade do dano continua em `multStab`. */
-export const tiposOfensivos = m => m?.tera ? [...new Set([m.tera, ...(m?.data?.types || [])])] : (m?.data?.types || []);
+export const tiposOfensivos = m => m?.tera ? [...new Set([m.tera, ...tiposDe(m)])] : tiposDe(m);
 /* Tipo Tera SORTEADO do inimigo: qualquer um dos 18, do tipo dele ou não, com a mesma chance. O fator surpresa é
    não dar pra prever pra onde ele vira. `rnd` injetável pros testes. */
 export function sortearTipoTera(rnd = Math.random) {
@@ -94,7 +101,7 @@ export function sortearTipoTera(rnd = Math.random) {
   return tipos[Math.floor(rnd() * tipos.length)];
 }
 export function multStab(m, tipoGolpe, base = 1.5) {
-  const originais = m?.data?.types || [];
+  const originais = tiposDe(m);   // quem virou Água por Soak ganha STAB em golpe de Água, como nos jogos
   if (!m?.tera) return originais.includes(tipoGolpe) ? base : 1;
   if (tipoGolpe === m.tera) return originais.includes(tipoGolpe) ? 2 : base;
   return originais.includes(tipoGolpe) ? base : 1;
@@ -132,7 +139,7 @@ export const maiorStatBase = m => STATS_COMBATE.reduce((a, s) => m.data.base[s] 
 export function multStatClima(m, stat, clima) {
   if (!clima || !CLIMAS[clima]) return 1;
   const porTipo = CLIMAS[clima].defesaDe || {};
-  const bonus = m.data.types.reduce((a, t) => a * (porTipo[t]?.[stat] || 1), 1);
+  const bonus = tiposDe(m).reduce((a, t) => a * (porTipo[t]?.[stat] || 1), 1);
   const h = hab(m);
   const maior = h.multMaiorStatClima?.[clima] && stat === maiorStatBase(m) ? multMaiorStat(stat) : 1;
   return (h.multStatClima?.[clima]?.[stat] || 1) * maior * bonus;
@@ -282,8 +289,8 @@ export const danoEspinhos = (m, camadas) => (!camadas || !noChao(m) ? 0 : Math.m
 // Toxic Spikes: Venenoso no chão limpa o campo; Aço e quem voa não ligam; 2 camadas = veneno grave
 export function efeitoToxinas(m, camadas) {
   if (!camadas || !noChao(m)) return null;
-  if (m.data.types.includes('poison')) return 'limpa';
-  if (imuneAoStatus(m.data.types, 'poison') || hab(m).imuneStatus?.includes('poison')) return null;
+  if (tiposDe(m).includes('poison')) return 'limpa';
+  if (imuneAoStatus(tiposDe(m), 'poison') || hab(m).imuneStatus?.includes('poison')) return null;
   return camadas >= MAX_TOXINAS ? 'grave' : 'veneno';
 }
 // fim da rodada: tudo que conta turno anda um. Devolve o que acabou agora, pra narrar.
@@ -377,7 +384,7 @@ export function golpeDaConversaoDeTipo(g, u) {
 }
 export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
 // quem está no chão sente o terreno; Voador e Levitate flutuam
-export const noChao = m => !m.data.types.includes('flying') && hab(m).imuneTipo !== 'ground';
+export const noChao = m => !tiposDe(m).includes('flying') && hab(m).imuneTipo !== 'ground' && !m?.vol?.balao;
 export function multTerreno(terreno, tipo, atacante) {
   const t = TERRENOS[terreno]; if (!t || !atacante || !noChao(atacante)) return 1;
   return t.sobe?.[tipo] || t.desce?.[tipo] || 1;
@@ -397,7 +404,7 @@ export function multClima(clima, tipo) {
 // dano de fim de turno do clima (areia/granizo); 0 = não machuca este Pokémon
 export function danoClima(clima, m) {
   const c = CLIMAS[clima];
-  if (!c?.dano || (c.poupa || []).some(t => m.data.types.includes(t))) return 0;
+  if (!c?.dano || (c.poupa || []).some(t => tiposDe(m).includes(t))) return 0;
   if (hab(m).imuneClima?.includes(clima)) return 0;                       // Sand Veil, Snow Cloak, Ice Body, Magic Guard…
   return Math.max(1, Math.floor(m.stats.hp * c.dano));
 }
@@ -425,7 +432,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   // `critContraStatus` (Merciless): contra alvo com esse status o crítico é garantido (ainda respeitando o semCritico)
   const crit = !esperado && !ht.semCritico
     && ((hu.critContraStatus && t.status === hu.critContraStatus)
-      || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0))]);
+      || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0) + (seg(u).critExtra || 0))]);
   // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
   const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno, !!ht.ignoraEstagios);
   const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno, !!hu.ignoraEstagios);
@@ -450,7 +457,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
   if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
-  mod *= resisteDoItem(t, move.type);                                                // Escama do Céu, Cristal Psíquico/Gélido
+  mod *= resisteDoItem(t, move.type, ef);                                            // Escama do Céu, Cristal Psíquico/Gélido, frutas de aperto
   mod *= multDanoDoItem(u, { ef, fisico: phys, tipo: move.type });                    // item segurado (Orbe da Vida, Núcleo Eternamax…)
   mod *= multClima(clima, move.type);                                                // sol/chuva (regras.CLIMAS)
   mod *= multTerreno(terreno, move.type, u);                                         // terreno, pra quem está no chão
@@ -483,7 +490,7 @@ export function imuneAoStatus(tipos, ail) {
   return (ail === 'paralysis' && tipos.includes('electric')) || (ail === 'burn' && tipos.includes('fire')) || (ail === 'freeze' && tipos.includes('ice')) || (ail === 'poison' && (tipos.includes('poison') || tipos.includes('steel')));
 }
 // tipo OU habilidade (Immunity, Limber, Insomnia, Own Tempo…)
-export const imuneAoStatusMon = (m, ail) => (ail !== 'confusion' && imuneAoStatus(m.data.types, ail)) || !!hab(m).imuneStatus?.includes(ail);
+export const imuneAoStatusMon = (m, ail) => (ail !== 'confusion' && imuneAoStatus(tiposDe(m), ail)) || !!hab(m).imuneStatus?.includes(ail);
 
 // dano de queimadura (1/16) e veneno (1/8) no fim do turno, mínimo 1 (como nos jogos); 0 = sem status que cause dano.
 // Sem o mínimo, HP máximo < 16 (queimadura) ou < 8 (veneno) dava floor = 0 e o status nunca machucava.

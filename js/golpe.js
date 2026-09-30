@@ -11,15 +11,15 @@
 //   ctx.campo        objeto do campo da batalha, compartilhado pelos dois lados: { clima, turnos } — opcional
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
 // Sem DOM: importável no Node (tests/golpe.test.js).
-import { STAT_PT, AIL_MSG, SELF_TARGETS } from './dados.js';
+import { STAT_PT, AIL_MSG, SELF_TARGETS, TYPE_PT } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
-import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem } from './segurados.js';
+import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem, frutaDeAperto } from './segurados.js';
 import { ITEMS, ITEM_VINCULO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
-  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, maiorStatBase,
+  passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
   fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
@@ -160,6 +160,14 @@ export async function mudarEstagios(m, mudancas, ctx, fonte = null, refletido = 
     m.vol.stages[c.stat] = nv;
     const d = Math.abs(c.change), subiu = c.change > 0;
     await ctx.say(`${STAT_PT[c.stat]} de ${ctx.nome(m)} ${subiu ? (d >= 3 ? 'subiu drasticamente' : d === 2 ? 'subiu muito' : 'subiu') : (d >= 3 ? 'caiu drasticamente' : d === 2 ? 'caiu muito' : 'caiu')}!`, subiu ? 'good' : 'status');
+    /* Erva Branca: desfaz a queda que acabou de acontecer. Vem ANTES do Defiant de propósito — a habilidade
+       reage a ter sido baixado, e com a erva o atributo volta ao que era, mas a reação continua valendo (é o
+       comportamento dos jogos: a erva desfaz o número, não o fato de ter sido atacado). */
+    if (!subiu && seg(m).desfazQueda) {
+      m.vol.stages[c.stat] = cur;
+      await ctx.say(`A ${ITEMS[m.item]?.name || 'Erva Branca'} de ${ctx.nome(m)} desfez a queda de ${STAT_PT[c.stat]}!`, 'good');
+      m.item = null;
+    }
     // Defiant / Competitive: uma queda causada por OUTRO Pokémon dispara o contra-ataque (a reação usa fonte = o próprio,
     // então não dispara de novo)
     if (!subiu && fonte && fonte !== m && h.aoSerBaixado) {
@@ -248,6 +256,9 @@ export async function preCarregarAshGreninja(lista) {
    oponentes: se a Defesa deles é menor que a Def. Esp., sobe o Ataque; senão, o At. Esp.
    `entrantes` = quem acabou de entrar; `oponentesDe(m)` = quem está do outro lado dele. */
 export async function aoEntrarEmCampo(entrantes, oponentesDe, ctx) {
+  /* Balão de Ar: quem entra segurando um começa flutuando. Mora no `vol` (regras.noChao lê de lá) porque some
+     sozinho no fim da batalha — o item continua na mochila pra próxima luta, como nos jogos. */
+  for (const a of entrantes) if (seg(a).balao && a.vol) a.vol.balao = true;
   for (const a of entrantes) if (hab(a).intimida) {
     await ctx.say(`A Intimidação de ${ctx.nome(a)} assusta o oponente!`);
     for (const b of oponentesDe(a)) {
@@ -436,6 +447,18 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro) {
     if (!ctx.trocaDePokemon) await ctx.say('(só machuca quem entrar em campo depois — do seu lado ninguém troca)', 'muted');
     return true;
   }
+  /* Soak e cia.: o tipo novo vai pro `vol` (regras.tiposDe), NUNCA pro `m.data` — aquele objeto vem do cache e é
+     compartilhado por toda a espécie. Falha quando não mudaria nada, como nos jogos: Soak num alvo que já é Água
+     pura, ou acrescentar um tipo que o alvo já tem. Terastalizado não muda de tipo (o Tera manda na defesa). */
+  if (esp.viraTipo || esp.ganhaTipo) {
+    if (t.tera) { await ctx.say(`Mas falhou! (${T} está terastalizado)`); return true; }
+    const agora = tiposDe(t);
+    const novos = esp.viraTipo ? [...esp.viraTipo] : [...agora, esp.ganhaTipo];
+    if (agora.join() === novos.join() || (esp.ganhaTipo && agora.includes(esp.ganhaTipo))) { await ctx.say('Mas falhou!'); return true; }
+    t.vol.tipos = novos;
+    await ctx.say(`${T} agora é do tipo ${novos.map(x => TYPE_PT[x] || x).join('/')}!`, 'status');
+    return true;
+  }
   if (esp.protege) {
     // King's Shield devolve o Aegislash pra Forma Escudo — e isso acontece mesmo se a proteção falhar
     if (esp.voltaPostura) await trocarPostura(u, false, ctx);
@@ -480,6 +503,12 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro) {
     else if (esp.trava === 'encore') { t.vol.encore = { golpe: ult, turnos: n }; await ctx.say(`${T} sofreu Encore! Vai repetir ${fmt(ult)} por ${n} turnos.`, 'status'); }
     else if (esp.trava === 'disable') { t.vol.desativado = { golpe: ult, turnos: n }; await ctx.say(`${fmt(ult)} de ${T} foi desativado por ${n} turnos!`, 'status'); }
     else { t.vol.tormento = true; await ctx.say(`${T} foi atormentado! Não poderá repetir o mesmo golpe.`, 'status'); }
+    // Erva Mental: a trava é posta e desfeita no mesmo instante (é o que o item faz nos jogos)
+    if (seg(t).livraTrava) {
+      delete t.vol.provocado; delete t.vol.encore; delete t.vol.desativado; delete t.vol.tormento;
+      await ctx.say(`A ${ITEMS[t.item]?.name || 'Erva Mental'} de ${T} o livrou na hora!`, 'good');
+      t.item = null;
+    }
     return true;
   }
   // Roar / Whirlwind: o alvo sai de campo (batalha.forcarSaida decide o que isso quer dizer)
@@ -594,7 +623,12 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   const esp = especial(g);
   if (!esp.protege && !esp.aguentaTurno) u.vol.protSeguidas = 0;
   // no sol forte, Solar Beam e Solar Blade saem na hora (não precisam carregar)
-  const cargaPulada = esp.carga && !esp.invulneravel && /^solar-/.test(g.name) && climaDoCtx(ctx) === 'sol';
+  const solNaCara = esp.carga && !esp.invulneravel && /^solar-/.test(g.name) && climaDoCtx(ctx) === 'sol';
+  /* Erva do Poder: pula o turno de carga de QUALQUER golpe de carga, uma vez. Só se gasta se o golpe fosse mesmo
+     carregar — no sol o Solar Beam já sai na hora sozinho, e queimar a erva ali seria desperdiçá-la à toa. */
+  const ervaDoPoder = esp.carga && !solNaCara && !u.vol.carregando && seg(u).pulaCarga;
+  if (ervaDoPoder) { await ctx.say(`A ${ITEMS[u.item]?.name || 'Erva do Poder'} de ${U} fez o golpe sair na hora!`, 'good'); u.item = null; }
+  const cargaPulada = solNaCara || ervaDoPoder;
   // golpe de carga, 1º turno: gasta PP, prepara (e some, se for Fly/Dig…) e ataca só no próximo
   if (esp.carga && !cargaPulada && !u.vol.carregando) {
     if (g.ppLeft !== undefined) g.ppLeft = Math.max(0, g.ppLeft - 1 - pressao(u, t, g));
@@ -679,13 +713,26 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (ht.flashFire) t.vol.flashFire = true;
     return;
   }
+  // Balão de Ar: quem flutua não é alcançado por golpe Terrestre (o balão só estoura com golpe que ACERTA)
+  if (g.type === 'ground' && t.vol?.balao) { await ctx.say(`${T} está flutuando no Balão de Ar!`); return; }
   const ef = typeEff(g.type, tiposDefensivos(t));                                     // terastalizado defende pelo tipo Tera
   if (ef === 0) { await ctx.say(`Não afeta ${T}...`); return; }
   if (ht.soSuperEfetivo && ef <= 1) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; } // Wonder Guard
 
+  /* Endeavor iguala o HP do alvo ao seu. Contra o CHEFE DE EVENTO isso era um atalho que anulava a luta: ele tem
+     o HP multiplicado (boss.prepararChefe), então um Endeavor com você quase morrendo o derrubava quase inteiro
+     de uma vez — por cima da couraça de energia, das reduções de `danoNoChefe` e das fases, que nem chegavam a
+     ser consultadas. Agora o buraco que o golpe abriria vira DANO COMUM e passa pelas mesmas regras de todo
+     mundo: a couraça absorve, `aposDanoNoChefe` desgasta e conta as fases. Contra chefe continua sendo muito
+     dano de uma vez — só não é mais um botão de vitória. Fora do chefe, nada muda. */
   if (esp.danoIgualHp) {                                                               // Endeavor
     if (t.hp <= u.hp) { await ctx.say('Mas falhou!'); return; }
-    const d = t.hp - u.hp; t.hp = u.hp; up(ctx); (ctx.tremer || nada)(t); await ctx.say(`${T} perdeu ${d} HP.`, 'hit'); return 'acertou';
+    const bruto = t.hp - u.hp;
+    const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, bruto, g.type, ef) : bruto);
+    t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t);
+    await ctx.say(`${T} perdeu ${feito} HP.`, 'hit');
+    if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
+    return 'acertou';
   }
 
   // Aegislash: atacar vira a Forma Lâmina ANTES de calcular o dano (é com o Ataque da Lâmina que o golpe sai)
@@ -788,6 +835,22 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
     // Stench: golpe que já tem chance própria de recuo não soma outra
     else if (hu.flinchChance && !meta.flinch && primeiro && total > 0 && !ht.semRecuo && chance(hu.flinchChance)) t.vol.flinch = true;
+  }
+  /* Itens do ALVO que reagem a ter levado o golpe. Ordem: a fruta já cortou o dano lá no cálculo (regras
+     `resisteDoItem`), então aqui ela só é consumida e anunciada; o balão estoura com qualquer golpe que acerte;
+     a Apólice reage ao super efetivo. Tudo depois do dano, e só se o golpe realmente acertou. */
+  if (total > 0) {
+    if (frutaDeAperto(t, g.type, ef)) {
+      await ctx.say(`${T} comeu a ${ITEMS[t.item]?.name || 'fruta'} e aguentou melhor o golpe!`, 'good');
+      t.item = null;
+    }
+    if (t.vol?.balao) { t.vol.balao = false; t.item = null; await ctx.say(`O Balão de Ar de ${T} estourou!`, 'status'); }
+    const pol = seg(t).subeAoLevarSE;
+    if (pol && ef > 1 && t.hp > 0) {
+      await ctx.say(`A ${ITEMS[t.item]?.name || 'Apólice de Fraqueza'} de ${T} reagiu ao golpe!`, 'good');
+      t.item = null;
+      await mudarEstagios(t, pol.map(([stat, change]) => ({ stat, change })), ctx, t);
+    }
   }
   // reação a ter sido atingido (Steam Engine, Stamina, Weak Armor, Anger Point, Sand Spit…)
   if (total > 0 && t.hp > 0 && ht.aoSerAtingido) await reagirAoGolpe(t, g, crit, ctx);

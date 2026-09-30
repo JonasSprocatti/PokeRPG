@@ -12,7 +12,13 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 - **Missões próprias de cada mapa** (hoje as de espécie valem em qualquer Gen; a trilha de Alfas é só de Kanto) e **lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
 - **Habilidades**: 215 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
-- **Frutas de aperto por tipo** (Occa, Passho…) — os outros itens segurados já entraram.
+
+- **Heavy-Duty Boots** (pedido em 30/09/2026, **não construído de propósito**): o item ignora armadilha de entrada,
+  e aqui isso não existe pro jogador. `golpe.aplicarArmadilhas` só é chamado quando o **inimigo** entra em campo
+  (as duas chamadas estão em `batalha.js`); do seu lado ninguém troca, aliado não "entra", `mp-motor` não tem
+  armadilha nenhuma e **inimigo não segura item**. Seria um item comprável que não faz nada. Pra ele valer,
+  antes teria de existir armadilha pegando o SEU lado — o que é mudança de mecânica, não item. Decisão do
+  usuário na mesma conversa: deixar de fora.
 
 ## Revisões grandes pedidas (ainda não feitas)
 

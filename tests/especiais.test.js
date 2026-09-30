@@ -23,6 +23,7 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'clima', 'terreno',                       // Rain Dance / Electric Terrain e cia.
     'lado', 'soNoGelo', 'armadilha',          // telas e armadilhas de entrada (Aurora Veil só no granizo/neve)
     'trava',                                  // Taunt, Encore, Disable, Torment (regras.motivoBloqueio)
+    'viraTipo', 'ganhaTipo',                  // Soak/Magic Powder trocam o tipo do alvo; Forest's Curse/Trick-or-Treat acrescentam um
     'forcaSaida', 'prende', 'passaBonus',     // o que nos jogos dependia de trocar de Pokémon (Roar, Mean Look, Baton Pass)
     'puneContato', 'voltaPostura']);          // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade']);

@@ -205,9 +205,34 @@ export const ITENS_SEGURADOS = {
   'choice-specs': ter('Óculos Escolha', 'At. Especial +50%, mas trava no primeiro golpe usado até você desmaiar (ou ser revivido).', 3000),
   'choice-scarf': ter('Lenço Escolha', 'Velocidade +50%, mas trava no primeiro golpe usado até você desmaiar (ou ser revivido).', 3000),
   'iron-ball': ter('Bola de Ferro', 'Velocidade -50%.', 1500),
-  eviolite: ter('Eviolite', 'Defesa e Defesa Especial +50% — só em espécies que ainda podem evoluir.', 2800)
+  eviolite: ter('Eviolite', 'Defesa e Defesa Especial +50% — só em espécies que ainda podem evoluir.', 2800),
+  /* Leva de 30/09/2026. ⚠️ Id novo aqui não pode COLIDIR com `ITENS_EVO` (mais abaixo): aquele `Object.assign`
+     roda DEPOIS e vence em silêncio. Foi o que aconteceu com a Pedra do Rei — `kings-rock` já era item de
+     evolução, e o efeito segurado teria ficado morto. `tests/segurados.test.js` passou a cobrar isso. */
+  'air-balloon': ter('Balão de Ar', 'Você flutua: golpes Terrestres não te acertam e o terreno não te afeta. O balão estoura no primeiro golpe que te acertar.', 2600),
+  'weakness-policy': ter('Apólice de Fraqueza', 'Ao levar um golpe super efetivo, seu Ataque e At. Especial sobem 2 níveis. Gasta-se no uso.', 2800),
+  'scope-lens': ter('Lente de Mira', 'Seus golpes acertam crítico com mais frequência (+1 nível de crítico).', 2400),
+  'white-herb': ter('Erva Branca', 'Desfaz na hora a primeira queda de atributo que você sofrer. Gasta-se no uso.', 1800),
+  'mental-herb': ter('Erva Mental', 'Livra você na hora de Provocação, Bis, Desativar ou Tormento. Gasta-se no uso.', 1800),
+  'power-herb': ter('Erva do Poder', 'Golpes que precisam de um turno de carga (Solar Beam, Fly, Dig…) saem na hora. Gasta-se no uso.', 2600)
 };
-Object.assign(ITEMS, ITENS_SEGURADOS);
+/* Frutas de aperto por tipo: cortam pela metade UM golpe super efetivo daquele tipo e se gastam. Eram o último
+   item segurado que faltava (estava em docs/backlog.md). Geradas da tabela em vez de 17 linhas escritas à mão —
+   o efeito é idêntico entre elas, só muda o tipo, e `FRUTA_DO_TIPO` vira a fonte única pro efeito em
+   segurados.js (mesmo padrão que `PLACA_DO_TIPO` já usa pros pratos do Arceus).
+   Fica de fora a Chilan (Normal): ela corta golpe Normal SEMPRE, não só super efetivo — é outra regra, e o
+   tipo Normal não é super efetivo contra ninguém, então ela não caberia nesta tabela. */
+export const FRUTA_DO_TIPO = {
+  fire: ['occa-berry', 'Fruta Occa'], water: ['passho-berry', 'Fruta Passho'], electric: ['wacan-berry', 'Fruta Wacan'],
+  grass: ['rindo-berry', 'Fruta Rindo'], ice: ['yache-berry', 'Fruta Yache'], fighting: ['chople-berry', 'Fruta Chople'],
+  poison: ['kebia-berry', 'Fruta Kebia'], ground: ['shuca-berry', 'Fruta Shuca'], flying: ['coba-berry', 'Fruta Coba'],
+  psychic: ['payapa-berry', 'Fruta Payapa'], bug: ['tanga-berry', 'Fruta Tanga'], rock: ['charti-berry', 'Fruta Charti'],
+  ghost: ['kasib-berry', 'Fruta Kasib'], dragon: ['haban-berry', 'Fruta Haban'], dark: ['colbur-berry', 'Fruta Colbur'],
+  steel: ['babiri-berry', 'Fruta Babiri'], fairy: ['roseli-berry', 'Fruta Roseli']
+};
+export const ITENS_FRUTA_TIPO = Object.fromEntries(Object.entries(FRUTA_DO_TIPO).map(([tipo, [id, nome]]) =>
+  [id, ter(nome, `Corta pela metade um golpe de ${TYPE_PT[tipo]} super efetivo contra você. Gasta-se no uso.`, 1200)]));
+Object.assign(ITEMS, ITENS_SEGURADOS, ITENS_FRUTA_TIPO);
 
 /* Itens segurados de PRÊMIO de raide (evento.ev(), gira entre eles junto com os 3 consumíveis de boss.ITENS_DE_RAIDE
    — ver evento.js). Sem `price`: não vendem na loja, só vêm de vencer o chefe da semana (como os outros 3). Ao

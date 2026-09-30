@@ -32,6 +32,9 @@
 //   passaBonus       passa os estágios de quem usa para um aliado em campo (Baton Pass) — ninguém troca de Pokémon aqui
 //   trava: tipo      restringe os golpes do ALVO (regras.motivoBloqueio): provocar (Taunt: só dano), encore (repete o último),
 //                    disable (desativa o último), tormento (não repete o golpe anterior)
+//   viraTipo: [t]    o ALVO passa a ser desse tipo (Soak: Água pura). Vale pra defesa, STAB, status e terreno —
+//                    a fonte é `regras.tiposDe`, e o tipo novo mora no `vol` (nunca em `m.data`, que é do cache)
+//   ganhaTipo: t     ACRESCENTA um tipo ao alvo sem tirar os dele (Forest's Curse, Trick-or-Treat)
 export const GOLPES_ESPECIAIS = {
   /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
      FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
@@ -56,6 +59,9 @@ export const GOLPES_ESPECIAIS = {
   roar: { forcaSaida: true }, whirlwind: { forcaSaida: true }, 'dragon-tail': { forcaSaida: true }, 'circle-throw': { forcaSaida: true },
   'mean-look': { prende: true }, block: { prende: true }, 'spider-web': { prende: true }, 'baton-pass': { passaBonus: true },
   taunt: { trava: 'provocar' }, encore: { trava: 'encore' }, disable: { trava: 'disable' }, torment: { trava: 'tormento' },
+  // troca de tipo do ALVO: Soak é o motivo de `regras.tiposDe` existir (antes o tipo saía direto de `m.data`)
+  soak: { viraTipo: ['water'] }, 'magic-powder': { viraTipo: ['psychic'] },
+  'forests-curse': { ganhaTipo: 'grass' }, 'trick-or-treat': { ganhaTipo: 'ghost' },
   'solar-beam': { carga: true }, 'solar-blade': { carga: true }, 'sky-attack': { carga: true }, 'razor-wind': { carga: true },
   'skull-bash': { carga: true }, 'meteor-beam': { carga: true }, 'freeze-shock': { carga: true }, 'ice-burn': { carga: true },
   fly: { carga: true, invulneravel: true }, dig: { carga: true, invulneravel: true }, dive: { carga: true, invulneravel: true },

@@ -28,10 +28,18 @@
 //   eviolite      Defesa/Def. Especial ×1.5 SÓ se a espécie ainda evolui (dados-evolucao-restante.js) — lido por
 //                 `multEviolite`, não por `multStat` (o multiplicador do Eviolite depende da espécie, não é fixo)
 //   cartaoVermelho  quem te acerta é tirado de campo e o item se gasta (Cartão Vermelho) — golpe.executar → ctx.forcarSaida
+//   balao         você flutua: golpe Terrestre não acerta e o terreno não pega (Balão de Ar). Vira `vol.balao` ao
+//                 entrar em campo (regras.noChao lê de lá) e ESTOURA no primeiro golpe que te acertar
+//   subeAoLevarSE estágios que sobem quando um golpe SUPER EFETIVO te acerta (Apólice de Fraqueza)
+//   critExtra     +n no estágio de crítico dos SEUS golpes (Lente de Mira) — somado ao Focus Energy e ao Super Luck
+//   desfazQueda   desfaz na hora a queda de atributo que você acabou de sofrer (Erva Branca)
+//   livraTrava    livra de Provocação/Bis/Desativar/Tormento (Erva Mental)
+//   pulaCarga     golpe de carga sai no mesmo turno (Erva do Poder)
+//   resisteSE     como `resisteTipo`, mas SÓ em golpe super efetivo daquele tipo (frutas Occa, Passho…)
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
-import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO } from './dados.js';
+import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_FRUTA_TIPO, PLACA_DO_TIPO, FRUTA_DO_TIPO } from './dados.js';
 import { AINDA_EVOLUI } from './dados-evolucao-restante.js';
 import { hab } from './habilidades.js';
 
@@ -78,7 +86,16 @@ export const SEGURADOS = {
   'presa-da-lua': { drenaDano: 0.1 },
   // Pratos do Arceus + Lenço de Seda (dados.PLACA_DO_TIPO, badges.js "Especialista em X"): +20% de dano no tipo
   // correspondente, um prato por tipo. Gerado da MESMA tabela que a badge usa pra premiar — nunca desalinha.
-  ...Object.fromEntries(Object.entries(PLACA_DO_TIPO).map(([tipo, id]) => [id, { danoTipo: { tipos: [tipo], mult: 1.2 } }]))
+  ...Object.fromEntries(Object.entries(PLACA_DO_TIPO).map(([tipo, id]) => [id, { danoTipo: { tipos: [tipo], mult: 1.2 } }])),
+  'air-balloon': { balao: true },
+  'weakness-policy': { subeAoLevarSE: [['attack', 2], ['special-attack', 2]], gastaNoUso: true },
+  'scope-lens': { critExtra: 1 },
+  'white-herb': { desfazQueda: true, gastaNoUso: true },
+  'mental-herb': { livraTrava: true, gastaNoUso: true },
+  'power-herb': { pulaCarga: true, gastaNoUso: true },
+  // frutas de aperto por tipo: uma por tipo, da MESMA tabela que gera os itens na loja (dados.FRUTA_DO_TIPO)
+  ...Object.fromEntries(Object.entries(FRUTA_DO_TIPO).map(([tipo, [id]]) =>
+    [id, { resisteSE: { tipo, mult: 0.5 }, gastaNoUso: true }]))
 };
 // o que este Pokémon está segurando (objeto vazio = nada). Klutz (semItemEmBatalha): o item continua segurado
 // (pode ser roubado, aparece pro Frisk…), só não tem NENHUM efeito em batalha — por isso é aqui, no único lugar
@@ -86,7 +103,7 @@ export const SEGURADOS = {
 export const seg = m => (hab(m).semItemEmBatalha ? {} : SEGURADOS[m?.item] || {});
 export const temSegurado = m => !!SEGURADOS[m?.item];
 // itens segurados que existem na mochila/loja (dados.js) — o teste confere que as duas listas batem
-export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO)];
+export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO), ...Object.keys(ITENS_FRUTA_TIPO)];
 
 // Multiplicador de dano do item de quem ataca. `ef` = eficácia de tipo (2, 1, 0.5…), `fisico` = golpe físico,
 // `tipo` = tipo do golpe (pro `danoTipo` do Núcleo Eternamax — independente do `multDano` genérico).
@@ -98,10 +115,18 @@ export function multDanoDoItem(m, { ef = 1, fisico = true, tipo = null } = {}) {
   return mult;
 }
 // Multiplicador de dano do item de quem DEFENDE, por tipo do golpe recebido (Escama do Céu, Cristal Psíquico/Gélido).
-export function resisteDoItem(m, tipo) {
+export function resisteDoItem(m, tipo, ef = 1) {
   const s = seg(m);
-  return (s.resisteTipo && tipo && s.resisteTipo.tipos.includes(tipo)) ? s.resisteTipo.mult : 1;
+  if (s.resisteTipo && tipo && s.resisteTipo.tipos.includes(tipo)) return s.resisteTipo.mult;
+  // fruta de aperto: só corta quando o golpe é DE VERDADE super efetivo (`ef > 1`), como nos jogos
+  if (s.resisteSE && tipo && s.resisteSE.tipo === tipo && ef > 1) return s.resisteSE.mult;
+  return 1;
 }
+// a fruta de aperto foi usada neste golpe? (quem chama gasta o item e avisa — golpe.js)
+export const frutaDeAperto = (m, tipo, ef) => {
+  const s = seg(m);
+  return !!(s.resisteSE && tipo && s.resisteSE.tipo === tipo && ef > 1);
+};
 // Eviolite: Defesa/Def. Especial ×1.5, só se a ESPÉCIE ainda evolui (dados-evolucao-restante.js — gerado do
 // repositório-fonte da PokéAPI, sem precisar buscar a árvore de evolução no meio do turno).
 export const multEviolite = (m, stat) =>

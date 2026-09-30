@@ -10,6 +10,18 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.32', data: '2026-09-30', titulo: 'Soak, itens novos e o fim do atalho contra o chefe', piada: 'Descobrimos que dava pra derrubar o chefe da semana quase inteiro com um golpe só, estando com 1 de HP. Foi divertido enquanto durou.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Golpes que trocam o tipo do alvo.</b> <b>Soak</b> deixa qualquer um Água puro e <b>Pó Mágico</b> deixa Psíquico; <b>Maldição da Floresta</b> e <b>Doces ou Travessuras</b> acrescentam Planta ou Fantasma. Vale pra tudo — o que é super efetivo contra ele, o STAB dele, o terreno, as imunidades — e dura até o fim da luta. Soak num Voador, por exemplo, tira a imunidade a golpe Terrestre.',
+        '<b>6 itens segurados novos na loja:</b> <b>Balão de Ar</b> (você flutua: golpe Terrestre não te acerta, até o balão estourar), <b>Apólice de Fraqueza</b> (levou super efetivo? Ataque e At. Especial sobem 2 de uma vez), <b>Lente de Mira</b> (mais crítico) e as ervas <b>Branca</b> (desfaz queda de atributo), <b>Mental</b> (livra de Provocação, Bis, Desativar e Tormento) e <b>do Poder</b> (Solar Beam e companhia saem sem turno de carga).',
+        '<b>As 17 frutas de aperto por tipo</b> — Occa, Passho, Wacan, Yache e o resto da turma. Cada uma corta pela metade UM golpe super efetivo daquele tipo. É a rede de segurança contra aquele golpe que te derrubaria de uma vez.'
+      ] },
+      { nome: 'Equilíbrio', itens: [
+        '<b>Endeavor não é mais um botão de vitória contra o chefe da semana.</b> Ele iguala o HP do alvo ao seu — e contra o chefe isso passava por cima da couraça de energia e de todas as defesas dele: bastava estar quase morto pra acabar com a luta. Agora o dano dele entra pelas mesmas regras de qualquer outro golpe. Contra o chefe continua valendo muito a pena; só não decide mais a luta sozinho.',
+        'Fora do chefe, o Endeavor não mudou em nada.'
+      ] }
+    ] },
   { versao: '2.31', data: '2026-09-30', titulo: 'As músicas agora têm melodia de verdade', piada: 'O compositor da casa vinha tocando notas sorteadas e chamando aquilo de improviso. Sentaram com ele e explicaram o que é uma melodia.',
     secoes: [
       { nome: 'Novidades', itens: [
