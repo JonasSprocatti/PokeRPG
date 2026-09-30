@@ -4,3 +4,7 @@ ferramentas/.relatos-admin.env
 
 # Saída local da mesma ferramenta: relatos de bug/sugestão baixados (texto + prints de jogadores).
 /relatos-baixados/
+
+# Grafo de conhecimento gerado pelo graphify (ferramenta local de leitura do código).
+# Tudo aqui é derivado do próprio repositório e pesa ~7 MB; refaz com `graphify update .`.
+/graphify-out/
