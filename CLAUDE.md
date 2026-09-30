@@ -198,6 +198,7 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 - Telas fora do jogo limpam o topo com **`limparTopo()`**, nunca `#topr.innerHTML = ''`.
 - Tela nova = `barraTelas('id')` + entrada em `navegacao.TELAS`.
 - `prefers-reduced-motion` já é global no CSS — animação nova não precisa de tratamento próprio.
+- **O minimalismo do ponytail não vale para as convenções acima.** O plugin `ponytail` (modo `full` por padrão) manda cortar o que não foi pedido — e o `README.md`, a versão nova em `dados-patchnotes.js`, o teste da função pura em `regras.js`, a linha no `PRECACHE` do `sw.js` e o registro em `docs/features.md` parecem exatamente isso. **Não são.** São entrega, não gordura: o pedido explícito do usuário vale sobre a heurística do plugin. O ponytail decide COMO o código fica (mais curto, sem abstração especulativa, stdlib antes de dependência) — nunca se esses passos acontecem.
 
 ## Backlog
 
