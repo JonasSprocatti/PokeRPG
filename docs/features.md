@@ -11,6 +11,7 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Gimmicks (Mega, Tera, Z-Move, Gigantamax) e as do inimigo/co-op
 - Itens no multiplayer · Reordenar golpes · Vínculo de Batalha
 - A revisão do multiplayer (29/09/2026)
+- A auditoria de segurança (29/09/2026)
 - Sprites, animações e microinterações
 - Anúncios e privacidade
 
@@ -625,6 +626,114 @@ co-op) e nos botões de golpe das duas telas. Validado com dados reais da PokéA
 não toca rede — mesmo recorte que `mega.megaevoluir`): a transformação, o Water Shuriken reforçado e o desfazer
 no fim da luta rodaram de ponta a ponta contra a API de verdade antes de ir pro commit.
 
+
+---
+
+## A auditoria de segurança (29/09/2026)
+
+Pedido do usuário: "auditoria de segurança contra invasão, ataque cibernético e roubo de ideias — e corrigir o
+que aparecer". O `/security-review` do Claude Code olha o DIFF do branch, e o branch estava limpo: não serviria
+de ponto de partida. A varredura foi feita à mão, na ordem do escopo que o `CLAUDE.md` já listava.
+
+### O achado grave: a sala do multiplayer acreditava em tudo
+
+O canal Realtime de uma sala é um **broadcast com a chave anônima**. Quem está na sala publica o que quiser, e o
+Supabase **não assina o remetente** — não existe "veio do anfitrião" que dê pra provar. Até aqui a sala tratava o
+pacote como se fosse dado próprio: `aoReceberEstado` fazia `sala.batalha = p.batalha` e a tela desenhava aquilo.
+
+O que isso permitia, na prática, pra qualquer um na sala (e a sala se entra com 4 caracteres):
+
+1. **Rodar JavaScript na página de todo mundo.** O HTML da sala escapava os TEXTOS — `esc(m.nome)`, `esc(vez.nome)`,
+   o chat — mas **número era número por fé**: `Nv. ${m.level}`, `${m.hp}/${m.stats.hp}`, `Turno ${b.turno}`. Um
+   `level` valendo `<img src=x onerror=…>` executava. Pior: o endereço da sprite ia **dentro** de
+   `onerror="this.onerror=null;this.src='AQUI'"`, onde uma apóstrofe no meio do endereço já fecha a string e emenda
+   código. E a sessão do Supabase mora no `localStorage` (padrão do `supabase-js`), então o alcance disso **não é a
+   sala: é a conta** — jornadas, saves, progresso, perfil, lista de amigos.
+2. **Estragar o save do outro em silêncio.** `aplicarCoop` faz `S.money += r.dinheiro` com o número que veio do
+   pacote. Com `"500"` em vez de `500`, o dinheiro da run vira a string `"100500"` — e isso é gravado no save e
+   sobe pra nuvem, onde nenhuma tela entende mais aquele campo. Nem precisa de má intenção: bastava um bug.
+3. **Deixar a tela em branco.** `p.batalha.turno` num pacote sem `batalha` estoura DENTRO do ouvinte do canal,
+   onde ninguém pega o erro — exatamente o tipo de falha que o `CLAUDE.md` chama de "o pior bug".
+
+### A correção: `js/mp-sanear.js`
+
+Um módulo puro, **sem nenhum import** (é o chão do grafo: `render.js` também depende dele), com uma porta por
+evento do canal — `estadoDaRede`, `fimDaRede`, `pingDaRede`, `chatDaRede`, `lobbyDaRede`, `acaoDaRede`,
+`membroDaRede`. Cada porta devolve o pacote saneado **ou `null`**, e `null` quer dizer "joga fora e anota no
+diagnóstico", nunca "usa como veio".
+
+**O que foi considerado e recusado: lista de campos permitidos.** O estado da batalha tem dezenas de campos, em
+seis níveis de aninhamento, e cresce a cada mecânica nova — uma lista dessas nasce certa e fica errada na semana
+seguinte, do jeito mais perigoso (o campo novo passa sem conferência). `saneado()` desce o pacote inteiro e troca
+cada folha pela versão segura **do mesmo tipo**: número finito ou 0, texto sem `< > "` e curto, endereço de
+imagem só se for `https` de um dos dois servidores de sprite. Só existe tipo de JSON ali (o broadcast chega
+decodificado), então a varredura é total por construção. Campo novo já nasce coberto.
+
+Duas exceções ao "por tipo", e as duas doeram:
+
+- **`CAMPOS_NUMERICOS`** (por nome de chave: `hp`, `level`, `xp`, `dinheiro`, `frac`, `ppLeft`…). Tirar o `<` de
+  um texto resolve o XSS mas **não** resolve o save estragado: `S.money += "500"` continua concatenando. Esses
+  campos são forçados a número. `id` ficou **de fora de propósito** — na presença o `id` do jogador é um uuid, e
+  forçar número ali arrebentaria a sala inteira; o ícone, que é o id numérico de verdade, é tratado à parte em
+  `membroDaRede`.
+- **`urlDeImagem`** não se contenta com a lista de hosts. **`new URL()` não limpa o caminho**: ela aceita
+  `https://cdn.jsdelivr.net/…/1';alert(1)//.png`, com host legítimo, e devolve a apóstrofe intacta no `href`.
+  Esse foi o **furo do primeiro conserto desta própria auditoria** — bastava o `id` do Pokémon vir torto pra
+  `SPR_ANIM(m.id)` montar sozinha um endereço com código dentro, e o filtro de host aprovava. Agora também
+  recusa `' " < > \` e espaço, que não existem em endereço de sprite nenhum (conferido contra os 12
+  construtores de `dados.js`, com 0 recusas indevidas).
+
+O render ganhou a segunda linha de defesa no mesmo passo: `esc()` nos números (`mp-cartao.js`, `mp-telas.js`),
+`urlDeImagem` nos três endereços de `render.js:imgMon` e no ícone de `conta.js:htmlIcone`, `esc()` no `fmt(t)` de
+`badge`. Depender de `esc()` em 40 lugares foi justamente o que falhou; depender dos dois é o que segura.
+
+**`doAnfitriao` é honesto sobre o que não é.** Estado, fim, lobby e pulso passaram a levar `de: meuId()`, e o
+outro lado confere contra o anfitrião da presença. Isso **não é autenticação** — broadcast não tem remetente
+assinado, e quem quiser mentir copia o id do anfitrião, que está visível na presença. Vale porque pega o engano
+honesto (dois anfitriões depois de uma reconexão bagunçada) e a forja ingênua, e porque custa uma linha. Pacote
+**sem** `de` passa: é a versão antiga do jogo, e derrubar a sala de quem ainda não atualizou seria pior que o
+problema. Quem protege de verdade é o saneamento.
+
+### No banco: dois furos de abuso, nenhum de vazamento
+
+Nenhuma tabela vazava dado de ninguém. O que estava aberto era **encher o projeto de graça**, que no plano
+gratuito é o jogo sair do ar:
+
+- **Bucket `relatos-imagens`.** A política de envio era só `bucket_id = 'relatos-imagens'`, aberta a `anon`
+  (relato sem conta é promessa da tela). Qualquer um mandava 2 MB por requisição, em caminho qualquer, pra
+  sempre — ~500 requisições enchem 1 GB. Agora o caminho tem de começar pela pasta de quem envia e existe um
+  teto por hora. **Detalhe que quase virou proteção de mentira**: a contagem do teto **precisa** ser
+  `SECURITY DEFINER`. Contando `storage.objects` direto na política, a contagem passa pelo RLS do papel `anon` —
+  que não tem policy de SELECT nesse bucket — e dá **sempre 0**, um teto que nunca fecha. Foi o primeiro jeito
+  que eu escrevi.
+- **`registrar_visitante_anonimo`.** Aceitava qualquer texto de até 40 caracteres, aberta a `anon`: linha sem fim,
+  uma por id inventado. Ganhou checagem de formato e teto por hora (com índice em `primeira_vez`, senão o teto
+  vira varredura da tabela a cada boot).
+
+O teto de upload é **quebra-molas, não tranca**: um atacante decidido ainda sobe 20 arquivos por hora sem conta
+nenhuma. A tranca seria exigir conta pra anexar imagem — decisão de produto (a tela promete "não precisa de
+conta"), deixada pro usuário escolher.
+
+### Revisado e considerado OK
+
+RLS de todas as tabelas (cada conta só lê o que é dela; `jornadas` sem update/delete); `validar_jornada`
+recalculando a pontuação no servidor com tetos por campo; o gatilho que impede alguém de se promover a
+`perfis.admin` pela API (inclusive no INSERT — um perfil não pode nascer admin); `perfil_do_amigo` só devolvendo
+dados de amizade **aceita**, e nada de e-mail ou código de amigo; `badge_exibivel` conferindo no progresso se a
+insígnia foi conquistada; a chave anônima no `config.js` (é pública por natureza — quem protege é o RLS); a
+presença global com `track({})` vazio, que conta sem identificar ninguém; `esc()` no apelido em todas as telas
+que mostram gente (ranking, amigos, perfil do amigo) — esse era o outro caminho de XSS entre jogadores e estava
+fechado.
+
+### Limites conhecidos e aceitos
+
+- **A pontuação é calculada no navegador** e só conferida no servidor. Inventar uma jornada plausível continua
+  possível; mandar uma pontuação qualquer, não. Sem servidor de jogo não tem como fechar, e isso já estava
+  escrito no SQL desde o começo.
+- **Forjar o fim de uma luta** continua possível pra quem está NA sala — mas o alcance é o de quem já podia
+  editar o próprio `localStorage`, e o saneamento garante que o pacote forjado seja pelo menos bem-formado
+  (números são números), então não corrompe save nem executa nada.
+- **`/security-review` não foi rodado** como segunda opinião. Continua no backlog.
 
 ---
 

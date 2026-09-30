@@ -35,6 +35,7 @@ import { encerrarJornada } from './fim.js';
 import { FIND_ITEMS } from './dados.js';
 import { URL_SITE } from './site.js';   // o link do convite sai daqui — endereço absoluto nunca é digitado à mão
 import { esc, fmt, pick, rand, clamp, offline, sleep } from './util.js';
+import { estadoDaRede, pingDaRede, fimDaRede, chatDaRede, lobbyDaRede, acaoDaRede, membroDaRede, doAnfitriao } from './mp-sanear.js';
 import { MAX_JOGADORES, PRAZO_MS, MAX_HISTORICO, raideSemRun, entradaEfetiva, jogaveis, primeiroInimigo,
   inimigosDe, minhaVezDe, todosProntos, montarLado, raideDisponiveis, itensComunsDisponiveis, podeReviver } from './mp-regras.js';
 import { meuId, membroDe, novoCodigo, codigoValido, anotar, enviar, ligarPulso, desligarPulso,
@@ -164,6 +165,17 @@ export function entrarSala(codigo) {
   if (!codigoValido(codigo)) return telaMultiplayer('O código tem 4 letras/números.');
   return conectar(codigo, false);
 }
+/* Pacote que só o anfitrião publica: além de saneado, tem de se dizer dele. `null` entra e `null` sai, então dá
+   pra encadear com as portas de mp-sanear. Rejeição vai pro diagnóstico — sala travada sem explicação é pior que
+   o ataque (CLAUDE.md: falha silenciosa em render é o pior bug; aqui vale o mesmo pra rede). */
+function deAnfitriao(p, evento) {
+  if (!p) { anotar(`← "${evento}" descartado: pacote fora do formato`, true); return null; }
+  const anfitriaoId = G.sala?.membros.find(m => m.anfitriao)?.id;
+  if (doAnfitriao(p, anfitriaoId)) return p;
+  anotar(`← "${evento}" descartado: não veio do anfitrião`, true);
+  return null;
+}
+
 async function conectar(codigo, anfitriao) {
   if (G.sala) await sairSala();
   if (!nuvemConfigurada() || offline()) return telaMultiplayer();
@@ -181,13 +193,19 @@ async function conectar(codigo, anfitriao) {
   try {
     const canal = await abrirCanal(codigo);
     sala.canal = canal;
+    /* TUDO o que entra passa por `mp-sanear` antes de encostar no estado ou na tela: o broadcast não assina o
+       remetente, então cada pacote é dado de fora (leia o cabeçalho de mp-sanear.js). `null` = joga fora.
+       `deAnfitriao` ainda confere se o pacote se diz do anfitrião — os quatro eventos abaixo só ele publica. */
     canal.on('presence', { event: 'sync' }, aoMudarPresenca)
-      .on('broadcast', { event: 'estado' }, ({ payload }) => aoReceberEstado(payload))
-      .on('broadcast', { event: 'ping' }, ({ payload }) => aoReceberPing(payload))   // sinal de vida magro do anfitrião
-      .on('broadcast', { event: 'acao' }, ({ payload }) => { if (G.sala?.anfitriao) registrarAcao(payload.de, payload.acao); })
-      .on('broadcast', { event: 'chat' }, ({ payload }) => aoReceberChat(payload))
-      .on('broadcast', { event: 'fim' }, ({ payload }) => aoReceberFim(payload))
-      .on('broadcast', { event: 'lobby' }, ({ payload }) => { anotar('← lobby'); if (G.sala && !G.sala.anfitriao) { G.sala.zona = payload.zona; G.sala.config = payload.config; renderSala(); } })
+      .on('broadcast', { event: 'estado' }, ({ payload }) => { const p = deAnfitriao(estadoDaRede(payload), 'estado'); if (p) aoReceberEstado(p); })
+      .on('broadcast', { event: 'ping' }, ({ payload }) => { const p = deAnfitriao(pingDaRede(payload), 'ping'); if (p) aoReceberPing(p); })   // sinal de vida magro do anfitrião
+      .on('broadcast', { event: 'acao' }, ({ payload }) => { const p = acaoDaRede(payload); if (p && G.sala?.anfitriao) registrarAcao(p.de, p.acao); })
+      .on('broadcast', { event: 'chat' }, ({ payload }) => { const p = chatDaRede(payload); if (p) aoReceberChat(p); })
+      .on('broadcast', { event: 'fim' }, ({ payload }) => { const p = deAnfitriao(fimDaRede(payload), 'fim'); if (p) aoReceberFim(p); })
+      .on('broadcast', { event: 'lobby' }, ({ payload }) => {
+        const p = deAnfitriao(lobbyDaRede(payload), 'lobby'); if (!p) return;
+        anotar('← lobby'); if (G.sala && !G.sala.anfitriao) { G.sala.zona = p.zona; G.sala.config = p.config; renderSala(); }
+      })
       .on('broadcast', { event: 'sincronizar' }, () => { // alguém pediu o estado de novo
         if (!G.sala?.anfitriao) return;
         anotar('← pedido de sincronização');
@@ -224,7 +242,8 @@ export async function sairSala() {
 function aoMudarPresenca() {
   const sala = G.sala;
   if (!sala) return;
-  sala.membros = membrosDaPresenca(sala.canal);
+  // a presença também é dado de fora: cada um anuncia o que quiser sobre si (nome, ícone, os Pokémon que traz)
+  sala.membros = membrosDaPresenca(sala.canal).map(membroDaRede).filter(Boolean);
   if (sala.membros.some(m => m.anfitriao)) {
     sala.encontrouAnfitriao = true;
     clearTimeout(sala.semAnfitriao); sala.semAnfitriao = null; // voltou (ou nem chegou a sumir de verdade)
@@ -242,7 +261,8 @@ function aoMudarPresenca() {
 }
 
 /* ---------- lobby: configuração (anfitrião) e time (cada um) ---------- */
-function publicarLobby() { enviar('lobby', { zona: G.sala.zona, config: G.sala.config }); }
+// `de` vai em todo pacote de anfitrião (estado, ping, fim, lobby): é o que `deAnfitriao` confere do outro lado
+function publicarLobby() { enviar('lobby', { de: meuId(), zona: G.sala.zona, config: G.sala.config }); }
 export function configurarSala(campo, valor) {
   const sala = G.sala;
   if (!sala?.anfitriao || sala.batalha) return;
@@ -360,7 +380,7 @@ export async function iniciarBatalhaMP(tipo) {
 
 /* ---------- anfitrião: juntar as escolhas e resolver o turno ---------- */
 // pacote do estado atual (sem mexer no prazo) — usado pelo pulso e por quem pede pra sincronizar
-const pacoteEstado = (eventos = []) => ({ batalha: G.sala.batalha, eventos, prazo: G.sala.prazo, acoesFeitas: Object.keys(G.sala.acoes), tipo: G.sala.tipo, zona: G.sala.zona });
+const pacoteEstado = (eventos = []) => ({ de: meuId(), batalha: G.sala.batalha, eventos, prazo: G.sala.prazo, acoesFeitas: Object.keys(G.sala.acoes), tipo: G.sala.tipo, zona: G.sala.zona });
 /* O pulso mandava a BATALHA INTEIRA a cada 4 s — dezenas de KB por batida, e cada pacote recebido reescrevia a
    tela toda. Agora a batida normal é um 'ping' magro (turno, quem já escolheu, prazo), e o estado completo sai só
    em turno novo, quando alguém pede pra sincronizar e a cada ESTADO_CHEIO_MS como rede de segurança.
@@ -371,7 +391,7 @@ let ultimoEstadoCheio = 0;
 function baterPulso() {
   const sala = G.sala; if (!sala?.anfitriao || !sala.batalha) return;
   if (Date.now() - ultimoEstadoCheio >= ESTADO_CHEIO_MS) return publicarCheio();
-  enviar('ping', { turno: sala.batalha.turno, acoesFeitas: Object.keys(sala.acoes), prazo: sala.prazo }, 1);
+  enviar('ping', { de: meuId(), turno: sala.batalha.turno, acoesFeitas: Object.keys(sala.acoes), prazo: sala.prazo }, 1);
 }
 function publicarCheio() {
   ultimoEstadoCheio = Date.now();
@@ -390,7 +410,7 @@ function publicarEstado(eventos, novoTurno) {
 function avisarEscolhas() {
   const sala = G.sala; if (!sala?.batalha) return;
   const acoesFeitas = Object.keys(sala.acoes);
-  enviar('ping', { turno: sala.batalha.turno, acoesFeitas, prazo: sala.prazo }, 1);
+  enviar('ping', { de: meuId(), turno: sala.batalha.turno, acoesFeitas, prazo: sala.prazo }, 1);
   sala.acoesFeitas = acoesFeitas;
   renderSala();
 }
@@ -481,7 +501,7 @@ function finalizar(eventos) {
       especie: m.data.speciesName, real: naNivelReal(m), nivelLuta: m.level };
   let p;
   if (b.pvp) {
-    p = { pvp: true, fim: b.fim, eventos, final, times: { A: [...new Set(b.lados.A.map(m => m.dono))], B: [...new Set(b.lados.B.map(m => m.dono))] } };
+    p = { de: meuId(), pvp: true, fim: b.fim, eventos, final, times: { A: [...new Set(b.lados.A.map(m => m.dono))], B: [...new Set(b.lados.B.map(m => m.dono))] } };
   } else {
     const venceu = b.fim === 'A', B = b.lados.B, effort = {};
     for (const E of B) for (const [s, v] of Object.entries(E.data.effort || {})) effort[s] = (effort[s] || 0) + v;
@@ -490,7 +510,7 @@ function finalizar(eventos) {
     // cada jogador: dinheiro + 35% de chance de um item (da lista de achados da exploração)
     for (const d of new Set(b.lados.A.map(m => m.dono))) recompensas[d] = { xp, dinheiro: venceu ? B.reduce((a, E) => a + E.level * rand(8, 14), 0) : 0,
       item: venceu && Math.random() < 0.35 ? pick(FIND_ITEMS) : null };
-    p = { pvp: false, fim: b.fim, eventos, final, recompensas, effort: venceu ? effort : {},
+    p = { de: meuId(), pvp: false, fim: b.fim, eventos, final, recompensas, effort: venceu ? effort : {},
       derrotados: venceu ? B.map(E => ({ especie: E.data.speciesName, id: E.id })) : [],
       vistos: B.map(E => ({ especie: E.data.speciesName, id: E.id, shiny: E.shiny })),
       chefe: venceu && sala.tipo === 'alfa' ? sala.zona : null, chefeNivel: B[0]?.level, evento: b.evento || null };

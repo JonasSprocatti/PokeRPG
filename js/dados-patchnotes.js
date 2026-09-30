@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.26', data: '2026-09-29', titulo: 'A sala parou de acreditar em tudo que os outros mandam', piada: 'A sala era aquele porteiro que deixa entrar qualquer um que chegue de terno. Agora ela confere o terno, o crachá, e se a pessoa cabe na porta.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Segurança da sala de multiplayer.</b> A sala aceitava de olhos fechados tudo o que chegava pela internet — e parte disso ia direto pra tela. Quem estivesse na mesma sala podia mandar um pacote torto e fazer coisa que ninguém deveria poder fazer no seu navegador, incluindo mexer com a sua conta. Agora <b>todo pacote é conferido antes de encostar no jogo</b>: número tem que ser número, texto tem que ser texto, e endereço de imagem só vale se vier dos servidores de sprite de sempre. O que não passa é jogado fora e vai pro diagnóstico da sala (o 🔎 lá embaixo).',
+        'De quebra, o mesmo cuidado conserta um jeito silencioso de <b>estragar a sua jornada</b>: uma recompensa que chegasse torta no fim de uma luta em grupo podia embaralhar o seu dinheiro no save.',
+        '<b>Pacote que se diz do anfitrião agora é conferido.</b> Estado da luta, fim de luta e configuração do lobby só valem se vierem de quem realmente está hospedando.',
+        'Sala com <b>pacote sem pé nem cabeça</b> não deixa mais a tela em branco: ela ignora e segue, em vez de travar no meio.'
+      ] }
+    ] },
   { versao: '2.25', data: '2026-09-29', titulo: 'O multiplayer foi refeito (e a luta em grupo virou uma batalha de verdade)', piada: 'A luta em sala era uma lista de fichinhas de 64 pixels. Acompanhar aquilo era como assistir a um jogo de futebol lendo a tabela de escanteios.',
     secoes: [
       { nome: 'Novidades', itens: [

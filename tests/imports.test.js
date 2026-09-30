@@ -65,8 +65,9 @@ test('todo import nomeado entre módulos do jogo existe no arquivo de origem', (
 });
 
 test('nenhum módulo do multiplayer importa a camada de cima (o grafo continua sem ciclo)', () => {
-  // mp-regras → mp-rede → mp-cartao → mp-telas → multiplayer. Cada um só pode olhar pra trás.
-  const camada = { 'mp-regras.js': 0, 'mp-rede.js': 1, 'mp-cartao.js': 1, 'mp-resultado.js': 2, 'mp-telas.js': 3, 'multiplayer.js': 4 };
+  // mp-sanear → mp-regras → mp-rede → mp-cartao → mp-telas → multiplayer. Cada um só pode olhar pra trás.
+  // `mp-sanear` é o chão: não importa NADA (nem util), porque `render.js` também depende dele pra allowlist de sprite.
+  const camada = { 'mp-sanear.js': -1, 'mp-regras.js': 0, 'mp-rede.js': 1, 'mp-cartao.js': 1, 'mp-resultado.js': 2, 'mp-telas.js': 3, 'multiplayer.js': 4 };
   const problemas = [];
   for (const [arquivo, nivel] of Object.entries(camada)) {
     for (const m of fonte[arquivo].matchAll(/from\s*['"]\.\/([\w.-]+\.js)['"]/g)) {

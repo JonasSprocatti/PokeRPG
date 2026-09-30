@@ -351,7 +351,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/navegacao.js`, `js/ajustes.js`, `js/tela-ajustes.js` | Barra de navegação das telas, escolha de fonte e a tela de ajustes |
 | `js/evolucao.js` | Condições de evolução (pedra, troca, vínculo, hora, golpe…) e as regras equivalentes dos casos raros |
 | `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
-| `js/mp-motor.js`, `js/mp-regras.js`, `js/mp-rede.js`, `js/mp-cartao.js`, `js/mp-telas.js`, `js/mp-resultado.js`, `js/multiplayer.js` | Multiplayer: motor do turno e regras da sala (puros, testados), rede, desenho dos Pokémon, telas, resultado no save e a orquestração da sala |
+| `js/mp-motor.js`, `js/mp-sanear.js`, `js/mp-regras.js`, `js/mp-rede.js`, `js/mp-cartao.js`, `js/mp-telas.js`, `js/mp-resultado.js`, `js/multiplayer.js` | Multiplayer: motor do turno, conferência do que chega pela rede e regras da sala (puros, testados), rede, desenho dos Pokémon, telas, resultado no save e a orquestração da sala |
 | `sw.js` | Modo offline |
 | `supabase/` | Banco (`schema.sql`) e passo a passo de configuração |
 | `CLAUDE.md` | Mapa técnico detalhado (para quem mexe no código) |
@@ -384,6 +384,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Amizade, aliados com ordens, batalha com vários do mesmo lado
 - [x] Zonas por nível, Alfas, missões
 - [x] Batalha no celular (cena e golpes fixos, abas), 🎯 Caça Shiny, sala multiplayer resistente a queda de conexão e batalha que não some ao recarregar
+- [x] **Sala multiplayer que não confia no que chega pela rede**: todo pacote é conferido antes de encostar no jogo (número tem que ser número, endereço de imagem só dos servidores de sprite), pacote torto é descartado e vai pro diagnóstico da sala em vez de virar tela em branco
 - [x] Itens segurados (13), mochila e loja em divisões, tela 📜 Novidades com as notas de atualização
 - [x] Evoluções especiais: pedras e itens, Cabo de Conexão (troca), vínculo, hora do dia, golpe conhecido e regras equivalentes para os casos raros
 - [x] 💾 Jornadas salvas: várias runs em andamento (guardar, continuar, excluir), na nuvem também

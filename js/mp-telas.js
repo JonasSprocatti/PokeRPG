@@ -232,7 +232,7 @@ function fichasDoTurno(b) {
 function barraDoTurno(b) {
   const sala = G.sala, resta = Math.max(0, sala.prazo - Date.now());
   return `<div class="mp-turno">
-    <span class="turno-n">Turno <b>${b.turno}</b></span>
+    <span class="turno-n">Turno <b>${esc(b.turno)}</b></span>
     <div class="mp-prazo" title="Quem não escolher até o fim joga no automático"><div class="mp-prazo-fill" id="mp-prazo-fill" style="width:${Math.round(resta / PRAZO_MS * 100)}%"></div></div>
     <span id="mp-relogio" class="mp-relogio">${Math.ceil(resta / 1000)}s</span></div>`;
 }
@@ -241,7 +241,7 @@ function historicoDoTurno() {
   const h = G.sala.historico || [];
   if (!h.length) return '';
   return `<details class="mp-historico"><summary>📜 Turnos anteriores (${h.length})</summary>
-    ${[...h].reverse().map(t => `<div class="mp-hist-turno"><b>Turno ${t.turno}</b><ul>${t.linhas.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`).join('')}</details>`;
+    ${[...h].reverse().map(t => `<div class="mp-hist-turno"><b>Turno ${esc(t.turno)}</b><ul>${t.linhas.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`).join('')}</details>`;
 }
 
 /* ---------- botões de item durante a luta ---------- */

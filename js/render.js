@@ -9,6 +9,7 @@ import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { TELAS } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
+import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
 import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
@@ -60,7 +61,11 @@ export const sprCostas = m => {
    bloqueado na rede de quem joga; (2) a sprite normal — cobre shiny que não existe pra aquela forma. Sem o
    primeiro, uma falha do servidor deixava o Pokémon como ícone quebrado mesmo com a imagem disponível ali ao
    lado, no outro endereço. `dataset.f` marca que a primeira tentativa já foi feita. */
-export const imgMon = (m, cls, src) => `<img class="${cls}" src="${src}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${outroServidor(src)}'}else{this.onerror=null;this.src='${espelhar(m.data.sprite)}'}">`;
+/* Os três endereços passam por `urlDeImagem` (mp-sanear): dois deles entram DENTRO de um `onerror="…src='AQUI'"`,
+   onde uma apóstrofe no meio do endereço já é código rodando. No single player a sprite vem da PokéAPI e nunca
+   teve aspa nenhuma; na SALA ela vem do estado que outro jogador publicou — e aí era XSS. Endereço fora dos
+   servidores de sprite vira vazio, que é o mesmo caminho de "sprite não carregou" que já existia. */
+export const imgMon = (m, cls, src) => `<img class="${cls}" src="${urlDeImagem(src)}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${urlDeImagem(outroServidor(src))}'}else{this.onerror=null;this.src='${urlDeImagem(espelhar(m.data.sprite))}'}">`;
 const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
 /* Botão ⚡ da Mega Evolução: só aparece pra quem já conquistou a Pedra Mega daquela espécie (conquistas.js) e
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
@@ -81,11 +86,11 @@ function botaoMega(dis) {
     <span class="small muted">${formas.length || tipos.length ? 'Mega e Tera não gastam o turno' : ''}${zs.length ? `${formas.length || tipos.length ? ' · ' : ''}o Z-Move É o seu turno` : ''}</span></div>`;
 }
 
-export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;
+export const badge = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || esc(fmt(t))}</span>`;
 /* Os tipos que a tela mostra. Quem terastalizou tem UM tipo só (regras.tiposDefensivos) — mostrar os antigos
    faria a pessoa calcular a fraqueza errada, que é justamente o que a Tera veio mudar. O 💎 marca a diferença. */
 export const badgesDeTipo = m => m?.tera
-  ? `<span class="ty tera-ty" style="--c:${TC[m.tera] || '#888'};--tc:${DARK_TEXT.has(m.tera) ? '#1c1f3a' : '#fff'}">💎 ${TYPE_PT[m.tera] || fmt(m.tera)}</span>`
+  ? `<span class="ty tera-ty" style="--c:${TC[m.tera] || '#888'};--tc:${DARK_TEXT.has(m.tera) ? '#1c1f3a' : '#fff'}">💎 ${TYPE_PT[m.tera] || esc(fmt(m.tera))}</span>`
   : (m?.data?.types || []).map(badge).join('');
 /* `chave` (opcional) dá um id estável ao preenchimento, pra animarBarrasHP() achar a MESMA barra entre um
    render() e o próximo (o jogo não faz diffing — cada render() destrói e recria o DOM inteiro — então sem um id

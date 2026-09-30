@@ -17,7 +17,10 @@ const statusTxt = () => offline() ? '📴 offline: salvo neste aparelho, sobe qu
 
 // sprite do ícone de um jogador ({ id, shiny }); usado no topo, na conta, no ranking, na sala e na lista de amigos
 export const htmlIcone = (ic, cls = 'icone') => {
-  const id = ic?.id || 25, url = ic?.shiny ? SPR_SHINY(id) : SPR(id);
+  // `ic` pode ter vindo da presença de uma sala (outro jogador escolhe o ícone dele): id que não é número de
+  // Pokédex torceria o endereço montado por SPR() pra dentro do `onerror`, virando código. Ver mp-sanear.js.
+  const n = Math.trunc(Number(ic?.id)), id = Number.isFinite(n) && n >= 1 && n <= 1025 ? n : 25;
+  const url = ic?.shiny ? SPR_SHINY(id) : SPR(id);
   return `<img class="${cls}" src="${url}" alt="" onerror="this.onerror=null;this.src='${SPR(id)}'">`;
 };
 
