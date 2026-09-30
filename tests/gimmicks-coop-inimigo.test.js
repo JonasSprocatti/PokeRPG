@@ -89,6 +89,18 @@ test('co-op: Mega Evolução troca os dados do Pokémon, sobe o teto e guarda o 
   assert.ok(!r2.eventos.some(x => x.txt.includes('MEGAEVOLUIU')));
 });
 
+/* Relato #72: megaevoluir é a forma ENTRANDO em campo, então a habilidade dela dispara na hora. Sem isto o sol do
+   Mega Charizard Y nunca aparecia (e o Solar Beam continuava carregando — relato #71). */
+test('co-op: a habilidade da forma Mega dispara ao megaevoluir (Drought põe o sol)', async t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const formaY = { ...FORMA_X, forma: 'charizard-mega-y', name: 'charizard-mega-y', types: ['fire', 'flying'], ability: 'drought' };
+  const { estado, eventos } = await resolverTurnoMP(luta(), [ataque([formaY])]);
+  assert.equal(monMP(estado, 'A0').ability, 'drought');
+  assert.equal(estado.campo.clima, 'sol');
+  assert.ok(estado.campo.turnos > 0);
+  assert.ok(eventos.some(x => x.txt.includes('sol')), 'a narração conta que o sol ficou forte');
+});
+
 test('co-op: a forma tem que ser da espécie do Pokémon e vir com dados completos', async t => {
   t.mock.method(Math, 'random', () => 0.99);
   for (const ruim of [

@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.37', data: '2026-09-30', titulo: 'A Mega Evolução voltou a trazer o clima dela', piada: 'O Mega Charizard Y vinha aparecendo em campo com o sol no bolso. Dizia que estava “guardando pra depois”. Não estava.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Megaevoluir agora ativa a habilidade da nova forma na hora.</b> O Mega Charizard Y põe o sol forte, o Mega Abomasnow começa a nevar, o Mega Mawile intimida — como nos jogos, porque a forma <i>entra em campo</i> naquele momento. Antes a habilidade só valia se você já tivesse entrado na luta com ela, ou seja: nunca. Vale pros dois lados e também no co-op.',
+        '<b>Como consequência, o Solar Beam volta a sair na hora sob o seu próprio sol.</b> Ele sempre soube dispensar o turno de carga no sol forte — o problema é que o sol do Mega Charizard Y não estava lá.',
+        '<b>A busca da lista de desbloqueados, na criação de jornada, filtra de novo.</b> Digitar “gengar” ou “94” esconde o resto. Um estilo da grade passava por cima do “esconder”, então o jogo escondia os botões e o navegador insistia em mostrá-los.'
+      ] }
+    ] },
   { versao: '2.36', data: '2026-09-30', titulo: 'Frutas e itens de segurar agora caem no chão', piada: 'Os itens estavam todos trancados na loja. O lojista alegou que “é assim que funciona o comércio”, mas ninguém explicou por que havia uma Fruta Yache atrás do balcão e nenhuma no mato.',
     secoes: [
       { nome: 'Novidades', itens: [

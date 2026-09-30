@@ -66,7 +66,8 @@ function aplicarMegaMP(m, g) {
   return f;
 }
 // devolve os `ref` cujo golpe deste turno é Z
-function aplicarGimmicksMP(s, acoes, say) {
+async function aplicarGimmicksMP(s, acoes, ctx) {
+  const say = ctx.say;
   const zRefs = new Set();
   if (s.pvp) return zRefs;
   for (const a of acoes) {
@@ -77,7 +78,11 @@ function aplicarGimmicksMP(s, acoes, say) {
     for (const g of a.gimmicks) {
       if (g?.tipo === 'mega' && !usou.mega) {
         const f = aplicarMegaMP(m, g);
-        if (f) { usou.mega = true; say(`${m.nome} ${verboDaForma(f)}! ${f.nome} entra em campo.`, 'level'); }
+        if (f) {
+          usou.mega = true; say(`${m.nome} ${verboDaForma(f)}! ${f.nome} entra em campo.`, 'level');
+          // a forma entra em campo de verdade: a habilidade dela dispara agora (Drought, Intimidate…)
+          await aoEntrarEmCampo([m], x => vivosMP(s.lados[outro(ladoDe(s, x.ref))]), ctx);
+        }
       } else if (g?.tipo === 'tera' && !usou.tera && !m.tera && TYPE_PT[g.valor]) {
         teracristalizar(m, g.valor); usou.tera = true;
         say(`${m.nome} TERASTALIZOU! Agora é do tipo ${TYPE_PT[g.valor]} — e só dele.`, 'level');
@@ -303,7 +308,7 @@ export async function resolverTurnoMP(estado, acoes) {
   }
 
   // 1b) gimmicks (Mega, Tera, Gigantamax entram antes de qualquer golpe; o Z marca o golpe do turno)
-  const zRefs = aplicarGimmicksMP(s, acoes, say);
+  const zRefs = await aplicarGimmicksMP(s, acoes, ctx);
 
   // 2) golpes na ordem de prioridade e velocidade
   const golpes = acoes.filter(a => a.tipo === 'golpe' && valida(a)).map(a => {

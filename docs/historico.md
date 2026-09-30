@@ -7,6 +7,50 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (30/09/2026) — a habilidade da forma Mega nunca disparava
+
+Dois relatos no mesmo dia, do mesmo jogador com o mesmo Charizard: **#72** "ao mega evoluir o charizard não esta
+fazendo o sol aparecer em campo" e **#71** "enquanto o campo esta com sunny day o ataque solar beam não ataca no
+mesmo turno, ele fica como carregando". Pareciam dois bugs; eram um.
+
+**Causa raiz**: `aoEntrarEmCampo` (golpe.js) — o único lugar que dispara Intimidate, Drought, Download, Trace e
+companhia — só era chamado no **começo da batalha** (`batalha.intimidar`, `mp-motor` no turno 1). `megaevoluir`
+troca `M.ability` pela habilidade da forma e não avisava ninguém. Como nos jogos a Mega "entra em campo" naquele
+instante, nada da habilidade nova valia: Mega Charizard Y sem sol, Mega Abomasnow sem neve, Mega Mawile sem
+intimidar. A habilidade só teria efeito se a luta tivesse COMEÇADO com ela — o que nunca acontece, porque a
+Mega é sempre uma troca no meio da batalha.
+
+**O #71 era consequência, não bug.** `golpe.js` já pula o turno de carga do Solar Beam no sol (`solNaCara`), e
+`tests/clima.test.js` provava isso desde antes. O jogador tinha o Mega Charizard Y e assumiu (com razão) que o
+campo estava ao sol. Lição: **dois relatos que se explicam pelo mesmo estado ausente provavelmente são um**;
+antes de caçar o segundo, confirmar se o primeiro não é a causa dele.
+
+**Corrigido** chamando `aoEntrarEmCampo` com o Pokémon que acabou de virar, nos três pontos onde uma forma Mega
+nasce: `usarMega`, `megaInimigo` (batalha.js) e `aplicarGimmicksMP` (mp-motor.js, que virou `async` por isso).
+Tera e Dynamax ficaram de fora **de propósito**: nenhum dos dois troca a habilidade.
+
+---
+
+## ✅ CORRIGIDO (30/09/2026) — a busca de desbloqueados na criação não filtrava nada
+
+Relato **#73**: "a aba de procurar um pokemon especifico para começar a jornada não funciona, ao digitar o nome ou
+numero do pokemon, nada acontece". O campo aceitava texto e a lista ficava idêntica.
+
+**Causa raiz**: CSS, não JavaScript. `ligarBuscaDesbloqueados` (criacao.js) filtra ligando `b.hidden = true` em
+cada botão — o jeito certo, sem redesenhar e sem perder o foco do campo. Mas `[hidden]{display:none}` mora na
+**folha do navegador**, e `.pick{…display:grid…}` é regra de AUTOR: autor ganha de UA sempre, então o atributo
+`hidden` era aplicado e ignorado. O contador de "achou" funcionava, o `#busca-vazia` aparecia na hora certa, e a
+grade continuava inteira na tela.
+
+**Corrigido** com uma linha global no topo do CSS: `[hidden]{display:none!important}` (o que o normalize.css faz
+há anos, pelo mesmo motivo). Vale pra todo `hidden` do projeto, presente e futuro — o conserto local (uma classe
+`.escondido` só pra `.pick`) deixaria a próxima lista com `display` de autor quebrada do mesmo jeito.
+
+**Lição**: `el.hidden = true` não é garantia de nada enquanto o elemento tiver `display` vindo do CSS do projeto.
+Quando "o JS roda e a tela não muda", desconfiar da cascata antes de reescrever o handler.
+
+---
+
 ## ✅ CORRIGIDO (29/09/2026) — o botão da 🎯 Caça Shiny não fazia nada
 
 Relatado **duas vezes** (relatos #63 em 26/09 e #67 em 28/09), com print: "apareceu o botão de caçada shiny,

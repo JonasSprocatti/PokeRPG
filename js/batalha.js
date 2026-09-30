@@ -103,6 +103,11 @@ async function intimidar(E, soInimigo = false) {
   const lado = vivos(emCampo());
   await aoEntrarEmCampo(soInimigo ? [E] : [...lado, E], m => (m === E ? lado : [E]), CTX);
 }
+/* Megaevoluir (e a Reversão Primitiva) é a forma ENTRANDO em campo: nos jogos a habilidade da Mega dispara na
+   hora — Drought do Mega Charizard Y, Snow Warning do Mega Abomasnow, Intimidate do Mega Mawile. Sem isto o sol
+   nunca aparecia e o Solar Beam continuava precisando carregar (relatos #72 e #71). Tera/Dynamax não entram
+   aqui: nenhum dos dois troca a habilidade. */
+const habilidadeDaNovaForma = m => aoEntrarEmCampo([m], x => (x === G.B.enemy ? vivos(emCampo()) : [G.B.enemy]), CTX);
 /* ---- sair de campo sem desmaiar ----
    Roar, Whirlwind, Dragon Tail, Circle Throw e Red Card empurram alguém pra fora; Wimp Out e Emergency Exit fazem o
    Pokémon sair por conta própria. Nos jogos isso é "trocar de Pokémon" — aqui você é o Pokémon e nunca troca, então
@@ -320,6 +325,7 @@ export async function usarMega() {
     render();
     await say(`<b>${esc(rotulo(P))} ${verboDaForma(f)}!</b> ${esc(f.nome)} entra em campo.`, 'level');
     await say(`Habilidade agora: <b>${esc(fmt(P.ability))}</b>.`, 'status');
+    await habilidadeDaNovaForma(P);
   } catch (e) { console.error(e); log('Não deu pra megaevoluir: ' + esc(e.message), 'hit'); }
   finally { G.busy = false; render(); save(); }
 }
@@ -393,6 +399,7 @@ async function megaDoInimigo() {
   if (!nome) return;
   render();
   await say(`<b>${esc(rotulo(E))} ${verboDaForma(f)}!</b> ${esc(f.nome)} — a luta mudou de patamar.`, 'hit');
+  await habilidadeDaNovaForma(E);
 }
 
 /* Tera do inimigo: mesmas lutas da Mega (Alfa, lendário e treinador) e o mesmo gatilho de metade do HP —

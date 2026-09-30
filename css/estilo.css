@@ -36,6 +36,10 @@ button:active:not(:disabled){transform:scale(.96)}
 button:disabled{cursor:not-allowed;opacity:.45}
 :focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
 img{max-width:100%}
+/* `hidden` tem de ganhar de qualquer `display` de autor: o `[hidden]{display:none}` do navegador é folha de UA e
+   perde de uma regra de classe. Foi o bug da busca de desbloqueados na criação (o filtro marcava `hidden` e o
+   `.pick{display:grid}` mantinha o botão na tela — "digito o nome e nada acontece"). */
+[hidden]{display:none!important}
 .muted{color:var(--muted)} .small{font-size:14px}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:2px solid var(--line)}
