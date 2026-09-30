@@ -993,6 +993,38 @@ Cinco queixas do primeiro dia, todas atendidas em `som.js`:
 dependesse de arquivo de áudio publicado (tudo é sintetizado). `tests/referencias.test.js`: `AudioContext` entrou
 em `GLOBAIS_MAIUSCULAS` (mesma lista que já tinha `Audio`).
 
+### A terceira leva (30/09/2026): melodia escrita à mão e o editor
+Queixa: *"não estou gostando das músicas, tem algum jeito de eu dar um toque humano nela? Quero interferir e
+testar, mas não estou perto do Raspberry Pi."* Duas coisas, e a primeira é a causa de fundo:
+
+**1. A melodia era SORTEADA nota a nota.** Dentro de uma pentatônica nenhuma nota soa errada, então o resultado
+era *inofensivo* — e sem rumo: faltava o motivo que se repete, que é o que faz a gente reconhecer uma música.
+Agora cada tema tem uma **frase escrita à mão** (`melodia`), numa notação de um token por semicolcheia:
+número = grau da escala, `.` = silêncio, `-` = segura a nota anterior. O sorteio virou só tempero (a oitava
+ocasional) — altura e ritmo são sempre os escritos. Tema sem `melodia` ainda cai no gerador antigo.
+⚠️ A variação de oitava é pra **baixo** (`+0` em vez de `+12`): a primeira versão pulava pra `+24` e teria
+desfeito exatamente a correção de agudo da leva anterior. `tests/som.test.js` trava o teto e o formato da frase.
+
+**2. O editor: `musica.html`.** Página de autoria, publicada junto com o site pra funcionar **de qualquer
+aparelho** (o pedido era justamente poder mexer longe do Pi). Seleciona tema e contexto, edita a frase, ajusta
+raiz/escala/onda/progressão/andamento e o corte de agudo e o volume, ouve na hora, e sai com **o bloco de código
+pronto pra colar em `TEMAS`** ou com um **link que carrega exatamente aqueles ajustes** (é assim que o resultado
+volta pra cá). Decisões que valem registro:
+- **Toca pelo motor de verdade** (`som.js` exporta `tocarPreview`/`ajustarSaida`, e `montarFaixa` aceita um tema
+  como OBJETO). Um editor com sintetizador próprio soaria diferente do jogo em uma semana.
+- **`tocarPreview` dá `resume()`**: o editor cria o `AudioContext` ao mexer nos controles de saída, e ele nasce
+  `suspended` — sem isso o botão Tocar agendava tudo e não saía som.
+- **Fora do jogo e fora do buscador**: não está em `PAGINAS` (então `gerar-paginas.mjs` não a toca e ela não
+  entra no `sitemap.xml`), não está no `PRECACHE`, não é linkada de lugar nenhum e leva `noindex,nofollow` —
+  importante porque a revisão do AdSense está em curso e página fina indexada conta contra.
+- O link usa `encodeURIComponent`, **não base64**: `btoa` estoura com acento (o nome "menor harmônica" já
+  bastava), e em texto dá pra ler o link e ver o que ele carrega.
+
+**Sobre testar isto sem navegador**: jsdom **não executa `<script type="module">`** — a primeira tentativa
+mediu zero e parecia que a página estava morta. O jeito que funciona é extrair o corpo do módulo e importá-lo
+com o DOM do jsdom nos globais; e `window.AudioContext` precisa ser posto no objeto `window` do jsdom, não só em
+`globalThis` (o código checa `window.AudioContext`, e essa mesma distração já tinha dado falso negativo antes).
+
 ---
 
 ## Anúncios (AdSense) e privacidade

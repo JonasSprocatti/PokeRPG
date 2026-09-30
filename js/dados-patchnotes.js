@@ -10,6 +10,13 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.31', data: '2026-09-30', titulo: 'As músicas agora têm melodia de verdade', piada: 'O compositor da casa vinha tocando notas sorteadas e chamando aquilo de improviso. Sentaram com ele e explicaram o que é uma melodia.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>As músicas foram reescritas.</b> Antes cada nota era sorteada na hora: nenhuma soava errada, mas a música não ia a lugar nenhum. Agora cada tema tem uma <b>frase própria, escrita nota por nota</b>, que se repete e dá pra reconhecer — do jeito que música de jogo funciona.',
+        'Continua tendo variação pra não ficar mecânico, mas agora ela é o tempero, não o prato.'
+      ] }
+    ] },
   { versao: '2.30', data: '2026-09-30', titulo: 'Os gritos voltaram (desculpa)', piada: 'Na tentativa de fazer o grito sair na hora, ele passou a sair nunca. Tecnicamente não está mais atrasado.',
     secoes: [
       { nome: 'Correções', itens: [

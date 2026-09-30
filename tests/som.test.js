@@ -3,7 +3,7 @@
    cai no tema padrão sem avisar ninguém — a rota nova simplesmente soaria genérica pra sempre. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TEMAS, precarregarCry, tocarCry, SOM_KEY } from '../js/som.js';
+import { TEMAS, precarregarCry, tocarCry, SOM_KEY, lerMelodia, grauEmSemitons } from '../js/som.js';
 import { CLIMAS, climaDaRota } from '../js/cenario.js';
 import { GENS } from '../js/dados-mapas.js';
 
@@ -86,9 +86,26 @@ test('som desligado não busca nem toca grito nenhum', async () => {
 test('nenhuma faixa pode gerar nota acima de 880 Hz (o teto de agudo combinado)', () => {
   const freq = m => 440 * 2 ** ((m - 69) / 12);
   for (const [id, t] of Object.entries(TEMAS)) {
-    const maisAgudo = t.raiz + Math.max(...t.escala) + 12;   // a oitava mais alta que o gerador usa
+    /* O grau mais alto que a faixa alcança: com melodia escrita é o maior grau DELA (um grau acima do tamanho
+       da escala já pula uma oitava, então não dá pra olhar só a escala); sem melodia, é o sorteio, que pode
+       tirar qualquer nota da escala. Nos dois casos a oitava máxima que o gerador aplica é +12. */
+    const graus = t.melodia ? lerMelodia(t.melodia).map(Number).filter(Number.isFinite)
+      : t.escala.map((_, i) => i);
+    const maisAgudo = t.raiz + Math.max(...graus.map(g => grauEmSemitons(t.escala, g))) + 12;
     assert.ok(freq(maisAgudo) <= 880, `${id}: chega a ${Math.round(freq(maisAgudo))} Hz`);
     assert.ok(t.raiz >= 48 && t.raiz <= 57, `${id}: raiz ${t.raiz} fora da faixa grave combinada`);
     assert.equal(t.acordes.length, 4, `${id}: a progressão é de 4 compassos`);
+  }
+});
+
+/* A melodia é escrita à mão (inclusive pelo usuário, no editor), então o formato precisa de guarda: token que
+   não seja número, `.` ou `-` seria ignorado em silêncio e viraria um buraco no meio da frase. */
+test('toda melodia escrita está num formato que o motor entende', () => {
+  for (const [id, t] of Object.entries(TEMAS)) {
+    assert.ok(t.melodia, `${id}: sem melodia escrita (cairia no sorteio)`);
+    const p = lerMelodia(t.melodia);
+    assert.equal(p.length, 16, `${id}: ${p.length} passos (o compasso é de 16)`);
+    for (const tok of p) assert.ok(tok === '.' || tok === '-' || Number.isFinite(Number(tok)), `${id}: token "${tok}" inválido`);
+    assert.notEqual(p[0], '-', `${id}: a frase não pode começar segurando uma nota que não existe`);
   }
 });

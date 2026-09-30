@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Ferramenta de autoria, NÃO faz parte do jogo: fora do sitemap, fora do PAGINAS (gerar-paginas.mjs não mexe
+     aqui) e sem link de lugar nenhum. O noindex é pra nenhum buscador tratar isto como conteúdo do site. -->
+<meta name="robots" content="noindex,nofollow">
+<title>Estúdio de trilha — PokéRPG</title>
+<style>
+  :root { --bg:#12131c; --caixa:#1c1e2b; --linha:#2e3145; --txt:#e9ecf5; --sec:#9aa3c0; --acc:#ffcb3d; }
+  * { box-sizing:border-box }
+  body { margin:0; padding:16px 14px 60px; background:var(--bg); color:var(--txt);
+         font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif }
+  h1 { font-size:20px; margin:0 0 4px } h2 { font-size:15px; margin:18px 0 8px; color:var(--acc) }
+  p.sub { color:var(--sec); font-size:13px; margin:0 0 16px }
+  .caixa { background:var(--caixa); border:1px solid var(--linha); border-radius:12px; padding:14px; margin-bottom:14px }
+  label { display:block; font-size:13px; color:var(--sec); margin:10px 0 4px }
+  select, input[type=text], textarea { width:100%; padding:10px; border-radius:8px; border:1px solid var(--linha);
+    background:#0f1018; color:var(--txt); font:inherit }
+  textarea { font-family:ui-monospace,monospace; font-size:15px; letter-spacing:1px; resize:vertical }
+  input[type=range] { width:100%; accent-color:var(--acc) }
+  .linha { display:flex; gap:10px; flex-wrap:wrap } .linha > * { flex:1 1 130px }
+  button { padding:13px 16px; border-radius:10px; border:0; background:var(--acc); color:#1b1400;
+    font:600 16px/1 inherit; cursor:pointer } button.sec { background:#333752; color:var(--txt) }
+  .botoes { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px } .botoes button { flex:1 1 120px }
+  .val { color:var(--acc); font-variant-numeric:tabular-nums }
+  pre { background:#0f1018; border:1px solid var(--linha); border-radius:8px; padding:12px; overflow-x:auto;
+        font-size:12px; white-space:pre-wrap; word-break:break-all }
+  .barra { display:flex; gap:3px; margin-top:10px }
+  .barra i { flex:1; height:6px; border-radius:2px; background:var(--linha) }
+  .barra i.on { background:var(--acc) } .barra i.forte { background:#5b6089 } .barra i.on.forte { background:var(--acc) }
+  code { background:#0f1018; padding:2px 5px; border-radius:4px; font-size:13px }
+  .aviso { color:var(--sec); font-size:12px; margin-top:8px }
+</style>
+</head>
+<body>
+<h1>🎹 Estúdio de trilha</h1>
+<p class="sub">Mexa, ouça, e mande o resultado. Toca pelo <b>motor do jogo</b> (<code>js/som.js</code>) — o que
+sai aqui é o que sai lá.</p>
+
+<div class="caixa">
+  <div class="linha">
+    <div><label for="tema">Tema (rota)</label><select id="tema"></select></div>
+    <div><label for="ctx">Contexto (tela)</label><select id="ctx"></select></div>
+  </div>
+  <div class="botoes">
+    <button id="tocar">▶ Tocar</button>
+    <button id="parar" class="sec">■ Parar</button>
+  </div>
+  <div class="barra" id="barra"></div>
+</div>
+
+<div class="caixa">
+  <h2>A melodia (é aqui que mora o toque humano)</h2>
+  <label for="mel">16 passos. Número = grau da escala · <code>.</code> = silêncio · <code>-</code> = segura a nota</label>
+  <textarea id="mel" rows="2" spellcheck="false"></textarea>
+  <div class="botoes">
+    <button id="sortear" class="sec">🎲 Sortear uma frase</button>
+    <button id="limpar" class="sec">Limpar</button>
+  </div>
+  <p class="aviso">Graus altos sobem de oitava sozinhos: numa pentatônica (5 notas) o grau 5 já é a tônica acima.
+    Comece simples — poucas notas e bastante <code>.</code> costuma soar melhor que encher os 16 passos.</p>
+</div>
+
+<div class="caixa">
+  <h2>Tonalidade e timbre</h2>
+  <label for="raiz">Raiz (grave ⇄ agudo): <span class="val" id="vraiz"></span></label>
+  <input type="range" id="raiz" min="45" max="60" step="1">
+  <div class="linha">
+    <div><label for="escala">Escala</label><select id="escala"></select></div>
+    <div><label for="onda">Onda</label><select id="onda">
+      <option value="triangle">triangle (suave)</option><option value="square">square (chiptune)</option>
+      <option value="sawtooth">sawtooth (áspero)</option><option value="sine">sine (puríssima)</option>
+    </select></div>
+  </div>
+  <label for="acordes">Progressão — 4 números, em semitons a partir da raiz</label>
+  <input type="text" id="acordes" inputmode="numeric">
+  <label for="bpm">Andamento: <span class="val" id="vbpm"></span> bpm</label>
+  <input type="range" id="bpm" min="60" max="180" step="2">
+</div>
+
+<div class="caixa">
+  <h2>Saída (vale pra tudo)</h2>
+  <label for="corte">Corte dos agudos: <span class="val" id="vcorte"></span> Hz — quanto menor, mais abafado</label>
+  <input type="range" id="corte" min="600" max="6000" step="100">
+  <label for="vol">Volume: <span class="val" id="vvol"></span></label>
+  <input type="range" id="vol" min="0" max="60" step="1">
+</div>
+
+<div class="caixa">
+  <h2>Mandar pra mim</h2>
+  <p class="sub" style="margin:0 0 10px">Copie o link e me mande — ele carrega exatamente estes ajustes.</p>
+  <div class="botoes">
+    <button id="link">🔗 Copiar link</button>
+    <button id="cod" class="sec">📋 Copiar código</button>
+  </div>
+  <pre id="saida"></pre>
+</div>
+
+<script type="module">
+import { TEMAS, CONTEXTOS, ESCALAS, tocarPreview, pararMusica, ajustarSaida, lerMelodia } from './js/som.js';
+
+const $ = id => document.getElementById(id);
+const nomeDaEscala = arr => Object.keys(ESCALAS).find(k => ESCALAS[k].join() === arr.join()) || 'penta maior';
+
+// estado = uma cópia dos temas do jogo, que o editor modifica sem tocar no original
+const temas = JSON.parse(JSON.stringify(TEMAS));
+for (const k in temas) temas[k].escalaNome = nomeDaEscala(TEMAS[k].escala);
+let atual = 'floresta', contexto = 'explorar', tocando = false;
+
+for (const k of Object.keys(temas)) $('tema').add(new Option(k, k));
+for (const k of Object.keys(CONTEXTOS)) $('ctx').add(new Option(k, k));
+for (const k of Object.keys(ESCALAS)) $('escala').add(new Option(k, k));
+$('barra').innerHTML = Array.from({ length: 16 }, (_, i) => `<i class="${i % 4 === 0 ? 'forte' : ''}"></i>`).join('');
+
+function daTela() {                     // o que está nos controles -> objeto de tema
+  return { raiz: +$('raiz').value, escala: ESCALAS[$('escala').value], escalaNome: $('escala').value,
+    onda: $('onda').value, melodia: $('mel').value,
+    acordes: ($('acordes').value.match(/-?\d+/g) || ['0', '7', '5', '9']).slice(0, 4).map(Number),
+    bpm: +$('bpm').value };
+  // (sem `densidade` de propósito: ela vem do contexto, e mandar `undefined` daqui apagaria o valor de lá)
+}
+function paraTela(t) {                  // objeto de tema -> controles
+  $('mel').value = t.melodia || '';
+  $('raiz').value = t.raiz; $('escala').value = t.escalaNome || nomeDaEscala(t.escala);
+  $('onda').value = t.onda || CONTEXTOS[contexto].onda;
+  $('acordes').value = t.acordes.join(' ');
+  $('bpm').value = t.bpm ?? CONTEXTOS[contexto].bpm;
+  rotulos();
+}
+const rotulos = () => {
+  $('vraiz').textContent = $('raiz').value; $('vbpm').textContent = $('bpm').value;
+  $('vcorte').textContent = $('corte').value; $('vvol').textContent = (+$('vol').value / 100).toFixed(2);
+};
+
+function aplicar({ retocar = true } = {}) {
+  const t = daTela();
+  temas[atual] = { ...temas[atual], ...t };
+  ajustarSaida({ corte: +$('corte').value, volume: +$('vol').value / 100 });
+  rotulos(); mostrarSaida();
+  if (retocar && tocando) tocarPreview(contexto, { ...t, bpm: t.bpm });
+}
+function tocar() {
+  const jaEstava = tocando;
+  tocando = true; aplicar({ retocar: false }); tocarPreview(contexto, daTela());
+  t0 = 0; if (!jaEstava) acender();   // um laço de animação só, mesmo clicando Tocar várias vezes
+}
+function parar() { tocando = false; pararMusica(); }
+
+// acende o passo que está soando (só visual: relê o relógio, não interfere no motor)
+let t0 = 0;
+function acender() {
+  if (!tocando) { [...$('barra').children].forEach(e => e.classList.remove('on')); return; }
+  const dur16 = 60 / (+$('bpm').value) / 4;
+  if (!t0) t0 = performance.now() / 1000;
+  const passo = Math.floor(((performance.now() / 1000 - t0) / dur16)) % 16;
+  const p = lerMelodia($('mel').value);
+  [...$('barra').children].forEach((e, i) => e.classList.toggle('on', i === passo && p[i % (p.length || 1)] !== '.'));
+  requestAnimationFrame(acender);
+}
+
+function mostrarSaida() {
+  const t = daTela(), esc = { 'penta maior': 'PENTA_MAIOR', 'penta menor': 'PENTA_MENOR', 'menor harmônica': 'MENOR_HARM' }[t.escalaNome];
+  const onda = t.onda === CONTEXTOS[contexto].onda ? '' : `, onda: '${t.onda}'`;
+  $('saida').textContent =
+    `${atual}: { raiz: ${t.raiz}, escala: ${esc}, acordes: [${t.acordes.join(', ')}]${onda}, melodia: '${t.melodia.trim()}' },`;
+}
+
+// --- eventos
+$('tema').onchange = e => { atual = e.target.value; paraTela(temas[atual]); if (tocando) tocar(); else mostrarSaida(); };
+$('ctx').onchange = e => { contexto = e.target.value; $('bpm').value = CONTEXTOS[contexto].bpm; if (tocando) tocar(); else aplicar({ retocar: false }); };
+for (const id of ['mel', 'raiz', 'escala', 'onda', 'acordes', 'bpm']) {
+  $(id).addEventListener('input', () => { t0 = 0; aplicar(); });
+}
+for (const id of ['corte', 'vol']) $(id).addEventListener('input', () => aplicar({ retocar: false }));
+$('tocar').onclick = tocar;
+$('parar').onclick = parar;
+$('limpar').onclick = () => { $('mel').value = '. '.repeat(16).trim(); aplicar(); };
+$('sortear').onclick = () => {                 // ponto de partida, não resultado final: a ideia é você editar depois
+  const n = ESCALAS[$('escala').value].length, p = [];
+  for (let i = 0; i < 16; i++) {
+    const forte = i % 4 === 0;
+    p.push(Math.random() < (forte ? 0.8 : 0.3) ? String(Math.floor(Math.random() * Math.min(n, 5)))
+      : (Math.random() < 0.3 && p.length && p[p.length - 1] !== '.' ? '-' : '.'));
+  }
+  if (p[0] === '-') p[0] = '0';
+  $('mel').value = p.join(' '); t0 = 0; aplicar();
+};
+
+const copiar = (txt, btn, ok) => navigator.clipboard.writeText(txt)
+  .then(() => { const a = btn.textContent; btn.textContent = ok; setTimeout(() => { btn.textContent = a; }, 1400); })
+  .catch(() => prompt('Copie à mão:', txt));
+$('cod').onclick = e => copiar($('saida').textContent, e.target, '✔ Copiado');
+// o hash vai em texto (encodeURIComponent), não em base64: `btoa` engasga com acento — "menor harmônica" no
+// nome da escala já era suficiente pra estourar — e assim dá pra ler o link e ver o que ele carrega.
+$('link').onclick = e => {
+  location.hash = encodeURIComponent(JSON.stringify({ tema: atual, ctx: contexto, t: daTela(),
+    corte: +$('corte').value, vol: +$('vol').value }));
+  copiar(location.href, e.target, '✔ Copiado');
+};
+
+// abrir um link compartilhado (ou começar do tema padrão do jogo)
+function inicio() {
+  $('corte').value = 2000; $('vol').value = 26;
+  try {
+    if (location.hash.length > 1) {
+      const d = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+      atual = d.tema; contexto = d.ctx; $('tema').value = atual; $('ctx').value = contexto;
+      $('corte').value = d.corte; $('vol').value = d.vol;
+      temas[atual] = { ...temas[atual], ...d.t, escalaNome: d.t.escalaNome };
+    }
+  } catch { /* link estragado: começa do padrão, sem drama */ }
+  paraTela(temas[atual]); aplicar({ retocar: false });
+}
+inicio();
+</script>
+</body>
+</html>
