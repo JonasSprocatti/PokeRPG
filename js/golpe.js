@@ -5,7 +5,7 @@
 //   ctx.golpe(g)     nome do golpe pra exibir
 //   ctx.say(txt, cls)  narra (pode ser async: o single player espera entre mensagens)
 //   ctx.atualizar()  redesenha (barras de HP) — opcional
-//   ctx.tremer(m)    animação de quem levou dano — opcional
+//   ctx.tremer(m, tipo)  animação + som de quem levou dano; `tipo` é o do golpe (pinta e escolhe o som) — opcional
 //   ctx.atacar(m)    animação de quem usou o golpe — opcional
 //   ctx.refDe(m) / ctx.monPorRef(ref)  identificam quem plantou Leech Seed (pra curar no fim do turno) — opcionais
 //   ctx.campo        objeto do campo da batalha, compartilhado pelos dois lados: { clima, turnos } — opcional
@@ -697,7 +697,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (typeEff(g.type, tiposDefensivos(t)) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
     if (ht.aguenta) { await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`); return; }     // Sturdy
     if (Math.random() >= chanceOhko(u, t)) { await ctx.say(t.level > u.level ? 'Mas falhou! (o alvo tem nível maior)' : 'Mas errou!'); return; }
-    t.hp = 0; up(ctx); (ctx.tremer || nada)(t); await ctx.say('É um nocaute de um golpe só!', 'crit'); return 'acertou';
+    t.hp = 0; up(ctx); (ctx.tremer || nada)(t, g.type); await ctx.say('É um nocaute de um golpe só!', 'crit'); return 'acertou';
   }
   if (!selfT && g.acc != null && Math.random() > chanceAcerto(g, u, t, climaDoCtx(ctx))) { await ctx.say('Mas errou!'); return; }
   // Good As Gold: imune a QUALQUER golpe de status alheio (o próprio ainda pode usar golpe de status normalmente)
@@ -729,7 +729,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (t.hp <= u.hp) { await ctx.say('Mas falhou!'); return; }
     const bruto = t.hp - u.hp;
     const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, bruto, g.type, ef) : bruto);
-    t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t);
+    t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t, g.type);
     await ctx.say(`${T} perdeu ${feito} HP.`, 'hit');
     if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
     return 'acertou';
@@ -765,7 +765,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (r.crit) u.vol.criticos = (u.vol.criticos || 0) + 1;                                  // Sirfetch'd (evolucao.js)
   }
   t.vol.danoSofrido = (t.vol.danoSofrido || 0) + total;                                      // Runerigus (evolucao.js)
-  up(ctx); (ctx.tremer || nada)(t);
+  up(ctx); (ctx.tremer || nada)(t, g.type);
   if (crit) await ctx.say('Um golpe crítico!', 'crit');
   if (ef > 1) await ctx.say('É super efetivo!', 'good'); else if (ef < 1) await ctx.say('Não é muito efetivo...');
   if (hits > 1) await ctx.say(`Acertou ${acertos} vez${acertos > 1 ? 'es' : ''}!`);

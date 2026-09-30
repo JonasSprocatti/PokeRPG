@@ -2,7 +2,7 @@
 // Tela inicial: passo 1 dificuldade, passo 2 espécie (só os iniciais — REGIOES_INICIAIS — salvo modo com
 // `especiesLivres`), prévia (habilidade, natureza, nível, apelido) e início do jogo.
 import { G, save, nm, registrar } from './estado.js';
-import { $, limparTopo, REDUCED, log } from './ui.js';
+import { $, limparTopo, semAnimacao, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon } from './pokemon.js';
 import { IMPL } from './habilidades.js';
@@ -237,7 +237,7 @@ export async function previewSearch(q) {
     G.PV = { data, ability: (data.abilities.find(a => !a.hidden) || data.abilities[0])?.name, nature: pick(Object.keys(NATURES)), level: G.PV?.level || 5, nick: '' };
     renderPreview();
     data.abilities.forEach(a => loadAbility(a).then(() => { if (G.PV?.data === data) renderPreview(); }).catch(() => {}));
-    box.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+    box.scrollIntoView({ behavior: semAnimacao() ? 'auto' : 'smooth', block: 'start' });
   } catch (e) {
     console.error('prévia:', e);
     box.innerHTML = `<p class="err">Não consegui montar a prévia de ${esc(fmt(data.name))}: ${esc(e.message)}.<br>

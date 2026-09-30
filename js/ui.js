@@ -2,9 +2,16 @@
 // Tudo que toca o DOM de forma genérica (sem saber de batalha/criação).
 import { G } from './estado.js';
 import { sleep } from './util.js';
+import { TC } from './dados.js';
+import { animacoesLigadas } from './ajustes.js';
 
 export const $ = s => document.querySelector(s);
-export const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* "Vou animar?" tem DUAS respostas e um só ponto de leitura: o `prefers-reduced-motion` do sistema e o ajuste
+   ⚙ Ajustes → Som e animações. É função, não const, porque o ajuste muda no meio da sessão (o const era lido uma
+   vez no carregamento e o checkbox não valeria até o F5). Desligar também encurta a pausa do `say` — a espera
+   existia pra dar tempo de ver a animação; sem animação, o combate anda mais rápido. */
+const REDUCED_SISTEMA = matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const semAnimacao = () => REDUCED_SISTEMA || !animacoesLigadas();
 
 /* ---- topo: dinheiro sempre visível + menu ☰ no celular ---- */
 // telas fora do jogo limpam o topo por aqui (botões + dinheiro), nunca direto no #topr
@@ -53,7 +60,7 @@ export function logRaw(l) {
   el.appendChild(p); el.scrollTop = el.scrollHeight;
 }
 export function log(html, cls = '') { const l = { html, cls }; logRaw(l); if (G.S) (G.S.log ||= []).push(l); }
-export async function say(html, cls) { log(html, cls); await sleep(REDUCED ? 80 : 420); }
+export async function say(html, cls) { log(html, cls); await sleep(semAnimacao() ? 80 : 420); }
 export function ask(html, options, extra = '') {
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
@@ -117,10 +124,22 @@ function idDoMon(m) {
 }
 // troca a classe (removendo antes, forçando reflow) pra reiniciar a animação mesmo se ela já estava rodando
 function reanimar(id, classe) {
-  const el = document.getElementById(id); if (!el) return;
+  const el = document.getElementById(id); if (!el) return null;
   el.classList.remove(classe); void el.offsetWidth; el.classList.add(classe);
+  return el;
 }
-export function shake(m) { const id = idDoMon(m); if (id) reanimar(id, 'shake'); }
+/* Quem apanha treme E pisca NA COR DO TIPO do golpe (`dados.TC`, as mesmas cores dos selos de tipo) — pedido do
+   usuário junto do som de impacto: golpe de fogo estoura laranja, de água azul.
+   A piscada já foi disparada pelo render de `up(ctx)`, no vermelho padrão, e ela é REINICIADA aqui com a cor
+   certa. O caminho de "pintar antes do render" não existe: `render()` remonta a cena inteira, então qualquer
+   variável de CSS posta no sprite antes seria jogada fora junto com o elemento. `tipo` ausente (dano de
+   confusão, esforço do próprio golpe) fica no vermelho de sempre. */
+export function shake(m, tipo) {
+  const id = idDoMon(m); if (!id || semAnimacao()) return;
+  const el = reanimar(id, 'shake'); if (!el) return;
+  el.style.setProperty('--cor-impacto', TC[tipo] || '#ff4d4d');
+  reanimar(id, 'hit-flash');
+}
 // quem usou o golpe "pula" um pouco — narrado bem no momento em que golpe.js anuncia "X usou Y!" (ctx.atacar,
 // opcional: o multiplayer não tem DOM, então o ctx dele simplesmente não define isso)
-export function atacar(m) { const id = idDoMon(m); if (id) reanimar(id, 'atacando'); }
+export function atacar(m) { const id = idDoMon(m); if (id && !semAnimacao()) reanimar(id, 'atacando'); }

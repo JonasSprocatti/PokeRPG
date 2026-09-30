@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.35', data: '2026-09-30', titulo: 'Cada golpe tem o seu som (e a sua cor) ao acertar', piada: 'Antes todo golpe fazia o mesmo nada. O Charizard reclamou que a labareda dele soava igual a um tapa do Snorlax — tinha razão, soava igual porque não soava.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Golpe que acerta agora faz barulho, e o barulho é do tipo do golpe.</b> Fogo é uma labareda; Voador e Dragão são uma lufada de ar; Água é um baque molhado; Gelo trinca; Elétrico estala; Aço soa como metal batendo; Grama e Inseto farfalham; Terra e Pedra são um estrondo grave; Fantasma, Psíquico, Sombrio, Fada e Venenoso têm um lamento; Normal e Lutador são pancada seca. Vale pros <b>dois lados</b>: quando você acerta e quando você apanha.',
+        '<b>A piscada de dano ganhou a cor do tipo.</b> Levar um golpe de fogo acende laranja no sprite, um de água acende azul — as mesmas cores dos selos de tipo. Dano sem tipo (confusão, o esforço do próprio golpe, veneno) continua no vermelho.',
+        '<b>Agora dá pra desligar as animações de combate</b> em <b>⚙ Ajustes → Som e animações</b>, separado do som. Sem animação o combate fica mais <b>rápido</b> de propósito: a pausa entre as mensagens existia pra dar tempo de ver a tremida e ouvir o impacto, então ela encurta junto. Quem já pediu “reduzir animações” no próprio aparelho não precisa mexer em nada.'
+      ] }
+    ] },
   { versao: '2.34', data: '2026-09-30', titulo: 'Tema de batalha, som de nível e Pokémon do tamanho certo', piada: 'O Meowth vinha sendo exibido do tamanho de um Onix. Ele gostou e não queria voltar, mas foi convencido.',
     secoes: [
       { nome: 'Novidades', itens: [

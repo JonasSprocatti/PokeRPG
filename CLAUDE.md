@@ -51,7 +51,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/util.js` · `js/dados.js` | Utilidades (`esc`, `store`, `offline`…) · tabelas fixas (tipos, `ITEMS`, `ZONES`, `MISSOES`, `DIFICULDADES`…). |
 | `js/regras.js` | **Fórmulas puras, todas testadas.** Regra nova de conta/probabilidade nasce aqui. |
 | `js/api.js` | PokéAPI com cache: memória + **IndexedDB** (`pokerpg-cache`), `localStorage` de reserva. `iniciarCache()` antes do boot. |
-| `js/ui.js` · `js/render.js` | Log, modal `ask`, `toast`, `REDUCED` · `render()` (re-render total) e os sprites. |
+| `js/ui.js` · `js/render.js` | Log, modal `ask`, `toast`, `semAnimacao()` · `render()` (re-render total) e os sprites. |
 | `js/layout.js` · `js/paineis.js` | Modelo puro do layout dos painéis (testado) · o DOM de arrastar e redimensionar. |
 | `js/pokemon.js` · `js/efeitos.js` | `makeMon()` = instância jogável · efeitos + `CTX` (narração do single player). |
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
@@ -83,7 +83,8 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/nuvem.js` · `js/presenca.js` | Supabase sob demanda (login, sincronizar) · "Jogando agora" (`track({})` vazio — nunca identifica quem). |
 | `js/offline.js` | Baixar um mapa (ou o jogo inteiro) pra jogar offline. |
 | `js/navegacao.js` | **`TELAS` é a ÚNICA lista de telas** — tela nova entra lá e aparece na barra e no menu ☰. |
-| `js/ajustes.js` · `js/tela-ajustes.js` | Fonte, estilo de sprite, presença, download offline. |
+| `js/ajustes.js` · `js/tela-ajustes.js` | Fonte, estilo de sprite, animações de combate, presença, download offline. |
+| `js/som.js` | Cries, música procedural e som de impacto por tipo de golpe (`IMPACTOS`). **Nada sai acima de 2 kHz** — é onde o passa-baixa da saída corta. |
 | `js/tutorial.js` · `js/tela-tutorial.js` | ❓ Tutorial (puro + tela). Desenha em `G.tut`, **nunca** `G.S`. |
 | `js/relatos.js` · `js/imagens-relato.js` | Bugs e sugestões (funciona offline, com fila), até 2 imagens de 2 MB. |
 | `js/conta.js` · `perfil-amigo.js` · `ranking.js` · `saves.js` · `tela-*.js` | Telas. |
@@ -186,7 +187,7 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 - Fontes: `--display` (Fredoka) para títulos e números, `--body` (Atkinson Hyperlegible) para texto. Não voltar a usar fonte pixelada em número (a Pixelify Sans saiu porque confundia 2/5/8).
 - Telas fora do jogo limpam o topo com **`limparTopo()`**, nunca `#topr.innerHTML = ''`.
 - Tela nova = `barraTelas('id')` + entrada em `navegacao.TELAS`.
-- `prefers-reduced-motion` já é global no CSS — animação nova não precisa de tratamento próprio.
+- `prefers-reduced-motion` já é global no CSS — animação nova não precisa de tratamento próprio. Animação de combate em JS pergunta a **`ui.semAnimacao()`** (mídia do sistema + ⚙ Ajustes), nunca só a mídia.
 - **O minimalismo do ponytail não vale para as convenções acima.** O plugin `ponytail` (modo `full` por padrão) manda cortar o que não foi pedido — e o `README.md`, a versão nova em `dados-patchnotes.js`, o teste da função pura em `regras.js`, a linha no `PRECACHE` do `sw.js` e o registro em `docs/features.md` parecem exatamente isso. **Não são.** São entrega, não gordura: o pedido explícito do usuário vale sobre a heurística do plugin. O ponytail decide COMO o código fica (mais curto, sem abstração especulativa, stdlib antes de dependência) — nunca se esses passos acontecem.
 
 ## Backlog

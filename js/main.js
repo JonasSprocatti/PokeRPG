@@ -12,7 +12,7 @@ import { telaAjustes, baixarMapaOffline, baixarImagensOffline, baixarImagens3DOf
 import { telaTutorial, tutAvancar, tutVoltar, tutExplorar, tutGolpe, tutComprar, tutRevelarCaptura, tutSair } from './tela-tutorial.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
 import { telaPrivacidade } from './tela-privacidade.js';
-import { aplicarFonte, definirEstiloSprite } from './ajustes.js';
+import { aplicarFonte, definirEstiloSprite, alternarAnimacoes } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
 import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem, entrarGoogle, entrarEmail, sair, salvarApelido, sincronizar,
   nuvem, salvarIcone, salvarBadgeExibida, pedirAmizade, aceitarAmizade, removerAmizade, tutorialVistoLocal } from './nuvem.js';
@@ -369,6 +369,7 @@ document.addEventListener('change', e => {
   }
   if (e.target.id === 'pv-presenca') { definirPresenca(e.target.checked); return; } // ⚙ Ajustes → presença global
   if (e.target.id === 'pv-som') { alternarSom(e.target.checked); return; } // ⚙ Ajustes → som (som.js)
+  if (e.target.id === 'pv-animacoes') { alternarAnimacoes(e.target.checked); return; } // ⚙ Ajustes → animações de combate (ajustes.js)
   if (e.target.id === 'pv-clima') { G.climaRotas = e.target.checked; return; } // 🌦 clima/terreno das rotas (só opcional fora do Roguelike/Hardcore)
   if (e.target.id === 'pv-caca') { G.cacaShiny = e.target.checked; return; } // vale mesmo sem prévia de Pokémon
   if (!G.PV) return;

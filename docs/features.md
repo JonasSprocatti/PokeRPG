@@ -1061,6 +1061,57 @@ já o criou), então `tocarCry` passou a dar `resume()` — sem isso o grito ser
 **Ficou de fora**: volume por categoria (música x efeitos) — o nó `musica` já deixaria isso a uma linha, mas o
 ajuste continua sendo um liga/desliga só, como combinado.
 
+### A quinta leva (30/09/2026): som de impacto por tipo, piscada colorida e desligar as animações
+Pedido: *"precisa ter um som de dano dos ataques ou efeitos, tipo golpes de fogo quando acertam fazem um som de
+labareda, o golpe de vento parece uma lufada de ar e assim por diante, isso nos 2 pokemons, isso acredito que
+implica no timing das batalhas também (…) impacto colorido nos sprites e o som, então ter a opção de desabilitar
+as animações de combate junto com a desabilitação do som seria uma opção viável."*
+
+**Um gancho, não três.** O motor já tinha `ctx.tremer(m)` — chamado nos cinco pontos em que alguém perde HP por
+golpe, e chamado igual pros dois lados (você, aliado, inimigo), porque o motor é único. Ele passou a receber o
+TIPO do golpe (`ctx.tremer(m, tipo)`) e o `CTX` do single player faz as duas coisas de uma vez: `ui.shake` (a
+animação) e `som.tocarImpacto` (o som). Nada de percorrer a árvore de golpes atrás de "onde toco o som de fogo":
+quem sabe que houve dano já era esse ponto.
+
+**O som: dez famílias pra dezoito tipos.** `som.IMPACTOS`, uma linha por família, com os tipos dela listados
+dentro — `FAMILIA_DO_TIPO` é *derivado* daí, então não existe segunda lista pra manter em sincronia. Duas peças
+por família, e o que define o caráter é a **varredura**, não a frequência parada: `ruido` é ruído branco por um
+passa-banda que escorrega de uma frequência a outra (descendo e largo = labareda; subindo = lufada; agudo e
+estreito = estalo; grave = pancada), `nota` é um oscilador deslizando, pro lado tonal (o ping do gelo, a
+badalada do metal, o lamento do fantasma). Nenhum arquivo de áudio, como o resto do módulo.
+
+O detalhe que quase passou: **tudo sai pelo passa-baixa de 2 kHz do `master`**. O estalo do Elétrico nasceu em
+2,3 kHz, o filtro o engoliria e a família perderia exatamente o que ela existe pra ter. Roteá-lo por fora do
+filtro custaria uma cadeia de saída nova — mais barato baixar os números e ficar com uma chain só. É o que
+`tests/som.test.js` trava agora, junto com "todo tipo tem família" (tipo novo cairia na pancada genérica em
+silêncio) e "nenhuma família lista um tipo que não existe" (erro de digitação vira família morta).
+
+**A piscada colorida reusou o que já existia.** `hit-flash` (a piscada de dano, deduzida do sentido em que a
+barra de HP mudou) trocou o `#ff4d4d` cravado por `var(--cor-impacto, #ff4d4d)`, e `ui.shake` põe a var com a
+cor do tipo (`dados.TC`, as mesmas dos selos). A ordem importa e não dava pra escolher: `render()` remonta a
+cena inteira, então uma var posta ANTES do `up(ctx)` iria pro lixo junto com o elemento — por isso `shake`
+**reinicia** a piscada depois, já com a cor certa. Dano sem tipo (confusão, o esforço do próprio golpe) fica no
+vermelho padrão, que é o fallback da própria var.
+
+**O liga/desliga virou um conceito só, não um segundo.** `ui.REDUCED` (uma const lida uma vez, do
+`prefers-reduced-motion`) foi substituída por `ui.semAnimacao()`, que junta a mídia do sistema com
+`ajustes.animacoesLigadas()`. Função, não const: o checkbox tem de valer na hora, e uma const lida no
+carregamento só valeria depois de um F5. Todos os cinco pontos que consultavam `REDUCED` passaram a chamar a
+função — e um deles é o `say`, o que **atende o "implica no timing" de graça**: sem animação pra ver, a pausa
+entre as mensagens do combate cai de 420 ms pra 80 ms e a luta anda mais rápido. O caminho contrário — deixar a
+batalha mais LENTA pra esperar a animação — não foi preciso: os 420 ms do `say` já cobrem os 0,35 s da piscada e
+o meio segundo do som mais longo, e o som não precisa terminar antes da próxima linha de texto.
+
+**Ficou de fora:**
+- **Som nos efeitos que não são golpe** (veneno e queimadura no fim do turno, recuo, armadilha de entrada). Eles
+  nunca passaram por `ctx.tremer` — nem hoje tremem —, então dar som a eles é um gancho novo em cada ponto, não
+  um parâmetro num que já existe. Entra quando alguém reclamar que o veneno é silencioso.
+- **Som de impacto no multiplayer.** O `ctx` do `mp-motor` não define `tremer` (não tem DOM), e a sala narra o
+  turno por linhas já prontas — o caminho seria tocar por `cls === 'hit'` na `narrar`, sem saber o tipo. Som
+  genérico pra todo golpe é pior que nenhum; fica pra quando o evento do motor levar o tipo junto.
+- **Animação por tipo** (chama subindo no Fogo, jato d'água): a piscada colorida cobre o pedido com uma var de
+  CSS; sprite de partícula por tipo é arte nova, não código.
+
 ---
 
 ## Sprites da cena: o retângulo escuro e o tamanho de verdade (30/09/2026)

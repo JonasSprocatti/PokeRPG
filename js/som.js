@@ -193,6 +193,70 @@ export function tocarSfx(nome) {
   for (const [dt, midi, dur] of s.notas) tocarNota(t0 + dt, midi, dur, s.onda, s.ganho);
 }
 
+/* ---- impacto do golpe (pedido do usuário) ----
+   Um som por FAMÍLIA de tipo, tocado quando o golpe causa dano — nos dois lados, porque quem chama é o
+   `ctx.tremer` do motor único (`efeitos.CTX`), que já é usado pra quem apanha, seja você, aliado ou inimigo.
+   Fogo é labareda, Voador é lufada, Elétrico é estalo. Nasce na hora, como a música: nenhum arquivo de áudio.
+   Duas peças, e o que define o caráter é a VARREDURA, não a frequência parada:
+     `ruido: [de, para, Q, dur, ganho]` — ruído branco por um passa-banda que escorrega de `de` até `para`.
+       Descendo e largo = labareda/água; subindo = lufada; agudo e estreito (Q alto) = estalo; grave = pancada.
+     `nota:  [midiDe, midiPara, dur, onda, ganho]` — um oscilador deslizando, pro lado tonal (o ping do gelo, a
+       badalada do metal, o lamento do fantasma). Família sem `nota` não toca nota nenhuma.
+   Tudo passa pelo `master`, ou seja, também pelo passa-baixa de 2 kHz da saída — por isso NENHUMA frequência
+   aqui passa muito de 2 kHz: acima disso o filtro engoliria o som e a diferença entre as famílias sumiria.
+   Tipo fora da tabela cai em `impacto` (pancada seca), que serve pra qualquer golpe. */
+export const IMPACTOS = {
+  fogo: { tipos: ['fire'], ruido: [1700, 280, 1.1, .45, .30] },                                    // labareda: desce e abre
+  lufada: { tipos: ['flying', 'dragon'], ruido: [320, 1900, 0.7, .5, .22] },                        // sopro subindo
+  agua: { tipos: ['water'], ruido: [1000, 140, 1.8, .42, .28] },                                    // baque molhado
+  gelo: { tipos: ['ice'], ruido: [2000, 900, 4, .22, .16], nota: [91, 79, .45, 'triangle', .08] },  // trinco + cristal
+  eletrico: { tipos: ['electric'], ruido: [1450, 1950, 8, .14, .30], nota: [95, 83, .12, 'square', .08] },   // estalo curto subindo
+  metal: { tipos: ['steel'], ruido: [1200, 520, 2, .2, .18], nota: [88, 74, .55, 'square', .07] },  // clangor
+  folhagem: { tipos: ['grass', 'bug'], ruido: [1800, 1100, 1.5, .3, .20] },                         // farfalhar
+  terra: { tipos: ['ground', 'rock'], ruido: [280, 60, 1, .38, .34] },                              // estrondo grave
+  misterio: { tipos: ['ghost', 'psychic', 'dark', 'fairy', 'poison'], ruido: [650, 180, 2, .35, .10], nota: [72, 53, .5, 'sine', .13] },
+  impacto: { tipos: ['normal', 'fighting'], ruido: [480, 80, 1, .18, .34] }                         // pancada seca (e o padrão)
+};
+// tipo -> família, DERIVADO da tabela (a família lista os tipos dela): uma fonte só, sem segunda lista pra manter
+export const FAMILIA_DO_TIPO = Object.fromEntries(
+  Object.entries(IMPACTOS).flatMap(([nome, f]) => f.tipos.map(t => [t, nome])));
+
+// 1 s de ruído branco, gerado e guardado uma vez (em loop dá pra qualquer duração)
+let ruidoBuf = null;
+function ruidoBranco(c) {
+  if (!ruidoBuf) {
+    ruidoBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const d = ruidoBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return ruidoBuf;
+}
+export function tocarImpacto(tipo) {
+  const c = motor(); if (!c || !somLigado()) return;
+  const f = IMPACTOS[FAMILIA_DO_TIPO[tipo]] || IMPACTOS.impacto;
+  c.resume();
+  const t0 = c.currentTime + 0.01;
+  if (f.ruido) {
+    const [de, para, q, dur, ganho] = f.ruido;
+    const fonte = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+    fonte.buffer = ruidoBranco(c); fonte.loop = true;
+    bp.type = 'bandpass'; bp.Q.value = q;
+    bp.frequency.setValueAtTime(de, t0); bp.frequency.exponentialRampToValueAtTime(para, t0 + dur);
+    g.gain.setValueAtTime(ganho, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    fonte.connect(bp); bp.connect(g); g.connect(master);
+    fonte.start(t0); fonte.stop(t0 + dur + 0.02);
+  }
+  if (f.nota) {
+    const [de, para, dur, onda, ganho] = f.nota;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = onda;
+    o.frequency.setValueAtTime(midiParaFreq(de), t0); o.frequency.exponentialRampToValueAtTime(midiParaFreq(para), t0 + dur);
+    g.gain.setValueAtTime(ganho, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+}
+
 /* `pedido` guarda o que foi pedido por último (contexto + rota) mesmo com o som desligado ou a aba escondida,
    pra retomar a MESMA faixa ao voltar — sem isso, ligar o som em ⚙ Ajustes só mudaria de música no próximo
    evento do jogo, e voltar pra aba deixaria tudo em silêncio até a batalha seguinte.

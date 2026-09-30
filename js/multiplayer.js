@@ -18,7 +18,7 @@
    Resultado: co-op aplica na jornada de cada um; PvP é amistoso (só conta vitórias/derrotas em S.pvp). */
 import { G, save, dificuldadeDe, rotasAtuais, centroPokemon, zerarDescontoCentro } from './estado.js';
 import { healFull } from './efeitos.js';
-import { logRaw, toast, ask, REDUCED } from './ui.js';
+import { logRaw, toast, ask, semAnimacao } from './ui.js';
 import { API, ZONES, TYPE_PT, ITEMS } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativa, agoraDoEvento, dataBR, formatarEspera } from './evento.js';
@@ -537,7 +537,7 @@ function marcarAtuando(ref) {
 }
 async function narrar(eventos) {
   if (!eventos?.length || !G.sala) return;
-  if (REDUCED) { for (const e of eventos) logRaw({ html: esc(e.txt), cls: e.cls }); return; }   // quem pediu menos animação recebe tudo de uma vez
+  if (semAnimacao()) { for (const e of eventos) logRaw({ html: esc(e.txt), cls: e.cls }); return; }   // quem pediu menos animação recebe tudo de uma vez
   const cracha = G.sala.narrando = {};
   for (const e of eventos) {
     if (!G.sala || G.sala.narrando !== cracha) return;   // outra narração começou (ou a sala fechou): esta para aqui

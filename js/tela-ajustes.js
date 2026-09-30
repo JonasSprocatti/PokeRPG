@@ -3,7 +3,7 @@
 // escolher; a escolha vale na hora e fica guardada neste navegador. O clique (data-act="fonte") está em main.js.
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
-import { FONTES, fonteEscolhida, urlDaFonte, ESTILOS_SPRITE, estiloSpriteAtual } from './ajustes.js';
+import { FONTES, fonteEscolhida, urlDaFonte, ESTILOS_SPRITE, estiloSpriteAtual, animacoesLigadas } from './ajustes.js';
 import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
 import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, baixarImagens3D, imagensGuardadas3D, baixarImagensAnimadas, imagensGuardadasAnimadas, quantoFaltaTudo, totalDoJogo } from './offline.js';
@@ -39,9 +39,11 @@ export function telaAjustes() {
     <h3 class="passo"><span>B</span> Sprites</h3>
     <div class="subrow">${ESTILOS_SPRITE.map(e => `<button class="btn ${e.id === estiloAtual ? '' : 'ghost'} sm" data-act="estilo-sprite" data-v="${e.id}" aria-pressed="${e.id === estiloAtual}">${esc(e.nome)}${e.id === estiloAtual ? ' ✓' : ''}</button>`).join('')}</div>
     <p class="small muted" style="margin-top:8px">${esc(ESTILOS_SPRITE.find(e => e.id === estiloAtual)?.desc || '')} Se a imagem não existir pra algum Pokémon, cai de volta pro clássico sozinho.</p>
-    <h3 class="passo"><span>C</span> Som</h3>
-    <p class="small muted">Desligado por padrão. Liga o grito de quem aparece na luta e uma música gerada na hora (nunca é arquivo pronto — o jogo não usa trilha de terceiros).</p>
+    <h3 class="passo"><span>C</span> Som e animações</h3>
+    <p class="small muted">O som vem desligado por padrão. Liga o grito de quem aparece na luta, uma música gerada na hora (nunca é arquivo pronto — o jogo não usa trilha de terceiros) e o som de cada golpe ao acertar: labareda no fogo, lufada no vento, estalo no elétrico.</p>
     <label class="check"><input type="checkbox" id="pv-som" ${somLigado() ? 'checked' : ''}> Som ligado</label>
+    <p class="small muted" style="margin-top:10px">As animações de combate são a tremida de quem apanha, a piscada na cor do tipo do golpe e o pulo de quem ataca. Desligar deixa o combate mais rápido: sem animação pra ver, as mensagens também param de esperar.</p>
+    <label class="check"><input type="checkbox" id="pv-animacoes" ${animacoesLigadas() ? 'checked' : ''}> Animações de combate</label>
     <h3 class="passo"><span>D</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
     ${htmlPresenca()}

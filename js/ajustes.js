@@ -58,3 +58,13 @@ export const ESTILOS_SPRITE = [
 ];
 export const estiloSpriteAtual = () => ESTILOS_SPRITE.find(e => e.id === store.get(ESTILO_SPRITE_KEY))?.id || 'classico';
 export const definirEstiloSprite = id => store.set(ESTILO_SPRITE_KEY, id);
+
+/* ============ ajustes: animações de combate (pedido do usuário) ============ */
+// Ligadas por padrão (`!== false`: save sem a chave continua com animação). Desligar apaga a tremida de quem
+// apanha, a piscada colorida de dano/cura e o pulo de quem ataca — e ENCURTA a pausa entre as mensagens do
+// combate (`ui.say`), porque a espera existia justamente pra dar tempo de ver a animação e ouvir o impacto.
+// Quem lê isso é `ui.semAnimacao()`, que junta este ajuste com o `prefers-reduced-motion` do sistema: quem já
+// pediu menos movimento no sistema não precisa vir aqui desligar de novo.
+export const ANIMACOES_KEY = 'pokerpg-animacoes';
+export const animacoesLigadas = () => store.get(ANIMACOES_KEY) !== false;
+export const alternarAnimacoes = on => store.set(ANIMACOES_KEY, on);

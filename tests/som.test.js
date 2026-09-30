@@ -3,7 +3,9 @@
    cai no tema padrão sem avisar ninguém — a rota nova simplesmente soaria genérica pra sempre. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TEMAS, CONTEXTOS, precarregarCry, tocarCry, SOM_KEY, lerMelodia, grauEmSemitons } from '../js/som.js';
+import { TEMAS, CONTEXTOS, precarregarCry, tocarCry, SOM_KEY, lerMelodia, grauEmSemitons, IMPACTOS, FAMILIA_DO_TIPO, tocarImpacto } from '../js/som.js';
+import { TC } from '../js/dados.js';
+import { animacoesLigadas, alternarAnimacoes } from '../js/ajustes.js';
 import { CLIMAS, climaDaRota } from '../js/cenario.js';
 import { GENS } from '../js/dados-mapas.js';
 
@@ -126,4 +128,46 @@ test('a melodia fixa de cada contexto está no mesmo formato', () => {
     for (const t of Object.values(TEMAS))
       assert.ok(440 * 2 ** ((raizMax + grauEmSemitons(t.escala, grauMax) + 12 - 69) / 12) <= 880, `${id}: passa de 880 Hz em ${t.escala}`);
   }
+});
+
+/* ---- impacto do golpe ----
+   O que apodrece em silêncio aqui: TIPO NOVO (ou tipo renomeado) sem família cai no `impacto` genérico e o golpe
+   de fogo passa a soar como pancada seca sem ninguém notar. E o corte: TUDO sai pelo passa-baixa de 2 kHz do
+   `master`, então uma frequência escrita acima disso seria engolida pelo filtro e a família perderia o caráter
+   que ela existe pra ter (o estalo do elétrico já nasceu assim e foi rebaixado). */
+const CORTE_DA_SAIDA = 2000;   // filtro.frequency.value em `motor()`
+
+test('todo tipo do jogo tem família de impacto própria', () => {
+  const semFamilia = Object.keys(TC).filter(t => !FAMILIA_DO_TIPO[t]);
+  assert.deepEqual(semFamilia, [], `tipo sem som de impacto (cairia na pancada genérica): ${semFamilia.join(', ')}`);
+  // e nada de família inventando um tipo que não existe (erro de digitação vira família morta)
+  for (const [nome, f] of Object.entries(IMPACTOS))
+    for (const t of f.tipos) assert.ok(TC[t], `família ${nome}: "${t}" não é um tipo do jogo`);
+});
+
+test('nenhum impacto passa do corte de 2 kHz da saída', () => {
+  for (const [nome, f] of Object.entries(IMPACTOS)) {
+    assert.ok(f.ruido || f.nota, `família ${nome} não toca nada`);
+    if (f.ruido) {
+      const [de, para, q, dur, ganho] = f.ruido;
+      for (const hz of [de, para]) assert.ok(hz > 0 && hz <= CORTE_DA_SAIDA, `${nome}: ruído em ${hz} Hz`);
+      assert.ok(q > 0 && dur > 0 && ganho > 0, `${nome}: ruído com Q/duração/ganho inválido`);
+    }
+    if (f.nota) {
+      const [de, para, dur, onda, ganho] = f.nota;
+      // a rampa é exponencial: nota tem de deslizar pra BAIXO ou pra cima, nunca parar em 0
+      for (const midi of [de, para]) assert.ok(440 * 2 ** ((midi - 69) / 12) <= CORTE_DA_SAIDA, `${nome}: nota midi ${midi} passa do corte`);
+      assert.ok(dur > 0 && ganho > 0, `${nome}: nota com duração/ganho inválido`);
+      assert.ok(['sine', 'square', 'triangle', 'sawtooth'].includes(onda), `${nome}: onda "${onda}" desconhecida`);
+    }
+  }
+});
+
+test('impacto e animações ficam calados/parados fora do navegador e quando desligados', () => {
+  tocarImpacto('fire');           // sem AudioContext (Node): não estoura
+  tocarImpacto(undefined);        // dano sem tipo (confusão, esforço do próprio golpe) cai no padrão
+  tocarImpacto('tipo-que-nao-existe');
+  assert.equal(animacoesLigadas(), true, 'animações vêm LIGADAS por padrão (chave ausente)');
+  alternarAnimacoes(false); assert.equal(animacoesLigadas(), false);
+  alternarAnimacoes(true); assert.equal(animacoesLigadas(), true);
 });

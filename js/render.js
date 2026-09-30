@@ -1,7 +1,7 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
-import { $, REDUCED } from './ui.js';
+import { $, semAnimacao } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_SPR_MEGA, ITEM_SPR_Z, ITEM_SPR_VINCULO, ITEM_PEDRA_MEGA, ITEM_CRISTAL_Z, ITEM_VINCULO, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { estiloSpriteAtual } from './ajustes.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
@@ -536,7 +536,7 @@ function atualizarCarteira() {
    (`hp-fill-<chave>`) só pra quem passa uma chave; isto aqui é a técnica FLIP: guarda a largura ANTES de
    redesenhar, deixa o render() de sempre trocar o DOM, e então força a barra NOVA a nascer na largura ANTIGA
    por um instante (sem transição) antes de soltar pra largura de verdade (com transição) — o olho vê os dois
-   quadros como uma animação contínua. Sem prefers-reduced-motion (REDUCED), a mudança fica instantânea, igual
+   quadros como uma animação contínua. Com as animações desligadas (ui.semAnimacao), a mudança fica instantânea, igual
    sempre foi. */
 // `.fill-hp` (barra de HP) e `.fill-xp` (barra de XP) usam a MESMA técnica FLIP — generalizado (28/09/2026)
 // pra não duplicar a função só porque XP não pisca vermelho/verde igual dano/cura.
@@ -562,7 +562,7 @@ function piscar(id, classe) {
    luta (Rare Candy, Dynamax) também mexe na largura sem ninguém ter apanhado ou curado — rarérrimo e sem efeito
    de jogo, só uma piscada errada ocasional; não vale a complexidade de separar os dois casos. */
 function animarBarras(antes) {
-  if (REDUCED) return;
+  if (semAnimacao()) return;
   for (const el of document.querySelectorAll('.fill-hp[id],.fill-xp[id]')) {
     const de = antes[el.id]; if (de === undefined || de === el.style.width) continue;
     const para = el.style.width;
@@ -585,7 +585,7 @@ function capturarTextosPP() {
   return antes;
 }
 function animarPP(antes) {
-  if (REDUCED) return;
+  if (semAnimacao()) return;
   for (const el of document.querySelectorAll('.pp[id]')) {
     if (antes[el.id] === undefined || antes[el.id] === el.textContent) continue;
     el.classList.remove('pp-mudou'); void el.offsetWidth; el.classList.add('pp-mudou');

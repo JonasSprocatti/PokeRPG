@@ -65,7 +65,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
-- As **barras de HP e XP animam** ao mudar de valor, e o **PP pisca** quando muda — nada salta direto pro número novo (respeita a preferência de "reduzir animações" do aparelho).
+- As **barras de HP e XP animam** ao mudar de valor, e o **PP pisca** quando muda — nada salta direto pro número novo. Quem apanha **treme e pisca na cor do tipo do golpe** (fogo acende laranja, água acende azul; dano sem tipo fica no vermelho) e quem ataca dá um pulinho. Tudo isso respeita a preferência de "reduzir animações" do aparelho e pode ser desligado em **⚙ Ajustes → Som e animações** — desligado, o combate também fica mais rápido, porque a pausa entre as mensagens existia pra dar tempo de ver a animação.
 - **Cena mais viva**: quem ataca dá um pulo, quem apanha pisca vermelho, quem se cura pisca verde, e status (queimado, envenenado, paralisado, congelado) e mudanças de atributo pulsam sutilmente enquanto durarem.
 - **Mais de 200 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):
   - **Ataque:** Overgrow/Blaze/Torrent/Swarm, Adaptability, Technician, Huge Power, Hustle, Guts, Toxic Boost, Flare Boost, Sniper, Tinted Lens, Skill Link, Serene Grace, Rock Head, Reckless, Neuroforce, Merciless, Defeatist, Iron Fist, Strong Jaw, Sharpness, Steelworker, Transistor, Dragon's Maw, Rocky Payload, Water Bubble, Sand Force.
@@ -167,7 +167,7 @@ A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer qu
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
 - **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
 - **⚙ Ajustes → Fonte:** escolha entre 6 fontes (padrão, Atkinson Hyperlegible para máxima legibilidade, Lexend, Andika, Nunito e uma monoespaçada). Cada opção é mostrada já na própria fonte, vale para o jogo inteiro e fica salva neste navegador.
-- **⚙ Ajustes → Som:** **desligado por padrão.** Liga o grito de quem aparece na luta (da PokéAPI, e também do Pokémon que você seleciona na tela inicial) e uma música que o próprio jogo COMPÕE na hora, sem tocar arquivo nenhum. A faixa muda com **o que você está fazendo** (tela inicial, telas de menu, explorar, batalha, chefe) e **com o tema da rota** — caverna, mar, floresta, vulcão, deserto, gelo, usina, ruínas, montanha e o Santuário têm cada um a sua tonalidade, tirada da mesma leitura da rota que já pinta o cenário da batalha. A **batalha e o chefe têm melodia própria**, a mesma em qualquer rota (a rota só dá a tonalidade), e trocar de faixa é uma **passagem**: a antiga desce, um respiro de silêncio, a nova entra subindo. Ainda: **fanfarra na vitória**, **som de derrota**, de **subir de nível** e de **compra**. Quando você troca de aba ou minimiza, o som para sozinho.
+- **⚙ Ajustes → Som:** **desligado por padrão.** Liga o grito de quem aparece na luta (da PokéAPI, e também do Pokémon que você seleciona na tela inicial) e uma música que o próprio jogo COMPÕE na hora, sem tocar arquivo nenhum. A faixa muda com **o que você está fazendo** (tela inicial, telas de menu, explorar, batalha, chefe) e **com o tema da rota** — caverna, mar, floresta, vulcão, deserto, gelo, usina, ruínas, montanha e o Santuário têm cada um a sua tonalidade, tirada da mesma leitura da rota que já pinta o cenário da batalha. A **batalha e o chefe têm melodia própria**, a mesma em qualquer rota (a rota só dá a tonalidade), e trocar de faixa é uma **passagem**: a antiga desce, um respiro de silêncio, a nova entra subindo. Ainda: **fanfarra na vitória**, **som de derrota**, de **subir de nível** e de **compra**. E **cada golpe que acerta tem o som do seu tipo**, nos dois lados da luta: labareda no Fogo, lufada no Voador e no Dragão, baque molhado na Água, trinco no Gelo, estalo no Elétrico, metal no Aço, farfalhar na Grama e no Inseto, estrondo grave na Terra e na Pedra, lamento no Fantasma/Psíquico/Sombrio/Fada/Venenoso e pancada seca no Normal e no Lutador — também gerados na hora, nenhum arquivo de áudio. Quando você troca de aba ou minimiza, o som para sozinho.
 
 ### 📀 Mexer nos golpes (Escama do Coração e Disco Técnico)
 Um Pokémon carrega **4 golpes**, e a cada nível você decide o que esquecer. Dois itens deixam você voltar atrás — e valem tanto para você quanto para **qualquer aliado** (você escolhe em quem usar e qual golpe ele esquece):
@@ -356,7 +356,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/segurados.js` | Efeito de cada item segurado (Restos, Orbe da Vida, frutas…) |
 | `js/dados-patchnotes.js`, `js/tela-patchnotes.js`, `js/novidades.js` | Notas de atualização e o aviso de novidade |
 | `js/navegacao.js`, `js/ajustes.js`, `js/tela-ajustes.js` | Barra de navegação das telas, escolha de fonte e a tela de ajustes |
-| `js/som.js` | Cries e música procedural (Web Audio API, desligado por padrão) |
+| `js/som.js` | Cries, música procedural e som de impacto por tipo (Web Audio API, desligado por padrão) |
 | `js/evolucao.js` | Condições de evolução (pedra, troca, vínculo, hora, golpe…) e as regras equivalentes dos casos raros |
 | `js/saves.js`, `js/tela-saves.js` | Jornadas salvas (várias runs em andamento) e a tela delas |
 | `js/mp-motor.js`, `js/mp-sanear.js`, `js/mp-regras.js`, `js/mp-rede.js`, `js/mp-cartao.js`, `js/mp-telas.js`, `js/mp-resultado.js`, `js/multiplayer.js` | Multiplayer: motor do turno, conferência do que chega pela rede e regras da sala (puros, testados), rede, desenho dos Pokémon, telas, resultado no save e a orquestração da sala |
@@ -418,8 +418,8 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
 - [x] Estrutura de anúncios (Google AdSense) desligada por padrão, banner de consentimento de cookies (GDPR) e tela de Política de Privacidade
 - [x] Três estilos de sprite (Clássico, 3D "home", Animado do Showdown), com download à parte pro modo offline
-- [x] Som (desligado por padrão): grito de quem aparece na luta e música procedural (composta na hora com a Web Audio API, não é arquivo pronto), com uma tonalidade por tema de rota
-- [x] Barra de HP anima ao tomar dano/curar (técnica FLIP, respeita "reduzir animações")
+- [x] Som (desligado por padrão): grito de quem aparece na luta, música procedural (composta na hora com a Web Audio API, não é arquivo pronto) com uma tonalidade por tema de rota, e som de impacto por tipo de golpe
+- [x] Barra de HP anima ao tomar dano/curar (técnica FLIP), piscada na cor do tipo do golpe, e liga/desliga próprio pras animações de combate
 
 ## Licença
 
