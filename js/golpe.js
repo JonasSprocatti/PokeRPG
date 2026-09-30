@@ -835,6 +835,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
     // Stench: golpe que já tem chance própria de recuo não soma outra
     else if (hu.flinchChance && !meta.flinch && primeiro && total > 0 && !ht.semRecuo && chance(hu.flinchChance)) t.vol.flinch = true;
+    // Pedra do Rei / Presa Afiada: mesma regra do Stench — só entra se o golpe não tiver recuo próprio
+    else if (seg(u).flinchDoItem && !meta.flinch && primeiro && total > 0 && !ht.semRecuo && chance(seg(u).flinchDoItem)) t.vol.flinch = true;
   }
   /* Itens do ALVO que reagem a ter levado o golpe. Ordem: a fruta já cortou o dano lá no cálculo (regras
      `resisteDoItem`), então aqui ela só é consumida e anunciada; o balão estoura com qualquer golpe que acerte;

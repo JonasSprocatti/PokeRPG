@@ -157,6 +157,11 @@ export const ITEMS = {
 const pedra = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}).`, evo: true, price: 2100 });
 const segurado = (name, desc) => ({ name, desc: `Evolução por troca ou por nível: fica na mochila e é gasto ao evoluir (${desc}).`, segurar: true });
 const especial = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}).`, evo: true });
+/* Item de EVOLUÇÃO que também tem efeito em BATALHA se estiver segurado — é como funciona nos jogos: a Pedra do
+   Rei evolui Poliwhirl e dá 10% de recuo na mão. Um id só, `segurar` (evolui) + `segurado` (equipável); o efeito
+   de luta mora em segurados.js, na mesma chave. Continua sem preço, como todo item de evolução: vem explorando.
+   Segurado ele sai da mochila, e a evolução por item aceita as duas coisas (progressao.contexto/pagar). */
+const duplo = (name, efeito, quem) => ({ name, desc: `${efeito} Também evolui, sendo gasto: ${quem}.`, segurar: true, segurado: true });
 export const ITENS_EVO = {
   'fire-stone': pedra('Pedra do Fogo', 'Vulpix, Growlithe, Eevee…'), 'water-stone': pedra('Pedra da Água', 'Poliwhirl, Shellder, Eevee…'),
   'thunder-stone': pedra('Pedra do Trovão', 'Pikachu, Eevee, Magneton…'), 'leaf-stone': pedra('Pedra da Folha', 'Gloom, Weepinbell, Eevee…'),
@@ -164,13 +169,13 @@ export const ITENS_EVO = {
   'shiny-stone': pedra('Pedra Brilhante', 'Togetic, Roselia, Minccino…'), 'dusk-stone': pedra('Pedra do Crepúsculo', 'Murkrow, Misdreavus, Lampent…'),
   'dawn-stone': pedra('Pedra da Aurora', 'Kirlia, Snorunt'), 'ice-stone': pedra('Pedra do Gelo', 'Eevee, Vulpix de Alola, Cetoddle…'),
   'linking-cord': { name: 'Cabo de Conexão', desc: 'Simula uma troca: evolui quem só evolui trocando (Kadabra, Machoke, Graveler, Haunter…). Alguns pedem também um item na mochila.', troca: true, price: 3000 },
-  'metal-coat': segurado('Revestimento Metálico', 'Onix, Scyther'), 'kings-rock': segurado('Pedra do Rei', 'Poliwhirl, Slowpoke'),
+  'metal-coat': duplo('Revestimento Metálico', 'Segurado, seus golpes de Aço batem 20% mais forte.', 'Onix, Scyther'), 'kings-rock': duplo('Pedra do Rei', 'Segurado, 10% de chance de fazer o alvo recuar quando você acerta um golpe de dano.', 'Poliwhirl, Slowpoke'),
   'dragon-scale': segurado('Escama de Dragão', 'Seadra'), 'up-grade': segurado('Melhoria', 'Porygon'), 'dubious-disc': segurado('Disco Duvidoso', 'Porygon2'),
   protector: segurado('Protetor', 'Rhydon'), electirizer: segurado('Eletrizador', 'Electabuzz'), magmarizer: segurado('Magmatizador', 'Magmar'),
   'reaper-cloth': segurado('Pano Ceifador', 'Dusclops'), 'prism-scale': segurado('Escama Prisma', 'Feebas'),
-  'deep-sea-tooth': segurado('Dente Abissal', 'Clamperl'), 'deep-sea-scale': segurado('Escama Abissal', 'Clamperl'),
+  'deep-sea-tooth': duplo('Dente Abissal', 'Segurado por um Clamperl, dobra o At. Especial dele.', 'Clamperl'), 'deep-sea-scale': duplo('Escama Abissal', 'Segurado por um Clamperl, dobra a Def. Especial dele.', 'Clamperl'),
   sachet: segurado('Sachê', 'Spritzee'), 'whipped-dream': segurado('Chantili dos Sonhos', 'Swirlix'),
-  'razor-claw': segurado('Garra Afiada', 'Sneasel, à noite'), 'razor-fang': segurado('Presa Afiada', 'Gligar, à noite'), 'oval-stone': segurado('Pedra Oval', 'Happiny, de dia'),
+  'razor-claw': duplo('Garra Afiada', 'Segurado, seus golpes acertam crítico com mais frequência (+1 nível).', 'Sneasel, à noite'), 'razor-fang': duplo('Presa Afiada', 'Segurado, 10% de chance de fazer o alvo recuar quando você acerta um golpe de dano.', 'Gligar, à noite'), 'oval-stone': segurado('Pedra Oval', 'Happiny, de dia'),
   'sweet-apple': especial('Maçã Doce', 'Applin'), 'tart-apple': especial('Maçã Azeda', 'Applin'), 'cracked-pot': especial('Bule Rachado', 'Sinistea'),
   'galarica-cuff': especial('Bracelete Galarica', 'Slowpoke de Galar'), 'galarica-wreath': especial('Coroa Galarica', 'Slowpoke de Galar'),
   'auspicious-armor': especial('Armadura Auspiciosa', 'Charcadet'), 'malicious-armor': especial('Armadura Maliciosa', 'Charcadet'),
@@ -351,10 +356,13 @@ Object.assign(ITEMS, ITENS_GOLPE);
 export const CATEGORIAS_ITEM = [
   { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.healPct || it.cure || it.ether || it.revive },
   { id: 'batalha', nome: '⚔ Em batalha', de: it => it.battle || it.stage },
+  /* ⚠️ `evolucao` vem ANTES de `segurado`: item de dupla função (dados.duplo — Pedra do Rei e cia.) tem as duas
+     marcas, e a casa dele na loja/mochila é 💎 Evolução. Isso não o esconde pra equipar: o seletor de "Segurar"
+     (render.js) filtra por `segurado`, não por categoria. */
+  { id: 'evolucao', nome: '💎 Evolução', de: it => it.evo || it.troca || it.segurar },
   { id: 'segurado', nome: '🎒 Para segurar', de: it => it.segurado },
   { id: 'exploracao', nome: '🧭 Exploração', de: it => it.repelente },
   { id: 'golpes', nome: '📀 Golpes', de: it => it.ensina },
-  { id: 'evolucao', nome: '💎 Evolução', de: it => it.evo || it.troca || it.segurar },
   { id: 'petisco', nome: '🍖 Petiscos (amizade)', de: it => it.afinidade },
   { id: 'especial', nome: '✨ Especiais', de: it => it.candy },
   { id: 'outros', nome: '📦 Outros', de: () => true }
@@ -365,6 +373,9 @@ export function porCategoria(pares) {
   return CATEGORIAS_ITEM.map(c => ({ ...c, itens: pares.filter(([k]) => ITEMS[k] && categoriaDoItem(ITEMS[k]) === c.id) })).filter(c => c.itens.length);
 }
 
+/* Os itens de evolução que TAMBÉM valem segurados (dados.duplo). Lista derivada, não escrita à mão: quem marcar
+   um item novo como `duplo` entra aqui sozinho, e `segurados.js` cobra um gancho pra cada um. */
+export const IDS_EVO_EM_BATALHA = Object.keys(ITENS_EVO).filter(k => ITENS_EVO[k].segurado);
 // o que dá pra achar explorando (as pedras também; o Cabo de Conexão só na loja)
 export const ITENS_EVO_ACHADOS = Object.keys(ITENS_EVO).filter(k => k !== 'linking-cord');
 Object.assign(ITEMS, ITENS_EVO); // mochila, loja e sprites tratam igual aos outros itens

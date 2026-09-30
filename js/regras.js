@@ -5,7 +5,7 @@
 import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
-import { seg, multDanoDoItem, resisteDoItem, multEviolite } from './segurados.js';
+import { seg, multDanoDoItem, resisteDoItem, multEviolite, multStatDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
 import { GOLPE_FLAGS } from './dados-golpe-flags.js';
 
@@ -188,7 +188,7 @@ export function effStat(m, stat, crit = false, attacking = true, clima = null, t
   let st = semEstagio ? 0 : (m.vol?.stages[stat] || 0);
   if (crit) { if (attacking && st < 0) st = 0; if (!attacking && st > 0) st = 0; }
   const h = hab(m);
-  let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * (seg(m).multStat?.[stat] || 1); // habilidade e item segurado
+  let v = m.stats[stat] * stageMul(st) * (h.multStat?.[stat] || 1) * multStatDoItem(m, stat); // habilidade e item segurado (multStatDoItem respeita o `soEspecie`)
   v *= multStatClima(m, stat, clima) * multStatTerreno(m, stat, terreno);         // clima e terreno
   v *= multEviolite(m, stat);                                                     // Eviolite: só se a espécie ainda evolui
   if (h.inicioLento && (stat === 'attack' || stat === 'speed') && (m.vol?.turnosEmCampo || 0) < h.inicioLento) v *= 0.5;   // Slow Start: metade do Ataque e da Velocidade nos primeiros turnos

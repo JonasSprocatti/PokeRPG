@@ -36,10 +36,13 @@
 //   livraTrava    livra de Provocação/Bis/Desativar/Tormento (Erva Mental)
 //   pulaCarga     golpe de carga sai no mesmo turno (Erva do Poder)
 //   resisteSE     como `resisteTipo`, mas SÓ em golpe super efetivo daquele tipo (frutas Occa, Passho…)
+//   flinchDoItem  chance (%) de fazer o alvo recuar ao acertar golpe de dano (Pedra do Rei, Presa Afiada)
+//   soEspecie     o `multStat` só vale nesta espécie (Dente/Escama Abissal só servem ao Clamperl) — lido por
+//                 `multStatDoItem`, não pelo `multStat` cru, senão valeria pra qualquer um
 // Puro (sem DOM): testado em tests/segurados.test.js.
 // (Vínculo de Batalha, Pedra Mega e Cristal Z NÃO entram aqui: são itens de UMA gimmick só, checados direto
 // pelo id — `M.item === ITEM_VINCULO` etc. — no módulo da própria gimmick, não por gancho genérico.)
-import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_FRUTA_TIPO, PLACA_DO_TIPO, FRUTA_DO_TIPO } from './dados.js';
+import { ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_FRUTA_TIPO, IDS_EVO_EM_BATALHA, PLACA_DO_TIPO, FRUTA_DO_TIPO } from './dados.js';
 import { AINDA_EVOLUI } from './dados-evolucao-restante.js';
 import { hab } from './habilidades.js';
 
@@ -93,6 +96,15 @@ export const SEGURADOS = {
   'white-herb': { desfazQueda: true, gastaNoUso: true },
   'mental-herb': { livraTrava: true, gastaNoUso: true },
   'power-herb': { pulaCarga: true, gastaNoUso: true },
+  /* Itens de EVOLUÇÃO que também valem segurados (dados.duplo / IDS_EVO_EM_BATALHA). Nos jogos são um item só
+     com duas funções, e agora aqui também: o mesmo id evolui (gasto na mochila ou na mão) e faz efeito em
+     batalha enquanto estiver segurado. O teste cobra um gancho pra cada um marcado como duplo. */
+  'kings-rock': { flinchDoItem: 10 },
+  'razor-fang': { flinchDoItem: 10 },
+  'razor-claw': { critExtra: 1 },
+  'metal-coat': { danoTipo: { tipos: ['steel'], mult: 1.2 } },
+  'deep-sea-tooth': { multStat: { 'special-attack': 2 }, soEspecie: 'clamperl' },
+  'deep-sea-scale': { multStat: { 'special-defense': 2 }, soEspecie: 'clamperl' },
   // frutas de aperto por tipo: uma por tipo, da MESMA tabela que gera os itens na loja (dados.FRUTA_DO_TIPO)
   ...Object.fromEntries(Object.entries(FRUTA_DO_TIPO).map(([tipo, [id]]) =>
     [id, { resisteSE: { tipo, mult: 0.5 }, gastaNoUso: true }]))
@@ -103,7 +115,7 @@ export const SEGURADOS = {
 export const seg = m => (hab(m).semItemEmBatalha ? {} : SEGURADOS[m?.item] || {});
 export const temSegurado = m => !!SEGURADOS[m?.item];
 // itens segurados que existem na mochila/loja (dados.js) — o teste confere que as duas listas batem
-export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO), ...Object.keys(ITENS_FRUTA_TIPO)];
+export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO), ...Object.keys(ITENS_FRUTA_TIPO), ...IDS_EVO_EM_BATALHA];
 
 // Multiplicador de dano do item de quem ataca. `ef` = eficácia de tipo (2, 1, 0.5…), `fisico` = golpe físico,
 // `tipo` = tipo do golpe (pro `danoTipo` do Núcleo Eternamax — independente do `multDano` genérico).
@@ -127,6 +139,14 @@ export const frutaDeAperto = (m, tipo, ef) => {
   const s = seg(m);
   return !!(s.resisteSE && tipo && s.resisteSE.tipo === tipo && ef > 1);
 };
+/* Multiplicador de atributo do item. Existe por causa do `soEspecie`: o Dente Abissal dobra o At. Especial só
+   do Clamperl, então ler `seg(m).multStat` cru daria o bônus pra qualquer um que segurasse. */
+export function multStatDoItem(m, stat) {
+  const s = seg(m), v = s.multStat?.[stat];
+  if (!v) return 1;
+  if (s.soEspecie && m?.data?.speciesName !== s.soEspecie) return 1;
+  return v;
+}
 // Eviolite: Defesa/Def. Especial ×1.5, só se a ESPÉCIE ainda evolui (dados-evolucao-restante.js — gerado do
 // repositório-fonte da PokéAPI, sem precisar buscar a árvore de evolução no meio do turno).
 export const multEviolite = (m, stat) =>

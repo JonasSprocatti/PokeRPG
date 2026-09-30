@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem, statusDoItem } from '../js/segurados.js';
-import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
+import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_EVO, IDS_EVO_EM_BATALHA, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, TYPE_PT } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
 const mon = (o = {}) => ({ level: 50, ability: 'none', data: { types: ['normal'] }, status: null, vol: { stages: {} },
@@ -32,10 +32,19 @@ test('tabela: todo item segurado da mochila tem efeito, e todo efeito tem item',
     assert.ok(ITEMS[k], `${k} não entrou em ITEMS`);
     assert.ok(SEGURADOS[k], `${k} não tem gancho em SEGURADOS`);
   }
+  /* Itens de EVOLUÇÃO que também valem segurados (dados.duplo): a lista é derivada da marca `segurado` em
+     ITENS_EVO, então marcar um item novo como duplo sem dar efeito a ele falha aqui — que é o contrário do bug
+     da Pedra do Rei (efeito sem item de verdade). */
+  for (const k of IDS_EVO_EM_BATALHA) {
+    assert.ok(ITENS_EVO[k]?.segurar && ITENS_EVO[k]?.segurado, `${k}: item duplo precisa das duas marcas`);
+    assert.ok(SEGURADOS[k], `${k} está marcado como duplo mas não tem efeito em batalha`);
+    assert.ok(/Segurad/.test(ITENS_EVO[k].desc), `${k}: a descrição tem de explicar o efeito de segurar`);
+  }
   const ganchos = new Set(['multDano', 'soFisico', 'soEspecial', 'soSuperEfetivo', 'multStat', 'semStatus', 'recuoPorGolpe', 'drenaDano',
     'espetos', 'aguentaCheio', 'gastaNoUso', 'curaFimTurno', 'soTipo', 'danoFimTurno', 'curaEm', 'curaStatus', 'danoTipo', 'resisteTipo', 'statusFimTurno',
     'quickClaw', 'choice', 'eviolite', 'cartaoVermelho',
     'balao', 'subeAoLevarSE', 'critExtra',                   // Balão de Ar, Apólice de Fraqueza, Lente de Mira
+    'flinchDoItem', 'soEspecie',                             // Pedra do Rei/Presa Afiada; Dente e Escama Abissal (só Clamperl)
     'desfazQueda', 'livraTrava', 'pulaCarga', 'resisteSE']); // Erva Branca/Mental/do Poder e as frutas de aperto por tipo
   for (const [k, s] of Object.entries(SEGURADOS)) {
     for (const g of Object.keys(s)) assert.ok(ganchos.has(g), `${k}: gancho "${g}"`);

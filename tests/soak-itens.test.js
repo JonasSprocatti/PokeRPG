@@ -4,10 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { usarGolpe, mudarEstagios, aoEntrarEmCampo } from '../js/golpe.js';
-import { freshVol, tiposDe, tiposDefensivos, multStab, noChao, typeEff } from '../js/regras.js';
-import { SEGURADOS, seg, resisteDoItem } from '../js/segurados.js';
-import { FRUTA_DO_TIPO, ITEMS } from '../js/dados.js';
+import { freshVol, tiposDe, tiposDefensivos, multStab, noChao, typeEff, effStat } from '../js/regras.js';
+import { SEGURADOS, seg, resisteDoItem, multDanoDoItem, multStatDoItem } from '../js/segurados.js';
+import { FRUTA_DO_TIPO, ITEMS, ITENS_EVO, IDS_EVO_EM_BATALHA, categoriaDoItem } from '../js/dados.js';
 import { prepararChefe } from '../js/boss.js';
+import { detalheCumprido } from '../js/evolucao.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
 const status = (name, o = {}) => golpe({ name, cls: 'status', power: null, acc: null, target: 'selected-pokemon', ...o });
@@ -184,11 +185,71 @@ test('Lente de Mira soma um degrau de crítico', () => {
   assert.equal(seg(mon({ item: 'scope-lens' })).critExtra, 1);
 });
 
-/* A Pedra do Rei ficou DE FORA da leva, e isto guarda o porquê: `kings-rock` já é item de EVOLUÇÃO
-   (Poliwhirl/Slowpoke). Pôr o mesmo id como item segurado fazia o `Object.assign` de `ITENS_EVO` — que roda
-   depois — vencer em silêncio, e o efeito de recuo nunca acontecia. O mesmo vale pro `razor-fang`. */
-test('Pedra do Rei continua sendo só item de evolução (o id não foi reaproveitado)', () => {
-  assert.ok(!SEGURADOS['kings-rock'], 'kings-rock não pode ter gancho de item segurado: o id já é de evolução');
-  assert.ok(!ITEMS['kings-rock'].segurado, 'kings-rock é item de evolução, não de segurar');
-  assert.ok(!SEGURADOS['razor-fang'], 'razor-fang tem a mesma colisão');
+/* ITENS DE DUPLA FUNÇÃO (dados.duplo): nos jogos a Pedra do Rei evolui Poliwhirl/Slowpoke E dá 10% de recuo
+   segurada. A primeira tentativa duplicou o id em duas tabelas, e o `Object.assign` de `ITENS_EVO` — que roda
+   depois — vencia em silêncio, deixando o efeito morto. A forma certa é UM item com as duas marcas. */
+test('item duplo existe uma única vez e serve pras duas coisas', () => {
+  for (const k of IDS_EVO_EM_BATALHA) {
+    assert.equal(ITEMS[k], ITENS_EVO[k], `${k}: ITEMS ficou com outro objeto (id duplicado em outra tabela?)`);
+    assert.ok(ITEMS[k].segurar, `${k}: perdeu a função de evoluir`);
+    assert.ok(ITEMS[k].segurado, `${k}: perdeu a função de segurar`);
+    assert.ok(SEGURADOS[k], `${k}: sem efeito em batalha`);
+    assert.equal(categoriaDoItem(ITEMS[k]), 'evolucao', `${k}: a casa dele na loja é 💎 Evolução`);
+  }
+  assert.deepEqual(IDS_EVO_EM_BATALHA.sort(),
+    ['deep-sea-scale', 'deep-sea-tooth', 'kings-rock', 'metal-coat', 'razor-claw', 'razor-fang']);
+});
+
+test('Pedra do Rei e Presa Afiada fazem o alvo recuar quando seguradas', async () => {
+  // 10% por golpe: com 60 tentativas a chance de nunca acontecer é ~0,2% — e o teste não depende de sorteio
+  // injetado porque o motor usa Math.random direto. Cada golpe é um turno novo (o flinch é limpo por rodada).
+  let recuos = 0;
+  for (let i = 0; i < 60; i++) {
+    const u = mon({ item: 'kings-rock' }), t = mon();
+    await usarGolpe(u, t, golpe(), true, ctx());
+    if (t.vol.flinch) recuos++;
+  }
+  assert.ok(recuos > 0, 'a Pedra do Rei nunca fez o alvo recuar em 60 golpes');
+  assert.ok(recuos < 40, 'recuou demais: a chance deveria ser de 10%');
+
+  let sem = 0;
+  for (let i = 0; i < 60; i++) {
+    const t = mon(); await usarGolpe(mon(), t, golpe(), true, ctx());
+    if (t.vol.flinch) sem++;
+  }
+  assert.equal(sem, 0, 'sem o item não pode haver recuo num golpe que não tem recuo próprio');
+});
+
+test('Revestimento Metálico reforça só golpe de Aço; Garra Afiada soma crítico', () => {
+  const u = mon({ item: 'metal-coat' });
+  assert.equal(multDanoDoItem(u, { tipo: 'steel' }), 1.2);
+  assert.equal(multDanoDoItem(u, { tipo: 'fire' }), 1);
+  assert.equal(seg(mon({ item: 'razor-claw' })).critExtra, 1);
+});
+
+test('Dente/Escama Abissal só valem no Clamperl (soEspecie)', () => {
+  const clamperl = mon({ item: 'deep-sea-tooth', data: { ...mon().data, speciesName: 'clamperl' } });
+  const outro = mon({ item: 'deep-sea-tooth', data: { ...mon().data, speciesName: 'gyarados' } });
+  assert.equal(multStatDoItem(clamperl, 'special-attack'), 2);
+  assert.equal(multStatDoItem(outro, 'special-attack'), 1, 'o item não podia servir a outra espécie');
+  assert.ok(effStat(clamperl, 'special-attack') > effStat(outro, 'special-attack'), 'o atributo tinha que subir de verdade');
+});
+
+/* A condição de evolução por item olha a `bag` que o contexto entrega (evolucao.detalheCumprido). Quem monta
+   esse contexto é `progressao.contexto`, e ele passou a INCLUIR o item da mão — senão equipar a Pedra do Rei
+   travava a evolução do Poliwhirl sem explicar nada. Aqui se prova a regra pura nas duas situações. */
+test('evoluir por item: vale na mochila e vale segurado (a bag do contexto inclui a mão)', () => {
+  const d = { trigger: 'level-up', held_item: 'kings-rock', min_level: 1 };
+  const M = mon({ level: 40, moves: [golpe()] });
+  const base = { gatilho: 'level-up', hora: 12, aliados: [], registro: {}, dinheiro: 0 };
+
+  assert.equal(detalheCumprido(d, M, { ...base, bag: {} }), null, 'sem o item em lugar nenhum, não evolui');
+
+  const naMochila = detalheCumprido(d, M, { ...base, bag: { 'kings-rock': 1 } });
+  assert.ok(naMochila, 'na mochila, evolui');
+  assert.equal(naMochila.consome, 'kings-rock', 'e o item é gasto');
+
+  // a bag que progressao.contexto monta pra quem está SEGURANDO o item (bag vazia + a mão)
+  const comoNaMao = { 'kings-rock': 0 + 1 };
+  assert.ok(detalheCumprido(d, M, { ...base, bag: comoNaMao }), 'segurado, também tem de evoluir');
 });

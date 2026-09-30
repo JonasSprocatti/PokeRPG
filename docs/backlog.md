@@ -19,6 +19,9 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   armadilha nenhuma e **inimigo não segura item**. Seria um item comprável que não faz nada. Pra ele valer,
   antes teria de existir armadilha pegando o SEU lado — o que é mudança de mecânica, não item. Decisão do
   usuário na mesma conversa: deixar de fora.
+- **Dragon Scale segurada** (e os outros itens de evolução sem efeito de luta): na Gen 2 a Escama de Dragão
+  reforçava golpe de Dragão, mas nos jogos modernos ela só evolui — ficou de fora por isso, não por esquecimento.
+  Se um dia a ideia for "todo item de evolução faz algo", é inventar efeito, não portar.
 
 ## Revisões grandes pedidas (ainda não feitas)
 

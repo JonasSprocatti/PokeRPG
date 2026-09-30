@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.33', data: '2026-09-30', titulo: 'A Pedra do Rei agora serve pras duas coisas', piada: 'Ela passou a vida só evoluindo Poliwhirl, sem saber que também sabia dar cascudo. Terapia resolveu.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Seis itens de evolução agora também funcionam segurados</b>, como nos jogos: <b>Pedra do Rei</b> e <b>Presa Afiada</b> (10% de chance de fazer o alvo recuar), <b>Garra Afiada</b> (mais crítico), <b>Revestimento Metálico</b> (golpes de Aço +20%) e <b>Dente</b> e <b>Escama Abissal</b> (dobram At. e Def. Especial — só no Clamperl, o dono de direito).',
+        'Eles continuam guardados em <b>💎 Evolução</b> e continuam evoluindo quem sempre evoluíram. A diferença é que agora dá pra equipar em vez de deixar parado na mochila esperando o nível certo.',
+        '<b>E evoluir funciona com o item na mochila ou na mão.</b> Antes, se você equipasse a Pedra do Rei, o seu Poliwhirl simplesmente não evoluía e o jogo não explicava por quê.'
+      ] }
+    ] },
   { versao: '2.32', data: '2026-09-30', titulo: 'Soak, itens novos e o fim do atalho contra o chefe', piada: 'Descobrimos que dava pra derrubar o chefe da semana quase inteiro com um golpe só, estando com 1 de HP. Foi divertido enquanto durou.',
     secoes: [
       { nome: 'Novidades', itens: [

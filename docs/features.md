@@ -1052,24 +1052,35 @@ energia, das reduções de `danoNoChefe` e das fases, que nem chegavam a ser con
 golpe abriria vira **dano comum** e passa pelo mesmo caminho de todo mundo (`danoNoChefe` + `aposDanoNoChefe`).
 Contra chefe continua sendo muito dano de uma vez; fora do chefe **nada mudou**.
 
-### Itens: 6 novos + as 17 frutas de aperto
+### Itens: 6 novos, 17 frutas de aperto e 6 de dupla função
 Reaproveitando ganchos que já existiam onde dava (`resisteDoItem` ganhou a efetividade como parâmetro; a Lente
 de Mira entrou no mesmo degrau de crítico do Focus Energy e do Super Luck).
-**A Pedra do Rei foi cortada da leva no meio do caminho**: `kings-rock` já era item de EVOLUÇÃO
-(Poliwhirl/Slowpoke), e `ITENS_EVO` é aplicado a `ITEMS` DEPOIS de `ITENS_SEGURADOS` — o item da loja virava o
-de evolução e o efeito de recuo ficava morto, sem nenhum teste reclamar. `razor-fang` (o outro item de recuo)
-tem exatamente a mesma colisão. `tests/segurados.test.js` passou a cobrar que `ITEMS[id]` seja mesmo o item
-desta tabela, que é a classe de bug que passou batida. As **frutas de aperto** eram o último item segurado pendente do
-backlog: geradas de `dados.FRUTA_DO_TIPO`, o mesmo padrão que `PLACA_DO_TIPO` já usava pros pratos, então a
-tabela é a fonte única do item na loja E do efeito. Fica de fora a **Chilan** (Normal): ela corta golpe Normal
-sempre, não só super efetivo — é outra regra, e Normal não é super efetivo contra ninguém.
+**A Pedra do Rei foi cortada da leva, e depois voltou de outra forma.** Na primeira tentativa eu criei
+`kings-rock` em `ITENS_SEGURADOS` sem notar que o id já era item de EVOLUÇÃO (Poliwhirl/Slowpoke). `ITENS_EVO` é
+aplicado a `ITEMS` DEPOIS, então o item da loja virava o de evolução e o efeito de recuo ficava morto — e nenhum
+teste reclamou, porque eles olhavam a TABELA e não o `ITEMS` final. Cortei o item e reforcei o teste.
 
-### ⚠️ Heavy-Duty Boots foi pedido e NÃO foi feito
-Levantamento antes de escrever código: `golpe.aplicarArmadilhas` só é chamado quando o **inimigo** entra em campo
-(as duas chamadas estão em `batalha.js`). Do lado do jogador ninguém troca, aliado não "entra", `mp-motor` não
-tem armadilha nenhuma e **inimigo não segura item** (`m.item` nunca é atribuído pra eles). O item seria
-comprável e faria **nada**. Decisão do usuário ao ver isso: deixar de fora. Fica registrado em `docs/backlog.md`
-com o que precisaria existir antes (armadilha pegando o lado do jogador — mudança de mecânica, não item).
+### Item de dupla função (`dados.duplo`)
+O usuário apontou o obvio que eu tinha perdido: nos jogos esses itens **são os dois** — a Pedra do Rei evolui
+Poliwhirl E dá 10% de recuo na mão. O erro não era ter querido o efeito, era ter **duplicado o id em duas
+tabelas** em vez de dar duas funções ao mesmo item. A forma certa:
+- **`dados.duplo(name, efeito, quem)`** cria um item com as duas marcas: `segurar` (evolui, é gasto) e
+  `segurado` (equipável). Um id só, em `ITENS_EVO`; o efeito de luta mora em `segurados.js` na mesma chave.
+- **`IDS_EVO_EM_BATALHA`** é derivada (`ITENS_EVO` filtrado por `segurado`), não escrita à mão: marcar um item
+  novo como duplo já o inclui, e o teste cobra um gancho e uma descrição que explique o efeito de segurar.
+- **A ordem de `CATEGORIAS_ITEM` mudou**: `evolucao` passou na frente de `segurado`, senão o item duplo (que tem
+  as duas marcas) migrava de 💎 Evolução pra 🎒 Para segurar e desaparecia de onde quem procura evolução olha.
+  Isso não o esconde pra equipar — o seletor de "Segurar" (`render.js`) filtra por `segurado`, não por categoria.
+- **A evolução passou a aceitar o item NA MÃO.** `evolucao.detalheCumprido` lê `ctx.bag`, e equipar tira da
+  mochila — então, sem isso, equipar a Pedra do Rei travava a evolução do Poliwhirl sem dizer por quê (e nos
+  jogos é justamente SEGURANDO que esses itens evoluem). `progressao.contexto` agora inclui o item da mão na
+  `bag` que entrega, e `pagar(o, M)` gasta da mão quando foi de lá que veio.
+- **`soEspecie`** nasceu pro Dente/Escama Abissal, que nos jogos só servem ao Clamperl. Ler `seg(m).multStat`
+  cru daria o bônus a qualquer um, então `multStatDoItem` faz a checagem e `regras.effStat` passou a chamá-la.
+
+Os 6: Pedra do Rei e Presa Afiada (recuo 10%), Garra Afiada (+1 crítico), Revestimento Metálico (Aço +20%),
+Dente e Escama Abissal (At./Def. Especial ×2, só Clamperl). Os demais itens de evolução **não têm** efeito de
+batalha nos jogos (pedras, Melhoria, Protetor, Escama de Dragão na era moderna…) e seguem só evoluindo.
 
 Testes em `tests/soak-itens.test.js`, todos pelo motor de verdade. O do Endeavor foi conferido contra a versão
 antiga: ele **reprova** o comportamento que estava no ar, que é o que faz dele um teste de regressão de verdade.

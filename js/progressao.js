@@ -86,13 +86,22 @@ async function arvoreDe(M) {
   } catch (e) { if (atual) return atual; throw e; }
 }
 // o que as condições precisam saber (evolucao.js): hora de verdade, os outros da equipe, mochila, registro, dinheiro
+/* A `bag` que a condição vê inclui o item que o PRÓPRIO Pokémon está segurando. Motivo: os itens de dupla função
+   (dados.duplo — Pedra do Rei, Revestimento Metálico…) evoluem E valem segurados, e equipar tira da mochila.
+   Sem isto, equipar a Pedra do Rei travava a evolução do Poliwhirl sem explicar nada — e nos jogos é justamente
+   SEGURANDO que esses itens evoluem. `pagar` sabe tirar da mão quando foi de lá que veio. */
 const contexto = (M, extra) => ({ gatilho: 'level-up', hora: new Date().getHours(), aliados: ladoJogador().filter(x => x !== M),
-  bag: G.S.bag, registro: G.S.registro, dinheiro: G.S.money, ...extra });
+  bag: M?.item ? { ...G.S.bag, [M.item]: (G.S.bag[M.item] || 0) + 1 } : G.S.bag,
+  registro: G.S.registro, dinheiro: G.S.money, ...extra });
 const nomeItem = k => ITEMS[k]?.name || fmt(k);
 // gasta o que a evolução pede (item segurado na mochila, dinheiro)
-function pagar(o) {
+function pagar(o, M = null) {
   const S = G.S;
-  if (o.consome) { S.bag[o.consome]--; if (S.bag[o.consome] <= 0) delete S.bag[o.consome]; }
+  if (o.consome) {
+    // o item pode estar SEGURADO em vez de na mochila (item de dupla função): gasta da mão nesse caso
+    if (!(S.bag[o.consome] > 0) && M?.item === o.consome) M.item = null;
+    else { S.bag[o.consome]--; if (S.bag[o.consome] <= 0) delete S.bag[o.consome]; }
+  }
   if (o.custo) S.money -= o.custo;
 }
 const extraTexto = o => [o.consome ? `gasta ${nomeItem(o.consome)}` : '', o.custo ? `custa ₽${o.custo.toLocaleString('pt-BR')}` : ''].filter(Boolean).join(', ');
@@ -117,7 +126,7 @@ export async function checkEvolution(M, extra = {}) {
     : `Algo está acontecendo com seu aliado ${nm(M)}... Deixar ele evoluir?`;
   const c = await ask(pergunta, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}${extraTexto(o) ? ` (${extraTexto(o)})` : ''}`, value: o.name })), { label: ehJogador(M) ? 'Resistir à evolução' : 'Impedir a evolução', value: null, ghost: true }]);
   if (!c) { await say(`${nm(M)} ${ehJogador(M) ? 'resistiu à' : 'não passou pela'} evolução.`); return false; }
-  pagar(opts.find(o => o.name === c));
+  pagar(opts.find(o => o.name === c), M);
   try {
     await evolve(M, await casulo(M, c, node), arvore);
   } catch (e) {
@@ -198,7 +207,7 @@ export async function evoluirComItem(id) {
   const c = await ask(`Usar <b>${it.name}</b> em ${nm(M)}?`, [...opts.map(o => ({ label: `Evoluir para ${esc(fmt(o.name))}${extraTexto(o) ? ` (${extraTexto(o)})` : ''}`, value: o.name })), { label: 'Cancelar', value: null, ghost: true }]);
   if (!c) return false;
   S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
-  pagar(opts.find(o => o.name === c));
+  pagar(opts.find(o => o.name === c), M);
   await say(it.troca ? `Você conecta o ${it.name}... ${nm(M)} sente uma energia estranha.` : `Você usa ${it.name} em ${nm(M)}.`);
   await evolve(M, c, arvore);
   return true;
