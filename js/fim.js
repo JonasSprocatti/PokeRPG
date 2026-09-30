@@ -71,7 +71,9 @@ const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jo
 
 function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
   G.mode = 'fim'; limparTopo();
-  r.motivo === 'venceu' ? tocarMusica('vitoria') : pararMusica();
+  // desmaiar ou ser capturado tem som próprio (pedido do usuário); encerrar por vontade própria continua em silêncio
+  r.motivo === 'venceu' ? tocarMusica('vitoria')
+    : r.motivo === 'desmaiou' || r.motivo === 'capturado' ? tocarMusica('derrota') : pararMusica();
   const f = (l, v) => l[2] ? l[2](v || 0) : n(v);
   $('#app').innerHTML = `<main class="create fim">
     <h1>${TITULO[r.motivo]}.</h1>

@@ -17,14 +17,17 @@ export const somLigado = () => store.get(SOM_KEY) === true;
 /* `filtro` é um passa-baixa na saída de TUDO: sem ele, onda quadrada e dente-de-serra jogam harmônico agudo
    direto no alto-falante e a trilha fica estridente (foi o primeiro retorno de quem jogou). Corta em 2 kHz —
    o chiptune continua com a cara certa, só sem a parte que dói no ouvido. */
-let ctx = null, master = null, filtro = null;
+/* `musica` é um volume SÓ da trilha, pendurado no master. É o que permite a transição: a faixa desce até o
+   silêncio, troca e sobe de novo, sem levar junto o grito e os efeitos (que entram direto no master). */
+let ctx = null, master = null, filtro = null, musica = null;
 function motor() {
   if (typeof window === 'undefined' || !window.AudioContext) return null;
   if (!ctx) {
     ctx = new AudioContext();
     filtro = ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 2000; filtro.Q.value = 0.6;
     master = ctx.createGain(); master.gain.value = 0.26;
-    master.connect(filtro); filtro.connect(ctx.destination);
+    musica = ctx.createGain(); musica.gain.value = 1;
+    musica.connect(master); master.connect(filtro); filtro.connect(ctx.destination);
   }
   return ctx;
 }
@@ -52,6 +55,7 @@ export function precarregarCry(id) { if (somLigado() && id) carregarCry(id); }
 export function tocarCry(id) {
   if (!somLigado() || !id) return;
   const c = motor(), p = carregarCry(id); if (!p) return;
+  c.resume();   // na tela de criação o grito pode ser o PRIMEIRO som da página, com o contexto ainda 'suspended'
   const pedidoEm = c.currentTime;
   p.then(buf => {
     // buffer quente resolve no mesmo instante; o que demorou na rede é descartado em vez de gritar fora de hora
@@ -75,13 +79,16 @@ const PENTA_MAIOR = ESCALAS['penta maior'];
 const PENTA_MENOR = ESCALAS['penta menor'];
 const MENOR_HARM = ESCALAS['menor harmônica'];
 
-// O CONTEXTO (que tela) dá o andamento, a agitação e o timbre.
+/* O CONTEXTO (que tela) dá o andamento, a agitação e o timbre.
+   `melodiaFixa` é a frase da BATALHA: ela vence a do bioma de propósito, porque "música de luta" só é marcante
+   se for a MESMA toda vez — a rota continua entrando pela tonalidade (raiz, escala e acordes do tema). Foi a
+   queixa "falta uma música marcante de batalha": antes o combate era o tema da rota tocado mais rápido. */
 export const CONTEXTOS = {
   telas: { bpm: 76, densidade: 0.3, onda: 'triangle' },    // Carreira, Conquistas, Ranking… nada acontecendo
   menu: { bpm: 84, densidade: 0.42, onda: 'triangle' },    // tela inicial
   explorar: { bpm: 104, densidade: 0.48, onda: 'triangle' },
-  batalha: { bpm: 138, densidade: 0.68, onda: 'square' },
-  chefe: { bpm: 156, densidade: 0.8, onda: 'square' }
+  batalha: { bpm: 138, densidade: 0.68, onda: 'square', melodiaFixa: '0 . 0 3 . 2 . 4 . 3 2 . 0 . 2 .' },
+  chefe: { bpm: 156, densidade: 0.8, onda: 'square', melodiaFixa: '0 0 . 4 . 3 . 4 . 2 . 0 - . 4 .' }
 };
 /* O TEMA DA ROTA dá a tonalidade. As chaves são os biomas de `cenario.climaDaRota` — a MESMA derivação que já
    pinta o céu e o chão da batalha, tirada do texto da rota. Reusar aquilo é o que faz "uma música por rota"
@@ -115,15 +122,16 @@ export const grauEmSemitons = (escala, d) =>
 export const lerMelodia = txt => String(txt || '').trim().split(/\s+/).filter(Boolean);
 const midiParaFreq = m => 440 * 2 ** ((m - 69) / 12);
 
-// nota aguda sai mais baixa: mesmo com o passa-baixa, volume igual em toda a extensão soa desequilibrado
-function tocarNota(tempo, midi, dur, onda, ganho) {
+// nota aguda sai mais baixa: mesmo com o passa-baixa, volume igual em toda a extensão soa desequilibrado.
+// `dest` separa a TRILHA (vai no `musica`, que sobe e desce nas transições) dos EFEITOS (direto no master).
+function tocarNota(tempo, midi, dur, onda, ganho, dest = master) {
   const o = ctx.createOscillator(), g = ctx.createGain();
   o.type = onda; o.frequency.value = midiParaFreq(midi);
   const v = ganho * (midi > 74 ? 0.55 : 1);
   g.gain.setValueAtTime(0, tempo);
   g.gain.linearRampToValueAtTime(v, tempo + 0.02);
   g.gain.exponentialRampToValueAtTime(0.001, tempo + dur);
-  o.connect(g); g.connect(master);
+  o.connect(g); g.connect(dest);
   o.start(tempo); o.stop(tempo + dur + 0.02);
 }
 
@@ -134,13 +142,13 @@ let timer = null, faixa = null, proximoPasso16 = 0, passo16 = 0, compasso = 0;
 
 function agendarPasso16(tempo) {
   const f = faixa, raizAcorde = f.raiz + f.acordes[compasso % f.acordes.length], dur16 = 60 / f.bpm / 4;
-  if (passo16 % 8 === 0) tocarNota(tempo, raizAcorde - 12, dur16 * 7, 'triangle', 0.22); // baixo: 1 nota por meio compasso
+  if (passo16 % 8 === 0) tocarNota(tempo, raizAcorde - 12, dur16 * 7, 'triangle', 0.22, musica); // baixo: 1 nota por meio compasso
   if (f.passos?.length) { melodiaEscrita(f, tempo, raizAcorde, dur16); return; }
   // tema sem melodia escrita: cai no sorteio de antes (é o que sobra pra quem não ganhou frase própria)
   const forte = passo16 % 4 === 0;
   if (Math.random() < f.densidade * (forte ? 1 : 0.5)) {
     const oitava = Math.random() < 0.7 ? 12 : 0;
-    tocarNota(tempo, raizAcorde + pick(f.escala) + oitava, dur16 * (Math.random() < 0.25 ? 2 : 1), f.onda, 0.12);
+    tocarNota(tempo, raizAcorde + pick(f.escala) + oitava, dur16 * (Math.random() < 0.25 ? 2 : 1), f.onda, 0.12, musica);
   }
 }
 /* A frase escrita à mão. O `-` que vier DEPOIS da nota estica a duração dela (é o que dá a nota longa no meio da
@@ -156,7 +164,7 @@ function melodiaEscrita(f, tempo, raizAcorde, dur16) {
   while (dur < p.length && p[(i + dur) % p.length] === '-') dur++;
   // a variação de oitava é pra BAIXO: pular pra cima devolveria o agudo que foi o motivo da leva anterior
   const oitava = Math.random() < 0.12 ? 0 : 12;
-  tocarNota(tempo, raizAcorde + grauEmSemitons(f.escala, grau) + oitava, dur16 * dur * 0.95, f.onda, 0.12);
+  tocarNota(tempo, raizAcorde + grauEmSemitons(f.escala, grau) + oitava, dur16 * dur * 0.95, f.onda, 0.12, musica);
 }
 function agendador() {
   while (proximoPasso16 < ctx.currentTime + OLHAR_A_FRENTE) {
@@ -169,11 +177,20 @@ function agendador() {
 }
 function pararLoop() { if (timer) { clearTimeout(timer); timer = null; } faixa = null; }
 
-// fanfarra de vitória: arpejo maior ascendente, não repete
-function tocarStinger() {
-  const c = motor(); if (!c) return;
-  const t0 = c.currentTime + 0.05, graus = [0, 4, 7, 12, 16, 19];
-  graus.forEach((g, i) => tocarNota(t0 + i * 0.11, 57 + g, 0.35, 'square', 0.16));
+/* ---- efeitos curtos (não repetem, não são faixa) ----
+   Notas escritas à mão como `[atraso, midi, duração]`. Vão no `master`, não no `musica`: um level up no meio da
+   exploração não pode ser engolido por uma transição de faixa acontecendo ao mesmo tempo. */
+const SFX = {
+  vitoria: { onda: 'square', ganho: 0.16, notas: [[0, 57, .35], [.11, 61, .35], [.22, 64, .35], [.33, 69, .35], [.44, 73, .35], [.55, 76, .6]] },
+  derrota: { onda: 'triangle', ganho: 0.2, notas: [[0, 57, .5], [.3, 55, .5], [.6, 52, .5], [.9, 45, 1.4]] },   // desce e se arrasta
+  nivel: { onda: 'square', ganho: 0.14, notas: [[0, 72, .12], [.07, 76, .12], [.14, 79, .34]] },                 // três degraus subindo
+  compra: { onda: 'square', ganho: 0.14, notas: [[0, 84, .09], [.08, 91, .22]] }                                 // caixa registradora
+};
+export function tocarSfx(nome) {
+  const c = motor(), s = SFX[nome]; if (!c || !s || !somLigado()) return;
+  c.resume();
+  const t0 = c.currentTime + 0.05;
+  for (const [dt, midi, dur] of s.notas) tocarNota(t0 + dt, midi, dur, s.onda, s.ganho);
 }
 
 /* `pedido` guarda o que foi pedido por último (contexto + rota) mesmo com o som desligado ou a aba escondida,
@@ -183,27 +200,53 @@ function tocarStinger() {
    `cenario.climaDaRota`. Sem rota (menus), cai no tema padrão. */
 let pedido = null;
 
+/* A TRANSIÇÃO. Faixa trocando no corte seco foi a queixa: "tem que ser algo mais claro e ao mesmo tempo suave,
+   tipo uma transição de um lugar para o outro". Então a antiga DESCE, existe um respiro de silêncio (é o que
+   deixa a mudança clara — sem ele um crossfade puro passa despercebido) e a nova SOBE. Crossfade de verdade,
+   com as duas tocando juntas, pediria dois agendadores e duas faixas: por 0,2 s de sobreposição não compensa.
+   `trocaId` cancela a entrada de uma troca que outra atropelou (andar rápido entre rotas dispara várias). */
+const FADE_SAI = 0.35, RESPIRO = 0.2, FADE_ENTRA = 0.7;
+let trocaId = 0;
+function comFade(montar) {
+  const c = motor(); if (!c) return;
+  const g = musica.gain, id = ++trocaId;
+  const entrar = () => {
+    if (id !== trocaId) return;
+    montar();
+    const t = c.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(0.0001, t);
+    if (faixa) g.exponentialRampToValueAtTime(1, t + FADE_ENTRA);   // sem faixa (parou de vez) fica embaixo mesmo
+  };
+  if (!timer) return entrar();   // nada tocando: entra direto, sem esperar fade de coisa nenhuma
+  const t = c.currentTime;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.exponentialRampToValueAtTime(0.0001, t + FADE_SAI);
+  setTimeout(entrar, (FADE_SAI + RESPIRO) * 1000);
+}
+
 // monta e começa a faixa (contexto + tema já resolvidos). Quem retoma — ligar o som, voltar pra aba — chama
 // daqui com o `pedido` guardado, sem precisar da rota de novo.
-function iniciarFaixa(qual, tema) { montarFaixa(qual, TEMAS[tema] || TEMAS.padrao); }
+function iniciarFaixa(qual, tema) { comFade(() => montarFaixa(qual, TEMAS[tema] || TEMAS.padrao)); }
 // o miolo, com o tema já como OBJETO: é por aqui que o editor (musica.html) toca um tema que ainda não existe
 // no arquivo, usando exatamente este motor — editor com sintetizador próprio sairia do ar em uma semana.
+// `t.preview` vem só do editor: lá a melodia do TEMA é o que se está ajustando, então a fixa da batalha não manda.
 function montarFaixa(qual, t) {
   pararLoop();
   const c = motor(), base = CONTEXTOS[qual]; if (!c || !base || !t) return;
-  faixa = { ...base, ...t, onda: t.onda || base.onda, passos: lerMelodia(t.melodia) };
+  const melodia = (!t.preview && base.melodiaFixa) || t.melodia;
+  faixa = { ...base, ...t, onda: t.onda || base.onda, passos: lerMelodia(melodia) };
   passo16 = 0; compasso = 0; proximoPasso16 = c.currentTime + 0.05;
   agendador();
 }
 export function tocarMusica(qual, zona = null) {
-  if (qual === 'vitoria') { pedido = null; pararLoop(); if (somLigado()) tocarStinger(); return; }
+  // vitória e derrota não são faixa: a trilha sai e o efeito fica sozinho (é o fim da jornada)
+  if (SFX[qual]) { pedido = null; pararLoop(); tocarSfx(qual); return; }
   const tema = climaDaRota(zona).id;
   // já é essa faixa que está tocando: não recomeça do zero (todo render passaria por aqui)
   if (pedido?.qual === qual && pedido.tema === tema && timer) return;
   pedido = { qual, tema };
   if (somLigado()) iniciarFaixa(qual, tema);
 }
-export function pararMusica() { pedido = null; pararLoop(); }
+export function pararMusica() { pedido = null; comFade(pararLoop); }
 // retoma o que estava tocando (ao ligar o som ou ao voltar pra aba)
 const retomar = () => { if (pedido) iniciarFaixa(pedido.qual, pedido.tema); };
 
@@ -215,7 +258,7 @@ const retomar = () => { if (pedido) iniciarFaixa(pedido.qual, pedido.tema); };
 // 'suspended' — sem isto o botão Tocar agendaria tudo certinho e não sairia som nenhum.
 export function tocarPreview(qual, tema) {
   const c = motor(); if (!c) return;
-  c.resume(); pedido = null; montarFaixa(qual, tema);
+  c.resume(); pedido = null; comFade(() => montarFaixa(qual, { ...tema, preview: true }));
 }
 export function ajustarSaida({ corte, volume } = {}) {
   if (!motor()) return;

@@ -10,6 +10,20 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.34', data: '2026-09-30', titulo: 'Tema de batalha, som de nível e Pokémon do tamanho certo', piada: 'O Meowth vinha sendo exibido do tamanho de um Onix. Ele gostou e não queria voltar, mas foi convencido.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>A batalha tem música própria agora.</b> Antes era o tema da rota tocando mais rápido; agora existe uma melodia de luta (e outra, mais pesada, pro chefe) que toca em qualquer rota — a rota continua entrando pela tonalidade.',
+        '<b>A troca de música virou uma passagem.</b> A faixa antiga desce, tem um respiro de silêncio e a nova entra subindo: dá pra sentir que você mudou de lugar, sem o corte seco de antes.',
+        '<b>Som de derrota</b> quando a jornada acaba mal, <b>som de subir de nível</b> (seu e dos aliados) e um <b>“ca-ching” ao comprar</b> na loja.',
+        '<b>Na tela inicial, o Pokémon que você seleciona solta o grito dele.</b> Dá pra escolher pelo ouvido também.',
+        'Tudo isso continua em <b>⚙ Ajustes → Som</b>, desligado por padrão.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Sumiu o retângulo escuro atrás do seu Pokémon na batalha.</b> Era um estilo da ficha vazando pra cena da luta.',
+        '<b>Os sprites não são mais esticados pra encher a caixa.</b> Cada Pokémon aparece no tamanho de verdade dele: acabou o serrilhado de imagem ampliada, e as espécies voltaram a ter tamanhos diferentes entre si.'
+      ] }
+    ] },
   { versao: '2.33', data: '2026-09-30', titulo: 'A Pedra do Rei agora serve pras duas coisas', piada: 'Ela passou a vida só evoluindo Poliwhirl, sem saber que também sabia dar cascudo. Terapia resolveu.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -240,7 +240,7 @@ function renderFicha() {
   const S = G.S, P = S.player;
   tituloPainel('ficha', `${brilho(P)}${esc(P.nick || fmt(P.name))}`);
   $('#p-ficha').innerHTML = `
-    <div class="me">
+    <div class="ficha-me">
       ${imgMon(P, '', spriteFrente(P))}
       <div>
         <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}</h2>

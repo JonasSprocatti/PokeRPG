@@ -3,7 +3,7 @@
    cai no tema padrão sem avisar ninguém — a rota nova simplesmente soaria genérica pra sempre. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TEMAS, precarregarCry, tocarCry, SOM_KEY, lerMelodia, grauEmSemitons } from '../js/som.js';
+import { TEMAS, CONTEXTOS, precarregarCry, tocarCry, SOM_KEY, lerMelodia, grauEmSemitons } from '../js/som.js';
 import { CLIMAS, climaDaRota } from '../js/cenario.js';
 import { GENS } from '../js/dados-mapas.js';
 
@@ -107,5 +107,23 @@ test('toda melodia escrita está num formato que o motor entende', () => {
     assert.equal(p.length, 16, `${id}: ${p.length} passos (o compasso é de 16)`);
     for (const tok of p) assert.ok(tok === '.' || tok === '-' || Number.isFinite(Number(tok)), `${id}: token "${tok}" inválido`);
     assert.notEqual(p[0], '-', `${id}: a frase não pode começar segurando uma nota que não existe`);
+  }
+});
+
+/* A frase da BATALHA mora no CONTEXTO, não no tema (ela vence a do bioma pra a música de luta ser sempre a
+   mesma), então ela não passa pelas guardas acima — que varrem `TEMAS`. Esta cobre o formato dela. */
+test('a melodia fixa de cada contexto está no mesmo formato', () => {
+  const comFrase = Object.entries(CONTEXTOS).filter(([, c]) => c.melodiaFixa);
+  assert.ok(comFrase.length >= 2, 'batalha e chefe têm frase própria');
+  for (const [id, c] of comFrase) {
+    const p = lerMelodia(c.melodiaFixa);
+    assert.equal(p.length, 16, `${id}: ${p.length} passos (o compasso é de 16)`);
+    assert.notEqual(p[0], '-', `${id}: a frase não pode começar segurando uma nota que não existe`);
+    for (const tok of p) assert.ok(tok === '.' || tok === '-' || Number.isFinite(Number(tok)), `${id}: token "${tok}" inválido`);
+    // ela toca sobre a escala de QUALQUER tema, então o teto de agudo tem de valer no pior caso (raiz mais alta)
+    const grauMax = Math.max(...p.map(Number).filter(Number.isFinite));
+    const raizMax = Math.max(...Object.values(TEMAS).map(t => t.raiz));
+    for (const t of Object.values(TEMAS))
+      assert.ok(440 * 2 ** ((raizMax + grauEmSemitons(t.escala, grauMax) + 12 - 69) / 12) <= 880, `${id}: passa de 880 Hz em ${t.escala}`);
   }
 });

@@ -14,6 +14,7 @@ import { makeMon } from './pokemon.js';
 import { evolucoesPossiveis, caminhoMostrado, textoCondicao, ganharFelicidade, ganhoFelicidadeNivel, felicidadeDe, FELICIDADE_ALIADO } from './evolucao.js';
 import { loadMove, loadSpecies, loadPokemon, loadEvo, loadGrowth } from './api.js';
 import { esc, fmt, offline } from './util.js';
+import { tocarSfx } from './som.js';
 
 const ehJogador = M => M === G.S.player;
 // chance de um aliado simplesmente não querer o golpe novo quando já sabe 4 (ver `aprender`)
@@ -25,7 +26,7 @@ export async function gainExp(xp) {
   let leveled = false;
   while (P.level < 100 && P.exp >= GR[P.level + 1]) {
     const before = { ...P.stats };
-    P.level++; recalc(P); leveled = true; ganharFelicidade(P, ganhoFelicidadeNivel(felicidadeDe(P))); render();
+    P.level++; recalc(P); leveled = true; ganharFelicidade(P, ganhoFelicidadeNivel(felicidadeDe(P))); render(); tocarSfx('nivel');
     await say(`<b>${esc(P.nick || fmt(P.name))} subiu para o nível ${P.level}!</b>`, 'level');
     await say(STATS.map(s => `${STAT_PT[s]} +${P.stats[s] - before[s]}`).join(', '), 'muted');
     for (const mv of P.data.learnset.list.filter(m => m.level === P.level)) await aprender(P, mv);
@@ -39,7 +40,7 @@ export async function gainExpAliado(A, xp) {
   A.exp += xp;
   let leveled = false;
   while (A.level < 100 && A.exp >= A.growth[A.level + 1]) {
-    A.level++; recalc(A); leveled = true; ganharFelicidade(A, ganhoFelicidadeNivel(felicidadeDe(A))); render();
+    A.level++; recalc(A); leveled = true; ganharFelicidade(A, ganhoFelicidadeNivel(felicidadeDe(A))); render(); tocarSfx('nivel');
     await say(`${nm(A)} subiu para o nível ${A.level}!`, 'level');
     for (const ref of A.data.learnset.list.filter(m => m.level === A.level)) await aprender(A, ref);
   }

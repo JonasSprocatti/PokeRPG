@@ -21,7 +21,7 @@ import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resol
 import { blocoAds, ativarSlots } from './ads.js';
 import { aoMudarOnline, onlineAgora, contagemAnonimos } from './presenca.js';
 import { ehAdmin } from './nuvem.js';
-import { tocarMusica } from './som.js';
+import { tocarMusica, tocarCry } from './som.js';
 
 // "Ad slot" da tela inicial. Mora em config.js junto com os outros: vazio = blocoAds() não desenha nada.
 import { AD_SLOT_INICIO } from './config.js';
@@ -228,6 +228,7 @@ export async function previewSearch(q) {
     box.innerHTML = `<p class="err">${e.code === 404 ? `Nenhum Pokémon chamado “${esc(q)}”. Use o nome em inglês (ex.: mr-mime) ou o número da Pokédex.` : apiErr(e)}</p>`;
     return;
   }
+  tocarCry(data.id);   // quem você escolheu se apresenta (pedido do usuário) — o clique no card já é o gesto que libera o áudio
   try {
     // garantia (a UI só oferece iniciais, mas `pick`/`search` vêm de atributo do HTML)
     const ok = permitidos();

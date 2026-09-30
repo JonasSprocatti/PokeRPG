@@ -1026,6 +1026,62 @@ mediu zero e parecia que a página estava morta. O jeito que funciona é extrair
 com o DOM do jsdom nos globais; e `window.AudioContext` precisa ser posto no objeto `window` do jsdom, não só em
 `globalThis` (o código checa `window.AudioContext`, e essa mesma distração já tinha dado falso negativo antes).
 
+### A quarta leva (30/09/2026): transição, tema de batalha e os efeitos curtos
+Queixa: *"o problema é relacionado à transição de uma pra outra, tem que ser algo mais claro e ao mesmo tempo
+suave, tipo uma transição de um lugar para o outro; também é importante ter uma música marcante durante a
+batalha, uma música de derrota, um som de level up, um som de compra de item. Quando selecionar o pokemon na tela
+inicial soltar o cry do pokemon. Algo mais fluido e natural e mais imersivo."* Cinco coisas, todas em `som.js`:
+
+**1. A transição.** Um nó de ganho novo, `musica`, entre as notas da trilha e o `master` — é ele que sobe e
+desce. `comFade(montar)`: a faixa atual desce em 0,35 s, há um **respiro de 0,2 s de silêncio** e a nova entra
+subindo em 0,7 s. O respiro é o que atende o "claro" do pedido — crossfade puro, com as duas se sobrepondo,
+passa despercebido justamente por ser contínuo. *Não* é crossfade de verdade (as duas tocando juntas) porque
+isso pediria dois agendadores e duas `faixa`s; por 0,2 s de sobreposição não compensa. `trocaId` cancela a
+entrada de uma troca que outra atropelou — andar rápido entre rotas dispara várias, e sem isso duas faixas
+começariam juntas. Os **efeitos curtos entram no `master`, não no `musica`**: um level up no meio de uma
+transição não pode ser engolido pelo fade.
+
+**2. A música de batalha.** O contexto ganhou `melodiaFixa`, e ela **vence a melodia do tema**: música de luta
+só é marcante se for a MESMA toda vez. A rota continua entrando pela tonalidade (raiz, escala e progressão do
+bioma), então a batalha na caverna e a na praia continuam soando diferentes — muda a cor, não a frase. O editor
+(`musica.html`) é a exceção: `tocarPreview` marca o tema com `preview`, e aí a frase do TEMA manda, que é o que
+se está ajustando lá.
+
+**3. Os efeitos curtos.** `SFX` é uma tabela de `[atraso, midi, duração]` escrita à mão, tocada por `tocarSfx`
+sem passar pelo agendador: `vitoria` (o antigo `tocarStinger`), `derrota` (desce e se arrasta), `nivel` (três
+degraus subindo, em `progressao` — seu e dos aliados) e `compra` (duas notas agudas, no `case 'buy'`).
+`tocarMusica` reconhece qualquer nome que exista em `SFX`, então `fim.telaFim` chama `tocarMusica('derrota')` do
+mesmo jeito que já chamava a vitória. Derrota toca em `desmaiou` e `capturado`; encerrar a jornada por vontade
+própria continua em silêncio.
+
+**4. O grito na tela inicial.** `criacao.previewSearch`, logo depois de a espécie resolver. O clique no card é o
+gesto que os navegadores exigem, mas o `AudioContext` pode ter nascido `suspended` antes disso (a trilha do menu
+já o criou), então `tocarCry` passou a dar `resume()` — sem isso o grito seria agendado num relógio parado.
+
+**Ficou de fora**: volume por categoria (música x efeitos) — o nó `musica` já deixaria isso a uma linha, mas o
+ajuste continua sendo um liga/desliga só, como combinado.
+
+---
+
+## Sprites da cena: o retângulo escuro e o tamanho de verdade (30/09/2026)
+Dois defeitos no mesmo print de celular: um fundo escuro arredondado atrás do Pokémon do jogador, e *"os pokémons
+oponentes parecem estar muito maior que o necessário, e ambos estão muito pixelados, acho que pela proximidade"*.
+
+**O retângulo era colisão de nome de classe.** A ficha usava `<div class="me">` e a cena da luta usa
+`<div class="side me">` (a sala, `<div class="mp-fila me">`) — o seletor `.me img`, escrito para a ficha, pegava
+o sprite em campo e lhe dava `background:var(--panel2)` e `border-radius`. Renomeado para **`.ficha-me`**, que é
+o lado com um uso só; renomear a cena mexeria em dois arquivos e numa media query. Lição: classe de duas letras
+com significado genérico (`me`, `foe`) só serve **composta** (`.side.me`).
+
+**O tamanho**: `.spr` tinha `object-fit:contain`, que ESTICA a imagem até encher a caixa de 128 px (92 no
+celular). Pixel art ampliada 1,6× tem pixel de tamanho irregular — é essa a "pixelação por proximidade". E como
+todo mundo enchia a mesma caixa, **a proporção entre espécies sumia**: o Showdown desenha o Meowth bem menor que
+um Onix, e a cena apagava isso (o "oponente maior que o necessário"). A troca é de uma palavra:
+**`object-fit:scale-down`** = `contain` que nunca amplia, ou seja, imagem menor que a caixa sai no tamanho de
+verdade dela (1:1, nítida). Com `object-position:bottom` junto, senão o sprite a que sobra espaço flutuaria no meio
+da caixa em vez de pisar no chão. A caixa continua valendo pra quem é MAIOR que ela: o sprite 3D (512 px) e os
+GIFs grandes seguem sendo reduzidos pra caber.
+
 ---
 
 ## Troca de tipo, Endeavor no chefe e a leva de itens (30/09/2026)

@@ -41,7 +41,7 @@ import { store, esc, fmt, novoId } from './util.js';
 import { iniciarAds, definirConsentimento } from './ads.js';
 import { rodapeHTML } from './site.js';
 import { iniciarPresencaGlobal, registrarVisitanteAnonimo, definirPresenca } from './presenca.js';
-import { alternarSom, tocarMusica } from './som.js';
+import { alternarSom, tocarMusica, tocarSfx } from './som.js';
 
 /* ============ eventos ============ */
 /* Toda ação da UI passa por este handler, e ele é `async` — ou seja, um erro lá dentro vira uma promise
@@ -288,7 +288,7 @@ async function aoClicar(e) {
       // o modal é assíncrono: reconfere (o dinheiro pode ter mudado enquanto ele estava aberto)
       if (!qtd || G.busy || G.S.money < qtd * preco) return;
       const total = qtd * preco;
-      G.S.money -= total; G.S.gasto = (G.S.gasto || 0) + total; addItem(v, qtd);
+      G.S.money -= total; G.S.gasto = (G.S.gasto || 0) + total; addItem(v, qtd); tocarSfx('compra');
       log(`Você comprou ${qtd > 1 ? `${qtd}× ` : ''}${it.name} por ₽${total.toLocaleString('pt-BR')}.`, 'good');
       toast(`🛒 Comprou <b>${qtd > 1 ? `${qtd}× ` : ''}${esc(it.name)}</b> por ₽${total.toLocaleString('pt-BR')}<br><small class="muted">Na mochila: ${G.S.bag[v]}</small>`, 3500);
       await verificarMissoes(); save(); return render(); // missões de gastar dinheiro

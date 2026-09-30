@@ -445,10 +445,12 @@ a.btn{display:inline-block;text-decoration:none}
   body.em-batalha .mon.mini .spr{width:44px;height:44px}
   body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:26vh}
 }
-.me{display:flex;gap:12px;align-items:center}
-.me img{width:96px;height:96px;image-rendering:pixelated;object-fit:contain;background:var(--panel2);border-radius:12px;flex:none}
-.me h2{margin:0;font:700 26px/1.1 var(--display)}
-.me .sub{color:var(--muted);font-size:14px;margin:2px 0 6px}
+/* `ficha-me`, não `me`: a cena da luta tem `<div class="side me">` e a sala tem `<div class="mp-fila me">`, e o
+   `.me img` daqui pegava TAMBÉM o Pokémon em campo — era dele o retângulo escuro atrás do seu sprite na batalha. */
+.ficha-me{display:flex;gap:12px;align-items:center}
+.ficha-me img{width:96px;height:96px;image-rendering:pixelated;object-fit:contain;background:var(--panel2);border-radius:12px;flex:none}
+.ficha-me h2{margin:0;font:700 26px/1.1 var(--display)}
+.ficha-me .sub{color:var(--muted);font-size:14px;margin:2px 0 6px}
 .bars{margin:14px 0 6px;display:grid;gap:6px}
 .hp{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;font:700 12px var(--display)}
 .bar{height:10px;border-radius:5px;background:#0f1230;overflow:hidden}
@@ -591,11 +593,14 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .side.foe .mon{order:2}
 .mon{position:relative;width:170px;height:130px;display:grid;place-items:end center;flex:none}
 .pad{position:absolute;bottom:4px;left:8px;right:8px;height:30px;border-radius:50%;background:rgba(0,0,0,.25)}
-/* object-fit:contain é o que impede o GIF animado (Showdown) de esticar: ao contrário do sprite clássico (sempre
-   quadrado, 96×96), o tamanho de cada GIF varia por Pokémon — sem isso, width/height fixos DISTORCIAM a imagem
-   pra caber na caixa (pedido do usuário: "os gifs animados ficaram estranhamente desproporcionais"). Não muda
-   nada pro clássico/3D, que já são quadrados. */
-.spr{position:relative;width:128px;height:128px;image-rendering:pixelated;object-fit:contain}
+/* `scale-down` = `contain` que NUNCA amplia: a imagem menor que a caixa sai no tamanho de verdade dela.
+   `contain` esticava o sprite até encher os 128px, e é isso que dava o bloco gigante e borrado relatado
+   ("estão muito pixelados, acho que pela proximidade") — pixel art ampliada 1,6× fica com pixel de tamanho
+   irregular. De quebra volta a PROPORÇÃO entre espécies: o Showdown já desenha o Meowth menor que o Onix, e
+   encher a caixa apagava essa diferença (era o "oponentes parecem maior que o necessário").
+   `object-position:bottom` põe o Pokémon no chão da caixa — sem isso, sobrando espaço, ele flutuaria no meio.
+   A caixa continua importando: o sprite 3D (512px) e os maiores são REDUZIDOS pra caber, como antes. */
+.spr{position:relative;width:128px;height:128px;image-rendering:pixelated;object-fit:scale-down;object-position:bottom}
 .spr.back{width:150px;height:150px}
 .spr.flip{transform:scaleX(-1)}
 .mon.fainted .spr{opacity:.15;transition:opacity .5s}
