@@ -964,11 +964,20 @@ o aviso duas vezes. `main.abrirJornada` religa a trilha certa ao retomar um save
 ### A segunda leva (30/09/2026): o que quem jogou reclamou
 Cinco queixas do primeiro dia, todas atendidas em `som.js`:
 1. **"Os sons estão com delay"** (o grito principalmente). A causa era `new Audio(url).play()`: o arquivo era
-   BUSCADO na hora do grito. Agora o cry é baixado, **decodificado uma vez e guardado** (`buffers`, id → `AudioBuffer`)
-   e tocado por `createBufferSource` — instantâneo. Quem aquece é **`precarregarCry`, chamado por
-   `pokemon.makeMon`**: todo Pokémon do jogo nasce ali, bem antes de entrar em campo, então na hora da luta o
-   áudio já está pronto. O service worker já guardava o arquivo (o host está em `EXTERNOS`), então isso custa rede
-   só na primeira vez. `buffers.set(id, null)` ANTES do fetch evita duas buscas pro mesmo id.
+   BUSCADO na hora do grito. Agora o cry é baixado, **decodificado uma vez e guardado** e tocado por
+   `createBufferSource` — instantâneo. Quem aquece é **`precarregarCry`, chamado por `pokemon.makeMon`**: todo
+   Pokémon do jogo nasce ali, bem antes de entrar em campo, então na hora da luta o áudio já está pronto. O
+   service worker já guardava o arquivo (o host está em `EXTERNOS`), então isso custa rede só na primeira vez.
+
+   ⚠️ **O primeiro conserto disto virou um bug pior, e foi pra produção**: o mapa guardava o BUFFER e era marcado
+   com `null` antes do fetch, pra não buscar duas vezes. Só que `tocarCry` lia esse `null` como "ainda não
+   chegou", apenas re-aquecia e **não tocava** — ou seja, na PRIMEIRA aparição de cada espécie o grito nunca saía,
+   que é justamente o caso comum. O jogador relatou como "os cries pararam de tocar". A correção é guardar a
+   **promessa** do buffer, não o buffer: quem pede o grito se pendura nela e toca quando ela resolve, esteja o
+   áudio pronto ou a caminho (com um corte de 3 s, pra grito que demorou na rede não sair fora de hora).
+   Lição de teste, registrada porque se repetiu: **o teste manual que eu fiz exercitou só o caminho QUENTE** (eu
+   esperei o áudio chegar antes de mandar tocar), e o caminho frio — o do jogador — nunca foi testado.
+   `tests/som.test.js` cobre agora o frio, e foi conferido que ele REPROVA a versão com bug.
 2. **"Se eu saio do navegador o som continua"** — incômodo real. `visibilitychange`: aba escondida para o
    agendador e dá `ctx.suspend()`; ao voltar, `resume()` + `retomar()` remonta a faixa do `pedido` guardado.
 3. **"Precisa ter menos agudos"** — duas coisas somadas: um **passa-baixa de 2 kHz** na saída de tudo (onda

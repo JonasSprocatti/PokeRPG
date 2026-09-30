@@ -35,26 +35,32 @@ function motor() {
    instantâneo. Quem aquece o cache é `precarregarCry`, chamado por `pokemon.makeMon`: todo Pokémon do jogo nasce
    ali, muito antes de entrar em campo, então na hora da luta o grito já está decodificado e sai junto da cena.
    O service worker já guarda o arquivo (cdn.jsdelivr.net está em `EXTERNOS`), então isso custa rede só na 1ª vez. */
-const buffers = new Map();   // id da espécie -> AudioBuffer (ou null quando não deu pra decodificar)
-export function precarregarCry(id) {
-  if (!somLigado() || !id || buffers.has(id)) return;
-  const c = motor(); if (!c) return;
-  buffers.set(id, null);   // marca antes de buscar: não dispara duas buscas pro mesmo id
-  fetch(CRY(id))
+/* O mapa guarda a PROMESSA do buffer, não o buffer. Guardar o buffer parecia mais simples e criou um bug de
+   verdade: `tocarCry` via o registro ainda vazio, concluía "não chegou", só re-aquecia e **não tocava** — ou seja,
+   na PRIMEIRA aparição de cada espécie o grito nunca saía (e a primeira aparição é o caso comum). Com a promessa,
+   quem pede o grito se pendura nela e toca quando ela resolve, esteja o áudio já pronto ou a caminho. */
+const buffers = new Map();   // id da espécie -> Promise<AudioBuffer | null>
+function carregarCry(id) {
+  const c = motor(); if (!c) return null;
+  if (!buffers.has(id)) buffers.set(id, fetch(CRY(id))
     .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('cry ' + r.status)))
     .then(b => c.decodeAudioData(b))
-    .then(buf => buffers.set(id, buf))
-    .catch(() => {});   // sem rede, formato não suportado (ogg no Safari): o jogo segue sem grito
+    .catch(() => null));   // sem rede, ou formato não suportado (ogg no Safari): o jogo segue sem grito
+  return buffers.get(id);
 }
+export function precarregarCry(id) { if (somLigado() && id) carregarCry(id); }
 export function tocarCry(id) {
-  if (!somLigado()) return;
-  const c = motor(), buf = buffers.get(id);
-  if (!c) return;
-  if (!buf) { precarregarCry(id); return; }   // ainda não chegou: aquece pra próxima em vez de tocar atrasado
-  const fonte = c.createBufferSource(), g = c.createGain();
-  fonte.buffer = buf; g.gain.value = 0.9;
-  fonte.connect(g); g.connect(master);
-  fonte.start();
+  if (!somLigado() || !id) return;
+  const c = motor(), p = carregarCry(id); if (!p) return;
+  const pedidoEm = c.currentTime;
+  p.then(buf => {
+    // buffer quente resolve no mesmo instante; o que demorou na rede é descartado em vez de gritar fora de hora
+    if (!buf || !somLigado() || c.currentTime - pedidoEm > 3) return;
+    const fonte = c.createBufferSource(), g = c.createGain();
+    fonte.buffer = buf; g.gain.value = 0.9;
+    fonte.connect(g); g.connect(master);
+    fonte.start();
+  });
 }
 
 /* ---- música: escalas, contexto de tela e tema da rota ----

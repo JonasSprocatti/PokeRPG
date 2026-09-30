@@ -10,6 +10,13 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.30', data: '2026-09-30', titulo: 'Os gritos voltaram (desculpa)', piada: 'Na tentativa de fazer o grito sair na hora, ele passou a sair nunca. Tecnicamente não está mais atrasado.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>O grito do Pokémon voltou a tocar.</b> A correção de ontem, que era justamente pra ele não atrasar, deixou ele mudo na <b>primeira</b> vez que cada espécie aparecia — ou seja, quase sempre. Agora toca na hora tanto na primeira vez quanto nas seguintes.',
+        'Se o áudio demorar muito pra chegar (internet ruim), ele é <b>descartado</b> em vez de gritar fora de hora, quando a cena já passou.'
+      ] }
+    ] },
   { versao: '2.29', data: '2026-09-30', titulo: 'O som afinou: cada rota tem a sua música, e ele cala a boca quando você sai', piada: 'O grito do Pokémon chegava tão atrasado que dava tempo de ele desmaiar antes de gritar. Agora ele grita na hora, como todo mundo que leva um golpe de verdade.',
     secoes: [
       { nome: 'Correções', itens: [
