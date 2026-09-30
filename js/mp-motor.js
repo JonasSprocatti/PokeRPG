@@ -273,8 +273,11 @@ export async function resolverTurnoMP(estado, acoes) {
   if (s.fim) return { estado: s, eventos: ev };
   const valida = a => { const m = monMP(s, a.ref); return m && m.hp > 0; };
 
-  // 0) desistir (PvP): todos os Pokémon do dono daquela ação saem da luta
-  for (const a of acoes.filter(x => x.tipo === 'desistir' && valida(x))) {
+  /* 0) desistir: todos os Pokémon do dono daquela ação saem da luta. **Só PvP** — a trava de modo estava só na
+     UI (`mp-telas.botoesPvP`) e o motor aceitava de qualquer modo, o que virou achado na 2ª auditoria: em co-op
+     uma ação `desistir` com o `de` de outro jogador zerava a equipe dele, e no Roguelike isso desce por
+     `mp-resultado.principalCaiu` → `encerrarJornada('desmaiou')`, acabando com a run de quem nem clicou. */
+  for (const a of (s.pvp ? acoes.filter(x => x.tipo === 'desistir' && valida(x)) : [])) {
     const dono = monMP(s, a.ref).dono;
     const dele = todosMP(s).filter(m => m.dono === dono && m.hp > 0);
     for (const m of dele) { m.hp = 0; m.caido = true; }

@@ -5,7 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { entradaEfetiva, raideSemRun, semMochila, usaRun, soAssistindo, hallEmprestado, jogaveis, minhaVezDe,
   quemFalta, jaEscolheu, todosProntos, montarLado, podeReviver, raideDisponiveis, itensComunsDisponiveis,
-  revivesRestantes, resumoDaConfig, inimigosDe, motivoParaNaoComecar, seloDoMembro } from '../js/mp-regras.js';
+  revivesRestantes, resumoDaConfig, inimigosDe, motivoParaNaoComecar, seloDoMembro,
+  itensADescontar, usosADescontar } from '../js/mp-regras.js';
 
 const sala = (entradaTipo, modo = 'coop') => ({ entradaTipo, config: { modo, porJogador: 1, balancear: true } });
 
@@ -151,4 +152,38 @@ test('resumoDaConfig conhece os três modos (a Raide não tem rota nem balanceam
   assert.equal(resumoDaConfig({ modo: 'coop', porJogador: 2, balancear: true }, 'Rota 1'), '🌿 Co-op · 2 Pokémon por jogador · balanceado · Rota 1');
   assert.equal(resumoDaConfig({ modo: 'pvp', porJogador: 1, balancear: false }, 'Rota 1'), '⚔ PvP · 1 Pokémon por jogador · sem balancear');
   assert.equal(resumoDaConfig({ modo: 'raide', porJogador: 3 }, 'Rota 1'), '☄ Sala de Raide · 3 Pokémon por jogador');
+});
+
+/* ---------- o que pode sair da minha mochila (2ª auditoria de segurança, 30/09/2026) ----------
+   O achado: `consumirItensComuns`/`consumirRevives` rodam a partir de `aoReceberEstado`, e o broadcast não
+   assina remetente. Um `estado` forjado com `itensUsados: { "<vítima>": [400 ids] }` esvaziava a mochila da run
+   de quem recebeu — ou o inventário de CONTA, na Sala de Raide. Agora o pacote só confirma; quem autoriza é o
+   livro-caixa local do que EU pedi. */
+test('pacote forjado não desconta nada: sem pedido meu, nada sai da mochila', () => {
+  const forjado = Array(400).fill('potion');
+  assert.deepEqual(itensADescontar(forjado, [], 0), [], 'livro-caixa vazio = desconto zero');
+  assert.deepEqual(itensADescontar(forjado, undefined, 0), []);
+  assert.deepEqual(itensADescontar(['hyper-potion'], ['potion'], 0), [], 'item que eu não pedi não sai');
+  // e o pacote que confirma MAIS do que eu pedi só vale até onde eu pedi
+  assert.deepEqual(itensADescontar(['potion', 'potion', 'potion'], ['potion'], 0), ['potion']);
+});
+
+test('o caminho honesto continua descontando, e só uma vez por uso', () => {
+  const meus = ['potion', 'x-attack'];
+  assert.deepEqual(itensADescontar(['potion', 'x-attack'], meus, 0), ['potion', 'x-attack']);
+  // `ja` = até onde já descontei: o mesmo estado chegando de novo (pulso) não desconta em dobro
+  assert.deepEqual(itensADescontar(['potion', 'x-attack'], meus, 2), []);
+  assert.deepEqual(itensADescontar(['potion', 'x-attack'], meus, 1), ['x-attack']);
+  // o anfitrião pode ter recusado o item (sem efeito): confirma menos do que pedi, e só o confirmado sai
+  assert.deepEqual(itensADescontar(['potion'], meus, 0), ['potion']);
+});
+
+test('contador (Revive, item de raide) tem teto no que eu pedi e nunca vira crédito', () => {
+  assert.equal(usosADescontar(999, 1), 1, 'o pacote diz 999, eu pedi 1');
+  assert.equal(usosADescontar(1, 0), 0, 'não pedi nada');
+  assert.equal(usosADescontar(3, 5), 3, 'o anfitrião confirmou menos do que eu pedi');
+  assert.equal(usosADescontar(-5, 5), 0, 'contador negativo não vira crédito');
+  assert.equal(usosADescontar('4', 4), 4, 'texto no pacote (mp-sanear deixa número passar) ainda é número aqui');
+  assert.equal(usosADescontar(Infinity, 2), 2);
+  assert.equal(usosADescontar(NaN, 2), 0);
 });

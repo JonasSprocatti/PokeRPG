@@ -1036,7 +1036,10 @@ export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 
 export const PENAL_CONTINUACAO = 0.8, PENAL_MINIMO = 0.5;
 // jogar sem as vantagens das badges (itens e dinheiro iniciais) rende 10% a mais: o desafio puro tem de valer algo
 export const BONUS_SEM_VANTAGENS = 1.1;
-export const multContinuacao = n => Math.max(PENAL_MINIMO, PENAL_CONTINUACAO ** (n || 0));
+// `Math.max(n||0, 0)` no EXPOENTE: com expoente negativo `0.8 ** -50` ≈ 70065 e a penalidade virava bônus de
+// dezenas de milhares. O `Math.max` de fora é PISO, não teto, e não segurava isso. Ver a migration
+// 20260930120000 — o furo de verdade era do lado do servidor; aqui é só manter os dois lados iguais.
+export const multContinuacao = n => Math.max(PENAL_MINIMO, PENAL_CONTINUACAO ** Math.max(n || 0, 0));
 export const pontuacao = (est, multDificuldade = 1) =>
   Math.round(Object.entries(PESOS_PONTOS).reduce((a, [k, p]) => a + (est[k] || 0) * p, 0)
     * multDificuldade * multContinuacao(est.continuacoes) * (est.semVantagens ? BONUS_SEM_VANTAGENS : 1));

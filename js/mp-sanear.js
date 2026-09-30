@@ -54,8 +54,14 @@ export const textoDeRede = (v, max = MAX_TEXTO) => String(v).replace(/[<>"]/g, '
    **`new URL()` NÃO resolve isso**: ela aceita `https://cdn.jsdelivr.net/…/1';alert(1)//.png`, com host
    legítimo, e devolve a apóstrofe intacta no `href` — o host estar na lista não diz nada sobre o CAMINHO. Foi o
    furo do primeiro conserto desta auditoria: bastava o `id` do Pokémon vir torto pra `SPR_ANIM` montar sozinha
-   um endereço com código dentro. */
-const CARACTERE_PROIBIDO_EM_URL = /['"<>\\\s`]/;
+   um endereço com código dentro.
+   `& ; %` entraram na 2ª auditoria (30/09/2026) e são o MESMO furo por outra porta: o endereço é escrito DENTRO
+   de um atributo, e o navegador decodifica entidade HTML ANTES de compilar o `onerror` como JavaScript — então
+   `&#39;` chega ao JS como apóstrofe de verdade sem nunca ter existido na string que este filtro olhou. `new URL()`
+   devolve `&#39;` intacto no `href` (conferido), o host é legítimo e o esquema é `https:`: passava pelas duas
+   checagens. O `%` fecha a mesma ideia via `%27`, pro caso de alguma normalização futura desencodar o caminho.
+   Nenhum dos 12 construtores de endereço de `dados.js` usa esses três caracteres, então o custo é zero. */
+const CARACTERE_PROIBIDO_EM_URL = /['"<>\\\s`&;%]/;
 
 /* Endereço de imagem: só `https://` de um host da lista e sem nenhum caractere de escape no meio. Qualquer
    outra coisa (inclusive `javascript:` e `data:`) vira string vazia, e quem desenha cai no plano B que já

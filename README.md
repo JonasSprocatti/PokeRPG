@@ -423,6 +423,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Três estilos de sprite (Clássico, 3D "home", Animado do Showdown), com download à parte pro modo offline
 - [x] Som (desligado por padrão): grito de quem aparece na luta, música procedural (composta na hora com a Web Audio API, não é arquivo pronto) com uma tonalidade por tema de rota, e som de impacto por tipo de golpe
 - [x] Barra de HP anima ao tomar dano/curar (técnica FLIP), piscada na cor do tipo do golpe, e liga/desliga próprio pras animações de combate
+- [x] Duas auditorias de segurança (29 e 30/09/2026), a segunda com `/security-review` como segunda opinião: 7 achados corrigidos — mochila e inventário de conta só saem com pedido do próprio jogador (`mp-regras.itensADescontar`), `desistir` restrito ao PvP, duas brechas de endereço de imagem viraria-código fechadas, par de amizade congelado no servidor e penalidade de pontuação com teto nos dois lados
 
 ## Licença
 

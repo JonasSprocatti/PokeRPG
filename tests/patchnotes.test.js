@@ -15,7 +15,10 @@ test('toda versão tem rótulo, data, título, piada e pelo menos uma seção co
     assert.ok(p.titulo?.length > 3 && p.piada?.length > 10, `${onde}: título/piada`);
     assert.ok(p.secoes?.length, `${onde}: sem seções`);
     for (const s of p.secoes) {
-      assert.ok(['Novidades', 'Correções', 'Equilíbrio'].includes(s.nome), `${onde}: seção "${s.nome}"`);
+      // lista fechada de propósito (a tela desenha o nome que vier): três viravam sinônimos soltos —
+      // "Melhorias"/"Ajustes"/"Novo" na mesma leva. "Segurança" entrou em 30/09/2026, na 2ª auditoria: ela não
+      // é "Correções" nem "Novidades" pra quem joga — é a resposta a "a minha conta está em risco?".
+      assert.ok(['Novidades', 'Correções', 'Equilíbrio', 'Segurança'].includes(s.nome), `${onde}: seção "${s.nome}"`);
       assert.ok(s.itens.length, `${onde}/${s.nome}: seção vazia`);
       for (const t of s.itens) assert.ok(typeof t === 'string' && t.length > 20, `${onde}/${s.nome}: item curto demais`);
     }

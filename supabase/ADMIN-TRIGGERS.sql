@@ -15,13 +15,18 @@
 -- chave anônima. Enquanto estiverem desligados, QUALQUER conta logada consegue virar admin.
 -- ============================================================================
 
--- ---- DESLIGAR a proteção ----
-alter table public.perfis disable trigger proteger_perfis_admin;
-alter table public.perfis disable trigger proteger_perfis_admin_insert;
+-- ⚠ O bloco ATIVO deste arquivo é o de LIGAR, de propósito (invertido na 2ª auditoria, 30/09/2026): quem abrisse
+-- este arquivo pra "gerenciar os gatilhos" e clicasse em Run apagava a proteção sem querer — e a partir daí
+-- qualquer conta logada viraria admin. Rodar o arquivo inteiro sem ler agora é a ação SEGURA, não a perigosa.
+-- Pra desligar, descomente o bloco de baixo à mão (e comente este).
 
--- ---- LIGAR de volta (faça isto assim que terminar) ----
--- alter table public.perfis enable trigger proteger_perfis_admin;
--- alter table public.perfis enable trigger proteger_perfis_admin_insert;
+-- ---- LIGAR a proteção (é o padrão; rodar isto nunca faz mal) ----
+alter table public.perfis enable trigger proteger_perfis_admin;
+alter table public.perfis enable trigger proteger_perfis_admin_insert;
+
+-- ---- DESLIGAR (só se precisar mesmo; religue assim que terminar) ----
+-- alter table public.perfis disable trigger proteger_perfis_admin;
+-- alter table public.perfis disable trigger proteger_perfis_admin_insert;
 
 -- ---- CONFERIR o estado atual ----
 -- 'O' = ligado (origin), 'D' = desligado.

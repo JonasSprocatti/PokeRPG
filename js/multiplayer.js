@@ -40,7 +40,8 @@ import { MAX_JOGADORES, PRAZO_MS, MAX_HISTORICO, raideSemRun, entradaEfetiva, jo
   inimigosDe, minhaVezDe, todosProntos, montarLado, raideDisponiveis, itensComunsDisponiveis, podeReviver } from './mp-regras.js';
 import { meuId, membroDe, novoCodigo, codigoValido, anotar, enviar, ligarPulso, desligarPulso,
   abrirCanal, retrack as retrackCanal, membrosDaPresenca, fecharSala, ligarRender, ESPERA_ANFITRIAO_MS } from './mp-rede.js';
-import { aplicarCoop, aplicarPvP, consumirRevives, consumirItensComuns, minhaMochila, ctxDaSala } from './mp-resultado.js';
+import { aplicarCoop, aplicarPvP, consumirRevives, consumirItensComuns, minhaMochila, ctxDaSala,
+  pediItemComum, pediRevive, pediRaide, zerarPedidos } from './mp-resultado.js';
 import { telaMenuMP, telaSala, renderSala, renderChat, gimmicksDisponiveisMP, golpeZ } from './mp-telas.js';
 
 export { MAX_JOGADORES } from './mp-regras.js';
@@ -562,7 +563,7 @@ function aoReceberEstado(p) {
   sala.batalha = p.batalha; sala.prazo = p.prazo; sala.acoesFeitas = p.acoesFeitas || []; sala.tipo = p.tipo; sala.zona = p.zona;
   // contadores do que já descontei da mochila nesta luta (não mexer em `tentativaEvento`: o anfitrião já registrou a
   // tentativa em iniciarBatalhaMP, e zerar aqui faria ele registrar de novo)
-  if (novaLuta) { sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.itensComunsConsumidos = 0; }
+  if (novaLuta) { sala.revivesConsumidos = 0; sala.raideConsumidos = {}; sala.itensComunsConsumidos = 0; zerarPedidos(); }
   // chefe da semana: a tentativa (8 h) conta pra TODOS assim que a luta começa
   if (p.tipo === 'evento' && !sala.tentativaEvento) { registrarTentativa(); sala.tentativaEvento = true; }
   consumirRevives(p.batalha);
@@ -579,7 +580,7 @@ async function aoReceberFim(p) {
   const sala = G.sala;
   if (!sala) return;
   sala.batalha = null; sala.acoes = {}; sala.ocupado = true; clearTimeout(sala.timer); desligarPulso();
-  sala.turnoVisto = null; sala.tentativaEvento = false; sala.escolhidos = new Set(); sala.gimmicksSel = {};   // a próxima luta recomeça do zero
+  sala.turnoVisto = null; sala.tentativaEvento = false; sala.escolhidos = new Set(); sala.gimmicksSel = {}; zerarPedidos();   // a próxima luta recomeça do zero
   renderSala();
   await narrar(p.eventos);   // o último turno (e o resultado) também saem narrados, antes de aplicar o resultado
   let acabouARun = false;
@@ -650,13 +651,18 @@ export function moverGolpeMP(i, dir) {
 export function fugirMP() { escolher({ tipo: 'fugir' }); }
 export function desistirMP() { escolher({ tipo: 'desistir' }); }
 export function mirarMP(ref) { if (G.sala) { G.sala.alvo = ref; renderSala(); } }
+/* As três ações que gastam item anotam o pedido ANTES de sair (`pedi*`, mp-resultado): o desconto na mochila só
+   acontece no cruzamento deste livro-caixa com o que o anfitrião confirmar. Ver o cabeçalho de `consumirRevives`. */
 export function usarRaideMP(tipo) {
   const b = G.sala?.batalha; if (!b || !raideDisponiveis(b, ctxDaSala()).includes(tipo)) return;
   const a = { tipo: 'raide', item: tipo };
+  pediRaide(tipo);
   if (G.sala.anfitriao) registrarAcao(meuId(), a); else enviar('acao', { de: meuId(), acao: a });
 }
 export function usarItemComumMP(id) {
   if (!itensComunsDisponiveis(ctxDaSala({ mon: minhaVez() })).includes(id)) return;
+  if (!minhaVez()) return;   // `escolher` desistiria adiante; anotar o pedido antes seria item a mais no livro-caixa
+  pediItemComum(id);
   escolher({ tipo: 'item', item: id });   // usar um item é a ESCOLHA do turno (como golpe/fugir), não uma ação livre
 }
 export function reviverMP() {
@@ -664,6 +670,7 @@ export function reviverMP() {
   const m = b.lados.A.find(x => x.dono === meuId() && x.hp <= 0); if (!m) return;   // o primeiro caído (o principal, se for ele)
   const raide = raideSemRun(sala), usaMax = raide && (minhaMochila()['max-revive'] || 0) > 0;
   const a = { tipo: 'revive', ref: m.ref, ...(raide ? { pct: usaMax ? 100 : 50 } : {}) };
+  pediRevive(usaMax ? 'max-revive' : 'revive');
   if (sala.anfitriao) registrarAcao(meuId(), a); else enviar('acao', { de: meuId(), acao: a });
 }
 // Centro Pokémon sem sair da sala (mesma conta e mesmas regras do jogo sozinho)

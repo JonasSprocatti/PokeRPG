@@ -10,6 +10,19 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.39', data: '2026-09-30', titulo: '🔒 Faxina de segurança: sua conta, sua mochila e sua run', piada: 'Contratamos alguém pra tentar invadir o jogo. Ele conseguiu sete vezes, anotou tudo num caderninho e foi embora. Passamos o dia lendo o caderninho.',
+    secoes: [
+      { nome: 'Segurança', itens: [
+        '<b>Ninguém mais gasta os SEUS itens numa sala.</b> Antes, o que saía da sua mochila durante uma luta em grupo era decidido pelo que chegava pela rede. Agora o jogo só desconta o que <i>você</i> pediu: se a mensagem disser que você usou quarenta Poções, ela é ignorada. Vale também pro inventário da Sala de Raide, que é comprado com o seu saldo.',
+        '<b>Ninguém mais acaba com a sua jornada.</b> O botão de <i>desistir</i> existe no PvP, mas a luta aceitava a desistência em qualquer modo — inclusive em co-op, onde, no Roguelike, isso encerrava a run de quem nem tinha clicado. Agora só vale onde deveria.',
+        '<b>Duas brechas que podiam levar a sua conta foram fechadas.</b> Uma na sala de multiplayer, outra na tela de perfil de amigo: em ambas, um endereço de imagem malformado conseguia virar código dentro do navegador de quem estava só olhando a tela. Nada disso chegava ao seu save, mas era o suficiente pra pegar o seu login — e agora não é mais.',
+        '<b>O seu histórico voltou a ser seu.</b> Dava pra forjar uma amizade aceita e, com isso, abrir o perfil de qualquer jogador (nível, pontuação, últimas jornadas) sem que a pessoa tivesse aceitado nada. A regra de amizade agora é conferida no servidor dos dois lados, e o par de uma amizade não pode mais ser reescrito.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>O ranking está limpo de novo.</b> Havia uma conta possível em que a penalidade de continuar a jornada com o mesmo Pokémon, em vez de tirar pontos, multiplicava a pontuação — o bastante pra cravar um primeiro lugar impossível. O servidor agora recusa, e a mesma conta foi corrigida dentro do jogo.',
+        'Também apertamos os bastidores: os geradores de dados dos mapas e das Megas passaram a recusar nome estranho vindo da PokéAPI em vez de embutir do jeito que vier — era o tipo de coisa que, num dia ruim, deixa o jogo inteiro sem carregar.'
+      ] }
+    ] },
   { versao: '2.38', data: '2026-09-30', titulo: '⚡ Dois itens rápidos, nas teclas 1 e 2', piada: 'A Poção estava no fundo da mochila, embaixo de dezessete frutas e uma pedra. Agora ela mora na porta, como manda o bom senso de qualquer geladeira.',
     secoes: [
       { nome: 'Novidades', itens: [

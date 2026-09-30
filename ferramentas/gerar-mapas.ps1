@@ -77,6 +77,25 @@ function Natural($e) {
 }
 function NomeBonito($n) { ($n -split '-' | ForEach-Object { $_.Substring(0,1).ToUpper() + $_.Substring(1) }) -join ' ' }
 
+<#
+  Texto vindo da REDE virando literal de JavaScript. Todo nome aqui sai da PokéAPI, e este script EMITE CÓDIGO
+  que vai pra todo jogador (js/dados-mapas.js é importado por js/dados.js). Sem isto, uma apóstrofe num nome
+  upstream fecha o literal: no caso bom é erro de sintaxe e o jogo inteiro deixa de carregar (e `node --check`
+  não roda no Windows, então o CI é a única rede); no caso ruim é código executando no navegador de todo mundo,
+  com a sessão do Supabase ali no localStorage. Achado da 2ª auditoria (30/09/2026) — o `desc` da linha do `$txt`
+  já escapava a apóstrofe por estar escrito à mão, mas nada que vinha da rede escapava.
+  Os `.mjs` de ferramentas/ não precisam disto: todos usam JSON.stringify.
+#>
+function JsStr($s) {
+  $t = [string]$s
+  # nome de espécie/forma da PokéAPI é sempre minúsculo com hífen. Qualquer coisa fora disso é upstream torto (ou
+  # hostil): melhor o gerador FALHAR aqui, na máquina de dev, do que emitir e descobrir no navegador do jogador.
+  if ($t -notmatch "^[a-z0-9-]+$") { throw "nome inesperado da PokeAPI (nao vou emitir isso): '$t'" }
+  "'" + $t + "'"
+}
+# Rótulo montado por nós (NomeBonito) — tem espaço e maiúscula, então não passa pelo padrão acima; escapa mesmo assim.
+function JsTexto($s) { "'" + ([string]$s -replace '\\', '\\' -replace "'", "\'" -replace "`r|`n", ' ') + "'" }
+
 # Alfas escolhidos à mão (id da rota => nome da espécie na PokéAPI). Tudo o mais é decidido pela regra (tema + força);
 # esta tabela existe pros casos em que a regra acerta tecnicamente mas erra no gosto.
 #   a-diglett: a regra só achava Sandygast (320 de BST) combinando com Terra/Pedra/Aço no nível da rota — fraco
@@ -298,17 +317,17 @@ foreach ($R in $REGIOES) {
   $saida.Add("  { gen: $g, regiao: '$($R.regiao)', rotas: [")
   for ($i = 0; $i -lt 10; $i++) {
     $def = $R.rotas[$i]; $f = $FAIXAS[$i]
-    $pool = @($pools[$i] | Sort-Object id | ForEach-Object { "{ id: $($_.id), n: '$($_.nome)', p: $([math]::Max(1, [math]::Round($_.captura / 30))) }" })
+    $pool = @($pools[$i] | Sort-Object id | ForEach-Object { "{ id: $($_.id), n: $(JsStr $_.nome), p: $([math]::Max(1, [math]::Round($_.captura / 30))) }" })
     # míticos: ~0,4% dos encontros cada (peso relativo ao total da rota), metade na rota 8 e metade na 9
     $totalRota = ($pools[$i] | ForEach-Object { [math]::Max(1, [math]::Round($_.captura / 30)) } | Measure-Object -Sum).Sum
     $pesoMito = ([math]::Round($totalRota * 0.004, 3)).ToString([Globalization.CultureInfo]::InvariantCulture)
-    if ($i -eq 7 -or $i -eq 8) { for ($k = 0; $k -lt $mitos.Count; $k++) { if (($k % 2) -eq ($i - 7) -or $mitos.Count -eq 1) { $pool += "{ id: $($mitos[$k].id), n: '$($mitos[$k].nome)', p: $pesoMito, m: 1 }" } } }
+    if ($i -eq 7 -or $i -eq 8) { for ($k = 0; $k -lt $mitos.Count; $k++) { if (($k % 2) -eq ($i - 7) -or $mitos.Count -eq 1) { $pool += "{ id: $($mitos[$k].id), n: $(JsStr $mitos[$k].nome), p: $pesoMito, m: 1 }" } } }
     $txt = "    { id: '$($def[0])', gen: $g, name: '$($def[1])', desc: '$($def[2] -replace "'", "\'")', min: $($f[0]), max: $($f[1]), libera: $($f[2]), pool: [$($pool -join ', ')]"
     if ($i -lt 9) {
       $alfa = $alfas[$i]   # escolhido antes, pro mapa inteiro (sem repetir — ver o bloco "Alfas do mapa")
-      $txt += ", chefe: { id: $($alfa.id), nome: '$(NomeBonito $alfa.nome)', nivel: $($f[1] + 4) }"
+      $txt += ", chefe: { id: $($alfa.id), nome: $(JsTexto (NomeBonito $alfa.nome)), nivel: $($f[1] + 4) }"
     } else {
-      $seq = @($outros | ForEach-Object { "{ id: $($_.id), nome: '$(NomeBonito $_.nome)', nivel: 68 }" }) + "{ id: $($principal.id), nome: '$(NomeBonito $principal.nome)', nivel: 75 }"
+      $seq = @($outros | ForEach-Object { "{ id: $($_.id), nome: $(JsTexto (NomeBonito $_.nome)), nivel: 68 }" }) + "{ id: $($principal.id), nome: $(JsTexto (NomeBonito $principal.nome)), nivel: 75 }"
       $txt += ", final: true, lendarios: [$($seq -join ', ')]"
     }
     $saida.Add($txt + ' },')
@@ -320,12 +339,12 @@ foreach ($R in $REGIOES) {
   $todos = @($esp.Values | Where-Object { $_.gen -eq $g } | Sort-Object id)
   $poolS = @($todos | ForEach-Object {
     $peso = [math]::Max(1, [math]::Round($_.captura / 30))
-    "{ id: $($_.id), n: '$($_.nome)', p: $peso$(if ($_.mitico) { ', m: 1' })$(if ($_.lend) { ', l: 1' }) }"
+    "{ id: $($_.id), n: $(JsStr $_.nome), p: $peso$(if ($_.mitico) { ', m: 1' })$(if ($_.lend) { ', l: 1' }) }"
   })
   # + as formas regionais criadas nesta Gen (Alolan na 7, Galarian/Hisuian na 8, Paldean na 9)
   $poolS += @($formas | Where-Object { $_.gen -eq $g } | ForEach-Object {
     $peso = [math]::Max(1, [math]::Round($_.captura / 30))
-    "{ id: $($_.id), n: '$($_.especie)', f: '$($_.nome)', p: $peso$(if ($_.mitico) { ', m: 1' })$(if ($_.lend) { ', l: 1' }) }"
+    "{ id: $($_.id), n: $(JsStr $_.especie), f: $(JsStr $_.nome), p: $peso$(if ($_.mitico) { ', m: 1' })$(if ($_.lend) { ', l: 1' }) }"
   })
   $saida.Add("    { id: '$($R.regiao.ToLower())-santuario', gen: $g, name: 'Santuário de $($R.regiao)', desc: 'Aberto depois que você vence os lendários: aqui vive toda a Gen $g, dos iniciais aos lendários.', min: 58, max: 70, libera: 1, posVitoria: true, pool: [$($poolS -join ', ')] }")
   $saida.Add('  ] }' + $(if ($g -lt 9) { ',' } else { '' }))

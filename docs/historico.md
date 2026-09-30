@@ -7,6 +7,36 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (30/09/2026) — quatro furos em cima de defesa que já existia
+
+Não veio de relato de jogador: saiu do `/security-review` rodado como segunda opinião (2ª auditoria; os sete
+achados estão em `docs/features.md`). Entra aqui porque o **padrão de diagnóstico** é reaproveitável, e é
+contra-intuitivo: **quatro dos sete achados estavam dentro de código escrito justamente pra impedir aquilo.**
+
+- `urlDeImagem` recusava a apóstrofe literal — e `&#39;` passava, porque o navegador decodifica entidade no
+  atributo **antes** de compilar o `onerror`. O filtro olhava uma string que não era a que o JS ia receber.
+- `htmlIcone` coagia o id remoto pra inteiro, **com um comentário explicando o ataque** — e `perfil-amigo.js`,
+  dois arquivos ao lado, interpolava `poke_id` cru dentro de um `src`.
+- `validar_jornada` recusava todo número impossível — menos o expoente, porque `greatest` é piso e ali fazia
+  falta um teto.
+- `mp-sanear` saneava todos os pacotes — e `consumirItensComuns` usava o pacote saneado como **autorização** pra
+  apagar item da mochila, o que saneamento nunca prometeu.
+
+**A lição, que é a mesma nos quatro:** o lugar mais perigoso não é o que não tem trava, é o que **tem** trava e
+por isso ninguém olha mais. Uma defesa é correta só em relação a uma pergunta específica — "este texto tem
+apóstrofe?", "este pacote é bem-formado?" — e o bug mora na distância entre essa pergunta e a que importava
+("o JS vai receber uma apóstrofe?", "este pacote é verdadeiro?"). Ao revisar área protegida, **escreva numa frase
+o que a defesa garante e compare com o que o call site precisa**; se as duas frases não forem a mesma, o furo
+está aí.
+
+Um quinto caso, do mesmo sabor, no próprio teste: `tests/schema.test.js` fatiava `validar_jornada` com
+`indexOf`, então bastava uma migration nova redefinindo a função pra ele passar conferindo a versão VELHA — o
+teste que existe pra travar a fórmula daria o conserto por feito sem ele estar valendo. **Teste sobre estado
+acumulado de migrations tem de olhar a ÚLTIMA definição** (`lastIndexOf`), e é bom ele falhar alto se a âncora
+sumir, em vez de comparar silenciosamente contra string vazia.
+
+---
+
 ## ✅ CORRIGIDO (30/09/2026) — a habilidade da forma Mega nunca disparava
 
 Dois relatos no mesmo dia, do mesmo jogador com o mesmo Charizard: **#72** "ao mega evoluir o charizard não esta

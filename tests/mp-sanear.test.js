@@ -62,6 +62,22 @@ test('host certo com código no CAMINHO também é recusado (new URL não limpa 
   assert.equal(urlDeImagem('https://cdn.jsdelivr.net/a b.png'), '');
 });
 
+test('apóstrofe escrita como ENTIDADE HTML também é recusada (2ª auditoria)', () => {
+  /* O furo do SEGUNDO conserto: o endereço é escrito dentro de `onerror="…src='AQUI'"`, e o navegador decodifica
+     entidade no valor do atributo ANTES de compilar o handler como JavaScript. `&#39;` chega ao JS como apóstrofe
+     de verdade sem nunca ter existido na string que o filtro olhou — e `new URL()` devolve a entidade intacta,
+     com host e esquema legítimos, então passava pelas duas checagens. */
+  const armado = "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/1&#39;;alert(1);//.png";
+  assert.equal(new URL(armado).href, armado, 'new URL preserva a entidade: é por isso que o filtro precisa pegá-la');
+  assert.equal(urlDeImagem(armado), '');
+  for (const forma of ['&#39;', '&#x27;', '&apos;', '&#0000039;', '%27', '&amp;']) {
+    assert.equal(urlDeImagem(`https://cdn.jsdelivr.net/x${forma}.png`), '', `entidade/codificação não pega: ${forma}`);
+  }
+  // e o endereço legítimo continua passando (nenhum dos 12 construtores de dados.js usa & ; %)
+  const bom = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/1.png';
+  assert.equal(urlDeImagem(bom), bom);
+});
+
 test('sprite dentro do estado é tratada como endereço, não como texto', () => {
   const s = saneado({ data: { sprite: "a';alert(1)//", back: 'https://cdn.jsdelivr.net/x.png', speciesName: 'bulbasaur' } });
   assert.equal(s.data.sprite, '');

@@ -15,24 +15,33 @@ const ORIGEM_ANTIGA = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/
 export const espelhar = url => typeof url === 'string' ? url.replace(ORIGEM_ANTIGA, SPRITES) : url;
 // caminho inverso: o MESMO arquivo no servidor antigo, pra <img> tentar o outro servidor antes de desistir
 export const outroServidor = url => typeof url === 'string' ? url.replace(SPRITES, ORIGEM_ANTIGA) : url;
-export const SPR = id => `${SPRITES}/pokemon/${id}.png`;
+/* Todo endereço montado por id passa por aqui (2ª auditoria, 30/09/2026). Esses endereços são escritos DENTRO de
+   `src="…"` e de `onerror="…src='…'"`, então um id que não seja número torce o endereço e vira código — foi a
+   Vuln do `poke_id` em `perfil-amigo.js`, que chega como TEXTO de `resumo.registro.ids` (jsonb do cliente, que
+   `validar_jornada` não olha). A trava mora no construtor, e não em cada tela, porque são 12 construtores × ~40
+   pontos de desenho: guardar no gargalho é o único jeito de nenhum caller novo reabrir o furo. `htmlIcone`
+   (conta.js) continua com a faixa 1–1025 dele, que é mais estreita porque ícone de perfil é só espécie; aqui não
+   dá pra apertar assim — id de FORMA passa de 10000 (render.spriteFrente usa `m.formaSprite`). Id inválido virá
+   `0.png`, que dá 404 e cai no plano B que toda `<img>` de sprite já tem. */
+const numeroDeSprite = id => Math.trunc(Number(id)) || 0;
+export const SPR = id => `${SPRITES}/pokemon/${numeroDeSprite(id)}.png`;
 // shiny: montado pelo id (não fica no cache da API — save antigo funciona sem migrar). Gen 8+ não tem sprite de costas.
-export const SPR_SHINY = id => `${SPRITES}/pokemon/shiny/${id}.png`;
-export const SPR_SHINY_COSTAS = id => `${SPRITES}/pokemon/back/shiny/${id}.png`;
+export const SPR_SHINY = id => `${SPRITES}/pokemon/shiny/${numeroDeSprite(id)}.png`;
+export const SPR_SHINY_COSTAS = id => `${SPRITES}/pokemon/back/shiny/${numeroDeSprite(id)}.png`;
 /* Sprites "3D" (pedido do usuário): a PokéAPI não tem modelo 3D de verdade pra jogar — o que existe é `home`,
    render 2D do MESMO modelo 3D usado em Pokémon HOME/jogos modernos (bem mais nítido que o pixel-art clássico).
    Montado pelo id, como o shiny — mesmo motivo (save antigo não precisa migrar). **Sem versão de costas**: o
    conjunto `home` só tem sprite de frente, então quem ativa o modo 3D vê a mesma figura tanto na frente quanto
    nas costas (mesmo fallback que já existe pra espécie sem back 2D — ver render.sprCostas). */
-export const SPR_3D = id => `${SPRITES}/pokemon/other/home/${id}.png`;
-export const SPR_3D_SHINY = id => `${SPRITES}/pokemon/other/home/shiny/${id}.png`;
+export const SPR_3D = id => `${SPRITES}/pokemon/other/home/${numeroDeSprite(id)}.png`;
+export const SPR_3D_SHINY = id => `${SPRITES}/pokemon/other/home/shiny/${numeroDeSprite(id)}.png`;
 /* Sprites ANIMADOS (pedido do usuário, depois do 3D): GIF do conjunto `showdown` — o mesmo sprite (pequeno,
    com uma animação de espera) usado no Pokémon Showdown. Ao contrário do "home", TEM versão de costas de
    verdade, então não precisa do fallback de frente+flip que o 3D precisa. */
-export const SPR_ANIM = id => `${SPRITES}/pokemon/other/showdown/${id}.gif`;
-export const SPR_ANIM_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/${id}.gif`;
-export const SPR_ANIM_SHINY = id => `${SPRITES}/pokemon/other/showdown/shiny/${id}.gif`;
-export const SPR_ANIM_SHINY_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/shiny/${id}.gif`;
+export const SPR_ANIM = id => `${SPRITES}/pokemon/other/showdown/${numeroDeSprite(id)}.gif`;
+export const SPR_ANIM_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/${numeroDeSprite(id)}.gif`;
+export const SPR_ANIM_SHINY = id => `${SPRITES}/pokemon/other/showdown/shiny/${numeroDeSprite(id)}.gif`;
+export const SPR_ANIM_SHINY_COSTAS = id => `${SPRITES}/pokemon/other/showdown/back/shiny/${numeroDeSprite(id)}.gif`;
 /* Grito (pedido do usuário, som.js): repositório IRMÃO do de sprites (PokeAPI/cries), mesmo espelho jsDelivr e
    mesma regra — montado pelo id, sem precisar buscar o Pokémon de novo pra achar a URL. */
 export const CRY = id => `https://cdn.jsdelivr.net/gh/PokeAPI/cries@main/cries/pokemon/latest/${id}.ogg`;

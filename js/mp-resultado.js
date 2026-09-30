@@ -17,7 +17,7 @@ import { verificarMissoes } from './missoes.js';
 import { usuario, sincronizarComRetentativa } from './nuvem.js';
 import { ITEM_DO_RAIDE } from './boss.js';
 import { meuId } from './mp-rede.js';
-import { raideSemRun, semMochila, usaRun } from './mp-regras.js';
+import { raideSemRun, semMochila, usaRun, itensADescontar, usosADescontar } from './mp-regras.js';
 import { esc, fmt } from './util.js';
 
 const temRun = () => !!G.S?.player;
@@ -32,39 +32,63 @@ export const ctxDaSala = extra => ({ sala: G.sala, eu: meuId(), bag: minhaMochil
 
 /* ---------- descontar o que foi usado durante a luta ----------
    O anfitrião conta os Revives e os itens de raide de cada jogador (`b.revivesUsados`, `b.raideUsados`); o que
-   passou do que eu já descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros). */
+   passou do que eu já descontei sai da MINHA mochila (o anfitrião não conhece a mochila dos outros).
+
+   ⚠ O pacote NÃO decide o que sai da minha mochila — ele só CONFIRMA. Achado grave da 2ª auditoria (30/09/2026):
+   estas duas funções rodam a partir de `aoReceberEstado`, e o broadcast não assina remetente (`doAnfitriao`
+   aceita pacote sem `de`, de propósito, por compatibilidade). Quem estivesse na sala mandava um `estado` com
+   `itensUsados: { "<id da vítima>": [400 ids] }` e esvaziava a mochila da run — ou, na Sala de Raide, o
+   INVENTÁRIO DE CONTA, comprado com saldo de Arena. Agora todo desconto é o CRUZAMENTO de duas listas: o que o
+   anfitrião confirmou **e** o que eu registrei ter pedido (`sala.pedi`, escrito só pelas minhas próprias ações
+   em multiplayer.js). Pacote forjado encontra livro-caixa vazio e não desconta nada.
+   Isso também desarma o `de` forjado numa `acao` (`registrarRevive`/`registrarRaide` aceitam o `de` do pacote):
+   o anfitrião pode ser convencido a CONTAR um uso no meu nome, mas o desconto continua preso ao meu pedido. */
+const PEDIDOS_VAZIOS = () => ({ itens: [], revives: 0, revivesTipos: [], raide: {} });
+const pedidos = () => (G.sala.pedi ||= PEDIDOS_VAZIOS());
+export function zerarPedidos() { if (G.sala) G.sala.pedi = PEDIDOS_VAZIOS(); }
+export const pediItemComum = id => pedidos().itens.push(id);
+export const pediRevive = tipo => { const p = pedidos(); p.revives++; p.revivesTipos.push(tipo); };
+export const pediRaide = tipo => { const p = pedidos(); p.raide[tipo] = (p.raide[tipo] || 0) + 1; };
+
 export function consumirRevives(b) {
   const sala = G.sala;
   if (!b?.evento || !sala || semMochila(sala) || (!raideSemRun(sala) && !temRun())) return;
-  const eu = meuId(); let mexeu = false;
+  const eu = meuId(), pedi = sala.pedi || PEDIDOS_VAZIOS(); let mexeu = false;
   const gastarDaRun = id => { const t = G.S.bag[id] > 0; if (t) { G.S.bag[id]--; if (!G.S.bag[id]) delete G.S.bag[id]; } return t; };
   // Sala de Raide desconta do INVENTÁRIO DE CONTA (evento.gastarItemDeRaide); fora dela, da mochila da run.
   const gastar = (id, n) => { for (let i = 0; i < n; i++) if (raideSemRun(sala) ? gastarItemDeRaide(id) : gastarDaRun(id)) mexeu = true; };
-  const usados = b.revivesUsados?.[eu] || 0, ja = sala.revivesConsumidos || 0;
+  // teto pelo que EU pedi: o pacote pode dizer 999, só valem os meus
+  const usados = usosADescontar(b.revivesUsados?.[eu], pedi.revives), ja = sala.revivesConsumidos || 0;
   if (usados > ja) {
-    // Revive x Max Revive descontam itens diferentes: `revivesTipos[dono]` é a lista na MESMA ordem que os usos
-    // foram contados (mp-motor.reviverCompanheiro) — só existe na Sala de Raide, onde há os dois tipos.
-    if (raideSemRun(sala)) for (const tipo of (b.revivesTipos?.[eu] || []).slice(ja, usados)) gastar(tipo, 1);
+    // Revive x Max Revive descontam itens diferentes: `revivesTipos` é a lista na MESMA ordem em que pedi
+    // (só existe na Sala de Raide, onde há os dois tipos).
+    if (raideSemRun(sala)) for (const tipo of pedi.revivesTipos.slice(ja, usados)) gastar(tipo, 1);
     else gastar('revive', usados - ja);
     sala.revivesConsumidos = usados;
   }
   const feitos = (sala.raideConsumidos ||= {});
-  for (const [tipo, n] of Object.entries(b.raideUsados?.[eu] || {})) if (n > (feitos[tipo] || 0)) { gastar(ITEM_DO_RAIDE[tipo], n - (feitos[tipo] || 0)); feitos[tipo] = n; }
+  for (const [tipo, n] of Object.entries(b.raideUsados?.[eu] || {})) {
+    const teto = usosADescontar(n, pedi.raide[tipo]), feito = feitos[tipo] || 0;
+    if (teto > feito) { gastar(ITEM_DO_RAIDE[tipo], teto - feito); feitos[tipo] = teto; }
+  }
   if (mexeu && !raideSemRun(sala)) save();
 }
 /* Item comum (Potion, X Attack…) usado durante a luta: ao contrário de Revive/raide, vale em QUALQUER luta de
    sala. `itensUsados[dono]` é uma LISTA que só cresce (cada uso vira um item novo no array);
-   `itensComunsConsumidos` lembra até onde eu já descontei, pra não gastar de novo a cada estado que chega. */
+   `itensComunsConsumidos` lembra até onde eu já descontei, pra não gastar de novo a cada estado que chega.
+   As duas listas (a confirmada e a minha) têm os MESMOS itens na MESMA ordem no caso honesto — as duas só contam
+   usos meus — então o índice `ja` vale nas duas. */
 export function consumirItensComuns(b) {
   const sala = G.sala;
   if (!b || !sala || semMochila(sala) || (!raideSemRun(sala) && !temRun())) return;
-  const eu = meuId(), usados = b.itensUsados?.[eu] || [], ja = sala.itensComunsConsumidos || 0;
-  if (usados.length <= ja) return;
-  for (const id of usados.slice(ja)) {
+  const eu = meuId(), ja = sala.itensComunsConsumidos || 0;
+  const sai = itensADescontar(b.itensUsados?.[eu], sala.pedi?.itens, ja);
+  if (!sai.length) return;
+  for (const id of sai) {
     if (raideSemRun(sala)) gastarItemDeRaide(id);
     else { G.S.bag[id] = Math.max(0, (G.S.bag[id] || 0) - 1); if (!G.S.bag[id]) delete G.S.bag[id]; }
   }
-  sala.itensComunsConsumidos = usados.length;
+  sala.itensComunsConsumidos = ja + sai.length;
   if (!raideSemRun(sala)) save();
 }
 

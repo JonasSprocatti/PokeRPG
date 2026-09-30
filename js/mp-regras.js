@@ -135,3 +135,31 @@ export function resumoDaConfig(cfg = {}, nomeZona = '') {
     raide ? '' : cfg.balancear ? 'balanceado' : 'sem balancear',
     pvp || raide ? '' : nomeZona].filter(Boolean).join(' · ');
 }
+
+/* ---------- o que pode sair da MINHA mochila (2ª auditoria de segurança, 30/09/2026) ----------
+   O anfitrião publica quanto cada jogador gastou durante a luta, e cada cliente desconta da própria mochila (o
+   anfitrião não conhece a mochila dos outros). O problema: isso rodava a partir do pacote de rede, e o broadcast
+   não assina remetente — quem estivesse na sala mandava um `estado` dizendo que a VÍTIMA usou 400 Potions e a
+   mochila dela (ou o inventário de conta, na Sala de Raide) era esvaziada item a item.
+   A regra agora é: o pacote CONFIRMA, o livro-caixa local (`sala.pedi`, escrito só pelas minhas próprias ações)
+   AUTORIZA. Desconta o cruzamento dos dois, nunca só um.
+   `ja` é até onde eu já descontei nesta luta, e vale nas DUAS listas: no caso honesto as duas têm os mesmos itens
+   na mesma ordem, porque as duas só contam usos meus. */
+export function itensADescontar(confirmados, pedidos, ja = 0) {
+  const conf = Array.isArray(confirmados) ? confirmados : [], meus = Array.isArray(pedidos) ? pedidos : [];
+  if (conf.length <= ja) return [];
+  // multiconjunto do que eu pedi e ainda não descontei: item que não estiver aqui não sai da mochila
+  const sobrando = new Map();
+  for (const id of meus.slice(ja)) sobrando.set(id, (sobrando.get(id) || 0) + 1);
+  const sai = [];
+  for (const id of conf.slice(ja)) {
+    if (!sobrando.get(id)) break;   // o pacote confirma mais do que eu pedi: para aqui
+    sobrando.set(id, sobrando.get(id) - 1);
+    sai.push(id);
+  }
+  return sai;
+}
+/* Contador (Revive, item de raide): mesma ideia, mas o que chega é um número e não uma lista. O teto é o que eu
+   pedi — `Math.min` puro, porque o pacote pode dizer 999 e o piso 0 evita contador negativo virar crédito. */
+export const usosADescontar = (confirmado, pedido) =>
+  Math.max(0, Math.min(Number(confirmado) || 0, Number(pedido) || 0));

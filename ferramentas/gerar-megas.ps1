@@ -15,6 +15,20 @@ $lista = (Invoke-RestMethod "https://pokeapi.co/api/v2/pokemon?limit=20000" -Tim
 $formas = $lista | Where-Object { $_.name -match '(-mega(-[xyz])?|-primal)$' }
 if ($formas.Count -lt 40) { throw "veio pouca coisa da PokeAPI ($($formas.Count) formas)" }
 
+<#
+  Mesmo cuidado de gerar-mapas.ps1 (2ª auditoria, 30/09/2026): nome vindo da PokéAPI virando literal de
+  JavaScript que vai pra todo jogador (js/dados-megas.js é importado por js/dados.js). Uma apóstrofe upstream
+  fecha o literal — no melhor caso derruba o jogo com erro de sintaxe, no pior executa código no navegador de
+  quem joga. Nome de forma/espécie é sempre minúsculo com hífen: fora disso o gerador FALHA aqui em vez de emitir.
+#>
+function JsStr($s) {
+  $t = [string]$s
+  if ($t -notmatch "^[a-z0-9-]+$") { throw "nome inesperado da PokeAPI (nao vou emitir isso): '$t'" }
+  "'" + $t + "'"
+}
+# Rótulo montado por nós (Rotulo) — tem espaço e maiúscula, então escapa em vez de exigir o padrão.
+function JsTexto($s) { "'" + ([string]$s -replace '\\', '\\' -replace "'", "\'" -replace "`r|`n", ' ') + "'" }
+
 # nome de exibição: "Mega Charizard X" / "Groudon Primitivo"
 function Rotulo($especie, $forma) {
   # os parênteses em volta do -replace são obrigatórios: sem eles o PowerShell lê como 2 argumentos do método
@@ -46,12 +60,12 @@ foreach ($g in ($dados | Group-Object especie)) {
   $usar = if ($canonicas.Count) { $canonicas } else { @($g.Group | Select-Object -First 1) }
   $itens = foreach ($d in $usar) {
     $primal = if ($d.nome -match '-primal$') { ', primal: true' } else { '' }
-    "{ forma: '$($d.nome)', id: $($d.id), nome: '$(Rotulo $g.Name $d.nome)'$primal }"
+    "{ forma: $(JsStr $d.nome), id: $($d.id), nome: $(JsTexto (Rotulo $g.Name $d.nome))$primal }"
   }
   $porEspecie[$g.Name] = @($itens)
 }
 
-$linhas = foreach ($e in $porEspecie.Keys) { "  '$e': [" + ($porEspecie[$e] -join ', ') + "]," }
+$linhas = foreach ($e in $porEspecie.Keys) { "  $(JsStr $e): [" + ($porEspecie[$e] -join ', ') + "]," }
 $corpo = ($linhas -join "`n").TrimEnd(',')
 
 $saida = @"

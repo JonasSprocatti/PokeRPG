@@ -747,10 +747,152 @@ fechado.
 - **A pontuação é calculada no navegador** e só conferida no servidor. Inventar uma jornada plausível continua
   possível; mandar uma pontuação qualquer, não. Sem servidor de jogo não tem como fechar, e isso já estava
   escrito no SQL desde o começo.
-- **Forjar o fim de uma luta** continua possível pra quem está NA sala — mas o alcance é o de quem já podia
-  editar o próprio `localStorage`, e o saneamento garante que o pacote forjado seja pelo menos bem-formado
-  (números são números), então não corrompe save nem executa nada.
-- **`/security-review` não foi rodado** como segunda opinião. Continua no backlog.
+- **Forjar o fim de uma luta** continua possível pra quem está NA sala: o `de` não é prova, porque o broadcast
+  não assina remetente. O alcance, depois da 2ª auditoria, é HP e narração.
+  > ⚠ **O que estava escrito aqui estava errado** (corrigido em 30/09/2026): dizia que "o alcance é o de quem já
+  > podia editar o próprio `localStorage`" e que "não corrompe save nem executa nada". Corrompia o save **dos
+  > outros** — `aoReceberEstado` chamava `consumirRevives`/`consumirItensComuns` direto do pacote, então um
+  > `estado` forjado esvaziava a mochila da run de quem recebesse, ou o inventário de CONTA na Sala de Raide.
+  > Lição registrada: "o pacote é bem-formado" (o que o `mp-sanear` garante) não é o mesmo que "o pacote é
+  > verdadeiro". Saneamento resolve INJEÇÃO, não AUTORIA — e a frase acima confundiu as duas por um dia.
+- ~~**`/security-review` não foi rodado** como segunda opinião.~~ ✔ rodado em 30/09/2026 — ver "A segunda
+  auditoria de segurança".
+
+---
+
+## A segunda auditoria de segurança (30/09/2026)
+
+Esta é o item (d) que a primeira deixou aberto: **`/security-review` rodado como segunda opinião**. O branch
+estava limpo de novo (o comando olha o diff), então o escopo foi o **repositório inteiro**, dividido em quatro
+frentes paralelas: SQL/RLS/Storage · pacote da sala · XSS no DOM · auth, upload, cache e geradores. Cada achado
+foi reconferido no código antes de entrar aqui — dois candidatos caíram nessa conferência.
+
+**7 achados: 6 graves, 1 médio.** O que mais chama atenção é que **quatro deles estavam em cima de defesa já
+existente** — não eram áreas esquecidas, eram áreas protegidas com um buraco fino. É o padrão a levar pra
+próxima: o lugar mais perigoso não é o que não tem trava, é o que tem trava e por isso ninguém olha mais.
+
+### 1. `&#39;` passava pelo filtro de endereço de imagem
+
+A primeira auditoria fechou a apóstrofe LITERAL no `urlDeImagem` (o endereço é escrito dentro de
+`onerror="…src='AQUI'"`). Mas o valor cai num **atributo**, e o navegador decodifica entidade HTML **antes** de
+compilar o `onerror` como JavaScript: `&#39;` chega ao JS como apóstrofe de verdade **sem nunca ter existido na
+string que o filtro olhou**. `new URL()` devolve a entidade intacta, host (`cdn.jsdelivr.net`) e esquema
+(`https:`) legítimos — passava pelas duas checagens. Bastava entrar na sala e anunciar a própria presença com
+`data.sprite` armado: o `src` truncado dava 404, o `onerror` disparava e o `eval` lia a sessão do Supabase do
+`localStorage` de **todos os presentes**. Conserto: `& ; %` entraram em `CARACTERE_PROIBIDO_EM_URL` (nenhum dos
+12 construtores de `dados.js` usa esses caracteres, então o custo é zero).
+
+**A lição, que vale além deste bug:** um filtro de caractere só é correto em relação ao **contexto** onde o valor
+cai. Aqui há dois contextos empilhados (string JS dentro de atributo HTML), e cada camada tem sua própria
+decodificação. Filtrar "o caractere perigoso" sem dizer "perigoso em qual camada" é o que deixou o furo.
+
+### 2. `poke_id` cru dentro de um `src`
+
+`perfil-amigo.js` desenhava a sprite das últimas runs de um amigo com `SPR(r.poke_id)` **sem `esc()`**, e
+`poke_id` vem de `resumo.registro.ids` — `jsonb` que o cliente envia e que `validar_jornada` não olha. Como
+`->>` devolve TEXTO, era string arbitrária indo pra dentro de um atributo. Todos os campos de texto ao redor
+estavam escapados; e `conta.js` (`htmlIcone`) **já coagia** o id remoto pra inteiro, com um comentário
+descrevendo exatamente este ataque. O call site vizinho é que tinha esquecido.
+
+Conserto **na raiz, não no call site**: a coerção foi pro construtor (`numeroDeSprite` em `dados.js`), então os
+12 `SPR*` e todos os ~40 pontos de desenho ficaram cobertos de uma vez — inclusive `fim.js`, que lê o mesmo
+`registro.ids`. A faixa aqui é "inteiro", não o `1–1025` do `htmlIcone`: id de FORMA passa de 10000
+(`render.spriteFrente` usa `m.formaSprite`), e clampar em 1025 quebraria sprite de forma.
+
+### 3. Reescrever uma amizade e ler o histórico de qualquer conta
+
+A política de UPDATE de `amizades` era `using (auth.uid() = para) with check (status = 'aceita')`. O `using` olha
+a linha ANTIGA, o `with check` olha a NOVA — e **nada prendia `de`/`para`**. Quem tivesse um pedido recebido
+reescrevia a linha pra "amizade aceita entre `de = <vítima>` e `para = eu`" e repetia trocando o uuid, varrendo a
+base com **uma linha só**. Os uuids eram fáceis: `presenca.js` usava `idJogador()` como **chave de presença** do
+canal global — o `track({})` vazio era de propósito, mas a *chave* anulava isso.
+
+A vítima não precisava aceitar nada, e como `perfil_do_amigo` é `SECURITY DEFINER` e fura o RLS de
+`jornadas`/`progresso` confiando nessa tabela, saía nível, pontuação, gens, shinies e as 5 últimas runs. **A
+função estava correta** (exige `'aceita'` nas duas direções, usa `auth.uid()`): o furo era a tabela em que ela
+confia. Conserto em `20260930120000`: `using` passou a exigir `status = 'pendente'`, `with check` voltou a exigir
+`auth.uid() = para`, e um gatilho `congelar_par_amizade` prende as duas colunas — porque **`with check` não
+enxerga `OLD`**, então política sozinha não consegue dizer "essas colunas não mudam". Mesmo padrão que
+`proteger_perfis_admin` já usava.
+
+### 4. A penalidade que virava bônus de 70.000×
+
+`validar_jornada` recusa número impossível, e recusava todos — menos o expoente:
+`penal := greatest(0.5, power(0.8, continuacoes))`. **`greatest` é piso, nunca teto**, e `continuacoes` vinha do
+`resumo` do cliente sem faixa. `power(0.8, -50)` ≈ 70065: o campo que devia TIRAR pontos multiplicava a
+pontuação por dezenas de milhares, com todos os outros números dentro do "possível". Um `insert` de console dava
+1º lugar geral **para sempre** — `jornadas` não tem política de update nem delete, então nem o dono apaga.
+
+Isso **não** era o limite aceito "a pontuação é calculada no navegador": esse limite é sobre jornada *plausível*
+inventada. Aqui o gatilho **aceitava e assinava** um valor impossível, que é exatamente o que ele existe pra
+impedir. Conserto: piso 0 no expoente e `least(1, …)` de teto, nos dois lados (`regras.multContinuacao` tinha o
+mesmo `0.8 ** n`). O `tests/schema.test.js` cobra a igualdade — e **ele também tinha um bug**: fatiava a função
+com `indexOf`, então com uma migration nova ele conferiria a definição VELHA e daria o conserto por feito. Virou
+`lastIndexOf`, com âncora no `create or replace` inteiro (o trecho curto reaparece no `execute function` do
+`create trigger`, depois do `drop trigger`, o que dava `slice` invertido e corpo vazio) e um `throw` se as
+âncoras mudarem. **Teste que valida o estado acumulado de migrations precisa olhar a ÚLTIMA definição.**
+
+### 5. O pacote de rede mandava na mochila alheia
+
+O pior dos sete, e o mais fácil de passar batido, porque não parece código de segurança: `aoReceberEstado`
+chamava `consumirRevives(p.batalha)` e `consumirItensComuns(p.batalha)`. Essas funções **apagam item do save**
+(`G.S.bag`, `save()`) ou do **inventário permanente de conta** (`gastarItemDeRaide`, na Sala de Raide), e quanto
+gastar vinha de `b.itensUsados[meuId()]` — campo do pacote. O único controle era `doAnfitriao`, que aceita pacote
+sem `de` de propósito (compatibilidade). Um broadcast com 400 ids esvaziava a mochila da vítima item a item, e
+alternando `fim`/`estado` a drenagem recomeçava.
+
+Conserto: **o pacote passou a CONFIRMAR, não a AUTORIZAR.** Existe agora um livro-caixa local (`sala.pedi`),
+escrito só pelas minhas próprias ações (`pediItemComum`/`pediRevive`/`pediRaide`), e o desconto é o cruzamento
+dos dois — `mp-regras.itensADescontar` (multiconjunto, pra não depender da ordem) e `usosADescontar` (teto, com
+piso 0 pra contador negativo não virar crédito). Pacote forjado encontra livro-caixa vazio e não desconta nada.
+As duas regras nasceram **puras em `mp-regras.js`, com teste**, porque `mp-resultado.js` importa `ui.js` e não é
+importável no Node — a regra do `CLAUDE.md` ("regra nova vai em função pura com teste") é o que tornou este
+conserto testável.
+
+**A lição:** `mp-sanear` garante que o pacote é **bem-formado**, não que é **verdadeiro**. Saneamento resolve
+injeção, nunca autoria. A frase antiga em "Limites conhecidos" confundia as duas — está corrigida lá.
+
+### 6. `desistir` funcionava em co-op
+
+O comentário no motor dizia "desistir (PvP)", mas o filtro era só `x.tipo === 'desistir'`: a trava de modo
+existia **só na UI** (`mp-telas.botoesPvP`). Como o ator de uma ação é o `de` autodeclarado do pacote, um
+participante mandava `{ de: "<vítima>", acao: { tipo: "desistir", ref: "A0" } }` — 70 bytes — e o **anfitrião
+autoritativo** zerava a equipe da vítima e publicava um `fim` **legítimo**. No Roguelike isso desce por
+`mp-resultado.principalCaiu` → `encerrarJornada('desmaiou')`: run acabada, sem nenhuma pista no diagnóstico,
+porque a ação foi válida. Conserto: `s.pvp ? … : []` no motor.
+
+**A lição:** regra que só existe na tela não é regra. Vale pro multiplayer o mesmo que já valia pra
+`golpesPermitidos` no single player — **o motor tem de conferir também**, porque a tela não é o único caminho até
+ele. E ataque que passa pelo anfitrião é pior que pacote forjado: o resultado sai assinado por quem manda, então
+nenhum endurecimento no cliente o pega.
+
+### 7. Nome da PokéAPI virando código nos geradores
+
+`gerar-mapas.ps1` e `gerar-megas.ps1` montavam literais de JavaScript concatenando nomes da PokéAPI **sem
+escapar** — e esses arquivos (`dados-mapas.js`, `dados-megas.js`) são importados por `dados.js`, ou seja vão pra
+todo jogador. O autor conhecia o risco (o `desc` escrito à mão já passava por `-replace "'", "\'"`), mas nada
+vindo da rede passava. O caso realista não é nem o hostil: é um `farfetch'd` numa forma nova derrubando o jogo
+inteiro com erro de sintaxe — e **`node --check` não roda no Windows**, então o CI seria a única rede. Conserto:
+`JsStr` exige `^[a-z0-9-]+$` e **falha o gerador** em vez de emitir, `JsTexto` escapa o rótulo que nós mesmos
+montamos. Os `.mjs` de `ferramentas/` não precisaram de nada: todos já usavam `JSON.stringify`.
+
+### Nota operacional: o arquivo que desprotegia ao ser rodado
+
+`supabase/ADMIN-TRIGGERS.sql` tinha o bloco **DESLIGAR ativo** e o de religar comentado. Não é migration (a
+integração não aplica), então o banco estava protegido — mas quem abrisse o arquivo pra "gerenciar os gatilhos" e
+clicasse em Run desligaria a proteção de `perfis.admin` sem querer, e daí qualquer conta logada viraria admin. Os
+blocos foram **invertidos**: rodar o arquivo inteiro sem ler agora é a ação segura.
+
+### Revisado e considerado OK
+
+Pra não reauditar o que já foi olhado: RLS ligada nas 7 tabelas, com `using` **e** `with check` em `saves` e
+`progresso`; `jornadas` sem update/delete; `perfis.admin` bloqueado nas duas portas; bucket de imagem privado,
+só `insert`, só `authenticated`, caminho preso ao `auth.uid()`; `subirImagensRelato` devolvendo `null` ≠ `[]`;
+zero `EXECUTE` dinâmico em todo `supabase/`; `search_path` em todas as 8 funções `SECURITY DEFINER`, nenhuma
+aceitando "o id de quem sou"; `auth.users` nunca lida; as 7 portas de `mp-sanear` cobrindo todos os eventos
+(inclusive a presença, que é a mais esquecida) com varredura por tipo que passa **nas chaves** também;
+`acaoDaRede` limitando `golpe` a índice; `?sala=` validado por `codigoValido`; chaves de cache derivadas só da
+PokéAPI; `sw.js` sem `importScripts` dinâmico; e os ids de AdSense sendo constantes de build.
 
 ---
 
