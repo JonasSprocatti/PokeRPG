@@ -4,6 +4,7 @@
 import { STATS, NATURES } from './dados.js';
 import { calcStats, freshVol, defaultMoves, ehShiny } from './regras.js';
 import { loadMove } from './api.js';
+import { precarregarCry } from './som.js';
 import { rand, pick } from './util.js';
 
 export async function makeMon(data, level, opt = {}) {
@@ -18,5 +19,8 @@ export async function makeMon(data, level, opt = {}) {
   // shiny (criacao.js). Sem a opção, continua no sorteio de sempre — 1 em 4096, pra você e pra todo selvagem.
   const mon = { id: data.id, name: data.name, nick: opt.nick || '', data, level, ivs, evs, nature, ability, moves, status: null, sleep: 0, exp: 0, vol: freshVol(), shiny: opt.shiny ?? ehShiny() };
   mon.stats = calcStats(mon); mon.hp = mon.stats.hp;
+  // aquece o grito desta espécie (som.js): todo Pokémon nasce aqui, bem antes de entrar em campo, então na hora
+  // da luta o áudio já está decodificado e sai junto da cena em vez de chegar atrasado. No-op com o som desligado.
+  precarregarCry(data.id);
   return mon;
 }

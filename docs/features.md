@@ -936,29 +936,53 @@ genérico do `sw.js` (a lista `EXTERNOS` casa por HOST, não por caminho — nen
 `tocarCry(id)` usa `new Audio(url).play().catch(()=>{})`: falha de rede ou autoplay bloqueado é silêncio, não erro
 — é decoração, não crítico como as imagens.
 
-**Música**: sem arquivo nenhum, sempre GERADA. Um objeto `HUMORES` por tela (`menu`/`explorar`/`batalha`/`chefe`),
-cada um com escala (pentatônica maior/menor ou menor harmônica — soam "certas" com nota quase aleatória, o que
-dispensa um gerador de melodia mais esperto), uma progressão de acordes por compasso, andamento e o tipo de onda
-do oscilador (`triangle`/`square`/`sawtooth` — o timbre chiptune). O agendamento segue o padrão clássico de
-"olhar à frente" (agendar no relógio do `AudioContext`, não confiar no `setTimeout` por nota — ele atrasa sob
-carga): `agendador()` roda a cada 25 ms e agenda todo passo de 16 que cair dentro da janela de 100 ms à frente.
+**Música**: sem arquivo nenhum, sempre GERADA, de dois ingredientes que se cruzam:
+- **`CONTEXTOS`** (que tela) dá andamento, agitação e timbre: `telas`/`menu`/`explorar`/`batalha`/`chefe`.
+- **`TEMAS`** (que rota) dá a tonalidade — raiz, escala e a progressão de 4 acordes. As chaves são **os biomas de
+  `cenario.climaDaRota`**, a MESMA derivação que já pinta o céu e o chão da batalha a partir do TEXTO da rota.
+  Reusar aquilo é o que faz "uma música por rota" valer pras 99 rotas sem tabela nova pra manter: rota com
+  "caverna" no nome já nasce com som de caverna. Os 12 biomas cobrem as 99 rotas de hoje (`tests/som.test.js`).
+
+Escalas: pentatônica maior/menor e menor harmônica — soam "certas" com nota quase aleatória, o que dispensa um
+gerador de melodia mais esperto. O agendamento segue o padrão clássico de "olhar à frente" (agendar no relógio do
+`AudioContext`, não confiar no `setTimeout` por nota — ele atrasa sob carga): `agendador()` roda a cada 25 ms e
+agenda todo passo de 16 que cair dentro da janela de 100 ms à frente.
 
 **Vitória** é uma fanfarra curta (arpejo maior ascendente, uma vez só, sem loop) — `tocarStinger()`, sem passar
 pelo agendador.
 
-**Onde troca de música**: nos pontos que já eram o choque único de cada transição (nenhuma tela nova precisou
-saber de música sozinha) — `criacao.showCreate` (menu), depois de `G.mode='explore'` no início da jornada
-(explorar), `batalha.iniciar` (batalha/chefe, + `tocarCry` do inimigo — é o único momento de grito: o jogo não
-tem captura de Pokémon selvagem, é o TREINADOR que tenta capturar VOCÊ, então não existe "grito de quem foi
-capturado"), `batalha.endBattle` (de volta pra explorar) e `fim.telaFim` (fanfarra na vitória, silêncio nos
-outros motivos). `main.abrirJornada` religa a trilha certa ao retomar um save (F5 no meio de uma batalha não
-troca de música à toa). `alternarSom` guarda o último humor pedido (`contexto`) mesmo com o som desligado, pra
-religar sozinho assim que o jogador ativa.
+**Onde troca de música**: nos pontos que já eram o choque único de cada transição (nenhuma tela precisou saber de
+música sozinha) — `criacao.showCreate` (menu), início da jornada e `main` no `case 'zone'` (explorar, com a rota
+nova), `batalha.iniciar` (batalha/chefe + `tocarCry` do inimigo — é o único momento de grito: o jogo não tem
+captura de Pokémon selvagem, é o TREINADOR que tenta capturar VOCÊ), `batalha.endBattle` (volta pra explorar),
+`fim.telaFim` (fanfarra na vitória, silêncio nos outros motivos) e **um ponto único em `main.aoClicar`** que dá a
+faixa `telas` pra toda tela de menu — todas são alcançadas por um `data-act` da lista `TELAS_NAV`, então bastou
+uma linha em vez de mexer em 12 telas. Essa linha lê a condição de batalha À MÃO em vez de chamar
+`travadoPelaBatalha()`: aquela função TOASTA quando barra, e o `case` do switch a chama de novo — o jogador veria
+o aviso duas vezes. `main.abrirJornada` religa a trilha certa ao retomar um save.
 
-**Ficou de fora, por escolha**: volume ajustável (só liga/desliga — o pedido era esse), música durante as telas
-de menu fora do fluxo de jogo (Carreira, Conquistas etc. — não são "humor" de jogo, ficam em silêncio ou com o
-que já estava tocando), qualquer coisa que dependesse de arquivo de áudio publicado (tudo é sintetizado).
-`tests/referencias.test.js`: `AudioContext` entrou em `GLOBAIS_MAIUSCULAS` (mesma lista que já tinha `Audio`).
+### A segunda leva (30/09/2026): o que quem jogou reclamou
+Cinco queixas do primeiro dia, todas atendidas em `som.js`:
+1. **"Os sons estão com delay"** (o grito principalmente). A causa era `new Audio(url).play()`: o arquivo era
+   BUSCADO na hora do grito. Agora o cry é baixado, **decodificado uma vez e guardado** (`buffers`, id → `AudioBuffer`)
+   e tocado por `createBufferSource` — instantâneo. Quem aquece é **`precarregarCry`, chamado por
+   `pokemon.makeMon`**: todo Pokémon do jogo nasce ali, bem antes de entrar em campo, então na hora da luta o
+   áudio já está pronto. O service worker já guardava o arquivo (o host está em `EXTERNOS`), então isso custa rede
+   só na primeira vez. `buffers.set(id, null)` ANTES do fetch evita duas buscas pro mesmo id.
+2. **"Se eu saio do navegador o som continua"** — incômodo real. `visibilitychange`: aba escondida para o
+   agendador e dá `ctx.suspend()`; ao voltar, `resume()` + `retomar()` remonta a faixa do `pedido` guardado.
+3. **"Precisa ter menos agudos"** — duas coisas somadas: um **passa-baixa de 2 kHz** na saída de tudo (onda
+   quadrada e dente-de-serra jogavam harmônico agudo direto no alto-falante) e a melodia rebaixada: antes era
+   `raiz + escala + 24` com raiz 60/62 (chegava perto de 2 kHz, a 7ª oitava); agora o teto é `+12` e as raízes
+   moram entre 48 e 57 (Dó2–Lá2), o que põe o topo em ~830 Hz. Nota acima de MIDI 74 ainda sai com 55% do volume.
+   `tests/som.test.js` trava esse teto — é fácil desfazer sem perceber ao mexer numa raiz.
+4. **"Música para cada rota de acordo com o tema"** — a tabela `TEMAS` acima, via `cenario.climaDaRota`.
+5. **"Um som pra tela inicial e as outras que não sejam o jogo em si"** — o contexto `telas` e a linha única em
+   `main.aoClicar`.
+
+**Ficou de fora, por escolha**: volume ajustável (só liga/desliga — o pedido era esse) e qualquer coisa que
+dependesse de arquivo de áudio publicado (tudo é sintetizado). `tests/referencias.test.js`: `AudioContext` entrou
+em `GLOBAIS_MAIUSCULAS` (mesma lista que já tinha `Audio`).
 
 ---
 

@@ -71,6 +71,12 @@ async function aoClicar(e) {
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
   const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
+  /* Trilha das telas fora do jogo (som.js), num lugar só: toda tela de menu é alcançada por um destes `data-act`,
+     então nenhuma delas precisa saber de música por conta própria. `inicio` tem a própria faixa (showCreate pede
+     'menu'); as telas de jogo em si (explorar/batalha) são pedidas por quem monta a cena, não aqui.
+     A condição é lida À MÃO em vez de chamar `travadoPelaBatalha()`: aquela função TOASTA quando barra, e o
+     `case` do switch a chama de novo — o jogador veria o mesmo aviso duas vezes. */
+  if (TELAS_NAV.includes(b.dataset.act) && b.dataset.act !== 'inicio' && G.mode !== 'battle' && !G.busy) tocarMusica('telas');
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
     case 'random': return sortearEspecie();
@@ -233,7 +239,7 @@ async function aoClicar(e) {
     case 'zone': {
       const z = rotasAtuais().find(x => x.id === v); // só rotas do mapa atual
       if (!z || !zonaLiberada(z, G.S.player.level, G.S)) return; // chip trancado já vem desativado; isto é a garantia
-      G.S.zone = v; save(); return render();
+      G.S.zone = v; save(); tocarMusica('explorar', z); return render();   // rota nova, tema novo (som.js)
     }
     // fechou uma Gen (fora do Roguelike): vai pro mapa escolhido
     case 'proxima-gen': {
@@ -399,7 +405,7 @@ function abrirJornada(s, aviso) {
   G.B = restaurarBatalha(s.batalha);
   if (G.B) { G.mode = 'battle'; G.panel = 'moves'; }
   else for (const m of ladoJogador()) m.vol = freshVol();
-  tocarMusica(G.B ? (G.B.chefe || G.B.evento || G.B.lendarios ? 'chefe' : 'batalha') : 'explorar');
+  tocarMusica(G.B ? (G.B.chefe || G.B.evento || G.B.lendarios ? 'chefe' : 'batalha') : 'explorar', zone());
   G.S.ultimoTick = Date.now(); // tempo de jogo recomeça a contar agora (não conta o tempo com o jogo fechado)
   if (G.S.escolhendoGen) return telaEscolherGen(); // fechou uma Gen e ainda não escolheu o próximo mapa
   buildGame();

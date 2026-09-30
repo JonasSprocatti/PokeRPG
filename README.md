@@ -161,7 +161,7 @@ A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer qu
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
 - **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
 - **⚙ Ajustes → Fonte:** escolha entre 6 fontes (padrão, Atkinson Hyperlegible para máxima legibilidade, Lexend, Andika, Nunito e uma monoespaçada). Cada opção é mostrada já na própria fonte, vale para o jogo inteiro e fica salva neste navegador.
-- **⚙ Ajustes → Som:** **desligado por padrão.** Liga o grito de quem aparece na luta (da PokéAPI) e uma música que o próprio jogo COMPÕE na hora, sem tocar arquivo nenhum — uma faixa diferente pra tela inicial, pra exploração, pra batalha comum e pra batalha de chefe/lendário, e uma fanfarra curta na vitória.
+- **⚙ Ajustes → Som:** **desligado por padrão.** Liga o grito de quem aparece na luta (da PokéAPI) e uma música que o próprio jogo COMPÕE na hora, sem tocar arquivo nenhum. A faixa muda com **o que você está fazendo** (tela inicial, telas de menu, explorar, batalha, chefe, e uma fanfarra na vitória) e **com o tema da rota** — caverna, mar, floresta, vulcão, deserto, gelo, usina, ruínas, montanha e o Santuário têm cada um a sua tonalidade, tirada da mesma leitura da rota que já pinta o cenário da batalha. Quando você troca de aba ou minimiza, o som para sozinho.
 
 ### 📀 Mexer nos golpes (Escama do Coração e Disco Técnico)
 Um Pokémon carrega **4 golpes**, e a cada nível você decide o que esquecer. Dois itens deixam você voltar atrás — e valem tanto para você quanto para **qualquer aliado** (você escolhe em quem usar e qual golpe ele esquece):
@@ -410,7 +410,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Vínculo de Batalha (Ash-Greninja): conquista própria (1.000 golpes finais sendo Greninja), item que transforma sozinho ao derrubar um oponente, Water Shuriken reforçado
 - [x] Estrutura de anúncios (Google AdSense) desligada por padrão, banner de consentimento de cookies (GDPR) e tela de Política de Privacidade
 - [x] Três estilos de sprite (Clássico, 3D "home", Animado do Showdown), com download à parte pro modo offline
-- [x] Som (desligado por padrão): grito de quem aparece na luta e música procedural (composta na hora com a Web Audio API, não é arquivo pronto)
+- [x] Som (desligado por padrão): grito de quem aparece na luta e música procedural (composta na hora com a Web Audio API, não é arquivo pronto), com uma tonalidade por tema de rota
 - [x] Barra de HP anima ao tomar dano/curar (técnica FLIP, respeita "reduzir animações")
 
 ## Licença

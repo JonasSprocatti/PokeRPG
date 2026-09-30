@@ -3,7 +3,7 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo } from './estado.js';
+import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo, zone } from './estado.js';
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
@@ -88,7 +88,8 @@ function iniciar(B) {
   // `zInimigo`: o lado inimigo carrega um Z-Move nesta luta? (treinador sempre; Alfa só às vezes — zmove.inimigoTemZ)
   G.B = { caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), zInimigo: inimigoTemZ(B), ...B };
   G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render();
-  tocarMusica(B.chefe || B.evento || B.lendarios ? 'chefe' : 'batalha'); tocarCry(B.enemy.id);
+  // a rota tinge a faixa (som.js lê o tema por cenario.climaDaRota, o mesmo que pinta a cena)
+  tocarMusica(B.chefe || B.evento || B.lendarios ? 'chefe' : 'batalha', zone()); tocarCry(B.enemy.id);
   /* Baixa as formas Mega que podem entrar em campo AGORA, em segundo plano. A batalha não espera: se a rede
      falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
      a Mudança de Postura do Aegislash documentou (golpe.trocarPostura). */
@@ -700,7 +701,7 @@ async function serCapturado() {
    é ignorado): é mais seguro varrer a equipe do que lembrar quem virou. Sem isto o Pokémon ficaria Mega pra
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
-  G.B = null; G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar');
+  G.B = null; G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar', G.S ? zone() : null);
   for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); desfazerTrace(m); m.vol = freshVol(); }
 }
 

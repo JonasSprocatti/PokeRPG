@@ -10,6 +10,18 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.29', data: '2026-09-30', titulo: 'O som afinou: cada rota tem a sua música, e ele cala a boca quando você sai', piada: 'O grito do Pokémon chegava tão atrasado que dava tempo de ele desmaiar antes de gritar. Agora ele grita na hora, como todo mundo que leva um golpe de verdade.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>O grito não atrasa mais.</b> Ele era baixado no instante em que devia tocar — e chegava depois da cena. Agora vem pronto de antemão: sai junto com o Pokémon aparecendo.',
+        '<b>Trocou de aba? O som para.</b> Antes a música continuava tocando por cima de tudo, inclusive com o celular na sua bolsa. Voltando pra aba, ela volta de onde estava.',
+        '<b>Bem menos agudo.</b> A trilha tinha notas altas demais e cansava o ouvido em poucos minutos. As melodias desceram de oitava e um filtro corta o que sobrava de estridente.'
+      ] },
+      { nome: 'Novidades', itens: [
+        '<b>Cada rota tem a sua música.</b> Caverna soa como caverna, mar soa como mar — e vulcão, deserto, gelo, floresta, usina, ruínas assombradas, montanha e o Santuário também. A trilha lê o tema da rota, o mesmo que já decide o cenário da batalha, então as 99 rotas do jogo têm tonalidade própria.',
+        '<b>As telas fora do jogo ganharam trilha</b> — Carreira, Pokédex, Conquistas, Ranking e companhia agora têm um fundo calmo em vez do silêncio.'
+      ] }
+    ] },
   { versao: '2.28', data: '2026-09-30', titulo: 'O jogo ganhou som (desligado, até você ligar)', piada: 'O compositor da casa não sabe tocar nenhum instrumento de verdade. Ele só sabe fazer um computador fingir que sabe, 16 vezes por segundo, pra sempre.',
     secoes: [
       { nome: 'Novidades', itens: [
