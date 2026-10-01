@@ -222,7 +222,7 @@ test('no motor: `extra` acerta outro alvo com o mesmo golpe sem contar como nova
   assert.equal(boss.vol.recarga, true, 'a recarga do golpe original continua valendo');
 });
 
-/* ---------------- os 14 chefes e as mecânicas novas ---------------- */
+/* ---------------- os 16 chefes e as mecânicas novas ---------------- */
 test('nenhum golpe carregado dos chefes é golpe de carga do motor (viraria "preparando" de novo) nem protege/fúria', () => {
   for (const [id, c] of Object.entries(CHEFES)) {
     const e = GOLPES_ESPECIAIS[c.canhao.name] || {};
@@ -230,7 +230,7 @@ test('nenhum golpe carregado dos chefes é golpe de carga do motor (viraria "pre
     assert.ok(TYPE_PT[c.canhao.type], `${id}: tipo do golpe carregado`);
     for (const t of [...(c.anula?.tipos || []), ...(c.pontoFraco?.tipos || [])]) assert.ok(TYPE_PT[t], `${id}: tipo "${t}"`);
   }
-  assert.equal(Object.keys(CHEFES).length, 14);
+  assert.equal(Object.keys(CHEFES).length, 16);
 });
 
 test('Groudon e Kyogre Primais: o clima nasce com a luta e o tipo oposto é anulado', () => {

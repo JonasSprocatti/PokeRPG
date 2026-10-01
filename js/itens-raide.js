@@ -20,7 +20,7 @@ export const TIPO_DO_GOLPE = {
   overheat: 'fire', surf: 'water', 'ice-beam': 'ice', thunder: 'electric', 'hydro-pump': 'water', psychic: 'psychic',
   'focus-blast': 'fighting', 'shadow-ball': 'ghost', thunderbolt: 'electric', 'dark-pulse': 'dark', 'sacred-sword': 'fighting',
   'close-combat': 'fighting', 'fusion-bolt': 'electric', 'earth-power': 'ground', 'shadow-claw': 'ghost', 'draco-meteor': 'dragon',
-  'hammer-arm': 'fighting', 'gunk-shot': 'poison', 'thousand-arrows': 'ground'
+  'hammer-arm': 'fighting', 'gunk-shot': 'poison', 'thousand-arrows': 'ground', 'thunder-punch': 'electric'
 };
 // todos os tipos de golpe que o chefe usa: os 4 golpes normais + o golpe carregado (que já traz o tipo na config)
 export const tiposDoChefe = ev => new Set([...ev.golpes.map(g => TIPO_DO_GOLPE[g]), CHEFES[ev.chefe]?.canhao?.type].filter(Boolean));

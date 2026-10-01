@@ -10,6 +10,15 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.40', data: '2026-10-01', titulo: '🏛 Arceus e 🗿 Regigigas entram na roda dos chefes', piada: 'O Regigigas chegou atrasado, bocejando, e levou cinco turnos pra entender que a luta já tinha começado. Depois disso, pediu desculpas batendo no chão.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Arceus é o 15º chefe da semana</b> (Gen 4): ele troca de <b>Prato</b> a cada duas ações — só o tipo do Prato da vez machuca de verdade, os outros quase não arranham — e carrega o <b>Julgamento</b>. Tem couraça, como os grandes. O <b>Prisma de Luz</b> serve contra ele.',
+        '<b>Regigigas é o 16º</b> (Gen 4), o líder dos Regis: ele entra <b>adormecido</b> (Slow Start — metade do Ataque e da Velocidade nos 5 primeiros turnos) e vai acordando a cada fase, até o <b>Esmagamento Colossal</b>. A couraça dele é a mais grossa do jogo; quem demora a derrubá-lo enfrenta outro bicho no fim.',
+        'Como sempre, derrotar cada um dá o Pokémon (Pokédex e jornadas novas), uma insígnia com título e prêmio. Eles entraram <b>no fim da fila</b>: o chefe desta semana continua sendo o mesmo de antes.',
+        '<b>A tela inicial agora mostra o calendário do ano inteiro.</b> Abaixo dos próximos 3 chefes tem um “📅 Calendário do ano inteiro”: abriu, você vê semana a semana quem vem, com a data de cada segunda-feira — dá pra planejar a jornada pro chefe que você quer enfrentar.'
+      ] }
+    ] },
   { versao: '2.39', data: '2026-09-30', titulo: '🔒 Faxina de segurança: sua conta, sua mochila e sua run', piada: 'Contratamos alguém pra tentar invadir o jogo. Ele conseguiu sete vezes, anotou tudo num caderninho e foi embora. Passamos o dia lendo o caderninho.',
     secoes: [
       { nome: 'Segurança', itens: [

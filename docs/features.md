@@ -44,7 +44,7 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
   e recebe o prêmio em `premiarEventoMP` só se a SUA run é Roguelike/Hardcore. A insígnia exibida vai no payload de presença (`meuPayload().badge`) e, nas listas persistentes, pelas RPCs `meus_amigos()` e `ranking()` (coluna `badge_exibida`, migração
   `20260925130000_badge_nas_listas.sql`, que exige a `20260925120000_badge_exibida.sql` antes). O servidor só devolve a insígnia se `progresso.dados->'eventos'` contém o evento
   (`badge_exibivel(uuid)`) — não é à prova de fraude (o progresso é gravado pelo jogo), mas impede escolher no perfil algo que nunca foi conquistado. O cliente desenha com
-  `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. ~~**Falta**: os outros chefes e os itens.~~ **✅ COMPLETO** (conferido em 29/09/2026 rodando o código: `EVENTOS.length` = 14, `Object.keys(boss.CHEFES).length` = 14, itens com `raide` em `ITEMS` = 10). Os 14 chefes estão em "Os 14 chefes" e os 10 itens em "Itens de raide", as duas seções logo abaixo.
+  `conta.htmlInsigniaDe(id)` (topo, amigos, ranking, sala); versão antiga do banco só não traz o campo e nada quebra. ~~**Falta**: os outros chefes e os itens.~~ **✅ COMPLETO** (conferido em 29/09/2026 rodando o código: `EVENTOS.length` = 14, `Object.keys(boss.CHEFES).length` = 14 — hoje 16 e 16, com Arceus e Regigigas, itens com `raide` em `ITEMS` = 10). Os 14 chefes estão em "Os 14 chefes" e os 10 itens em "Itens de raide", as duas seções logo abaixo.
   **⚠️ TEMPORÁRIO (pedido do usuário, beta testers, 28/09/2026): `evento.BETA_SEM_ESPERA = true` remove a espera de
   8h entre tentativas** — Arena, run e sala. Implementado SEM tocar `COOLDOWN_MS`/`esperaRestante` (que continuam
   puros e testados com os números reais): a flag entra só em `evento.ultimaTentativaEfetiva()` (finge "nunca
@@ -71,10 +71,10 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
   (`mp-motor`) localmente — lado A = Hall reidratado (`makeMon` + `loadMove`), lado B = chefe (`prepararChefe(E, jogadoresEfetivos(1, n))`) — então não pode mexer no save de uma run em andamento. Por isso não tem item
   segurado, Mega/Tera/Z/Gigantamax nem Revive (o motor do co-op não os tem). Tentativa de 8 h, vitória (`registrarVitoriaDeEvento`) e prêmio de itens de raide iguais ao resto do evento; dinheiro/Rare Candy só dentro de
   uma run. Entradas antigas (jornadas terminadas antes deste recurso) NÃO estão no Hall: só valem as que terminam depois. Ideia de expansão: chefe na Arena em grupo (a base do co-op já serve).
-- **Os 14 chefes** (`evento.EVENTOS`, fábrica `ev()`; regras em `boss.CHEFES`, mesma `id`): a ordem do array É o calendário (semana N = `N % 14`). Mecânicas novas além de couraça/ponto fraco/canhão/fases:
+- **Os 16 chefes** (`evento.EVENTOS`, fábrica `ev()`; regras em `boss.CHEFES`, mesma `id`): a ordem do array É o calendário (semana N = `N % 16`). Mecânicas novas além de couraça/ponto fraco/canhão/fases:
   `climaFixo` (`aplicarClimaDoChefe` usa o clima fixo de `novoCampo`; Groudon sol, Kyogre chuva), `anula {tipos}` (dano 0 + texto em `golpe.js`), `inverso {acoes}` (Mundo Reverso: `danoNoChefe(t, dano,
   tipo, ef)` divide pelo ef² do motor, com teto ×4), `adapta {reducao}` (guarda `b.ultimoTipo` DENTRO de `danoNoChefe`), `dreno` (`drenoDoChefe` em `executar`), `regenera` (efeito `{cura}` em
-  `antesDoChefeAgir`), `habilidade` (habilidade da tabela do motor: Calyrex `grim-neigh`, Necrozma `neuroforce`, Zacian `intrepid-sword`). **O golpe carregado NÃO pode ser golpe de carga do motor**
+  `antesDoChefeAgir`), `habilidade` (habilidade da tabela do motor: Calyrex `grim-neigh`, Necrozma `neuroforce`, Zacian `intrepid-sword`, Regigigas `slow-start`). **O golpe carregado NÃO pode ser golpe de carga do motor**
   (`especiais.carga`, ex.: Freeze Shock — viraria "preparando" de novo); o teste confere. `EVENTO_SEM_PERMADEATH` vale pra todos. **Simplificações a lembrar**: as duplas (Zacian+Zamazenta,
   Dialga+Palkia) viraram UM chefe cada; Mewtwo troca pro "modo X" só como bônus de atributo (fase 2) — não há troca de forma/sprite; Kyurem não ignora habilidades do jogador.
 - **Itens de raide** (`dados.ITEMS[x].raide`, `boss.usarItemDeRaide`): 10 consumíveis, UM de cada tipo por luta (marca
@@ -432,7 +432,7 @@ Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémo
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.
 
 ### 3. ✅ FEITO — Badges com vantagem permanente
-Implementado em `js/badges.js` (53 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 29/09/2026: Tipos 18, Eventos 14, Caçada 4, Coleção/Laços/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2) e ligado na criação
+Implementado em `js/badges.js` (55 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 01/10/2026: Tipos 18, Eventos 16, Caçada 4, Coleção/Laços/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2) e ligado na criação
 (`criacao.renderVantagens`, `vantagensDe`) e na tela 🏅 Conquistas. Cada badge é medida do **progresso
 permanente** (nunca do histórico, que o jogador pode apagar — `contextoBadges` monta o `ctx` a partir de
 `progresso-conta.js`) e paga uma vantagem na PRÓXIMA jornada: itens (empilham) e/ou dinheiro inicial (soma),
@@ -1710,10 +1710,17 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
      pra admin). Divulgado na tela 🔒 Privacidade (passo 3) e com interruptor em ⚙ Ajustes — decisão própria
      (não pedida explicitamente, mas coerente com "não pode virar telemetria silenciosa" já anotado aqui):
      desligar tira o jogador do canal de presença E do registro de visitante, sem afetar o resto do jogo.
-- **Arceus como chefe de raide** (pedido do usuário, 28/09/2026, ligado aos "Pratos do Arceus" na seção 3 de
-  badges com vantagem, abaixo): faz sentido temático — nos jogos ele carrega um Prato de cada tipo, item que
-  acabou de entrar no jogo. Ainda sem desenho: precisa decidir se entra na rotação dos 14 chefes existentes
-  (mudaria o `% 14` do calendário pra `% 15`, ver "Os 14 chefes") ou como um evento à parte.
+- **Arceus como chefe de raide** (pedido do usuário, 28/09/2026) — **✅ FEITO em 01/10/2026**, junto com
+  **Regigigas** (pedido na mesma conversa: líder dos Regis). Decisão: **entram na rotação**, no FIM da lista
+  (`% 14` virou `% 16`). A ordem do array É o calendário — entrar no meio trocaria o chefe da semana de quem já
+  está jogando, então chefe novo sempre vai no fim. **Arceus** reusa `pontoFraco` como os Pratos (seis tipos,
+  troca a cada 2 ações) + couraça + Julgamento carregado: a mecânica de "o tipo que fere muda" já existia, não
+  valia um gancho novo pra Multitype. **Regigigas** não ganhou mecânica nenhuma: `habilidade: 'slow-start'` (já
+  na tabela do motor) faz o colosso começar com metade do Ataque e da Velocidade e acordar nos 5 primeiros
+  turnos, e as fases somam Ataque em cima disso. Golpes escolhidos entre os que já estavam em `TIPO_DO_GOLPE`
+  (só `thunder-punch` entrou novo) — de quebra, nenhum deles é de Fogo/Água/Psíquico/Gelo/Voador/Dragão, então
+  só a descrição do `prisma-de-luz` mudou (Arceus tem ponto fraco). Com 16 chefes o rodízio de itens novos
+  deixou de ser 1 pra 1: os dois primeiros da lista saem duas vezes na volta.
 
 ## Modo offline, convenções, testes e Supabase (versão anterior)
 

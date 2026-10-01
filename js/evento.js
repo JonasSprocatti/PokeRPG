@@ -28,9 +28,10 @@ export const agoraDoEvento = () => { const t = Number(store.get(RELOGIO_KEY)); r
    regras dele em boss.js (CHEFES). */
 /* Fábrica dos eventos: `forma` = a forma da PokéAPI que aparece (pelo id), `especie` = o que o jogador GANHA. O prêmio
    da semana tem DUAS partes de item de raide: os 3 originais (consumíveis "só na luta do chefe") continuam girando
-   como sempre, ×2; e os 14 novos (28/09/2026: 7 consumíveis + 7 segurados) têm um cada EXATAMENTE um chefe — como
-   são 14 chefes, dá cobertura completa: `i % 3` nunca deixaria os 3 últimos dos 17 de fora (14 chefes < 17 itens
-   não fecha conta certa), então os dois grupos giram em módulos diferentes. */
+   como sempre, ×2; e os 14 novos (28/09/2026: 7 consumíveis + 7 segurados) giram no próprio módulo — `i % 3` nunca
+   deixaria os 3 últimos dos 17 de fora (14 chefes < 17 itens não fecha conta certa), então os dois grupos giram em
+   módulos diferentes. Com 14 chefes dava 1 item novo por chefe; com os 16 de 01/10/2026 os dois primeiros saem duas
+   vezes na volta — a cobertura continua completa. */
 const ITENS_RAIDE_PREMIO = ['cristal-de-ruptura', 'selo-de-interrupcao', 'escudo-astral'];
 const ITENS_RAIDE_NOVOS = [
   'cinza-vulcanica', 'escama-abissal', 'prisma-de-luz', 'espelho-reverso', 'relogio-de-areia', 'fragmento-tera', 'celula-zygarde',
@@ -100,7 +101,18 @@ export const EVENTOS = [
   ev({ id: 'zygarde-complete', gen: 6, nome: 'Zygarde Completo', especie: 'zygarde', especieId: 718, formaId: 10120,
     golpes: ['thousand-arrows', 'earthquake', 'dragon-claw', 'draco-meteor'],
     resumo: 'Células que se regeneram a cada ação (só param com o chefe exposto), couraça e Core Enforcer carregado.',
-    badge: { icone: '🧩', nome: 'Guardião do Equilíbrio', titulo: 'Ordem Perfeita' } })
+    badge: { icone: '🧩', nome: 'Guardião do Equilíbrio', titulo: 'Ordem Perfeita' } }),
+  /* Arceus e Regigigas (01/10/2026, pedido do usuário) entram NO FIM da lista de propósito: a ordem do array é o calendário,
+     e mexer no meio trocaria o chefe da semana de quem já está jogando. Com 16 chefes os dois primeiros itens de
+     ITENS_RAIDE_NOVOS aparecem duas vezes no rodízio — cobertura continua completa, só deixou de ser 1 pra 1. */
+  ev({ id: 'arceus', gen: 4, nome: 'Arceus', especie: 'arceus', especieId: 493, formaId: 493,
+    golpes: ['extreme-speed', 'earth-power', 'shadow-ball', 'thunderbolt'],
+    resumo: 'Troca de Prato: o tipo que realmente o machuca muda a cada duas ações, entre seis Pratos. Couraça do Criador e o Julgamento carregado.',
+    badge: { icone: '🏛', nome: 'Diante do Criador', titulo: 'Escolhido do Original' } }),
+  ev({ id: 'regigigas', gen: 4, nome: 'Regigigas', especie: 'regigigas', especieId: 486, formaId: 486,
+    golpes: ['earthquake', 'hammer-arm', 'stone-edge', 'thunder-punch'],
+    resumo: 'Começa adormecido (Slow Start: metade do Ataque e da Velocidade nos 5 primeiros turnos) e acorda a cada fase. Couraça de pedra grossa e o Esmagamento Colossal carregado.',
+    badge: { icone: '🗿', nome: 'Despertar do Colosso', titulo: 'Colosso Desperto' } })
 ];
 /* ---- calendário ---- */
 export const indiceDaSemana = agora => Math.floor((agora - INICIO) / SEMANA_MS);

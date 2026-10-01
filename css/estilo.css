@@ -138,6 +138,9 @@ button.link{background:none;border:0;padding:0;font:inherit;color:#b45cff;text-d
 .agenda-lista li.atual{border-color:#b45cff;box-shadow:0 0 12px rgba(180,92,255,.5)}
 .agenda-lista img{width:56px;height:56px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(180,92,255,.7))}
 .agenda-lista small{display:block}
+.agenda-ano{margin:0 0 8px}
+.agenda-ano ol{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:3px;font-size:.92em}
+.agenda-ano li.atual{color:#d9b3ff}
 .boss-fraco{margin-top:4px;font-size:12px;font-weight:700}
 .boss-info{margin-top:6px}
 .boss-coura .fill{background:linear-gradient(90deg,#7bd0ff,#b45cff)}

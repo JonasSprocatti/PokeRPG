@@ -126,6 +126,19 @@ export const CHEFES = {
     regenera: 0.04,                            // as células se regeneram: só pára enquanto o chefe está exposto
     canhao: canhao('core-enforcer', 'dragon', 'special', 190, 'CORE ENFORCER'),
     fases: fases('Fase 2 — Células Reunidas', [['defense', 1], ['special-defense', 1]], 'Fase 3 — Ordem Perfeita', [['attack', 1], ['speed', 1]])
+  },
+  arceus: {
+    nome: 'Arceus', coura: { fracao: 0.15, reducao: 0.4 }, ciclo: 4, cicloFase3: 3,
+    // os Pratos: o tipo que fere de verdade é o do Prato da vez. Seis, não os 17 — com a lista inteira ninguém acerta a janela
+    pontoFraco: { tipos: ['fighting', 'ground', 'ghost', 'dragon', 'ice', 'steel'], acoes: 2, mult: 1.7, contra: 0.55 },
+    canhao: canhao('judgment', 'normal', 'special', 200, 'JULGAMENTO'),
+    fases: fases('Fase 2 — Prato Trocado', [['special-attack', 1], ['defense', 1]], 'Fase 3 — Julgamento Final', [['special-attack', 1], ['speed', 1]])
+  },
+  regigigas: {
+    nome: 'Regigigas', coura: { fracao: 0.2, reducao: 0.45 }, ciclo: 4, cicloFase3: 3,
+    habilidade: 'slow-start',                  // o colosso acorda: metade do Ataque e da Velocidade nos 5 primeiros turnos
+    canhao: canhao('crush-grip', 'normal', 'physical', 200, 'ESMAGAMENTO COLOSSAL'),
+    fases: fases('Fase 2 — O Colosso Desperta', [['attack', 1], ['speed', 1]], 'Fase 3 — Força Titânica', [['attack', 2]])
   }
 };
 export const CHEFE_PADRAO = 'eternatus-eternamax';

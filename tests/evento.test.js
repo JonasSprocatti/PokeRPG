@@ -48,12 +48,13 @@ test('cada evento é completo: forma da PokéAPI, golpes, espécie que ganha, ba
   assert.deepEqual([ray.gen, ray.formaId, ray.especieId], [3, 10079, 384]);
 });
 
-test('são 14 chefes, na ordem da lista, e a cada segunda entra o próximo (depois do 14º a lista recomeça)', () => {
+test('são 16 chefes, na ordem da lista, e a cada segunda entra o próximo (depois do último a lista recomeça)', () => {
   const ordem = ['eternatus-eternamax', 'rayquaza-mega', 'groudon-primal', 'kyogre-primal', 'mewtwo-mega-y', 'necrozma-ultra', 'calyrex-shadow',
-    'zacian-crowned', 'kyurem-black', 'giratina-origin', 'dialga-origin', 'terapagos-stellar', 'ursaluna-bloodmoon', 'zygarde-complete'];
+    'zacian-crowned', 'kyurem-black', 'giratina-origin', 'dialga-origin', 'terapagos-stellar', 'ursaluna-bloodmoon', 'zygarde-complete',
+    'arceus', 'regigigas'];   // chefe novo entra no FIM: a ordem é o calendário, mexer no meio troca o chefe da semana de quem joga
   assert.deepEqual(EVENTOS.map(e => e.id), ordem);
   ordem.forEach((id, i) => assert.equal(eventoDaSemana(INICIO + i * SEMANA_MS).id, id, `semana ${i}`));
-  assert.equal(eventoDaSemana(INICIO + 14 * SEMANA_MS).id, 'eternatus-eternamax', 'a lista gira');
+  assert.equal(eventoDaSemana(INICIO + ordem.length * SEMANA_MS).id, 'eternatus-eternamax', 'a lista gira');
   assert.equal(eventoDoIndice(EVENTOS.length).id, EVENTOS[0].id);
 });
 
