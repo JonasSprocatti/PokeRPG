@@ -8,7 +8,7 @@ import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
 import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, baixarImagens3D, imagensGuardadas3D, baixarImagensAnimadas, imagensGuardadasAnimadas, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache, limparCache } from './api.js';
-import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, limparTeste, temProgressoDeTeste } from './dev.js';
+import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, liberarIvsPerfeitos, limparTeste, temProgressoDeTeste } from './dev.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
 import { adsConfigurado, consentimento } from './ads.js';
@@ -205,6 +205,7 @@ function htmlDev() {
       <button class="btn" data-act="dev-megas">⚡ Liberar todas as Megas</button>
       <button class="btn" data-act="dev-especies">🔓 Desbloquear todas as espécies</button>
       <button class="btn ghost" data-act="dev-gimmicks">💎 Encher Tera / Z-Move</button>
+      <button class="btn ghost" data-act="dev-ivs">🧬 IVs perfeitos nas próximas jornadas</button>
       <button class="btn ghost" data-act="dev-limpar" ${temProgressoDeTeste() ? '' : 'disabled'}>🧹 Limpar o que foi de teste</button>
     </div>
     <div id="dev-msg" class="small muted" style="margin-top:8px">${temProgressoDeTeste() ? '⚠ Há progresso de teste ativo nesta conta.' : ''}</div>`;
@@ -216,6 +217,7 @@ export function acaoDev(qual) {
   if (qual === 'megas') msg(`✅ ${liberarMegas()} espécies com a Pedra Mega liberada. Entre numa batalha com uma delas e o botão ⚡ aparece.`);
   else if (qual === 'especies') msg(`✅ ${liberarEspecies()} espécies desbloqueadas pra escolher na criação.`);
   else if (qual === 'gimmicks') { liberarOutrasGimmicks(); msg('✅ Contadores de Tera e Z-Move no alvo (essas gimmicks ainda não são jogáveis).'); }
+  else if (qual === 'ivs') msg(`✅ Badge “Potencial máximo” conquistada (${liberarIvsPerfeitos().toLocaleString('pt-BR')} de dano). Toda jornada NOVA nasce com os 6 IVs em 31 — a atual continua como está, e “jogar sem vantagens” desliga.`);
   else if (qual === 'limpar') { const n = limparTeste(); msg(`🧹 Progresso de teste removido (${n} espécie(s)). O que veio de jogo continua.`); }
   telaAjustes();
 }

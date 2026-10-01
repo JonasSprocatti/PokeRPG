@@ -435,7 +435,7 @@ Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémo
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.
 
 ### 3. ✅ FEITO — Badges com vantagem permanente
-Implementado em `js/badges.js` (55 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 01/10/2026: Tipos 18, Eventos 16, Caçada 4, Coleção/Laços/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2) e ligado na criação
+Implementado em `js/badges.js` (56 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 01/10/2026: Tipos 18, Eventos 16, Caçada 4, Coleção/Laços/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2, Maestria 1) e ligado na criação
 (`criacao.renderVantagens`, `vantagensDe`) e na tela 🏅 Conquistas. Cada badge é medida do **progresso
 permanente** (nunca do histórico, que o jogador pode apagar — `contextoBadges` monta o `ctx` a partir de
 `progresso-conta.js`) e paga uma vantagem na PRÓXIMA jornada: itens (empilham) e/ou dinheiro inicial (soma),
@@ -445,6 +445,36 @@ no SQL — mudou aqui, muda em `supabase/migrations/`). **Rayquaza são DUAS bad
 explicitamente pra não bugar: `rayquaza-shiny` (recrutar um shiny) e `rayquaza-mega` (1.000 golpes finais sendo
 ele) contam sozinhas, em qualquer ordem; uma terceira (`rayquaza-lenda`) só fecha quando as duas estão prontas
 e é a única que dá o prêmio grande (loja de graça pra sempre, `S.lojaGratis` em `regras.precoItem`).
+
+**🧬 Potencial máximo (01/10/2026) — IVs perfeitos, e o botão do admin.** Pedido do usuário: um botão pra a conta
+admin sempre nascer com IVs 31, e **a mesma coisa liberável por qualquer jogador** através de uma conquista "bem
+complexa". Virou **uma badge** (`ivs-perfeitos`, grupo Maestria) em vez de uma conquista de `conquistas.js` ou de um
+interruptor de admin, por três razões: badge já é o canal de "vantagem na PRÓXIMA jornada", já é medida do progresso
+permanente, e já é desligada pelo `G.semVantagens` — e esse último ponto é o que importa de verdade, porque IVs
+perfeitos **somados** ao bônus de +10% de "jogar sem vantagens" seria o melhor dos dois mundos no ranking. É a
+segunda badge na história do arquivo a pagar uma REGRA em vez de item/dinheiro (a primeira foi a loja grátis do
+Rayquaza), e o comentário no topo de `badges.js` sobre "vantagens de regra ficam pra depois" vale menos do que o
+pedido explícito.
+
+A medida é **1.000.000 de dano causado pelos SEUS golpes** somando a carreira inteira (`ALVOS.dano`). O contador
+(`conquistas.registrarDano`) mora **dentro de `S.registro.abates`**, como um número solto ao lado de `total`, e isso
+é de propósito: `estatisticasDaJornada` copia `abates` inteiro pra carreira, então o campo sobrevive ao fim da
+jornada **sem precisar entrar em lista branca nova** — foi exatamente o que derrubou `abates` e `shiniesAmigos`
+quando nasceram. As duas listas brancas que ele PRECISOU atravessar são as de `progresso-conta.js` (`bancar` e
+`totaisDe`), que enumeram campo por campo.
+
+Onde conta: `batalha.turn`, no único ponto que já tinha o HP do inimigo antes e depois de um golpe seu
+(`hpAntes - E.hp`, a mesma linha que decide `B.abate`). Então **dano do aliado não entra** (mesma regra do golpe
+final), nem veneno, armadilha ou recuo, nem o modo Fácil (`MODO_NAO_CONTA`), e inimigo curado no meio do turno não
+vira dano negativo (`!(d > 0)`). Aplicado em `criacao.iniciarJornada` via `makeMon(..., { ivs: IVS_MAX })`
+(`pokemon.IVS_MAX`, congelado e compartilhado — nada no jogo escreve em `mon.ivs` depois de criado).
+
+**O botão do admin não é um atalho paralelo**: `dev.liberarIvsPerfeitos` só põe o contador de dano no alvo dentro da
+entrada `__teste__` do livro-caixa, igual ao que `liberarMegas` faz com a Pedra Mega. Assim o botão testa o caminho
+de verdade e 🧹 Limpar devolve a conta ao estado real. **Ficou de fora**: aliados recrutados continuam com IVs
+sorteados (a badge é sobre o Pokémon que VOCÊ é), e as outras 6 construções de "IV 31" espalhadas por
+`batalha.js`/`arena.js`/`multiplayer.js` não foram trocadas por `IVS_MAX` — é código que funciona, e a dedução
+valeria um diff maior do que o ganho.
 
 **Pratos do Arceus (28/09/2026) — revisão do item por tipo.** As 18 badges "Especialista em X" (`ALVO_TIPO` =
 1.000 abates daquele tipo, mesmo número do Mega/Vínculo) davam originalmente uma pedra de evolução (quando o

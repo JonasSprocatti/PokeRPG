@@ -4,7 +4,7 @@
 import { G, save, nm, registrar } from './estado.js';
 import { $, limparTopo, semAnimacao, log } from './ui.js';
 import { badge, buildGame } from './render.js';
-import { makeMon } from './pokemon.js';
+import { makeMon, IVS_MAX } from './pokemon.js';
 import { IMPL } from './habilidades.js';
 import { SPR, espelhar, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS } from './dados.js';
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
@@ -305,15 +305,16 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   let evo;
   if (sp.evoUrl) { try { evo = await loadEvo(sp.evoUrl); } catch (e) { console.warn('evolução vem depois:', e.message); } }
   else evo = null;
-  const mon = await makeMon(data, level, { nature, ability, nick, shiny });
+  /* Vantagens das badges (badges.js): itens, dinheiro e — com a badge "Potencial máximo" — os 6 IVs em 31.
+     G.semVantagens desliga tudo: quem joga sem elas ganha bônus de pontuação no ranking (regras.pontuacao), e IVs
+     perfeitos de graça junto com esse bônus seria o melhor dos dois mundos. */
+  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false } : vantagensDaConta();
+  const mon = await makeMon(data, level, { nature, ability, nick, shiny, ivs: v.ivsPerfeitos ? IVS_MAX : undefined });
   mon.exp = growth[mon.level];
   // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
   const rotas = rotasDaGen(gen), startZone = [...rotas].reverse().find(z => !z.final && zonaLiberada(z, mon.level) && z.min <= mon.level) || rotas[0];
   // começar outra com uma jornada aberta (veio pelo 🏠 Início): a de antes vai pras guardadas, não some (saves.js)
   const anterior = G.S?.player ? (save(), guardar(G.S) ? G.S : null) : null;
-  /* Vantagens das badges (badges.js): itens e dinheiro a mais no começo. G.semVantagens desliga tudo — quem
-     joga sem elas ganha bônus de pontuação no ranking (regras.pontuacao). */
-  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false } : vantagensDaConta();
   const bag = { potion: 3, 'full-heal': 1 };
   for (const [k, n] of Object.entries(v.itens)) bag[k] = (bag[k] || 0) + n;
   G.S = { player: mon, bag, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
@@ -331,6 +332,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   if (G.S.cacaShiny) log('🎯 Modo Caça Shiny ligado: revele todas as espécies de uma rota pra escolher qual vai aparecer nela.', 'muted');
   if (G.S.climaRotas) log('🌦 Clima e terreno das rotas ligados: várias rotas começam a luta com o tempo da paisagem.', 'muted');
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
+  if (v.ivsPerfeitos) log('🧬 Potencial máximo: seus 6 IVs nasceram em 31, o teto. É a badge do milhão de dano fazendo efeito.', 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');
   log('Explore para encontrar Pokémon selvagens, itens e dinheiro. Cuidado com treinadores: eles querem te capturar. O jogo salva sozinho neste navegador.', 'muted');

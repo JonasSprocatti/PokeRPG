@@ -111,6 +111,7 @@ async function aoClicar(e) {
     case 'dev-megas': return acaoDev('megas');
     case 'dev-especies': return acaoDev('especies');
     case 'dev-gimmicks': return acaoDev('gimmicks');
+    case 'dev-ivs': return acaoDev('ivs');
     case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
       const ok = await ask('Apagar tudo o que está guardado da PokéAPI neste aparelho e baixar este mapa <b>do zero</b>?<br><br>Serve pra quando algo ficou pela metade e baixar por cima não resolve. <b>Seus saves, a carreira e as conquistas não são tocados.</b>',

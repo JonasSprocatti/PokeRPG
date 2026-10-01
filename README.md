@@ -157,6 +157,9 @@ Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada j
 ### 🤝 Badges de parceiros
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 
+### 🧬 Potencial máximo
+Badge de conta que **muda uma regra**: cause **1.000.000 de dano** com os seus golpes, somando a carreira inteira, e todo Pokémon que você começar a jogar daí em diante nasce com os **6 IVs em 31**. Só conta o dano que você bate — golpe de aliado, veneno, armadilha e recuo não entram, e o modo Fácil não acumula (como em todo progresso de conta). O interruptor "jogar sem as vantagens da conta" na criação desliga ela junto com as outras.
+
 ### 🏅 Insígnia Alpha
 Quem criou a conta durante o Alpha ganha, para sempre, uma **Poké Ball dourada com o α** na tela 👤 Conta (e ao lado do nome no topo). A regra é a data de criação da conta, que vem do servidor (`ALPHA_ATE` em `js/alpha.js`); quem entra depois não consegue.
 

@@ -102,6 +102,14 @@ export const BADGES = [
     mede: c => feito(c.rayquazaShiny, 1), recompensa: { itens: { 'sitrus-berry': 2 } } },
   { id: 'rayquaza-mega', grupo: 'Rayquaza', icone: '🐉', nome: 'Ascensão do dragão', desc: `Conquiste a Mega do Rayquaza (${ALVOS.mega.toLocaleString('pt-BR')} golpes finais sendo ele).`,
     mede: c => feito(c.rayquazaAbates, ALVOS.mega), recompensa: { dinheiro: 5000 } },
+  /* ---- maestria: a única badge que muda uma REGRA do jogo pra você (o resto são itens, dinheiro e a loja grátis
+     do Rayquaza). 1 milhão de dano somando a carreira é de propósito a mais longa de todas: dá pra chegar lá, mas
+     só depois de muitas jornadas. Dano do aliado não conta, veneno e armadilha não contam — é o que VOCÊ bate
+     (conquistas.registrarDano). Entra pelo caminho normal das vantagens, então `jogar sem vantagens` desliga ela
+     também: senão o bônus de pontuação do ranking sairia de graça com IVs perfeitos. ---- */
+  { id: 'ivs-perfeitos', grupo: 'Maestria', icone: '🧬', nome: 'Potencial máximo',
+    desc: `Cause ${ALVOS.dano.toLocaleString('pt-BR')} de dano com os seus golpes, somando a carreira inteira. Depois disso, todo Pokémon que você começar a jogar nasce com os 6 IVs em 31.`,
+    mede: c => feito(c.danoCausado, ALVOS.dano), recompensa: { ivsPerfeitos: true, titulo: 'Potencial máximo' } },
   { id: 'rayquaza-lenda', grupo: 'Rayquaza', icone: '🏆', nome: 'Senhor dos céus',
     desc: 'Tenha as duas conquistas do Rayquaza: o shiny e a Mega.',
     mede: c => feito((c.rayquazaShiny >= 1 ? 1 : 0) + (c.rayquazaAbates >= ALVOS.mega ? 1 : 0), 2),
@@ -138,7 +146,9 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
     terasLiberadas: (conquistas?.tera || []).filter(x => x.liberado).length,
     megasLiberadas: (conquistas?.mega || []).filter(x => x.liberado).length,
     rayquazaShiny: dex?.rayquazaShiny || 0,
-    rayquazaAbates: abates?.especie?.[RAYQUAZA] || 0
+    rayquazaAbates: abates?.especie?.[RAYQUAZA] || 0,
+    danoCausado: abates?.dano || 0   // badge 'ivs-perfeitos'
+
   };
 }
 
@@ -150,13 +160,14 @@ export function badgesDaConta(ctx) {
 /* O que as badges conquistadas dão na PRÓXIMA jornada. Soma itens (empilham), dinheiro (soma) e marca `lojaGratis`.
    `iniciarJornada` usa isto quando as vantagens estão ligadas. */
 export function vantagensDe(lista) {
-  const out = { itens: {}, dinheiro: 0, lojaGratis: false, titulos: [] };
+  const out = { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [] };
   for (const b of lista) {
     if (!b.completo) continue;
     const r = b.recompensa || {};
     for (const [k, n] of Object.entries(r.itens || {})) out.itens[k] = (out.itens[k] || 0) + n;
     out.dinheiro += r.dinheiro || 0;
     if (r.lojaGratis) out.lojaGratis = true;
+    if (r.ivsPerfeitos) out.ivsPerfeitos = true;
     if (r.titulo) out.titulos.push(r.titulo);
   }
   return out;

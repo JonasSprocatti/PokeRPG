@@ -62,6 +62,16 @@ export function liberarEspecies(quando = new Date().toISOString()) {
   return n;
 }
 
+/* IVs perfeitos: põe o contador de dano no alvo da badge "Potencial máximo" (badges.js), que é o que a criação
+   lê (`vantagensDaConta().ivsPerfeitos`). Não existe um atalho de "admin tem IV 31" em paralelo de propósito —
+   assim o botão testa o caminho de verdade, e 🧹 Limpar devolve a conta ao estado real como em tudo aqui. */
+export function liberarIvsPerfeitos() {
+  const p = carregarProgresso();
+  entradaTeste(p).abates.dano = ALVOS.dano;
+  salvarProgresso(p);
+  return ALVOS.dano;
+}
+
 // enche os contadores das outras gimmicks, pra dar pra ver as listas cheias enquanto elas não são jogáveis
 export function liberarOutrasGimmicks() {
   const p = carregarProgresso();

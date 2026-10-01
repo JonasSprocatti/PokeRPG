@@ -23,7 +23,7 @@ import {
   prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
-import { registrarAbate } from './conquistas.js';
+import { registrarAbate, registrarDano } from './conquistas.js';
 import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, inimigoMegaLiberada, inimigoTeraGmaxLiberado, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
 import { terasDisponiveis, teracristalizar, desfazerTera } from './tera.js';
 import { zDisponiveis, inimigoTemZ, inimigoUsaZAgora } from './zmove.js';
@@ -526,6 +526,9 @@ export async function turn(action) {
         // quem deu o golpe final (e com qual golpe): é o que as conquistas de conta contam — e elas só contam o
         // que VOCÊ fez, não o que o aliado fez (conquistas.js / registrarAbate)
         if (hpAntes > 0 && E.hp <= 0) B.abate = { porMim: a.quem === P, golpe: a.golpe };
+        // dano acumulado da conta (badge "Potencial máximo"): aqui é o ÚNICO ponto que já tem o HP antes e depois
+        // de um golpe SEU. Veneno, armadilha e recuo não entram — a badge é sobre o que você bate.
+        if (a.quem === P) registrarDano(S, hpAntes - E.hp, dificuldadeDe(S));
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
       // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra

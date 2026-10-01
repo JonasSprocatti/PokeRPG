@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.41', data: '2026-10-01', titulo: '🧬 Potencial máximo: um milhão de dano, IVs perfeitos pra sempre', piada: 'Fizemos a conta de quanto dano o jogo já levou desde que abriu. O número era tão alto que o contador pediu férias. Agora ele trabalha pra você.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Nova insígnia: 🧬 Potencial máximo.</b> Cause <b>1.000.000 de dano</b> com os seus golpes, somando a carreira inteira — e, a partir daí, <b>todo Pokémon que você começar a jogar nasce com os 6 IVs em 31</b>, o teto. Não é por jornada: é pra sempre, em qualquer modo, como as outras insígnias.',
+        'Só conta o dano que <b>você</b> bate: golpe de aliado, veneno, armadilha e recuo ficam de fora. O modo Fácil também não conta (como em todo progresso de conta). A barra de progresso está na tela 🏅 Conquistas, no grupo <b>Maestria</b>.',
+        'Ela é a <b>segunda insígnia da história do jogo a mudar uma regra</b> em vez de dar item ou dinheiro — a outra é a loja de graça do Senhor dos céus. Como todas, ela é desligada pelo interruptor <b>“jogar sem as vantagens da conta”</b> na criação: o bônus de pontuação continua sendo pra quem começa do zero de verdade.'
+      ] }
+    ] },
   { versao: '2.40', data: '2026-10-01', titulo: '🏛 Arceus e 🗿 Regigigas entram na roda dos chefes', piada: 'O Regigigas chegou atrasado, bocejando, e levou cinco turnos pra entender que a luta já tinha começado. Depois disso, pediu desculpas batendo no chão.',
     secoes: [
       { nome: 'Novidades', itens: [

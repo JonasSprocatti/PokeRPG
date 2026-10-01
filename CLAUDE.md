@@ -65,7 +65,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/carreira.js` | Carreira = jornadas terminadas. Também monta as gimmicks da loja e o Hall da conta. |
 | `js/progresso-conta.js` | Progresso permanente (puro). Regra única: **nunca encolhe**; `bancar()` idempotente por id de jornada. |
 | `js/conquistas.js` · `js/tela-conquistas.js` | Conquistas da conta. As gimmicks somam a CARREIRA, não a run. |
-| `js/badges.js` | 55 badges numa tabela única (puro) → vantagem na PRÓXIMA jornada. Medidas do progresso permanente, nunca do histórico. |
+| `js/badges.js` | 56 badges numa tabela única (puro) → vantagem na PRÓXIMA jornada. Medidas do progresso permanente, nunca do histórico. "Potencial máximo" (1 milhão de dano seu) é a única que muda uma REGRA: IVs 31 na criação. |
 | `js/mega.js` · `tera.js` · `zmove.js` · `dynamax.js` | As 4 gimmicks. **`endBattle` desfaz todas** — senão o estado vai junto no save. |
 | `js/mapas.js` · `js/dados-mapas.js` | Mapas por Gen · **GERADO** por `ferramentas/gerar-mapas.ps1`, não editar à mão. |
 | `js/roguelike.js` | Desbloqueios entre runs (puro). Só conta jornada `roguelike`. |

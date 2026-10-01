@@ -86,7 +86,8 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
       semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null,
       casaCheia: !!j.casaCheia, aliadosPerdidos: j.aliadosPerdidos || 0,   // badges de parceiros (badges.js)
       maxDinheiro: j.maxDinheiro || 0,   // loja de preparo da Arena (arena.js): alimenta o saldo de conta
-      abates: { total: a?.total || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a?.[l] || {}) }])) }
+      // `total` e `dano` são números soltos; o resto são mapas (LISTAS_ABATE). Campo solto novo aqui = também em `totaisDe`.
+      abates: { total: a?.total || 0, dano: a?.dano || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a?.[l] || {}) }])) }
     };
   }
   for (const d of desbloqueadasAgora) {
@@ -98,10 +99,11 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
 
 // soma os abates guardados (todas as jornadas já bancadas). `extra` = a run em andamento, que ainda não é jornada.
 export function totaisDe(progresso, extra = null) {
-  const out = { total: 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, {}])) };
+  const out = { total: 0, dano: 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, {}])) };
   const somar = a => {
     if (!a) return;
     out.total += a.total || 0;
+    out.dano += a.dano || 0;
     for (const l of LISTAS_ABATE) for (const [k, n] of Object.entries(a[l] || {})) out[l][k] = (out[l][k] || 0) + n;
   };
   // `j.abates` é o formato de hoje; `j` cru é o de quem já tinha progresso gravado antes de os abates virarem campo próprio

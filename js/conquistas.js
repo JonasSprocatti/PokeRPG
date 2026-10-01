@@ -13,7 +13,10 @@
 import { temMega } from './dados-megas.js';
 
 // quanto falta pra cada desbloqueio
-export const ALVOS = { tera: 200, mega: 1000, zGolpe: 250, zElemento: 500, gmaxRuns: 25, gmaxNivel: 50, vinculo: 1000 };
+export const ALVOS = { tera: 200, mega: 1000, zGolpe: 250, zElemento: 500, gmaxRuns: 25, gmaxNivel: 50, vinculo: 1000, dano: 1000000 };
+/* `dano` = dano causado PELOS SEUS GOLPES somando a carreira inteira, e quem usa é a badge "Potencial máximo"
+   (badges.js): 1 milhão de dano libera IVs 31 em todas as jornadas seguintes. Fica aqui, junto dos outros alvos,
+   porque o contador mora no mesmo lugar que os abates (`S.registro.abates.dano`). */
 /* Vínculo de Batalha (Ash-Greninja): igual à Mega em espírito — 1.000 golpes finais sendo a espécie — mas não é
    Mega (Greninja não tem uma neste jogo), então é uma conquista PRÓPRIA, com seu item (Vínculo de Batalha,
    dados.js) em vez de Pedra Mega. Hoje só o Greninja; a lista existe pra caber outra espécie um dia. */
@@ -47,12 +50,24 @@ export function registrarAbate(S, { porMim = false, tiposDoAlvo = [], minhaEspec
   return a;
 }
 
+/* Dano que VOCÊ causou (não o aliado — mesma regra do golpe final). Mora dentro de `abates` de propósito: é o
+   objeto que `estatisticasDaJornada` já copia inteiro pra carreira, então o contador sobrevive ao fim da jornada
+   sem lista branca nova (foi exatamente o que derrubou `abates` e `shiniesAmigos` quando nasceram).
+   `d` vem de `hpAntes - hpDepois` no turno (batalha.js), então cura do inimigo no meio não vira dano negativo. */
+export function registrarDano(S, d, modo) {
+  if (!S || modo === MODO_NAO_CONTA || !(d > 0)) return null;
+  const a = (S.registro ||= {}).abates ||= { tipoAlvo: {}, especie: {}, golpe: {}, elemento: {}, total: 0 };
+  a.dano = (a.dano || 0) + Math.floor(d);
+  return a.dano;
+}
+
 // soma os abates de várias jornadas (a carreira inteira + a atual)
 export function somarAbates(registros) {
-  const out = { tipoAlvo: {}, especie: {}, golpe: {}, elemento: {}, total: 0 };
+  const out = { tipoAlvo: {}, especie: {}, golpe: {}, elemento: {}, total: 0, dano: 0 };
   for (const r of registros) {
     const a = r?.abates; if (!a) continue;
     out.total += a.total || 0;
+    out.dano += a.dano || 0;
     for (const lista of ['tipoAlvo', 'especie', 'golpe', 'elemento']) for (const [k, n] of Object.entries(a[lista] || {})) out[lista][k] = (out[lista][k] || 0) + n;
   }
   return out;

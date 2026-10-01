@@ -7,6 +7,11 @@ import { loadMove } from './api.js';
 import { precarregarCry } from './som.js';
 import { rand, pick } from './util.js';
 
+/* Os 6 IVs em 31. Quem passa isto em `opt.ivs` é a criação, quando a badge "Potencial máximo" está conquistada
+   (badges.js). Alfas, lendários e chefes montam o próprio mapa em batalha.js — não foram trocados por este pra não
+   mexer em código que funciona. Congelado e compartilhado: nada no jogo escreve em `mon.ivs` depois de criado. */
+export const IVS_MAX = Object.freeze(Object.fromEntries(STATS.map(s => [s, 31])));
+
 export async function makeMon(data, level, opt = {}) {
   const ivs = opt.ivs || Object.fromEntries(STATS.map(s => [s, rand(0, 31)]));
   const evs = opt.evs || Object.fromEntries(STATS.map(s => [s, 0]));

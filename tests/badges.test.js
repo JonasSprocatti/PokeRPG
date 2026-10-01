@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BADGES, badgesDaConta, contextoBadges, vantagensDe, ALVO_TIPO, ALVO_AMIGOS } from '../js/badges.js';
-import { ALVOS, MARCOS_ABATES } from '../js/conquistas.js';
+import { ALVOS, MARCOS_ABATES, MODO_NAO_CONTA, registrarDano, somarAbates } from '../js/conquistas.js';
 import { ITEMS, TYPE_PT } from '../js/dados.js';
 
 const ctxVazio = () => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {}, golpe: {}, elemento: {} }, progresso: null, dex: null, conquistas: null });
@@ -14,7 +14,8 @@ test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () =
   for (const b of BADGES) {
     assert.ok(b.nome?.length > 3 && b.desc?.length > 10 && b.grupo && b.icone, `${b.id}: faltando texto`);
     const r = b.recompensa || {};
-    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis, `${b.id}: não dá nada`);
+    // vantagem de verdade = item, dinheiro, loja grátis ou IVs perfeitos (título sozinho não conta: é só texto)
+    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis || r.ivsPerfeitos, `${b.id}: não dá nada`);
     for (const k of Object.keys(r.itens || {})) assert.ok(ITEMS[k], `${b.id}: item "${k}" não existe`);
   }
 });
@@ -22,7 +23,31 @@ test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () =
 test('nada está conquistado numa conta zerada', () => {
   const lista = badgesDaConta(ctxVazio());
   assert.equal(lista.some(b => b.completo), false);
-  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, titulos: [] });
+  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [] });
+});
+
+/* "Potencial máximo": a única badge que paga uma REGRA (IVs 31 na criação). O teste é o que garante que o dano
+   chega até `vantagensDe` — é esse valor que criacao.js lê, e um elo solto no meio não dá erro em lugar nenhum,
+   só deixa de dar o prêmio em silêncio. */
+test('1 milhão de dano libera IVs perfeitos na próxima jornada', () => {
+  const ctxCom = d => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {}, dano: d }, progresso: null, dex: null, conquistas: null });
+  assert.equal(acha(badgesDaConta(ctxCom(ALVOS.dano - 1)), 'ivs-perfeitos').completo, false);
+  assert.equal(vantagensDe(badgesDaConta(ctxCom(ALVOS.dano - 1))).ivsPerfeitos, false);
+  const lista = badgesDaConta(ctxCom(ALVOS.dano));
+  assert.equal(acha(lista, 'ivs-perfeitos').completo, true);
+  assert.equal(vantagensDe(lista).ivsPerfeitos, true);
+});
+
+// o contador só soma o dano SEU, ignora o modo Fácil e nunca aceita número negativo (inimigo curado no meio do turno)
+test('registrarDano só conta o que vale', () => {
+  const S = {};
+  registrarDano(S, 120, 'roguelike');
+  registrarDano(S, 80, 'roguelike');
+  registrarDano(S, 500, MODO_NAO_CONTA);
+  registrarDano(S, -30, 'roguelike');
+  assert.equal(S.registro.abates.dano, 200);
+  // e a soma entre jornadas chega inteira na conta
+  assert.equal(somarAbates([S.registro, { abates: { dano: 50 } }]).dano, 250);
 });
 
 test('marcos de caçada acendem na ordem', () => {
