@@ -7,8 +7,9 @@
 // Pokédex da rota: quem você nunca enfrentou é "?"; depois de enfrentar vira silhueta; com REVELA_DERROTADOS
 // derrotados (somando todas as jornadas) aparece colorido, com a taxa de aparição na rota.
 // Puro (sem DOM): testado em tests/mapas.test.js.
-import { GENS } from './dados-mapas.js';
-import { REGIOES_INICIAIS } from './dados.js';
+// `GENS` sai de dados.js, não de dados-mapas.js: é lá que o Alfa trocado no editor de rotas (dados-rotas.js) é
+// aplicado. Ler o mapa cru aqui faria a troca valer numa tela e não na outra.
+import { GENS, REGIOES_INICIAIS } from './dados.js';
 import { MEGAS } from './dados-megas.js';
 import { clamp, fmt } from './util.js';
 

@@ -505,6 +505,26 @@ test('missões: progresso de cada tipo de condição, nunca passa do alvo', () =
   assert.equal(progressoCondicao({}, { player: { level: 1 } }).ok, false); // condição desconhecida nunca conclui
 });
 
+/* `alvos` = a missão de espécie do editor de rotas, que pode pedir mais de uma espécie ("8 Plusle e 8 Minun").
+   O ponto delicado é o TETO POR ESPÉCIE: sem ele, matar 20 Plusle fecharia a missão sozinho e a segunda espécie
+   seria decoração. */
+test('missões com várias espécies: cada uma tem o próprio teto, e `qualquer` revela a missão', () => {
+  const S = n => ({ player: { level: 5 }, registro: { derrotados: n } });
+  const obj = { alvos: [['plusle', 8], ['minun', 8]] };
+  assert.deepEqual(progressoCondicao(obj, S({})), { atual: 0, alvo: 16, ok: false });
+  assert.deepEqual(progressoCondicao(obj, S({ plusle: 8 })), { atual: 8, alvo: 16, ok: false });
+  // 20 Plusle e nenhum Minun continua 8/16: o excedente de uma espécie não paga a outra
+  assert.deepEqual(progressoCondicao(obj, S({ plusle: 20 })), { atual: 8, alvo: 16, ok: false });
+  assert.deepEqual(progressoCondicao(obj, S({ plusle: 8, minun: 8 })), { atual: 16, alvo: 16, ok: true });
+  assert.deepEqual(progressoCondicao(obj, S({ plusle: 99, minun: 99 })), { atual: 16, alvo: 16, ok: true });
+  // o `libera` da missão: ver UM dos dois já basta (exigir os dois esconderia a missão por azar no sorteio)
+  const lib = { alvos: [['plusle', 1], ['minun', 1]], qualquer: 1 };
+  assert.equal(progressoCondicao(lib, S({})).ok, false);
+  assert.equal(progressoCondicao(lib, S({ minun: 1 })).ok, true);
+  // uma espécie só também passa por aqui (o editor sempre gera `alvos`, nunca `derrotar`)
+  assert.deepEqual(progressoCondicao({ alvos: [['rattata', 24]] }, S({ rattata: 24 })), { atual: 24, alvo: 24, ok: true });
+});
+
 test('missões de dinheiro, gasto e evolução', () => {
   const S = { money: 2500, gasto: 900, player: { level: 5 }, registro: { evolucoes: { ivysaur: 1 } } };
   assert.equal(progressoCondicao({ dinheiro: 2000 }, S).ok, true);

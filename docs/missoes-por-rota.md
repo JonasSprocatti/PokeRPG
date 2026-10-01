@@ -260,3 +260,26 @@ espécie que hoje empilham 6 na Rota 1 e nenhuma nas 3 últimas rotas). *Entram*
    todo `premio.itens` existe em `ITEMS`. É o teste que faltava — A1 e A2 passariam batido hoje.
 4. `README.md` + versão nova em `js/dados-patchnotes.js`.
 5. Sair do `docs/backlog.md` e virar registro em `docs/features.md`.
+
+---
+
+## D. O que foi construído de verdade (01/10/2026)
+
+Este documento é o levantamento. **A implementação mudou de forma depois dele**, por pedido na mesma conversa:
+em vez de a tabela ser escrita à mão por mim, foi construído o **🗺 Editor de rotas** (tela de admin) pra o usuário
+escolher as espécies, montar a missão, o prêmio e o nome, trocar o Alfa e ver a **curva de stats** de cada rota.
+O registro de como ficou está em `docs/features.md` → "Missões por rota e o editor de rotas".
+
+Diferenças entre a proposta acima e o que foi ao ar:
+
+| Na proposta | No jogo |
+|---|---|
+| Quantidades 2–12 | **O dobro** (24 / 16 / 12 / 8 / 4 pela raridade) — pedido do usuário |
+| Uma espécie por missão | **Várias**, somando: "Mais ou Menos" = 8 Plusle + 8 Minun, com teto por espécie |
+| Tabela escrita à mão em `dados.js` | **`dados-rotas.js` gerado pelo editor**; `dados.js` só junta |
+| "Zero condição nova no motor" (A7) | Uma: `alvos: [[especie, qtd]…]`, que é o que permite a missão de duas espécies |
+| "`PESOS_PONTOS` fica como está, o SQL não precisa de arquivo novo" (A5) | O peso ficou em 120, mas o **teto** do `validar_jornada` foi de 36 pra 197 (migration `20261001120000`) — a conta de A5 esqueceu que `missoesFeitas` acumula quando a jornada segue pro mapa seguinte |
+| Nomes fixos neste documento | Ponto de partida; o editor existe pra trocar o que não ficou bom |
+
+Os cinco achados da revisão (seção A) foram todos endereçados, e os dois defeitos de verdade (A1 `scyther` nascia
+pronta, A2 missões escondidas pra sempre fora de Kanto) ganharam teste pra não voltarem.

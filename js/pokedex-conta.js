@@ -3,7 +3,7 @@
    O jogo já registrava isso por jornada (estado.registrar → S.registro): `vistos` (apareceu na sua frente),
    `derrotados`, `amigos` (recrutou) e `ids` (id da espécie, pro sprite). Aqui só se junta tudo por espécie.
    Puro: sem DOM e sem rede — testado em tests/pokedex-conta.test.js. Quem desenha é tela-pokedex.js. */
-import { GENS } from './dados-mapas.js';
+import { GENS } from './dados.js';   // já com os ajustes do editor de rotas (ver dados.js)
 import { idDaEspecieNoRegistro } from './mapas.js';
 
 // lendários de todos os mapas, pelo nome: é o que a badge `Amizade impossível` mede (recrutar um lendário)

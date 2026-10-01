@@ -10,6 +10,19 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.42', data: '2026-10-01', titulo: '🗺 180 missões novas: cada rota das 9 Gens tem as suas', piada: 'O Rattata da Rota 1 pediu reforço sindical quando soube que a meta subiu de 10 pra 24. Negamos. Ele mordeu o escrivão.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Cada rota do jogo agora tem duas missões próprias:</b> uma de <b>espécie</b> (derrote tantos daquele bicho que vive ali) e uma de <b>Alfa</b> (derrote o Alfa da rota). São <b>10 rotas x 9 Gens</b> — e a corrente vai da primeira rota até os lendários, com a última valendo "Campeão da região".',
+        '<b>Missão pode pedir mais de uma espécie.</b> No Monte Pira, "Mais ou Menos" quer 8 Plusle <i>e</i> 8 Minun; cada contagem fecha sozinha, e exagerar numa não paga a outra.',
+        '<b>As quantidades subiram.</b> O que antes era "derrote 10 Pidgey" virou "derrote 24 Rattata" na rota onde ele realmente mora — e os prêmios acompanham, subindo de 4 Poções na primeira rota a Max Revive e ₽12.000 nas últimas.',
+        'Fora de Kanto, antes, <b>15 missões ficavam escondidas pra sempre</b>: eram todas de espécie de Kanto e nunca apareciam em Johto, Hoenn ou qualquer outro mapa. O contador dizia "21 escondidas" e não havia como revelar a maioria. Agora cada mapa mostra as suas 20, e só elas.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Uma missão nascia pronta.</b> "Lâminas no capim" aparecia e concluía no mesmo instante, pagando ₽3.000 por nada — e estava rotulada como missão do Safari, onde não existe nenhum Scyther. Agora ela mora na Caverna Cerúlea, onde ele vive, e pede 8.',
+        '<b>A trilha dos Alfas pulava três rotas.</b> Usina Elétrica, Ilhas Espuma e Estrada Vitória não tinham missão nenhuma — justamente o trecho mais longo da jornada. E a 5ª da fila aparecia por nível, não pela rota anterior, entao o jogo te oferecia a Torre Pokémon enquanto você ainda estava na Rota 24.'
+      ] }
+    ] },
   { versao: '2.41', data: '2026-10-01', titulo: '🧬 Potencial máximo: um milhão de dano, IVs perfeitos pra sempre', piada: 'Fizemos a conta de quanto dano o jogo já levou desde que abriu. O número era tão alto que o contador pediu férias. Agora ele trabalha pra você.',
     secoes: [
       { nome: 'Novidades', itens: [

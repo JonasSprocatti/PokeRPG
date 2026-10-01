@@ -1,7 +1,16 @@
 /* ============ dados fixos ============ */
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
-import { GENS } from './dados-mapas.js';
+import { GENS as GENS_DO_MAPA } from './dados-mapas.js';
+import { ALFAS, MISSOES_ROTA } from './dados-rotas.js';
 import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO } from './dados-item-sprites.js';
+/* Os mapas chegam em DUAS camadas: `dados-mapas.js` é gerado da PokéAPI (pools, níveis, Alfa sorteado) e
+   `dados-rotas.js` é gerado pelo editor de rotas do jogo, com as escolhas de DESENHO por cima — hoje só o Alfa
+   trocado. Elas se juntam aqui, no único arquivo que importa `dados-mapas.js`: `mapas.js` e `pokedex-conta.js`
+   leem o `GENS` já ajustado daqui, senão a troca de Alfa valeria na tela de explorar e não na batalha (ou pior,
+   o contrário). Rota fora de `ALFAS` segue com o Alfa do mapa, intocada — é o caso de todas, até alguém trocar. */
+export const GENS = Object.keys(ALFAS).length
+  ? GENS_DO_MAPA.map(g => ({ ...g, rotas: g.rotas.map(z => ALFAS[z.id] ? { ...z, chefe: { ...z.chefe, ...ALFAS[z.id] } } : z) }))
+  : GENS_DO_MAPA;
 export const API = 'https://pokeapi.co/api/v2';
 /* As imagens vêm do jsDelivr, que espelha o MESMO repositório de sprites da PokéAPI (mesmos arquivos, byte a
    byte — é o repositório do GitHub servido por uma CDN). O endereço original, `raw.githubusercontent.com`, é
@@ -414,33 +423,20 @@ export const FIND_ITEMS = ['oran-berry','potion', 'potion', 'potion', 'super-pot
 // pool = [{ id, n: speciesName, p: peso de aparição, m?: mítico }].
 export const ZONES = GENS.flatMap(g => g.rotas);
 
-// Missões (Etapa 2). `libera` = condição pra missão aparecer (sem ela: visível desde o início); `objetivo` = pra concluir.
-// Condição (uma chave só): { derrotar: especie, qtd } · { vitorias } · { amigos } · { nivel } · { chefe: zona } ·
-// { treinadores } · { missao: id } · { dinheiro } (ter de uma vez) · { gasto } (total gasto) · { evolucoes }.
-// Avaliada por progressoCondicao(cond, S) em regras.js — espécie = speciesName.
-// Quantidade de "derrotar" segue a facilidade de achar: comum da 1ª rota = 10, meio = 5–8, raro/forte = 1–3.
-// `premio`: { dinheiro?, itens?: { idItem: qtd } }. `gen` = só aparece jogando no mapa dessa Gen (as trilhas de Alfas de Kanto).
-export const MISSOES = [
+/* Missões. `libera` = condição pra missão aparecer (sem ela: visível desde o início); `objetivo` = pra concluir.
+   Condição (uma chave só): { derrotar: especie, qtd } · { alvos: [[especie, qtd]…], qualquer? } · { vitorias } ·
+   { amigos } · { nivel } · { chefe: zona } · { treinadores } · { missao: id } · { dinheiro } (ter de uma vez) ·
+   { gasto } (total gasto) · { evolucoes }. Avaliada por progressoCondicao(cond, S) em regras.js — espécie = speciesName.
+   `premio`: { dinheiro?, itens?: { idItem: qtd } }. `gen` = só aparece jogando no mapa dessa Gen.
+
+   Esta lista é a das missões GLOBAIS (vitórias, amizade, dinheiro, gasto, treinadores, nível): valem em qualquer
+   mapa e não têm `gen`. As missões POR ROTA (uma de espécie e uma de Alfa em cada rota das 9 Gens) vêm de
+   `dados-rotas.js`, gerado pelo editor de rotas, e são juntadas em `MISSOES` logo abaixo da tabela. */
+const MISSOES_GLOBAIS = [
   // começo
   { id: 'primeiros', nome: 'Primeiros passos', desc: 'Vença 3 batalhas.', objetivo: { vitorias: 3 }, premio: { dinheiro: 300 } },
   { id: 'vitorias25', nome: 'Pegando o jeito', desc: 'Vença 25 batalhas.', libera: { missao: 'primeiros' }, objetivo: { vitorias: 25 }, premio: { dinheiro: 1000 } },
   { id: 'vitorias100', nome: 'Terror da região', desc: 'Vença 100 batalhas.', libera: { missao: 'vitorias25' }, objetivo: { vitorias: 100 }, premio: { itens: { 'rare-candy': 3 } } },
-  // Rota 1 e Floresta (comuns: contagem alta)
-  { id: 'pidgey', nome: 'Dono do céu da Rota 1', desc: 'Derrote 10 Pidgey.', libera: { derrotar: 'pidgey', qtd: 1 }, objetivo: { derrotar: 'pidgey', qtd: 10 }, premio: { itens: { honey: 2 } } },
-  { id: 'rattata', nome: 'Praga de Rattata', desc: 'Derrote 10 Rattata.', libera: { derrotar: 'rattata', qtd: 1 }, objetivo: { derrotar: 'rattata', qtd: 10 }, premio: { itens: { potion: 4 } } },
-  { id: 'caterpie', nome: 'Folhas mastigadas', desc: 'Derrote 8 Caterpie.', libera: { derrotar: 'caterpie', qtd: 1 }, objetivo: { derrotar: 'caterpie', qtd: 8 }, premio: { itens: { honey: 2 } } },
-  { id: 'weedle', nome: 'Ferrão por ferrão', desc: 'Derrote 8 Weedle.', libera: { derrotar: 'weedle', qtd: 1 }, objetivo: { derrotar: 'weedle', qtd: 8 }, premio: { itens: { antidote: 3 } } },
-  { id: 'spearow', nome: 'Bico afiado', desc: 'Derrote 6 Spearow.', libera: { derrotar: 'spearow', qtd: 1 }, objetivo: { derrotar: 'spearow', qtd: 6 }, premio: { itens: { 'mystic-water': 2 } } },
-  { id: 'pikachu', nome: 'Faísca na floresta', desc: 'Derrote 3 Pikachu.', libera: { derrotar: 'pikachu', qtd: 1 }, objetivo: { derrotar: 'pikachu', qtd: 3 }, premio: { itens: { magnet: 2, 'paralyze-heal': 2 } } },
-  // Monte Lua e Rota 24
-  { id: 'zubat', nome: 'Asas na escuridão', desc: 'Derrote 10 Zubat.', libera: { derrotar: 'zubat', qtd: 1 }, objetivo: { derrotar: 'zubat', qtd: 10 }, premio: { itens: { 'tiny-mushroom': 2 } } },
-  { id: 'geodude', nome: 'Quebra-pedra', desc: 'Derrote 8 Geodude.', libera: { derrotar: 'geodude', qtd: 1 }, objetivo: { derrotar: 'geodude', qtd: 8 }, premio: { itens: { 'hard-stone': 2 } } },
-  { id: 'clefairy', nome: 'Dança da lua', desc: 'Derrote 3 Clefairy.', libera: { derrotar: 'clefairy', qtd: 1 }, objetivo: { derrotar: 'clefairy', qtd: 3 }, premio: { itens: { 'rare-candy': 1 } } },
-  { id: 'mankey', nome: 'Briga de rua', desc: 'Derrote 6 Mankey.', libera: { derrotar: 'mankey', qtd: 1 }, objetivo: { derrotar: 'mankey', qtd: 6 }, premio: { itens: { charcoal: 2 } } },
-  // Torre e Safari (mais raros: contagem baixa)
-  { id: 'gastly', nome: 'Caça-fantasmas', desc: 'Derrote 8 Gastly.', libera: { derrotar: 'gastly', qtd: 1 }, objetivo: { derrotar: 'gastly', qtd: 8 }, premio: { itens: { 'tiny-mushroom': 3 } } },
-  { id: 'cubone', nome: 'O capacete de osso', desc: 'Derrote 3 Cubone.', libera: { derrotar: 'cubone', qtd: 1 }, objetivo: { derrotar: 'cubone', qtd: 3 }, premio: { itens: { revive: 1 } } },
-  { id: 'scyther', nome: 'Lâminas no capim', desc: 'Derrote 1 Scyther.', libera: { derrotar: 'scyther', qtd: 1 }, objetivo: { derrotar: 'scyther', qtd: 1 }, premio: { dinheiro: 3000 } },
   // amizade
   { id: 'amigo1', nome: 'Um amigo no caminho', desc: 'Faça amizade com um Pokémon selvagem.', objetivo: { amigos: 1 }, premio: { itens: { 'super-potion': 2 } } },
   { id: 'bando', nome: 'Bando formado', desc: 'Faça amizade com 3 Pokémon ao todo.', libera: { amigos: 1 }, objetivo: { amigos: 3 }, premio: { dinheiro: 1000 } },
@@ -456,16 +452,13 @@ export const MISSOES = [
   // treinadores
   { id: 'cacadores', nome: 'Caça aos caçadores', desc: 'Derrote 3 treinadores.', libera: { treinadores: 1 }, objetivo: { treinadores: 3 }, premio: { dinheiro: 2000 } },
   { id: 'cacadores10', nome: 'Pesadelo dos caçadores', desc: 'Derrote 10 treinadores.', libera: { missao: 'cacadores' }, objetivo: { treinadores: 10 }, premio: { itens: { revive: 2 } } },
-  // trilha dos Alfas de Kanto (só no mapa da Gen 1)
-  { id: 'alfa1', gen: 1, nome: 'O Alfa da Rota 1', desc: 'Derrote o Alfa da Rota 1.', libera: { nivel: 6 }, objetivo: { chefe: 'rota1' }, premio: { itens: { 'rare-candy': 1 } } },
-  { id: 'alfa2', gen: 1, nome: 'Rainha da Floresta', desc: 'Derrote o Alfa da Floresta de Viridian.', libera: { chefe: 'rota1' }, objetivo: { chefe: 'floresta' }, premio: { dinheiro: 1500 } },
-  { id: 'alfa3', gen: 1, nome: 'A lua cheia', desc: 'Derrote o Alfa do Monte Lua.', libera: { chefe: 'floresta' }, objetivo: { chefe: 'montelua' }, premio: { dinheiro: 2500 } },
-  { id: 'alfa4', gen: 1, nome: 'Punho da Rota 24', desc: 'Derrote o Alfa da Rota 24.', libera: { chefe: 'montelua' }, objetivo: { chefe: 'rota24' }, premio: { itens: { 'rare-candy': 2 } } },
-  { id: 'alfa5', gen: 1, nome: 'A sombra da Torre', desc: 'Derrote o Alfa da Torre Pokémon.', libera: { nivel: 20 }, objetivo: { chefe: 'torre' }, premio: { dinheiro: 5000 } },
-  { id: 'alfa6', gen: 1, nome: 'Estouro no Safari', desc: 'Derrote o Alfa da Zona Safari.', libera: { chefe: 'torre' }, objetivo: { chefe: 'safari' }, premio: { itens: { 'rare-candy': 3 } } },
   { id: 'veterano', nome: 'Veterano', desc: 'Chegue ao nível 40.', libera: { nivel: 30 }, objetivo: { nivel: 40 }, premio: { dinheiro: 8000 } },
-  { id: 'lenda', gen: 1, nome: 'A lenda da caverna', desc: 'Derrote o Alfa da Caverna Cerúlea.', libera: { chefe: 'safari' }, objetivo: { chefe: 'caverna' }, premio: { dinheiro: 20000 } }
+  { id: 'nivel60', nome: 'Topo da cadeia', desc: 'Chegue ao nível 60.', libera: { missao: 'veterano' }, objetivo: { nivel: 60 }, premio: { itens: { 'max-revive': 1 } } }
 ];
+/* As globais primeiro, as de rota depois: é a ordem em que a tela de missões e o `verificarMissoes` percorrem, e
+   as de rota são as que mudam com o editor. `situacaoMissoes` filtra por `gen`, então numa jornada só aparecem as
+   21 globais + as 20 do mapa em que você está. */
+export const MISSOES = [...MISSOES_GLOBAIS, ...MISSOES_ROTA];
 export const FLAVOR = {
   default: ['O vento balança a grama. Nada por aqui.', 'Você ouve algo ao longe, mas não vê ninguém.', 'Um treinador passa correndo e nem nota você.'],
   montelua: ['Gotas pingam do teto da caverna.', 'Uma pedra brilha na escuridão e some.'],

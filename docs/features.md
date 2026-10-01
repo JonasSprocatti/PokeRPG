@@ -2153,3 +2153,91 @@ Três decisões de arquitetura que sustentam isso:
 `node --test` (653 casos, incluindo `tests/mp-regras.test.js` e `tests/imports.test.js`) e o smoke:
 `JSDOM=/caminho/node_modules/jsdom/lib/api.js node ferramentas/smoke-multiplayer.mjs`. O teste de verdade continua
 sendo duas abas com `python3 -m http.server 3000`.
+
+---
+
+## 🗺 Missões por rota e o editor de rotas (01/10/2026)
+
+Fechou o item **"Missões próprias de cada mapa"** do `docs/backlog.md`. Veio em duas conversas: primeiro um
+documento de proposta (`docs/missoes-por-rota.md`, que continua valendo como registro do levantamento e da
+revisão), depois o pedido que mudou o desenho — *"acho que o ideal é você criar um sistema onde eu possa escolher
+os pokemons da Gen que estão na rota, consiga criar a missão, a recompensa dela por itens e o nome da missão"*,
+com a mesma coisa pros Alfas e **uma análise de curva de stats** da rota.
+
+### O que havia antes, e os dois defeitos
+
+36 missões numa tabela à mão em `dados.js`. A revisão achou dois defeitos de verdade:
+
+1. **`scyther` nascia pronta**: `libera` e `objetivo` eram a MESMA condição (`derrotar: 'scyther', qtd: 1`), então
+   no turno em que o primeiro caía a missão aparecia e concluía no mesmo laço do `verificarMissoes` — ₽3.000 por
+   uma missão que nunca existiu. E estava rotulada como "Safari", onde não há Scyther no pool nenhum.
+2. **25 das 36 só eram alcançáveis em Kanto**: as 15 de espécie não tinham `gen`, então em Johto o `libera` nunca
+   era cumprido e elas ficavam escondidas pra sempre, inflando o contador de "escondidas" sem caminho nenhum pra
+   revelar. Pior nas formas regionais, onde `speciesName` repete (`rattata` de Alola acordava a missão de Kanto).
+
+Os dois agora são cobrados por teste (`tests/dados.test.js`: `libera ≠ objetivo`, e espécie de `alvos` tem de
+estar no POOL da rota). Também: a trilha de Alfas cobria 6 dos 9 (faltavam Usina, Ilhas Espuma e Estrada Vitória,
+o trecho mais longo da jornada) e a 5ª liberava por `nivel: 20` em vez da rota anterior, anunciando fora de hora.
+
+### A forma: duas camadas de mapa
+
+`dados-mapas.js` é **gerado da PokéAPI** e não deve guardar escolha de desenho. `dados-rotas.js` é **gerado pelo
+editor dentro do jogo** e guarda só o desenho: as 180 missões (uma de espécie e uma de Alfa em cada uma das 10
+rotas × 9 Gens; o Santuário não tem, é pós-vitória) e os Alfas trocados (`ALFAS`, hoje vazio).
+
+As duas se juntam em **`dados.js`**, que passou a ser o único arquivo que importa `dados-mapas.js` e a exportar
+`GENS`. `mapas.js` e `pokedex-conta.js` leem `GENS` **de lá**. Isso foi deliberado: aplicar a troca de Alfa em
+`mapas.js` pareceria mais natural (é o módulo do mapa), mas `dados.js` constrói `ZONES` do mesmo array, e a troca
+valeria na tela de explorar e não na batalha — ou pior, o contrário, dependendo da ordem de import. Um dono só.
+
+### A condição `alvos`
+
+Única regra nova no motor (`regras.progressoCondicao`): `alvos: [[especie, qtd]…]`. Várias espécies **somam** e
+**cada uma tem o próprio teto** — 20 Plusle e 0 Minun dá 8/16, não 16/16, senão a missão de duas espécies viraria
+a de uma só com o dobro da conta. `qualquer: 1` é o que o `libera` usa: ver UM dos dois já revela a missão (exigir
+os dois a esconderia por azar na ordem do sorteio da rota). O editor **sempre** emite `alvos`, mesmo com uma
+espécie só — um caminho de código, não dois. `derrotar` continua existindo para as missões globais.
+
+### O editor (`js/editor-rotas.js` + `js/tela-editor-rotas.js`)
+
+Tela de admin (`navegacao.TELAS` com `admin: true`; `telasVisiveis()` é o único ponto que decide, lido pela barra
+e pelo menu ☰ — senão o atalho apareceria num e não no outro, e a própria tela confere `ehAdmin()` de novo).
+
+**A análise de curva** responde ao pedido "ver se está desequilibrada ou justa". O Alfa de cada rota foi sorteado
+pelo gerador de mapas sem olhar o pool, então há rota em que ele é um paredão e rota em que é mais fraco que o
+capim. A tela mostra, por rota: BST de cada espécie com barra, **mediana** (não média — um Dratini de peso 2 no
+pool puxaria a média sozinho), **mediana ponderada pelo peso de aparição** (o que o jogador realmente encontra, e
+é contra ela que o Alfa é julgado), espalhamento `max/mediana` com veredito `parelha`/`variada`/`desigual` e quem
+está puxando a ponta. Para o Alfa: razão contra a ponderada, veredito `fraco`/`justo-fraco`/`justo`/`duro`/`muro`
+(faixa justa 1.15×–1.5×, já contando que `statsDeChefe` dá HP ×2 e +30% no resto) e a **faixa-alvo de BST** pra
+procurar candidato — mais "BST 395 contra uma rota de mediana 310" do que "Cloyster nível 24", que não dá pra
+julgar. `🔍 Sugerir Alfa` varre a Gen e lista as espécies que caem na faixa, do centro dela pra fora.
+
+**Como a edição chega no jogador** (decisão do usuário entre as três opções apresentadas): rascunho no
+`localStorage` + botão `📋 Copiar o arquivo`, que devolve o conteúdo de `dados-rotas.js` pra colar no repositório.
+Tabela no Supabase foi recusada: missão é conteúdo estático, buscar isso no boot é rede num caminho hoje
+instantâneo, e missão quebrada iria ao ar sem passar pelos testes. O preço combinado é um commit por leva.
+
+**Detalhes que custaram uma linha cada, mas são bug silencioso se faltarem:**
+- O `<select>` do Alfa garante a opção do Alfa ATUAL mesmo que `especiesDaGen` não o traga (hoje traz todos os 81,
+  conferido). Sem isso, o select mostraria a primeira opção como selecionada e "Guardar o Alfa" trocaria o Pokémon
+  da rota sem ninguém pedir.
+- `carregarBsts` vai de 8 em 8, não num `Promise.all` de 150: o "Sugerir Alfa" varre a Gen inteira.
+- O redesenho assíncrono só acontece se o editor ainda estiver na tela (procura `#ed-saida`), senão quem saiu no
+  meio de um carregamento teria o editor desenhado por cima da tela nova.
+- `gerarArquivo` é testado **carregando o resultado de volta como módulo** (`import('data:text/javascript,…')`):
+  é um arquivo reescrito a cada edição, e um `import` que estoura leva todo o grafo do jogo.
+
+### Balanceamento e o SQL
+
+`PESOS_PONTOS.missoes` continua **120**. O teto do `validar_jornada` subiu de 36 pra **197**
+(`supabase/migrations/20261001120000_limite_de_missoes.sql`) — e é 197, não 37, porque `S.missoesFeitas` acumula
+quando a jornada segue pro mapa seguinte com o mesmo Pokémon: numa run que atravessa as 9 Gens, todas as 180 são
+alcançáveis. O teto é anti-fraude, não balanceamento.
+
+### Ficou de fora desta leva (pedido na mesma conversa)
+
+**Criar e excluir rotas** e **rotas secretas** (abertas por Pokémon capturado/usado, golpe aprendido etc.). A
+primeira é CRUD sobre a lista que `mapas.js`, o Santuário, a Pokédex, a caça shiny, o download offline e o
+desbloqueio do Roguelike todos leem; a segunda é mecânica nova (condição no save, na tela de explorar e no
+progresso), não editor. Escolha do usuário: o editor de missões/Alfas/curva primeiro.

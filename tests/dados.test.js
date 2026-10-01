@@ -156,13 +156,25 @@ test('ZONES: toda zona tem nível de liberação; Alfa acima do teto da própria
 test('MISSOES: ids únicos e toda referência (zona, missão, item) existe', () => {
   const ids = MISSOES.map(m => m.id), zonas = ZONES.map(z => z.id);
   assert.equal(new Set(ids).size, ids.length);
-  const chaves = ['derrotar', 'vitorias', 'amigos', 'nivel', 'chefe', 'treinadores', 'missao', 'dinheiro', 'gasto', 'evolucoes'];
+  const chaves = ['derrotar', 'alvos', 'vitorias', 'amigos', 'nivel', 'chefe', 'treinadores', 'missao', 'dinheiro', 'gasto', 'evolucoes'];
   const confere = (c, onde, m = {}) => {
     assert.equal(Object.keys(c).filter(k => chaves.includes(k)).length, 1, `${onde}: condição precisa de exatamente um tipo`);
     if (c.chefe) { const z = ZONES.find(z => z.id === c.chefe); assert.ok(z && (z.chefe || z.lendarios), `${onde}: zona "${c.chefe}" sem Alfa nem lendários`); }
     if (c.chefe && m.gen) assert.equal(ZONES.find(z => z.id === c.chefe).gen, m.gen, `${onde}: Alfa de outro mapa`);
     if (c.missao) assert.ok(ids.includes(c.missao), `${onde}: missão "${c.missao}" não existe`);
     if (c.derrotar) assert.match(c.derrotar, /^[a-z0-9-]+$/, `${onde}: espécie deve ser o speciesName em minúsculas`);
+    /* `alvos` (missão de espécie do editor de rotas): a espécie tem de estar no POOL da rota, senão a missão é
+       impossível e ninguém descobre — fica escondida pra sempre, que foi o defeito das 15 missões de espécie
+       antigas fora de Kanto. `m.rota` existe em toda missão vinda de dados-rotas.js. */
+    for (const [n, q] of c.alvos || []) {
+      assert.match(n, /^[a-z0-9-]+$/, `${onde}: espécie "${n}" deve ser o speciesName em minúsculas`);
+      assert.ok(Number.isInteger(q) && q > 0, `${onde}: quantidade de "${n}" inválida`);
+      if (m.rota) {
+        const z = ZONES.find(z => z.id === m.rota);
+        assert.ok(z, `${onde}: rota "${m.rota}" não existe`);
+        assert.ok(z.pool.some(p => p.n === n), `${onde}: "${n}" não aparece em ${m.rota}`);
+      }
+    }
   };
   for (const m of MISSOES) {
     confere(m.objetivo, `${m.id}.objetivo`, m);
@@ -171,6 +183,12 @@ test('MISSOES: ids únicos e toda referência (zona, missão, item) existe', () 
     for (const k of Object.keys(m.premio.itens || {})) assert.ok(ITEMS[k], `${m.id}: prêmio "${k}" não existe em ITEMS`);
   }
   assert.ok(MISSOES.some(m => !m.libera), 'precisa haver missão visível desde o início');
+  /* Defeito real que isto tranca (achado na revisão de 01/10/2026): a missão `scyther` tinha `libera` e `objetivo`
+     IGUAIS, então nascia pronta — aparecia e concluía no mesmo laço do verificarMissoes, pagando ₽3.000 por uma
+     missão que nunca existiu de verdade. */
+  for (const m of MISSOES) if (m.libera) {
+    assert.notDeepEqual(m.libera, m.objetivo, `${m.id}: libera igual ao objetivo (a missão nasce pronta)`);
+  }
 });
 
 test('ZONES: ids únicos, faixa de nível coerente, ambientação só de zona que existe', () => {

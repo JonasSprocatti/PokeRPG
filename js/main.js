@@ -19,6 +19,7 @@ import { iniciarNuvem, aoMudarNuvem, ganchos, agendarEnvioSave, apagarSaveNuvem,
 import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, alternarShinyIcone, iconeEscolhido, limparIconeEdit } from './conta.js';
 import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
+import { telaEditorRotas, acaoEditor } from './tela-editor-rotas.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, convidarAmigoMP, copiarConviteMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
@@ -69,7 +70,7 @@ async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'editor'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   /* Trilha das telas fora do jogo (som.js), num lugar só: toda tela de menu é alcançada por um destes `data-act`,
      então nenhuma delas precisa saber de música por conta própria. `inicio` tem a própria faixa (showCreate pede
@@ -112,6 +113,11 @@ async function aoClicar(e) {
     case 'dev-especies': return acaoDev('especies');
     case 'dev-gimmicks': return acaoDev('gimmicks');
     case 'dev-ivs': return acaoDev('ivs');
+    // 🗺 editor de rotas (só admin; a tela confere de novo)
+    case 'editor': if (travadoPelaBatalha()) return; return telaEditorRotas();
+    case 'ed-gen': case 'ed-rota': case 'ed-recarregar': case 'ed-salvar-missao': case 'ed-salvar-alfa':
+    case 'ed-usar-alfa': case 'ed-sugerir': case 'ed-desfazer': case 'ed-copiar': case 'ed-limpar-tudo':
+      return acaoEditor(b.dataset.act.slice(3), v);
     case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
       const ok = await ask('Apagar tudo o que está guardado da PokéAPI neste aparelho e baixar este mapa <b>do zero</b>?<br><br>Serve pra quando algo ficou pela metade e baixar por cima não resolve. <b>Seus saves, a carreira e as conquistas não são tocados.</b>',
@@ -359,6 +365,9 @@ async function aoClicar(e) {
 }
 document.addEventListener('change', e => {
   if (e.target.matches?.('[data-ranking-especie]')) return telaRanking(e.target.value || null);
+  // 🗺 editor de rotas: marcar/desmarcar espécie liga o campo de quantidade e redivide o total entre as marcadas
+  if (e.target.matches?.('.ed-alvo')) return acaoEditor('alvo-toggle');
+  if (e.target.id === 'ed-alfa-esp') return acaoEditor('usar-alfa', e.target.value);
   if (e.target.matches?.('[data-arena-equipar]')) return arenaEquipar(e.target.dataset.arenaEquipar, e.target.value);
   if (e.target.matches?.('[data-mp-equipar]')) return raideEquiparHall(e.target.dataset.mpEquipar, e.target.value);
   const cfg = e.target.dataset?.mpCfg; // configuração da sala (anfitrião): modo, porJogador, zona, balancear

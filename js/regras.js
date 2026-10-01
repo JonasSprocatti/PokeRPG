@@ -967,6 +967,14 @@ export function progressoCondicao(cond, S) {
   const r = S.registro || {}, soma = o => Object.values(o || {}).reduce((a, n) => a + n, 0);
   const [atual, alvo] =
     'derrotar' in cond ? [r.derrotados?.[cond.derrotar] || 0, cond.qtd || 1]
+    /* `alvos: [[especie, qtd]…]` = missão de espécie do editor de rotas (dados-rotas.js). Mais de uma espécie SOMA
+       (8 Plusle + 8 Minun = 16/16), e cada uma tem o PRÓPRIO teto: 20 Plusle e 0 Minun dá 8/16, não 16/16 — senão a
+       missão de duas espécies viraria a de uma só com o dobro da conta. `qualquer` = basta UMA chegar no alvo dela,
+       e é o que o `libera` usa: ver um dos dois já revela a missão (exigir os dois deixaria a missão escondida
+       por puro azar na ordem do sorteio da rota). */
+    : 'alvos' in cond ? (cond.qualquer
+      ? [cond.alvos.some(([n, q]) => (r.derrotados?.[n] || 0) >= (q || 1)) ? 1 : 0, 1]
+      : [cond.alvos.reduce((s, [n, q]) => s + Math.min(r.derrotados?.[n] || 0, q || 1), 0), cond.alvos.reduce((s, [, q]) => s + (q || 1), 0)])
     : 'vitorias' in cond ? [S.wins || 0, cond.vitorias]
     : 'amigos' in cond ? [soma(r.amigos), cond.amigos]
     : 'nivel' in cond ? [S.player.level, cond.nivel]

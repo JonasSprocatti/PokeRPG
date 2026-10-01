@@ -6,7 +6,7 @@ import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_A
 import { estiloSpriteAtual } from './ajustes.js';
 import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
-import { TELAS } from './navegacao.js';
+import { telasVisiveis } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
@@ -628,7 +628,7 @@ export function render() {
   // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),
   // mais o que só existe dentro do jogo: ↺ Layout e Novo jogo. Em batalha, só esses dois (navegar fica pra depois).
   const telas = G.mode === 'explore'
-    ? TELAS.map(t => `<button class="btn ghost sm" data-act="${t.act}" title="${t.dica}" ${G.busy ? 'disabled' : ''}>${t.rotulo}${t.id === 'patch' && temNovidade() ? ' <span class="bolinha">novo</span>' : ''}</button>`).join('')
+    ? telasVisiveis().map(t => `<button class="btn ghost sm" data-act="${t.act}" title="${t.dica}" ${G.busy ? 'disabled' : ''}>${t.rotulo}${t.id === 'patch' && temNovidade() ? ' <span class="bolinha">novo</span>' : ''}</button>`).join('')
     : '';
   $('#topr').innerHTML = `${telas}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
 }

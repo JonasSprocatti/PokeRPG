@@ -8,7 +8,10 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 ## Pedido, ainda não construído
 
 - **Troca de verdade** entre dois jogadores (hoje só o Cabo de Conexão simulado).
-- **Missões próprias de cada mapa** (hoje as de espécie valem em qualquer Gen; a trilha de Alfas é só de Kanto) e **lendários no co-op**.
+- ~~**Missões próprias de cada mapa**~~ **✅ FEITO (01/10/2026)** — 180 missões por rota (uma de espécie e uma de Alfa em cada rota das 9 Gens) + o 🗺 **Editor de rotas** (admin) que as gera, com análise de curva de stats e troca de Alfa. Detalhe em `docs/features.md` ("Missões por rota e o editor de rotas"); o levantamento e a revisão das 36 antigas estão em `docs/missoes-por-rota.md`. **Continua de fora, por escolha do usuário na mesma conversa**: criar/excluir rotas pelo editor e **rotas secretas** (abertas por Pokémon capturado/usado, golpe aprendido etc.) — a primeira é CRUD sobre a lista que meia dúzia de sistemas leem, a segunda é mecânica nova, não editor. São os dois itens abaixo.
+- **Criar e excluir rotas pelo editor** (pedido em 01/10/2026): o editor hoje só edita as rotas que existem. Rota nova mexe em `mapas.js`, Santuário, Pokédex da conta, caça shiny, `baixarGen` (offline) e desbloqueio do Roguelike — todos leem a lista.
+- **Rotas secretas** (pedido em 01/10/2026): rota que abre por condição do jogador — Pokémon específico capturado **e usado**, golpe aprendido pelo principal, etc. É mecânica nova (condição no save, na tela de explorar e no progresso), não funcionalidade do editor.
+- **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
 - **Habilidades**: 215 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
 

@@ -226,7 +226,12 @@ Duram 5 turnos e **só valem para quem está no chão** (Voador e Levitate flutu
 - Itens podem ser usados em qualquer um da equipe, e o Revive reanima um aliado.
 
 ### Missões
-36 missões que vão aparecendo conforme você joga: derrotar espécies (mais para as comuns, menos para as raras), fazer amigos, vencer a trilha dos Alfas (a de Kanto só aparece no mapa da Gen 1), juntar e gastar dinheiro, subir de nível, evoluir e derrotar treinadores.
+Missões que vão aparecendo conforme você joga, em duas famílias:
+
+- **17 globais**, válidas em qualquer mapa: fazer amigos, juntar e gastar dinheiro, subir de nível, evoluir, vencer batalhas e derrotar treinadores.
+- **20 por mapa** (180 no total): **cada uma das 10 rotas** das 9 Gens tem uma missão de **espécie** (derrote tantos de um bicho que mora ali — mais para os comuns, menos para os raros; algumas pedem duas espécies, como "8 Plusle e 8 Minun") e uma missão de **Alfa**, em corrente da primeira rota até os lendários. Fechar a última vale o título de campeão da região.
+
+Só as missões do mapa em que você está aparecem — e os prêmios sobem conforme a rota: Poções na primeira, Max Revive e ₽12.000 nas últimas.
 
 ### Fim de jornada e carreira
 - **💾 Jornadas salvas:** dá para ter várias runs em andamento. Em **Novo jogo**, escolha **Guardar e começar outra** (nada se perde) ou **Encerrar**. A tela 💾 Jornadas salvas lista todas, com **Continuar** e **Excluir**. Com conta, todas ficam na nuvem. Quando chega uma jornada de outro aparelho, você escolhe **Continuar**, **Guardar pra depois** (fica na lista e não pergunta de novo) ou **Excluir**. Até 12 guardadas.
