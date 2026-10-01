@@ -124,6 +124,45 @@ test('fases: em 66% e 33% a couraça se refaz, atributos sobem e o golpe telegra
   assert.equal(antesDoChefeAgir(t).pular, true, 'na 3ª ação já carrega');
 });
 
+/* ---------------- Arceus: o Prato é SORTEADO (não é rotação decorável) e pede a animação ---------------- */
+test('Arceus: troca de Prato a cada 2 ações, sempre um tipo diferente do atual, e manda animar', () => {
+  const PRATOS = CHEFES.arceus.pontoFraco.tipos;
+  assert.equal(PRATOS.length, 17, 'os 17 Pratos (sem Normal, que é a forma sem prato)');
+  assert.ok(!PRATOS.includes('normal'));
+  for (const t of PRATOS) assert.ok(TYPE_PT[t], `tipo ${t}`);
+
+  const a = chefe(1, 'arceus');
+  assert.ok(PRATOS.includes(a.boss.fraco), 'o Prato inicial também é sorteado');
+  let trocas = 0;
+  for (let i = 1; i <= 60; i++) {
+    const antes = a.boss.fraco, r = antesDoChefeAgir(a);
+    const pede = r.efeitos.find(e => e.pratos);
+    if (i > 1 && (i - 1) % 2 === 0) {                       // é uma ação de troca
+      trocas++;
+      assert.notEqual(a.boss.fraco, antes, `ação ${i}: sortear o mesmo Prato pareceria bug`);
+      assert.ok(PRATOS.includes(a.boss.fraco), `ação ${i}: tipo fora dos Pratos`);
+      assert.equal(pede?.pratos, a.boss.fraco, `ação ${i}: a animação tem de vir com o Prato novo`);
+    } else {
+      assert.equal(a.boss.fraco, antes, `ação ${i}: não é turno de trocar`);
+      assert.equal(pede, undefined);
+    }
+  }
+  assert.ok(trocas >= 25, `trocou ${trocas} vezes em 60 ações`);
+  // 17 Pratos sorteados: em 30 trocas a chance de cair sempre no mesmo punhado é nula — é sorteio, não ciclo
+  const vistos = new Set(); for (let i = 0; i < 200; i++) { antesDoChefeAgir(a); vistos.add(a.boss.fraco); }
+  assert.ok(vistos.size >= 10, `só ${vistos.size} Pratos diferentes em 200 ações — isso não é sorteio`);
+});
+
+test('Arceus: o pedido de animação chega ao ctx pelo motor (quem narra sem DOM só ignora)', async () => {
+  const a = chefe(1, 'arceus'), animou = [];
+  const c = { ...ctx(), pratos: (m, tipo) => animou.push([m === a, tipo]) };
+  for (let i = 0; i < 3; i++) await usarGolpe(a, mon(), golpe(), true, c);   // a 3ª ação é a da troca de Prato
+  assert.deepEqual(animou, [[true, a.boss.fraco]], 'uma animação, no chefe, com o Prato novo');
+  const semDom = { ...ctx() };                                              // ctx do multiplayer: sem `pratos`
+  for (let i = 0; i < 2; i++) await usarGolpe(a, mon(), golpe(), true, semDom);
+  assert.ok(semDom.msgs.some(t => /troca de Prato/.test(t)), 'o texto sai mesmo sem animação');
+});
+
 /* ---------------- Mega Rayquaza: ponto fraco rotativo, sem couraça ---------------- */
 test('Rayquaza: sem couraça, ponto fraco começa em Gelo e o golpe carregado é o Dragon Ascent', () => {
   const r = chefe(1, 'rayquaza-mega');

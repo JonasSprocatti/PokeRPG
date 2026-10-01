@@ -4,7 +4,7 @@
 // (shake) e "pulo" de quem ataca (atacar) — e os atalhos que batalha/itens usam. O multiplayer usa o mesmo
 // motor com outro ctx (texto puro, sem DOM — por isso `atacar`/`tremer` são OPCIONAIS em golpe.js).
 import { G, nm, ladoJogador } from './estado.js';
-import { say, shake, atacar } from './ui.js';
+import { say, shake, atacar, trocarPratos } from './ui.js';
 import { render } from './render.js';
 import { TC } from './dados.js';
 import { mudarEstagios, aplicarStatus } from './golpe.js';
@@ -14,7 +14,7 @@ import { tocarImpacto } from './som.js';
 export const CTX = {
   nome: nm,
   golpe: g => `<b style="color:${TC[g.type] || 'inherit'};filter:brightness(.7)">${esc(fmt(g.name))}</b>`,
-  say, atualizar: render, atacar,
+  say, atualizar: render, atacar, pratos: trocarPratos,   // 🏛 Arceus trocando de Prato (boss.js pede, ui anima)
   // apanhar = tremida + piscada na cor do tipo (ui.shake) + o som do impacto daquele tipo (som.tocarImpacto:
   // labareda pro fogo, lufada pro vento…). Um gancho só, chamado pelo motor pros DOIS lados; cada metade se
   // cala sozinha se o jogador tiver desligado a sua (animação em ⚙ Ajustes, som no mesmo lugar).

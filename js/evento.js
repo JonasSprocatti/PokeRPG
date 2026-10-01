@@ -107,7 +107,7 @@ export const EVENTOS = [
      ITENS_RAIDE_NOVOS aparecem duas vezes no rodízio — cobertura continua completa, só deixou de ser 1 pra 1. */
   ev({ id: 'arceus', gen: 4, nome: 'Arceus', especie: 'arceus', especieId: 493, formaId: 493,
     golpes: ['extreme-speed', 'earth-power', 'shadow-ball', 'thunderbolt'],
-    resumo: 'Troca de Prato: o tipo que realmente o machuca muda a cada duas ações, entre seis Pratos. Couraça do Criador e o Julgamento carregado.',
+    resumo: 'Troca de Prato a cada 2 ações, SORTEADO entre os 17 Pratos: só golpes do tipo do Prato da vez machucam de verdade. Couraça do Criador e o Julgamento carregado.',
     badge: { icone: '🏛', nome: 'Diante do Criador', titulo: 'Escolhido do Original' } }),
   ev({ id: 'regigigas', gen: 4, nome: 'Regigigas', especie: 'regigigas', especieId: 486, formaId: 486,
     golpes: ['earthquake', 'hammer-arm', 'stone-edge', 'thunder-punch'],

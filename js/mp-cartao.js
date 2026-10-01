@@ -18,7 +18,7 @@ export function blocoChefeMP(m) {
   const r = resumoDoChefe(m); if (!r) return '';
   return `<div class="boss-info">
     ${r.temCoura ? `<div class="hp boss-coura ${r.exposto ? 'exposto' : ''}"><span>🛡</span><div class="bar"><div class="fill" style="width:${Math.round(r.couraFracao * 100)}%"></div></div><span>${r.exposto ? 'EXPOSTO' : ''}</span></div>` : r.exposto ? '<div class="boss-fase" style="color:#e4572e">💥 EXPOSTO: dano ×1,5</div>' : ''}
-    ${r.pontoFraco ? `<div class="boss-fraco">🎯 Ponto fraco: <b>${esc(TYPE_PT[r.pontoFraco] || r.pontoFraco)}</b></div>` : ''}
+    ${r.pontoFraco ? `<div class="boss-fraco">${r.prato ? '🏛 Prato da vez' : '🎯 Ponto fraco'}: <b>${esc(TYPE_PT[r.pontoFraco] || r.pontoFraco)}</b></div>` : ''}
     ${r.anula ? `<div class="boss-fraco" title="${esc(r.textoAnula)}">🚫 Imune a: <b>${r.anula.map(t => esc(TYPE_PT[t] || t)).join(', ')}</b></div>` : ''}
     ${r.temReverso ? (r.reverso ? '<div class="boss-carga" role="alert">🔄 MUNDO REVERSO: tipos INVERTIDOS agora!</div>' : '<div class="boss-fase">🔄 Mundo Reverso (alterna)</div>') : ''}
     ${r.adaptado !== undefined ? `<div class="boss-fraco">🧬 Adaptado a: <b>${r.adaptado ? esc(TYPE_PT[r.adaptado] || r.adaptado) : '—'}</b></div>` : ''}

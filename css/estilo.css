@@ -611,6 +611,13 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .spr.back{width:150px;height:150px}
 .spr.flip{transform:scaleX(-1)}
 .mon.fainted .spr{opacity:.15;transition:opacity .5s}
+/* 🏛 troca de Pratos do Arceus (ui.trocarPratos): o anel com a cor de cada tipo gira em volta dele, encolhe, e o
+   Prato sorteado aparece pulsando no meio. Camada temporária por cima do sprite — o JS a remove ao fim. */
+.pratos{position:absolute;inset:0;pointer-events:none;z-index:3;animation:pratos-anel 1.5s ease-in-out forwards}
+.pratos i{position:absolute;left:50%;top:50%;width:13px;height:13px;margin:-6px;border-radius:3px;transform:rotate(var(--a)) translateY(-54px);box-shadow:0 0 7px rgba(255,255,255,.75)}
+.pratos b{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px;border-radius:5px;box-shadow:0 0 20px 4px var(--cor-prato);animation:prato-escolhido 1.5s ease-out forwards}
+@keyframes pratos-anel{0%{opacity:0;transform:rotate(0) scale(.35)}18%{opacity:1}72%{opacity:1;transform:rotate(430deg) scale(1)}100%{opacity:0;transform:rotate(540deg) scale(.25)}}
+@keyframes prato-escolhido{0%,50%{opacity:0;transform:scale(.3)}68%{opacity:1;transform:scale(1.6)}100%{opacity:.95;transform:scale(1)}}
 .plate{background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:9px 12px;width:min(270px,100%);box-shadow:4px 4px 0 rgba(0,0,0,.3)}
 .pl-top{display:flex;justify-content:space-between;gap:8px;font:700 16px var(--display)}
 .plate .bar{background:#cfc8b6}

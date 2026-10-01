@@ -143,3 +143,19 @@ export function shake(m, tipo) {
 // quem usou o golpe "pula" um pouco — narrado bem no momento em que golpe.js anuncia "X usou Y!" (ctx.atacar,
 // opcional: o multiplayer não tem DOM, então o ctx dele simplesmente não define isso)
 export function atacar(m) { const id = idDoMon(m); if (id && !semAnimacao()) reanimar(id, 'atacando'); }
+
+/* 🏛 Arceus trocando de Prato (boss.js manda `{pratos: tipo}`): um anel com a cor de CADA tipo gira em volta dele
+   e o Prato sorteado fica brilhando no meio. É uma camada por cima do sprite que se remove sozinha — nada fica no
+   DOM pro `render()` seguinte ter de limpar (e `render()` remontando a cena no meio só corta a animação, não quebra). */
+export function trocarPratos(m, tipo) {
+  const id = idDoMon(m); if (!id || semAnimacao()) return;
+  const el = document.getElementById(id); if (!el) return;
+  el.querySelector('.pratos')?.remove();
+  const tipos = Object.keys(TC), cor = TC[tipo] || '#fff', d = document.createElement('div');
+  d.className = 'pratos'; d.setAttribute('aria-hidden', 'true');
+  d.style.setProperty('--cor-prato', cor);
+  d.innerHTML = tipos.map((t, i) => `<i style="--a:${Math.round(360 / tipos.length * i)}deg;background:${TC[t]}"></i>`).join('')
+    + `<b style="background:${cor}"></b>`;
+  el.appendChild(d);
+  setTimeout(() => d.remove(), 1700);
+}

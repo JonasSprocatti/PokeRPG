@@ -331,6 +331,7 @@ async function reagirAoGolpe(t, g, crit, ctx) {
 // Chefe de evento (boss.js): aplica e narra a lista de efeitos que as regras dele devolveram
 async function aplicarEfeitosChefe(m, efeitos, ctx) {
   for (const e of efeitos || []) {
+    if (e.pratos) (ctx.pratos || nada)(m, e.pratos);    // Arceus trocando de Prato: a animação vem ANTES do texto (ctx sem DOM não tem)
     if (e.dizer) await ctx.say(e.dizer, e.cls || 'status');
     if (e.cura) { heal(m, e.cura); up(ctx); }
     if (e.curaStatus) { m.status = null; m.sleep = 0; m.vol.conf = 0; delete m.vol.toxico; delete m.vol.semente; }

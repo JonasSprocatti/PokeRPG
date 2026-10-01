@@ -4,7 +4,8 @@
      COURAÇA e RUPTURA   enquanto a couraça está de pé o dano cai; quando o estoque dela zera acontece a RUPTURA, uma janela em
                          que o chefe fica EXPOSTO e leva MAIS dano. Depois a couraça se refaz.
      PONTO FRACO         a cada `acoes` ações do chefe ele muda de "ponto fraco": só golpe DAQUELE tipo machuca de verdade (×mult);
-                         qualquer outro tipo é reduzido (×contra). Pede um time de tipos variados.
+                         qualquer outro tipo é reduzido (×contra). Pede um time de tipos variados. Com `sorteia`, o tipo da vez é
+                         SORTEADO entre os 17 Pratos em vez de girar na ordem (Arceus), e a troca pede a animação (`{pratos}`).
      GOLPE TELEGRAFADO   a cada `ciclo` ações o chefe carrega um golpe devastador (avisado com um turno de antecedência). Dá pra
                          INTERROMPER causando dano suficiente no mesmo turno — o que ainda expõe o chefe. Solto, machuca de
                          verdade (no co-op, o time inteiro).
@@ -19,8 +20,18 @@
      REGENERAÇÃO         recupera HP a cada ação enquanto não está exposto (as células de Zygarde).
      HABILIDADE          uma habilidade da tabela (habilidades.js): Calyrex com Grim Neigh cresce a cada Pokémon seu que derruba.
    Tudo aqui é PURO: recebe o Pokémon do chefe (`E.boss` é só dados: vai no save e na rede) e devolve números e uma lista de
-   EFEITOS (`{dizer}`, `{estagios}`, `{curaStatus}`, `{cura}`) que quem chama (golpe.js) aplica e narra. Sem DOM, sem rede:
+   EFEITOS (`{dizer}`, `{estagios}`, `{curaStatus}`, `{cura}`, `{pratos}`) que quem chama (golpe.js) aplica e narra. Sem DOM, sem
+   rede — `{pratos}` é só o PEDIDO de animação: quem tem tela anima (`ui.trocarPratos` pelo `ctx`), quem não tem ignora.
    tests/boss.test.js. Os números moram em AJUSTES e CHEFES, num lugar só: a dificuldade se calibra jogando, não lendo. */
+import { TYPE_PT, PLACA_DO_TIPO, ITEMS } from './dados.js';
+
+/* Os Pratos do Arceus: a MESMA tabela que as badges e os itens usam (`dados.PLACA_DO_TIPO`), sem o Normal — nos
+   jogos não existe Prato Normal (é a forma SEM prato; na nossa tabela o lugar dele é o Lenço de Seda). Assim o
+   chefe nunca desalinha da lista de pratos que o jogador pode carregar. */
+const PRATOS = Object.keys(PLACA_DO_TIPO).filter(t => t !== 'normal');
+const nomeDoPrato = tipo => ITEMS[PLACA_DO_TIPO[tipo]]?.name || `Prato de ${TYPE_PT[tipo] || tipo}`;
+// sorteia um tipo DIFERENTE do atual (a troca de Prato tem de ser visível: sortear o mesmo pareceria bug)
+const sortearPrato = (tipos, atual) => { const op = tipos.filter(t => t !== atual); return op[Math.floor(Math.random() * op.length)] || atual; };
 
 export const AJUSTES = {
   // nível do chefe: o do jogador + `nivelExtra`, entre o piso e o teto
@@ -41,7 +52,7 @@ export const AJUSTES = {
 const fases = (t2, e2, t3, e3) => [{ abaixo: 0.66, titulo: t2, estagios: e2 }, { abaixo: 0.33, titulo: t3, estagios: e3 }];
 const canhao = (name, type, cls, power, rotulo) => ({ name, type, cls, power, rotulo });
 
-/* Os 14 chefes. `coura` {fracao do HP que a couraça guarda, reducao do dano com ela de pé}; `pontoFraco` {tipos que giram, acoes por
+/* Os 16 chefes. `coura` {fracao do HP que a couraça guarda, reducao do dano com ela de pé}; `pontoFraco` {tipos que giram, acoes por
    tipo, mult no tipo da vez, contra nos outros}; `canhao` = o golpe carregado (NÃO pode ser golpe de carga do motor, tipo Freeze
    Shock: ele viraria "preparando" de novo). O Eternabeam e o Roar of Time já têm `recarga` em especiais.js. */
 export const CHEFES = {
@@ -128,9 +139,11 @@ export const CHEFES = {
     fases: fases('Fase 2 — Células Reunidas', [['defense', 1], ['special-defense', 1]], 'Fase 3 — Ordem Perfeita', [['attack', 1], ['speed', 1]])
   },
   arceus: {
+    /* Os Pratos: o tipo que fere de verdade é o do Prato da vez, e ele troca a cada 2 ações entre os 17 — SORTEADO
+       (`sorteia`), não em ordem: o Deus Pokémon não tem rotação decorável. Com 17 tipos no bolo, acertar a janela é
+       raro, então `contra` é mais generoso que nos chefes de ciclo fixo (0,65 em vez de 0,5) e o acerto vale ×2. */
     nome: 'Arceus', coura: { fracao: 0.15, reducao: 0.4 }, ciclo: 4, cicloFase3: 3,
-    // os Pratos: o tipo que fere de verdade é o do Prato da vez. Seis, não os 17 — com a lista inteira ninguém acerta a janela
-    pontoFraco: { tipos: ['fighting', 'ground', 'ghost', 'dragon', 'ice', 'steel'], acoes: 2, mult: 1.7, contra: 0.55 },
+    pontoFraco: { tipos: PRATOS, acoes: 2, sorteia: true, mult: 2, contra: 0.65 },
     canhao: canhao('judgment', 'normal', 'special', 200, 'JULGAMENTO'),
     fases: fases('Fase 2 — Prato Trocado', [['special-attack', 1], ['defense', 1]], 'Fase 3 — Julgamento Final', [['special-attack', 1], ['speed', 1]])
   },
@@ -168,7 +181,7 @@ export function prepararChefe(E, jogadores = 1, id = CHEFE_PADRAO) {
   const max = cfg.coura ? Math.max(1, Math.floor(E.stats.hp * cfg.coura.fracao)) : 0;
   E.boss = { id, fase: 1, acoes: 0, quebradoAcoes: 0, carga: null, jogadores: j,
     nucleo: cfg.coura ? { ativo: true, pv: max, max } : null,
-    fraco: cfg.pontoFraco ? cfg.pontoFraco.tipos[0] : null, reverso: false, ultimoTipo: null, raide: {}, canhaoMult: 0, canhaoUltimoMult: 1 };
+    fraco: cfg.pontoFraco ? (cfg.pontoFraco.sorteia ? sortearPrato(cfg.pontoFraco.tipos, null) : cfg.pontoFraco.tipos[0]) : null, reverso: false, ultimoTipo: null, raide: {}, canhaoMult: 0, canhaoUltimoMult: 1 };
   return E;
 }
 
@@ -260,9 +273,13 @@ export function antesDoChefeAgir(u) {
     ef.push(dizer('🛡 A couraça do chefe se refez.', 'muted'));
   }
   if (cfg.pontoFraco && b.acoes > 1 && (b.acoes - 1) % cfg.pontoFraco.acoes === 0) {     // gira o ponto fraco a cada `acoes` ações
-    const tipos = cfg.pontoFraco.tipos, i = (tipos.indexOf(b.fraco) + 1) % tipos.length;
-    b.fraco = tipos[i];
-    ef.push(dizer(`🎯 O ponto fraco do chefe mudou: agora só golpes do tipo ${b.fraco.toUpperCase()} machucam de verdade!`, 'level'));
+    const pf = cfg.pontoFraco, tipos = pf.tipos;
+    b.fraco = pf.sorteia ? sortearPrato(tipos, b.fraco) : tipos[(tipos.indexOf(b.fraco) + 1) % tipos.length];
+    const nome = TYPE_PT[b.fraco] || b.fraco;
+    if (pf.sorteia) {
+      // `{pratos}` = a animação da troca (ui.trocarPratos, pelo ctx). Quem narra sem DOM (multiplayer) simplesmente ignora
+      ef.push({ pratos: b.fraco }, dizer(`🏛 ${cfg.nome} troca de Prato! O <b>${nomeDoPrato(b.fraco)}</b> brilha — agora só golpes de ${nome} machucam de verdade.`, 'level'));
+    } else ef.push(dizer(`🎯 O ponto fraco do chefe mudou: agora só golpes do tipo ${nome} machucam de verdade!`, 'level'));
   }
   if (cfg.inverso) {                                                                      // Mundo Reverso: alterna a cada `acoes` ações
     const rev = Math.floor((b.acoes - 1) / cfg.inverso.acoes) % 2 === 1;
@@ -370,6 +387,8 @@ export function resumoDoChefe(E) {
   return {
     id: b.id, fase: b.fase, temCoura: !!b.nucleo, couraAtiva: !!b.nucleo?.ativo, couraFracao: b.nucleo?.ativo ? Math.max(0, b.nucleo.pv / b.nucleo.max) : 0,
     exposto: b.quebradoAcoes > 0, pontoFraco: cfg.pontoFraco ? b.fraco : null, carregando: !!b.carga && !b.carga.interrompida,
+    // `prato` = o ponto fraco é um Prato sorteado (Arceus), não uma rotação: as telas trocam o rótulo por causa disso
+    prato: !!cfg.pontoFraco?.sorteia,
     rotuloCarga: cfg.canhao.rotulo, faltaParaInterromper: b.carga && !b.carga.interrompida ? Math.max(0, b.carga.lim - b.carga.dano) : 0,
     anula: cfg.anula?.tipos || null, textoAnula: cfg.anula?.texto || '', reverso: !!b.reverso, temReverso: !!cfg.inverso,
     adaptado: cfg.adapta ? b.ultimoTipo : undefined, regenera: !!cfg.regenera, dreno: !!cfg.dreno,

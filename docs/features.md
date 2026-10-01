@@ -74,7 +74,10 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - **Os 16 chefes** (`evento.EVENTOS`, fábrica `ev()`; regras em `boss.CHEFES`, mesma `id`): a ordem do array É o calendário (semana N = `N % 16`). Mecânicas novas além de couraça/ponto fraco/canhão/fases:
   `climaFixo` (`aplicarClimaDoChefe` usa o clima fixo de `novoCampo`; Groudon sol, Kyogre chuva), `anula {tipos}` (dano 0 + texto em `golpe.js`), `inverso {acoes}` (Mundo Reverso: `danoNoChefe(t, dano,
   tipo, ef)` divide pelo ef² do motor, com teto ×4), `adapta {reducao}` (guarda `b.ultimoTipo` DENTRO de `danoNoChefe`), `dreno` (`drenoDoChefe` em `executar`), `regenera` (efeito `{cura}` em
-  `antesDoChefeAgir`), `habilidade` (habilidade da tabela do motor: Calyrex `grim-neigh`, Necrozma `neuroforce`, Zacian `intrepid-sword`, Regigigas `slow-start`). **O golpe carregado NÃO pode ser golpe de carga do motor**
+  `antesDoChefeAgir`), `habilidade` (habilidade da tabela do motor: Calyrex `grim-neigh`, Necrozma `neuroforce`, Zacian `intrepid-sword`, Regigigas `slow-start`),
+  `pontoFraco.sorteia` (Arceus: o tipo da vez é SORTEADO entre os 17 Pratos — `dados.PLACA_DO_TIPO` sem o Normal — e nunca repete o atual; a troca devolve
+  o efeito `{pratos: tipo}`, que é PEDIDO DE ANIMAÇÃO: `ctx.pratos` → `ui.trocarPratos` no single player, ignorado por quem narra sem DOM. Com 17 tipos no
+  bolo acertar a janela é raro, então `contra` subiu pra 0,65 e `mult` pra ×2; as telas trocam o rótulo por `🏛 Prato da vez` lendo `resumoDoChefe().prato`). **O golpe carregado NÃO pode ser golpe de carga do motor**
   (`especiais.carga`, ex.: Freeze Shock — viraria "preparando" de novo); o teste confere. `EVENTO_SEM_PERMADEATH` vale pra todos. **Simplificações a lembrar**: as duplas (Zacian+Zamazenta,
   Dialga+Palkia) viraram UM chefe cada; Mewtwo troca pro "modo X" só como bônus de atributo (fase 2) — não há troca de forma/sprite; Kyurem não ignora habilidades do jogador.
 - **Itens de raide** (`dados.ITEMS[x].raide`, `boss.usarItemDeRaide`): 10 consumíveis, UM de cada tipo por luta (marca
@@ -1713,9 +1716,12 @@ Grafo de imports sem ciclos: `util`/`dados`/`layout` → `regras`/`api` → `est
 - **Arceus como chefe de raide** (pedido do usuário, 28/09/2026) — **✅ FEITO em 01/10/2026**, junto com
   **Regigigas** (pedido na mesma conversa: líder dos Regis). Decisão: **entram na rotação**, no FIM da lista
   (`% 14` virou `% 16`). A ordem do array É o calendário — entrar no meio trocaria o chefe da semana de quem já
-  está jogando, então chefe novo sempre vai no fim. **Arceus** reusa `pontoFraco` como os Pratos (seis tipos,
-  troca a cada 2 ações) + couraça + Julgamento carregado: a mecânica de "o tipo que fere muda" já existia, não
-  valia um gancho novo pra Multitype. **Regigigas** não ganhou mecânica nenhuma: `habilidade: 'slow-start'` (já
+  está jogando, então chefe novo sempre vai no fim. **Arceus** reusa `pontoFraco` como os Pratos (os 17, sorteados, troca
+  a cada 2 ações) + couraça + Julgamento carregado: a mecânica de "o tipo que fere muda" já existia, não valia um
+  gancho novo pra Multitype — só a flag `sorteia` e o efeito `{pratos}` da animação (pedido do usuário no mesmo dia:
+  "é o Deus Pokémon, a luta tem que ser fantástica"). A animação é um anel com a cor de cada tipo girando em volta
+  do sprite (`ui.trocarPratos` + `@keyframes pratos-anel`), que encolhe e deixa o Prato sorteado pulsando; respeita
+  `semAnimacao()` e se remove sozinha do DOM. **Regigigas** não ganhou mecânica nenhuma: `habilidade: 'slow-start'` (já
   na tabela do motor) faz o colosso começar com metade do Ataque e da Velocidade e acordar nos 5 primeiros
   turnos, e as fases somam Ataque em cima disso. Golpes escolhidos entre os que já estavam em `TIPO_DO_GOLPE`
   (só `thunder-punch` entrou novo) — de quebra, nenhum deles é de Fogo/Água/Psíquico/Gelo/Voador/Dragão, então
