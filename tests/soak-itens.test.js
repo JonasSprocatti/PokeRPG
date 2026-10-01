@@ -201,23 +201,19 @@ test('item duplo existe uma única vez e serve pras duas coisas', () => {
 });
 
 test('Pedra do Rei e Presa Afiada fazem o alvo recuar quando seguradas', async () => {
-  // 10% por golpe: com 60 tentativas a chance de nunca acontecer é ~0,2% — e o teste não depende de sorteio
-  // injetado porque o motor usa Math.random direto. Cada golpe é um turno novo (o flinch é limpo por rodada).
-  let recuos = 0;
-  for (let i = 0; i < 60; i++) {
-    const u = mon({ item: 'kings-rock' }), t = mon();
-    await usarGolpe(u, t, golpe(), true, ctx());
-    if (t.vol.flinch) recuos++;
+  /* 10% por golpe. A versão por amostragem (60 golpes, esperando ao menos um recuo) falhava ~0,2% das
+     rodadas no CI por azar puro — então o sorteio é FIXADO nos dois lados do limiar. Cada chamada é um
+     turno novo (o flinch é limpo por rodada). */
+  const recuou = async (sorteio, item) => {
+    const real = Math.random; Math.random = () => sorteio;
+    try { const t = mon(); await usarGolpe(mon({ item }), t, golpe(), true, ctx()); return !!t.vol.flinch; }
+    finally { Math.random = real; }
+  };
+  for (const item of ['kings-rock', 'razor-fang']) {
+    assert.equal(await recuou(0.05, item), true, `${item}: 5% está dentro dos 10% e tinha que fazer recuar`);
+    assert.equal(await recuou(0.50, item), false, `${item}: 50% está fora dos 10% — não podia recuar`);
   }
-  assert.ok(recuos > 0, 'a Pedra do Rei nunca fez o alvo recuar em 60 golpes');
-  assert.ok(recuos < 40, 'recuou demais: a chance deveria ser de 10%');
-
-  let sem = 0;
-  for (let i = 0; i < 60; i++) {
-    const t = mon(); await usarGolpe(mon(), t, golpe(), true, ctx());
-    if (t.vol.flinch) sem++;
-  }
-  assert.equal(sem, 0, 'sem o item não pode haver recuo num golpe que não tem recuo próprio');
+  assert.equal(await recuou(0.05, null), false, 'sem o item não pode haver recuo num golpe que não tem recuo próprio');
 });
 
 test('Revestimento Metálico reforça só golpe de Aço; Garra Afiada soma crítico', () => {

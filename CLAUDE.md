@@ -177,6 +177,7 @@ Sala por código (4 caracteres), até `MAX_JOGADORES` = 6, funciona sem login. A
 - `tests/schema.test.js` — pesos de pontuação do SQL x `regras.js`. **Mudou num lado, muda no outro.**
 - `tests/sw.test.js` — arquivo novo em `js/` entrou no PRECACHE.
 - `tests/habilidades.test.js` — falha se aparecer gancho desconhecido na tabela.
+- **Efeito de chance se testa FIXANDO o sorteio, nunca por amostragem.** "60 golpes, espero ao menos um recuo de 10%" falha 0,2% das rodadas — e no CI isso vira defeito fantasma num código certo. Troque `Math.random` pelos dois lados do limiar (`0.05` recua, `0.50` não) e restaure no `finally`.
 
 ## Supabase
 
