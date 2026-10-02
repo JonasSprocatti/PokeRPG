@@ -4,7 +4,7 @@
 import { G, SAVE_KEY, save, nm, zone, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
 import { render, buildGame, spriteItem } from './render.js';
-import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer } from './criacao.js';
+import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer, porNaComitiva, tirarDaComitiva } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
 import { telaSaves } from './tela-saves.js';
@@ -239,6 +239,9 @@ async function aoClicar(e) {
     case 'pick': return previewSearch(v);
     case 'ability': G.PV.ability = v; return renderPreview();
     case 'dificuldade': G.dif = v; return renderDificuldade();
+    // ⚔ Saga: montar a comitiva no passo 4 da criação (criacao.js)
+    case 'comitiva-por': return porNaComitiva(v);
+    case 'comitiva-tirar': return tirarDaComitiva(v);
     case 'sem-vantagens': G.semVantagens = !G.semVantagens; return renderDificuldade();   // jogar sem os itens das badges
     case 'randomizer': return fullRandomizer(b);
     case 'recomecar': G.S = null; G.B = null; G.PV = null; return showCreate();

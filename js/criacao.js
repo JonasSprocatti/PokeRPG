@@ -17,7 +17,9 @@ import { vantagensDe } from './badges.js';
 import { modoComEvento, eventoDaGen, agenda, agoraDoEvento, jaComecou, dataBR, INICIO, BETA_SEM_ESPERA, EVENTOS } from './evento.js';
 import { htmlComoFuncionam } from './ajuda-chefes.js';
 import { progressoRoguelike, desbloqueadas, textoProgresso } from './roguelike.js';
-import { natureLabel, defaultMoves, zonaLiberada } from './regras.js';
+import { natureLabel, defaultMoves, zonaLiberada, maxAliados } from './regras.js';
+import { oficioDe, OFICIOS } from './oficios.js';
+import { FELICIDADE_ALIADO } from './evolucao.js';
 import { syncGet, loadAbility, loadSpecies, loadGrowth, loadEvo, loadList, resolvePokemon, apiErr } from './api.js';
 import { blocoAds, ativarSlots } from './ads.js';
 import { aoMudarOnline, onlineAgora, contagemAnonimos } from './presenca.js';
@@ -59,6 +61,7 @@ export function showCreate() {
     <div id="rnd" hidden><button class="btn big" data-act="randomizer">🎲 Sortear tudo e começar</button></div>
     <div id="netwarn"></div>
     <div id="preview"></div>
+    <div id="comitiva"></div>
     ${blocoAds(AD_SLOT_INICIO)}
     <p class="small muted rodape-creditos">© 2026 Jonas Sprocatti · <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">código-fonte no GitHub</a></p></main>`;
   renderDificuldade();
@@ -221,6 +224,7 @@ export function renderDificuldade() {
   if (G.PV && ok && !ok.includes(G.PV.data.id)) G.PV = null;
   if (rnd || !G.PV) $('#preview').innerHTML = '';
   else renderPreview();
+  renderComitiva();   // ⚔ Saga: o passo 4 só existe nesse modo (e o ofício mostrado depende da sua espécie)
 }
 // "Sortear": entre os iniciais, ou entre todos se o modo for livre
 export const sortearEspecie = () => { const ok = permitidos(); return previewSearch(ok ? pick(ok) : rand(1, 1025)); };
@@ -275,6 +279,16 @@ function opcaoShiny(d) {
     ✨ Começar shiny
     <small class="muted">Você já recrutou ${tem === 1 ? 'um' : tem} ${esc(fmt(d.name))} shiny, então pode ser um também. Só muda as cores — nada de status.</small></label>`;
 }
+/* ⚔ Saga: o ofício da espécie escolhida, na prévia. Só nesse modo — nos outros a palavra "ofício" não significa
+   nada, e prometer função de RPG onde ela não existe é pior que não falar. `oficioDe` é puro e não vai à rede:
+   `base` e `learnset` já vieram com a prévia. */
+function blocoOficio(d) {
+  if (G.dif !== 'saga') return '';
+  const o = oficioDe(d);
+  if (!o) return '';
+  return `<p class="small" style="margin-top:6px">Ofício: <b>${o.emoji} ${esc(o.nome)}</b>
+    <span class="muted">· ${esc(OFICIOS[o.maior].funcao)}. Lido dos stats base e do que a espécie aprende — não dá pra escolher.</span></p>`;
+}
 export function renderPreview() {
   const PV = G.PV, d = PV.data, total = STATS.reduce((a, s) => a + d.base[s], 0);
   const nickVal = $('#pv-nick')?.value ?? PV.nick; PV.nick = nickVal;
@@ -289,6 +303,7 @@ export function renderPreview() {
       <div class="basestats">${STATS.map(s => `<div class="bs"><span>${STAT_PT[s]}</span><b>${d.base[s]}</b><i style="width:${Math.min(100, d.base[s] / 255 * 100)}%"></i></div>`).join('')}
         <div class="bs total"><span>Total</span><b>${total}</b><i></i></div></div>
       <p class="small muted" style="margin-top:14px">Modo <b>${dif.nome}</b> (troque no passo 1, lá em cima).</p>
+      ${blocoOficio(d)}
       <h3>Habilidade${livre ? '' : sorteada}</h3>
       <div class="abils">${d.abilities.map(a => `<button class="abil ${livre && PV.ability === a.name ? 'on' : ''}" data-act="ability" data-v="${a.name}" aria-pressed="${livre && PV.ability === a.name}" ${livre ? '' : 'disabled'}><b>${esc(fmt(a.name))}</b>${a.hidden ? '<em>oculta</em>' : ''}${IMPL.has(a.name) ? '<span class="impl">✓ ativa em batalha</span>' : '<span class="impl-futura">efeito em batalha: será ajustado em atualizações futuras</span>'}<small>${esc(syncGet('ab:' + a.name)?.effect || 'Carregando…')}</small></button>`).join('')}</div>
       <div class="row3">
@@ -301,8 +316,78 @@ export function renderPreview() {
       <button class="btn big" data-act="start">Começar como ${esc(fmt(d.name))}</button>
     </div></section>`;
 }
+/* ============ ⚔ Saga: montar a comitiva na criação ============
+   No Saga você escolhe quem vai com você (decisão do usuário, 02/10/2026) em vez de recrutar com petisco pelo
+   caminho: a comitiva de ofícios complementares é o que a fase 1 existe pra avaliar, e esperar meia hora de jogo
+   pra ter um Curandeiro inviabiliza testar.
+
+   Um clique = UMA busca, de propósito: mostrar o ofício de todos os candidatos de uma vez custaria ~30
+   requisições à PokéAPI ao abrir a tela (o ofício precisa de `base` e `learnset`, e a grade só tem id e sprite).
+   É o mesmo desenho da prévia do passo 3 — você clica, ele busca, o ofício aparece.
+   `G.comitiva` vive na tela (não no save): quem começa a jornada é `iniciarJornada`. */
+const candidatosDaComitiva = () => permitidos() || INICIAIS;
+
+export function renderComitiva() {
+  const el = $('#comitiva'); if (!el) return;
+  if (G.dif !== 'saga') { el.innerHTML = ''; return; }
+  const teto = maxAliados('saga'), escolhidos = G.comitiva || [];
+  const meu = G.PV ? oficioDe(G.PV.data) : null;
+  el.innerHTML = `<h3 class="passo"><span>4</span> Comitiva <span class="muted small">(${escolhidos.length}/${teto})</span></h3>
+    <p class="small muted">Quem vai com você. ${meu ? `Você é <b>${meu.emoji} ${esc(meu.nome)}</b> — ` : ''}a ideia é cobrir os ofícios que faltam: alguém que segure a linha, alguém que cure, alguém que machuque.
+      Dá pra começar com menos e recrutar o resto no caminho, com petisco.</p>
+    ${escolhidos.length ? `<div class="aliados">${escolhidos.map((c, i) => `<div class="ali-card">
+        <img src="${espelhar(c.data.sprite)}" alt="" loading="lazy">
+        <div><b>${esc(fmt(c.data.name))}</b><small class="muted">${c.oficio ? `${c.oficio.emoji} ${esc(c.oficio.nome)}` : 'ofício desconhecido'}</small></div>
+        <button class="btn sm ghost" data-act="comitiva-tirar" data-v="${i}">✕ Tirar</button>
+      </div>`).join('')}</div>` : ''}
+    ${escolhidos.length < teto ? `<div class="picks" style="margin-top:10px">${candidatosDaComitiva().map(id =>
+      `<button class="pick" data-act="comitiva-por" data-v="${id}"><img src="${SPR(id)}" alt="" loading="lazy">#${id}</button>`).join('')}</div>
+      <p class="small muted" id="comitiva-aviso"></p>` : '<p class="small muted">Comitiva completa.</p>'}`;
+}
+/* Põe um candidato na comitiva. A busca pode falhar (rede): o aviso fica NO BLOCO da comitiva, não na prévia —
+   erro de rede mostrado longe do botão que o causou faz o jogador procurar o problema no lugar errado. */
+export async function porNaComitiva(id) {
+  const teto = maxAliados('saga');
+  // o aviso pode não estar mais na tela depois do `await` (trocou de modo no meio da busca): nunca assumir que está
+  const aviso = html => { const el = $('#comitiva-aviso'); if (el) el.innerHTML = html; };
+  G.comitiva ||= [];
+  if (G.comitiva.length >= teto) return;
+  if (G.comitiva.some(c => String(c.data.id) === String(id))) { aviso('Esse já está na comitiva.'); return; }
+  aviso('Consultando a PokéAPI…');
+  let data;
+  try { data = await resolvePokemon(id); }
+  catch (e) { aviso(apiErr(e)); return; }
+  G.comitiva.push({ data, oficio: oficioDe(data) });
+  renderComitiva();
+}
+export function tirarDaComitiva(i) {
+  (G.comitiva || []).splice(Number(i), 1);
+  renderComitiva();
+}
+/* Os companheiros escolhidos entram como aliados de verdade: mesmo caminho do recrutar com petisco
+   (`amizade.oferecer`) — growth, exp do nível e `felicidade` de aliado, senão eles não sobem de nível nem evoluem.
+   Falhar aqui NÃO pode impedir a jornada de começar: quem não vier é só um companheiro a menos (e o aviso diz
+   isso), porque a esta altura o save já existe. */
+async function montarComitiva(S, comitiva) {
+  for (const { data } of comitiva) {
+    try {
+      const A = await makeMon(data, S.player.level);
+      const sp = await loadSpecies(data.speciesUrl);
+      A.growth = await loadGrowth(sp.growthUrl);
+      A.exp = A.growth[A.level];
+      A.felicidade = FELICIDADE_ALIADO;
+      S.aliados.push(A);
+      registrar(S, 'amigos', data.speciesName, data.id);
+      if (A.shiny) registrar(S, 'shiniesAmigos', data.speciesName, data.id);
+    } catch (e) {
+      console.error('comitiva:', e);
+      log(`${esc(fmt(data.name))} não pôde vir com você agora (${esc(e.message)}) — dá pra recrutar alguém no caminho, com petisco.`, 'muted');
+    }
+  }
+}
+
 // Monta o save e entra no jogo. `nature`/`ability` undefined = sorteadas pelo makeMon.
-async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen, shiny }) {
+async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen, shiny, comitiva }) {
   /* Modo em construção só pra admin — conferido AQUI, não só no cartão: `data-act="dificuldade"` carrega a chave
      num atributo do HTML, e regra que só existe na tela não é regra. Sem isso, dá pra começar uma jornada num
      modo pela metade e levar o save (e a pontuação) pra frente. */
@@ -334,7 +419,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
      dentro do ovo sem aparecer em tela nenhuma até chocar. Nada de rede neste caminho: os ciclos de choco de cada
      tipo são fixos (CICLOS_PSEUDO/CICLOS_LENDARIO), então começar a jornada nunca espera por isso. */
   const ovosIniciais = (v.ovos || []).map(t => ovoDeBadge(t, t === 'lendario' ? especiesLendarias() : PSEUDO_LENDARIOS)).filter(Boolean);
-  G.S = { player: mon, bag, ovos: ovosIniciais, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+  G.S = { player: mon, bag, aliados: [], ovos: ovosIniciais, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     climaRotas: !!(DIFICULDADES[dificuldade].climaRotasFixo || G.climaRotas), // 🌦 clima/terreno das rotas: fixo no Roguelike/Hardcore, opção nos outros (regras.climaDasRotasAtivo)
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
@@ -342,6 +427,8 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   // Segredo do brilho (regras.bonusShiny): registra NA HORA pra "✨ Começar shiny" (opcaoShiny) já valer nesta
   // espécie em jornadas futuras — bug corrigido em 27/09/2026, antes só recrutar um ALIADO shiny registrava isso.
   if (mon.shiny) registrar(G.S, 'shiniesAmigos', data.speciesName, data.id);
+  // ⚔ Saga: os companheiros escolhidos no passo 4 entram agora, com o save já montado
+  if (comitiva?.length) await montarComitiva(G.S, comitiva);
   G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar');
   buildGame();
   log(`Você abre os olhos em ${startZone.name}, em ${dadosDaGen(gen).regiao}. Não há treinador por perto: desta vez, o Pokémon é você, ${nm(mon)}.`);
@@ -365,7 +452,7 @@ export async function startGame(btn) {
     // não marcado, pra `makeMon` cair no sorteio normal de 1 em 4096 em vez de forçar "não shiny".
     PV.shiny = !!$('#pv-shiny')?.checked;
     const gen = gensLiberadas().includes(G.gen) ? G.gen : 1; // garantia (o cartão trancado já vem desativado)
-    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif, gen, shiny: PV.shiny || undefined });
+    await iniciarJornada({ data: PV.data, level: nivelInicial(PV), nature: livre ? PV.nature : undefined, ability: livre ? PV.ability : undefined, nick: PV.nick, dificuldade: G.dif, gen, shiny: PV.shiny || undefined, comitiva: G.dif === 'saga' ? G.comitiva : null });
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Tentar de novo';
     $('#preview').insertAdjacentHTML('beforeend', `<p class="err">${apiErr(e)}</p>`);
