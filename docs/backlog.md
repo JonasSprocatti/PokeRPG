@@ -11,6 +11,14 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 - ~~**Missões próprias de cada mapa**~~ **✅ FEITO (01/10/2026)** — 180 missões por rota (uma de espécie e uma de Alfa em cada rota das 9 Gens) + o 🗺 **Editor de rotas** (admin) que as gera, com análise de curva de stats e troca de Alfa. Detalhe em `docs/features.md` ("Missões por rota e o editor de rotas"); o levantamento e a revisão das 36 antigas estão em `docs/missoes-por-rota.md`. **Continua de fora, por escolha do usuário na mesma conversa**: criar/excluir rotas pelo editor e **rotas secretas** (abertas por Pokémon capturado/usado, golpe aprendido etc.) — a primeira é CRUD sobre a lista que meia dúzia de sistemas leem, a segunda é mecânica nova, não editor. São os dois itens abaixo.
 - **Criar e excluir rotas pelo editor** (pedido em 01/10/2026): o editor hoje só edita as rotas que existem. Rota nova mexe em `mapas.js`, Santuário, Pokédex da conta, caça shiny, `baixarGen` (offline) e desbloqueio do Roguelike — todos leem a lista.
 - **Rotas secretas** (pedido em 01/10/2026): rota que abre por condição do jogador — Pokémon específico capturado **e usado**, golpe aprendido pelo principal, etc. É mecânica nova (condição no save, na tela de explorar e no progresso), não funcionalidade do editor.
+- **⚔ Modo Saga** (pedido em 02/10/2026): modo separado de RPG medieval fantástico com **ofícios** na luta
+  (Guardião, Curandeiro, Arcano, Guerreiro, Encantador, Bardo), ameaça/aggro, perícias com recarga, Brecha/Ruína,
+  comitiva de 4, NPCs Pokémon com diálogo, três facções e caminhos com consequência. **O plano combinado está em
+  `docs/plano-saga.md`** — ler de lá antes de mexer. Entrega em 4 fases; a fase 1 é o combate.
+  **Feito até agora**: `js/oficios.js` + `tests/oficios.test.js` (o ofício lido dos stats base + learnset).
+  **Falta na fase 1**: ameaça (`regras.alvoPorAmeaca`, nos dois motores), as 8 perícias, Brecha/Ruína, o modo
+  `saga` em `DIFICULDADES` com `aliadosEmCampo: 3`, e o painel de perícia. README e patch note entram quando o
+  modo ficar jogável (hoje nada disso aparece pra quem joga).
 - **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
 - **Habilidades**: 217 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
