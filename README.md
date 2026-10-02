@@ -65,6 +65,7 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 ### Batalha
 - Turnos com barra de "quem está agindo", prioridade e velocidade, precisão e evasão, crítico, status (queimado, envenenado, paralisado, dormindo, congelado, confuso) e dano residual.
+- **Congelado derrete:** 20% de chance de sair sozinho por turno, mas **golpe de Fogo descongela quem leva**, **golpe quente (Roda de Fogo, Fogo Sagrado, Investida Flamejante, Água Fervente, Bola de Fogo…) descongela quem usa** — e no **sol forte ninguém congela**.
 - As **barras de HP e XP animam** ao mudar de valor, e o **PP pisca** quando muda — nada salta direto pro número novo. Quem apanha **treme e pisca na cor do tipo do golpe** (fogo acende laranja, água acende azul; dano sem tipo fica no vermelho) e quem ataca dá um pulinho. Tudo isso respeita a preferência de "reduzir animações" do aparelho e pode ser desligado em **⚙ Ajustes → Som e animações** — desligado, o combate também fica mais rápido, porque a pausa entre as mensagens existia pra dar tempo de ver a animação.
 - **Cena mais viva**: quem ataca dá um pulo, quem apanha pisca vermelho, quem se cura pisca verde, e status (queimado, envenenado, paralisado, congelado) e mudanças de atributo pulsam sutilmente enquanto durarem.
 - **Mais de 200 habilidades com efeito de verdade**, iguais no single player e no multiplayer (Intimidate e as outras de "entrar em campo" agora também valem no multiplayer):

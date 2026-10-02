@@ -393,6 +393,11 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
     if (avisar) await ctx.say(`${TERRENOS[terrenoDe(ctx.campo)].nome} protege ${ctx.nome(t)}!`);
     return;
   }
+  // Sol forte não deixa ninguém congelar (fiel aos jogos)
+  if (ail === 'freeze' && climaDe(ctx.campo) === 'sol') {
+    if (avisar) await ctx.say(`O ${CLIMAS.sol.nome.toLowerCase()} impede o congelamento!`);
+    return;
+  }
   let imune = imuneAoStatusMon(t, ail);
   // Corrosion: ignora a imunidade de TIPO ao veneno (Venenoso/Aço) de quem é atingido — não a de habilidade (Immunity…)
   if (imune && ail === 'poison' && fonte && hab(fonte).podeEnvenenarQualquer) imune = !!hab(t).imuneStatus?.includes(ail);
@@ -586,8 +591,10 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
     if (u.sleep > 0) { interromper(u); await ctx.say(`${U} está dormindo profundamente.`); return; }
     u.status = null; u.sleep = 0; up(ctx); await ctx.say(`${U} acordou!`);
   }
+  // Congelado: 20% de descongelar por turno — MAS golpe com a flag `defrost` (Flame Wheel, Sacred Fire, Flare
+  // Blitz, Scald, Pyro Ball…) derrete o gelo de quem usa e sai normalmente, como nos jogos.
   if (u.status === 'freeze') {
-    if (Math.random() < 0.2) { u.status = null; up(ctx); await ctx.say(`${U} descongelou!`); }
+    if (temFlag(g, 'defrost') || Math.random() < 0.2) { u.status = null; up(ctx); await ctx.say(`${U} descongelou!`); }
     else { interromper(u); await ctx.say(`${U} está congelado!`); return; }
   }
   if (u.status === 'paralysis' && Math.random() < 0.25) { interromper(u); await ctx.say(`${U} está paralisado e não consegue se mover!`); return; }
@@ -772,6 +779,9 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (hits > 1) await ctx.say(`Acertou ${acertos} vez${acertos > 1 ? 'es' : ''}!`);
   await ctx.say(`${T} perdeu ${total} HP.`, 'hit');
   if (t.boss && total === 0 && anulaTexto(t, g.type)) await ctx.say(`🚫 ${anulaTexto(t, g.type)}: o golpe não faz nada!`, 'muted');
+  // Levar um golpe de Fogo (ou Scald/Água Fervente e cia., flag `defrost`) descongela quem está congelado. Não é
+  // efeito secundário: Shield Dust e Sheer Force não impedem.
+  if (t.status === 'freeze' && total > 0 && (g.type === 'fire' || temFlag(g, 'defrost'))) { t.status = null; up(ctx); await ctx.say(`${T} descongelou com o calor do golpe!`, 'status'); }
   if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, total), ctx);   // desgasta a couraça, interrompe a carga, muda de fase
   if (u.boss) {                                                               // Ursaluna Bloodmoon: cura uma fração do que causou
     const h = drenoDoChefe(u, total);

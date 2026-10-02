@@ -5,6 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
+- Congelamento: o que faltava (02/10/2026)
 - Golpes de peso e de atributo trocado (02/10/2026)
 - Evento semanal, chefes e Arena
 - Loja de preparo, Hall da Fama e Sala de Raide
@@ -19,6 +20,33 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Anúncios e privacidade
 
 ---
+
+## Congelamento: o que faltava (02/10/2026)
+
+Relato do jogador: "o status congelado parece não estar funcionando". A primeira coisa foi reproduzir num script
+de Node com o motor de verdade (`usarGolpe` + um `ctx` de teste) em vez de confiar na leitura: **a aplicação e a
+trava funcionavam** — Ice Beam congela, o congelado perde a vez, 20% de sair por turno. O que faltava eram as
+três INTERAÇÕES, e são elas que fazem o status parecer quebrado em jogo, porque são o que o jogador espera:
+
+1. **Golpe de Fogo não descongelava o alvo.** Lança-Chamas num inimigo congelado deixava o gelo intacto.
+   Consertado em `executar`, logo depois do dano — e de propósito **fora** do bloco de secundários (`!hu.sheerForce
+   && !ht.semSecundario`): descongelar não é efeito secundário, Shield Dust e Sheer Force não impedem nos jogos.
+2. **Golpe `defrost` não descongelava quem usa.** Flame Wheel, Sacred Fire, Flare Blitz, Scald, Fusion Flare,
+   Steam Eruption, Burn Up, Sizzly Slide, Pyro Ball e Scorching Sands existem justamente pra sair do gelo, e o
+   congelamento travava os dez. A lista **não foi digitada à mão**: a flag `defrost` já estava em
+   `dados-golpe-flags.js` (gerado do repositório-fonte da PokéAPI) e `regras.temFlag` já era importada em
+   `golpe.js` — o conserto é uma condição a mais no `if` que já existia.
+3. **Sol forte não impedia o congelamento.** Uma guarda em `aplicarStatus`, junto das outras (Salvaguarda, Flower
+   Veil, Leaf Guard, terreno), antes da imunidade de tipo.
+
+Quem descongela por Fogo usa `g.type === 'fire' || temFlag(g, 'defrost')`: o tipo cobre todo golpe de Fogo, a flag
+cobre Scald/Steam Eruption/Scorching Sands, que são de Água/Chão e derretem mesmo assim.
+
+**Ficou de fora:** Tri Attack. A PokéAPI devolve `ailment: 'unknown'` pra ele (o status é sorteado entre queimar,
+congelar e paralisar), então `aplicarStatus` cai no `!AIL_MSG[ail]` e não faz nada — em silêncio, porque o
+secundário chama com `avisar: false`. Resolver pede uma entrada em `especiais.js` com sorteio, não é regressão
+desta leva. `tests/congelado.test.js` fixa o sorteio nos dois lados do limiar (0.1 descongela, 0.99 não), nunca
+por amostragem.
 
 ## Golpes de peso e de atributo trocado (02/10/2026)
 

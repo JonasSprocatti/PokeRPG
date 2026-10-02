@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.44', data: '2026-10-02', titulo: '🧊 Congelado agora derrete: fogo quebra o gelo e o sol não deixa congelar', piada: 'Um Charizard passou três turnos congelado cuspindo lança-chamas sem notar o gelo nas asas. Avisamos. Ele ficou constrangido e pediu pra não aparecer na nota. Está na nota.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Golpe de Fogo descongela quem leva.</b> Um inimigo congelado levava Lança-Chamas na cara e continuava congeladinho — nos jogos, o calor quebra o gelo na hora. Agora quebra aqui também (e <b>Água Fervente</b> e companhia, que também derretem, contam).',
+        '<b>Golpe quente descongela quem usa.</b> Estar congelado travava TUDO, inclusive <b>Roda de Fogo</b>, <b>Fogo Sagrado</b>, <b>Investida Flamejante</b>, <b>Água Fervente</b> e <b>Bola de Fogo</b> — justamente os golpes que existem pra te tirar do gelo. Agora saem normalmente e te descongelam de quebra.',
+        '<b>Sol forte não deixa mais ninguém congelar.</b> Fazia 40 graus no campo e o Raio Congelante congelava do mesmo jeito. Não congela mais.'
+      ] }
+    ] },
   { versao: '2.43', data: '2026-10-02', titulo: '⚖ Golpe de peso agora pesa: Heavy Slam, Low Kick, Psyshock e Body Press', piada: 'Descobrimos que o Snorlax levava Low Kick como se fosse um Joltik de 0,6 kg. Ele agradeceu os anos de tratamento gentil e pediu que não contassem a ninguém. Contamos.',
     secoes: [
       { nome: 'Correções', itens: [
