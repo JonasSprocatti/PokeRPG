@@ -10,6 +10,17 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.49', data: '2026-10-02', titulo: '📱 Deitado: menu enxuto, logo de volta e o Explorar na mão direita', piada: 'O subtítulo dizia "RPG de texto" desde sempre, e um jogador perguntou onde ficava o campo pra digitar o texto. Não ficava em lugar nenhum. O subtítulo foi aposentado com honras.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Celular deitado: o menu voltou pro ☰.</b> As quinze telas abriam em três fileiras de botões e comiam metade da tela — agora ficam guardadas no menu, que rola se não couber.',
+        '<b>O botão principal agora fica na borda direita</b> quando o aparelho está deitado: saindo da batalha, o <b>Explorar</b> cai no mesmo canto onde estavam os golpes, debaixo do polegar.',
+        'O jogo agora se apresenta como <b>"Você é o Pokémon"</b> — o antigo "RPG de texto" prometia um teclado que nunca existiu.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>A logo voltou a aparecer no topo</b> do celular deitado: com muito botão na barra, ela era espremida até virar um risco de nada.'
+      ] }
+    ] },
   { versao: '2.48', data: '2026-10-02', titulo: '📱 Celular deitado: a batalha para de fugir pro pé da página', piada: 'A cena da luta estava indo pra quarta linha do layout sem avisar ninguém. Perguntamos o que ela fazia lá embaixo. Ela disse que o CSS mandou. O CSS confirmou. Demitimos o CSS daquela parte.',
     secoes: [
       { nome: 'Correções', itens: [

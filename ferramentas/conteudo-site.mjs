@@ -10,7 +10,7 @@
 import { AVISO_MARCA, CREDITO_DADOS, EMAIL_CONTATO, ATUALIZADO_EM } from '../js/site.js';
 
 export const SOBRE = `
-  <p class="lead">O PokéRPG é um RPG de texto que roda no navegador, de graça, e parte de uma pergunta simples:
+  <p class="lead">O PokéRPG é um RPG que roda no navegador, de graça, e parte de uma pergunta simples:
     e se, em vez de treinar Pokémon, você <b>fosse</b> um?</p>
 
   <h2>A ideia</h2>

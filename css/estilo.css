@@ -43,7 +43,9 @@ img{max-width:100%}
 .muted{color:var(--muted)} .small{font-size:14px}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:2px solid var(--line)}
-.brand{display:flex;align-items:center;gap:10px}
+/* `flex:none`: com muitos botões no topo o navegador encolhia o .brand e a logo virava um risco de 0px de largura
+   (o subtítulo quebrava em 3 linhas ao lado) — era o "ícone que não aparece" no celular deitado. */
+.brand{display:flex;align-items:center;gap:10px;flex:none}
 /* a logo é um botão (data-act="inicio"): leva pra tela inicial. Sem borda/fundo de botão, com foco visível pra teclado */
 .brand-logo{background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;border-radius:8px;transition:transform .15s}
 .brand-logo:hover{transform:scale(1.04)}
@@ -67,17 +69,22 @@ img{max-width:100%}
 .carteira-mini{color:var(--yellow);font:800 15px var(--display);white-space:nowrap}
 .carteira-loja{margin:0 0 10px;padding:8px 14px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;color:var(--yellow);font:600 16px var(--display)}
 .carteira-loja b{font-size:20px}
-@media(max-width:720px){.dinheiro{font-size:17px;padding:6px 12px;min-height:44px}}
+@media(max-width:720px),(orientation:landscape) and (max-height:560px){.dinheiro{font-size:17px;padding:6px 12px;min-height:44px}}
 .burger{display:none}
 .menu-links{display:contents} /* no computador some da conta: filhos ficam em linha no .top-r */
 #topr{flex-wrap:wrap;justify-content:flex-end}
 .btn-login{border-radius:999px;padding:8px 18px;box-shadow:0 0 0 3px rgba(247,197,72,.25)}
-@media(max-width:720px){
+/* O ☰ também em celular DEITADO (mesmo gatilho de altura do resto do CSS de paisagem): um celular deitado passa
+   de 720px de largura e sem isso as ~15 telas abriam em três fileiras de botões, comendo metade da tela. */
+@media(max-width:720px),(orientation:landscape) and (max-height:560px){
   .top{padding:10px 14px}
   .brand small{display:none}
   .brand .logo{height:38px}
   .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
+  /* `max-height`+rolagem: o menu é `absolute` (não empurra a página), então numa tela baixa os últimos botões
+     ficariam fora da tela sem nenhum jeito de chegar neles. */
   .menu-links{display:none;position:absolute;top:calc(100% + 6px);left:10px;right:10px;z-index:9;flex-direction:column;gap:10px;
+    max-height:70vh;max-height:70dvh;overflow:auto;
     background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
   .menu-links.open{display:flex}
   .menu-links .top-r,#conta-chip{flex-direction:column;align-items:stretch;gap:8px}
@@ -438,6 +445,11 @@ a.btn{display:inline-block;text-decoration:none}
    Fixa, ela está sempre visível; o `padding-left` do `.game` reserva o espaço e o resto rola por baixo dela.
    A logo do topo é a única coisa que ficaria atrás do cartão, então sai de vista enquanto durar a luta. */
 @media(orientation:landscape) and (max-height:560px){
+  /* MÃO DIREITA: deitado, a cena da luta toma a esquerda e quem age é o polegar direito. Saindo da batalha, o
+     "Explorar" tem de cair no mesmo canto — senão a mão vai no lugar onde estavam os golpes e não acha nada.
+     `row-reverse` leva o primeiro botão do DOM (o principal) pra borda direita sem mexer na ordem de leitura
+     nem na tabulação. Só fora da luta: em batalha os golpes já nascem na coluna da direita. */
+  body:not(.em-batalha) #actions{flex-direction:row-reverse}
   body.em-batalha .game{--cena:min(36vw,320px);grid-template-columns:1fr;gap:10px;padding:8px 8px 8px calc(var(--cena) + 16px)}
   body.em-batalha .stage{display:contents}
   body.em-batalha .divisor{display:none}

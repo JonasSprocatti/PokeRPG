@@ -70,7 +70,7 @@ function pagina({ slug, titulo, descricao }) {
 </head>
 <body>
 <header class="top">
-  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para o jogo"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>RPG de texto</small></div>
+  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para o jogo"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>Você é o Pokémon</small></div>
   <div class="top-r"><a class="btn" href="./">▶ Jogar</a></div>
 </header>
 <div id="app">
