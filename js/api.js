@@ -187,6 +187,7 @@ export function slimPokemon(p) {
     id: p.id, name: p.name, speciesName: p.species.name, speciesUrl: p.species.url,
     types: [...p.types].sort((a, b) => a.slot - b.slot).map(t => t.type.name),
     base: Object.fromEntries(p.stats.map(s => [s.stat.name, s.base_stat])),
+    weight: p.weight,                            // HECTOGRAMAS, como a API manda (Low Kick, Heavy Slam — regras.poderEspecial)
     effort: Object.fromEntries(p.stats.filter(s => s.effort > 0).map(s => [s.stat.name, s.effort])),
     baseExp: p.base_experience || 60,
     abilities: p.abilities.map(a => ({ name: a.ability.name, url: a.ability.url, hidden: a.is_hidden })),
@@ -211,7 +212,7 @@ export function slimMove(m) {
 // o `valido` aqui existe por causa do `learnset.extras` (golpes de MT/tutor/herança), que nasceu depois do cache:
 // registro guardado sem ele é atualizado na primeira busca online. Ao acrescentar OUTRO campo, estenda esta checagem.
 export const loadPokemon = q => cached('mon:' + q, async () => slimPokemon(await getJSON(`${API}/pokemon/${q}`)),
-  v => Array.isArray(v?.learnset?.extras));
+  v => Array.isArray(v?.learnset?.extras) && typeof v.weight === 'number');
 export const loadMove = url => cached('move:' + lastSeg(url), async () => slimMove(await getJSON(url)));
 export const loadAbility = a => cached('ab:' + a.name, async () => {
   const d = await getJSON(a.url); const en = (d.effect_entries || []).find(e => e.language.name === 'en');

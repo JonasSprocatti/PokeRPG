@@ -18,6 +18,7 @@
 //   recarga          no turno seguinte quem usou não age (Hyper Beam)
 //   furia            ataca sozinho por 2–3 turnos e depois fica confuso (Thrash, Outrage)
 //   poder: fórmula   poder calculado na hora (poderEspecial em regras.js)
+//   atkDe/atkDoAlvo/defDe   o golpe ataca ou defende por OUTRO atributo (Body Press, Foul Play, Psyshock) — ver a tabela
 //   danoIgualHp      o alvo fica com o HP de quem usou (Endeavor)
 //   soPrimeiroTurno  só funciona no primeiro golpe que você dá na batalha (Fake Out, First Impression)
 //   soSeAlvoAtaca    só funciona se o alvo escolheu um golpe de DANO neste turno e ainda não agiu (Sucker Punch, Thunderclap)
@@ -75,6 +76,20 @@ export const GOLPES_ESPECIAIS = {
   'gyro-ball': { poder: 'giroscopio' }, 'electro-ball': { poder: 'eletro' },
   hex: { poder: 'dobraAlvoComStatus' }, facade: { poder: 'dobraComStatus' }, venoshock: { poder: 'dobraAlvoEnvenenado' },
   brine: { poder: 'dobraAlvoMetade' },
+  // peso (data.weight, em hectogramas): o do ALVO (Low Kick, Grass Knot) ou a razão entre os dois (Heavy Slam, Heat Crash).
+  // Sem o peso no cache (registro baixado antes deste campo existir) a fórmula devolve null e vale o poder da tabela.
+  'low-kick': { poder: 'pesoDoAlvo' }, 'grass-knot': { poder: 'pesoDoAlvo' },
+  'heavy-slam': { poder: 'pesoRelativo' }, 'heat-crash': { poder: 'pesoRelativo' },
+  'stored-power': { poder: 'estagios' }, 'power-trip': { poder: 'estagios' }, punishment: { poder: 'estagiosDoAlvo' },
+  'wring-out': { poder: 'hpDoAlvo' }, 'crush-grip': { poder: 'hpDoAlvo' },
+  /* Golpe que ataca ou defende por OUTRO atributo (calcDamage). Sem isso o par saía só do `cls` do golpe, e o
+     dano ficava silenciosamente errado — não "sem efeito": Psyshock batia na Defesa Especial e o Body Press
+     usava o Ataque de quem é feito pra bater com a Defesa.
+       atkDe     atributo de QUEM USA que entra no lugar do Ataque
+       atkDoAlvo o ataque é o do ALVO (Foul Play)
+       defDe     atributo do ALVO que entra no lugar da Defesa */
+  'body-press': { atkDe: 'defense' }, 'foul-play': { atkDoAlvo: true },
+  psyshock: { defDe: 'defense' }, psystrike: { defDe: 'defense' }, 'secret-sword': { defDe: 'defense' },
   endeavor: { danoIgualHp: true },
   // só no primeiro golpe que o Pokémon dá na batalha (senão falha) — é o que segura o recuo do Fake Out
   'fake-out': { soPrimeiroTurno: true }, 'first-impression': { soPrimeiroTurno: true },

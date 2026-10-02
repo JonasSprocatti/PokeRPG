@@ -5,6 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
+- Golpes de peso e de atributo trocado (02/10/2026)
 - Evento semanal, chefes e Arena
 - Loja de preparo, Hall da Fama e Sala de Raide
 - Habilidades: as 7 levas
@@ -16,6 +17,47 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Som: cries e música procedural (30/09/2026)
 - Troca de tipo, Endeavor no chefe e a leva de itens de 30/09/2026
 - Anúncios e privacidade
+
+---
+
+## Golpes de peso e de atributo trocado (02/10/2026)
+
+Um levantamento do jogador: "Heavy Slam, Psyshock e Body Press funcionam?" Não funcionavam, e de duas maneiras
+diferentes — a segunda bem pior que a primeira.
+
+**Poder variável que a PokéAPI não calcula.** Low Kick, Grass Knot, Heavy Slam, Heat Crash, Wring Out e Crush Grip
+vêm da API com `power: null`, e `calcDamage` fazia `move.power || 60`: **todos batiam com poder fixo 60**, o Low Kick
+contra um Snorlax igual ao Low Kick contra um Caterpie. Entraram como fórmulas em `regras.poderEspecial`
+(`pesoDoAlvo`, `pesoRelativo`, `hpDoAlvo`), mais `estagios`/`estagiosDoAlvo` para Stored Power, Power Trip e
+Punishment — esses três tinham poder na tabela, mas o poder BASE, sem os +20 por degrau.
+
+O peso não existia no jogo: `api.slimPokemon` descartava o `weight` da API. Ele entra agora **em hectogramas, como
+a API manda** (`pesoKg` divide por 10 na hora de usar) — converter na entrada criaria duas unidades em circulação.
+Quem já tinha a espécie no cache tem um registro sem o campo; é exatamente o caso que o `valido` de `cached()` existe
+pra resolver (o precedente é o `learnset.extras`), então `loadPokemon` passou a exigir `typeof v.weight === 'number'`
+e troca o registro na primeira busca online. **Não subimos `VERSAO_DOWNLOAD`**: nenhuma busca nova entrou no
+`baixarGen`, só um campo a mais no mesmo JSON. O preço é que quem está offline com uma Gen antiga baixada continua
+sem o peso — e aí as fórmulas devolvem `null` de propósito, caindo no poder da tabela. É melhor que tratar peso
+ausente como zero, que daria Heavy Slam de poder 120 contra tudo.
+
+**O par de atributos errado — esse não "não funcionava", funcionava diferente em silêncio.** `calcDamage` escolhia
+Ataque/Defesa só pelo `cls` do golpe. Então Psyshock, Psystrike e Secret Sword (especiais que nos jogos batem na
+Defesa FÍSICA) atingiam a Defesa Especial; Body Press usava o seu Ataque, quando a razão de ele existir é bater com
+a Defesa; e Foul Play usava o SEU Ataque em vez do do alvo. Nenhum deles mostrava "efeito será ajustado em
+atualizações futuras", porque dano saía — só o número errado. Três campos novos em `especiais.js` (`atkDe`,
+`atkDoAlvo`, `defDe`) e o par de `effStat` em `calcDamage` passou a consultá-los.
+
+Como tudo caiu em `calcDamage` e em `poderEspecial`, veio de graça: o motor único (`golpe.js`), o multiplayer
+(`mp-motor` chama o mesmo `usarGolpe`) e **a IA do inimigo**, que estima dano por `notaDoGolpe` → `calcDamage` e
+agora entende que o Heavy Slam dela vale mais contra um alvo leve.
+
+**Ficou de fora:** Avalanche e Revenge (dobram se você levou dano ANTES no turno) — precisam de um registro novo no
+`vol` alimentado pelos dois motores, não é uma fórmula pura. Autotomize também não existe, então nada altera o peso
+durante a batalha.
+
+O teste de contrato de `tests/especiais.test.js` ("só comportamentos que o motor conhece") pegou cada fórmula e cada
+campo novo antes de eu rodar o resto — é pra isso que ele está lá. O teste da troca de atributo compara o golpe com
+um de referência do mesmo poder mexendo só no atributo que deveria pesar, em vez de travar um número de dano.
 
 ---
 

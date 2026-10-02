@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';
 import { usarGolpe, fimDeTurno, fimDaRodada, golpeTravado } from '../js/golpe.js';
-import { freshVol, poderEspecial, chanceOhko, danoResidual, TRAVAS } from '../js/regras.js';
+import { freshVol, poderEspecial, chanceOhko, danoResidual, calcDamage, TRAVAS } from '../js/regras.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
 const status = (name, o = {}) => golpe({ name, cls: 'status', power: null, acc: null, target: 'user', ...o });
@@ -25,8 +25,10 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'trava',                                  // Taunt, Encore, Disable, Torment (regras.motivoBloqueio)
     'viraTipo', 'ganhaTipo',                  // Soak/Magic Powder trocam o tipo do alvo; Forest's Curse/Trick-or-Treat acrescentam um
     'forcaSaida', 'prende', 'passaBonus',     // o que nos jogos dependia de trocar de Pokémon (Roar, Mean Look, Baton Pass)
-    'puneContato', 'voltaPostura']);          // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
-  const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade']);
+    'puneContato', 'voltaPostura',            // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
+    'atkDe', 'atkDoAlvo', 'defDe']);          // golpe que ataca/defende por outro atributo (Body Press, Foul Play, Psyshock) — regras.calcDamage
+  const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade',
+    'pesoDoAlvo', 'pesoRelativo', 'estagios', 'estagiosDoAlvo', 'hpDoAlvo']);
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {
     for (const k of Object.keys(e)) assert.ok(ok.has(k), `${n}: comportamento desconhecido "${k}"`);
     if (e.poder) assert.ok(formulas.has(e.poder), `${n}: fórmula "${e.poder}"`);
@@ -163,6 +165,58 @@ test('poder variável', () => {
   assert.equal(poderEspecial(mon(), mon({ status: 'burn' }), g('hex')), 120);
   assert.equal(poderEspecial(mon(), mon({ hp: 80 }), g('brine')), 120);
   assert.equal(poderEspecial(mon(), mon(), g('tackle')), null);
+});
+
+test('poder pelo peso: o do alvo (Low Kick) e a razão entre os dois (Heavy Slam)', () => {
+  const g = n => ({ name: n, power: null });
+  const kg = v => mon({ data: { types: ['normal'], weight: v * 10 } });   // a API manda hectogramas
+  // Low Kick: faixas de 10, 25, 50, 100 e 200 kg
+  assert.equal(poderEspecial(mon(), kg(5), g('low-kick')), 20);
+  assert.equal(poderEspecial(mon(), kg(10), g('low-kick')), 40);          // o limite entra na faixa de cima
+  assert.equal(poderEspecial(mon(), kg(49.9), g('low-kick')), 60);
+  assert.equal(poderEspecial(mon(), kg(99), g('low-kick')), 80);
+  assert.equal(poderEspecial(mon(), kg(199), g('low-kick')), 100);
+  assert.equal(poderEspecial(mon(), kg(460), g('low-kick')), 120);        // Snorlax
+  // Heavy Slam: 2×, 3×, 4× e 5× mais pesado
+  assert.equal(poderEspecial(kg(100), kg(60), g('heavy-slam')), 40);
+  assert.equal(poderEspecial(kg(100), kg(50), g('heavy-slam')), 60);
+  assert.equal(poderEspecial(kg(100), kg(30), g('heavy-slam')), 80);
+  assert.equal(poderEspecial(kg(100), kg(25), g('heavy-slam')), 100);
+  assert.equal(poderEspecial(kg(100), kg(20), g('heavy-slam')), 120);
+  // espécie guardada no cache antes de o peso existir: desiste e vale o poder da tabela, não "peso zero"
+  assert.equal(poderEspecial(mon(), mon(), g('low-kick')), null);
+  assert.equal(poderEspecial(kg(100), mon(), g('heavy-slam')), null);
+});
+
+test('poder por estágios e por HP do alvo', () => {
+  const g = (n, power) => ({ name: n, power });
+  const comEstagios = st => mon({ vol: { ...freshVol(), stages: { ...freshVol().stages, ...st } } });
+  assert.equal(poderEspecial(mon(), mon(), g('stored-power', 20)), 20);
+  assert.equal(poderEspecial(comEstagios({ attack: 2, speed: 1 }), mon(), g('stored-power', 20)), 80);
+  assert.equal(poderEspecial(comEstagios({ attack: -6 }), mon(), g('stored-power', 20)), 20);  // queda não tira poder
+  assert.equal(poderEspecial(mon(), comEstagios({ defense: 3 }), g('punishment', 60)), 120);
+  assert.equal(poderEspecial(mon(), comEstagios({ attack: 6, defense: 6 }), g('punishment', 60)), 200); // teto
+  assert.equal(poderEspecial(mon(), mon({ hp: 40 }), g('wring-out', null)), 30);               // 1/4 do HP → 1/4 de 120
+  assert.equal(poderEspecial(mon(), mon({ hp: 1 }), g('crush-grip', null)), 1);                // nunca zero
+});
+
+/* Aqui o que importa é QUAL atributo entrou na conta, não o número do dano — então o teste compara o golpe
+   especial com um golpe de referência do mesmo poder e tipo, mexendo só no atributo que deveria pesar. */
+test('golpe que ataca ou defende por outro atributo', () => {
+  const g = (name, cls) => ({ name, type: 'normal', cls, power: 80, acc: 100, meta: {}, stats: [] });
+  const com = st => mon({ stats: { hp: 160, attack: 50, defense: 50, 'special-attack': 50, 'special-defense': 50, speed: 100, ...st } });
+  const dano = (u, t, m) => calcDamage(u, t, m, null, null, null, true).dmg;   // `esperado`: sem crítico nem sorteio
+
+  // Body Press: sobe com a SUA Defesa, não com o seu Ataque
+  assert.ok(dano(com({ defense: 200 }), com(), g('body-press', 'physical')) > dano(com({ attack: 200 }), com(), g('body-press', 'physical')));
+  // Foul Play: sobe com o Ataque do ALVO, não com o seu
+  assert.ok(dano(com(), com({ attack: 200 }), g('foul-play', 'physical')) > dano(com({ attack: 200 }), com(), g('foul-play', 'physical')));
+  // Psyshock e cia.: golpe ESPECIAL que bate na Defesa física do alvo
+  for (const n of ['psyshock', 'psystrike', 'secret-sword']) {
+    assert.ok(dano(com(), com({ defense: 200 }), g(n, 'special')) < dano(com(), com({ 'special-defense': 200 }), g(n, 'special')), n);
+  }
+  // golpe comum não muda de atributo
+  assert.equal(dano(com({ attack: 200 }), com(), g('tackle', 'physical')), dano(com({ attack: 200 }), com({ defense: 50 }), g('tackle', 'physical')));
 });
 
 test('Endeavor deixa o alvo com o seu HP', async t => {

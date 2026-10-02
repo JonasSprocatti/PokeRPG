@@ -224,10 +224,23 @@ export function golpesDaEvolucao(antes = [], depois = [], nivel) {
 // Dano de um golpe. Habilidades (habilidades.js) entram aqui: quem ataca (stab, técnico, crítico, pinch, pouco
 // efetivo, queimadura ignorada) e quem recebe (resiste, super efetivo reduzido, HP cheio). Estágios/atributos em effStat.
 // Poder de golpe que depende da situação (especiais.js → poder). null = usa o poder da tabela.
+/* Peso em QUILOS. A PokéAPI manda em hectogramas (`data.weight`); quem baixou a espécie antes deste campo existir
+   tem o registro sem ele (api.loadPokemon troca na primeira busca online), e aí não há peso: `null` faz a fórmula
+   desistir e vale o poder da tabela, em vez de o golpe bater como se o bicho pesasse zero. */
+const pesoKg = m => (typeof m.data?.weight === 'number' ? m.data.weight / 10 : null);
+const estagiosPositivos = m => Object.values(m.vol?.stages || {}).reduce((s, n) => s + Math.max(0, n), 0);
 export function poderEspecial(u, t, move) {
   const f = especial(move).poder; if (!f) return null;
   const base = move.power || 60, hpU = u.hp / u.stats.hp;
   switch (f) {
+    case 'pesoDoAlvo': { const p = pesoKg(t); return p == null ? null : p >= 200 ? 120 : p >= 100 ? 100 : p >= 50 ? 80 : p >= 25 ? 60 : p >= 10 ? 40 : 20; } // Low Kick, Grass Knot
+    case 'pesoRelativo': { // Heavy Slam, Heat Crash: quantas vezes você é mais pesado que o alvo
+      const a = pesoKg(u), b = pesoKg(t); if (a == null || b == null) return null;
+      const r = a / Math.max(0.1, b); return r >= 5 ? 120 : r >= 4 ? 100 : r >= 3 ? 80 : r >= 2 ? 60 : 40;
+    }
+    case 'estagios': return base + 20 * estagiosPositivos(u);                                           // Stored Power, Power Trip
+    case 'estagiosDoAlvo': return Math.min(200, base + 20 * estagiosPositivos(t));                      // Punishment (teto 200 no jogo)
+    case 'hpDoAlvo': return Math.max(1, Math.floor(120 * t.hp / t.stats.hp));                           // Wring Out, Crush Grip
     case 'hpBaixo': { const p = Math.floor(48 * u.hp / u.stats.hp); return p <= 1 ? 200 : p <= 4 ? 150 : p <= 9 ? 100 : p <= 16 ? 80 : p <= 32 ? 40 : 20; } // Flail, Reversal
     case 'hpAlto': return Math.max(1, Math.floor(150 * hpU));                                           // Eruption, Water Spout
     case 'giroscopio': return Math.min(150, Math.floor(25 * effStat(t, 'speed') / effStat(u, 'speed')) + 1); // Gyro Ball: mais lento = mais forte
@@ -434,8 +447,12 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
     && ((hu.critContraStatus && t.status === hu.critContraStatus)
       || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0) + (seg(u).critExtra || 0))]);
   // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
-  const A = effStat(u, phys ? 'attack' : 'special-attack', crit, true, clima, terreno, !!ht.ignoraEstagios);
-  const D = effStat(t, phys ? 'defense' : 'special-defense', crit, false, clima, terreno, !!hu.ignoraEstagios);
+  /* O par de atributos sai do `cls` do golpe, MENOS quando a tabela de especiais diz outra coisa: Body Press
+     ataca com a sua Defesa, Foul Play com o Ataque do alvo, e Psyshock/Psystrike/Secret Sword são especiais
+     que batem na Defesa física. */
+  const esp = especial(move);
+  const A = effStat(esp.atkDoAlvo ? t : u, esp.atkDe || (phys ? 'attack' : 'special-attack'), crit, true, clima, terreno, !!ht.ignoraEstagios);
+  const D = effStat(t, esp.defDe || (phys ? 'defense' : 'special-defense'), crit, false, clima, terreno, !!hu.ignoraEstagios);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * (esperado ? 92.5 : rand(85, 100)) / 100;
   mod *= multStab(u, move.type, hu.stab || 1.5);                                      // STAB (Adaptability = ×2; Tera muda a conta)

@@ -10,6 +10,17 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.43', data: '2026-10-02', titulo: '⚖ Golpe de peso agora pesa: Heavy Slam, Low Kick, Psyshock e Body Press', piada: 'Descobrimos que o Snorlax levava Low Kick como se fosse um Joltik de 0,6 kg. Ele agradeceu os anos de tratamento gentil e pediu que não contassem a ninguém. Contamos.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Golpe que depende de peso finalmente pesa.</b> <b>Low Kick</b> e <b>Grass Knot</b> batiam com força fixa, igual contra um Caterpie e contra um Snorlax — agora valem mais quanto mais pesado é o alvo (até 120 de poder contra bicho de 200 kg ou mais). <b>Heavy Slam</b> e <b>Heat Crash</b> olham a <b>diferença</b>: ser 5 vezes mais pesado que o alvo é o golpe mais forte que você tem.',
+        '<b>Psyshock, Psystrike e Secret Sword atacavam a defesa errada.</b> Eles são golpes especiais que, nos jogos, batem na <b>Defesa física</b> do alvo — era justamente o ponto deles. Aqui iam na Defesa Especial, então o dano saía errado sem avisar ninguém. Consertado.',
+        '<b>Body Press usava o seu Ataque</b> em vez da sua <b>Defesa</b>, que é a razão de o golpe existir: agora quanto mais duro você é, mais forte ele bate. E <b>Foul Play</b> passou a usar o Ataque do <b>inimigo</b> contra ele mesmo, como deveria desde sempre.',
+        '<b>Stored Power, Power Trip e Punishment</b> ignoravam os aumentos de atributo que deveriam contar: cada degrau a mais soma <b>+20 de poder</b> (os seus, nos dois primeiros; os do alvo, no Punishment). <b>Wring Out</b> e <b>Crush Grip</b> agora batem mais forte quanto mais cheia está a vida do alvo.',
+        '<b>O inimigo aprendeu tudo isso junto.</b> A IA calcula o dano pela mesma conta, então um Alfa pesado agora SABE que o Heavy Slam dele vale a pena contra alvo leve. Boa sorte.',
+        'Um detalhe chato: o jogo não guardava o peso dos Pokémon — ele passou a vir junto com o resto da ficha. Se você baixou um mapa pra jogar offline antes desta atualização, o peso chega na primeira vez que o jogo falar com a internet; até lá esses golpes usam a força antiga, em vez de achar que todo mundo pesa zero.'
+      ] }
+    ] },
   { versao: '2.42', data: '2026-10-01', titulo: '🗺 180 missões novas: cada rota das 9 Gens tem as suas', piada: 'O Rattata da Rota 1 pediu reforço sindical quando soube que a meta subiu de 10 pra 24. Negamos. Ele mordeu o escrivão.',
     secoes: [
       { nome: 'Novidades', itens: [
