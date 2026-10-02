@@ -113,6 +113,7 @@ async function aoClicar(e) {
     case 'dev-especies': return acaoDev('especies');
     case 'dev-gimmicks': return acaoDev('gimmicks');
     case 'dev-ivs': return acaoDev('ivs');
+    case 'dev-forjar': return acaoDev('forjar');   // ⏩ nível/₽/mochila na jornada em andamento (dev.js forjarJornada)
     // 🗺 editor de rotas (só admin; a tela confere de novo)
     case 'editor': if (travadoPelaBatalha()) return; return telaEditorRotas();
     case 'ed-gen': case 'ed-rota': case 'ed-recarregar': case 'ed-salvar-missao': case 'ed-salvar-alfa':

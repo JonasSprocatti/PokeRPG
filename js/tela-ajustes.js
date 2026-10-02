@@ -8,7 +8,7 @@ import { barraTelas } from './navegacao.js';
 import { GENS, genDe, dadosDaGen } from './mapas.js';
 import { alvosDaGen, quantoFalta, precisaRebaixar, jaBaixado, semServiceWorker, baixarGen, baixarTudo, baixarImagens, imagensGuardadas, baixarImagens3D, imagensGuardadas3D, baixarImagensAnimadas, imagensGuardadasAnimadas, quantoFaltaTudo, totalDoJogo } from './offline.js';
 import { espacoUsado, itensNoCache, limparCache } from './api.js';
-import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, liberarIvsPerfeitos, limparTeste, temProgressoDeTeste } from './dev.js';
+import { devLigado, liberarMegas, liberarEspecies, liberarOutrasGimmicks, liberarIvsPerfeitos, limparTeste, temProgressoDeTeste, forjarJornada, NIVEIS_FORJA } from './dev.js';
 import { TOTAL_GENS } from './mapas.js';
 import { esc, offline } from './util.js';
 import { adsConfigurado, consentimento } from './ads.js';
@@ -208,12 +208,27 @@ function htmlDev() {
       <button class="btn ghost" data-act="dev-ivs">🧬 IVs perfeitos nas próximas jornadas</button>
       <button class="btn ghost" data-act="dev-limpar" ${temProgressoDeTeste() ? '' : 'disabled'}>🧹 Limpar o que foi de teste</button>
     </div>
+    <p class="small muted" style="margin-top:10px">⏩ <b>Forjar a jornada em andamento</b>: põe o nível escolhido, ₽50.000 e 5 de cada item na
+      mochila, pra caçar bug de fim de jogo sem jogar horas. Mexe só nesta run (não entra no progresso de teste).
+      Itens de raide ficam de fora — eles iriam pro inventário da conta no fim da jornada.</p>
+    <div class="subrow">
+      <label>Nível <select id="dev-nivel">${NIVEIS_FORJA.map(n => `<option>${n}</option>`).join('')}</select></label>
+      <button class="btn" data-act="dev-forjar" ${G.S?.player && G.mode !== 'battle' ? '' : 'disabled'}>⏩ Forjar jornada</button>
+    </div>
     <div id="dev-msg" class="small muted" style="margin-top:8px">${temProgressoDeTeste() ? '⚠ Há progresso de teste ativo nesta conta.' : ''}</div>`;
 }
 // as concessões do painel de testes; `render` de novo pra tela refletir na hora
-export function acaoDev(qual) {
+export async function acaoDev(qual) {
   if (!devLigado()) return;
   const msg = t => { const el = document.getElementById('dev-msg'); if (el) el.innerHTML = t; };
+  // ⏩ forjar sai antes: é a única que mexe na run, espera as perguntas de evolução e já traz o resultado pronto
+  if (qual === 'forjar') {
+    const nivel = +(document.getElementById('dev-nivel')?.value || NIVEIS_FORJA[0]);
+    const r = await forjarJornada(nivel);
+    telaAjustes();
+    return msg(r ? `⏩ Jornada forjada: nível ${r.nivel}, ${r.golpes} golpe(s) do learnset, ₽50.000 e 5 de cada item${r.evolucoes ? `, ${r.evolucoes} evolução(ões)` : ''}. Volte ao jogo pra continuar.`
+      : '⚠ Não deu: precisa de uma jornada em andamento e fora de batalha.');
+  }
   if (qual === 'megas') msg(`✅ ${liberarMegas()} espécies com a Pedra Mega liberada. Entre numa batalha com uma delas e o botão ⚡ aparece.`);
   else if (qual === 'especies') msg(`✅ ${liberarEspecies()} espécies desbloqueadas pra escolher na criação.`);
   else if (qual === 'gimmicks') { liberarOutrasGimmicks(); msg('✅ Contadores de Tera e Z-Move no alvo (essas gimmicks ainda não são jogáveis).'); }

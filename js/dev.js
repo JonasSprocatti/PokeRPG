@@ -16,6 +16,12 @@ import { ID_JORNADA_TESTE, RAZAO_TESTE, semTeste, temTeste } from './progresso-c
 import { MEGAS } from './dados-megas.js';
 import { ALVOS } from './conquistas.js';
 import { GENS } from './mapas.js';
+import { G, save } from './estado.js';
+import { recalc } from './regras.js';
+import { ITEMS } from './dados.js';
+import { loadMove } from './api.js';
+import { checkEvolution } from './progressao.js';
+import { render } from './render.js';
 
 const ID_TESTE = ID_JORNADA_TESTE, RAZAO = RAZAO_TESTE;   // ver progresso-conta.js: a marca mora no formato
 
@@ -95,5 +101,36 @@ export function limparTeste() {
   salvarProgresso(p);
   return n;
 }
+/* ---- ⏩ Forjar a jornada atual ----
+   Game Over APAGA o save, aqui e na nuvem (fim.js: `store.del(SAVE_KEY)` + `apagarSaveNuvem`), e a carreira só
+   guarda estatística: run perdida não volta. Então em vez de ressuscitar, forja — pra voltar a caçar bug de fim
+   de jogo sem jogar horas de novo.
+   Mexe SÓ em `G.S` (a run em andamento), nunca no progresso permanente: ao contrário do resto deste painel, não
+   há nada pra 🧹 limpar depois — a jornada forjada acaba como qualquer outra, e aí sim conta na carreira.
+   Nível entra direto (exp da curva + `recalc`, o mesmo caminho de quem sobe de nível) e os golpes passam a ser os
+   4 últimos do learnset até o nível: 40 modais de "esquecer qual golpe?" não testam nada. A EVOLUÇÃO, sim, vai
+   pelo caminho de verdade (`checkEvolution` em laço, uma pergunta por estágio) — é justamente o que se quer ver. */
+export const NIVEIS_FORJA = [20, 50, 80, 100];
+const DINHEIRO_FORJA = 50000, ITENS_FORJA = 5;
+
+export async function forjarJornada(nivel) {
+  const S = G.S, P = S?.player;
+  if (!devLigado() || !P || G.mode === 'battle') return null;   // no meio da luta não: nível e evolução no turno é confusão, não teste
+  P.level = Math.min(100, Math.max(1, nivel | 0));
+  P.exp = S.meta.growth[P.level];
+  recalc(P); P.hp = P.stats.hp; P.status = null;
+  const refs = (P.data.learnset?.list || []).filter(m => m.level > 0 && m.level <= P.level).slice(-4);   // `list` vem ordenada por nível (api.buildLearnset)
+  if (refs.length) P.moves = await Promise.all(refs.map(async r => { const mv = await loadMove(r.url); return { ...mv, ppLeft: mv.pp }; }));
+  S.money += DINHEIRO_FORJA;
+  for (const [k, it] of Object.entries(ITEMS)) {
+    if (it.raide) continue;   // item de raide da mochila vai pro INVENTÁRIO DA CONTA no fim da jornada (fim.js darItensDeRaide): forja não enche conta
+    S.bag[k] = Math.max(S.bag[k] || 0, ITENS_FORJA);
+  }
+  let evolucoes = 0;
+  while (await checkEvolution(P)) evolucoes++;   // multi-estágio: nível 50 pode passar por duas perguntas
+  render(); save();
+  return { nivel: P.level, golpes: P.moves.length, evolucoes };
+}
+
 // `semTeste`/`temTeste` moram em progresso-conta.js (o formato é deles, e nuvem.js precisa sem criar ciclo)
 export const temProgressoDeTeste = () => temTeste(carregarProgresso());

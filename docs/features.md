@@ -2283,3 +2283,34 @@ alcançáveis. O teto é anti-fraude, não balanceamento.
 primeira é CRUD sobre a lista que `mapas.js`, o Santuário, a Pokédex, a caça shiny, o download offline e o
 desbloqueio do Roguelike todos leem; a segunda é mecânica nova (condição no save, na tela de explorar e no
 progresso), não editor. Escolha do usuário: o editor de missões/Alfas/curva primeiro.
+
+## ⏩ Forjar jornada no painel de testes (02/10/2026)
+
+**O pedido**: "tem como eu como mestre reviver os meus saves que eu perdi pra conseguir continuar analisando
+bugs?" — jornadas boas tinham acabado em Game Over.
+
+**Reviver é impossível, e isso é por desenho.** `fim.encerrarJornada` faz `store.del(SAVE_KEY)` e
+`apagarSaveNuvem(resumo.id)`; a carreira guarda só o que `montarResumo` monta (estatística, sprite, pontuação) —
+nada de mochila, golpes, IVs, rota, `meta.growth`. Não existe lixeira, nem histórico, nem coluna de save morto.
+Conferido no banco antes de escrever código: a tabela `saves` não tinha nenhuma linha da conta do usuário (as 12
+que o SQL Editor mostrou eram de outras contas — **o SQL Editor roda como `postgres` e passa por cima do RLS**,
+a política `save: tudo no próprio` está correta e com a chave anônima ninguém alcança save alheio).
+
+**Então o substituto**: `dev.forjarJornada(nivel)` + botão ⏩ na seção 🧪 de ⚙ Ajustes. Põe o nível escolhido
+(`NIVEIS_FORJA` = 20/50/80/100), ₽50.000 e 5 de cada item na mochila **da run em andamento**.
+
+- **Mexe só em `G.S`**, nunca no progresso permanente — é a exceção do painel: não há o que 🧹 limpar depois, a
+  jornada forjada termina como qualquer outra e aí sim conta na carreira.
+- **Nível direto** (`exp = meta.growth[nivel]` + `regras.recalc`), **golpes** = os 4 últimos do learnset até o
+  nível (`api.buildLearnset` já devolve `list` ordenada). Subir por `gainExp` seria o caminho "de verdade", mas são
+  ~45 níveis de `say()` (420 ms cada) e um modal "esquecer qual golpe?" por nível: 40 perguntas não testam nada.
+- **A evolução, sim, vai pelo caminho de verdade**: `while (await checkEvolution(P))` — uma pergunta por estágio,
+  porque é justamente o comportamento que se quer ver ao forjar um nível alto.
+- **Itens de raide ficam de fora** (`ITEMS[k].raide`): a mochila deles vira **inventário da conta** no fim da
+  jornada (`fim.js` → `darItensDeRaide`), e forja não pode inflar conta permanente.
+- Barrado em batalha e sem jornada aberta (o botão nasce `disabled`, e `forjarJornada` confere de novo — regra que
+  só existe na tela não é regra).
+
+**Sem teste automatizado**: `dev.js` não importa no Node (cadeia `render.js` → `ui.js` → `matchMedia`), e o que o
+forjar acrescenta é um `filter`+`slice` sobre lista já testada mais chamadas a `recalc`/`checkEvolution`, que têm
+teste próprio. Não está no README nem nos patch notes de propósito: o painel 🧪 inteiro é invisível pra quem joga.
