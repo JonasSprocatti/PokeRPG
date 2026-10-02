@@ -7,6 +7,32 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (02/10/2026) — a batalha no celular deitado nascia na 4ª linha do grid
+
+Relato: *"no momento que entrar em uma luta, a batalha tem que sempre estar visível na lateral, no momento eu
+tenho que descer para ver onde está a batalha, muito estranho"*.
+
+O código parecia certo: `body.em-batalha .scene.battle{grid-column:1;position:sticky;top:8px;height:calc(100vh - 16px)}`
+no bloco de paisagem, exatamente a intenção descrita no comentário. O que faltava era **ordem de colocação**.
+`#scene` é irmão das zonas (por causa do `.stage{display:contents}`) e não tinha linha definida; `#actions`
+(`order:-2`) e `.zona[centro]` (`order:-1`) vinham ANTES dele na ordem modificada por `order`, ocupando a coluna 2.
+O cursor de auto-colocação do grid **nunca anda pra trás** (CSS Grid §8.5: item com coluna definida MENOR que a do
+cursor ⇒ incrementa a linha), então a cena era empurrada pra linha 4 — abaixo de golpes, painel central e zona
+esquerda. E `position:sticky` não resgatava: sticky só desliza DENTRO da própria área de grid, que ali começava
+já fora da tela.
+
+Descartado no diagnóstico: "o `@media` não está pegando" (pegava — os sprites compactos do mesmo bloco apareciam)
+e "é o `sticky` que não funciona" (funcionava, só não tinha pra onde). Conserto: a cena sai do grid (`position:fixed`
+à esquerda) e o `.game` vira **uma coluna** com `padding-left` reservando o espaço. Item fora de fluxo não participa
+do dimensionamento de linha nem da auto-colocação — some a classe inteira de bug.
+
+**A lição:** `grid-column` posiciona na coluna, **não na linha**. Num grid de auto-colocação com `order`, quem define
+só a coluna fica à mercê da ordem dos irmãos, e a linha é escolhida por um cursor que é de via única. Elemento que
+precisa estar SEMPRE visível não deveria depender de onde a auto-colocação resolveu pôr a área dele: ou a área é
+explícita nas duas direções, ou ele sai do fluxo.
+
+---
+
 ## ✅ CORRIGIDO (30/09/2026) — quatro furos em cima de defesa que já existia
 
 Não veio de relato de jogador: saiu do `/security-review` rodado como segunda opinião (2ª auditoria; os sete

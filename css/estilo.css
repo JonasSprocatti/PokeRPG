@@ -380,9 +380,10 @@ a.btn{display:inline-block;text-decoration:none}
    trocavam o que aparecia no meio foram removidas (ver paineis.js).
    Também entra aqui um celular DEITADO: as 3 colunas do desktop (`--larg-esq` 340px + centro 420px + `--larg-dir`
    340px, mais de 1100px no total) não cabem numa tela baixa e um pouco mais larga que 880px — sem isso o jogo
-   ficava cortado/com rolagem lateral fora da batalha. O tratamento ESPECIAL da batalha em paisagem (cena vira
-   coluna, não fica presa no topo) está no bloco "celular deitado" logo abaixo. */
-@media(max-width:880px),(orientation:landscape) and (max-height:500px){
+   ficava cortado/com rolagem lateral fora da batalha. O tratamento ESPECIAL da batalha em paisagem (cena FIXA na
+   lateral, não presa no topo) está no bloco "celular deitado" logo abaixo — mesmo gatilho de altura (560px, que
+   cobre o celular de 540px de altura deitado), pra não existir faixa de tela que caia só num dos dois. */
+@media(max-width:880px),(orientation:landscape) and (max-height:560px){
   .game{grid-template-columns:1fr;gap:14px}
   .stage{order:-1}
   .divisor{display:none}
@@ -426,25 +427,33 @@ a.btn{display:inline-block;text-decoration:none}
 /* ==================== celular deitado (paisagem) ====================
    O bloco "celular" acima foi pensado pra RETRATO (tela alta e estreita: cena presa no topo, resto rola embaixo).
    Paisagem é o oposto — larga e baixa — e presa no topo ali sobraria pouquíssima altura pro resto. Aqui a cena
-   vira uma COLUNA fixa à esquerda (a altura toda da tela) e tudo mais (golpes, log, painéis) numa coluna à
-   direita que rola por dentro. Gatilho por ALTURA (`max-height`), não largura: um celular deitado pode passar
-   de 880px de largura (o limiar do bloco retrato) e continuar sendo um celular deitado, baixo o bastante pra
-   precisar do mesmo tratamento — só telas realmente baixas entram aqui, então tablet/desktop landscape (bem
-   mais altos) não são afetados. `.stage{display:contents}`: a MESMA técnica já usada em `.menu-links` (topo, no
-   celular) pra "abrir" um elemento e deixar os FILHOS dele participarem do grid do PAI — sem isso, `#scene`
-   (dentro de `.stage`) não teria como virar uma coluna própria de `.game` (`.stage` é irmão das zonas esq/dir,
-   não pai delas). */
-@media(orientation:landscape) and (max-height:500px){
-  body.em-batalha .game{grid-template-columns:minmax(180px,36%) 1fr;gap:10px;padding:8px}
+   fica FIXA na lateral esquerda (a altura toda da tela) e tudo mais (golpes, log, painéis) numa coluna à direita
+   que rola. Gatilho por ALTURA (`max-height`), não largura: um celular deitado pode passar de 880px de largura
+   (o limiar do bloco retrato) e continuar sendo um celular deitado, baixo o bastante pra precisar do mesmo
+   tratamento — só telas realmente baixas entram aqui, então tablet/desktop landscape (bem mais altos) não são
+   afetados.
+   `position:fixed` na cena, e NÃO uma coluna do grid: como `#scene` é irmã das zonas (via `.stage{display:contents}`)
+   ela entrava na auto-colocação DEPOIS dos itens da coluna 2 (#actions, zonas), e o cursor do grid nunca anda pra
+   trás — a cena era jogada pra 4ª linha e a batalha só aparecia ROLANDO a página (o bug relatado em 02/10/2026).
+   Fixa, ela está sempre visível; o `padding-left` do `.game` reserva o espaço e o resto rola por baixo dela.
+   A logo do topo é a única coisa que ficaria atrás do cartão, então sai de vista enquanto durar a luta. */
+@media(orientation:landscape) and (max-height:560px){
+  body.em-batalha .game{--cena:min(36vw,320px);grid-template-columns:1fr;gap:10px;padding:8px 8px 8px calc(var(--cena) + 16px)}
   body.em-batalha .stage{display:contents}
   body.em-batalha .divisor{display:none}
-  body.em-batalha .scene.battle{grid-column:1;position:sticky;top:8px;max-height:calc(100vh - 16px);height:calc(100vh - 16px);overflow:auto;gap:4px;padding:8px 10px}
+  body.em-batalha .brand{visibility:hidden}
+  body.em-batalha .scene.battle{position:fixed;left:8px;top:8px;z-index:8;width:var(--cena);
+    height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:none;overflow:auto;gap:4px;padding:8px 10px}
   /* ordem na coluna direita: golpes primeiro (é o que se usa a cada turno), depois painel central (se algo
      estiver ancorado lá), depois ficha/log/mochila/etc. — sem isso a ordem do DOM enterraria os golpes embaixo
      dos painéis da esquerda */
-  body.em-batalha #actions{grid-column:2;order:-2;position:static}
-  body.em-batalha .zona[data-zona="centro"]{grid-column:2;order:-1}
-  body.em-batalha .zona[data-zona="esq"],body.em-batalha .zona[data-zona="dir"]{grid-column:2}
+  body.em-batalha #actions{order:-2}
+  body.em-batalha .zona[data-zona="centro"]{order:-1}
+  /* golpes menores e SEMPRE 2 em cima / 2 embaixo: na altura de um celular deitado, botão alto empurra o
+     resto pra fora da tela (o `max-width:420px` lá embaixo nem pega aqui — em paisagem a largura é grande) */
+  body.em-batalha .moves{grid-template-columns:1fr 1fr;gap:6px}
+  body.em-batalha .mv{padding:5px 9px}
+  body.em-batalha .mv b{font-size:14px}
   body.em-batalha .mon{width:88px;height:74px}
   body.em-batalha .spr{width:72px;height:72px}
   body.em-batalha .spr.back{width:82px;height:82px}

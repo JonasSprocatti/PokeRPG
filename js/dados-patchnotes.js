@@ -10,6 +10,17 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.48', data: '2026-10-02', titulo: '📱 Celular deitado: a batalha para de fugir pro pé da página', piada: 'A cena da luta estava indo pra quarta linha do layout sem avisar ninguém. Perguntamos o que ela fazia lá embaixo. Ela disse que o CSS mandou. O CSS confirmou. Demitimos o CSS daquela parte.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Celular deitado:</b> ao entrar numa luta, a cena da batalha agora fica <b>grudada na lateral esquerda</b> e <b>sempre visível</b> — antes ela ia parar no fim da página e era preciso <b>rolar pra baixo pra achar a própria batalha</b>.',
+        'Tudo mais (golpes, registro, ficha, mochila) continua na coluna da direita e rola por baixo dela, sem nunca levar a batalha embora.',
+        'Celular de tela um pouco mais alta (540px deitado) também entra nesse layout agora — antes caía num meio de caminho entre o celular e o computador e ficava torto.'
+      ] },
+      { nome: 'Novidades', itens: [
+        '<b>Botões de golpe mais baixos no celular deitado</b>, sempre <b>2 em cima e 2 embaixo</b>: cabe a luta inteira sem rolar.'
+      ] }
+    ] },
   { versao: '2.47', data: '2026-10-02', titulo: '🥚 Agora os ovos respeitam os grupos-ovo (o Pikachu pediu desculpas ao Gyarados)', piada: 'Na versão de ontem um Pikachu e um Gyarados tiveram um ovo. Ninguém soube explicar a logística. Os dois foram chamados pra uma conversa, concordaram que foi estranho e seguiram como amigos.',
     secoes: [
       { nome: 'Novidades', itens: [
