@@ -11,11 +11,13 @@
      - herda um golpe do pai e 3 IVs (o melhor dos dois pais em cada um dos 3 sorteados);
      - espécie demorada demora mais pra chocar (`hatch_counter` da PokéAPI, ver `passosParaChocar`).
 
+   O par é **gênero oposto + um grupo-ovo em comum** (`eggGroups` da PokéAPI), como nos jogos. A primeira versão era
+   só o gênero, e o usuário voltou atrás no dia seguinte: Pikachu cruzando com Gyarados "prejudicou mesmo".
+
    O que ficou de fora de propósito:
-     - **grupos-ovo** (`egg_groups`): o par só exige gênero oposto (`regras.generoOposto`), então um Pikachu cruza com
-       um Gyarados. Decisão do usuário — a regra de gênero já existe e já é testada, e grupos-ovo custariam um campo
-       novo no cache e um `VERSAO_DOWNLOAD` só pra proibir pares esquisitos;
-     - Ditto, Incenso, Chaveiro Oval, Poké Pensão: nada disso existe aqui;
+     - **Ditto**: nos jogos ele cruza com quase todo mundo. Aqui não, e de graça — ele não tem gênero, então a regra
+       de gênero oposto já o deixa de fora sem uma linha de código. Entraria como exceção, se alguém pedir;
+     - Incenso, Chaveiro Oval, Poké Pensão: nada disso existe aqui;
      - lista de golpes-ovo legais: o golpe herdado é QUALQUER um dos 4 do pai.
        // ponytail: sem allowlist de golpe-ovo, um filhote Nv. 5 pode nascer com Hyper Beam. Se virar problema de
        // equilíbrio, filtrar por `golpe.power <= X` aqui em `golpeHerdado` resolve num lugar só.
@@ -46,24 +48,42 @@ export function ovos(S) {
   return (S.ovos ||= []);
 }
 
-/* O par: gênero oposto, e só. `generoOposto` já responde `false` pra quem não tem gênero e pra save antigo (onde
-   `genero` não existe), então esses simplesmente nunca cruzam em vez de chutar um sexo. A mãe é quem define a
-   espécie do filhote. Varredura de todos contra todos: com os 30 do esconderijo dá 435 comparações, não vale índice. */
-export function acharPar(lista, sorte = Math.random) {
+/* O grupo-ovo de quem não cruza com ninguém (lendário, mítico, bebê, Ditto está em `ditto`). Nome da PokéAPI. */
+export const GRUPO_SEM_OVO = 'no-eggs';
+// ponytail: o `grupos` é montado a cada tentativa (1 em 20 explorações) em vez de guardado no save — são ~30 leituras
+// de um cache em memória. Se um dia pesar, o lugar de guardar é `mon.grupos` no `makeMon`, com fallback pra busca.
+
+/* O par: **gênero oposto + um grupo-ovo em comum**, como nos jogos.
+   `generoOposto` já responde `false` pra quem não tem gênero e pra save antigo (onde `genero` não existe), então
+   esses nunca cruzam em vez de chutar um sexo. Os grupos vêm de FORA (`grupos`: nome da espécie → lista de grupos,
+   montada por quem tem rede, de `api.loadSpecies`): este módulo não busca nada.
+   **Grupo desconhecido não cruza.** É o contrário do que o resto do jogo faz com dado que falta (lá a regra mais
+   calada é a que vale), e é de propósito: sem o dado, o certo é não aparecer ovo, não aparecer ovo errado — e quem
+   baixou o mapa antes do campo existir é justamente quem o `VERSAO_DOWNLOAD` manda baixar de novo. */
+export function parCompativel(a, b, grupos) {
+  if (!generoOposto(a, b)) return false;
+  const ga = grupos?.get?.(a?.data?.speciesName) || [], gb = grupos?.get?.(b?.data?.speciesName) || [];
+  if (!ga.length || !gb.length) return false;
+  if (ga.includes(GRUPO_SEM_OVO) || gb.includes(GRUPO_SEM_OVO)) return false;
+  return ga.some(g => gb.includes(g));
+}
+
+/* Varredura de todos contra todos: com os 30 do esconderijo dá 435 comparações, não vale índice nenhum.
+   A mãe é quem define a espécie do filhote. */
+export function acharPar(lista, grupos, sorte = Math.random) {
   const pares = [];
   for (let i = 0; i < lista.length; i++)
     for (let j = i + 1; j < lista.length; j++)
-      if (generoOposto(lista[i], lista[j])) pares.push([lista[i], lista[j]]);
+      if (parCompativel(lista[i], lista[j], grupos)) pares.push([lista[i], lista[j]]);
   if (!pares.length) return null;
   const [a, b] = pares[Math.floor(sorte() * pares.length)];
   return a.genero === 'f' ? { mae: a, pai: b } : { mae: b, pai: a };
 }
 
-// Tem casal, tem vaga e deu a sorte? Devolve { mae, pai } — quem busca a espécie base e monta o ovo é quem tem rede.
-export function tentarCruzar(S, guardados, sorte = Math.random) {
-  if (ovos(S).length >= MAX_OVOS || sorte() >= CHANCE_OVO) return null;
-  return acharPar(guardados, sorte);
-}
+/* Tem vaga no ninho e deu a sorte? Separado de `acharPar` de propósito: saber os grupos-ovo exige buscar a ficha de
+   espécie de cada um do esconderijo (até 30), e isso só vale a pena DEPOIS que o sorteio passou — 1 exploração em 20
+   em vez de todas. Quem chama monta os grupos e busca a espécie base só então. */
+export const podeCruzar = (S, sorte = Math.random) => ovos(S).length < MAX_OVOS && sorte() < CHANCE_OVO;
 
 /* Os 6 IVs do filhote: `IVS_HERDADOS` sorteados ficam com o MELHOR dos dois pais, o resto é sorteio normal.
    É a simplificação da regra dos jogos (3 IVs herdados, com Destiny Knot subindo pra 5) sem os itens. */

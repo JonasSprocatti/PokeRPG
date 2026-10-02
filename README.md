@@ -161,7 +161,7 @@ Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada j
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 
 ### 🥚 Ovos e criação
-Quem espera no **esconderijo** não fica só esperando: um casal de **gênero oposto** guardado lá pode aparecer com um **ovo** — e ninguém conta de onde veio. O ovo choca **andando**: cada exploração é um passo, e espécie mais demorada pede mais (de **100 a 400 explorações**, seguindo os ciclos de choco dos jogos). Cabem **3 ovos** chocando ao mesmo tempo, e o painel de Aliados mostra só a barra: **o que tem dentro é segredo até ele abrir.**
+Quem espera no **esconderijo** não fica só esperando: dois parceiros guardados lá que sejam **de gêneros opostos** e tenham um **grupo-ovo em comum** (os mesmos dos jogos) podem aparecer com um **ovo** — e ninguém conta de onde veio. Lendário, mítico e companhia (o grupo "sem ovos") não botam. O ovo choca **andando**: cada exploração é um passo, e espécie mais demorada pede mais (de **100 a 400 explorações**, seguindo os ciclos de choco dos jogos). Cabem **3 ovos** chocando ao mesmo tempo, e o painel de Aliados mostra só a barra: **o que tem dentro é segredo até ele abrir.**
 
 Quando abre, nasce a **forma base da mãe** no **Nv. 5**, com **um golpe herdado do pai** e **3 IVs** puxados do melhor dos dois pais. Ele entra na equipe se houver vaga, ou vai esperar no esconderijo. Ovo pronto sem lugar nenhum pra nascer fica parado até você abrir espaço — não se perde.
 

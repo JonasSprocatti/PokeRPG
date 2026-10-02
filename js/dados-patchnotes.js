@@ -10,6 +10,17 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.47', data: '2026-10-02', titulo: '🥚 Agora os ovos respeitam os grupos-ovo (o Pikachu pediu desculpas ao Gyarados)', piada: 'Na versão de ontem um Pikachu e um Gyarados tiveram um ovo. Ninguém soube explicar a logística. Os dois foram chamados pra uma conversa, concordaram que foi estranho e seguiram como amigos.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Ovo agora segue os grupos-ovo dos jogos.</b> Além de serem de <b>gêneros opostos</b>, os dois precisam ter um <b>grupo-ovo em comum</b> — Gyarados e Magikarp dividem o grupo Dragão e dão ovo; Pikachu e Gyarados não dividem nada e não dão mais.',
+        '<b>Quem é do grupo "sem ovos" não bota, nem com outro do mesmo grupo:</b> lendário, mítico, os bebês — e a <b>Nidoqueen</b>, que é a surpresa da lista e é assim nos jogos de verdade.',
+        'Pra combinar o casal, o jogo olha a ficha de espécie de quem está no esconderijo. Se ela ainda não chegou, <b>nenhum ovo aparece</b> — melhor nenhum ovo que ovo errado.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Se você baixou um mapa pra jogar offline, a <b>⚙ Ajustes</b> vai pedir pra baixar de novo (de novo, desculpe): o grupo-ovo é mais um dado da ficha de cada espécie, e sem ele o esconderijo não tem como formar casal nenhum no avião.'
+      ] }
+    ] },
   { versao: '2.46', data: '2026-10-02', titulo: '🥚 Apareceu um ovo no esconderijo e ninguém quer explicar como', piada: 'Perguntamos aos dois Pokémon do esconderijo de onde veio o ovo. Um olhou pro teto, o outro assobiou. Encerramos a investigação por falta de provas e porque o ovo estava chocando.',
     secoes: [
       { nome: 'Novidades', itens: [

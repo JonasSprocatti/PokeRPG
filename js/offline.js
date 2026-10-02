@@ -21,9 +21,12 @@ import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache
    Subiu na v4 pelo mesmo motivo da v3: a espécie agora traz `hatchCounter` (os ciclos de choco), e é dele que sai
    quantas explorações cada ovo pede (ovos.passosParaChocar). Sem o campo, todo ovo cai no piso de 100 — o lendário
    chocaria tão rápido quanto um Magikarp, no avião, sem ninguém notar.
+   Subiu na v5 pela mesma razão, um dia depois: a espécie traz `eggGroups` (os grupos-ovo), e é deles que sai QUEM
+   pode cruzar com quem (ovos.parCompativel). Sem o campo não há par nenhum, então no avião o esconderijo volta a
+   ser um depósito e nenhum ovo aparece — calado, como se a mecânica não existisse.
    Quem baixou numa versão antiga volta a aparecer como incompleto — é de propósito: dizer "já baixado"
    pra um mapa que ainda falha no avião é pior do que pedir um download de novo. */
-export const VERSAO_DOWNLOAD = 4;
+export const VERSAO_DOWNLOAD = 5;
 const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}:gen${gen}`;
 
 /* Quem guarda as IMAGENS é o service worker (sw.js): `guardarSprite` só pede a imagem, e é o sw que a intercepta

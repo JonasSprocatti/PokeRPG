@@ -49,7 +49,7 @@ fazia absolutamente nada. Criar dá uma razão pra ter 30 parceiros guardados em
 | Nível do filhote | **Nv. 5**, fiel aos jogos | `NIVEL_CHOCAR`. Filhote mid-run é investimento, não reforço |
 | Passos | **100 no mínimo**, com **categorias** de ovo, **3 em paralelo** | `PASSOS_MIN` 100, `PASSOS_MAX` 400, `MAX_OVOS` 3, categoria pelo `hatchCounter` |
 | A "mistura" | **espécie base da mãe + golpe e IVs do pai** | `arvore.name` (raiz da árvore de evolução), `golpeHerdado`, `ivsHerdados` |
-| Pares | **só gênero oposto** | `regras.generoOposto`, zero código novo. Pikachu cruza com Gyarados, de propósito |
+| Pares | **só gênero oposto** → **revertido no dia seguinte** | ver abaixo |
 
 ### As categorias de ovo
 Os jogos têm ciclos de choco (`hatch_counter` da PokéAPI): Magikarp 5, Dratini e Beldum 40, lendário 120. Isso virou
@@ -58,14 +58,33 @@ Os jogos têm ciclos de choco (`hatch_counter` da PokéAPI): Magikarp 5, Dratini
 4**: é um campo que muda uma REGRA em jogo, e sem ele todo ovo cai no piso de 100 — o de lendário chocaria como um de
 Magikarp, no avião, sem ninguém notar. `CICLOS_PADRAO` = 20 é o que vale quando o dado não veio.
 
+### Os grupos-ovo (a volta atrás, 02/10/2026)
+A primeira versão perguntou e o usuário escolheu **só gênero oposto**, pra não custar um campo novo no cache. No dia
+seguinte, vendo o resultado: *"o sem Grupos-ovo acabou prejudicando mesmo, vamos colocar"*. Então o par agora é
+**gênero oposto + um grupo-ovo em comum** (`ovos.parCompativel`), com `eggGroups` entrando em `api.loadSpecies` pelo
+`valido` de sempre e **`VERSAO_DOWNLOAD` pra 5**.
+
+Três detalhes que a regra obrigou:
+- **`no-eggs` não cruza com ninguém**, nem com outro `no-eggs`. É o grupo de lendário, mítico, bebê — e de
+  Nidoqueen, o caso que mais surpreende quem não conhece (confirmado contra a PokéAPI: ela realmente não bota).
+- **Grupo desconhecido também não cruza.** É o contrário do que o resto do jogo faz com dado que falta (lá a regra
+  mais calada é a que vale, ver `genderRate` = −1), e aqui é de propósito: sem o dado, o certo é **não aparecer ovo**,
+  não aparecer ovo errado. Quem está nessa situação é exatamente quem o `VERSAO_DOWNLOAD` manda baixar de novo.
+- **A busca saiu de dentro do caminho quente.** Saber os grupos exige a ficha de espécie de até 30 Pokémon do
+  esconderijo. Então `tentarCruzar` virou `podeCruzar` (vaga + sorteio, puro e barato) + `acharPar(lista, grupos)`:
+  a busca só acontece DEPOIS do sorteio passar, 1 exploração em 20 em vez de todas. Na prática é cache em memória,
+  porque `makeMon` já busca essa mesma ficha pra sortear o gênero de todo mundo que nasce.
+
+Ditto continua fora e **de graça**: ele não tem gênero, então a regra de gênero oposto já o exclui sem uma linha de
+código. Nos jogos ele cruzaria com quase todo mundo; entraria como exceção explícita, se for pedido.
+
 ### O segredo
 O ovo guarda `especie` no save, mas **nenhuma tela lê esse campo**: `blocoOvos` mostra "🥚 Ovo misterioso" e a barra.
 O `de` (nomes dos pais) também só aparece na hora do nascimento — dizer "filho da Nidorina" antes de abrir seria
 contar a espécie. Quem quiser trapacear abrindo o `localStorage` consegue; o alvo aqui é a experiência, não o DRM.
 
 ### O que ficou de fora de propósito
-- **Grupos-ovo (`egg_groups`)**: decisão do usuário. A regra de gênero já existia e já era testada; grupos-ovo
-  custariam outro campo no cache e outro `VERSAO_DOWNLOAD` só pra proibir par esquisito.
+- **Ditto**: ver acima — excluído de graça pela regra de gênero.
 - **Lista de golpes-ovo legais**: o herdado é qualquer um dos 4 do pai, então um filhote Nv. 5 pode nascer com
   Hyper Beam. Marcado com `ponytail:` no código — filtrar por poder resolve num lugar só, se desequilibrar.
 - **Forma regional na raiz**: a raiz da árvore é a forma original, então um Sandslash de Alola põe um Sandshrew de

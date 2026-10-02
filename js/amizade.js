@@ -11,7 +11,7 @@ import { escondidos, esconderijoCheio, equipeCheia, acolher } from './esconderij
 import { loadSpecies, loadGrowth, loadEvo, resolvePokemon } from './api.js';
 import { FELICIDADE_ALIADO } from './evolucao.js';
 import { makeMon } from './pokemon.js';
-import { ovos, criarOvo, tentarCruzar, andarOvos, tirarOvo, ivsHerdados, golpeHerdado, NIVEL_CHOCAR, MAX_OVOS } from './ovos.js';
+import { ovos, criarOvo, podeCruzar, acharPar, andarOvos, tirarOvo, ivsHerdados, golpeHerdado, NIVEL_CHOCAR, MAX_OVOS } from './ovos.js';
 import { esc, fmt } from './util.js';
 
 // 'cancelado' = nada gasto (turno não conta) · 'ok' = petisco gasto, turno segue · 'fim' = batalha acabou em paz
@@ -109,7 +109,19 @@ async function chocar(S, ovo) {
 }
 
 async function talvezPorOvo(S) {
-  const par = tentarCruzar(S, escondidos(S));
+  if (!podeCruzar(S)) return;
+  const guardados = escondidos(S);
+  /* Os grupos-ovo de cada um do esconderijo. São dado de ESPÉCIE (`api.loadSpecies`), não do Pokémon, e na prática
+     já estão em memória: `makeMon` busca essa mesma ficha pra sortear o gênero de todo mundo que nasce. A busca só
+     acontece aqui, depois de o sorteio de `podeCruzar` passar — nunca a cada exploração. Espécie que falhar fica
+     fora do Map e, por `ovos.parCompativel`, simplesmente não cruza (nada de par chutado). */
+  const grupos = new Map();
+  await Promise.all(guardados.map(async A => {
+    const nome = A?.data?.speciesName;
+    if (!nome || grupos.has(nome)) return;
+    try { grupos.set(nome, (await loadSpecies(A.data.speciesUrl)).eggGroups || []); } catch { /* sem ficha, sem par */ }
+  }));
+  const par = acharPar(guardados, grupos);
   if (!par) return;
   const { mae, pai } = par;
   /* O filhote é a FORMA BASE da mãe: a raiz da árvore de evolução. Forma regional não é tratada — a raiz pode ser a
