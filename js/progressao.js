@@ -75,10 +75,11 @@ export async function aprender(M, ref, escolher = ehJogador(M)) {
 
 export function findNode(n, name) { if (n.name === name) return n; for (const c of n.to) { const f = findNode(c, name); if (f) return f; } return null; }
 // Árvore de evolução: a sua fica em S.meta.evo; a do aliado é buscada na 1ª vez e guardada nele (A.evo, null = não
-// evolui). Árvore sem `v: 2` é de save antigo (só nível): busca de novo com todas as condições (offline: usa a velha).
+// evolui). Árvore abaixo de `v: 3` é de save antigo (v nenhum = só nível; v: 2 = sem o `gender` de cada caminho):
+// busca de novo com todas as condições (offline: usa a velha).
 async function arvoreDe(M) {
   const atual = ehJogador(M) ? G.S.meta.evo : M.evo;
-  if (atual === null || atual?.v === 2) return atual;
+  if (atual === null || atual?.v >= 3) return atual;
   try {
     const sp = await loadSpecies(M.data.speciesUrl);
     const nova = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;

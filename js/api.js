@@ -221,10 +221,12 @@ export const loadAbility = a => cached('ab:' + a.name, async () => {
 });
 // chave 'sp2:' (era 'sp:'): o cache antigo no localStorage não tinha captureRate — trocar a chave força buscar de novo.
 // Ao acrescentar campo a qualquer loader, trocar a chave do mesmo jeito.
+// `genderRate` chegou depois (regras.sortearGenero): −1 = sem gênero, 0 = sempre macho, 8 = sempre fêmea,
+// 1–7 = oitavos de chance de fêmea. Entra por `valido` em vez de chave nova pra não jogar fora o mapa baixado.
 export const loadSpecies = url => cached('sp2:' + lastSeg(url), async () => {
   const s = await getJSON(url);
-  return { growthUrl: s.growth_rate.url, evoUrl: s.evolution_chain?.url || null, defaultPokemon: (s.varieties.find(v => v.is_default) || s.varieties[0]).pokemon.name, captureRate: s.capture_rate ?? 45 };
-});
+  return { growthUrl: s.growth_rate.url, evoUrl: s.evolution_chain?.url || null, defaultPokemon: (s.varieties.find(v => v.is_default) || s.varieties[0]).pokemon.name, captureRate: s.capture_rate ?? 45, genderRate: s.gender_rate ?? -1 };
+}, v => typeof v?.genderRate === 'number');
 export const loadGrowth = url => cached('gr:' + lastSeg(url), async () => {
   const g = await getJSON(url); const arr = Array(101).fill(0);
   for (const l of g.levels) arr[l.level] = l.experience;
@@ -239,12 +241,14 @@ export function slimEvo(chain) {
     known_move: nome(d.known_move), known_move_type: nome(d.known_move_type), min_happiness: d.min_happiness, min_affection: d.min_affection,
     time_of_day: d.time_of_day || '', trade_species: nome(d.trade_species), party_species: nome(d.party_species), party_type: nome(d.party_type),
     relative_physical_stats: d.relative_physical_stats, location: nome(d.location), rain: !!d.needs_overworld_rain,
-    upside_down: !!d.turn_upside_down, beauty: d.min_beauty
+    upside_down: !!d.turn_upside_down, beauty: d.min_beauty,
+    gender: d.gender ?? null                     // 1 = só fêmea, 2 = só macho (Vespiquen, Salazzle, Froslass, Wormadam)
   });
   const n = x => ({ name: x.species.name, details: x.evolution_details.map(det), to: x.evolves_to.map(n) });
-  return { ...n(chain), v: 2 };
+  return { ...n(chain), v: 3 };
 }
-export const loadEvo = url => cached('evo2:' + lastSeg(url), async () => slimEvo((await getJSON(url)).chain));
+// `v: 3` trouxe o `gender` de cada caminho; `valido` refaz a árvore guardada sem ele (chave mantida: ver loadSpecies)
+export const loadEvo = url => cached('evo2:' + lastSeg(url), async () => slimEvo((await getJSON(url)).chain), v => v?.v >= 3);
 export const loadList = () => cached('list', async () => (await getJSON(`${API}/pokemon-species?limit=1025`)).results.map(r => r.name));
 export async function resolvePokemon(q) {
   try { return await loadPokemon(q); }

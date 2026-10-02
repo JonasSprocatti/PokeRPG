@@ -20,7 +20,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
-  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA } from './regras.js';
+  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -409,6 +409,14 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
     if (t.vol.conf > 0) { if (avisar) await ctx.say(`${ctx.nome(t)} já está confuso!`); return; }
     t.vol.conf = rand(2, 5); await ctx.say(`${ctx.nome(t)} ficou confuso!`, 'status'); return;
   }
+  /* Paixão (Attract, Cute Charm): só pega quem é do gênero OPOSTO de quem causou — sem gênero de um dos dois
+     (Magnemite, lendário, save de antes do gênero existir) o efeito falha. Vive no `vol`, como a confusão, então
+     morre ao entrar/sair de campo e no fim da batalha: nunca vaza pro save. */
+  if (ail === 'infatuation') {
+    if (!generoOposto(t, fonte)) { if (avisar) await ctx.say(`Não afeta ${ctx.nome(t)}...`); return; }
+    if (t.vol.paixao) { if (avisar) await ctx.say(`${ctx.nome(t)} já está apaixonado!`); return; }
+    t.vol.paixao = true; await ctx.say(`${ctx.nome(t)} se apaixonou por ${ctx.nome(fonte)}!`, 'status'); return;
+  }
   if (!AIL_MSG[ail]) { if (avisar) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted'); return; }
   if (t.status) { if (avisar) await ctx.say(`${ctx.nome(t)} já tem uma condição de status.`); return; }
   t.status = ail; delete t.vol.toxico; if (ail === 'sleep') t.sleep = rand(2, 4);
@@ -425,6 +433,9 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
 // Golpes de status com regra própria (especiais.js). true = tratou (o genérico não roda).
 async function statusEspecial(u, t, g, esp, ctx, primeiro) {
   const U = ctx.nome(u), T = ctx.nome(t);
+  // Captivate: só funciona em quem é do gênero OPOSTO. Os estágios dele são comuns (`g.stats`), então sem esta
+  // trava o golpe baixava a At.Esp. de qualquer um — inclusive de quem não tem gênero.
+  if (esp.generoOposto && !generoOposto(t, u)) { await ctx.say(`Não afeta ${T}...`); return true; }
   if (esp.clima) { if (!await mudarClima(esp.clima, ctx)) await ctx.say('Mas falhou!'); return true; }
   if (esp.terreno) { if (!await mudarTerreno(esp.terreno, ctx)) await ctx.say('Mas falhou!'); return true; }
   // telas e proteções: valem no lado de quem usou
@@ -599,6 +610,11 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   }
   if (u.status === 'paralysis' && Math.random() < 0.25) { interromper(u); await ctx.say(`${U} está paralisado e não consegue se mover!`); return; }
   if (u.vol.flinch) { u.vol.flinch = false; interromper(u); await ctx.say(`${U} recuou e não conseguiu atacar!`); return; }
+  // Paixão (Attract / Cute Charm): metade dos turnos ele não consegue atacar. Antes da confusão, como nos jogos.
+  if (u.vol.paixao) {
+    await ctx.say(`${U} está apaixonado...`);
+    if (Math.random() < 0.5) { interromper(u); await ctx.say(`${U} está imobilizado pelo amor e não atacou!`); return; }
+  }
   if (u.vol.conf > 0) {
     u.vol.conf--;
     if (u.vol.conf === 0) await ctx.say(`${U} não está mais confuso.`);

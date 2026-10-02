@@ -80,13 +80,15 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     'aoNocautearMaior', 'aftermath', 'aoDesmaiarDanoAtacante', 'dreno', 'roubaItem', 'protegeItem',
     'imuneGolpeStatus', 'podeEnvenenarQualquer', 'protegeAliadoStatus', 'copiaHabilidadeAoEntrar',
     'avisaGolpeForte', 'revelaItem', 'moody', 'ripen', 'curaBerryExtra', 'semItemEmBatalha', 'algodaoCai',
-    'trocaHabilidadeContato']);
+    'trocaHabilidadeContato',
+    // gênero (regras.sortearGenero): Rivalry no dano, Cute Charm pelo `contato` com status 'infatuation'
+    'rivalidade']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
     for (const k of Object.keys(h)) assert.ok(ganchos.has(k), `${nome}: gancho desconhecido "${k}" (não faz nada no motor)`);
     for (const t of [h.pinch, h.imuneTipo, h.absorve, ...Object.keys(h.resiste || {}), ...Object.keys(h.danoTipo || {}), ...(h.prendeTipo || [])].filter(Boolean)) assert.ok(tipos.includes(t), `${nome}: tipo "${t}"`);
-    for (const a of h.imuneStatus || []) assert.ok(AIL_MSG[a] || a === 'confusion', `${nome}: status "${a}"`);
+    for (const a of h.imuneStatus || []) assert.ok(AIL_MSG[a] || ['confusion', 'infatuation'].includes(a), `${nome}: status "${a}"`);
     for (const k of h.imuneTrava || []) assert.ok(TRAVAS.includes(k), `${nome}: trava "${k}" não existe (regras.TRAVAS)`);
     for (const s of Object.keys({ ...h.multStat, ...h.comStatus })) assert.ok(STATS.includes(s), `${nome}: atributo "${s}"`);
     if (h.imuneFlag) assert.ok(FLAGS_VALIDAS.includes(h.imuneFlag), `${nome}: flag de golpe "${h.imuneFlag}" não existe`);
@@ -102,7 +104,7 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     if (h.prendeQualquer) assert.ok(h.prendeQualquer === true || h.prendeQualquer === 'chao', `${nome}: prendeQualquer "${h.prendeQualquer}"`);
     if (h.dreno) assert.ok(h.dreno === 'inverte', `${nome}: dreno "${h.dreno}"`);
     // ganchos da quarta leva: tipo, status, atributo e família existem de verdade (typo aqui deixaria a habilidade inerte)
-    for (const a of [...(h.soStatus || []), h.critContraStatus, h.toque?.status, ...(h.contato?.sorteio || []).map(x => x[0]), ...(typeof h.contato?.status === 'string' ? [h.contato.status] : [])].filter(Boolean)) assert.ok(AIL_MSG[a], `${nome}: status "${a}"`);
+    for (const a of [...(h.soStatus || []), h.critContraStatus, h.toque?.status, ...(h.contato?.sorteio || []).map(x => x[0]), ...(typeof h.contato?.status === 'string' ? [h.contato.status] : [])].filter(Boolean)) assert.ok(AIL_MSG[a] || a === 'infatuation', `${nome}: status "${a}"`);   // Cute Charm: paixão é volátil, não tem AIL_MSG
     for (const s of [...Object.keys(h.abaixoDeMetade || {}), h.aoSerBaixado?.[0], h.aoNocautear?.[0], h.contato?.estagio?.[0]].filter(Boolean)) stat(nome, s);
     for (const r of h.aoSerAtingido || []) {
       for (const t of r.tipos || []) assert.ok(tipos.includes(t), `${nome}: tipo "${t}"`);

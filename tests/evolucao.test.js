@@ -94,7 +94,7 @@ test('slimEvo: guarda todas as condições; comoEvolui descreve pra ficha', () =
     { species: sp('vaporeon'), evolution_details: [{ trigger: sp('use-item'), item: sp('water-stone'), min_level: null, time_of_day: '' }], evolves_to: [] },
     { species: sp('umbreon'), evolution_details: [{ trigger: sp('level-up'), min_happiness: 160, time_of_day: 'night' }], evolves_to: [] }] };
   const arv = slimEvo(chain);
-  assert.equal(arv.v, 2);
+  assert.equal(arv.v, 3);
   assert.deepEqual(arv.to[0].details[0].item, 'water-stone');
   assert.equal(acharNo(arv, 'umbreon').name, 'umbreon');
   const txt = comoEvolui(arv, 'eevee', k => ITEMS[k]?.name || k);

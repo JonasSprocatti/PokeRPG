@@ -55,7 +55,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/layout.js` · `js/paineis.js` | Modelo puro do layout dos painéis (testado) · o DOM de arrastar e redimensionar. |
 | `js/pokemon.js` · `js/efeitos.js` | `makeMon()` = instância jogável · efeitos + `CTX` (narração do single player). |
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
-| `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 215 de 314 reais). Gancho novo = código no motor + teste. |
+| `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 217 de 314 reais). Gancho novo = código no motor + teste. |
 | `js/especiais.js` | Golpes cujo efeito não cabe no `meta` da PokéAPI. Sem imports. |
 | `js/segurados.js` | Itens segurados (puro). `seg(m)` é o ÚNICO ponto por onde toda leitura de item passa. |
 | `js/batalha.js` | `turn(action)` é a única entrada da UI. Começo de batalha, vitória, derrota, captura, `endBattle`. |
@@ -131,6 +131,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 - **`tirarIniciais` e `especiesDaGen` PULAM rotas `posVitoria`** (o Santuário). Quem varrer rotas pra filtrar conteúdo tem de pular também, senão o Santuário deixa de garantir a completude da Pokédex.
 - **Ao mexer em velocidade, lembrar do clima** — a ordem do turno usa `effStat(..., clima)` nos DOIS motores.
 - **Cuidado com o nome**: `espetos` é o Elmo Rochoso (item); `espinhos` é o Spikes (campo).
+- **Campo novo num `load*` do `api.js` entra por `valido`, não por chave nova** — trocar `'sp2:'` por `'sp3:'` joga fora tudo que foi baixado pra jogar offline. O `valido` usa o registro velho enquanto a rede não responde e troca na primeira vez que ela responder. Mas se o campo novo **muda uma regra em jogo** (foi o caso de `genderRate` e do `gender` da árvore de evolução), **subir `VERSAO_DOWNLOAD` também**: a lista de buscas não cresceu, o CONTEÚDO de duas delas mudou, e sem a marca nova quem baixou antes joga com a regra velha no avião sem nunca saber.
 - **Copiar `m.data` antes de alterar** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todos da espécie.
 - **`endBattle` desfaz Mega/Tera/Dynamax/Forma/Trace/Ash-Greninja.** Sem isso o estado vai junto no save.
 - **Nunca gravar arquivo com BOM.** `Set-Content`/`Out-File -Encoding utf8` no PowerShell 5.1 grava COM BOM e já quebrou o deploy do banco. Usar `[System.IO.File]::WriteAllText($p,$t,(New-Object System.Text.UTF8Encoding $false))`.
@@ -152,6 +153,7 @@ considerado, o que foi simplificado) está em `docs/features.md`.
 - **IA do inimigo**: `regras.escolhaIA(..., contexto)` → `notaDoGolpe(...)` ≈ "% do HP do alvo que o golpe vale"; `nivelDaIA(esperteza)` dá o degrau `simples`/`basico`/`completo`. **Golpe ou efeito novo que a IA deva entender = uma linha em `notaDoGolpe`**; sem regra vale `IGNORADO`. Sempre sobre `golpesPermitidos`.
 - **Clima** (`regras.CLIMAS`, 5 turnos) e **terreno** (`TERRENOS`) vivem no `campo`, compartilhado pelos dois lados. Terreno **só afeta quem está no chão** (`noChao`). Rota pode ter padrão (`CLIMA_DA_ROTA`).
 - **Lado do campo** (`campo.lados`): telas, salvaguarda, neblina, vento, armadilhas. `multTelas` recebe o lado de QUEM DEFENDE.
+- **Gênero** (`m.genero`: `'m'`/`'f'`/`null`): sorteado UMA vez em `makeMon` por `regras.sortearGenero(genderRate da espécie, nome da forma)` e congelado — nada reescreve depois, nem a evolução. Comparar só por `regras.mesmoGenero`/`generoOposto`, que respondem false pra quem não tem gênero (e pra save antigo), então o efeito FALHA em vez de chutar. Quem lê: Attract/Cute Charm (`ailment: 'infatuation'` → `vol.paixao`, conferido em `aplicarStatus`), Captivate (`especiais.generoOposto`), Rivalry (`habilidades.rivalidade`), a evolução (`d.gender`) e `notaDoGolpe`. O ♂/♀ sai de `render.sexo`, por COMPARAÇÃO — **nunca interpolar `m.genero` no HTML** (na sala ele vem de outro jogador).
 - **Gimmicks**: conquistadas na CARREIRA, uma por batalha, não gastam o turno (o Z **é** o turno). O inimigo também usa.
 - **Batalha sobrevive ao F5**: `S.batalha = ganchosSave.serializarBatalha(G.B)`; `restaurarBatalha` reaponta `B.enemy` pra `trainer.equipe[atual]`.
 - **Segredo do brilho**: jogador shiny ganha XP e dinheiro em dobro e Centro grátis. **É segredo — não entra no README nem nos patch notes.**

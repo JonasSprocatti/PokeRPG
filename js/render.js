@@ -67,6 +67,10 @@ export const sprCostas = m => {
    servidores de sprite vira vazio, que é o mesmo caminho de "sprite não carregou" que já existia. */
 export const imgMon = (m, cls, src) => `<img class="${cls}" src="${urlDeImagem(src)}" alt="${esc(fmt(m.name))}${m.shiny ? ' (shiny)' : ''}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${urlDeImagem(outroServidor(src))}'}else{this.onerror=null;this.src='${urlDeImagem(espelhar(m.data.sprite))}'}">`;
 const brilho = m => m.shiny ? '<span class="shiny" title="Shiny">✨</span>' : '';
+/* ♂/♀ (regras.sortearGenero). Sem gênero (Magnemite, lendários) e save de antes disto existir não mostram nada.
+   O símbolo sai de uma COMPARAÇÃO, nunca de interpolar `m.genero`: na sala esse campo vem de outro jogador. */
+export const sexo = m => m?.genero === 'f' ? '<span class="sexo f" title="Fêmea">♀</span>'
+  : m?.genero === 'm' ? '<span class="sexo m" title="Macho">♂</span>' : '';
 /* Botão ⚡ da Mega Evolução: só aparece pra quem já conquistou a Pedra Mega daquela espécie (conquistas.js) e
    ainda não usou nesta batalha. Não gasta o turno — por isso fica junto dos golpes, e não no lugar de um deles.
    `megasDoJogador()` não vai à rede: lê a tabela e o progresso da conta. */
@@ -108,6 +112,7 @@ export function chipsFor(m) {
   if (m.vol?.recarga) h += `<span class="st" title="Não age no próximo turno">RECARGA</span>`;
   if (m.vol?.furia) h += `<span class="st" title="Repete o golpe e depois fica confuso">FÚRIA</span>`;
   if (m.vol?.semente != null) h += `<span class="st" title="Perde 1/8 do HP por turno">SEMENTE</span>`;
+  if (m.vol?.paixao) h += `<span class="st" title="Metade dos turnos não consegue atacar">PAIXÃO</span>`;
   if (m.vol?.foco) h += `<span class="st" title="Crítico mais fácil">FOCO</span>`;
   for (const [s, v] of Object.entries(m.vol?.stages || {})) if (v) h += `<span class="stg ${v > 0 ? 'up' : 'down'}">${STAGE_SHORT[s]} ${v > 0 ? '+' : ''}${v}</span>`;
   return `<div class="chips">${h}</div>`;
@@ -119,7 +124,7 @@ function plate(m, chave) {
   /* O TIPO de quem está em campo fica visível na plaquinha. Estava só na ficha, a um clique de distância — e é
      justamente o dado que explica por que o seu golpe acertou fraco. Usa `badgesDeTipo`, então mostra o tipo
      Tera de quem terastalizou, que é o que vale pra defesa. */
-  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}</span><span>Nv. ${m.level}</span></div>
+  return `<div class="pl-top"><span>${brilho(m)}${esc(label)}${sexo(m)}</span><span>Nv. ${m.level}</span></div>
     <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m, chave)}${blocoChefe(m)}${amizadeBar(m)}${chipsFor(m)}`;
 }
 // chefe do evento semanal (boss.js): barra da couraça, fase e o aviso do golpe carregado — o que decide o turno
@@ -226,7 +231,7 @@ const listaGolpes = (M, quem) => `<div class="sec mlist"><h3>Golpes</h3>
 function cartaoAliado(A, i) {
   const ordem = A.ordem || 'livre';
   return `<div class="aliado ${ordem === 'fora' ? 'descansando' : ''}">
-    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth, 'card-a' + i)}${chipsFor(A)}</div></div>
+    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}${sexo(A)}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth, 'card-a' + i)}${chipsFor(A)}</div></div>
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
@@ -243,7 +248,7 @@ function renderFicha() {
     <div class="ficha-me">
       ${imgMon(P, '', spriteFrente(P))}
       <div>
-        <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}</h2>
+        <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}${sexo(P)}</h2>
         <p class="sub">${P.nick ? esc(fmt(P.name)) + ', ' : ''}nível ${P.level}</p>
         <div class="types">${badgesDeTipo(P)}</div>
       </div>
@@ -310,7 +315,7 @@ function blocoEsconderijo(AL, guardados) {
   return `<h4 class="bag-sec">📦 Esconderijo <span class="muted small">(${guardados.length}/${MAX_ESCONDIDOS})</span></h4>
     ${guardados.length ? `<div class="aliados esconderijo">${guardados.map((A, i) => `<div class="ali-card guardado">
       <img src="${espelhar(A.data.sprite)}" alt="" loading="lazy">
-      <div><b>${brilho(A)}${esc(A.nick || fmt(A.name))}</b><small class="muted">Nv. ${A.level}</small>
+      <div><b>${brilho(A)}${esc(A.nick || fmt(A.name))}${sexo(A)}</b><small class="muted">Nv. ${A.level}</small>
       <div class="types">${badgesDeTipo(A)}</div></div>
       <button class="btn sm ${AL.length >= MAX_ALIADOS ? 'ghost' : ''}" data-act="esconderijo-trazer" data-v="${i}" ${fora && AL.length < MAX_ALIADOS ? '' : 'disabled'}
         title="${AL.length >= MAX_ALIADOS ? 'Equipe cheia: guarde alguém antes' : fora ? '' : 'Só fora de batalha'}">↩ Trazer</button>

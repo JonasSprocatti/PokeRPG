@@ -129,7 +129,7 @@ export function calcStats(m) {
    da luta (Mega, Castform, Aegislash…) perdia o bônus na recontagem: o teto de HP caía pela metade e o `clamp`
    embaixo zerava o HP atual — Alfa mega-evoluindo já saía desmaiado, antes até do aliado bater. Relatado em jogo. */
 export function recalc(m) { const old = m.stats.hp; m.stats = m.statsChefe ? statsDeChefe(calcStats(m)) : calcStats(m); m.hp = clamp(m.hp + (m.stats.hp - old), 0, m.stats.hp); }
-export const freshVol = () => ({ stages: { attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0, accuracy: 0, evasion: 0 }, conf: 0, flinch: false, flashFire: false });
+export const freshVol = () => ({ stages: { attack: 0, defense: 0, 'special-attack': 0, 'special-defense': 0, speed: 0, accuracy: 0, evasion: 0 }, conf: 0, flinch: false, flashFire: false, paixao: false });
 export const stageMul = n => n >= 0 ? (2 + n) / 2 : 2 / (2 - n);
 // maior atributo BASE de combate (sem HP), empate desfeito por Ataque > Defesa > At.Esp. > Def.Esp. > Velocidade
 // (mesma ordem dos jogos) — Protosynthesis e Quark Drive reforçam esse, seja lá qual for, em vez de um fixo.
@@ -470,6 +470,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (ht.resisteFlag && temFlag(move, ht.resisteFlag.flag)) mod *= ht.resisteFlag.mult; // Punk Rock: quem tem leva metade de golpe de som
   if (hu.recuo && move.meta?.drain < 0) mod *= hu.recuo;                             // Reckless: golpe com recuo
   if (phys && u.status === 'burn' && !(hu.comStatus?.attack && statusVale(hu, 'burn')) && move.name !== 'facade') mod *= 0.5; // Guts e Facade ignoram a queimadura
+  if (hu.rivalidade) mod *= mesmoGenero(u, t) ? 1.25 : generoOposto(u, t) ? 0.75 : 1; // Rivalry: briga melhor com igual
   if (hu.pinch === move.type && u.hp <= u.stats.hp / 3) mod *= 1.5;                 // Overgrow, Blaze, Torrent, Swarm
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
@@ -773,8 +774,10 @@ export function notaDoGolpe(g, c) {
 
   // ---- golpe de status ----
   const ailmentDe = (ail, extra = 0) => {                                                     // infligir um status no alvo
-    if (alvo.status && ail !== 'confusion') return IMPOSSIVEL;
+    if (alvo.status && !['confusion', 'infatuation'].includes(ail)) return IMPOSSIVEL;
     if (ail === 'confusion' && alvo.vol?.conf > 0) return IMPOSSIVEL;
+    // Attract só pega gênero OPOSTO, e uma vez só (golpe.aplicarStatus confere o mesmo)
+    if (ail === 'infatuation' && (alvo.vol?.paixao || !generoOposto(alvo, u))) return IMPOSSIVEL;
     if (imuneAoStatusMon(alvo, ail) || ladoAlvo?.salvaguarda > 0) return IMPOSSIVEL;
     let v = (VALOR_STATUS[ail] ?? 4) + extra;
     if (ail === 'paralysis' && effStat(alvo, 'speed') > effStat(u, 'speed')) v += 15;        // tira a vez de quem é mais rápido
@@ -787,6 +790,7 @@ export function notaDoGolpe(g, c) {
     if (f > 0.65) return IMPOSSIVEL;                                                         // com o HP alto, curar é desperdício
     return Math.min(fracCura, 1 - f) * 110;
   };
+  if (esp.generoOposto && !generoOposto(alvo, u)) return IMPOSSIVEL;                           // Captivate
   if (esp.toxico) return alvo.status || imuneAoStatusMon(alvo, 'poison') || ladoAlvo?.salvaguarda > 0 ? IMPOSSIVEL : 45 * acerto;
   if (esp.descanso) return frac(u) <= 0.4 && !imuneAoStatusMon(u, 'sleep') ? 60 : IMPOSSIVEL;
   if (g.meta?.heal > 0 && SELF_TARGETS.has(g.target)) return curaDe(g.meta.heal / 100);
@@ -1076,6 +1080,24 @@ export function formatarTempo(ms) {
   return h ? `${h}h ${String(m).padStart(2, '0')}min` : `${m} min`;
 }
 
+
+/* ---- gênero ---- */
+/* A PokéAPI dá `gender_rate` na ESPÉCIE (api.loadSpecies → `genderRate`): −1 = sem gênero, 0 = sempre macho,
+   8 = sempre fêmea, 1–7 = chance de FÊMEA em oitavos. Sorteado uma vez no nascimento (pokemon.makeMon) e
+   congelado no save — nada reescreve `m.genero` depois, nem a evolução.
+   Forma presa a um gênero (meowstic-female, basculegion-male, oinkologne-male…): o NOME da forma manda, porque
+   a espécie delas tem taxa 4 e o sorteio daria um Meowstic-Female macho. A forma padrão não traz sufixo, então
+   o macho dessas espécies continua saindo do sorteio — fica certo nos dois casos. */
+export function sortearGenero(taxa, nome = '', sorte = Math.random()) {
+  if (/-female$/.test(nome)) return 'f';
+  if (/-male$/.test(nome)) return 'm';
+  if (!(taxa >= 0 && taxa <= 8)) return null;                 // −1 (sem gênero), ausente ou lixo
+  return sorte < taxa / 8 ? 'f' : 'm';
+}
+// Rivalry, Attract, Captivate, Cute Charm. Sem gênero (Magnemite, lendários) e save antigo (`genero` ausente)
+// nunca casam com nada: as duas respondem false, então o efeito falha em vez de chutar um gênero.
+export const mesmoGenero = (a, b) => !!a?.genero && a.genero === b?.genero;
+export const generoOposto = (a, b) => !!a?.genero && !!b?.genero && a.genero !== b.genero;
 
 // shiny: 1 em 4096 (Gen 6+), sorteado pra todo Pokémon criado — você, selvagem ou de treinador, em qualquer modo
 export const CHANCE_SHINY = 1 / 4096;

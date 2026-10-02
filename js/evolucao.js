@@ -7,7 +7,8 @@
 //   'use-item'    usar um item de evolução (pedras, maçãs…) — ctx.item
 //   'trade'       usar o Cabo de Conexão (troca): às vezes pede um item (Metal Coat…) ou um aliado da espécie parceira
 //   'pos-batalha' ao fim de uma vitória (Sirfetch'd: 3 críticos na batalha; Runerigus: aguentou 49 de dano)
-// Gênero é ignorado (os Pokémon do jogo não têm gênero ainda). Puro: testado em tests/evolucao.test.js.
+// Gênero (`d.gender`: 1 = só fêmea, 2 = só macho) é conferido contra `M.genero` — Vespiquen, Salazzle, Froslass e
+// Wormadam só saem de fêmeas, Mothim só de machos. Puro: testado em tests/evolucao.test.js.
 
 // Amizade com o treinador (aqui: vínculo com a jornada). 0–255; começa em 70; aliado recrutado começa em 120.
 export const FELICIDADE_INICIAL = 70, FELICIDADE_ALIADO = 120, FELICIDADE_MAX = 255, FELICIDADE_EVOLUCAO = 160;
@@ -60,6 +61,9 @@ export function detalheCumprido(d, M, ctx) {
   if (d.min_level && M.level < d.min_level) return null;
   if (d.trigger === 'use-item' && d.item !== ctx.item) return null;
   if (d.held_item) { if (!(ctx.bag?.[d.held_item] > 0)) return null; out.consome = d.held_item; }
+  // Gênero exigido pelo caminho. Save de antes do gênero existir (`M.genero` ausente) não cumpre: o outro caminho
+  // da mesma espécie continua valendo (Burmy fêmea → Wormadam, macho → Mothim), então ninguém fica sem evolução.
+  if (d.gender && M.genero !== (d.gender === 1 ? 'f' : 'm')) return null;
   if (d.known_move && !M.moves.some(m => m.name === d.known_move)) return null;
   if (d.known_move_type && !M.moves.some(m => m.type === d.known_move_type)) return null;
   if ((d.min_happiness || d.min_affection) && felicidadeDe(M) < (d.min_happiness || FELICIDADE_EVOLUCAO)) return null;
@@ -101,6 +105,7 @@ export function textoCondicao(d, nomeItem = x => x) {
   if (d.trigger === 'trade') p.push('Cabo de Conexão');
   if (d.trigger === 'pos-batalha') p.push(d.criticos ? `${d.criticos} críticos numa batalha` : `aguentar ${d.dano_sofrido} de dano numa batalha`);
   if (d.min_level) p.push(`Nv. ${d.min_level}`);
+  if (d.gender) p.push(d.gender === 1 ? 'sendo fêmea' : 'sendo macho');
   if (d.held_item) p.push(`com ${nomeItem(d.held_item)} na mochila`);
   if (d.min_happiness || d.min_affection) p.push('vínculo alto');
   if (d.known_move) p.push(`sabendo ${d.known_move}`);

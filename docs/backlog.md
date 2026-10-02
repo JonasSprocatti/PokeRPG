@@ -13,7 +13,7 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 - **Rotas secretas** (pedido em 01/10/2026): rota que abre por condição do jogador — Pokémon específico capturado **e usado**, golpe aprendido pelo principal, etc. É mecânica nova (condição no save, na tela de explorar e no progresso), não funcionalidade do editor.
 - **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
-- **Habilidades**: 215 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
+- **Habilidades**: 217 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
 
 - **Heavy-Duty Boots** (pedido em 30/09/2026, **não construído de propósito**): o item ignora armadilha de entrada,
   e aqui isso não existe pro jogador. `golpe.aplicarArmadilhas` só é chamado quando o **inimigo** entra em campo

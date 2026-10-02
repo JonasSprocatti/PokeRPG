@@ -83,7 +83,9 @@ export function htmlEquiparConta(entradas, equipamento, actAttr) {
 // ficha da PokéAPI + o que foi guardado (nível, IVs, EVs, natureza, habilidade, golpes) + o item de segurar
 // escolhido na Loja de preparo (`itemId`; só entra se a conta realmente tem 1+ no inventário).
 export async function reidratarHall(e, itemId) {
-  const m = await makeMon(await loadPokemon(e.id), e.nivel, { ivs: e.ivs, evs: e.evs, nature: e.nature, ability: e.ability, nick: e.nick, shiny: e.shiny });
+  // `genero: e.genero ?? null` fecha o sorteio: o Pokémon do Hall é um que JÁ nasceu, e sortear de novo aqui faria
+  // o mesmo bicho entrar macho numa raide e fêmea na seguinte (entrada velha, de antes do gênero: fica sem).
+  const m = await makeMon(await loadPokemon(e.id), e.nivel, { ivs: e.ivs, evs: e.evs, nature: e.nature, ability: e.ability, nick: e.nick, shiny: e.shiny, genero: e.genero ?? null });
   const golpes = (await Promise.all((e.moves || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(g => ({ ...g, ppLeft: g.pp }));
   if (golpes.length) m.moves = golpes;
   if (itemId && inventarioRaide()[itemId] > 0) m.item = itemId;

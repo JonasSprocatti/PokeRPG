@@ -10,6 +10,20 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.45', data: '2026-10-02', titulo: '♂♀ Agora todo Pokémon tem gênero — e isso muda a batalha', piada: 'O Combee macho que virou Vespiquen em 2026 foi notificado de que sua transformação era irregular. Ele apresentou recurso. O recurso foi lido por uma Vespiquen, que é fêmea, e negado por conflito de interesses.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Todo Pokémon nasce com gênero</b>, sorteado pela proporção real da espécie — Vulpix é fêmea em 75% das vezes, Tauros é sempre macho, e quem não tem gênero (Magnemite, Voltorb, quase todo lendário) continua sem. O ♂ ou ♀ aparece na plaquinha de batalha, na ficha e no cartão da sala.',
+        '<b>Atração funciona.</b> Antes ela dizia "nada aconteceu": agora o alvo se apaixona e fica <b>sem atacar em metade dos turnos</b> — só entre gêneros opostos, como nos jogos. <b>Charme Fofo</b> faz o mesmo em quem encostar em você, e <b>Oblivious</b> e <b>Aroma Veil</b> não caem nessa.',
+        '<b>Rivalidade (Rivalry) entrou em campo:</b> bate <b>25% mais forte</b> contra o mesmo gênero e <b>25% mais fraco</b> contra o oposto. Contra quem não tem gênero, nada muda.',
+        '<b>Vespiquen, Salazzle, Froslass e Wormadam só saem de fêmeas</b> — e Mothim, só de machos. Era uma exigência que o jogo simplesmente ignorava.',
+        'O inimigo aprendeu tudo junto: a IA não gasta mais o turno com uma Atração que não tem como funcionar.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Cativar (Captivate) funcionava em qualquer um</b>, inclusive em bicho sem gênero. Agora só no gênero oposto, como deveria.',
+        'Se você baixou um mapa pra jogar offline, a tela de <b>⚙ Ajustes</b> vai pedir pra baixar de novo: o gênero é um dado novo da ficha de cada espécie e sem ele, no avião, todo mundo nasceria sem gênero. Com internet, chega sozinho na primeira vez que o jogo falar com a PokéAPI.'
+      ] }
+    ] },
   { versao: '2.44', data: '2026-10-02', titulo: '🧊 Congelado agora derrete: fogo quebra o gelo e o sol não deixa congelar', piada: 'Um Charizard passou três turnos congelado cuspindo lança-chamas sem notar o gelo nas asas. Avisamos. Ele ficou constrangido e pediu pra não aparecer na nota. Está na nota.',
     secoes: [
       { nome: 'Correções', itens: [

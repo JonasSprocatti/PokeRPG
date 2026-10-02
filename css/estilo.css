@@ -631,6 +631,10 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .treinador .equipe{letter-spacing:2px;color:var(--yellow)}
 .treinador img{width:24px;height:24px;image-rendering:pixelated;margin-left:4px}
 .shiny{margin-right:4px}
+/* ♂/♀ (render.sexo): só cor — o símbolo já diz tudo e não deve competir com o nome */
+.sexo{margin-left:4px;font-weight:700}
+.sexo.m{color:#4c8ed9}
+.sexo.f{color:#e0699a}
 .fim .pv{align-items:center}
 /* lado do jogador com aliados: sprites menores ao lado do seu, placas empilhadas */
 .mons-lado{display:flex;align-items:flex-end}

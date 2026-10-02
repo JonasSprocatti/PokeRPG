@@ -25,6 +25,8 @@ import { hab } from './habilidades.js';
 export function fotoDoMon(M, ref, dono, nome, slot = 0) {
   return {
     ref, dono, slot, nome: nome || M.nick || fmt(M.name), id: M.id, name: M.name, level: M.level, shiny: !!M.shiny, ability: M.ability,
+    // gênero: Rivalry, Attract, Captivate e Cute Charm leem daqui (regras.mesmoGenero/generoOposto)
+    genero: M.genero ?? null,
     // item segurado (pedido do usuário, 28/09/2026): antes NENHUM item segurado fazia efeito em luta de multiplayer
     // (Restos, Orbe da Vida, Faixa de Foco...) nem o Vínculo de Batalha virava Ash-Greninja — `seg(m)`/`m.item ===
     // ITEM_VINCULO` liam de `m.item`, e a "foto" simplesmente não tinha esse campo. golpe.js/regras.js são o MESMO

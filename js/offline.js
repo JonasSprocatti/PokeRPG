@@ -13,9 +13,14 @@ import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache
 
 /* Versão do que o download traz. Subiu na v2: além dos Pokémon, golpes e sprites, agora vêm a curva de XP e a
    árvore de evolução de cada espécie (sem elas não dava pra COMEÇAR uma jornada nem evoluir offline).
-   Quem baixou na v1 tem a marca antiga e volta a aparecer como incompleto — é de propósito: dizer "já baixado"
+   Subiu na v3: a lista de buscas é a MESMA, mas o conteúdo mudou — a espécie agora traz a taxa de gênero
+   (`genderRate`) e a árvore de evolução traz o gênero exigido de cada caminho (`v: 3`). Quem baixou na v2 tem
+   registro guardado SEM esses campos, e aí todo mundo nasce sem gênero no avião (Attract e Rivalry inertes,
+   Vespiquen evoluindo de macho). O `valido` do api.js conserta na primeira vez ONLINE; a marca nova é o que
+   avisa, na tela de Ajustes, que vale baixar de novo.
+   Quem baixou numa versão antiga volta a aparecer como incompleto — é de propósito: dizer "já baixado"
    pra um mapa que ainda falha no avião é pior do que pedir um download de novo. */
-export const VERSAO_DOWNLOAD = 2;
+export const VERSAO_DOWNLOAD = 3;
 const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}:gen${gen}`;
 
 /* Quem guarda as IMAGENS é o service worker (sw.js): `guardarSprite` só pede a imagem, e é o sw que a intercepta

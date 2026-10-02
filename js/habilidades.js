@@ -139,6 +139,8 @@
 //   protegeItem              seu item não pode ser roubado por Pickpocket/Magician (golpe.executar) — Sticky Hold
 //   imuneGolpeStatus         imune a QUALQUER golpe de status usado por outro Pokémon (golpe.executar, antes de
 //                          golpeDeStatus) — Good As Gold
+//   rivalidade              ×1,25 contra o MESMO gênero, ×0,75 contra o oposto, ×1 se um dos dois não tem gênero
+//                          (regras.calcDamage) — Rivalry
 //   podeEnvenenarQualquer    seus próprios golpes/toque venenoso ignoram a imunidade de TIPO ao veneno
 //                          (Venenoso/Aço) do alvo — não a de habilidade, tipo Immunity (golpe.aplicarStatus) —
 //                          Corrosion
@@ -212,12 +214,12 @@ export const HABILIDADES = {
   immunity: { imuneStatus: ['poison'] }, limber: { imuneStatus: ['paralysis'] },
   insomnia: { imuneStatus: ['sleep'] }, 'vital-spirit': { imuneStatus: ['sleep'] }, 'sweet-veil': { imuneStatus: ['sleep'] },
   'water-veil': { imuneStatus: ['burn'] }, 'magma-armor': { imuneStatus: ['freeze'] },
-  'own-tempo': { imuneStatus: ['confusion'], imuneIntimidacao: true }, oblivious: { imuneStatus: ['confusion'], imuneIntimidacao: true, imuneTrava: ['provocar'] },
-  'aroma-veil': { imuneTrava: ['provocar', 'encore', 'disable', 'tormento'] },
+  'own-tempo': { imuneStatus: ['confusion'], imuneIntimidacao: true }, oblivious: { imuneStatus: ['confusion', 'infatuation'], imuneIntimidacao: true, imuneTrava: ['provocar'] },
+  'aroma-veil': { imuneStatus: ['infatuation'], imuneTrava: ['provocar', 'encore', 'disable', 'tormento'] },
   // o que nos jogos acontece ao TROCAR de Pokémon, ligado ao evento equivalente daqui (você nunca troca)
   regenerator: { curaAoVencer: 1 / 3 }, 'natural-cure': { limpaStatusAoVencer: true },
   'wimp-out': { saiComPoucoHp: 0.5 }, 'emergency-exit': { saiComPoucoHp: 0.5 },
-  'slow-start': { inicioLento: 5 }, stakeout: { emboscada: 2 },
+  'slow-start': { inicioLento: 5 }, stakeout: { emboscada: 2 }, rivalry: { rivalidade: true },
   'early-bird': { sonoRapido: true }, 'shed-skin': { curaStatusFimTurno: 0.3 },
   // atributos que não caem
   'clear-body': { semQueda: 'todas' }, 'white-smoke': { semQueda: 'todas' }, 'full-metal-body': { semQueda: 'todas' },
@@ -225,6 +227,8 @@ export const HABILIDADES = {
   // contato
   static: { contato: { status: 'paralysis', chance: 30 } }, 'flame-body': { contato: { status: 'burn', chance: 30 } },
   'poison-point': { contato: { status: 'poison', chance: 30 } },
+  // Cute Charm: quem encostou se apaixona — a exigência de gênero oposto é de aplicarStatus, não daqui
+  'cute-charm': { contato: { status: 'infatuation', chance: 30 } },
   'rough-skin': { contatoDano: 1 / 8 }, 'iron-barbs': { contatoDano: 1 / 8 },
   synchronize: { sincroniza: true }, stench: { flinchChance: 10 },
   'sheer-force': { sheerForce: true }, unnerve: { unnerve: true }, 'friend-guard': { friendGuard: true },

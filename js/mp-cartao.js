@@ -4,7 +4,7 @@
    1190 linhas com rede dentro entrava no grafo por causa de um cartãozinho. */
 import { G } from './estado.js';
 import { TYPE_PT } from './dados.js';
-import { spriteFrente, sprCostas, imgMon, chipsFor, badgesDeTipo } from './render.js';
+import { spriteFrente, sprCostas, imgMon, chipsFor, badgesDeTipo, sexo } from './render.js';
 import { resumoDoChefe } from './boss.js';
 import { esc, clamp } from './util.js';
 import { urlDeImagem } from './mp-sanear.js';   // sprite vinda da rede não entra no HTML sem passar por aqui
@@ -33,7 +33,7 @@ export const marcasMP = m => [m.mega && `⚡ ${m.mega.forma?.nome || 'Mega'}`, m
 export function cartao(m, legenda, destaque = false) {
   const marcas = marcasMP(m);
   return `<div class="mp-mon ${m.hp <= 0 ? 'caido' : ''} ${destaque ? 'vez' : ''} ${G.sala?.atuandoRef === m.ref ? 'atacando' : ''}" data-ref="${esc(m.ref || '')}"><img src="${urlDeImagem(spriteFrente(m))}" alt="" onerror="this.onerror=null;this.src='${urlDeImagem(m.data.sprite)}'">
-    <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</b> <span class="muted small">Nv. ${esc(m.level)}</span>${marcas ? ` <span class="small">${esc(marcas)}</span>` : ''}${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
+    <div><b>${m.shiny ? '✨ ' : ''}${esc(m.nome)}${sexo(m)}</b> <span class="muted small">Nv. ${esc(m.level)}</span>${marcas ? ` <span class="small">${esc(marcas)}</span>` : ''}${legenda ? `<small class="muted">${esc(legenda)}</small>` : ''}${barra(m)}${blocoChefeMP(m)}</div></div>`;
 }
 
 /* ---------- a CENA da luta em sala (29/09/2026) ----------
@@ -52,7 +52,7 @@ export function unidadeMP(m, { costas = false, legenda = '', destaque = false } 
 }
 function placaMP(m, legenda) {
   const marcas = marcasMP(m);
-  return `<div class="pl-top"><span>${m.shiny ? '✨ ' : ''}${esc(m.nome)}</span><span>Nv. ${esc(m.level)}</span></div>
+  return `<div class="pl-top"><span>${m.shiny ? '✨ ' : ''}${esc(m.nome)}${sexo(m)}</span><span>Nv. ${esc(m.level)}</span></div>
     <div class="types pl-tipos">${badgesDeTipo(m)}</div>
     ${marcas ? `<div class="small mp-marcas">${esc(marcas)}</div>` : ''}
     ${legenda ? `<div class="small muted mp-dono">${esc(legenda)}</div>` : ''}

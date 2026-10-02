@@ -15,7 +15,7 @@ export const entraNoHall = dificuldade => !!DIFICULDADES[dificuldade]?.eventoSem
 
 export function compactarPokemon(M) {
   return {
-    id: M.id, especie: M.data?.speciesName || M.name, nome: M.name, nick: M.nick || '', nivel: M.level, shiny: !!M.shiny,
+    id: M.id, especie: M.data?.speciesName || M.name, nome: M.name, nick: M.nick || '', nivel: M.level, shiny: !!M.shiny, genero: M.genero ?? null,
     ivs: { ...(M.ivs || {}) }, evs: { ...(M.evs || {}) }, nature: M.nature, ability: M.ability,
     moves: (M.moves || []).map(m => m.name)
   };

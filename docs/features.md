@@ -5,6 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
+- Gênero (02/10/2026)
 - Congelamento: o que faltava (02/10/2026)
 - Golpes de peso e de atributo trocado (02/10/2026)
 - Evento semanal, chefes e Arena
@@ -18,6 +19,89 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Som: cries e música procedural (30/09/2026)
 - Troca de tipo, Endeavor no chefe e a leva de itens de 30/09/2026
 - Anúncios e privacidade
+
+---
+
+## Gênero (02/10/2026)
+
+Pedido do usuário: "os pokémons não constam com gênero, temos que adicionar isso pois tem habilidades e moves que
+se importam com isso". Era dado morto até então — nenhuma mecânica de gênero existia no jogo, e as que existiam
+funcionavam **errado em silêncio**: Captivate baixava a At.Esp. de qualquer um (os −2 são `stat_changes` comuns,
+e o motor não tinha nada contra o que conferir) e a evolução ignorava a exigência de gênero, então um Combee macho
+virava Vespiquen. Attract caía no "este efeito será ajustado em atualizações futuras", porque `infatuation` não
+tinha entrada em `AIL_MSG`.
+
+### De onde o dado vem
+
+A PokéAPI não põe gênero no Pokémon, põe `gender_rate` na **espécie**: −1 sem gênero, 0 sempre macho, 8 sempre
+fêmea, 1–7 chance de FÊMEA em oitavos. Isso entrou em `api.loadSpecies` como `genderRate`.
+
+Duas decisões aqui:
+
+- **Entrou por `valido`, não por chave nova.** `cached('sp2:', …, v => typeof v?.genderRate === 'number')`. Trocar
+  pra `'sp3:'` jogaria fora toda espécie já baixada pra jogar offline; com o `valido`, o registro velho é usado
+  enquanto a rede não responde e trocado pelo novo na primeira vez que ela responder. Mesmo caminho do
+  `learnset.extras`.
+- **A busca da espécie vai no mesmo `Promise.all` dos golpes** (`pokemon.makeMon`). Não é uma espera nova: a função
+  já aguardava os 4 golpes, e a espécie já está no cache de quem baixou o mapa (`offline.baixarGen` busca espécie
+  desde a v2). Se falhar, o fallback é **−1 (sem gênero)**, de propósito o mais calado dos dois erros: um ♂ errado
+  num Voltorb seria visível E faria Attract funcionar onde não devia.
+
+O sorteio é `regras.sortearGenero(taxa, nome, sorte)`, puro e testado, chamado **uma vez no nascimento**. `m.genero`
+é congelado: nada reescreve depois, nem a evolução (que só troca `id`/`data`). `loja-conta.reidratarHall` passa
+`opt.genero` pra não re-sortear — o mesmo Pokémon do Hall entrando macho numa raide e fêmea na seguinte seria
+visível e sem explicação.
+
+**Forma presa a um gênero.** Meowstic-Female, Basculegion-Male e Oinkologne-Male são formas de espécies com taxa 4:
+o sorteio daria um "Meowstic-Female macho". O **nome da forma manda** (`/-female$/`, `/-male$/`). A forma padrão
+dessas espécies não traz sufixo, então o macho continua saindo do sorteio — fica certo nos dois casos sem precisar
+de uma tabela de exceções.
+
+### O que lê o gênero
+
+Duas funções puras são o único jeito de comparar: `mesmoGenero(a, b)` e `generoOposto(a, b)`. **Sem gênero nunca
+casa com nada** — as duas respondem `false` pra quem não tem e pra save de antes disto existir, então o efeito
+falha em vez de chutar um gênero.
+
+- **Attract** (`ailment: infatuation`) e **Cute Charm** (`contato: { status: 'infatuation', chance: 30 }`): a
+  checagem está em **`golpe.aplicarStatus`**, no único lugar por onde todo status passa — a habilidade não precisou
+  de gancho novo, é uma linha na tabela. Paixão vive no `vol` (como a confusão), então morre ao entrar/sair de campo
+  e no fim da batalha: **nunca vaza pro save**. Metade dos turnos o apaixonado não ataca, conferido antes da
+  confusão como nos jogos. Oblivious e Aroma Veil ganharam `'infatuation'` no `imuneStatus` que já tinham.
+- **Captivate**: `especiais.captivate = { generoOposto: true }`. Os −2 de At.Esp. continuam genéricos; o que a
+  tabela acrescenta é a trava, conferida no topo de `statusEspecial`.
+- **Rivalry**: gancho `rivalidade` em `calcDamage` — ×1,25 contra o mesmo gênero, ×0,75 contra o oposto, ×1 se um
+  dos dois não tem.
+- **Evolução**: `slimEvo` passou a guardar `gender` de cada caminho (1 = só fêmea, 2 = só macho) e `detalheCumprido`
+  confere contra `M.genero`. Isso fechou um buraco listado como "não suportado": Vespiquen, Salazzle, Froslass e
+  Wormadam só saem de fêmeas, Mothim só de machos. Ninguém fica sem evolução porque as duas pontas existem na mesma
+  árvore (Burmy fêmea → Wormadam, macho → Mothim).
+- **IA** (`notaDoGolpe`): Attract vale `IMPOSSIVEL` contra quem não é do gênero oposto ou já está apaixonado, e
+  Captivate idem — senão o inimigo gastaria o turno num golpe inerte.
+
+### O que isso obrigou a mexer
+
+- **`v: 3` na árvore de evolução.** A chave do cache (`'evo2:'`) ficou, o `valido` virou `v => v?.v >= 3`, e
+  `progressao.arvoreDe` passou de `=== 2` pra `>= 3`. Mesma lógica da espécie: nada é jogado fora, a árvore velha
+  serve offline e é refeita online.
+- **`VERSAO_DOWNLOAD` 2 → 3.** A lista de buscas do `baixarGen` é a MESMA — mudou o *conteúdo* de duas delas. Quem
+  baixou na v2 tem registro sem `genderRate` e sem `gender`, e no avião isso é todo mundo sem gênero (Attract e
+  Rivalry inertes). O `valido` conserta online; a marca nova é o que avisa na tela de Ajustes que vale baixar de
+  novo.
+- **`fotoDoMon` leva `genero`** (mp-motor): as 4 mecânicas são as do motor único, então faltava só mandar o dado
+  pela rede. `mp-sanear` varre por TIPO, e `'m'`/`'f'` é texto — não precisou de linha nova lá.
+- **O ♂/♀ sai de uma COMPARAÇÃO, nunca de interpolar `m.genero`** (`render.sexo`): na sala esse campo vem de outro
+  jogador, e `${m.genero}` dentro do HTML seria a mesma classe de furo da auditoria de 30/09.
+
+### O que ficou de fora
+
+- **A paixão não acaba quando quem causou sai de campo**, como nos jogos. No seu lado ninguém troca de Pokémon, e
+  o `vol` do inimigo que entra já nasce limpo — o único caso real é você ficar apaixonado depois de o inimigo
+  trocar, e aí a paixão dura a batalha. Guardar quem causou pra isso seria um campo no `vol` por um caso de borda.
+- **Não existe tela de "proporção de gênero"** nem gênero na Pokédex: o símbolo na plaquinha, na ficha e no cartão
+  da sala é o que muda decisão em jogo.
+- **Forma padrão macho continua no sorteio** (ver acima): um Indeedee macho de verdade é o que sai, mas a espécie
+  também sorteia fêmea pra forma padrão, que nos jogos seria outra forma. Caso de borda de 4 espécies.
 
 ---
 
@@ -1580,7 +1664,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 - **Bola de Ferro**: só Velocidade -50% (`multStat`). **Simplificação assumida**: nos jogos de verdade também torna o portador "no chão" (perde imunidade a golpe de Terra, mesmo voador ou com Levitate) — ficou de fora porque mexeria na imunidade de tipo do motor único (`typeEff`/`ht.imuneTipo` em `golpe.js`, usada em TODO golpe do jogo), risco maior que o ganho pro uso mais comum do item (Trick Room).
 - **Eviolite** (`eviolite`): Defesa/Def. Especial ×1.5, só se a ESPÉCIE ainda evolui. Puro problema de dado: saber "ainda evolui" em batalha (`regras.effStat`, síncrona) sem buscar a árvore de evolução da PokéAPI no meio do turno (~550 requisições encadeadas só pra montar isso uma vez). Resolvido do MESMO jeito que as flags de golpe: `ferramentas/gerar-evolucao-restante.mjs` lê `pokemon_species.csv` do repositório-fonte da PokéAPI (`evolves_from_species_id`) numa passada só — uma espécie "ainda evolui" se ALGUMA OUTRA aponta pra ela nesse campo — e gera `js/dados-evolucao-restante.js` (`AINDA_EVOLUI`, 457 espécies). `segurados.multEviolite(m, stat)` é um gancho À PARTE de `multStat` (não dá pra usar o genérico: o multiplicador depende da espécie seguradora, não é fixo por item), chamado direto em `regras.effStat`. Não inclui formas regionais/variedades (o CSV é por espécie — a mesma chave que Pokédex/caça/registro já usam); uma forma regional herda a resposta da espécie base. `tests/regras.test.js`. |
 | `js/dados-patchnotes.js` / `js/tela-patchnotes.js` / `js/novidades.js` | **Notas de atualização** (tela 📜 Novidades). `PATCH_NOTES` é escrito À MÃO, mais novo primeiro: `{ versao, data (AAAA-MM-DD), titulo, piada, secoes: [{ nome: 'Novidades'\|'Correções'\|'Equilíbrio', itens: [texto] }] }` — formato garantido por `tests/patchnotes.test.js` (versões únicas, ordem decrescente, itens com mais de 20 letras). Texto PRA JOGADOR: nada de nome de arquivo/função, e cada versão leva uma piada. **Toda leva de mudanças deve virar uma versão nova aqui.** `novidades.js` guarda só o "já li" (`pokerpg-patch-visto`) porque navegacao.js e a tela se importam. |
-| `js/evolucao.js` | **Evoluções especiais** (puro, `tests/evolucao.test.js`). `detalheCumprido(d, M, ctx)`/`evolucoesPossiveis(node, M, ctx)` avaliam os detalhes da PokéAPI (`api.slimEvo`, cache `evo2:`, raiz com `v: 2`; árvore de save antigo é rebuscada em `arvoreDe`). Gatilhos: `level-up`, `use-item`, `trade` (Cabo de Conexão), `pos-batalha`. Condições cobertas: nível, item, item na mochila (`held_item` → `consome`), golpe/tipo de golpe, `min_happiness`/`min_affection` (vínculo `M.felicidade`, começa em 70, aliado 120, +5/+3/+2 por nível e +1 por vitória), hora real (`periodoDoDia`, dusk = 17h), espécie/tipo na equipe, Ataque×Defesa. **Não suportado** (e por isso ignorado): local, chuva, de cabeça pra baixo, beleza, gênero (ignorado = sempre vale) e `level-up` SEM condição nenhuma (na API é o campo magnético de Magnezone/Probopass/Vikavolt — evoluiria em qualquer nível; eles têm Pedra do Trovão). `EVO_ALTERNATIVAS` dá regra equivalente aos 19 casos que o jogo não tem (contadores `M.vol.criticos`, `M.vol.danoSofrido` em golpe.js; `M.recuoTotal`; `M.passos` em mundo.js; `registro.derrotados`; dinheiro). Fluxo: `progressao.checkEvolution(M, extra)` (nível e pós-batalha) e `evoluirComItem(id)` (item/Cabo, chamado por `itens.useItem`). Itens em `dados.ITENS_EVO` (fundidos em `ITEMS`): `evo` (usar), `troca` (Cabo), `segurar` (fica na mochila e é gasto ao evoluir). **Shedinja** (`casulo()` em progressao.js): ao escolher `ninjask`, se há vaga em `S.aliados` o Shedinja é criado e entra como aliado; equipe cheia = `ask` de qual dos dois o próprio Pokémon vira. |
+| `js/evolucao.js` | **Evoluções especiais** (puro, `tests/evolucao.test.js`). `detalheCumprido(d, M, ctx)`/`evolucoesPossiveis(node, M, ctx)` avaliam os detalhes da PokéAPI (`api.slimEvo`, cache `evo2:`, raiz com `v: 2`; árvore de save antigo é rebuscada em `arvoreDe`). Gatilhos: `level-up`, `use-item`, `trade` (Cabo de Conexão), `pos-batalha`. Condições cobertas: nível, item, item na mochila (`held_item` → `consome`), golpe/tipo de golpe, `min_happiness`/`min_affection` (vínculo `M.felicidade`, começa em 70, aliado 120, +5/+3/+2 por nível e +1 por vitória), hora real (`periodoDoDia`, dusk = 17h), espécie/tipo na equipe, Ataque×Defesa, **gênero** (`d.gender`, 1 = fêmea, 2 = macho, conferido contra `M.genero` — ver "Gênero (02/10/2026)"). **Não suportado** (e por isso ignorado): local, chuva, de cabeça pra baixo, beleza e `level-up` SEM condição nenhuma (na API é o campo magnético de Magnezone/Probopass/Vikavolt — evoluiria em qualquer nível; eles têm Pedra do Trovão). `EVO_ALTERNATIVAS` dá regra equivalente aos 19 casos que o jogo não tem (contadores `M.vol.criticos`, `M.vol.danoSofrido` em golpe.js; `M.recuoTotal`; `M.passos` em mundo.js; `registro.derrotados`; dinheiro). Fluxo: `progressao.checkEvolution(M, extra)` (nível e pós-batalha) e `evoluirComItem(id)` (item/Cabo, chamado por `itens.useItem`). Itens em `dados.ITENS_EVO` (fundidos em `ITEMS`): `evo` (usar), `troca` (Cabo), `segurar` (fica na mochila e é gasto ao evoluir). **Shedinja** (`casulo()` em progressao.js): ao escolher `ninjask`, se há vaga em `S.aliados` o Shedinja é criado e entra como aliado; equipe cheia = `ask` de qual dos dois o próprio Pokémon vira. |
 | `js/saves.js` / `js/tela-saves.js` | **Jornadas salvas**: a atual continua em `SAVE_KEY`; as outras em andamento ficam em `pokerpg-saves-guardados-v1` (`{id: S}`, até `MAX_GUARDADAS` = 12). `excluir(id)` lembra o id em `pokerpg-saves-excluidos-v1` pra apagar da nuvem na próxima sincronização (offline) e não ressuscitar. Na nuvem, `saves` tem chave `(user_id, jornada_id)` — uma linha por jornada (o `schema.sql` migra a chave antiga). `nuvem.js sincronizarSaves` executa `reconciliarSaves` (puro, `tests/saves.test.js`): mesma jornada = vale a mais nova; terminada/excluída = apaga; desconhecida vinda da nuvem = `ganchos.oferecerSave` → 'continuar' (a atual vai pras guardadas) / 'guardar' / 'excluir'. **Nada é descartado sem o jogador escolher.** Com o schema antigo (erro 42P10 no upsert), cai pro modo uma-jornada-por-conta e só a atual sobe. Tela: `telaSaves()`; cliques `saves`/`save-guardar`/`save-continuar`/`save-excluir` em main.js (`guardarAtual`, `continuarGuardada`). "Novo jogo" oferece guardar ou encerrar. |
 | `js/mapas.js` / `js/dados-mapas.js` | Mapas por Gen (ver "Mundo e progressão"). `dados-mapas.js` é gerado por `ferramentas/gerar-mapas.ps1`. **Iniciais fora das rotas**: `tirarIniciais(GENS)` roda UMA vez ao carregar o módulo e tira dos pools os 27 iniciais das 9 regiões e as evoluções deles (`ehInicialDeRegiao(id)`: cada trio ocupa ids seguidos a partir do primeiro, 1-9, 152-160, …). Pikachu e Eevee ficam — são a região marcada `nasRotas: true` em `REGIOES_INICIAIS` (dados.js). Alfa que era inicial vira o bicho mais raro do pool, no mesmo nível; rota que fica com menos de `MIN_POOL` (5) empresta das rotas vizinhas do mesmo mapa (`completarPool`, 2ª passada — na 1ª todas as rotas já foram limpas, senão uma vizinha suja emprestaria justo o inicial recém-tirado). O gerador aplica a MESMA regra (`EhInicial` em gerar-mapas.ps1), então dados regerados já nascem limpos. `especiesDaGen(gen)` = todas as espécies do mapa sem repetir, sem mítico e **sem o Santuário**, usada pelos treinadores. **Santuário (11ª rota de cada mapa, `posVitoria: true`)**: pool com TODA a Gen — espécies comuns, iniciais, lendários, míticos e as 53 formas regionais —, peso pela taxa de captura, gerado junto com o resto em `gerar-mapas.ps1`. É o que garante completude: qualquer espécie que ficasse de fora das 10 rotas cai ali. `regras.zonaLiberada(z, nivel, S)` ganhou o 3º parâmetro por causa dele: rota `posVitoria` ignora nível e exige `S.gensVencidas.includes(z.gen)`; **sem `S` fica trancada** (padrão seguro — todos os chamadores passam `G.S`). `tirarIniciais` e `especiesDaGen` PULAM rotas `posVitoria` — se um dia alguém varrer rotas pra filtrar conteúdo, tem de pular também, senão o Santuário deixa de cumprir o papel. **Formas regionais**: na PokéAPI são variedades de `pokemon` com id > 10000, não espécies; a entrada do pool é `{ id: 10100, n: 'raichu', f: 'raichu-alola' }` — `n` continua sendo a ESPÉCIE (chave do registro/Pokédex/caça, que o jogo inteiro já usa) e `f` só o nome mostrado (`pokedexDaRota` devolve `nome: f || n`). Formas de Tauros de Paldea ficaram de fora: o nome delas não termina em `-paldea`. **Roguelike + Santuário**: vencer os lendários grava `S.genVencida` NA HORA (não no fim da run) e pergunta se encerra em vitória ou segue no Santuário (`S.aposVitoria`, botão `encerrar-vitoria` nas ações). Quem segue e morre lá termina em derrota **sem perder a Gen**: `encerrarJornada` injeta `genVencida` do save e `gensLiberadasRoguelike` aceita `j.genVencida` mesmo com `motivo !== 'venceu'`. **Lendário selvagem no Santuário** aceita petisco (é o que torna o desbloqueio por amizade possível), mas `ganhoAmizade(..., lendario)` divide o ganho por `DIVISOR_AMIZADE_LENDARIO` (4, piso 1) — `batalha.startBattle` marca `E.lendario` pelo `l`/`m` da entrada do pool. |
 | `js/regras.js` | **Fórmulas puras** (testadas): `calcStats`, `calcDamage`, `effStat`, `typeEff`, `chanceAcerto`, `consegueFugir`, `jogadorAgePrimeiro`, `danoResidual`, `imuneAoStatus`, `xpPorVitoria`, `ganhoDeEVs`… |
@@ -1605,7 +1689,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 215 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 217 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
