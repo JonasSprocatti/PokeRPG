@@ -477,6 +477,11 @@ export const REGIOES_INICIAIS = [
 ];
 export const INICIAIS = REGIOES_INICIAIS.flatMap(r => r.ids);
 
+/* Pseudo-lendários (badge 'ovos100', ovos.js): as FORMAS BASE das 10 linhas de 600 stats-base — uma por Gen. Lista à
+   mão porque "pseudo-lendário" não é um dado da PokéAPI, é consenso da comunidade (3 estágios, 1.250.000 de XP,
+   600 de total base). Tyrunt e os paradoxos não entram. */
+export const PSEUDO_LENDARIOS = ['dratini', 'larvitar', 'bagon', 'beldum', 'gible', 'deino', 'goomy', 'jangmo-o', 'dreepy', 'frigibax'];
+
 /* ---- treinadores caçadores e dificuldade (Etapa 3) ---- */
 // chave = nome do sprite em ITEM_SPR; mult = multiplicador da fórmula de captura
 export const BOLAS = {

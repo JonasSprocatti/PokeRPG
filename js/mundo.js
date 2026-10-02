@@ -9,6 +9,7 @@ import { startBattle, startTrainerBattle, startBossBattle, startLendarios, start
 import { situacaoDoEvento, BETA_SEM_ESPERA } from './evento.js';
 import { verificarEvolucoesPendentes } from './progressao.js';
 import { verificarMissoes } from './missoes.js';
+import { cuidarDosOvos } from './amizade.js';
 import { addItem } from './itens.js';
 import { ITEMS, FIND_ITEMS, FLAVOR, ITENS_EVO_ACHADOS, FRUTAS_ACHADAS, SEGURADOS_ACHADOS } from './dados.js';
 import { apiErr } from './api.js';
@@ -32,6 +33,9 @@ export async function explore() {
     }
     await say(`Você anda por ${z.name}...`, 'muted');
     for (const M of emCampo()) M.passos = (M.passos || 0) + 1; // Pawmot, Brambleghast, Rabsca (evolucao.js)
+    /* 🥚 Ovos (ovos.js): andam um passo por exploração, chocam e um casal do esconderijo pode pôr outro. Try próprio
+       porque ovo é bônus — uma falha aqui não pode custar a exploração (e o encontro ainda vem logo abaixo). */
+    try { await cuidarDosOvos(); } catch (e) { console.error('ovos', e); }
     // repelente gasta um passo por exploração; quando acaba, avisa (mapas.js)
     if (gastarRepelente(G.S) === 'acabou') await say('O efeito do repelente passou.', 'muted');
     const r = Math.random();

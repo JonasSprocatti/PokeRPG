@@ -65,7 +65,8 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/carreira.js` | Carreira = jornadas terminadas. Também monta as gimmicks da loja e o Hall da conta. |
 | `js/progresso-conta.js` | Progresso permanente (puro). Regra única: **nunca encolhe**; `bancar()` idempotente por id de jornada. |
 | `js/conquistas.js` · `js/tela-conquistas.js` | Conquistas da conta. As gimmicks somam a CARREIRA, não a run. |
-| `js/badges.js` | 56 badges numa tabela única (puro) → vantagem na PRÓXIMA jornada. Medidas do progresso permanente, nunca do histórico. "Potencial máximo" (1 milhão de dano seu) é a única que muda uma REGRA: IVs 31 na criação. |
+| `js/badges.js` | 58 badges numa tabela única (puro) → vantagem na PRÓXIMA jornada. Medidas do progresso permanente, nunca do histórico. "Potencial máximo" (1 milhão de dano seu) é a única que muda uma REGRA: IVs 31 na criação. |
+| `js/ovos.js` | 🥚 Cruzar no esconderijo e chocar andando (puro). Ovo é **segredo**: a tela nunca mostra `ovo.especie`. Passos = EXPLORAÇÕES, de `hatchCounter`. |
 | `js/mega.js` · `tera.js` · `zmove.js` · `dynamax.js` | As 4 gimmicks. **`endBattle` desfaz todas** — senão o estado vai junto no save. |
 | `js/mapas.js` · `js/dados-mapas.js` | Mapas por Gen · **GERADO** por `ferramentas/gerar-mapas.ps1`, não editar à mão. **`GENS` sai de `dados.js`**, não daqui: é lá que os ajustes de `dados-rotas.js` entram. |
 | `js/dados-rotas.js` | **GERADO pelo editor de rotas do jogo** — as 180 missões por rota e os Alfas trocados. Dado puro, sem imports. |
@@ -147,6 +148,8 @@ considerado, o que foi simplificado) está em `docs/features.md`.
 
 ### Mundo e progressão
 9 Gens × 10 rotas + **Santuário** (11ª, `posVitoria`: pool com TODA a Gen, exige `S.gensVencidas`, ignora nível — é o que garante a completude da Pokédex). `pool = [{id, n, p, m?}]`, sorteio ponderado. Rotas 1–9 têm `chefe` (Alfa, IVs 31 + `statsDeChefe`); a 10ª tem `final: true` + `lendarios`. **Zonas por nível** (`libera`/`zonaLiberada`). **Anti-grind (só Roguelike)**: `regras.rotaEsgotada` — a Pokédex da rota continua. **Vencer os lendários** → `vencerGen()`; modo com `fimNaGen` encerra a run, senão oferece o mapa seguinte (seguir com o mesmo Pokémon vale MENOS pontos). **Missões**: `MISSOES` = 17 globais (`dados.js`) + **180 por rota** (`dados-rotas.js`: uma de espécie e uma de Alfa em cada rota das 9 Gens), avaliadas por `situacaoMissoes` (puro, testado). Missão de espécie usa `alvos: [[especie, qtd]…]` — várias espécies SOMAM e **cada uma tem o próprio teto**. Quem edita é o 🗺 Editor de rotas, não a mão. **Repelentes** e **🎯 Caça Shiny** (`S.caca`): `especieForcada` põe o repelente na frente da caça; `cacaveisDaRota` exclui mítico E lendário.
+
+**🥚 Ovos** (`ovos.js`, puro + `amizade.cuidarDosOvos`, chamado por `explore`): casal de **gênero oposto** no esconderijo põe ovo (`S.ovos`, máx. `MAX_OVOS` = 3); 1 exploração = 1 passo; o filhote é a forma BASE da mãe, Nv. 5, com um golpe do pai e 3 IVs herdados. **A tela nunca mostra `ovo.especie`** — o ovo é segredo até abrir. Ovo pronto sem vaga (equipe + esconderijo cheios) espera parado. `S.ovosChocados` → resumo → progresso permanente → badges `ovos100`/`ovos1000` (ovo de pseudo-lendário / de lendário em toda jornada nova).
 
 ### Batalha
 - **Aliados** (`S.aliados`, máx. `MAX_ALIADOS` = 2): recrutados com petisco, agem no turno (`ordenarAcoes`: prioridade → `rapido` → `lento` → velocidade), têm `ORDENS`.

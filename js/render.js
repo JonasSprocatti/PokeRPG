@@ -20,6 +20,7 @@ import { terasDisponiveis } from './tera.js';
 import { zDisponiveis, avisoDoZ, primeiroTipoZ } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
+import { ovos, MAX_OVOS } from './ovos.js';
 import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
 import { resumoDoChefe, nivelDoChefe } from './boss.js';
 import { linhaItensDoChefe } from './itens-raide.js';
@@ -305,7 +306,22 @@ function renderAliados() {
   const guardados = escondidos(G.S);
   $('#p-aliados').innerHTML = `${AL.length ? `<div class="aliados">${AL.map(cartaoAliado).join('')}</div>`
     : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>'}
-    ${blocoEsconderijo(AL, guardados)}`;
+    ${blocoOvos(G.S)}${blocoEsconderijo(AL, guardados)}`;
+}
+/* 🥚 Ovos (ovos.js): a barra mostra explorações andadas e nada mais. A espécie, o golpe herdado e o brilho são
+   SEGREDO até chocar — é o que faz o jogador querer andar mais um pouco. Nada de `ovo.especie` aqui. */
+function blocoOvos(S) {
+  const lista = ovos(S);
+  if (!lista.length) return '';
+  const cheio = (S.aliados || []).length >= MAX_ALIADOS && escondidos(S).length >= MAX_ESCONDIDOS;
+  return `<h4 class="bag-sec">🥚 Ovos <span class="muted small">(${lista.length}/${MAX_OVOS})</span></h4>
+    ${lista.map(o => {
+      const pronto = o.passos >= o.alvo;
+      return `<div class="missao"><b>🥚 Ovo misterioso</b><small>${pronto
+        ? (cheio ? 'Está trincando! Mas não há lugar: despeça alguém ou abra vaga no esconderijo.' : 'Está trincando — vai abrir a qualquer momento.')
+        : 'Ninguém sabe o que tem dentro. Explore para chocar.'}</small>
+        <div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${Math.min(100, o.passos / o.alvo * 100)}%"></div></div><span>${o.passos}/${o.alvo}</span></div></div>`;
+    }).join('')}`;
 }
 /* 📦 Esconderijo (esconderijo.js): quem não está em campo espera aqui em vez de se despedir pra sempre.
    Só fora de batalha — trocar de time no meio da luta seria outra mecânica inteira. */

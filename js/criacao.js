@@ -6,8 +6,9 @@ import { $, limparTopo, semAnimacao, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon, IVS_MAX } from './pokemon.js';
 import { IMPL } from './habilidades.js';
-import { SPR, espelhar, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS } from './dados.js';
-import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen } from './mapas.js';
+import { SPR, espelhar, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS, PSEUDO_LENDARIOS } from './dados.js';
+import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen, especiesLendarias } from './mapas.js';
+import { ovoDeBadge } from './ovos.js';
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
 import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta } from './carreira.js';
@@ -147,7 +148,9 @@ function renderVantagens() {
   const ganhas = badgesDaCarreira().filter(b => b.completo);
   const v = vantagensDe(ganhas);
   const itens = Object.entries(v.itens).map(([k, n]) => `${esc(ITEMS[k]?.name || k)} ×${n}`);
-  const linhas = [...itens, v.dinheiro ? `₽${v.dinheiro.toLocaleString('pt-BR')} a mais` : '', v.lojaGratis ? 'loja de graça' : ''].filter(Boolean);
+  const ovoTexto = { pseudo: '🥚 um ovo de pseudo-lendário', lendario: '🥚 um ovo de lendário ou mítico' };
+  const linhas = [...itens, v.dinheiro ? `₽${v.dinheiro.toLocaleString('pt-BR')} a mais` : '', v.lojaGratis ? 'loja de graça' : '',
+    ...(v.ovos || []).map(t => ovoTexto[t] || '🥚 um ovo')].filter(Boolean);
   el.innerHTML = `<label class="check caca-opcao"><input type="checkbox" id="pv-sem-vantagens" data-act="sem-vantagens" ${G.semVantagens ? 'checked' : ''}>
       🎖 Jogar sem as vantagens da conta
       <small class="muted">${ganhas.length
@@ -308,7 +311,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   /* Vantagens das badges (badges.js): itens, dinheiro e — com a badge "Potencial máximo" — os 6 IVs em 31.
      G.semVantagens desliga tudo: quem joga sem elas ganha bônus de pontuação no ranking (regras.pontuacao), e IVs
      perfeitos de graça junto com esse bônus seria o melhor dos dois mundos. */
-  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false } : vantagensDaConta();
+  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, ovos: [] } : vantagensDaConta();
   const mon = await makeMon(data, level, { nature, ability, nick, shiny, ivs: v.ivsPerfeitos ? IVS_MAX : undefined });
   mon.exp = growth[mon.level];
   // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
@@ -317,7 +320,11 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   const anterior = G.S?.player ? (save(), guardar(G.S) ? G.S : null) : null;
   const bag = { potion: 3, 'full-heal': 1 };
   for (const [k, n] of Object.entries(v.itens)) bag[k] = (bag[k] || 0) + n;
-  G.S = { player: mon, bag, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+  /* 🥚 Ovos das badges (ovos.js): a espécie é sorteada AQUI, porque é a criação que conhece o mapa — e fica guardada
+     dentro do ovo sem aparecer em tela nenhuma até chocar. Nada de rede neste caminho: os ciclos de choco de cada
+     tipo são fixos (CICLOS_PSEUDO/CICLOS_LENDARIO), então começar a jornada nunca espera por isso. */
+  const ovosIniciais = (v.ovos || []).map(t => ovoDeBadge(t, t === 'lendario' ? especiesLendarias() : PSEUDO_LENDARIOS)).filter(Boolean);
+  G.S = { player: mon, bag, ovos: ovosIniciais, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     climaRotas: !!(DIFICULDADES[dificuldade].climaRotasFixo || G.climaRotas), // 🌦 clima/terreno das rotas: fixo no Roguelike/Hardcore, opção nos outros (regras.climaDasRotasAtivo)
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
@@ -333,6 +340,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   if (G.S.climaRotas) log('🌦 Clima e terreno das rotas ligados: várias rotas começam a luta com o tempo da paisagem.', 'muted');
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
   if (v.ivsPerfeitos) log('🧬 Potencial máximo: seus 6 IVs nasceram em 31, o teto. É a badge do milhão de dano fazendo efeito.', 'level');
+  if (ovosIniciais.length) log(`🥚 Você carrega ${ovosIniciais.length === 1 ? 'um ovo' : `${ovosIniciais.length} ovos`} de presente das suas badges. Ninguém sabe o que tem dentro — explore pra chocar (veja no painel de Aliados).`, 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');
   log('Explore para encontrar Pokémon selvagens, itens e dinheiro. Cuidado com treinadores: eles querem te capturar. O jogo salva sozinho neste navegador.', 'muted');

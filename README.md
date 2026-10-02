@@ -160,6 +160,13 @@ Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada j
 ### 🤝 Badges de parceiros
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 
+### 🥚 Ovos e criação
+Quem espera no **esconderijo** não fica só esperando: um casal de **gênero oposto** guardado lá pode aparecer com um **ovo** — e ninguém conta de onde veio. O ovo choca **andando**: cada exploração é um passo, e espécie mais demorada pede mais (de **100 a 400 explorações**, seguindo os ciclos de choco dos jogos). Cabem **3 ovos** chocando ao mesmo tempo, e o painel de Aliados mostra só a barra: **o que tem dentro é segredo até ele abrir.**
+
+Quando abre, nasce a **forma base da mãe** no **Nv. 5**, com **um golpe herdado do pai** e **3 IVs** puxados do melhor dos dois pais. Ele entra na equipe se houver vaga, ou vai esperar no esconderijo. Ovo pronto sem lugar nenhum pra nascer fica parado até você abrir espaço — não se perde.
+
+Duas conquistas de conta saem daí: **Criadouro** (choque **100 ovos** somando a carreira) faz toda jornada nova começar com o ovo de um **pseudo-lendário** sorteado, e **Guardião do ninho** (**1.000 ovos**) acrescenta o ovo de um **lendário ou mítico**. Esses também são segredo: você só descobre qual era quando ele chocar.
+
 ### 🧬 Potencial máximo
 Badge de conta que **muda uma regra**: cause **1.000.000 de dano** com os seus golpes, somando a carreira inteira, e todo Pokémon que você começar a jogar daí em diante nasce com os **6 IVs em 31**. Só conta o dano que você bate — golpe de aliado, veneno, armadilha e recuo não entram, e o modo Fácil não acumula (como em todo progresso de conta). O interruptor "jogar sem as vantagens da conta" na criação desliga ela junto com as outras.
 

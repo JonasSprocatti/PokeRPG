@@ -152,6 +152,14 @@ export function especiesDaGen(gen) {
   for (const z of rotasDaGen(gen)) if (!z.posVitoria) for (const p of z.pool) if (!p.m && !vistos.has(p.id)) vistos.set(p.id, p);
   return [...vistos.values()];
 }
+/* Nomes de todo lendário e mítico do jogo (badge 'ovos1000', ovos.js): saem das MARCAS `l`/`m` dos pools, as mesmas
+   que `cacaveisDaRota` usa pra excluir os dois. Derivado, não uma lista nova à mão — mapa novo entra sozinho. Aqui o
+   Santuário CONTA (é justamente onde eles moram), ao contrário de `especiesDaGen`. */
+export function especiesLendarias() {
+  const out = new Set();
+  for (const g of GENS) for (const z of g.rotas) for (const p of z.pool || []) if (p.l || p.m) out.add(p.n);
+  return [...out];
+}
 // chance (0–100) de cada encontro selvagem na rota ser esta espécie
 export function taxaNaRota(z, id) {
   const total = z.pool.reduce((a, p) => a + p.p, 0), e = z.pool.find(p => p.id === id);

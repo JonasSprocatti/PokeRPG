@@ -5,6 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
+- Ovos e criação no esconderijo (02/10/2026)
 - Gênero (02/10/2026)
 - Congelamento: o que faltava (02/10/2026)
 - Golpes de peso e de atributo trocado (02/10/2026)
@@ -19,6 +20,78 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Som: cries e música procedural (30/09/2026)
 - Troca de tipo, Endeavor no chefe e a leva de itens de 30/09/2026
 - Anúncios e privacidade
+
+---
+
+## Ovos e criação no esconderijo (02/10/2026)
+
+Pedido do usuário: "pokémons que estão no esconderijo podem aleatoriamente breedar, dando o pokemon que seria a
+mistura, **mas secretamente**; os passos para chocar um ovo, leve em consideração as explorações". Mais as duas
+conquistas: 100 ovos chocados → toda run começa com ovo de pseudo-lendário; 1.000 → ovo de lendário ou mítico.
+
+**Por que caiu no esconderijo**: até aqui ele era um depósito — quem estava lá não lutava, não ganhava XP e não
+fazia absolutamente nada. Criar dá uma razão pra ter 30 parceiros guardados em vez de 2.
+
+### Onde cada parte mora
+- **`js/ovos.js`** (novo, PURO, testado em `tests/ovos.test.js`): as constantes, `passosParaChocar`, `acharPar`,
+  `tentarCruzar`, `ivsHerdados`, `golpeHerdado`, `criarOvo`, `ovoDeBadge`, `andarOvos`, `tirarOvo`. Mesmo molde do
+  `esconderijo.js`: recebe o save, devolve o save mexido, sem DOM e sem rede.
+- **`amizade.cuidarDosOvos`** = a parte com rede e narração (chocar de verdade precisa de `resolvePokemon`,
+  `makeMon`, `loadGrowth`). Ficou em `amizade.js` em vez de um arquivo novo porque é exatamente o que o
+  `recrutar` de lá já faz — `acolher`, `registrar`, `say` — e o grafo já permitia (`amizade` está acima de
+  `pokemon`).
+- **`mundo.explore`** chama com `try` próprio: ovo é bônus, não pode custar a exploração de ninguém.
+- **`render.blocoOvos`** desenha a barra no painel de Aliados. **Nunca interpola `ovo.especie`** — é o segredo.
+
+### Decisões (perguntadas ao usuário em 02/10/2026)
+| Pergunta | Resposta | Consequência no código |
+|---|---|---|
+| Nível do filhote | **Nv. 5**, fiel aos jogos | `NIVEL_CHOCAR`. Filhote mid-run é investimento, não reforço |
+| Passos | **100 no mínimo**, com **categorias** de ovo, **3 em paralelo** | `PASSOS_MIN` 100, `PASSOS_MAX` 400, `MAX_OVOS` 3, categoria pelo `hatchCounter` |
+| A "mistura" | **espécie base da mãe + golpe e IVs do pai** | `arvore.name` (raiz da árvore de evolução), `golpeHerdado`, `ivsHerdados` |
+| Pares | **só gênero oposto** | `regras.generoOposto`, zero código novo. Pikachu cruza com Gyarados, de propósito |
+
+### As categorias de ovo
+Os jogos têm ciclos de choco (`hatch_counter` da PokéAPI): Magikarp 5, Dratini e Beldum 40, lendário 120. Isso virou
+`passosParaChocar = clamp(ciclos × 5, 100, 400)` → **100 · 200 · 400 explorações**. O campo entrou em
+`api.loadSpecies` por `valido` (não por chave nova, pra não jogar fora mapa baixado), e **`VERSAO_DOWNLOAD` subiu pra
+4**: é um campo que muda uma REGRA em jogo, e sem ele todo ovo cai no piso de 100 — o de lendário chocaria como um de
+Magikarp, no avião, sem ninguém notar. `CICLOS_PADRAO` = 20 é o que vale quando o dado não veio.
+
+### O segredo
+O ovo guarda `especie` no save, mas **nenhuma tela lê esse campo**: `blocoOvos` mostra "🥚 Ovo misterioso" e a barra.
+O `de` (nomes dos pais) também só aparece na hora do nascimento — dizer "filho da Nidorina" antes de abrir seria
+contar a espécie. Quem quiser trapacear abrindo o `localStorage` consegue; o alvo aqui é a experiência, não o DRM.
+
+### O que ficou de fora de propósito
+- **Grupos-ovo (`egg_groups`)**: decisão do usuário. A regra de gênero já existia e já era testada; grupos-ovo
+  custariam outro campo no cache e outro `VERSAO_DOWNLOAD` só pra proibir par esquisito.
+- **Lista de golpes-ovo legais**: o herdado é qualquer um dos 4 do pai, então um filhote Nv. 5 pode nascer com
+  Hyper Beam. Marcado com `ponytail:` no código — filtrar por poder resolve num lugar só, se desequilibrar.
+- **Forma regional na raiz**: a raiz da árvore é a forma original, então um Sandslash de Alola põe um Sandshrew de
+  Kanto. Também marcado no código.
+- **Ditto, Incenso, Chaveiro Oval, Poké Pensão, EVs/natureza herdados, Destiny Knot**: nada disso existe.
+- **Ovo não anda em batalha nem no multiplayer**: o passo é a exploração, e só.
+
+### A contagem das duas badges
+`S.ovosChocados` sobe ao nascer → entra em `regras.estatisticasDaJornada` (a LISTA BRANCA do resumo; campo não
+citado lá morre com a jornada) → `progresso-conta.bancar` grava em `porJornada[id].ovosChocados` → `contextoBadges`
+SOMA todas as jornadas. Vem do progresso permanente, que nunca encolhe: apagar a carreira não desfaz ovo chocado.
+
+As badges `ovos100`/`ovos1000` são as **únicas cuja recompensa é um ovo** (`recompensa.ovo`), então `vantagensDe`
+ganhou `out.ovos`. Quem sorteia a espécie é `criacao.iniciarJornada` — é ela que conhece o mapa: pseudo-lendário sai
+de `dados.PSEUDO_LENDARIOS` (lista à mão: "pseudo-lendário" é consenso da comunidade, não dado da PokéAPI) e
+lendário/mítico de `mapas.especiesLendarias()`, **derivado das marcas `l`/`m` dos pools** — mapa novo entra sozinho.
+Esse caminho **não toca a rede**: os ciclos do ovo de badge são fixos (`CICLOS_PSEUDO` 40, `CICLOS_LENDARIO` 120),
+porque uma busca a mais na criação da jornada é uma jornada a menos quando a rede falha.
+
+O teste de `badges.test.js` cobre o elo inteiro (badge → `vantagensDe().ovos`) pelo mesmo motivo do "Potencial
+máximo": a recompensa não é item nem dinheiro, então um elo solto no meio não daria erro em lugar nenhum — só
+deixaria de dar o prêmio em silêncio.
+
+**Nota de equilíbrio, registrada de propósito**: 100 ovos × ~100–400 explorações cada é um alvo muito longo, e 1.000
+é ordem de grandeza de "talvez nunca" (como o milhão de dano). Os números são os pedidos pelo usuário; se um dia
+parecerem inalcançáveis, os botões são `CHANCE_OVO` e `MAX_OVOS`, não o alvo da badge.
 
 ---
 
@@ -589,7 +662,7 @@ Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémo
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.
 
 ### 3. ✅ FEITO — Badges com vantagem permanente
-Implementado em `js/badges.js` (56 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 01/10/2026: Tipos 18, Eventos 16, Caçada 4, Coleção/Laços/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2, Maestria 1) e ligado na criação
+Implementado em `js/badges.js` (58 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 02/10/2026: Tipos 18, Eventos 16, Caçada 4, Laços 5, Coleção/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2, Maestria 1) e ligado na criação
 (`criacao.renderVantagens`, `vantagensDe`) e na tela 🏅 Conquistas. Cada badge é medida do **progresso
 permanente** (nunca do histórico, que o jogador pode apagar — `contextoBadges` monta o `ctx` a partir de
 `progresso-conta.js`) e paga uma vantagem na PRÓXIMA jornada: itens (empilham) e/ou dinheiro inicial (soma),

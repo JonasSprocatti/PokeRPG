@@ -1036,6 +1036,7 @@ export function estatisticasDaJornada(S) {
     nivel: S.player.level, vitorias: S.wins || 0, derrotados: soma(r.derrotados), treinadores: S.treinadoresVencidos || 0,
     alfas: Object.keys(S.chefes || {}).length, amigos: soma(r.amigos), evolucoes: soma(r.evolucoes),
     missoes: (S.missoesFeitas || []).length, capturas: S.capturas || 0,
+    ovosChocados: S.ovosChocados || 0,   // badges 'ovos100'/'ovos1000' (ovos.js): somadas do progresso permanente
     // mapa (Gen) em que a jornada estava e quantas Gens fechou (venceu os lendários)
     gen: S.gen || 1, gens: (S.gensVencidas || []).length, tempoMs: S.tempoMs || 0, shiny: !!S.player.shiny,
     // quantas vezes esta jornada seguiu pro mapa seguinte com o MESMO Pokémon (cada uma tira 20% da pontuação)

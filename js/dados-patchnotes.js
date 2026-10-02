@@ -10,6 +10,20 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.46', data: '2026-10-02', titulo: '🥚 Apareceu um ovo no esconderijo e ninguém quer explicar como', piada: 'Perguntamos aos dois Pokémon do esconderijo de onde veio o ovo. Um olhou pro teto, o outro assobiou. Encerramos a investigação por falta de provas e porque o ovo estava chocando.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Agora tem ovo.</b> Dois parceiros de <b>gêneros opostos</b> esperando no 📦 esconderijo podem aparecer com um <b>ovo</b> do nada. Nenhum dos dois comenta o assunto. Cabem <b>3 ovos</b> ao mesmo tempo.',
+        '<b>Ovo choca andando:</b> cada <b>exploração</b> é um passo, e espécie demorada demora mais — de <b>100 a 400 explorações</b>, seguindo os ciclos de choco dos jogos. A barra fica no painel de <b>Aliados</b>.',
+        '<b>O que tem dentro é segredo.</b> Você vê "🥚 Ovo misterioso" e a barra, e mais nada, até ele trincar. Quando abre, nasce a <b>forma base da mãe</b> no <b>Nv. 5</b>, com <b>um golpe herdado do pai</b> e <b>3 IVs</b> puxados do melhor dos dois. E sim: ele pode nascer <b>shiny</b>.',
+        '<b>Ovo pronto não se perde.</b> Com a equipe e o esconderijo lotados, ele fica trincando parado até você abrir uma vaga — em vez de sumir com as suas 300 explorações.',
+        '<b>🥚 Criadouro</b> (nova conquista de conta): choque <b>100 ovos</b> somando a carreira e <b>toda jornada nova começa com o ovo de um pseudo-lendário</b> sorteado. Qual? Segredo, até chocar.',
+        '<b>🐣 Guardião do ninho:</b> <b>1.000 ovos</b> chocados e você também começa toda jornada com o ovo de um <b>lendário ou mítico</b>. É de longe a conquista mais longa do jogo, junto com o milhão de dano. Boa sorte.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Se você baixou um mapa pra jogar offline, a tela de <b>⚙ Ajustes</b> vai pedir pra baixar de novo: quantas explorações cada ovo pede é um dado novo da ficha de cada espécie, e sem ele o ovo de lendário chocaria tão rápido quanto um de Magikarp. Com internet, chega sozinho.'
+      ] }
+    ] },
   { versao: '2.45', data: '2026-10-02', titulo: '♂♀ Agora todo Pokémon tem gênero — e isso muda a batalha', piada: 'O Combee macho que virou Vespiquen em 2026 foi notificado de que sua transformação era irregular. Ele apresentou recurso. O recurso foi lido por uma Vespiquen, que é fêmea, e negado por conflito de interesses.',
     secoes: [
       { nome: 'Novidades', itens: [

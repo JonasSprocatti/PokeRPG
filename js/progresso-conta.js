@@ -85,6 +85,7 @@ export function bancar(progresso, jornadas = [], desbloqueadasAgora = [], quando
       amigos: j.amigos || 0, alfas: j.alfas || 0, gens: j.gens || 0, genVencida: j.genVencida || 0,
       semCentro: !!j.semCentro, shiny: !!j.shiny, motivo: j.motivo || null,
       casaCheia: !!j.casaCheia, aliadosPerdidos: j.aliadosPerdidos || 0,   // badges de parceiros (badges.js)
+      ovosChocados: j.ovosChocados || 0,   // badges 'ovos100'/'ovos1000' (ovos.js)
       maxDinheiro: j.maxDinheiro || 0,   // loja de preparo da Arena (arena.js): alimenta o saldo de conta
       // `total` e `dano` são números soltos; o resto são mapas (LISTAS_ABATE). Campo solto novo aqui = também em `totaisDe`.
       abates: { total: a?.total || 0, dano: a?.dano || 0, ...Object.fromEntries(LISTAS_ABATE.map(l => [l, { ...(a?.[l] || {}) }])) }

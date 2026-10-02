@@ -18,9 +18,12 @@ import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache
    registro guardado SEM esses campos, e aí todo mundo nasce sem gênero no avião (Attract e Rivalry inertes,
    Vespiquen evoluindo de macho). O `valido` do api.js conserta na primeira vez ONLINE; a marca nova é o que
    avisa, na tela de Ajustes, que vale baixar de novo.
+   Subiu na v4 pelo mesmo motivo da v3: a espécie agora traz `hatchCounter` (os ciclos de choco), e é dele que sai
+   quantas explorações cada ovo pede (ovos.passosParaChocar). Sem o campo, todo ovo cai no piso de 100 — o lendário
+   chocaria tão rápido quanto um Magikarp, no avião, sem ninguém notar.
    Quem baixou numa versão antiga volta a aparecer como incompleto — é de propósito: dizer "já baixado"
    pra um mapa que ainda falha no avião é pior do que pedir um download de novo. */
-export const VERSAO_DOWNLOAD = 3;
+export const VERSAO_DOWNLOAD = 4;
 const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}:gen${gen}`;
 
 /* Quem guarda as IMAGENS é o service worker (sw.js): `guardarSprite` só pede a imagem, e é o sw que a intercepta

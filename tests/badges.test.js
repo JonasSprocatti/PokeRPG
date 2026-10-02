@@ -1,7 +1,7 @@
 // Badges da conta (js/badges.js): conquistas de longo prazo que pagam vantagem na próxima jornada.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BADGES, badgesDaConta, contextoBadges, vantagensDe, ALVO_TIPO, ALVO_AMIGOS } from '../js/badges.js';
+import { BADGES, badgesDaConta, contextoBadges, vantagensDe, ALVO_TIPO, ALVO_AMIGOS, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
 import { ALVOS, MARCOS_ABATES, MODO_NAO_CONTA, registrarDano, somarAbates } from '../js/conquistas.js';
 import { ITEMS, TYPE_PT } from '../js/dados.js';
 
@@ -14,8 +14,8 @@ test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () =
   for (const b of BADGES) {
     assert.ok(b.nome?.length > 3 && b.desc?.length > 10 && b.grupo && b.icone, `${b.id}: faltando texto`);
     const r = b.recompensa || {};
-    // vantagem de verdade = item, dinheiro, loja grátis ou IVs perfeitos (título sozinho não conta: é só texto)
-    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis || r.ivsPerfeitos, `${b.id}: não dá nada`);
+    // vantagem de verdade = item, dinheiro, loja grátis, IVs perfeitos ou um ovo (título sozinho não conta: é só texto)
+    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis || r.ivsPerfeitos || r.ovo, `${b.id}: não dá nada`);
     for (const k of Object.keys(r.itens || {})) assert.ok(ITEMS[k], `${b.id}: item "${k}" não existe`);
   }
 });
@@ -23,7 +23,21 @@ test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () =
 test('nada está conquistado numa conta zerada', () => {
   const lista = badgesDaConta(ctxVazio());
   assert.equal(lista.some(b => b.completo), false);
-  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [] });
+  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [], ovos: [] });
+});
+
+/* Os dois ovos de badge (ovos.js) são o mesmo tipo de elo frágil do "Potencial máximo": a recompensa não é item nem
+   dinheiro, então nada no caminho até `criacao.iniciarJornada` daria erro se ela deixasse de chegar. */
+test('100 e 1000 ovos chocados viram ovo no começo da jornada', () => {
+  const ctxOvos = n => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, dex: null, conquistas: null,
+    progresso: { porJornada: { a: { ovosChocados: n } } } });
+  assert.deepEqual(vantagensDe(badgesDaConta(ctxOvos(ALVO_OVOS - 1))).ovos, []);
+  assert.deepEqual(vantagensDe(badgesDaConta(ctxOvos(ALVO_OVOS))).ovos, ['pseudo']);
+  assert.deepEqual(vantagensDe(badgesDaConta(ctxOvos(ALVO_OVOS_LENDA))).ovos, ['pseudo', 'lendario'], 'quem passou de 1000 ganha os dois ovos');
+  // a contagem é a SOMA das jornadas gravadas no progresso permanente, nunca de uma só
+  const somadas = contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, dex: null, conquistas: null,
+    progresso: { porJornada: { a: { ovosChocados: 60 }, b: { ovosChocados: 40 } } } });
+  assert.equal(acha(badgesDaConta(somadas), 'ovos100').completo, true);
 });
 
 /* "Potencial máximo": a única badge que paga uma REGRA (IVs 31 na criação). O teste é o que garante que o dano

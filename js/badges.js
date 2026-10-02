@@ -20,6 +20,8 @@ import { EVENTOS } from './evento.js';
 export const ALVO_TIPO = 1000;          // derrotados de um tipo pra ganhar a vantagem daquele tipo
 export const ALVO_AMIGOS = 100;         // aliados recrutados na conta inteira
 export const ALVO_PERDIDOS = 15;        // parceiros perdidos de vez numa MESMA run (badge "Cemitério de parceiros")
+export const ALVO_OVOS = 100;           // ovos chocados na carreira → ovo de pseudo-lendário em toda jornada (ovos.js)
+export const ALVO_OVOS_LENDA = 1000;    // …e de lendário ou mítico
 export const RAYQUAZA = 'rayquaza';
 
 // prato do Arceus daquele tipo (dados.PLACA_DO_TIPO): +20% de dano nesse tipo enquanto segurado. Trocou a
@@ -62,6 +64,13 @@ export const BADGES = [
     mede: c => feito(c.lendariosAmigos, 1), recompensa: { itens: { 'sitrus-berry': 1 } } },
   { id: 'shiny', grupo: 'Laços', icone: '✨', nome: 'Caçador de brilho', desc: 'Recrute um Pokémon shiny (1 em 4096).',
     mede: c => feito(c.shiniesAmigos, 1), recompensa: { itens: { 'lum-berry': 1 } } },
+  /* ---- ovos (ovos.js): as duas únicas badges cuja recompensa é um OVO no começo da jornada. Pedido do usuário, com
+     os alvos que ele definiu. São de propósito as mais longas do jogo junto com o milhão de dano: cada ovo custa de
+     100 a 400 explorações, e chocam 3 por vez. ---- */
+  { id: 'ovos100', grupo: 'Laços', icone: '🥚', nome: 'Criadouro', desc: `Choque ${ALVO_OVOS} ovos somando a carreira inteira. Depois disso, toda jornada começa com o ovo de um pseudo-lendário sorteado.`,
+    mede: c => feito(c.ovosChocados, ALVO_OVOS), recompensa: { ovo: 'pseudo' } },
+  { id: 'ovos1000', grupo: 'Laços', icone: '🐣', nome: 'Guardião do ninho', desc: `Choque ${ALVO_OVOS_LENDA.toLocaleString('pt-BR')} ovos somando a carreira inteira. Depois disso, toda jornada começa também com o ovo de um lendário ou mítico sorteado.`,
+    mede: c => feito(c.ovosChocados, ALVO_OVOS_LENDA), recompensa: { ovo: 'lendario', titulo: 'Guardião do ninho' } },
   /* ---- parceiros: as três medem UMA jornada (não a soma da conta) e ignoram o modo Fácil, onde nada disso custa caro.
      As duas de vitória exigem VENCER (fechar uma Gen), pelo mesmo motivo da 'sem-centro': sair de uma run recém-criada
      também "terminaria" sem recrutar ninguém. ---- */
@@ -143,6 +152,8 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
     runsCasaCheia: jornadas.filter(j => j.casaCheia && venceu(j) && j.dificuldade !== 'easy').length,
     runsSemParceiro: jornadas.filter(j => (j.amigos || 0) === 0 && venceu(j) && j.dificuldade !== 'easy').length,
     maxParceirosPerdidos: jornadas.filter(j => j.dificuldade !== 'easy').reduce((m, j) => Math.max(m, j.aliadosPerdidos || 0), 0),
+    ovosChocados: jornadas.reduce((a, j) => a + (j.ovosChocados || 0), 0),   // soma da conta, nunca encolhe
+
     terasLiberadas: (conquistas?.tera || []).filter(x => x.liberado).length,
     megasLiberadas: (conquistas?.mega || []).filter(x => x.liberado).length,
     rayquazaShiny: dex?.rayquazaShiny || 0,
@@ -158,9 +169,10 @@ export function badgesDaConta(ctx) {
 }
 
 /* O que as badges conquistadas dão na PRÓXIMA jornada. Soma itens (empilham), dinheiro (soma) e marca `lojaGratis`.
-   `iniciarJornada` usa isto quando as vantagens estão ligadas. */
+   `iniciarJornada` usa isto quando as vantagens estão ligadas. `ovos` são os TIPOS de ovo ('pseudo' | 'lendario');
+   quem sorteia a espécie é a criação, que é quem conhece o mapa (ovos.ovoDeBadge). */
 export function vantagensDe(lista) {
-  const out = { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [] };
+  const out = { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [], ovos: [] };
   for (const b of lista) {
     if (!b.completo) continue;
     const r = b.recompensa || {};
@@ -168,6 +180,7 @@ export function vantagensDe(lista) {
     out.dinheiro += r.dinheiro || 0;
     if (r.lojaGratis) out.lojaGratis = true;
     if (r.ivsPerfeitos) out.ivsPerfeitos = true;
+    if (r.ovo) out.ovos.push(r.ovo);
     if (r.titulo) out.titulos.push(r.titulo);
   }
   return out;

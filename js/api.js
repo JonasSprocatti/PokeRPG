@@ -223,10 +223,13 @@ export const loadAbility = a => cached('ab:' + a.name, async () => {
 // Ao acrescentar campo a qualquer loader, trocar a chave do mesmo jeito.
 // `genderRate` chegou depois (regras.sortearGenero): −1 = sem gênero, 0 = sempre macho, 8 = sempre fêmea,
 // 1–7 = oitavos de chance de fêmea. Entra por `valido` em vez de chave nova pra não jogar fora o mapa baixado.
+// `hatchCounter` chegou junto dos ovos (ovos.passosParaChocar): são os ciclos de choco da espécie, 5 no Magikarp e
+// 120 num lendário. Mesmo esquema do `genderRate` — e, como ele, muda uma REGRA em jogo (quantas explorações o ovo
+// pede), então `offline.VERSAO_DOWNLOAD` subiu: sem isso quem baixou o mapa antes chocaria tudo no piso de 100.
 export const loadSpecies = url => cached('sp2:' + lastSeg(url), async () => {
   const s = await getJSON(url);
-  return { growthUrl: s.growth_rate.url, evoUrl: s.evolution_chain?.url || null, defaultPokemon: (s.varieties.find(v => v.is_default) || s.varieties[0]).pokemon.name, captureRate: s.capture_rate ?? 45, genderRate: s.gender_rate ?? -1 };
-}, v => typeof v?.genderRate === 'number');
+  return { growthUrl: s.growth_rate.url, evoUrl: s.evolution_chain?.url || null, defaultPokemon: (s.varieties.find(v => v.is_default) || s.varieties[0]).pokemon.name, captureRate: s.capture_rate ?? 45, genderRate: s.gender_rate ?? -1, hatchCounter: s.hatch_counter ?? 20 };
+}, v => typeof v?.genderRate === 'number' && typeof v?.hatchCounter === 'number');
 export const loadGrowth = url => cached('gr:' + lastSeg(url), async () => {
   const g = await getJSON(url); const arr = Array(101).fill(0);
   for (const l of g.levels) arr[l.level] = l.experience;

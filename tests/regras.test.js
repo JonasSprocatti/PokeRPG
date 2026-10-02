@@ -588,7 +588,7 @@ test('estatisticasDaJornada + pontuacao', () => {
   const e = estatisticasDaJornada({ ...S, money: 800, maxDinheiro: 1500, gasto: 400 });
   const { registro, ...numeros } = e;
   assert.deepEqual(numeros, { especie: 'charmander', especieFinal: 'charmeleon', nivel: 16, vitorias: 12, derrotados: 10, treinadores: 2,
-    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, gen: 1, gens: 0, tempoMs: 90000, shiny: true,
+    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, ovosChocados: 0, gen: 1, gens: 0, tempoMs: 90000, shiny: true,
     continuacoes: 0, campeaoDe: [], semVantagens: false, semCentro: true,
     maxDinheiro: 1500, gasto: 400, shiniesVistos: 0, shiniesAmigos: 0 });
   assert.deepEqual(registro.derrotados, { pidgey: 4, rattata: 6 });
