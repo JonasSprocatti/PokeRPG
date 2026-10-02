@@ -8,7 +8,7 @@ import { formaRegionalDaGen, genDe, dadosDaGen } from './mapas.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { API, STATS, STAT_PT, TYPE_PT, CLS_PT, ITEMS } from './dados.js';
-import { recalc, MAX_ALIADOS, golpesDaEvolucao } from './regras.js';
+import { recalc, tetoDaEquipe, golpesDaEvolucao } from './regras.js';
 import { habilidadeDaEvolucao } from './habilidades.js';
 import { makeMon } from './pokemon.js';
 import { evolucoesPossiveis, caminhoMostrado, textoCondicao, ganharFelicidade, ganhoFelicidadeNivel, felicidadeDe, FELICIDADE_ALIADO } from './evolucao.js';
@@ -159,8 +159,8 @@ async function casulo(M, escolha, node) {
   const outra = CASCA_PRA_TRAS[escolha];
   if (!outra || !node.to.some(x => x.name === outra)) return escolha;
   const S = G.S; S.aliados ||= [];
-  if (S.aliados.length >= MAX_ALIADOS) {
-    const c = await ask(`A casca de ${nm(M)} vai ficar pra trás e ganhar vida própria — mas sua equipe já está cheia (${MAX_ALIADOS} aliados). Em qual dos dois ${ehJogador(M) ? 'você vira' : 'ele vira'}?`,
+  if (S.aliados.length >= tetoDaEquipe(S)) {
+    const c = await ask(`A casca de ${nm(M)} vai ficar pra trás e ganhar vida própria — mas sua equipe já está cheia (${tetoDaEquipe(S)} aliados). Em qual dos dois ${ehJogador(M) ? 'você vira' : 'ele vira'}?`,
       [{ label: `Virar ${esc(fmt(escolha))}`, value: escolha }, { label: `Virar ${esc(fmt(outra))}`, value: outra }]);
     return c || escolha;
   }

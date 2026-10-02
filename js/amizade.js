@@ -6,7 +6,7 @@ import { G, nm, rotulo, registrar, save } from './estado.js';
 import { say, ask } from './ui.js';
 import { render } from './render.js';
 import { ITEMS, TYPE_PT } from './dados.js';
-import { ganhoAmizade, podeFazerAmizade, freshVol, MAX_ALIADOS, AMIZADE_MAX } from './regras.js';
+import { ganhoAmizade, podeFazerAmizade, freshVol, tetoDaEquipe, AMIZADE_MAX } from './regras.js';
 import { escondidos, esconderijoCheio, equipeCheia, acolher } from './esconderijo.js';
 import { loadSpecies, loadGrowth, loadEvo, resolvePokemon } from './api.js';
 import { FELICIDADE_ALIADO } from './evolucao.js';
@@ -45,9 +45,9 @@ async function recrutar(E) {
      Despedir continua sendo uma opção — mas agora é escolha, e não o preço de ter achado alguém interessante
      tarde na jornada. */
   let destino = null;
-  if (S.aliados.length >= MAX_ALIADOS) {
+  if (equipeCheia(S)) {
     const cheio = esconderijoCheio(S);
-    const c = await ask(`${nm(E)} quer seguir você, mas você já anda com ${MAX_ALIADOS} aliados. O que fazer?`, [
+    const c = await ask(`${nm(E)} quer seguir você, mas você já anda com ${tetoDaEquipe(S)} aliados. O que fazer?`, [
       ...(cheio ? [] : [{ label: `📦 Deixar ${esc(fmt(E.name))} esperando no esconderijo`, value: 'guardar' }]),
       ...S.aliados.map((a, i) => ({ label: `Despedir ${esc(rotulo(a))} (Nv. ${a.level}) e levar o novo`, value: i })),
       { label: `Não levar ${esc(fmt(E.name))}`, value: -1, ghost: true }]);

@@ -199,9 +199,15 @@ function renderGens() {
       ${ev ? `<img class="evento-sprite" src="${SPR(ev.formaId)}" alt="" loading="lazy"><small class="evento-tag">☄ Evento</small>` : lend.length ? `<img src="${SPR(lend.at(-1).id)}" alt="" loading="lazy">` : ''}<b>${lib ? '' : '🔒 '}Gen ${x.gen}</b><span>${x.regiao}</span></button>`; }).join('')}</div>
     <p class="small muted">${DIFICULDADES[G.dif].fimNaGen ? 'No Roguelike, vencer os lendários de um mapa encerra a run em vitória e libera o mapa da Gen seguinte.' : 'Cada mapa tem 10 rotas; vencer os lendários da última deixa você escolher o próximo mapa, com a mesma equipe.'} Os Pokémon selvagens são os daquela Gen.</p>`;
 }
+/* Modos em construção (`admin: true` em DIFICULDADES, hoje o ⚔ Saga) aparecem SÓ pra conta de manutenção —
+   mesmo critério do 🗺 Editor de rotas e do painel de testes (`nuvem.ehAdmin`, que exige login e `perfis.admin`).
+   Esconder o cartão não é a trava: `iniciarJornada` confere de novo, porque `data-v` vem de atributo do HTML. */
+const modosVisiveis = () => Object.entries(DIFICULDADES).filter(([, x]) => !x.admin || ehAdmin());
+
 // cartões de dificuldade + monta os passos 2 e 3 conforme o modo (Randomizer não escolhe Pokémon nem mapa)
 export function renderDificuldade() {
-  $('#difs').innerHTML = Object.entries(DIFICULDADES).map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b><small>${esc(x.desc)}</small></button>`).join('');
+  if (DIFICULDADES[G.dif]?.admin && !ehAdmin()) G.dif = 'roguelike';   // deslogou com um modo de manutenção escolhido
+  $('#difs').innerHTML = modosVisiveis().map(([k, x]) => `<button class="abil ${G.dif === k ? 'on' : ''}" data-act="dificuldade" data-v="${k}" aria-pressed="${G.dif === k}"><b>${k === 'randomizer' ? '🎲 ' : ''}${x.nome}</b>${x.admin ? '<em>🔒 em construção · só admin</em>' : ''}<small>${esc(x.desc)}</small></button>`).join('');
   renderGens();
   renderVantagens();
   renderClimaOpcao();
@@ -297,6 +303,10 @@ export function renderPreview() {
 }
 // Monta o save e entra no jogo. `nature`/`ability` undefined = sorteadas pelo makeMon.
 async function iniciarJornada({ data, level, nature, ability, nick = '', dificuldade, gen, shiny }) {
+  /* Modo em construção só pra admin — conferido AQUI, não só no cartão: `data-act="dificuldade"` carrega a chave
+     num atributo do HTML, e regra que só existe na tela não é regra. Sem isso, dá pra começar uma jornada num
+     modo pela metade e levar o save (e a pontuação) pra frente. */
+  if (DIFICULDADES[dificuldade]?.admin && !ehAdmin()) throw new Error('Este modo ainda está em construção.');
   const sp = await loadSpecies(data.speciesUrl);
   const growth = await loadGrowth(sp.growthUrl);
   /* A árvore de evolução NÃO pode impedir você de começar a jogar. Ela só é consultada quando você sobe de

@@ -515,7 +515,15 @@ export const DIFICULDADES = {
   // `climaRotasFixo`: o clima e o terreno das rotas ficam SEMPRE ligados (nos outros modos é opção da criação, desligada por padrão)
   hardcore: { nome: 'Hardcore', climaRotasFixo: true, eventoSemanal: true, especiesLivres: false, multPontos: 2, desmaiosLivres: 3, semCaptura: false, fimDeJogo: true, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Ser capturado é o fim da jornada: o save é apagado. Centro pago. Começa no nível 5, com natureza e habilidade sorteadas.' },
   // sorteia até a espécie (a tela inicial troca a busca por um botão só). Captura e Centro = regras do Difícil
-  randomizer: { nome: 'Full Randomizer', especiesLivres: false, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Captura e Centro seguem o Difícil.' }
+  randomizer: { nome: 'Full Randomizer', especiesLivres: false, multPontos: 1.5, desmaiosLivres: 3, semCaptura: false, centroGratis: false, nivelLivre: false, escolhaLivre: false, desc: 'Espécie, natureza e habilidade sorteadas, nível 5. Captura e Centro seguem o Difícil.' },
+  /* ⚔ Saga — modo de RPG medieval fantástico (plano em docs/plano-saga.md). EM CONSTRUÇÃO:
+     `admin: true` é o que o mantém fora da vista de quem joga (criacao.js esconde o cartão e iniciarJornada
+     recusa de novo — regra que só existe na tela não é regra). Sai quando a fase 1 estiver jogável.
+     `aliadosEmCampo: 3` = você + 3 na comitiva, só aqui: o teto 2 (MAX_ALIADOS) continua valendo nos outros
+     modos, onde é decisão fechada de balanceamento. Quem decide a vaga é `regras.maxAliados`.
+     Mole de propósito na fase 1 (3 desmaios livres, sem captura): a fase existe pra avaliar o combate, e
+     permadeath atrapalha iterar. A dureza entra junto com as trilhas e as facções (fase 3). */
+  saga: { nome: '⚔ Saga', admin: true, aliadosEmCampo: 3, especiesLivres: false, climaRotasFixo: true, multPontos: 1.5, desmaiosLivres: 3, semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: false, escolhaLivre: true, fimNaGen: true, desc: 'Cada Pokémon tem um ofício na luta — quem segura a linha, quem cura, quem lança o fogo — e você anda com uma comitiva de 4. Cada mapa é um capítulo. Nível 5.' }
 };
 // Ordens pros aliados (A.ordem; sem campo = 'livre'). A escolha do golpe mora em golpeDoAliado (regras.js).
 export const ORDENS = {

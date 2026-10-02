@@ -11,7 +11,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, MAX_ALIADOS, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
+import { natureLabel, tetoDaEquipe, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -302,7 +302,8 @@ function renderMissoes() {
 }
 function renderAliados() {
   const AL = G.S.aliados || [];
-  tituloPainel('aliados', `Aliados <span class="muted small">(${AL.length}/${MAX_ALIADOS})</span>`);
+  // o teto vem do MODO (regras.tetoDaEquipe): o ⚔ Saga anda com uma comitiva de 4
+  tituloPainel('aliados', `Aliados <span class="muted small">(${AL.length}/${tetoDaEquipe(G.S)})</span>`);
   const guardados = escondidos(G.S);
   $('#p-aliados').innerHTML = `${AL.length ? `<div class="aliados">${AL.map(cartaoAliado).join('')}</div>`
     : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>'}
@@ -313,7 +314,7 @@ function renderAliados() {
 function blocoOvos(S) {
   const lista = ovos(S);
   if (!lista.length) return '';
-  const cheio = (S.aliados || []).length >= MAX_ALIADOS && escondidos(S).length >= MAX_ESCONDIDOS;
+  const cheio = (S.aliados || []).length >= tetoDaEquipe(S) && escondidos(S).length >= MAX_ESCONDIDOS;
   return `<h4 class="bag-sec">🥚 Ovos <span class="muted small">(${lista.length}/${MAX_OVOS})</span></h4>
     ${lista.map(o => {
       const pronto = o.passos >= o.alvo;
@@ -327,14 +328,15 @@ function blocoOvos(S) {
    Só fora de batalha — trocar de time no meio da luta seria outra mecânica inteira. */
 function blocoEsconderijo(AL, guardados) {
   const fora = G.mode === 'explore' && !G.busy;
-  if (!guardados.length && AL.length < MAX_ALIADOS) return '';   // nada guardado e com vaga: não há o que mostrar
+  const teto = tetoDaEquipe(G.S);
+  if (!guardados.length && AL.length < teto) return '';   // nada guardado e com vaga: não há o que mostrar
   return `<h4 class="bag-sec">📦 Esconderijo <span class="muted small">(${guardados.length}/${MAX_ESCONDIDOS})</span></h4>
     ${guardados.length ? `<div class="aliados esconderijo">${guardados.map((A, i) => `<div class="ali-card guardado">
       <img src="${espelhar(A.data.sprite)}" alt="" loading="lazy">
       <div><b>${brilho(A)}${esc(A.nick || fmt(A.name))}${sexo(A)}</b><small class="muted">Nv. ${A.level}</small>
       <div class="types">${badgesDeTipo(A)}</div></div>
-      <button class="btn sm ${AL.length >= MAX_ALIADOS ? 'ghost' : ''}" data-act="esconderijo-trazer" data-v="${i}" ${fora && AL.length < MAX_ALIADOS ? '' : 'disabled'}
-        title="${AL.length >= MAX_ALIADOS ? 'Equipe cheia: guarde alguém antes' : fora ? '' : 'Só fora de batalha'}">↩ Trazer</button>
+      <button class="btn sm ${AL.length >= teto ? 'ghost' : ''}" data-act="esconderijo-trazer" data-v="${i}" ${fora && AL.length < teto ? '' : 'disabled'}
+        title="${AL.length >= teto ? 'Equipe cheia: guarde alguém antes' : fora ? '' : 'Só fora de batalha'}">↩ Trazer</button>
     </div>`).join('')}</div>`
     : '<p class="small muted">Vazio. Aliados que não couberem na equipe podem esperar aqui, em vez de se despedir.</p>'}
     ${AL.length ? `<div class="subrow" style="margin-top:8px">${AL.map((A, i) =>

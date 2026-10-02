@@ -123,8 +123,13 @@ test('treinadores: toda bola sorteável existe em BOLAS; listas de nome não vaz
   assert.ok(CLASSES_TREINADOR.length && NOMES_TREINADOR.length);
 });
 
-test('DIFICULDADES: Roguelike primeiro (modo principal), depois os outros cinco', () => {
-  assert.deepEqual(Object.keys(DIFICULDADES), ['roguelike', 'easy', 'medium', 'hard', 'hardcore', 'randomizer']);
+test('DIFICULDADES: Roguelike primeiro (modo principal), Saga por último (em construção)', () => {
+  assert.deepEqual(Object.keys(DIFICULDADES), ['roguelike', 'easy', 'medium', 'hard', 'hardcore', 'randomizer', 'saga']);
+  /* ⚔ Saga: modo em construção, por isso `admin: true` (só a conta de manutenção vê o cartão — criacao.js) e
+     por isso é o ÚLTIMO da lista. Único modo com teto de equipe próprio: a comitiva de 4 é a base dele. */
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].admin), ['saga']);
+  assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].aliadosEmCampo), ['saga']);
+  assert.equal(DIFICULDADES.saga.aliadosEmCampo, 3);   // você + 3
   assert.deepEqual(Object.keys(DIFICULDADES).filter(k => DIFICULDADES[k].desbloqueios), ['roguelike']);
   assert.equal(DIFICULDADES.roguelike.fimDeJogo, true); // ser capturado encerra a jornada
   assert.equal(DIFICULDADES.easy.nivelLivre && DIFICULDADES.easy.escolhaLivre, true);

@@ -921,6 +921,13 @@ export function golpeDoAliado(ordem, moves, tiposA, tiposAlvo, sorte = Math.rand
 
 /* ---- amizade (Etapa 3.2) ---- */
 export const MAX_ALIADOS = 2;
+/* Quantos aliados andam com você NESTE modo. O teto 2 é decisão fechada de balanceamento pros modos normais
+   (o Esconderijo já resolve "guardar mais parceiros"); o ⚔ Saga sobe pra 3, porque a comitiva de quatro ofícios
+   é a base do modo. Recebe a CHAVE da dificuldade (`dificuldadeDe(S)`) pra seguir pura — a regra de
+   "save antigo = easy" mora em `estado.dificuldadeDe` e não deve existir em dois lugares. */
+export const maxAliados = dif => DIFICULDADES[dif]?.aliadosEmCampo || MAX_ALIADOS;
+// o mesmo teto, perguntado pelo save (o fallback `easy` é o de `estado.dificuldadeDe`: save antigo sem o campo)
+export const tetoDaEquipe = S => maxAliados(S?.dificuldade || 'easy');
 export const AMIZADE_MAX = 100;
 // Item que o tipo gosta: +20–35 por oferta (3–5 ofertas pra encher). Item errado: 0–5 (quase nada).
 export const DIVISOR_AMIZADE_LENDARIO = 4; // lendário/mítico: a amizade sobe ~4× mais devagar (ver ganhoAmizade)

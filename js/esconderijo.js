@@ -6,11 +6,11 @@
    O esconderijo é um lugar onde os aliados esperam: `S.escondidos`. Quem está lá não luta, não ganha XP e não
    aparece em campo — só espera. Trocar é livre e reversível, fora de batalha.
 
-   O que ele NÃO muda de propósito: `MAX_ALIADOS` continua sendo quantos andam com você. A decisão tática de
+   O que ele NÃO muda de propósito: o teto da EQUIPE continua sendo quantos andam com você. A decisão tática de
    "quem leva pra próxima rota" continua existindo; o que deixa de existir é a perda permanente.
 
    Puro (sem DOM, sem rede): recebe o save e devolve o save mexido. Testado em tests/esconderijo.test.js. */
-import { MAX_ALIADOS } from './regras.js';
+import { tetoDaEquipe } from './regras.js';
 
 // quantos cabem esperando. Alto de propósito: o limite que importa é o da EQUIPE, não o do depósito.
 export const MAX_ESCONDIDOS = 30;
@@ -22,7 +22,10 @@ export function escondidos(S) {
   if (!S) return [];
   return (S.escondidos ||= []);
 }
-export const equipeCheia = S => (S?.aliados || []).length >= MAX_ALIADOS;
+/* Teto da equipe POR MODO (o ⚔ Saga anda com uma comitiva de 4): quem decide é `regras.tetoDaEquipe`, e tudo
+   o que pergunta "cabe mais um?" passa por aqui ou por ela — senão um modo com teto diferente precisaria de uma
+   trava nova em cada tela. */
+export const equipeCheia = S => (S?.aliados || []).length >= tetoDaEquipe(S);
 export const esconderijoCheio = S => escondidos(S).length >= MAX_ESCONDIDOS;
 
 /* Manda um aliado da equipe pro esconderijo. Devolve o Pokémon guardado, ou null se não deu.

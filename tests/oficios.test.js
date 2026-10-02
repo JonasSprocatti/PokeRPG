@@ -77,3 +77,17 @@ test('golpesDaEspecie junta nível e MT/tutor/herança', () => {
   assert.deepEqual([...g].sort(), ['tackle', 'toxic']);
   assert.equal(golpesDaEspecie(undefined).size, 0);
 });
+
+/* O teto da equipe é POR MODO: `regras.maxAliados`/`tetoDaEquipe` é o ponto único que decide, e o ⚔ Saga é o
+   único que sobe (comitiva de 4). Sem isso, cada tela precisaria de uma trava própria. */
+test('teto de aliados: 2 nos modos normais, 3 na Saga', async () => {
+  const { maxAliados, tetoDaEquipe, MAX_ALIADOS } = await import('../js/regras.js');
+  assert.equal(MAX_ALIADOS, 2);
+  assert.equal(maxAliados('roguelike'), 2);
+  assert.equal(maxAliados('easy'), 2);
+  assert.equal(maxAliados('saga'), 3);
+  assert.equal(maxAliados(undefined), 2);        // modo desconhecido cai no teto normal, não em 0
+  assert.equal(tetoDaEquipe({ dificuldade: 'saga' }), 3);
+  assert.equal(tetoDaEquipe({}), 2);             // save antigo sem o campo = easy
+  assert.equal(tetoDaEquipe(null), 2);
+});
