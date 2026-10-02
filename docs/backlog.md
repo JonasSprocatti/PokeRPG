@@ -15,9 +15,12 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   (Guardião, Curandeiro, Arcano, Guerreiro, Encantador, Bardo), ameaça/aggro, perícias com recarga, Brecha/Ruína,
   comitiva de 4, NPCs Pokémon com diálogo, três facções e caminhos com consequência. **O plano combinado está em
   `docs/plano-saga.md`** — ler de lá antes de mexer. Entrega em 4 fases; a fase 1 é o combate.
-  **Feito até agora**: `js/oficios.js` + `tests/oficios.test.js` (o ofício lido dos stats base + learnset).
-  **Falta na fase 1**: ameaça (`regras.alvoPorAmeaca`, nos dois motores), as 8 perícias, Brecha/Ruína, o modo
-  `saga` em `DIFICULDADES` com `aliadosEmCampo: 3`, e o painel de perícia. README e patch note entram quando o
+  **Feito até agora**: `js/oficios.js` (o ofício lido dos stats base + learnset, congelado em `m.oficio`); o modo
+  `saga` em `DIFICULDADES` (`admin: true`, `aliadosEmCampo: 3`, `ameaca: true`) com teto de equipe por modo
+  (`regras.tetoDaEquipe`); o passo 4 da criação pra escolher a comitiva; e a **ameaça** (`regras.alvoPorAmeaca`,
+  lida por `batalha.js`, acumulada em `golpe.js`, mostrada por `render.seloOficio`).
+  **Falta na fase 1**: as 8 perícias + o painel delas, Brecha/Ruína, e a redução de dano do Guardião.
+  **Fora de propósito por ora**: ameaça no `mp-motor` (não existe Saga em sala). README e patch note entram quando o
   modo ficar jogável (hoje nada disso aparece pra quem joga).
 - **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").

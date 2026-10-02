@@ -20,7 +20,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
-  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto } from './regras.js';
+  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -721,6 +721,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (typeEff(g.type, tiposDefensivos(t)) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
     if (ht.aguenta) { await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`); return; }     // Sturdy
     if (Math.random() >= chanceOhko(u, t)) { await ctx.say(t.level > u.level ? 'Mas falhou! (o alvo tem nível maior)' : 'Mas errou!'); return; }
+    somarAmeaca(u, t.stats.hp);   // ⚔ nocaute de um golpe: a ameaça é o HP inteiro que ele tirou
     t.hp = 0; up(ctx); (ctx.tremer || nada)(t, g.type); await ctx.say('É um nocaute de um golpe só!', 'crit'); return 'acertou';
   }
   if (!selfT && g.acc != null && Math.random() > chanceAcerto(g, u, t, climaDoCtx(ctx))) { await ctx.say('Mas errou!'); return; }
@@ -754,6 +755,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     const bruto = t.hp - u.hp;
     const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, bruto, g.type, ef) : bruto);
     t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t, g.type);
+    somarAmeaca(u, feito);
     await ctx.say(`${T} perdeu ${feito} HP.`, 'hit');
     if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
     return 'acertou';
@@ -789,6 +791,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (r.crit) u.vol.criticos = (u.vol.criticos || 0) + 1;                                  // Sirfetch'd (evolucao.js)
   }
   t.vol.danoSofrido = (t.vol.danoSofrido || 0) + total;                                      // Runerigus (evolucao.js)
+  somarAmeaca(u, total);   // ⚔ ameaça (regras.alvoPorAmeaca): quem bate atrai. Acumula sempre; só a Saga LÊ
   up(ctx); (ctx.tremer || nada)(t, g.type);
   if (crit) await ctx.say('Um golpe crítico!', 'crit');
   if (ef > 1) await ctx.say('É super efetivo!', 'good'); else if (ef < 1) await ctx.say('Não é muito efetivo...');

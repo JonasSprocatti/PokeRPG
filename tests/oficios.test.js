@@ -91,3 +91,42 @@ test('teto de aliados: 2 nos modos normais, 3 na Saga', async () => {
   assert.equal(tetoDaEquipe({}), 2);             // save antigo sem o campo = easy
   assert.equal(tetoDaEquipe(null), 2);
 });
+
+/* ⚔ Ameaça (aggro): a mecânica que faz ofício valer algo. Antes dela o inimigo sorteava alvo entre os do seu
+   lado, então ter um tanque não mudava nada. Sorteio FIXADO nos dois lados do limiar — testar efeito de chance
+   por amostragem dá defeito fantasma no CI. */
+test('ameaça: o Guardião atrai mesmo batendo menos que o Arcano', async () => {
+  const { alvoPorAmeaca, ameacaDe, somarAmeaca, RUIDO_AMEACA } = await import('../js/regras.js');
+  const mon = (oficio, hp, ameaca = 0) => ({ oficio, stats: { hp }, hp, vol: { ameaca } });
+  const guardiao = mon('guardiao', 200), arcano = mon('arcano', 120, 60);
+
+  // o Arcano já bateu 60; o Guardião não bateu nada e ainda assim é o alvo (base 1 × 200 = 200 > 60 × 1)
+  assert.equal(alvoPorAmeaca([arcano, guardiao], () => 1), guardiao);
+  // mas aggro não é imunidade: com dano suficiente o Arcano rouba a atenção
+  somarAmeaca(arcano, 300);   // 360 de ameaça: aí sim passa os 200 do Guardião
+  assert.equal(alvoPorAmeaca([arcano, guardiao], () => 1), arcano);
+
+  // a Provocação (vol.provocou) devolve o alvo pro Guardião — é pra isso que ela existe
+  guardiao.vol.provocou = 3;
+  assert.equal(alvoPorAmeaca([arcano, guardiao], () => 1), guardiao);
+
+  // ruído: abaixo do limiar NÃO mira o maior (senão a luta vira xadrez decorado)
+  delete guardiao.vol.provocou;
+  somarAmeaca(guardiao, 10_000);
+  assert.equal(alvoPorAmeaca([arcano, guardiao], () => 1), guardiao);           // 1 > RUIDO: o maior
+  assert.equal(alvoPorAmeaca([arcano, guardiao], () => RUIDO_AMEACA / 2), arcano); // abaixo: o outro
+});
+
+test('ameaça: casos de borda não estouram', async () => {
+  const { alvoPorAmeaca, ameacaDe, somarAmeaca } = await import('../js/regras.js');
+  assert.equal(alvoPorAmeaca([]), null);
+  assert.equal(alvoPorAmeaca(null), null);
+  const so = { oficio: 'arcano', stats: { hp: 10 }, vol: {} };
+  assert.equal(alvoPorAmeaca([so], () => 0), so);   // um só: sem sorteio, sem ruído
+  assert.equal(ameacaDe({}), 0);                    // sem stats nem ofício
+  assert.equal(ameacaDe(null), 0);
+  // ofício desconhecido (save antigo, ou espécie sem stats) cai no peso padrão em vez de zerar
+  assert.ok(ameacaDe({ oficio: 'inventado', stats: { hp: 100 }, vol: {} }) > 0);
+  somarAmeaca(null, 10); somarAmeaca({ vol: {} }, -5);   // não pode estourar nem aceitar negativo
+  assert.equal(somarAmeaca({ vol: {} }, 0), undefined);
+});

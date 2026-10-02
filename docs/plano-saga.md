@@ -63,6 +63,29 @@ aleatório como hoje (sem flag do modo não muda nada).
 - 🛡 O Guardião tem ameaça passiva ×2 + redução de dano: ele puxa a luta sozinho, e o Brado é o botão de
   consertar quando o inimigo escapa pro Curandeiro.
 
+**CONSTRUÍDO em 02/10/2026** (`regras.AMEACA`/`ameacaDe`/`alvoPorAmeaca`/`somarAmeaca`). Duas coisas saíram
+diferentes do desenho acima, as duas por motivo medido:
+
+1. **A ameaça tem DUAS parcelas**, não só a acumulada: `base × HP máximo` (ameaça por existir) + `acumulada ×
+   peso`. Só com a acumulada, o Guardião — que bate pouco — teria sempre menos ameaça que o Arcano e nunca
+   seguraria nada: aggro puro por dano premia justamente quem não devia ser mirado. A `base` do Guardião é **1**
+   (o HP máximo inteiro). Começou em 0.5 e foi corrigida ao ver rodando: com 0.5 um Arcano roubava o alvo depois
+   de ~100 de dano (dois golpes), o Guardião segurava dois turnos e a mecânica não aparecia.
+2. **Só o motor do single player (`batalha.js`) passou a ler a ameaça.** O `mp-motor` continua sorteando o alvo:
+   não existe Saga em sala, e trocar a regra lá agora seria mudar o multiplayer por uma mecânica que ninguém
+   alcança. A função é a mesma quando chegar a hora.
+
+O acúmulo mora no motor único (`golpe.js`, nos três pontos onde o dano é aplicado: golpe comum, OHKO e Endeavor)
+e vale pra todo modo — quem **lê** é só quem tem a flag `ameaca`. O estado fica em `m.vol.ameaca`, que
+`iniciar`/`endBattle` já zeram: a ameaça é da LUTA e nunca vai pro save.
+
+**O ofício fica congelado em `m.oficio`** (decidido uma vez em `makeMon`, como o gênero). Não muda na evolução, de
+propósito — e congelar evita que uma calibragem futura da fórmula troque o ofício de quem já está num save.
+
+**A tela mostra** (`render.seloOficio`): o emoji do ofício ao lado do nome e um **🎯** em quem o inimigo está
+mirando, com a ameaça no `title`. Sem isso a mecânica é invisível e não há como jogar com ela. O 🎯 chama
+`alvoPorAmeaca` com o sorteio desligado: mostra o alvo provável, não uma previsão do sorteio que ainda vai rolar.
+
 ## 3. Perícias — uma por ofício, **recarga em turnos**, não gasta PP
 
 Painel novo (`G.panel = 'pericias'`) ao lado dos golpes. Estado em `m.vol.cd = {pericia: turnos}` — `vol` já é

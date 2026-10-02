@@ -1,6 +1,7 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
-import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais } from './estado.js';
+import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais, emCampo, vivos } from './estado.js';
+import { OFICIOS } from './oficios.js';
 import { $, semAnimacao } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_SPR_MEGA, ITEM_SPR_Z, ITEM_SPR_VINCULO, ITEM_PEDRA_MEGA, ITEM_CRISTAL_Z, ITEM_VINCULO, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { estiloSpriteAtual } from './ajustes.js';
@@ -11,7 +12,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, tetoDaEquipe, zonaLiberada, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
+import { natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -229,10 +230,23 @@ const listaGolpes = (M, quem) => `<div class="sec mlist"><h3>Golpes</h3>
       }).join('')}
     </div>`;
 // aliado: resumo + seletor de ordem + ficha completa num <details> (aberto/fechado sobrevive ao re-render via G.abertos)
+/* ⚔ Saga: o ofício e quem o inimigo está mirando. Sem isso a ameaça é invisível e não há como jogar com ela —
+   a mecânica só existe pra quem joga se a tela disser quem está segurando a linha.
+   `🎯` sai de `alvoPorAmeaca` com sorteio DESLIGADO (sorte: () => 1, nunca < RUIDO): mostra o alvo provável, não
+   uma previsão de um sorteio que ainda vai acontecer. Só aparece no modo com a flag. */
+export const modoComAmeaca = S => !!DIFICULDADES[dificuldadeDe(S)]?.ameaca;
+export function seloOficio(m) {
+  if (!modoComAmeaca(G.S) || !m?.oficio) return '';
+  const o = OFICIOS[m.oficio]; if (!o) return '';
+  const emPe = vivos(emCampo());
+  const alvo = emPe.length > 1 ? alvoPorAmeaca(emPe, () => 1) : emPe[0];
+  const mirado = G.B && alvo === m;
+  return `<span class="oficio" title="${esc(o.nome)}: ${esc(o.funcao)}${mirado ? ' · é quem o inimigo está mirando agora' : ''}${G.B ? ` · ameaça ${Math.round(ameacaDe(m))}` : ''}">${o.emoji}${mirado ? ' 🎯' : ''}</span>`;
+}
 function cartaoAliado(A, i) {
   const ordem = A.ordem || 'livre';
   return `<div class="aliado ${ordem === 'fora' ? 'descansando' : ''}">
-    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}${sexo(A)}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth, 'card-a' + i)}${chipsFor(A)}</div></div>
+    <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}${sexo(A)}${seloOficio(A)}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth, 'card-a' + i)}${chipsFor(A)}</div></div>
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
     <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
@@ -249,7 +263,7 @@ function renderFicha() {
     <div class="ficha-me">
       ${imgMon(P, '', spriteFrente(P))}
       <div>
-        <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}${sexo(P)}</h2>
+        <h2>${brilho(P)}${esc(P.nick || fmt(P.name))}${sexo(P)}${seloOficio(P)}</h2>
         <p class="sub">${P.nick ? esc(fmt(P.name)) + ', ' : ''}nível ${P.level}</p>
         <div class="types">${badgesDeTipo(P)}</div>
       </div>

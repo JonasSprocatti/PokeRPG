@@ -919,6 +919,53 @@ export function golpeDoAliado(ordem, moves, tiposA, tiposAlvo, sorte = Math.rand
   return { golpe: melhorGolpe(moves, tiposA, tiposAlvo) };
 }
 
+/* ---- ⚔ Saga: ameaça (aggro) ----
+   Até aqui o inimigo mirava um alvo ALEATÓRIO entre os do seu lado (`pick(vivos(emCampo()))` em batalha.js), e
+   por isso "tanque" era impossível: não havia como atrair dano. A ameaça é o que faz ofício valer algo.
+
+   Duas parcelas, de propósito:
+   - `base × HP máximo` — ameaça por EXISTIR. Sem ela um Guardião, que bate pouco, teria sempre menos ameaça que
+     o Arcano e nunca seguraria nada: aggro só por dano premia justamente quem não devia ser mirado.
+   - `acumulada × peso` — o que você fez na luta (dano causado; cura e feitiço entram quando as perícias chegarem).
+   O Curandeiro tem peso 1.5 porque curar chama atenção — é ele o segundo alvo, como em todo RPG de turno.
+
+   `RUIDO` existe pra luta não virar xadrez: 10% das vezes o inimigo mira outro. Sem isso o jogador decora a
+   regra e o combate fica resolvido.
+   Fora de um modo com a flag `ameaca` nada disso roda — quem decide é batalha.js, e o padrão segue aleatório. */
+export const AMEACA = {
+  /* `base: 1` = o HP máximo inteiro vira ameaça. Calibrado contra o caso real: com 0.5, um Arcano roubava o
+     alvo depois de ~100 de dano, ou seja, dois golpes — o Guardião segurava dois turnos e a mecânica não
+     aparecia. Com 1, um Aggron de 200 de HP exige 200 de dano acumulado do Arcano pra perder o alvo: segura a
+     luta comum inteira e começa a vazar nas longas (Alfa, chefe), que é onde a Provocação precisa existir. */
+  guardiao:   { peso: 2,   base: 1 },
+  curandeiro: { peso: 1.5, base: 0.2 },
+  arcano:     { peso: 1,   base: 0.1 },
+  guerreiro:  { peso: 1,   base: 0.1 },
+  encantador: { peso: 1.2, base: 0.1 },
+  bardo:      { peso: 1.2, base: 0.1 }
+};
+export const AMEACA_PADRAO = { peso: 1, base: 0.1 };   // sem ofício (save antigo, espécie sem dado)
+export const RUIDO_AMEACA = 0.1;
+export const ameacaDe = m => {
+  const a = AMEACA[m?.oficio] || AMEACA_PADRAO;
+  // `vol.provocou` é a Provocação do Guardião (perícia): multiplica a ameaça por alguns turnos
+  return ((m?.vol?.ameaca || 0) * a.peso + a.base * (m?.stats?.hp || 0)) * (m?.vol?.provocou || 1);
+};
+/* Quem o inimigo ataca. Empate mantém a ordem de entrada (sort estável): o mesmo estado sempre dá o mesmo alvo,
+   senão a luta mudaria de rumo entre dois F5. */
+export function alvoPorAmeaca(candidatos, sorte = Math.random) {
+  if (!candidatos?.length) return null;
+  if (candidatos.length === 1) return candidatos[0];
+  const ordem = [...candidatos].sort((a, b) => ameacaDe(b) - ameacaDe(a));
+  if (sorte() < RUIDO_AMEACA) {
+    const outros = ordem.slice(1);
+    return outros[Math.floor(sorte() * outros.length)] || ordem[0];
+  }
+  return ordem[0];
+}
+// um golpe causou dano: quem bateu ganha ameaça. Chamado pelo motor único (golpe.js), nunca por uma tela.
+export const somarAmeaca = (m, n) => { if (m?.vol && n > 0) m.vol.ameaca = (m.vol.ameaca || 0) + n; };
+
 /* ---- amizade (Etapa 3.2) ---- */
 export const MAX_ALIADOS = 2;
 /* Quantos aliados andam com você NESTE modo. O teto 2 é decisão fechada de balanceamento pros modos normais

@@ -20,7 +20,7 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate, registrarDano } from './conquistas.js';
@@ -507,7 +507,11 @@ export async function turn(action) {
       if (a.bola) { await vez('t'); await lancarBola(P); continue; }
       if (a.parado) { await vez(idVez(a.quem)); await say(`${nm(a.quem)} ${a.parado}`, 'muted'); continue; }
       if (a.quem === E) {
-        const alvo = pick(vivos(emCampo()));
+        /* ⚔ Saga (flag `ameaca`): o inimigo mira quem tem mais AMEAÇA, não um alvo aleatório — é o que faz um
+           Guardião existir (regras.alvoPorAmeaca). Nos outros modos segue sorteando, como sempre foi.
+           Lê a FLAG do modo, nunca o nome dele. */
+        const emPe = vivos(emCampo());
+        const alvo = DIFICULDADES[dificuldadeDe(S)]?.ameaca ? alvoPorAmeaca(emPe) : pick(emPe);
         if (!alvo) continue;   // ninguém em campo pra apanhar (você foi tirado e os aliados caíram)
         // recuo (flinch) só vale em quem ainda não agiu neste turno
         await vez('e');
