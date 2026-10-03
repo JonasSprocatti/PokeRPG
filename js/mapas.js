@@ -165,8 +165,18 @@ export function taxaNaRota(z, id) {
   const total = z.pool.reduce((a, p) => a + p.p, 0), e = z.pool.find(p => p.id === id);
   return e && total ? e.p / total * 100 : 0;
 }
-// texto da taxa: raros com casa decimal
-export const textoTaxa = t => t >= 10 ? `${Math.round(t)}%` : t >= 1 ? `${t.toFixed(1).replace('.', ',')}%` : `${t.toFixed(2).replace('.', ',')}%`;
+/* Texto da taxa: uma casa (raros, duas) e sempre TRUNCADO pra baixo.
+   ⚠️ Bugs #74 e #75 (03/10/2026): a soma das taxas MOSTRADAS passava de 100% (101,8% na Estrada da Vitória da
+   Gen 4) e o jogador concluiu, com razão, que não sobrava espaço pros míticos — que ficam ocultos na Pokédex da
+   rota e valem ~0,4% cada. A conta nunca esteve errada (`taxaNaRota` divide pelo pool inteiro, míticos
+   incluídos, e `sortearDaRota` sorteia sobre o mesmo pool): era o ARREDONDAMENTO do texto, que levava oito
+   espécies de 11,63% pra "12%". Truncar garante que o que está na tela nunca promete mais do que 100%, então o
+   que falta pra fechar é justamente o que está escondido. */
+export const textoTaxa = t => {
+  const casas = t >= 1 ? 1 : 2, p = 10 ** casas;
+  // o epsilon é contra o binário: 3.3 * 10 dá 32.999…, e truncar isso mostraria 3,2%
+  return `${(Math.floor(t * p + 1e-9) / p).toFixed(casas).replace(/\.0$/, '').replace('.', ',')}%`;
+};
 
 // soma vistos/derrotados de vários registros (jornadas da carreira + a atual): o que você já sabe de cada espécie
 export function somarRegistros(registros) {

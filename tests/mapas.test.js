@@ -67,6 +67,17 @@ test('sortearDaRota: pelo peso; filtro (offline) pode esvaziar', () => {
   assert.equal(textoTaxa(75), '75%');
   assert.equal(textoTaxa(2.5), '2,5%');
   assert.equal(textoTaxa(0.4), '0,40%');
+  assert.equal(textoTaxa(11.63), '11,6%');   // truncado, não "12%" (bug #74)
+  assert.equal(textoTaxa(3.3), '3,3%');      // 3.3 * 10 = 32.999… em binário
+});
+
+/* Bugs #74/#75: a soma das taxas MOSTRADAS não pode passar de 100% em rota nenhuma — se passar, o jogador
+   conclui que os míticos ocultos no pool não têm chance de aparecer. */
+test('taxas mostradas de cada rota somam no máximo 100%', () => {
+  for (const g of GENS) for (const z of g.rotas) {
+    const soma = z.pool.reduce((a, p) => a + parseFloat(textoTaxa(taxaNaRota(z, p.id)).replace(',', '.')), 0);
+    assert.ok(soma <= 100, `Gen ${g.gen} / ${z.id}: ${soma.toFixed(2)}%`);
+  }
 });
 
 test('Pokédex da rota: ? → silhueta (enfrentou) → revelado com taxa (10 derrotados, somando jornadas)', () => {

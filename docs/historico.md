@@ -7,6 +7,34 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (03/10/2026) — as taxas da Pokédex da rota somavam 101,8% (relatos #74 e #75)
+
+Relato: *"ao fazer a soma da % de aparição dos pokemon da rota da um total de 101,8%, acredito que essa % deveria
+ficar menor do que 100% para ter uma pequena noção de % dos míticos"* (Estrada da Vitória, Gen 4) e, no dia
+seguinte, o mesmo na Área de Sobrevivência, onde a soma fechava exatamente 100% — *"não deixando 'espaço' para a %
+de aparição dos míticos"*. A conclusão do jogador era perfeitamente dedutível do que estava na tela: se o que ele
+enxerga já ocupa todo o bolo, os três cartões ocultos (📦) nunca sairiam.
+
+A conta nunca esteve errada. `taxaNaRota` divide o peso da espécie pela soma do pool **inteiro**, míticos
+incluídos, e `sortearDaRota` sorteia sobre esse mesmo pool — na `s-vitoria` da Gen 4 os pesos são oito espécies
+de `p: 2` (11,63% cada), um Magnezone de `p: 1` (5,81%) e Phione/Darkrai/Arceus de `p: 0.068` (0,40% cada), somando
+100,0%. O defeito era só de TEXTO: `textoTaxa` fazia `Math.round` acima de 10%, e 11,63 virava "12%" — **oito
+arredondamentos pra cima no mesmo bolso** criam 3 pontos percentuais do nada, mais do que os 1,2% que os míticos
+ocupam de verdade.
+
+Descartado no diagnóstico: "os míticos estão fora do sorteio" (estão dentro — `sortearDaRota` não filtra nada
+além do cache quando offline) e "o pool da jornada é filtrado e as taxas são calculadas sobre o pool cheio"
+(`rotaNaJornada` mexe só em níveis, nunca no `pool`). Conserto: `textoTaxa` trunca pra baixo em vez de arredondar,
+com um epsilon contra o binário (`3.3 * 10` dá 32,999…, e truncar isso mostraria 3,2%). Um teste varre todas as
+rotas de todas as Gens e falha se a soma dos textos passar de 100%.
+
+**A lição:** arredondamento é individualmente correto e coletivamente mentiroso. Onde N números arredondados são
+SOMADOS pelo leitor — e numa lista de porcentagens eles sempre são —, o erro não se cancela, se acumula na direção
+de quem tem mais itens. Truncar perde até 0,1 por linha e nunca promete o que não existe; arredondar ganha até
+0,05 por linha e promete. **Número que o jogador vai somar de cabeça, trunque.**
+
+---
+
 ## ✅ CORRIGIDO (02/10/2026) — a batalha no celular deitado nascia na 4ª linha do grid
 
 Relato: *"no momento que entrar em uma luta, a batalha tem que sempre estar visível na lateral, no momento eu

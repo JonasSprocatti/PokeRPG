@@ -10,6 +10,13 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.50', data: '2026-10-03', titulo: '📊 As taxas da Pokédex da rota pararam de somar mais de 100%', piada: 'Um jogador somou as porcentagens da Estrada da Vitória e achou 101,8%. Conferimos a conta do sorteio: certinha. Conferimos a conta da TELA: ela andava arredondando pra cima e devolvendo 1,8% de troco que não existia. O arredondamento foi mandado embora sem recomendação.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>A porcentagem de encontro de cada espécie agora é mostrada truncada pra baixo</b> (11,6% em vez de "12%"). Somando tudo que aparece na Pokédex da rota, o resultado nunca passa de 100% — antes passava, e dava a impressão de que os espaços ainda ocultos (📦) não tinham chance nenhuma de sair.',
+        '<b>Nada mudou no sorteio:</b> a chance sempre foi calculada sobre o pool inteiro da rota, incluindo quem ainda está escondido. O que estava errado era só o número na tela, que arredondava pra cima oito vezes seguidas.'
+      ] }
+    ] },
   { versao: '2.49', data: '2026-10-02', titulo: '📱 Deitado: menu enxuto, logo de volta e o Explorar na mão direita', piada: 'O subtítulo dizia "RPG de texto" desde sempre, e um jogador perguntou onde ficava o campo pra digitar o texto. Não ficava em lugar nenhum. O subtítulo foi aposentado com honras.',
     secoes: [
       { nome: 'Novidades', itens: [
