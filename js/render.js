@@ -12,7 +12,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
+import { natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -159,6 +159,27 @@ function blocoEvento(g) {
     <small>Muito difícil, sem fuga. Vencer dá ${esc(fmt(ev.especie))} na Pokédex, a insígnia ${esc(ev.badge.nome)} e um prêmio.${sit.ok ? '' : ' Uma tentativa a cada 8 horas.'}
     Sem estar nesta Gen? Use a <button class="link" data-act="arena" ${G.busy ? 'disabled' : ''}>🏟 Arena do Chefe</button> com os Pokémon do seu Hall da Fama.</small></div>${botao}</div>`;
 }
+/* ⚔ Saga: a FILA DO TURNO — quem age antes de quem, como em RPG de turno.
+   Não é previsão nova: `regras.ordenarAcoes` já decide a ordem por prioridade e velocidade, e aqui a mesma conta
+   é feita só com a velocidade efetiva (o golpe de cada um ainda não foi escolhido, então prioridade e Quick Claw
+   não dão pra saber). É por isso que a fila diz "ordem provável": um Quick Attack muda tudo, e prometer exatidão
+   que o motor não garante seria pior que não mostrar.
+   Só aparece no modo com a flag — e só com mais de dois na luta, senão não informa nada. */
+function filaDoTurno(B, P, AL, FOES) {
+  if (!modoComAmeaca(G.S)) return '';
+  const clima = climaDe(B.campo), terreno = terrenoDe(B.campo);
+  const lutando = [
+    ...(P.hp > 0 && !P.vol?.retirado ? [[P, 'p']] : []),
+    ...AL.filter(([A]) => A.hp > 0).map(([A, i]) => [A, 'a' + i]),
+    ...FOES.filter(F => F.hp > 0 && !F.vol?.retirado).map((F, i) => [F, 'e' + i])
+  ];
+  if (lutando.length < 3) return '';
+  const ordem = lutando.sort((x, y) => effStat(y[0], 'speed', false, true, clima, terreno) - effStat(x[0], 'speed', false, true, clima, terreno));
+  return `<div class="fila-turno" aria-label="Ordem provável do turno">${ordem.map(([m, chave]) => {
+    const meu = chave === 'p' || chave[0] === 'a';
+    return `<span class="fila-item ${meu ? 'meu' : 'foe'} ${B.vez === chave || (B.vez === 'e' && chave[0] === 'e') ? 'agora' : ''}" title="${esc(rotulo(m))} · Vel. ${effStat(m, 'speed', false, true, clima, terreno)}">${m.oficio && OFICIOS[m.oficio] ? OFICIOS[m.oficio].emoji : meu ? '•' : '✦'}<b>${esc((m.nick || fmt(m.name)).slice(0, 8))}</b></span>`;
+  }).join('<i class="fila-seta">▸</i>')}</div>`;
+}
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
 function turnoBar(B, P, E) {
   const T = B.trainer;
@@ -235,6 +256,10 @@ const listaGolpes = (M, quem) => `<div class="sec mlist"><h3>Golpes</h3>
    `🎯` sai de `alvoPorAmeaca` com sorteio DESLIGADO (sorte: () => 1, nunca < RUIDO): mostra o alvo provável, não
    uma previsão de um sorteio que ainda vai acontecer. Só aparece no modo com a flag. */
 export const modoComAmeaca = S => !!DIFICULDADES[dificuldadeDe(S)]?.ameaca;
+/* Tocar no golpe deve pedir o alvo? Só quando a escolha EXISTE: modo com grupo e mais de um inimigo de pé.
+   Um ponto único (main.js e a cena leem daqui) — a alternativa era cada tela decidir por conta, e aí uma delas
+   acaba pedindo alvo onde não há o que escolher. */
+export const precisaEscolherAlvo = () => !!G.B && (G.B.inimigos || []).filter(m => m.hp > 0 && !m.vol?.retirado).length > 1;
 export function seloOficio(m) {
   if (!modoComAmeaca(G.S) || !m?.oficio) return '';
   const o = OFICIOS[m.oficio]; if (!o) return '';
@@ -400,9 +425,29 @@ function renderScene() {
     sc.setAttribute('style', estiloDaCena(z));
     // aliado descansando (ordem "fora") não aparece em campo; o índice `i` continua sendo o de S.aliados (ids mon-a{i})
     const B = G.B, AL = (G.S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.ordem !== 'fora');
-    sc.innerHTML = `${turnoBar(B, P, E)}
-      <div class="side foe"><div class="plate ${B.vez === 'e' ? 'agindo' : ''}">${plate(E, 'e')}</div>
-        <div class="mon ${E.hp <= 0 ? 'fainted' : ''} ${E.dyna ? 'gigante' : ''}" id="mon-e"><div class="pad"></div>${imgMon(E, 'spr', spriteFrente(E))}</div></div>
+    /* ⚔ Saga: o lado inimigo é uma LISTA (`B.inimigos`), igual ao seu lado desde sempre. Nos outros modos ela tem
+       um elemento e o desenho sai idêntico ao de antes — não há ramo "um inimigo" x "vários".
+       `escolhendo` = você tocou num golpe e a cena está pedindo o alvo: os inimigos viram botões. */
+    const FOES = B.inimigos || [E];
+    const escolhendo = G.alvoDe != null && FOES.filter(m => m.hp > 0).length > 1;
+    const grupo = FOES.length > 1;
+    sc.className += grupo || modoComAmeaca(G.S) ? ' saga' : '';
+    const sprFoe = (F, i) => {
+      const morto = F.hp <= 0, mirado = !escolhendo && B.foco === i && grupo;
+      const corpo = `<div class="pad"></div>${imgMon(F, 'spr', spriteFrente(F))}`;
+      const cls = `mon ${grupo ? 'mini' : ''} ${morto ? 'fainted' : ''} ${F.dyna ? 'gigante' : ''} ${mirado ? 'em-foco' : ''}`;
+      // só vira botão quando há alvo a escolher: botão que não faz nada confunde mais que texto nenhum
+      return escolhendo && !morto
+        ? `<button class="${cls} alvo" id="mon-e${i}" data-act="alvo" data-v="${i}" title="Atacar ${esc(rotulo(F))}">${corpo}</button>`
+        : `<div class="${cls}" id="mon-e${i}">${corpo}</div>`;
+    };
+    sc.innerHTML = `${turnoBar(B, P, E)}${filaDoTurno(B, P, AL, FOES)}
+      <div class="side foe">
+        <div class="plates foe-plates">${FOES.map((F, i) => `<div class="plate ${grupo ? 'mini' : ''} ${B.vez === 'e' && B.foco === i ? 'agindo' : ''}">${plate(F, 'e' + i)}</div>`).join('')}</div>
+        <div class="mons-lado foe-mons">${FOES.map(sprFoe).join('')}</div>
+      </div>
+      ${escolhendo ? `<p class="pedir-alvo" role="status">🎯 Em quem usar <b>${esc(fmt(P.moves[G.alvoDe]?.name || 'o golpe'))}</b>? Toque num inimigo.
+        <button class="btn ghost sm" data-act="alvo-cancelar">Cancelar</button></p>` : ''}
       <div class="side me">
         <div class="mons-lado">
           <div class="mon ${P.hp <= 0 ? 'fainted' : ''} ${P.dyna ? 'gigante' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
@@ -609,7 +654,7 @@ function capturarLargurasBarras() {
 // que têm um .mon correspondente pra piscar. As outras (ficha-p, card-a0…) mostram o MESMO Pokémon noutro lugar
 // da tela; sem esse filtro a piscada duplicaria (uma vez por barra, não por Pokémon). XP nunca pisca (não faz
 // sentido dano/cura em barra de XP), então esta função só é chamada pra `.fill-hp`.
-const idDoMonNaCena = chave => chave === 'e' ? 'mon-e' : chave === 'p' ? 'mon-p' : /^a\d+$/.test(chave) ? 'mon-' + chave : null;
+const idDoMonNaCena = chave => /^e\d*$/.test(chave) ? 'mon-e' + (chave.slice(1) || '0') : chave === 'p' ? 'mon-p' : /^a\d+$/.test(chave) ? 'mon-' + chave : null;
 function piscar(id, classe) {
   const el = document.getElementById(id); if (!el) return;
   el.classList.remove('hit-flash', 'heal-flash'); void el.offsetWidth; el.classList.add(classe);

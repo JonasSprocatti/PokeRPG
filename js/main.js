@@ -3,7 +3,7 @@
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, zone, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
-import { render, buildGame, spriteItem } from './render.js';
+import { render, buildGame, spriteItem, precisaEscolherAlvo } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer, porNaComitiva, tirarDaComitiva } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
@@ -338,7 +338,19 @@ async function aoClicar(e) {
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
     case 'rapido': return marcarRapido(v);   // ⚡ na mochila: liga/desliga o atalho (regras.alternarRapido)
-    case 'move': return turn({ type: 'move', idx: +v });
+    /* ⚔ Saga: com mais de um inimigo de pé, tocar no golpe PEDE o alvo (a cena vira botões) em vez de atacar —
+       escolher em quem bater é a decisão tática do modo. Com um inimigo só, ataca direto: um segundo toque pra
+       confirmar o óbvio seria atrito puro. */
+    case 'move': {
+      if (precisaEscolherAlvo()) { G.alvoDe = +v; return render(); }
+      return turn({ type: 'move', idx: +v });
+    }
+    case 'alvo': {
+      const idx = G.alvoDe; G.alvoDe = null;
+      if (idx == null) return render();
+      return turn({ type: 'move', idx, alvo: +v });
+    }
+    case 'alvo-cancelar': G.alvoDe = null; return render();
     // nenhum dos dois passa por `turn`: megaevoluir e terastalizar não gastam o turno
     case 'mega': return usarMega();
     case 'tera': return usarTera();

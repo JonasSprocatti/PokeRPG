@@ -963,6 +963,16 @@ export function alvoPorAmeaca(candidatos, sorte = Math.random) {
   }
   return ordem[0];
 }
+/* ⚔ Saga: quantos inimigos aparecem num encontro. Cresce com o avanço da rota (`iRota` = índice 0-based dentro
+   do mapa) — nas três primeiras a luta ainda pode ser 1×1, pra jornada nova não começar contra um grupo cheio
+   no nível 5; da quarta em diante nunca é sozinho. Alfa e lendários montam o grupo por conta (batalha.js).
+   `GRUPO_MAX` é teto da CENA, não de balanceamento: mais de 3 sprites do lado inimigo não cabe no celular. */
+export const GRUPO_MAX = 3;
+export function tamanhoDoGrupo(iRota, sorte = Math.random) {
+  const piso = iRota <= 2 ? 1 : 2, teto = iRota <= 2 ? 2 : GRUPO_MAX;
+  return piso + Math.floor(sorte() * (teto - piso + 1));
+}
+
 // um golpe causou dano: quem bateu ganha ameaça. Chamado pelo motor único (golpe.js), nunca por uma tela.
 export const somarAmeaca = (m, n) => { if (m?.vol && n > 0) m.vol.ameaca = (m.vol.ameaca || 0) + n; };
 

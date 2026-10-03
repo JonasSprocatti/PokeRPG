@@ -118,6 +118,46 @@ O inimigo tem uma **Guarda** (3 num selvagem, 6 num Alfa, 10 num chefe de capít
 +50% e perde os buffs. É o que dá motivo pra comitiva ser montada por TIPO, e faz o Arcano ser quem abre a brecha
 em vez de só a maior barra de dano. A Guarda aparece na cena, abaixo do HP.
 
+## 4.5 Grupo inimigo e a cena meio-FF (pedido em 02/10/2026, CONSTRUÍDO)
+
+Pedido do usuário depois de ver a ameaça rodando: **"quero que os inimigos venham em vários também, pra ter uma
+luta nível Final Fantasy"**, com um layout meio-termo entre FF e Pokémon. Não estava no plano original (a fase 1
+previa só ofício/ameaça/perícias), e é a mudança mais profunda do modo até aqui.
+
+**O que travava**: o jogo nasceu com UM inimigo (`B.enemy`), lido em ~50 pontos de 7 arquivos. A fonte de verdade
+passou a ser **`B.inimigos` (lista) + `B.foco` (índice)**, e `B.enemy` virou um **getter** que devolve
+`inimigos[foco]` (`estado.ligarInimigos`). Getter e não campo sincronizado: `enemy` é lido em 50 lugares e
+escrito em 4, e um dia que uma escrita nova esquecesse de sincronizar, o jogo mostraria um inimigo e aplicaria
+dano em outro — tela plausível, bug invisível. Com getter isso é impossível por construção. Nos modos de um
+inimigo só a lista tem um elemento: **não existe ramo "um" × "vários"**.
+
+**Decisões do usuário (02/10/2026)**: grupo de **1 a 3 sorteado pela rota** (`regras.tamanhoDoGrupo`: as três
+primeiras rotas ainda podem ser 1×1, da quarta em diante nunca sozinho) · **layout meio-termo FF** · **golpe
+primeiro, alvo depois** (dois toques; com um inimigo só, ataca direto).
+
+**Onde o grupo vale**: encontro selvagem e **Alfa com dois lacaios da rota** (é o que transforma a luta de chefe
+num encontro de RPG: limpar os lacaios ou concentrar fogo?). **Treinador e lendários continuam vindo um por vez**,
+de propósito — a fila deles é o balanceamento de todos os outros modos, e mexer nisso não foi o que se pediu.
+
+**A cena** (`render.renderScene`): o lado inimigo reusa `.mons-lado`/`.plates`/`.mini`, que já existiam pro SEU
+lado desde os aliados — a simetria estava lá, só o lado inimigo era singular. Novo: placas do inimigo empilhadas
+à esquerda (espelho das suas), o alvo em foco com contorno tracejado, os sprites virando BOTÃO quando há alvo a
+escolher, e a **fila do turno** no topo.
+
+A fila diz "ordem provável" e não a ordem exata, de propósito: ela ordena por velocidade efetiva, mas o motor
+(`regras.ordenarAcoes`) decide por prioridade → Quick Claw → velocidade, e a prioridade depende do golpe que
+ninguém escolheu ainda. Prometer exatidão que o motor não garante seria pior que não mostrar. No celular deitado
+a fila some (a informação está nas placas).
+
+**A recompensa sai toda no fim da luta** (`win` percorre os caídos): XP, EVs e dinheiro somados, e cada um do
+grupo conta na Pokédex. Dar XP na hora de cada queda faria o jogador subir de nível no meio do próprio turno,
+com evolução e aprendizado de golpe interrompendo a rodada pela metade.
+
+**Conferido com jsdom** (3 inimigos, turno real): atacar o 2º derruba ele e o foco passa sozinho pro próximo de
+pé; os três inimigos agem no mesmo turno; a ameaça mandou o dano no Guardião (119 × 31 do Arcano); a luta só
+acabou quando o último caiu; os três entraram em `registro.derrotados`. A cena desenhou 3 sprites, 3 placas e a
+fila na ordem certa de velocidade.
+
 ## 5. Comitiva de 4 e os Juramentos
 
 `aliadosEmCampo: 3` como flag da dificuldade `saga`. **Mexe no espaço da cena no celular** — a cena presa no topo

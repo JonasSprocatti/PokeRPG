@@ -19,8 +19,12 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   `saga` em `DIFICULDADES` (`admin: true`, `aliadosEmCampo: 3`, `ameaca: true`) com teto de equipe por modo
   (`regras.tetoDaEquipe`); o passo 4 da criação pra escolher a comitiva; e a **ameaça** (`regras.alvoPorAmeaca`,
   lida por `batalha.js`, acumulada em `golpe.js`, mostrada por `render.seloOficio`).
+  Também já feito, **pedido em 02/10/2026 fora do plano original**: **grupo inimigo** (1 a 3 por rota, Alfa com
+  dois lacaios) — o lado inimigo virou lista (`B.inimigos` + `B.foco`, com `B.enemy` como getter em
+  `estado.ligarInimigos`) — e a **cena meio-termo FF** (placas do inimigo, alvo clicável, fila do turno).
   **Falta na fase 1**: as 8 perícias + o painel delas, Brecha/Ruína, e a redução de dano do Guardião.
-  **Fora de propósito por ora**: ameaça no `mp-motor` (não existe Saga em sala). README e patch note entram quando o
+  **Fora de propósito por ora**: ameaça no `mp-motor` (não existe Saga em sala); grupo em luta de treinador e de
+  lendários (a fila deles é o balanceamento dos outros modos). README e patch note entram quando o
   modo ficar jogável (hoje nada disso aparece pra quem joga).
 - **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").

@@ -668,6 +668,38 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .plates .plate{width:auto}
 .plate.mini{padding:5px 10px}
 .plate.mini .pl-top{font-size:14px}
+
+/* ============ ⚔ Saga: batalha em grupo, meio-termo entre Pokémon e RPG de turno ============
+   O lado inimigo virou LISTA igual ao do jogador (render: B.inimigos), então ele reusa `.mons-lado`/`.plates`
+   e o `.mini` que já existiam. O que é novo aqui: as placas do inimigo empilhadas à esquerda (espelho das
+   suas, que ficam à direita), a fila de turnos no topo e o estado de "escolha o alvo". */
+.foe-mons{justify-content:flex-end}
+.side.foe .foe-mons .mon{order:0}                 /* na lista, a ordem é a do array, não a regra de 1×1 */
+.foe-plates{justify-self:start}
+/* quem você está mirando: contorno discreto, nunca cor de dano (vermelho ali leria como "levou golpe") */
+.mon.em-foco::after{content:'';position:absolute;inset:auto 6px 2px 6px;height:34px;border-radius:50%;
+  border:2px dashed var(--yellow);opacity:.8;pointer-events:none}
+/* alvo clicável: o sprite vira botão de verdade (foco de teclado inclusive) */
+button.mon.alvo{background:none;border:0;padding:0;cursor:pointer}
+button.mon.alvo::after{content:'';position:absolute;inset:0;border:2px solid var(--yellow);border-radius:12px;
+  background:color-mix(in srgb,var(--yellow) 12%,transparent)}
+button.mon.alvo:hover::after,button.mon.alvo:focus-visible::after{background:color-mix(in srgb,var(--yellow) 26%,transparent)}
+.pedir-alvo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;margin:0;
+  background:rgba(10,12,30,.72);border:2px solid var(--yellow);border-radius:999px;padding:6px 14px;font:600 15px var(--display)}
+/* fila de turnos: a ordem PROVÁVEL do turno (por velocidade), o elemento mais "RPG de turno" da cena */
+.fila-turno{display:flex;align-items:center;gap:2px;flex-wrap:wrap;background:rgba(10,12,30,.55);border-radius:999px;padding:4px 10px}
+.fila-item{display:inline-flex;align-items:center;gap:3px;font:600 13px var(--display);color:var(--muted);
+  background:var(--panel2);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.fila-item.meu{color:var(--text)}
+.fila-item.foe{color:#f0b6b6}
+.fila-item.agora{background:var(--yellow);color:#1b1b2f}
+.fila-seta{color:var(--muted);font-style:normal;font-size:11px}
+/* celular deitado: a cena é apertada: a fila some (a informação está nas placas) e os sprites encolhem */
+@media(max-height:520px){
+  .fila-turno{display:none}
+  .scene.battle.saga .mon.mini{width:62px;height:62px}
+  .scene.battle.saga .mon.mini .spr{width:58px;height:58px}
+}
 @media(max-width:520px){.side.me{flex-wrap:wrap}.mon.mini{width:60px;height:60px}.mon.mini .spr{width:56px;height:56px}}
 .hp.amz .fill{background:#e86fa0}
 .bag-sec{font:600 15px var(--display);margin:14px 0 8px;width:100%}

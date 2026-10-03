@@ -120,7 +120,10 @@ export function pedirQuantidade({ nome, figuraHtml = '', preco, max, dinheiro, a
 function idDoMon(m) {
   if (!G.S) return null;
   const ia = (G.S.aliados || []).indexOf(m);
-  return m === G.S.player ? 'mon-p' : ia >= 0 ? 'mon-a' + ia : G.B?.enemy === m ? 'mon-e' : null;
+  // o lado inimigo é uma lista (⚔ Saga: até 3): o id leva o índice, senão a animação de dano cairia sempre
+  // no primeiro sprite e o jogador veria o golpe acertar quem não apanhou
+  const ie = (G.B?.inimigos || []).indexOf(m);
+  return m === G.S.player ? 'mon-p' : ia >= 0 ? 'mon-a' + ia : ie >= 0 ? 'mon-e' + ie : null;
 }
 // troca a classe (removendo antes, forçando reflow) pra reiniciar a animação mesmo se ela já estava rodando
 function reanimar(id, classe) {

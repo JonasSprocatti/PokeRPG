@@ -3,7 +3,8 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo, zone } from './estado.js';
+import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo, zone,
+  ligarInimigos, inimigosEmCampo, grupoInimigoCaiu } from './estado.js';
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
@@ -20,7 +21,7 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate, registrarDano } from './conquistas.js';
@@ -82,32 +83,41 @@ function sortearDoTreinador(z) {
   return sortearOponente(z); // (offline sem nada guardado: o erro daqui é o mesmo do encontro selvagem)
 }
 async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinador(z); return makeMon(await loadPokemon(id), level); }
+/* Começa a batalha. `B.enemy` (um inimigo) e `B.inimigos` (grupo, ⚔ Saga) são aceitos: tudo é normalizado pra
+   lista + `estado.ligarInimigos`, que instala o getter `enemy`. Um ramo só serve aos dois casos. */
 function iniciar(B) {
   for (const m of ladoJogador()) m.vol = freshVol();
+  const lista = B.inimigos?.length ? [...B.inimigos] : [B.enemy];
+  delete B.inimigos; delete B.enemy;   // quem responde por `enemy` daqui pra frente é o getter
   // o campo já nasce com o clima/terreno da rota (regras.CLIMA_DA_ROTA); habilidades de entrada e golpes ainda trocam
   // `zInimigo`: o lado inimigo carrega um Z-Move nesta luta? (treinador sempre; Alfa só às vezes — zmove.inimigoTemZ)
-  G.B = { caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), zInimigo: inimigoTemZ(B), ...B };
-  G.mode = 'battle'; G.panel = 'moves'; registrarVisto(B.enemy); render();
+  G.B = ligarInimigos({ caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), ...B, foco: 0 }, lista);
+  G.B.zInimigo = inimigoTemZ(G.B);     // depende de trainer/chefe, que já estão no objeto
+  G.mode = 'battle'; G.panel = 'moves';
+  for (const E of lista) registrarVisto(E);
+  render();
   // a rota tinge a faixa (som.js lê o tema por cenario.climaDaRota, o mesmo que pinta a cena)
-  tocarMusica(B.chefe || B.evento || B.lendarios ? 'chefe' : 'batalha', zone()); tocarCry(B.enemy.id);
+  tocarMusica(B.chefe || B.evento || B.lendarios ? 'chefe' : 'batalha', zone()); tocarCry(lista[0].id);
   /* Baixa as formas Mega que podem entrar em campo AGORA, em segundo plano. A batalha não espera: se a rede
      falhar, só não dá pra megaevoluir nesta luta. O que não pode é buscar no meio do turno — foi o cuidado que
      a Mudança de Postura do Aegislash documentou (golpe.trocarPostura). */
-  preCarregarMegas([G.S.player, G.B.enemy]).catch(e => console.warn('mega: pré-carga', e));
+  preCarregarMegas([G.S.player, ...lista]).catch(e => console.warn('mega: pré-carga', e));
   preCarregarAshGreninja(ladoJogador()).catch(e => console.warn('vínculo: pré-carga', e));
 }
 // Habilidades de entrada em campo (Intimidate, Drizzle, Download, Intrepid Sword…): cada um do seu lado age sobre o
 // inimigo e o inimigo age sobre todo o seu lado. Na troca de Pokémon do treinador só o que acabou de entrar dispara.
 // A regra em si é a `golpe.aoEntrarEmCampo`, a MESMA do multiplayer.
 async function intimidar(E, soInimigo = false) {
-  const lado = vivos(emCampo());
-  await aoEntrarEmCampo(soInimigo ? [E] : [...lado, E], m => (m === E ? lado : [E]), CTX);
+  const lado = vivos(emCampo()), foes = inimigosEmCampo();
+  // entra o grupo inteiro (⚔ Saga) ou só quem acabou de chegar; "oponentes de" olha de que lado o Pokémon está
+  const entrantes = soInimigo ? [E] : [...lado, ...foes];
+  await aoEntrarEmCampo(entrantes, m => (foes.includes(m) ? lado : foes), CTX);
 }
 /* Megaevoluir (e a Reversão Primitiva) é a forma ENTRANDO em campo: nos jogos a habilidade da Mega dispara na
    hora — Drought do Mega Charizard Y, Snow Warning do Mega Abomasnow, Intimidate do Mega Mawile. Sem isto o sol
    nunca aparecia e o Solar Beam continuava precisando carregar (relatos #72 e #71). Tera/Dynamax não entram
    aqui: nenhum dos dois troca a habilidade. */
-const habilidadeDaNovaForma = m => aoEntrarEmCampo([m], x => (x === G.B.enemy ? vivos(emCampo()) : [G.B.enemy]), CTX);
+const habilidadeDaNovaForma = m => aoEntrarEmCampo([m], x => (inimigosEmCampo().includes(x) ? vivos(emCampo()) : inimigosEmCampo()), CTX);
 /* ---- sair de campo sem desmaiar ----
    Roar, Whirlwind, Dragon Tail, Circle Throw e Red Card empurram alguém pra fora; Wimp Out e Emergency Exit fazem o
    Pokémon sair por conta própria. Nos jogos isso é "trocar de Pokémon" — aqui você é o Pokémon e nunca troca, então
@@ -124,14 +134,14 @@ const habilidadeDaNovaForma = m => aoEntrarEmCampo([m], x => (x === G.B.enemy ? 
 async function forcarSaida(m, { motivo = 'forcada' } = {}) {
   const B = G.B; if (!B) return false;
   const P = G.S.player, T = B.trainer, voluntaria = motivo === 'medo';
-  if (m === B.enemy) {
+  if (B.inimigos.includes(m)) {
     if (B.chefe || B.evento || B.lendarios || m.boss) return false;
     if (T) {
       const i = proximoDoTreinador(T.equipe, T.atual, !voluntaria);
       if (i < 0) return false;                                            // não tem ninguém pra mandar no lugar
       m.vol = freshVol(); m.vol.retirado = true;                          // o turno dele acaba aqui (turn() pula quem tem `retirado`)
       T.atual = i; const novo = T.equipe[i]; novo.vol = freshVol(); novo.vol.recemEntrou = true;
-      B.enemy = novo; registrarVisto(novo); render();
+      B.inimigos[B.inimigos.indexOf(m)] = novo; registrarVisto(novo); render();
       await say(`${voluntaria ? `${nm(m)} perde a coragem e sai de campo!` : `${nm(m)} foi arrastado pra fora da luta!`}`, 'status');
       await say(`${esc(T.nome)} envia <b>${esc(fmt(novo.name))}</b> (Nv. ${novo.level})!${novo.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
       await aplicarArmadilhas(novo, CTX);                                 // Stealth Rock e cia. pegam quem entra
@@ -164,16 +174,31 @@ async function habilidadesAoVencer() {
   }
 }
 
+/* ⚔ Saga: encontro selvagem em GRUPO (1 a 3, por `regras.tamanhoDoGrupo` — cresce com o avanço da rota).
+   Fora dos modos com `grupos`, um só, como sempre. Cada um é sorteado à parte, então o grupo pode ser misto.
+   Se a busca de um acompanhante falhar, a luta começa com quem deu: um encontro a menos é melhor que um erro de
+   rede impedindo de explorar. */
+const modoComGrupos = S => !!DIFICULDADES[dificuldadeDe(S)]?.grupos;
+async function grupoSelvagem(z) {
+  const i = rotasAtuais().findIndex(x => x.id === z.id);
+  const quantos = modoComGrupos(G.S) ? tamanhoDoGrupo(Math.max(0, i)) : 1;
+  const lista = [await novoOponente(z)];
+  for (let k = 1; k < quantos; k++) {
+    try { lista.push(await novoOponente(z)); } catch (e) { console.warn('acompanhante:', e.message); break; }
+  }
+  return lista;
+}
 export async function startBattle(z) {
-  const E = await novoOponente(z);
+  const lista = await grupoSelvagem(z);
   // no Santuário existe encontro selvagem com lendário/mítico: marca aqui, que é onde se sabe de que pool ele veio
   // (amizade.js deixa a amizade deles subir bem mais devagar)
-  const entrada = z.pool.find(p => p.id === E.id);
-  if (entrada?.l || entrada?.m) E.lendario = true;
-  iniciar({ enemy: E, turn: 1, runs: 0 });
-  await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${E.level}) apareceu!`, 'enc');
+  for (const M of lista) { const e = z.pool.find(p => p.id === M.id); if (e?.l || e?.m) M.lendario = true; }
+  const E = lista[0], entrada = z.pool.find(p => p.id === E.id);
+  iniciar({ inimigos: lista, turn: 1, runs: 0 });
+  if (lista.length > 1) await say(`Um grupo de <b>${lista.length}</b> aparece: ${lista.map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(', ')}!`, 'enc');
+  else await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${E.level}) apareceu!`, 'enc');
   if (entrada?.m) await say('🌟 Um Pokémon mítico! Quase ninguém chega a ver um desses.', 'level');
-  if (E.shiny) await say('✨ Ele brilha! Um Pokémon shiny.', 'level');
+  for (const M of lista) if (M.shiny) await say(`✨ ${esc(fmt(M.name))} brilha! Um Pokémon shiny.`, 'level');
   await intimidar(E);
 }
 // Alfa da zona: IVs perfeitos + statsDeChefe (HP ×2, resto ×1,3). Não aceita petisco; dá pra fugir.
@@ -182,8 +207,16 @@ export async function startBossBattle(z) {
   if (offline() && !pokemonEmCache(c.id)) throw erroOffline(`📴 Sem internet: o Alfa de ${z.name} ainda não está salvo neste aparelho. Desafie ele online uma vez, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: max });
   E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id; E.statsChefe = true;
-  iniciar({ enemy: E, turn: 1, runs: 0, chefe: z.id });
+  /* ⚔ Saga: o Alfa não guarda a rota sozinho — vêm dois lacaios da própria rota com ele (sem stats de chefe).
+     É o que transforma a luta de Alfa num encontro de RPG: a comitiva tem de decidir se limpa os lacaios ou
+     concentra fogo no chefe. O prêmio continua sendo o do Alfa. */
+  const lista = [E];
+  if (modoComGrupos(G.S)) for (let k = 1; k < GRUPO_MAX; k++) {
+    try { lista.push(await novoOponente(z)); } catch (e) { console.warn('lacaio:', e.message); break; }
+  }
+  iniciar({ inimigos: lista, turn: 1, runs: 0, chefe: z.id });
   await say(`⚔ O chão treme. <b>${esc(fmt(E.name))} Alfa</b> (Nv. ${E.level}) guarda ${esc(z.name)}!`, 'enc');
+  if (lista.length > 1) await say(`E não está só: ${lista.slice(1).map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(' e ')} lutam com ele.`, 'enc');
   await say('Alfas são muito mais fortes que o normal: o dobro de HP e 30% a mais em todo o resto.', 'muted');
   if (E.shiny) await say('✨ E ele brilha! Um Alfa shiny.', 'level');
   await intimidar(E);
@@ -286,6 +319,11 @@ async function lancarBola(P) {
 const idVez = m => m === G.S.player ? 'p' : 'a' + G.S.aliados.indexOf(m);
 // aliado que acabou de cair: anuncia uma vez só (B.caidos guarda quem já foi anunciado nesta batalha)
 async function anunciarQuedas() {
+  // inimigo que caiu: anuncia uma vez. A RECOMPENSA (XP, EVs, dinheiro) sai toda no fim da luta, em `win`
+  for (const E of (G.B?.inimigos || [])) if (E.hp <= 0 && !G.B.caidos.has(E)) {
+    G.B.caidos.add(E);
+    await say(`${nm(E)} desmaiou!`, 'good');
+  }
   // no chefe de evento ninguém é perdido pra sempre (evento.EVENTO_SEM_PERMADEATH): a luta é difícil, não um risco à run inteira
   const permadeath = DIFICULDADES[dificuldadeDe(G.S)].permadeath && !(EVENTO_SEM_PERMADEATH && G.B?.evento);
   for (const A of [...(G.S.aliados || [])]) if (A.hp <= 0 && !G.B.caidos.has(A)) {
@@ -441,6 +479,10 @@ export async function turn(action) {
   if (G.busy || !G.B) return;
   G.busy = true;
   const B = G.B, S = G.S, P = S.player;
+  /* ⚔ Saga: o alvo do seu golpe vem na ação (`action.alvo` = índice em B.inimigos, escolhido na cena). Sem ele
+     (todo modo de um inimigo só, e a IA dos aliados) vale o foco. O foco também é o que os aliados atacam:
+     concentrar fogo é a decisão tática do turno, e dividir dano por conta própria desfaria a escolha do jogador. */
+  if (action.alvo != null && B.inimigos[action.alvo]?.hp > 0) B.foco = Number(action.alvo);
   let E = B.enemy;   // muda no meio do turno se o treinador manda outro (Roar…): sempre reler de B.enemy depois de uma ação
   // item sem efeito cancela o turno sem avançar B.turn — não repetir o divisor na próxima tentativa
   if (B.turnoNoLog !== B.turn) { log(`Turno ${B.turn}`, 'turno'); B.turnoNoLog = B.turn; }
@@ -487,26 +529,34 @@ export async function turn(action) {
     if (pm) acoes.push({ quem: P, golpe: pm, prio: prioridadeEfetiva(P, pm), vel: vel(P), rapido: ativouQuickClaw(P), lento: sempreUltimo(P) });
     // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
-      const d = golpeDoAliado(A.ordem || 'livre', golpesPermitidos(A), A.data.types, E.data.types);   // já vem sem o que Choice/Taunt/Encore/Disable/Torment proíbem
+      const d = golpeDoAliado(A.ordem || 'livre', golpesPermitidos(A), A.data.types, (E || B.inimigos[0]).data.types);   // já vem sem o que Choice/Taunt/Encore/Disable/Torment proíbem
       if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
       const g = d.golpe || STRUGGLE;
       acoes.push({ quem: A, golpe: g, prio: prioridadeEfetiva(A, g), vel: vel(A), rapido: ativouQuickClaw(A), lento: sempreUltimo(A) });
     }
-    const ea = acaoDoInimigo(E, P);
-    acoes.push(ea.bola ? { quem: E, bola: true, prio: 99, vel: 0 } : { quem: E, golpe: ea.move, prio: prioridadeEfetiva(E, ea.move), vel: vel(E), rapido: ativouQuickClaw(E), lento: sempreUltimo(E) });
+    // cada inimigo de pé age (⚔ Saga: o grupo inteiro; nos outros modos a lista tem um só)
+    for (const F of inimigosEmCampo()) {
+      const ea = acaoDoInimigo(F, P);
+      acoes.push(ea.bola ? { quem: F, bola: true, prio: 99, vel: 0 }
+        : { quem: F, golpe: ea.move, prio: prioridadeEfetiva(F, ea.move), vel: vel(F), rapido: ativouQuickClaw(F), lento: sempreUltimo(F) });
+    }
     // o que cada um vai usar neste turno (Sucker Punch olha isso: só funciona contra quem vai atacar). Golpe travado (carga/fúria) vale.
-    for (const m of [...ladoJogador(), E]) delete m.vol.golpeEscolhido;
+    for (const m of [...ladoJogador(), ...B.inimigos]) delete m.vol.golpeEscolhido;
     for (const a of acoes) if (a.golpe) a.quem.vol.golpeEscolhido = golpeTravado(a.quem) || a.golpe;
     const ordem = ordenarAcoes(acoes);
     const posicao = m => ordem.findIndex(a => a.quem === m); // -1 = não age neste turno
     for (let i = 0; i < ordem.length; i++) {
       const a = ordem[i];
+      /* O foco pode ter caído no meio do turno (⚔ Saga): passa pro próximo inimigo de pé, senão o resto do
+         turno bate num corpo. A luta só termina quando o GRUPO inteiro cai. */
+      if (B.enemy?.hp <= 0) { const j = B.inimigos.findIndex(m => m.hp > 0 && !m.vol?.retirado); if (j >= 0) B.foco = j; }
       E = B.enemy;
-      if (P.hp <= 0 || E.hp <= 0 || B.capturado || B.saidaForcada) break;
+      if (P.hp <= 0 || grupoInimigoCaiu() || B.capturado || B.saidaForcada) break;
       if (a.quem.hp <= 0 || a.quem.vol?.retirado) continue;   // caiu, ou foi tirado da luta antes de agir
       if (a.bola) { await vez('t'); await lancarBola(P); continue; }
       if (a.parado) { await vez(idVez(a.quem)); await say(`${nm(a.quem)} ${a.parado}`, 'muted'); continue; }
-      if (a.quem === E) {
+      if (B.inimigos.includes(a.quem)) {
+        const F = a.quem;
         /* ⚔ Saga (flag `ameaca`): o inimigo mira quem tem mais AMEAÇA, não um alvo aleatório — é o que faz um
            Guardião existir (regras.alvoPorAmeaca). Nos outros modos segue sorteando, como sempre foi.
            Lê a FLAG do modo, nunca o nome dele. */
@@ -519,20 +569,23 @@ export async function turn(action) {
            (`vol.zAtivo`, lida em calcDamage), apagada logo depois do golpe — um Z que vazasse pro turno seguinte
            dobraria o dano de graça. */
         if (inimigoUsaZAgora(B, a.golpe)) {
-          B.zInimigoUsado = true; E.vol.zAtivo = true;
-          await say(`<b>${esc(rotulo(E))} concentra a energia Z!</b>`, 'hit');
+          B.zInimigoUsado = true; F.vol.zAtivo = true;
+          await say(`<b>${esc(rotulo(F))} concentra a energia Z!</b>`, 'hit');
         }
-        try { await useMove(E, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo)); }
-        finally { delete E.vol.zAtivo; }
+        // quem AGE é `F` (pode não ser o foco: no grupo, os três atacam no mesmo turno)
+        try { await useMove(F, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo)); }
+        finally { delete F.vol.zAtivo; }
       } else {
-        const hpAntes = E.hp;
-        await vez(idVez(a.quem)); await useMove(a.quem, E, a.golpe, i < posicao(E));
+        // você e os aliados batem no FOCO — o alvo que você escolheu neste turno
+        const alvoMeu = E;
+        const hpAntes = alvoMeu.hp;
+        await vez(idVez(a.quem)); await useMove(a.quem, alvoMeu, a.golpe, i < posicao(alvoMeu));
         // quem deu o golpe final (e com qual golpe): é o que as conquistas de conta contam — e elas só contam o
         // que VOCÊ fez, não o que o aliado fez (conquistas.js / registrarAbate)
-        if (hpAntes > 0 && E.hp <= 0) B.abate = { porMim: a.quem === P, golpe: a.golpe };
+        if (hpAntes > 0 && alvoMeu.hp <= 0) B.abate = { porMim: a.quem === P, golpe: a.golpe };
         // dano acumulado da conta (badge "Potencial máximo"): aqui é o ÚNICO ponto que já tem o HP antes e depois
         // de um golpe SEU. Veneno, armadilha e recuo não entram — a badge é sobre o que você bate.
-        if (a.quem === P) registrarDano(S, hpAntes - E.hp, dificuldadeDe(S));
+        if (a.quem === P) registrarDano(S, hpAntes - alvoMeu.hp, dificuldadeDe(S));
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
       // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra
@@ -541,18 +594,20 @@ export async function turn(action) {
     E = B.enemy;
     if (B.capturado) { await serCapturado(); return; }
     if (B.saidaForcada) { endBattle(); return; }   // selvagem afugentado, ou o último do seu lado arrastado: acaba como uma fuga, sem XP nem penalidade
-    if (P.hp > 0 && E.hp > 0) { await vez('fim'); for (const m of [...vivos(emCampo()), E]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
-    for (const m of [...ladoJogador(), E]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
+    // veneno, clima e fim de rodada valem pro GRUPO inimigo inteiro (⚔ Saga), não só pra quem está em foco
+    if (P.hp > 0 && !grupoInimigoCaiu()) { await vez('fim'); for (const m of [...vivos(emCampo()), ...inimigosEmCampo()]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
+    for (const m of [...ladoJogador(), ...B.inimigos]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
     // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
-    for (const m of [...ladoJogador(), E]) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
+    for (const m of [...ladoJogador(), ...B.inimigos]) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
     B.turn++;
     if (P.hp <= 0) await lose();
-    else if (E.hp <= 0) await win();
+    else if (grupoInimigoCaiu()) await win();
     else if (!vivos(emCampo()).length) { await say('Não sobrou ninguém em campo: a luta termina.', 'muted'); endBattle(); }   // você foi tirado e os aliados caíram
   } catch (e) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
   } finally {
     B.vez = null;
+    G.alvoDe = null;       // alvo pendente é da ESCOLHA, não do turno: some ao resolver (senão o próximo golpe herdaria)
     delete P.vol.zAtivo;   // vale só pelo turno em que foi acionado (ver o `action.z` acima)
     // missões no fim de TODO turno (inclusive fuga/amizade que saem cedo com `return`); G.S some no fim de jogo do Hardcore
     try { await verificarMissoes(); } catch (e) { console.error(e); }
@@ -562,20 +617,26 @@ export async function turn(action) {
 }
 
 /* ---- fim de batalha ---- */
+/* O GRUPO inimigo caiu (⚔ Saga: pode ser mais de um; nos outros modos, o de sempre).
+   A recompensa é por inimigo derrotado e sai toda AQUI, no fim da luta — como em todo RPG de turno. Dar XP na
+   hora de cada queda faria o jogador subir de nível no meio do próprio turno, com evolução e aprendizado de
+   golpe interrompendo a rodada pela metade. */
 async function win() {
-  const S = G.S, B = G.B, T = B.trainer, P = S.player, E = B.enemy;
-  await say(`${nm(E)} desmaiou!`, 'good');
+  const S = G.S, B = G.B, T = B.trainer, P = S.player;
+  const caidos = B.inimigos.filter(m => m.hp <= 0 && !m.vol?.retirado);
+  const E = caidos[0] || B.inimigos[0];        // o "principal" da luta: é dele que saem chefe/registro/abate
   const mult = multShiny(S); // segredo do brilho: shiny ganha XP e dinheiro em dobro (regras.js)
-  const xp = xpPorVitoria(E, !!T) * mult;
+  const xp = caidos.reduce((t, F) => t + xpPorVitoria(F, !!T), 0) * mult;
   const gained = [], fora = !!P.vol?.retirado;   // arrastado pra fora no meio da luta: não lutou até o fim, sem XP nem EVs
-  if (!fora) for (const [s, add] of ganhoDeEVs(P.evs, E.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
-  const money = T ? 0 : E.level * rand(8, 14) * mult; // de treinador, o dinheiro vem todo no prêmio final
+  if (!fora) for (const F of caidos) for (const [s, add] of ganhoDeEVs(P.evs, F.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
+  const money = T ? 0 : caidos.reduce((t, F) => t + F.level * rand(8, 14), 0) * mult; // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
   // E.id vira o id da forma Mega enquanto ela está ativa (mega.aplicarForma); se ele desmaiou já mega-evoluído
   // e nada desfaz isso (o inimigo é descartado, não salvo), registrar E.id direto gravaria pra sempre o id da
   // Mega em registro.ids — a tela de desbloqueio do Roguelike passou a mostrar "Alakazam #10037" (a Mega).
-  registrar(S, 'derrotados', E.data.speciesName, E.mega?.antes?.id ?? E.id);
+  // cada um do grupo conta na Pokédex e nas missões, não só o principal
+  for (const F of caidos) registrar(S, 'derrotados', F.data.speciesName, F.mega?.antes?.id ?? F.id);
   /* Conquistas da conta (conquistas.js). A espécie conta sempre — o aliado lutando com você também constrói a sua
      Pedra Mega. Tipo e golpe só quando o golpe final foi SEU (`B.abate.porMim`, preenchido no laço do turno).
      Sem `B.abate` o inimigo caiu de veneno/armadilha/recuo: a equipe venceu, mas não há golpe pra creditar. */
@@ -585,13 +646,18 @@ async function win() {
   else { await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`); await gainExp(xp); }
   // aliados em pé ganham o mesmo XP e EVs (como o Exp. Share dos jogos novos)
   for (const A of vivos(emCampo()).filter(m => m !== P)) { // quem está descansando não ganha XP
-    for (const [s, add] of ganhoDeEVs(A.evs, E.data.effort)) A.evs[s] += add;
+    for (const F of caidos) for (const [s, add] of ganhoDeEVs(A.evs, F.data.effort)) A.evs[s] += add;
     await say(`${nm(A)} ganhou ${xp} de XP.`, 'muted');
     await gainExpAliado(A, xp);
   }
   const proximo = T ? proximoDoTreinador(T.equipe, T.atual) : -1;   // o primeiro de pé (Roar pode ter deixado um pra trás)
   if (T && proximo >= 0) {
-    T.atual = proximo; B.enemy = T.equipe[T.atual]; B.enemy.vol = freshVol(); B.enemy.vol.recemEntrou = true; registrarVisto(B.enemy); render();
+    /* Treinador e lendários continuam vindo UM POR VEZ, inclusive no ⚔ Saga: o grupo é dos encontros selvagens e
+       do Alfa (ver startBattle/startBossBattle). Trocar a fila do treinador por grupo mudaria o balanceamento de
+       todos os modos, e não é o que foi pedido. A lista do lado inimigo passa a ter o que acabou de entrar. */
+    T.atual = proximo;
+    B.inimigos = [T.equipe[T.atual]]; B.foco = 0;
+    B.enemy.vol = freshVol(); B.enemy.vol.recemEntrou = true; registrarVisto(B.enemy); render();
     await say(T.lendarios ? `Outro lendário surge: <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Shiny!' : ''}`
       : `${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
     await aplicarArmadilhas(B.enemy, CTX); // Stealth Rock e cia. pegam quem entra
@@ -715,6 +781,7 @@ async function serCapturado() {
    é ignorado): é mais seguro varrer a equipe do que lembrar quem virou. Sem isto o Pokémon ficaria Mega pra
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
+  G.alvoDe = null;
   G.B = null; G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar', G.S ? zone() : null);
   for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); desfazerTrace(m); m.vol = freshVol(); }
 }
@@ -723,11 +790,22 @@ export function endBattle() {
    Recarregar a página apagava a batalha: dava pra escapar de treinador, Alfa ou lendário — e de uma derrota no
    Roguelike — só dando refresh. Agora ela vai junto no save (estado.save) e volta ao abrir o jogo, no mesmo turno.
    `caidos` é um Set (quem já foi anunciado) e não sobrevive ao JSON: volta vazio, no máximo repete um anúncio. */
-export const serializarBatalha = B => B ? { ...B, caidos: null, vez: null } : null;
+/* `enemy` é um GETTER (estado.ligarInimigos), e `{...B}` o transforma num campo comum — o que vai pro JSON é uma
+   CÓPIA do inimigo em foco. Por isso ele é descartado aqui: a verdade é `inimigos` + `foco`, e o getter volta no
+   `restaurarBatalha`. Sem isso o save teria dois objetos iguais e o dano aplicado num não apareceria no outro —
+   exatamente o bug que a troca de Pokémon do treinador já documentava. */
+export const serializarBatalha = B => {
+  if (!B) return null;
+  const { enemy, ...resto } = B;
+  return { ...resto, caidos: null, vez: null };
+};
 export function restaurarBatalha(b) {
-  if (!b?.enemy) return null;
-  const B = { ...b, caidos: new Set(), vez: null };
+  if (!b?.inimigos?.length && !b?.enemy) return null;
+  const { enemy, ...resto } = b;
+  const B = { ...resto, caidos: new Set(), vez: null };
+  // save de antes do grupo: tinha só `enemy`. Vira lista de um.
+  let lista = B.inimigos?.length ? B.inimigos : [enemy];
   // o inimigo é o Pokémon atual do treinador: sem isso seriam dois objetos iguais e o dano iria só pra um deles
-  if (B.trainer?.equipe?.length) B.enemy = B.trainer.equipe[B.trainer.atual] || B.enemy;
-  return B;
+  if (B.trainer?.equipe?.length) lista = [B.trainer.equipe[B.trainer.atual] || lista[0]];
+  return ligarInimigos(B, lista);
 }

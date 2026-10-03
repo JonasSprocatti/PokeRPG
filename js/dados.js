@@ -523,7 +523,7 @@ export const DIFICULDADES = {
      modos, onde é decisão fechada de balanceamento. Quem decide a vaga é `regras.maxAliados`.
      Mole de propósito na fase 1 (3 desmaios livres, sem captura): a fase existe pra avaliar o combate, e
      permadeath atrapalha iterar. A dureza entra junto com as trilhas e as facções (fase 3). */
-  saga: { nome: '⚔ Saga', admin: true, aliadosEmCampo: 3, ameaca: true, especiesLivres: false, climaRotasFixo: true, multPontos: 1.5, desmaiosLivres: 3, semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: false, escolhaLivre: true, fimNaGen: true, desc: 'Cada Pokémon tem um ofício na luta — quem segura a linha, quem cura, quem lança o fogo — e você anda com uma comitiva de 4. Cada mapa é um capítulo. Nível 5.' }
+  saga: { nome: '⚔ Saga', admin: true, aliadosEmCampo: 3, ameaca: true, grupos: true, especiesLivres: false, climaRotasFixo: true, multPontos: 1.5, desmaiosLivres: 3, semCaptura: true, centroGratis: false, descontoPorVitoria: 0.1, nivelLivre: false, escolhaLivre: true, fimNaGen: true, desc: 'Cada Pokémon tem um ofício na luta — quem segura a linha, quem cura, quem lança o fogo — e você anda com uma comitiva de 4. Cada mapa é um capítulo. Nível 5.' }
 };
 // Ordens pros aliados (A.ordem; sem campo = 'livre'). A escolha do golpe mora em golpeDoAliado (regras.js).
 export const ORDENS = {

@@ -23,7 +23,9 @@ export const SAVE_KEY = 'pokerpg-save-v1';
 //   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
 //   gen   = mapa (Gen) escolhido na tela inicial; vira S.gen ao começar
 //   cacaShiny = 🎯 modo Caça Shiny marcado na tela inicial; vira S.cacaShiny (só dá pra ligar ao começar)
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set() };
+//   alvoDe = índice do golpe escolhido esperando ALVO (⚔ Saga, grupo inimigo); null = nada pendente. Só UI.
+//   comitiva = companheiros escolhidos no passo 4 da criação (⚔ Saga), antes de existir save
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set(), alvoDe: null, comitiva: null };
 
 // rotas do mapa (Gen) atual, já com os níveis desta jornada (mapas.js: escalaNivel depois de trocar de Gen)
 export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z, G.S));
@@ -46,6 +48,35 @@ export const vivos = lista => lista.filter(m => m.hp > 0);
 // `vol.retirado` = saiu desta luta sem desmaiar (arrastado por Roar & cia., ou fugiu de medo): não age, não é alvo, não ganha XP.
 // Vive em `vol`, que é zerado ao começar e ao acabar toda batalha — nunca vaza pro save.
 export const emCampo = () => ladoJogador().filter(m => m.ordem !== 'fora' && !m.vol?.retirado);
+
+/* ---- lado INIMIGO: um ou vários ----
+   O jogo nasceu com um inimigo só (`B.enemy`), e ~50 pontos em 7 arquivos leem esse campo. O ⚔ Saga luta contra
+   GRUPO (até 3), então a fonte de verdade virou `B.inimigos` (array) + `B.foco` (índice de quem está em foco),
+   e **`B.enemy` passou a ser um getter** que devolve `inimigos[foco]`.
+
+   Por que getter e não um campo que se atualiza: `B.enemy` é lido em 50 lugares e escrito em 4 (troca do
+   treinador, Roar, próximo da fila). Com campo, cada escrita nova teria de lembrar de sincronizar as duas
+   coisas, e o dia que esquecer o jogo mostra um inimigo e aplica dano em outro. Com getter isso é impossível
+   por construção: existe UM lugar de verdade.
+
+   Nos modos de um inimigo só, `inimigos` tem um elemento — o mesmo código serve aos dois casos, sem ramo.
+   `B.enemy` continua funcionando em todos os 50 pontos, inclusive no save (`serializarBatalha` grava o array e
+   o índice; `restaurarBatalha` reinstala o getter, senão o JSON devolveria um objeto DUPLICADO e o dano
+   aplicado no `enemy` não apareceria na cena). */
+export function ligarInimigos(B, lista) {
+  B.inimigos = lista;
+  B.foco = Math.max(0, Math.min(B.foco || 0, lista.length - 1));
+  Object.defineProperty(B, 'enemy', {
+    configurable: true, enumerable: true,
+    get: () => B.inimigos[B.foco] ?? B.inimigos[0] ?? null,
+    set: m => { const i = B.inimigos.indexOf(m); if (i >= 0) B.foco = i; else { B.inimigos[B.foco] = m; } }
+  });
+  return B;
+}
+// inimigos que ainda estão na luta (de pé e não retirados). O alvo do jogador e a ordem do turno saem daqui.
+export const inimigosEmCampo = () => (G.B?.inimigos || []).filter(m => m.hp > 0 && !m.vol?.retirado);
+// a luta contra o grupo acabou quando ninguém do lado inimigo está de pé
+export const grupoInimigoCaiu = () => !(G.B?.inimigos || []).some(m => m.hp > 0);
 
 // Centro Pokémon: se alguém da equipe precisa de cura e quanto custa no modo atual (grátis no Fácil; no Médio,
 // cada vitória desde a última visita — S.vitoriasDesdeCentro — tira 10%). `cheio` = preço sem desconto, pra mostrar.
