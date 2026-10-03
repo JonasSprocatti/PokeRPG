@@ -259,6 +259,36 @@ export const modoComAmeaca = S => !!DIFICULDADES[dificuldadeDe(S)]?.ameaca;
 /* Tocar no golpe deve pedir o alvo? Só quando a escolha EXISTE: modo com grupo e mais de um inimigo de pé.
    Um ponto único (main.js e a cena leem daqui) — a alternativa era cada tela decidir por conta, e aí uma delas
    acaba pedindo alvo onde não há o que escolher. */
+/* ⚔ Saga — comandar a comitiva.
+   `G.comandando`: 'p' (você) ou 'a<i>' (um aliado). `alvoDoPainel` é quem o painel de golpes está mostrando;
+   fora da Saga é sempre você, e nada disso aparece. */
+export function alvoDoPainel(P) {
+  if (!modoComAmeaca(G.S) || !G.comandando || G.comandando === 'p') return P;
+  const A = (G.S.aliados || [])[+G.comandando.slice(1)];
+  // aliado que caiu (ou foi perdido no Roguelike) no meio da escolha: o painel volta pra você em vez de quebrar
+  return A && A.hp > 0 && A.ordem !== 'fora' ? A : P;
+}
+/* A fileira de quem está na luta, pra trocar de comandado. ✓ = já tem plano neste turno; a Ordem decide os
+   outros. Só aparece com aliado em campo — sozinho, a fileira seria um botão só, sem função. */
+function barraComitiva(P, dis) {
+  if (!modoComAmeaca(G.S)) return '';
+  const AL = (G.S.aliados || []).map((A, i) => [A, i]).filter(([A]) => A.hp > 0 && A.ordem !== 'fora');
+  if (!AL.length) return '';
+  const planos = G.B?.planos || {};
+  const quem = G.comandando || 'p';
+  const botao = (m, chave, rotulo) => {
+    const o = m.oficio && OFICIOS[m.oficio] ? OFICIOS[m.oficio].emoji : '•';
+    const pronto = chave !== 'p' && planos[chave] ? '<i class="ok">✓</i>' : '';
+    return `<button class="cmd ${quem === chave ? 'on' : ''}" data-act="comandar" data-v="${chave}" ${dis}
+      title="${chave === 'p' ? 'Seus golpes' : `Comandar ${esc(rotulo(m))}`}">${o} ${esc((m.nick || fmt(m.name)).slice(0, 9))}${pronto}</button>`;
+  };
+  return `<div class="comitiva-cmd" aria-label="Quem você está comandando">
+      ${botao(P, 'p', rotulo)}${AL.map(([A, i]) => botao(A, 'a' + i, rotulo)).join('')}
+    </div>
+    <p class="small muted cmd-dica">${quem === 'p'
+      ? 'Toque num companheiro pra escolher o golpe dele. Quem você não comandar segue a Ordem. <b>Seu golpe fecha o turno.</b>'
+      : 'Escolha o golpe dele — o turno só resolve quando VOCÊ atacar.'}</p>`;
+}
 export const precisaEscolherAlvo = () => !!G.B && (G.B.inimigos || []).filter(m => m.hp > 0 && !m.vol?.retirado).length > 1;
 export function seloOficio(m) {
   if (!modoComAmeaca(G.S) || !m?.oficio) return '';
@@ -565,25 +595,29 @@ function renderActions() {
         <div class="subrow"><button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button></div>`;
       return;
     }
-    /* Quais golpes dá pra escolher vem de regras.golpesPermitidos — a MESMA função das outras telas, dos aliados, da IA
-       e do motor: Choice, Colete de Assalto, Taunt, Encore, Disable, Torment e PP. Nenhum permitido = Struggle (travar
-       nunca pode deixar sem NENHUM botão clicável). O Choice guarda o nome do golpe BASE (`vol.escolha`), de antes de
-       Weather Ball/Tera Blast mudarem de tipo. */
-    const permitidos = golpesPermitidos(P);
+    /* ⚔ Saga: dá pra COMANDAR cada membro da comitiva em vez de deixar a Ordem decidir (`G.comandando` = de
+       quem é o painel agora). O plano de cada aliado fica em `B.planos` e o turno resolve com ele; quem você
+       não comandou segue a Ordem dele, como sempre.
+       Desenho escolhido pra NÃO obrigar a comandar três Pokémon por turno: o SEU golpe fecha o turno. Então
+       comandar é opcional — toca no aliado quando importa, ignora quando não. Forçar quatro escolhas por luta
+       comum transformaria cada encontro de grama alta numa sessão de xadrez. */
+    const M = alvoDoPainel(P);
+    const permitidos = golpesPermitidos(M);
     const noPP = !permitidos.length;
-    a.innerHTML = `<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Nenhum golpe disponível: ataque desesperado com recuo.</small></button>`
-      : P.moves.map((golpeBase, i) => {
-        const m = golpeDoBattleBond(golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), P), P);   // Weather Ball (clima), Tera Blast (seu Tera) e Water Shuriken (Ash-Greninja) no botão
+    a.innerHTML = `${barraComitiva(P, dis)}<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Nenhum golpe disponível: ataque desesperado com recuo.</small></button>`
+      : M.moves.map((golpeBase, i) => {
+        const m = golpeDoBattleBond(golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), M), M);   // Weather Ball (clima), Tera Blast (seu Tera) e Water Shuriken (Ash-Greninja) no botão
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;
         const presoAqui = !permitidos.includes(golpeBase) && golpeBase.ppLeft > 0;   // sem PP já desabilita sozinho; aqui é só o que uma TRAVA proíbe
         return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 || presoAqui ? 'disabled' : ''} title="${presoAqui ? esc(`Não pode: ${motivoBloqueio(P, golpeBase)?.texto || 'bloqueado'}`) : `${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}`}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
       }).join('')}</div>
-      ${resumoTravas(P).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
-      ${botaoMega(dis)}
-      ${barraRapidos(dis)}
-      <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`;
+      ${resumoTravas(M).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
+      ${M === P ? `${botaoMega(dis)}${barraRapidos(dis)}
+      <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`
+      : `<div class="subrow"><button class="btn ghost" data-act="comandar" data-v="p" ${dis}>↩ Voltar pros seus golpes</button>
+        <button class="btn ghost" data-act="comandar-auto" data-v="${G.comandando}" ${dis}>⚡ Deixar ele decidir (Ordem: ${esc(ORDENS[M.ordem || 'livre'].nome)})</button></div>`}`;
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila
     /* `soComMega` (a Pedra Mega) só entra na prateleira quando a SUA espécie já tem a Mega conquistada na conta.

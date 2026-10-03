@@ -21,7 +21,7 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate, registrarDano } from './conquistas.js';
@@ -527,11 +527,19 @@ export async function turn(action) {
     // Vento de Cauda (Tailwind) dobra a velocidade do lado dele (regras.multVento)
     const vel = m => effStat(m, 'speed', false, true, clima, terreno) * multVento(B.campo.lados?.[CTX.ladoDe(m)]);
     if (pm) acoes.push({ quem: P, golpe: pm, prio: prioridadeEfetiva(P, pm), vel: vel(P), rapido: ativouQuickClaw(P), lento: sempreUltimo(P) });
-    // aliados em campo agem pela ordem que você deu (golpeDoAliado); "Não atacar"/sem golpe válido = fica parado
+    /* Aliados: o PLANO que você deu neste turno (⚔ Saga, `B.planos`) manda; sem plano, vale a Ordem dele
+       (golpeDoAliado). O plano passa pelas mesmas travas — `golpesPermitidos` é a única fonte, e um golpe que
+       virou proibido depois de você escolher (o inimigo mais rápido te provocou) não pode escapar por aqui. */
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
-      const d = golpeDoAliado(A.ordem || 'livre', golpesPermitidos(A), A.data.types, (E || B.inimigos[0]).data.types);   // já vem sem o que Choice/Taunt/Encore/Disable/Torment proíbem
-      if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
-      const g = d.golpe || STRUGGLE;
+      const chave = 'a' + S.aliados.indexOf(A), plano = B.planos?.[chave];
+      let g = golpeDoPlano(plano, A.moves, golpesPermitidos(A), STRUGGLE);
+      // o alvo do plano vale pro FOCO só se ele ainda está de pé (o grupo muda no meio do turno)
+      if (g && plano.alvo != null && B.inimigos[plano.alvo]?.hp > 0) B.foco = Number(plano.alvo);
+      if (!g) {
+        const d = golpeDoAliado(A.ordem || 'livre', golpesPermitidos(A), A.data.types, (E || B.inimigos[0]).data.types);   // já vem sem o que Choice/Taunt/Encore/Disable/Torment proíbem
+        if (d.parado) { acoes.push({ quem: A, parado: d.parado, prio: 0, vel: vel(A) }); continue; }
+        g = d.golpe || STRUGGLE;
+      }
       acoes.push({ quem: A, golpe: g, prio: prioridadeEfetiva(A, g), vel: vel(A), rapido: ativouQuickClaw(A), lento: sempreUltimo(A) });
     }
     // cada inimigo de pé age (⚔ Saga: o grupo inteiro; nos outros modos a lista tem um só)
@@ -608,6 +616,8 @@ export async function turn(action) {
   } finally {
     B.vez = null;
     G.alvoDe = null;       // alvo pendente é da ESCOLHA, não do turno: some ao resolver (senão o próximo golpe herdaria)
+    G.comandando = 'p';    // o painel volta pros seus golpes
+    B.planos = {};         // plano é DO TURNO: um golpe comandado não se repete sozinho na rodada seguinte
     delete P.vol.zAtivo;   // vale só pelo turno em que foi acionado (ver o `action.z` acima)
     // missões no fim de TODO turno (inclusive fuga/amizade que saem cedo com `return`); G.S some no fim de jogo do Hardcore
     try { await verificarMissoes(); } catch (e) { console.error(e); }

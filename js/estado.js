@@ -24,8 +24,9 @@ export const SAVE_KEY = 'pokerpg-save-v1';
 //   gen   = mapa (Gen) escolhido na tela inicial; vira S.gen ao começar
 //   cacaShiny = 🎯 modo Caça Shiny marcado na tela inicial; vira S.cacaShiny (só dá pra ligar ao começar)
 //   alvoDe = índice do golpe escolhido esperando ALVO (⚔ Saga, grupo inimigo); null = nada pendente. Só UI.
+//   comandando = de quem é o painel de golpes ('p' você | 'a<i>' aliado) no ⚔ Saga. Só UI.
 //   comitiva = companheiros escolhidos no passo 4 da criação (⚔ Saga), antes de existir save
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set(), alvoDe: null, comitiva: null };
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set(), alvoDe: null, comitiva: null, comandando: 'p' };
 
 // rotas do mapa (Gen) atual, já com os níveis desta jornada (mapas.js: escalaNivel depois de trocar de Gen)
 export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z, G.S));

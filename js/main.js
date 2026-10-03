@@ -66,6 +66,18 @@ function travadoPelaBatalha(msg = 'Termine a batalha primeiro — no meio da lut
   return true;
 }
 document.addEventListener('click', e => { aoClicar(e).catch(avisarErro); });
+/* ⚔ Saga: um golpe escolhido é PLANO (de um companheiro, guardado pro turno) ou AÇÃO (a sua, que resolve o
+   turno). Um ponto só, porque os dois caminhos entram pelo mesmo botão de golpe — e porque a ordem importa:
+   o plano tem de estar guardado ANTES de `turn()` rodar. */
+function escolherGolpe(idx, alvo) {
+  const quem = G.comandando || 'p';
+  if (quem !== 'p' && G.B) {
+    (G.B.planos ||= {})[quem] = { idx, alvo };
+    G.comandando = 'p';          // comandou um: volta pros seus golpes, que são o que fecha o turno
+    return render();
+  }
+  return turn({ type: 'move', idx, alvo });
+}
 async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;

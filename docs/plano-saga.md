@@ -158,6 +158,30 @@ pé; os três inimigos agem no mesmo turno; a ameaça mandou o dano no Guardião
 acabou quando o último caiu; os três entraram em `registro.derrotados`. A cena desenhou 3 sprites, 3 placas e a
 fila na ordem certa de velocidade.
 
+## 4.6 Comandar o golpe dos companheiros (pedido em 03/10/2026, CONSTRUÍDO)
+
+Pergunta do usuário: **"nesse modo eu vou poder escolher os moves dos meus aliados?"** Até aqui não: o aliado
+decidia pela **Ordem** (`ORDENS`: À vontade, Pegar leve, Só status, Não atacar, Descansar) e `golpeDoAliado`
+escolhia. Num modo com ofícios e comitiva de 4, isso é pouco — mandar o Curandeiro usar um golpe específico é
+metade da tática.
+
+**Como ficou**: acima dos golpes aparece a fileira de quem está na luta (você + companheiros, com o emoji do
+ofício). Tocar num companheiro abre os **golpes dele**; escolher guarda um plano (`B.planos`) e volta pros seus
+golpes, com um **✓** no companheiro já comandado.
+
+**O seu golpe é o que FECHA o turno** — essa é a decisão de desenho. Comandar é opcional: quem você não comandou
+segue a Ordem, como sempre. A alternativa (o turno só resolve quando todos os quatro escolherem) é mais FF, mas
+transformaria cada encontro de grama alta numa sessão de xadrez de quatro decisões. Quem quiser controle total
+comanda os três; quem quiser velocidade só ataca.
+
+Também tem **"⚡ Deixar ele decidir"**, que apaga o plano e devolve o turno pra Ordem dele.
+
+**O plano passa pelas mesmas travas de todo mundo** (`regras.golpeDoPlano`, pura e testada). É a única porta nova
+por onde um golpe proibido poderia entrar: o plano é uma intenção escrita ANTES do turno rodar, e no meio do
+turno o inimigo mais rápido pode te provocar (Taunt), travar o golpe (Disable) ou o aliado pode ter trocado de
+golpe. Nesses casos o plano devolve `null` e a Ordem decide — nunca um golpe que `golpesPermitidos` proíbe.
+Plano é **do turno**: é apagado ao resolver, senão um golpe comandado se repetiria sozinho na rodada seguinte.
+
 ## 5. Comitiva de 4 e os Juramentos
 
 `aliadosEmCampo: 3` como flag da dificuldade `saga`. **Mexe no espaço da cena no celular** — a cena presa no topo

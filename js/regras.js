@@ -898,6 +898,20 @@ export function efeitosAoVencer(m) {
   return r;
 }
 
+/* ⚔ Saga: o golpe que VOCÊ mandou o aliado usar neste turno (`B.planos`), já conferido.
+   Devolve null quando o plano não vale mais — e aí quem chama cai na Ordem do aliado. Os três casos de null
+   importam: índice que não existe mais (o aliado aprendeu/trocou golpe entre a escolha e o turno), e golpe que
+   ficou PROIBIDO depois de escolhido. O terceiro é o que obriga esta função a existir: o inimigo mais rápido
+   provoca (Taunt) no mesmo turno em que você planejou um golpe de status, e sem esta conferência o plano
+   furaria `golpesPermitidos` — a regra que as 3 telas, a IA e o motor leem. Struggle sempre passa: é o que
+   sobra quando nada é permitido. */
+export function golpeDoPlano(plano, moves, permitidos, struggle) {
+  if (!plano) return null;
+  const g = plano.idx === -1 ? struggle : moves?.[plano.idx];
+  if (!g) return null;
+  return g === struggle || permitidos.includes(g) ? g : null;
+}
+
 // O que o aliado faz neste turno, pela ordem dele (ORDENS em dados.js):
 //   { golpe }        → usa esse golpe (golpe null = sem PP em nada → Struggle, só no 'livre')
 //   { parado: txt }  → não age neste turno (txt vai pro log)

@@ -58,3 +58,22 @@ test('o grupo cresce com o avanço da rota, e nunca passa do teto da cena', () =
   assert.ok(tamanhoDoGrupo(-1, () => 0.5) >= 1);
   assert.ok(tamanhoDoGrupo(undefined, () => 0.5) >= 1);
 });
+
+/* ⚔ Saga: comandar o golpe de um companheiro (`B.planos`). O plano é uma INTENÇÃO de antes do turno rodar, e
+   `regras.golpeDoPlano` é quem confere se ela ainda vale — a mesma trava das 3 telas, da IA e do motor
+   (`golpesPermitidos`). Sem isso, o plano seria a única porta do jogo por onde um golpe proibido passaria. */
+test('plano de aliado: vale o que foi mandado, cai fora quando não pode mais', async () => {
+  const { golpeDoPlano } = await import('../js/regras.js');
+  const tackle = { name: 'tackle' }, toxic = { name: 'toxic' }, STRUGGLE = { name: 'struggle' };
+  const moves = [tackle, toxic];
+
+  assert.equal(golpeDoPlano({ idx: 0 }, moves, [tackle, toxic], STRUGGLE), tackle);
+  assert.equal(golpeDoPlano({ idx: -1 }, moves, [], STRUGGLE), STRUGGLE);   // Struggle passa mesmo sem nada permitido
+  assert.equal(golpeDoPlano(null, moves, [tackle], STRUGGLE), null);        // sem plano: a Ordem decide
+
+  // Taunt chegou DEPOIS de você planejar o status: o plano não pode furar golpesPermitidos
+  assert.equal(golpeDoPlano({ idx: 1 }, moves, [tackle], STRUGGLE), null);
+  // índice que não existe mais (aprendeu golpe novo entre a escolha e o turno)
+  assert.equal(golpeDoPlano({ idx: 7 }, moves, [tackle], STRUGGLE), null);
+  assert.equal(golpeDoPlano({ idx: 0 }, undefined, [tackle], STRUGGLE), null);
+});

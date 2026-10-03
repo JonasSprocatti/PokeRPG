@@ -694,6 +694,15 @@ button.mon.alvo:hover::after,button.mon.alvo:focus-visible::after{background:col
 .fila-item.foe{color:#f0b6b6}
 .fila-item.agora{background:var(--yellow);color:#1b1b2f}
 .fila-seta{color:var(--muted);font-style:normal;font-size:11px}
+/* comandar a comitiva: a fileira de quem você está comandando, acima dos golpes */
+.comitiva-cmd{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.cmd{display:inline-flex;align-items:center;gap:4px;background:var(--panel2);color:var(--muted);border:2px solid var(--line);
+  border-radius:999px;padding:5px 12px;font:700 14px var(--display);cursor:pointer}
+.cmd:hover:not(:disabled){border-color:var(--yellow);color:var(--text)}
+.cmd.on{background:var(--yellow);color:#1b1b2f;border-color:var(--yellow)}
+.cmd .ok{font-style:normal;color:#5ac46a;font-weight:700}
+.cmd.on .ok{color:#1b1b2f}
+.cmd-dica{margin:0 0 8px}
 /* celular deitado: a cena é apertada: a fila some (a informação está nas placas) e os sprites encolhem */
 @media(max-height:520px){
   .fila-turno{display:none}
