@@ -1062,3 +1062,14 @@ ul.quase.conquistas .bar{margin:4px 0}
 .ed-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 12px;margin:6px 0 10px}
 .ed-grade .check{grid-template-columns:auto auto 1fr auto;gap:6px}
 #ed-saida{width:100%;margin-top:8px;font-family:ui-monospace,monospace;font-size:12px}
+
+/* 🤖 Auto-explorar (só admin, auto.js): o painel da caçada em cima dos golpes e do Explorar. A lista é uma
+   grade de 4 colunas (espécie · quantos · % observada · % esperada) pra alinhar os números entre as linhas —
+   comparar observado com esperado é a razão de a ferramenta existir. */
+.auto-box{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 8px;background:rgba(255,255,255,.03)}
+.auto-box.on{border-color:var(--yellow)}
+.auto-topo{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin:0 0 6px}
+.auto-stats{list-style:none;margin:0 0 6px;padding:0;max-height:34vh;overflow:auto}
+.auto-stats li{display:grid;grid-template-columns:1fr auto 54px 92px;gap:8px;align-items:baseline;padding:2px 0;border-top:1px solid var(--line);font-size:13px}
+.auto-stats li:first-child{border-top:0}
+.auto-stats b,.auto-stats .muted{text-align:right}

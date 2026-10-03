@@ -1,6 +1,7 @@
 /* ============ exploração ============ */
 // Um clique em "Explorar": 10% treinador caçador, 58% selvagem, 15% item, 7% dinheiro, 10% só ambientação.
-import { G, zone, save, emCampo, rotasAtuais, dificuldadeDe } from './estado.js';
+import { G, zone, save, emCampo, rotasAtuais, dificuldadeDe, centroPokemon, zerarDescontoCentro } from './estado.js';
+import { healFull } from './efeitos.js';
 import { gastarRepelente, semSelvagens, genDe } from './mapas.js';
 import { rotaEsgotada } from './regras.js';
 import { log, say, ask } from './ui.js';
@@ -75,6 +76,18 @@ export async function explore() {
     if (!G.B) try { await verificarMissoes(); } catch (e) { console.error(e); }
     G.busy = false; render(); save();
   }
+}
+/* Centro Pokémon: paga, cura a equipe inteira e zera o desconto por vitória. Mora aqui (e não dentro do
+   `data-act` do main.js) porque o 🤖 auto-explorar também precisa curar entre uma batalha e outra — e o Centro
+   que o laço usa tem de ser o MESMO que o botão usa, com o mesmo preço e a mesma marca `usouCentro` (que decide
+   uma conquista). Devolve false quando não havia o que fazer: sem precisar, sem dinheiro ou ocupado. */
+export async function curarNoCentro() {
+  const { precisa, custo } = centroPokemon();
+  if (G.busy || !precisa || G.S.money < custo) return false;
+  G.S.money -= custo; G.S.gasto = (G.S.gasto || 0) + custo; G.S.usouCentro = true; healFull(); zerarDescontoCentro();
+  log(`${custo ? `Você pagou ₽${custo} e descansou` : 'Você descansou'} no Centro Pokémon. HP, PP e status ${G.S.aliados?.length ? 'da equipe ' : ''}restaurados.`, 'good');
+  await verificarMissoes(); save();
+  return true;
 }
 // botão "☄ Desafiar" do chefe do evento semanal (rota final do mapa): confirma, porque gasta a tentativa das 8 horas
 export async function desafiarEvento() {

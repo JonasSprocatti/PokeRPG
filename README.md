@@ -179,6 +179,9 @@ Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, 
 ### 🟢 Jogando agora
 A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer quem, só quantas. Dá pra desligar em ⚙ Ajustes (detalhes na Política de Privacidade).
 
+### 🔔 Notificações
+O jogo pode avisar **fora da aba**: o aviso aparece na tela de qualquer jeito, e a notificação é o extra pra quando você está em outro lugar. Liga em **⚙ Ajustes → Notificações** (o navegador só deixa pedir permissão num clique seu, então é um botão). São notificações **locais**: nascem no seu aparelho com o jogo aberto — não existe servidor de push, e nada sobre você sai daqui. Recusou? Dá pra liberar no cadeado ao lado do endereço; o jogo não insiste.
+
 ### Telas e ajustes
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.
 - **🏠 Início com uma jornada aberta:** se você começar outra, a atual é **guardada** sozinha (aparece em 💾 Jornadas salvas).
@@ -349,6 +352,14 @@ Depois abra http://localhost:3000.
 
 **Publicar:** qualquer hospedagem estática (usamos a Vercel), com a raiz do repositório como pasta pública e sem comando de build.
 
+## Ferramentas de manutenção (só a conta admin)
+
+Aparecem só pra quem está logado numa conta com `perfis.admin` no Supabase (`nuvem.ehAdmin`) — são de diagnóstico, não conteúdo de jogo:
+
+- **🧪 Painel de testes** (⚙ Ajustes): libera Megas, espécies e gimmicks na marra, tudo marcado como teste e reversível.
+- **🗺 Editor de rotas**: edita as missões e o Alfa de cada rota e cospe o `dados-rotas.js`.
+- **🤖 Explorar automaticamente** (botão ao lado do *Explorar*): escolhe uma espécie **qualquer** do pool da rota — inclusive a que você nunca encontrou — e o jogo explora e luta sozinho até ela aparecer, **parando antes de atacá-la**. O golpe é escolhido pela mesma IA do chefe da semana, ele foge quando o HP fica abaixo de 25% e passa no Centro Pokémon abaixo de 60%, pra não perder a run. Enquanto roda, um painel mostra **quantos de cada espécie caíram, a porcentagem observada e a que a rota promete** — é o jeito rápido de conferir se o sorteio de encontro está honesto. Ao achar (ou ao parar por qualquer motivo), manda uma **notificação**.
+
 ## Testes
 
 `node --test` (sem caminho) roda `tests/*.test.js`: fórmulas de batalha, captura, missões, carreira, layout dos painéis, sanidade das tabelas de dados e a lista de arquivos do modo offline. O GitHub Actions roda os testes a cada push (aba **Actions**).
@@ -375,6 +386,7 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 | `js/criacao.js`, `js/fim.js`, `js/carreira.js`, `js/roguelike.js` | Criação, fim de jornada, carreira e desbloqueios do Roguelike |
 | `js/nuvem.js`, `js/conta.js`, `js/config.js`, `js/ranking.js` | Login, nuvem (Supabase) e ranking global |
 | `js/segurados.js` | Efeito de cada item segurado (Restos, Orbe da Vida, frutas…) |
+| `js/auto.js`, `js/notificacoes.js` | 🤖 Auto-explorar (só admin) e as notificações do navegador |
 | `js/dados-patchnotes.js`, `js/tela-patchnotes.js`, `js/novidades.js` | Notas de atualização e o aviso de novidade |
 | `js/navegacao.js`, `js/ajustes.js`, `js/tela-ajustes.js` | Barra de navegação das telas, escolha de fonte e a tela de ajustes |
 | `js/som.js` | Cries, música procedural e som de impacto por tipo (Web Audio API, desligado por padrão) |

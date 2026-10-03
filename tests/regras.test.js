@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  resumoDeAbates, motivoDeParar,
   typeEff, natureMod, natureLabel, calcStats, recalc, freshVol, stageMul, effStat, defaultMoves,
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
   jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
@@ -739,4 +740,27 @@ test('fazContato: usa a flag de verdade quando o golpe está mapeado; sem mapa, 
   // golpe sem entrada na tabela: nunca deveria acontecer com golpe real do jogo, mas o plano B existe mesmo assim
   assert.equal(fazContato({ name: 'golpe-que-nao-existe', cls: 'physical' }), true, 'sem mapa: cai pro proxy antigo');
   assert.equal(fazContato({ name: 'golpe-que-nao-existe', cls: 'special' }), false);
+});
+
+/* 🤖 Auto-explorar (só admin): a estatística ao vivo e quando o laço tem de parar. O motivo importa — um laço
+   que não para no fim da jornada continua clicando "explorar" depois do Game Over do Roguelike. */
+test('auto-explorar: resumo de abates com porcentagem, do mais derrotado pro menos', () => {
+  const r = resumoDeAbates({ bidoof: 3, starly: 1 });
+  assert.equal(r.total, 4);
+  assert.deepEqual(r.linhas.map(l => l.especie), ['bidoof', 'starly']);
+  assert.equal(r.linhas[0].pct, 75);
+  assert.equal(resumoDeAbates({}).total, 0);
+  assert.deepEqual(resumoDeAbates({}).linhas, []);
+});
+test('auto-explorar: motivo de parar, na ordem de prioridade', () => {
+  const base = { modo: 'explore', hp: 100, exploracoes: 0, teto: 500 };
+  assert.equal(motivoDeParar(base), null);
+  assert.equal(motivoDeParar({ ...base, achou: true }), 'achou');
+  assert.equal(motivoDeParar({ ...base, achou: true, erro: true }), 'erro');
+  assert.equal(motivoDeParar({ ...base, modo: 'end' }), 'saiu');       // jornada acabou
+  assert.equal(motivoDeParar({ ...base, hp: 0 }), 'desmaiou');
+  assert.equal(motivoDeParar({ ...base, modo: 'battle', hp: 1 }), null);
+  assert.equal(motivoDeParar({ ...base, exploracoes: 500 }), 'teto');
+  // achar o alvo ganha até do teto: a caçada terminou, não importa quantas explorações levou
+  assert.equal(motivoDeParar({ ...base, achou: true, exploracoes: 999 }), 'achou');
 });

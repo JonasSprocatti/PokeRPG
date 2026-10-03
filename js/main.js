@@ -1,7 +1,7 @@
 /* ============ ponto de entrada ============ */
 // Um único listener delegado por tipo de evento (click/change/keydown) no document: todo botão só
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
-import { G, SAVE_KEY, save, nm, zone, ladoJogador, centroPokemon, zerarDescontoCentro, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
+import { G, SAVE_KEY, save, nm, zone, ladoJogador, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
 import { render, buildGame, spriteItem, precisaEscolherAlvo } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer, porNaComitiva, tirarDaComitiva } from './criacao.js';
@@ -26,12 +26,13 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
   raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP, enviarChatMP,
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
-import { explore, desafiarChefe, desafiarEvento } from './mundo.js';
+import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
+import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
+import { pedirPermissao, desligarNotificacoes } from './notificacoes.js';
 import { telaPerfil } from './perfil-amigo.js';
 import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim,
   arenaComprarComum, arenaComprarSegurado, arenaEquipar, arenaUsarItem, arenaReviver } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
-import { healFull } from './efeitos.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem, marcarRapido } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
@@ -293,14 +294,18 @@ async function aoClicar(e) {
       return ok ? encerrarJornada('venceu', { genVencida: G.S.genVencida }) : undefined;
     }
     case 'panel': G.panel = v; return render();
-    case 'heal': {
-      // o botão já vem desativado nesses casos; a checagem aqui é a garantia (clique duplo, estado mudou entre renders)
-      const { precisa, custo } = centroPokemon();
-      if (G.busy || !precisa || G.S.money < custo) return;
-      G.S.money -= custo; G.S.gasto = (G.S.gasto || 0) + custo; G.S.usouCentro = true; healFull(); zerarDescontoCentro();
-      log(`${custo ? `Você pagou ₽${custo} e descansou` : 'Você descansou'} no Centro Pokémon. HP, PP e status ${G.S.aliados?.length ? 'da equipe ' : ''}restaurados.`, 'good');
-      await verificarMissoes(); save(); return render();
+    // o botão já vem desativado quando não há o que curar; `curarNoCentro` (mundo.js) confere de novo e é o
+    // MESMO Centro que o 🤖 auto-explorar usa entre uma batalha e outra
+    case 'heal': await curarNoCentro(); return render();
+    // 🤖 auto-explorar (auto.js): ferramenta de manutenção, barrada de novo do lado de lá por `ehAdmin()`
+    case 'notif-ligar': {   // a permissão só pode ser pedida dentro de um clique — é aqui ou nunca
+      const r = await pedirPermissao();
+      if (r === 'denied') toast('🔕 As notificações ficaram bloqueadas. Dá pra liberar no cadeado ao lado do endereço.', 8000);
+      return telaAjustes();
     }
+    case 'auto': return escolherAlvoAuto();
+    case 'auto-parar': pararAuto('parado'); return render();
+    case 'auto-fechar': limparAuto(); return render();
     case 'oferecer': return turn({ type: 'oferecer', id: v });
     case 'despedir': if (G.busy) return; G.busy = true; render(); try { await despedir(+v); } finally { G.busy = false; render(); save(); } return;
     case 'buy': {
@@ -406,6 +411,7 @@ document.addEventListener('change', e => {
     const A = G.S.aliados[+io]; A.ordem = e.target.value;
     log(`${nm(A)}: ${ORDENS[A.ordem].nome}.`, 'muted'); save(); return render();
   }
+  if (e.target.id === 'pv-notificacoes') { e.target.checked ? pedirPermissao() : desligarNotificacoes(); return; } // ⚙ Ajustes → notificações
   if (e.target.id === 'pv-presenca') { definirPresenca(e.target.checked); return; } // ⚙ Ajustes → presença global
   if (e.target.id === 'pv-som') { alternarSom(e.target.checked); return; } // ⚙ Ajustes → som (som.js)
   if (e.target.id === 'pv-animacoes') { alternarAnimacoes(e.target.checked); return; } // ⚙ Ajustes → animações de combate (ajustes.js)

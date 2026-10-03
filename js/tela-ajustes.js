@@ -15,6 +15,7 @@ import { adsConfigurado, consentimento } from './ads.js';
 import { presencaLigada } from './presenca.js';
 import { nuvemConfigurada } from './nuvem.js';
 import { somLigado } from './som.js';
+import { permissao, notificacoesLigadas } from './notificacoes.js';
 
 export function telaAjustes() {
   G.mode = 'ajustes'; limparTopo();
@@ -46,6 +47,7 @@ export function telaAjustes() {
     <label class="check"><input type="checkbox" id="pv-animacoes" ${animacoesLigadas() ? 'checked' : ''}> Animações de combate</label>
     <h3 class="passo"><span>D</span> Jogar offline</h3>
     <div id="offline-box">${htmlOffline()}</div>
+    ${htmlNotificacoes()}
     ${htmlPresenca()}
     ${htmlAds()}
     ${htmlDev()}
@@ -182,6 +184,23 @@ function htmlAds() {
       <button class="btn ${c === 'aceito' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="aceito">Aceitar</button>
       <button class="btn ${c === 'recusado' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="recusado">Recusar</button>
     </div>`;
+}
+/* Notificações do navegador (js/notificacoes.js): hoje quem usa é o 🤖 auto-explorar ("achei o Pokémon"), e
+   qualquer aviso futuro que valha interromper entra pela mesma porta. A permissão SÓ pode ser pedida dentro de
+   um clique — por isso é um botão, e não algo que o jogo tente sozinho ao abrir a tela. Recusou? O navegador
+   não pergunta de novo; só as configurações do site resolvem, e o texto diz isso em vez de deixar um botão que
+   não faz nada. */
+function htmlNotificacoes() {
+  const p = permissao();
+  const explica = '<p class="small muted">O jogo avisa na tela de qualquer jeito; a notificação é pra quando você está em outra aba — o aviso de que o Pokémon que você estava caçando apareceu, por exemplo. Nada é enviado por servidor nenhum: o aviso nasce no seu aparelho, com o jogo aberto.</p>';
+  if (p === 'sem-suporte') return `<h3 class="passo"><span>N</span> Notificações</h3>${explica}
+    <p class="small muted">Este navegador não tem notificação. No iPhone, ela só funciona depois de adicionar o jogo à tela de início.</p>`;
+  if (p === 'denied') return `<h3 class="passo"><span>N</span> Notificações</h3>${explica}
+    <p class="small muted">🔕 Você bloqueou as notificações deste site. Pra liberar, é no cadeado ao lado do endereço — daqui o jogo não consegue perguntar de novo.</p>`;
+  if (p === 'granted') return `<h3 class="passo"><span>N</span> Notificações</h3>${explica}
+    <label class="check"><input type="checkbox" id="pv-notificacoes" ${notificacoesLigadas() ? 'checked' : ''}> Receber notificações</label>`;
+  return `<h3 class="passo"><span>N</span> Notificações</h3>${explica}
+    <div class="subrow"><button class="btn" data-act="notif-ligar">🔔 Ativar notificações</button></div>`;
 }
 /* Presença global (js/presenca.js): o "🟢 X jogando agora" da tela inicial + o registro (sem PII) de visitante
    sem conta. Só aparece com Supabase configurado — sem isso, presenca.js já é no-op e não tem o que desligar. */

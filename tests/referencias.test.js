@@ -55,7 +55,8 @@ const GLOBAIS_MAIUSCULAS = new Set(['String', 'Number', 'Boolean', 'Object', 'Ar
   'Set', 'Map', 'Promise', 'Error', 'RegExp', 'Function', 'Intl', 'WeakMap', 'WeakSet', 'URL', 'URLSearchParams', 'Image', 'Audio', 'AudioContext',
   'Event', 'CustomEvent', 'FormData', 'Blob', 'File', 'FileReader', 'Response', 'Request', 'Headers',
   'AbortController', 'ResizeObserver', 'MutationObserver', 'IntersectionObserver', 'TextEncoder', 'TextDecoder',
-  'Proxy', 'Reflect', 'Symbol', 'BigInt', 'ArrayBuffer', 'Uint8Array']);
+  'Proxy', 'Reflect', 'Symbol', 'BigInt', 'ArrayBuffer', 'Uint8Array',
+  'Notification']);   // notificacoes.js: existe no navegador, e `typeof` cobre quem não tem (iOS fora da tela de início)
 
 test('toda função chamada dentro de template literal existe', () => {
   const faltando = [];

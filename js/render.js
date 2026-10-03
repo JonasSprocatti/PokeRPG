@@ -5,14 +5,14 @@ import { OFICIOS } from './oficios.js';
 import { $, semAnimacao } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_SPR_MEGA, ITEM_SPR_Z, ITEM_SPR_VINCULO, ITEM_PEDRA_MEGA, ITEM_CRISTAL_Z, ITEM_VINCULO, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { estiloSpriteAtual } from './ajustes.js';
-import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
+import { genDe, dadosDaGen, pokedexDaRota, somarRegistros, textoTaxa, taxaNaRota, REVELA_DERROTADOS, rotaLiberaCaca, progressoCaca, cacaDaRota, repelenteAtivo, semSelvagens } from './mapas.js';
 import { carregarCarreira, versaoCarreira } from './carreira.js';
 import { telasVisiveis } from './navegacao.js';
 import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
+import { resumoDeAbates, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -26,6 +26,7 @@ import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
 import { resumoDoChefe, nivelDoChefe } from './boss.js';
 import { linhaItensDoChefe } from './itens-raide.js';
 import { progressoRastreado } from './rastreio.js';
+import { ehAdmin } from './nuvem.js';   // o 🤖 auto-explorar é ferramenta de manutenção: só a conta admin vê o botão
 import { estiloDaCena, nomeDoClima } from './cenario.js';
 import { clamp, esc, fmt } from './util.js';
 
@@ -570,6 +571,26 @@ function barraRapidos(dis) {
   return `<div class="subrow rapidos">${lista.map((k, i) => `<button class="item-btn rapido" data-act="${act}" data-v="${k}" data-rapido="${i + 1}" ${dis}
     title="${esc(ITEMS[k].desc)}"><img src="${spriteItem(k, G.S.player)}" alt="" onerror="${ITEM_ERRO}"><b>${ITEMS[k].name}</b><small>×${G.S.bag[k]} · tecla ${i + 1}</small></button>`).join('')}</div>`;
 }
+/* 🤖 Painel do auto-explorar (auto.js, só admin): o que ele está caçando e a estatística ao vivo — quantos de
+   cada caíram, a porcentagem observada e, ao lado, a que a rota promete (`taxaNaRota`). É pra isso que a
+   ferramenta existe: ver o sorteio de encontro acontecendo. Aparece em cima dos golpes E em cima do Explorar,
+   porque durante a caçada a tela fica quase sempre em batalha. */
+function blocoAuto() {
+  const a = G.auto; if (!a) return '';
+  const { total, linhas } = resumoDeAbates(a.abates);
+  const z = rotasAtuais().find(x => x.id === a.rota) || zone();
+  const esperado = n => { const p = z.pool.find(x => x.n === n); return p ? textoTaxa(taxaNaRota(z, p.id)) : '—'; };
+  const num = n => n.toFixed(1).replace('.', ',');
+  return `<div class="auto-box${a.ativo ? ' on' : ''}">
+    <p class="auto-topo"><b>🤖 ${a.ativo ? 'Caçando' : 'Caçada encerrada:'} ${esc(fmt(a.alvo))}</b>
+      <span class="muted small">${esc(a.rotaNome)} · ${a.exploracoes} explorações · ${total} derrotados</span></p>
+    ${linhas.length ? `<ul class="auto-stats">${linhas.map(l => `<li><span>${esc(fmt(l.especie))}</span><b>${l.n}</b>
+      <span class="muted">${num(l.pct)}%</span><small class="muted">esperado ${esperado(l.especie)}</small></li>`).join('')}</ul>`
+      : '<p class="small muted">Nenhuma batalha terminada ainda.</p>'}
+    <div class="subrow">${a.ativo
+      ? '<button class="btn ghost sm" data-act="auto-parar">⏹ Parar</button>'
+      : '<button class="btn ghost sm" data-act="auto-fechar">✕ Fechar</button>'}</div></div>`;
+}
 function renderActions() {
   const S = G.S, a = $('#actions'), dis = G.busy ? 'disabled' : '';
   if (G.mode === 'battle' && G.B) {
@@ -604,7 +625,7 @@ function renderActions() {
     const M = alvoDoPainel(P);
     const permitidos = golpesPermitidos(M);
     const noPP = !permitidos.length;
-    a.innerHTML = `${barraComitiva(P, dis)}<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Nenhum golpe disponível: ataque desesperado com recuo.</small></button>`
+    a.innerHTML = `${blocoAuto()}${barraComitiva(P, dis)}<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Nenhum golpe disponível: ataque desesperado com recuo.</small></button>`
       : M.moves.map((golpeBase, i) => {
         const m = golpeDoBattleBond(golpeDoTera(golpeDoClima(golpeBase, climaDe(G.B?.campo)), M), M);   // Weather Ball (clima), Tera Blast (seu Tera) e Water Shuriken (Ash-Greninja) no botão
         /* A seta de vantagem (regras.vantagemDoGolpe) contra QUEM está na frente. É a informação que decide o
@@ -647,7 +668,8 @@ function renderActions() {
     // Médio: preço cheio riscado + quantas vitórias deram desconto
     const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s> <small>(${vitorias} vitória${vitorias > 1 ? 's' : ''})</small>` : '';
     const esgotada = rotaEsgotada(zone(), S.player.level, dificuldadeDe(S));   // anti-grind do Roguelike
-    a.innerHTML = `<button class="btn big" data-act="explore" ${dis || esgotada ? 'disabled' : ''} title="${esgotada ? 'Você está forte demais pra esta rota: nada mais aparece aqui' : ''}">${esgotada ? '✔ Rota esgotada' : `Explorar ${zone().name}`}</button>
+    a.innerHTML = `${blocoAuto()}<button class="btn big" data-act="explore" ${dis || esgotada ? 'disabled' : ''} title="${esgotada ? 'Você está forte demais pra esta rota: nada mais aparece aqui' : ''}">${esgotada ? '✔ Rota esgotada' : `Explorar ${zone().name}`}</button>
+      ${ehAdmin() && !G.auto?.ativo && !esgotada ? `<button class="btn ghost" data-act="auto" ${dis}>🤖 Explorar automaticamente <small class="muted">(só admin)</small></button>` : ''}
       <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">Centro Pokémon${!precisa ? ' (todos saudáveis)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}${semGrana ? ' (sem dinheiro)' : ''}`}</button>
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>
       ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}

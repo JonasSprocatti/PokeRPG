@@ -45,13 +45,17 @@ const useMove = (user, target, move, movedFirst) => usarGolpe(user, target, move
 function chooseEnemyMove(E) {
   const B = G.B;
   const esperteza = B?.chefe || B?.lendarios || B?.evento ? ESPERTEZA.chefe : B?.trainer ? ESPERTEZA.treinador : ESPERTEZA.selvagem;
-  const alvo = vivos(emCampo())[0] || G.S.player;
-  // só o que as travas deixam (regras.golpesPermitidos), julgado com o CONTEXTO da luta (notaDoGolpe): quem apanha, o campo e os dois lados
-  const lados = B?.campo?.lados;
-  const contexto = { u: E, alvo, campo: B?.campo, ladoU: lados?.[CTX.ladoDe(E)], ladoAlvo: lados?.[CTX.ladoDe(alvo)] };
-  // tipos pelo Tera, não pelos de origem: sem isso o selvagem (degrau `simples`, que não passa por `notaDoGolpe`)
-  // escolhia o golpe como se você nunca tivesse terastalizado
-  return escolhaIA(golpesPermitidos(E), tiposOfensivos(E), tiposDefensivos(alvo), esperteza, undefined, contexto) || STRUGGLE;
+  return melhorGolpe(E, vivos(emCampo())[0] || G.S.player, esperteza);
+}
+/* A escolha de golpe, de qualquer lado do campo: só o que as travas deixam (regras.golpesPermitidos), julgado
+   com o CONTEXTO da luta (notaDoGolpe) — quem apanha, o campo e os dois lados. Tipos pelo Tera, não pelos de
+   origem: sem isso o selvagem (degrau `simples`, que não passa por `notaDoGolpe`) escolhia o golpe como se você
+   nunca tivesse terastalizado. Exportada porque o 🤖 auto-explorar (auto.js) decide o SEU golpe por ela — o
+   laço automático tem de jogar com a mesma cabeça do inimigo mais esperto, não com uma segunda regra. */
+export function melhorGolpe(m, alvo, esperteza = ESPERTEZA.chefe) {
+  const lados = G.B?.campo?.lados;
+  const contexto = { u: m, alvo, campo: G.B?.campo, ladoU: lados?.[CTX.ladoDe(m)], ladoAlvo: lados?.[CTX.ladoDe(alvo)] };
+  return escolhaIA(golpesPermitidos(m), tiposOfensivos(m), tiposDefensivos(alvo), esperteza, undefined, contexto) || STRUGGLE;
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
 

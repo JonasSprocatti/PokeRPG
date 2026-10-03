@@ -13,6 +13,14 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '4.4', data: '2026-10-03', titulo: '🔔 O jogo agora sabe te chamar quando você está em outra aba', piada: 'Um jogador deixou o jogo aberto numa aba, foi fazer outra coisa e voltou vinte minutos depois pra descobrir que o que ele procurava tinha aparecido havia dezenove. O Chatot foi designado para avisar daqui em diante. Ele aceitou na hora: finalmente alguém quer ouvir o que ele tem a dizer.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Notificações, em ⚙ Ajustes → Notificações.</b> O aviso continua aparecendo na tela de sempre; a notificação é o extra pra quando o jogo está numa aba de fundo ou minimizado.',
+        '<b>São notificações locais:</b> nascem no seu aparelho, com o jogo aberto, e <b>não existe servidor nenhum envolvido</b> — nada sobre você sai daqui pra isso funcionar. O botão de ativar existe porque o navegador só deixa pedir permissão num clique seu; se você recusar, o jogo não insiste (dá pra liberar depois no cadeado ao lado do endereço).',
+        'No iPhone, notificação só funciona depois de <b>adicionar o jogo à tela de início</b> — a tela de Ajustes avisa isso em vez de deixar um botão que não faria nada.'
+      ] }
+    ] },
   { versao: '4.3', data: '2026-10-03', titulo: '📊 A Pokédex da rota: taxas honestas e o Arceus de volta ao Santuário', piada: 'Um jogador somou as porcentagens da Estrada Vitória e achou 101,8%. A conta do sorteio estava certa; a da tela andava arredondando para cima e devolvendo troco que não existia. No meio da auditoria encontramos o Arceus perambulando pelo mato da mesma rota, entre um Purugly e um Probopass, alegando que estava "só dando uma volta". Foi reconduzido ao Santuário.',
     secoes: [
       { nome: 'Correções', itens: [

@@ -1251,3 +1251,25 @@ export function ganhoDeEVs(evs, effort) {
   }
   return out;
 }
+
+/* ---- 🤖 Auto-explorar (só admin, auto.js) ----
+   A estatística da caçada: quantos de cada espécie o laço derrubou e quanto isso dá em porcentagem, pra comparar
+   ao vivo com a taxa de aparição da rota (`mapas.taxaNaRota`). Puro porque é conta: a tela só desenha. */
+export function resumoDeAbates(contagem = {}) {
+  const linhas = Object.entries(contagem).map(([especie, n]) => ({ especie, n }));
+  const total = linhas.reduce((a, l) => a + l.n, 0);
+  for (const l of linhas) l.pct = total ? l.n / total * 100 : 0;
+  return { total, linhas: linhas.sort((a, b) => b.n - a.n || a.especie.localeCompare(b.especie)) };
+}
+/* Por que o laço para. A ordem é a prioridade: achar o alvo ganha de tudo, e qualquer coisa que tire o jogo da
+   rota (fim de jornada, outra tela, desmaio) para na hora — um laço que continua clicando depois do Game Over
+   do Roguelike é exatamente o jeito de perder uma run sozinho. `teto` existe porque laço sem fim é bug, não
+   funcionalidade. Devolve null quando é pra seguir. */
+export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, exploracoes = 0, teto = Infinity } = {}) {
+  if (erro) return 'erro';
+  if (achou) return 'achou';
+  if (modo !== 'explore' && modo !== 'battle') return 'saiu';
+  if (hp <= 0) return 'desmaiou';
+  if (exploracoes >= teto) return 'teto';
+  return null;
+}
