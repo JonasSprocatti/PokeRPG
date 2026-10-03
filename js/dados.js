@@ -8,9 +8,19 @@ import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO } from '.
    trocado. Elas se juntam aqui, no único arquivo que importa `dados-mapas.js`: `mapas.js` e `pokedex-conta.js`
    leem o `GENS` já ajustado daqui, senão a troca de Alfa valeria na tela de explorar e não na batalha (ou pior,
    o contrário). Rota fora de `ALFAS` segue com o Alfa do mapa, intocada — é o caso de todas, até alguém trocar. */
-export const GENS = Object.keys(ALFAS).length
-  ? GENS_DO_MAPA.map(g => ({ ...g, rotas: g.rotas.map(z => ALFAS[z.id] ? { ...z, chefe: { ...z.chefe, ...ALFAS[z.id] } } : z) }))
-  : GENS_DO_MAPA;
+/* Quem é CHEFE DE RAIDE na própria forma normal não é encontro de rota (pedido do usuário, 03/10/2026): o Arceus
+   saía como mítico de 0,068% na Estrada Vitória e é o mesmo Arceus que toma a tela como chefe da semana. Os outros
+   14 chefes aparecem numa forma alternativa (Mega Rayquaza, Eternatus Eternamax, Groudon Primal…), então a forma
+   normal deles segue valendo como lendário da rota final — era o que distinguia os dois casos.
+   O Santuário (`posVitoria`) mantém TODO MUNDO: é ele que garante a Pokédex completa da Gen.
+   Lista à mão porque `evento.js` importa daqui (importar de lá seria um ciclo); `tests/evento.test.js` falha se
+   um chefe novo de forma normal ficar de fora dela. */
+const SO_NO_SANTUARIO = ['arceus', 'regigigas'];
+const semChefeDeRaide = z => z.posVitoria ? z : { ...z, pool: z.pool.filter(p => !SO_NO_SANTUARIO.includes(p.n)) };
+export const GENS = GENS_DO_MAPA.map(g => ({ ...g, rotas: g.rotas.map(z0 => {
+  const z = semChefeDeRaide(z0);
+  return ALFAS[z.id] ? { ...z, chefe: { ...z.chefe, ...ALFAS[z.id] } } : z;
+}) }));
 export const API = 'https://pokeapi.co/api/v2';
 /* As imagens vêm do jsDelivr, que espelha o MESMO repositório de sprites da PokéAPI (mesmos arquivos, byte a
    byte — é o repositório do GitHub servido por uma CDN). O endereço original, `raw.githubusercontent.com`, é

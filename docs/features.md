@@ -281,6 +281,11 @@ um de referência do mesmo poder mexendo só no atributo que deveria pesar, em v
   **Calendário**: `INICIO` = segunda 28/09/2026 00:00 de Brasília (03:00 UTC); a semana vira toda segunda 00:00 BRT (`FUSO_MS`); antes de `INICIO` `eventoDaSemana` é `null` e
   `situacaoDoEvento` devolve `motivo:'em-breve'`. `agenda(agora, 3)` alimenta a tela inicial (`criacao.renderAgendaEvento`). Pra TESTAR antes da data: no console,
   `localStorage.setItem('pokerpg-evento-agora', Date.UTC(2026,8,28,12))` (`evento.RELOGIO_KEY`; qualquer chamada usa `agoraDoEvento()`, nunca `Date.now()` direto).
+  **Chefe de Raide não é bicho de rota** (03/10/2026, pedido do usuário): `dados.SO_NO_SANTUARIO` tira do pool de encontro de toda rota 1–10 quem é chefe na própria FORMA NORMAL —
+  hoje Arceus (saía como mítico de 0,068% na Estrada Vitória da Gen 4) e Regigigas. Os outros 14 chefes aparecem numa forma alternativa (Mega Rayquaza, Eternamax, Primal), então a
+  forma NORMAL deles pode continuar como lendário da rota final; foi o próprio usuário quem apontou essa distinção. O Santuário (`posVitoria`) mantém todo mundo, senão a Pokédex da
+  Gen só fecharia vencendo o chefe da semana. A lista é à mão porque `evento.js` importa `dados.js` (importar de volta seria ciclo); `tests/evento.test.js` deriva de `EVENTOS` quem é
+  chefe em forma normal e falha se um ficar num pool. **Chefe novo cuja forma é a normal = uma linha em `SO_NO_SANTUARIO`.**
   **Vários chefes**: `boss.CHEFES[id]` guarda a config (couraça e/ou `pontoFraco`, canhão, fases, ciclo); `E.boss.id` escolhe. Eternatus = couraça + Ruptura; Mega Rayquaza = ponto fraco
   rotativo (`danoNoChefe(t, dano, tipo)` recebe o TIPO do golpe) + Dragon Ascent (`expostoAposCanhao`). Chefe novo = uma linha em `EVENTOS` (evento.js) + uma em `CHEFES` (o teste confere as duas).
   **Co-op** (`multiplayer.iniciarBatalhaMP('evento')`, botão `botaoEventoMP`): `fotoDoMon` leva `boss`; HP por `jogadoresEfetivos(jogadores, porJogador)`; o golpe carregado devolve `todos` →

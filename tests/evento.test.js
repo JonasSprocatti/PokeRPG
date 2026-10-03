@@ -125,3 +125,16 @@ test('o tempo de espera aparece por extenso', () => {
   assert.equal(formatarEspera(2 * H), '2h');
   assert.equal(formatarEspera(1), '1min', 'arredonda pra cima: nunca mostra 0min esperando');
 });
+
+/* Pedido do usuário (03/10/2026): chefe de Raide não é bicho de rota. Só vale pra quem é chefe na FORMA NORMAL
+   (hoje Arceus e Regigigas) — os outros 14 aparecem numa forma alternativa, e a forma normal deles continua
+   podendo ser lendário da rota final. O Santuário (`posVitoria`) fica de fora: é ele que fecha a Pokédex. */
+test('chefe de Raide em forma normal não entra no pool de encontro das rotas', () => {
+  const normais = EVENTOS.filter(e => e.formaId === e.especieId).map(e => e.especie);
+  assert.ok(normais.includes('arceus'), 'o Arceus é o caso que originou a regra');
+  for (const g of GENS) for (const z of g.rotas) if (!z.posVitoria)
+    for (const p of z.pool) assert.ok(!normais.includes(p.n), `${z.id} ainda sorteia ${p.n}`);
+  // e continua no Santuário da Gen dele, senão a Pokédex não fecha sem vencer o chefe da semana
+  const santuario = GENS.find(g => g.gen === 4).rotas.find(z => z.posVitoria);
+  assert.ok(santuario.pool.some(p => p.n === 'arceus'));
+});

@@ -10,6 +10,14 @@
    Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
    histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
 export const PATCH_NOTES = [
+  { versao: '2.51', data: '2026-10-03', titulo: '🌌 O Arceus parou de perambular pela Estrada Vitória', piada: 'O criador do universo estava sendo encontrado no mato da Rota 10 de Sinnoh, com 0,068% de chance, entre um Purugly e um Probopass. Pedimos explicações. Ele disse que estava "só dando uma volta". Foi reconduzido ao Santuário.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Quem é chefe de Raide na própria forma normal não aparece mais como encontro selvagem nas rotas</b> — o caso é o <b>Arceus</b>, que saía como mítico raríssimo na Estrada Vitória de Sinnoh sendo o mesmo Arceus que toma a tela inteira no evento da semana.',
+        '<b>Rayquaza, Groudon, Kyogre, Mewtwo e companhia não mudam nada:</b> no evento eles vêm numa forma alternativa (Mega, Primal, Eternamax), então a forma normal continua valendo como <b>lendário da rota final</b>, como sempre foi.',
+        '<b>O Santuário continua com todos.</b> Depois de vencer a Gen, o Arceus está lá — a Pokédex completa não depende de ganhar o chefe da semana.'
+      ] }
+    ] },
   { versao: '2.50', data: '2026-10-03', titulo: '📊 As taxas da Pokédex da rota pararam de somar mais de 100%', piada: 'Um jogador somou as porcentagens da Estrada da Vitória e achou 101,8%. Conferimos a conta do sorteio: certinha. Conferimos a conta da TELA: ela andava arredondando pra cima e devolvendo 1,8% de troco que não existia. O arredondamento foi mandado embora sem recomendação.',
     secoes: [
       { nome: 'Correções', itens: [
