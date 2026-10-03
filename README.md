@@ -300,7 +300,7 @@ O campo `status` tem um vocabulário fechado por CHECK no banco (`20260929140000
 Para fechar relatos sem abrir o painel:
 
 ```
-node ferramentas/relatos-admin.mjs --resolver 57,58 --nota "Corrigido na versão 2.73"
+node ferramentas/relatos-admin.mjs --resolver 57,58 --nota "Corrigido na versão 4.3"
 node ferramentas/relatos-admin.mjs --arquivar 59 --nota "Fora do escopo por enquanto"
 ```
 

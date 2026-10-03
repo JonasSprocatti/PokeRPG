@@ -10,7 +10,7 @@
 //   node ferramentas/relatos-admin.mjs            puxa relatos com status 'novo', baixa prints, marca como 'lido'
 //   node ferramentas/relatos-admin.mjs --manter   mesma coisa, mas não marca como lido (deixa pra próxima puxada)
 //   node ferramentas/relatos-admin.mjs --todos    puxa TODOS os relatos (qualquer status); não marca nada
-//   node ferramentas/relatos-admin.mjs --resolver 57,58 --nota "Corrigido na versão 2.73"
+//   node ferramentas/relatos-admin.mjs --resolver 57,58 --nota "Corrigido na versão 4.3"
 //                                                 fecha esses relatos como ATENDIDOS (status 'resolvido'), com
 //                                                 uma nota opcional que o jogador lê na tela 🐞 Relatar
 //   node ferramentas/relatos-admin.mjs --arquivar 59 --nota "..."   fecha SEM virar mudança

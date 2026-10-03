@@ -5,60 +5,41 @@
    Mais nova primeiro. `versao` = rótulo curto, `data` = AAAA-MM-DD, `titulo` = manchete curta,
    `piada` = uma linha de humor no estilo "nota de bugfix absurda", `secoes` = [{ nome, itens: [texto] }].
 
-   COMPILADO em 29/09/2026: as notas nasceram uma por leva de mudanças e viraram uma enxurrada de 96 versões,
-   com o mesmo assunto espalhado em cinco entradas e correções de bug que a própria leva anterior tinha criado.
-   Foram fundidas POR TEMA, mantendo a data real de cada uma. Quem quiser o detalhe cronológico fino tem o
-   histórico do repositório; aqui vale o que o jogador precisa saber sobre o jogo de hoje. */
+   COMPILADO DUAS VEZES. Em 29/09/2026 as 96 versões originais (uma por leva de mudanças, com o mesmo assunto
+   espalhado em cinco entradas) viraram 71. Em 03/10/2026 essas 71 viraram as 43 etapas de hoje: cada entrada
+   conta um TEMA inteiro, da primeira versão ao estado atual — a leva de som num lugar só, a de ovos num lugar
+   só —, e a numeração foi refeita em sequência (0.1 … 4.3), por isso ela não bate com a de antes. A data de
+   cada etapa é a da última mudança que entrou nela. O detalhe cronológico fino está no histórico do repositório;
+   aqui vale o que o jogador precisa saber sobre o jogo de hoje.
+   Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
-  { versao: '2.51', data: '2026-10-03', titulo: '🌌 O Arceus parou de perambular pela Estrada Vitória', piada: 'O criador do universo estava sendo encontrado no mato da Rota 10 de Sinnoh, com 0,068% de chance, entre um Purugly e um Probopass. Pedimos explicações. Ele disse que estava "só dando uma volta". Foi reconduzido ao Santuário.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>Quem é chefe de Raide na própria forma normal não aparece mais como encontro selvagem nas rotas</b> — o caso é o <b>Arceus</b>, que saía como mítico raríssimo na Estrada Vitória de Sinnoh sendo o mesmo Arceus que toma a tela inteira no evento da semana.',
-        '<b>Rayquaza, Groudon, Kyogre, Mewtwo e companhia não mudam nada:</b> no evento eles vêm numa forma alternativa (Mega, Primal, Eternamax), então a forma normal continua valendo como <b>lendário da rota final</b>, como sempre foi.',
-        '<b>O Santuário continua com todos.</b> Depois de vencer a Gen, o Arceus está lá — a Pokédex completa não depende de ganhar o chefe da semana.'
-      ] }
-    ] },
-  { versao: '2.50', data: '2026-10-03', titulo: '📊 As taxas da Pokédex da rota pararam de somar mais de 100%', piada: 'Um jogador somou as porcentagens da Estrada da Vitória e achou 101,8%. Conferimos a conta do sorteio: certinha. Conferimos a conta da TELA: ela andava arredondando pra cima e devolvendo 1,8% de troco que não existia. O arredondamento foi mandado embora sem recomendação.',
+  { versao: '4.3', data: '2026-10-03', titulo: '📊 A Pokédex da rota: taxas honestas e o Arceus de volta ao Santuário', piada: 'Um jogador somou as porcentagens da Estrada Vitória e achou 101,8%. A conta do sorteio estava certa; a da tela andava arredondando para cima e devolvendo troco que não existia. No meio da auditoria encontramos o Arceus perambulando pelo mato da mesma rota, entre um Purugly e um Probopass, alegando que estava "só dando uma volta". Foi reconduzido ao Santuário.',
     secoes: [
       { nome: 'Correções', itens: [
         '<b>A porcentagem de encontro de cada espécie agora é mostrada truncada pra baixo</b> (11,6% em vez de "12%"). Somando tudo que aparece na Pokédex da rota, o resultado nunca passa de 100% — antes passava, e dava a impressão de que os espaços ainda ocultos (📦) não tinham chance nenhuma de sair.',
-        '<b>Nada mudou no sorteio:</b> a chance sempre foi calculada sobre o pool inteiro da rota, incluindo quem ainda está escondido. O que estava errado era só o número na tela, que arredondava pra cima oito vezes seguidas.'
+        '<b>Nada mudou no sorteio:</b> a chance sempre foi calculada sobre o pool inteiro da rota, incluindo quem ainda está escondido. O que estava errado era só o número na tela, que arredondava pra cima oito vezes seguidas.',
+        '<b>Quem é chefe de Raide na própria forma normal não aparece mais como encontro selvagem nas rotas</b> — o caso é o <b>Arceus</b>, que saía como mítico raríssimo na Estrada Vitória de Sinnoh sendo o mesmo Arceus que toma a tela inteira no evento da semana.',
+        '<b>Rayquaza, Groudon, Kyogre, Mewtwo e companhia não mudam nada:</b> no evento eles vêm numa forma alternativa (Mega, Primal, Eternamax), então a forma normal continua valendo como <b>lendário da rota final</b>, como sempre foi.',
+        '<b>O Santuário continua com todos.</b> Depois de vencer a Gen, o Arceus está lá — a Pokédex completa não depende de ganhar o chefe da semana.',
+        'Estas <b>notas de atualização</b> foram compiladas de novo: 71 entradas viraram 43, agrupadas por assunto — a leva de ovos num lugar só, a de som num lugar só, e assim por diante. Por isso a numeração deu um salto; nada do que você leu antes sumiu.'
       ] }
     ] },
-  { versao: '2.49', data: '2026-10-02', titulo: '📱 Deitado: menu enxuto, logo de volta e o Explorar na mão direita', piada: 'O subtítulo dizia "RPG de texto" desde sempre, e um jogador perguntou onde ficava o campo pra digitar o texto. Não ficava em lugar nenhum. O subtítulo foi aposentado com honras.',
+  { versao: '4.2', data: '2026-10-02', titulo: '📱 Celular deitado: a batalha para de fugir pro pé da página', piada: 'A cena da batalha estava descendo sozinha para o rodapé, e o subtítulo prometia um "RPG de texto" — um jogador passou um bom tempo procurando onde digitar. Não havia onde. A batalha voltou para o topo e o subtítulo foi aposentado com honras.',
     secoes: [
       { nome: 'Novidades', itens: [
+        '<b>Botões de golpe mais baixos no celular deitado</b>, sempre <b>2 em cima e 2 embaixo</b>: cabe a luta inteira sem rolar.',
         '<b>Celular deitado: o menu voltou pro ☰.</b> As quinze telas abriam em três fileiras de botões e comiam metade da tela — agora ficam guardadas no menu, que rola se não couber.',
         '<b>O botão principal agora fica na borda direita</b> quando o aparelho está deitado: saindo da batalha, o <b>Explorar</b> cai no mesmo canto onde estavam os golpes, debaixo do polegar.',
         'O jogo agora se apresenta como <b>"Você é o Pokémon"</b> — o antigo "RPG de texto" prometia um teclado que nunca existiu.'
       ] },
       { nome: 'Correções', itens: [
+        '<b>Celular deitado:</b> ao entrar numa luta, a cena da batalha agora fica <b>grudada na lateral esquerda</b> e <b>sempre visível</b> — antes ela ia parar no fim da página e era preciso <b>rolar pra baixo pra achar a própria batalha</b>.',
+        'Tudo mais (golpes, registro, ficha, mochila) continua na coluna da direita e rola por baixo dela, sem nunca levar a batalha embora.',
+        'Celular de tela um pouco mais alta (540px deitado) também entra nesse layout agora — antes caía num meio de caminho entre o celular e o computador e ficava torto.',
         '<b>A logo voltou a aparecer no topo</b> do celular deitado: com muito botão na barra, ela era espremida até virar um risco de nada.'
       ] }
     ] },
-  { versao: '2.48', data: '2026-10-02', titulo: '📱 Celular deitado: a batalha para de fugir pro pé da página', piada: 'A cena da luta estava indo pra quarta linha do layout sem avisar ninguém. Perguntamos o que ela fazia lá embaixo. Ela disse que o CSS mandou. O CSS confirmou. Demitimos o CSS daquela parte.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>Celular deitado:</b> ao entrar numa luta, a cena da batalha agora fica <b>grudada na lateral esquerda</b> e <b>sempre visível</b> — antes ela ia parar no fim da página e era preciso <b>rolar pra baixo pra achar a própria batalha</b>.',
-        'Tudo mais (golpes, registro, ficha, mochila) continua na coluna da direita e rola por baixo dela, sem nunca levar a batalha embora.',
-        'Celular de tela um pouco mais alta (540px deitado) também entra nesse layout agora — antes caía num meio de caminho entre o celular e o computador e ficava torto.'
-      ] },
-      { nome: 'Novidades', itens: [
-        '<b>Botões de golpe mais baixos no celular deitado</b>, sempre <b>2 em cima e 2 embaixo</b>: cabe a luta inteira sem rolar.'
-      ] }
-    ] },
-  { versao: '2.47', data: '2026-10-02', titulo: '🥚 Agora os ovos respeitam os grupos-ovo (o Pikachu pediu desculpas ao Gyarados)', piada: 'Na versão de ontem um Pikachu e um Gyarados tiveram um ovo. Ninguém soube explicar a logística. Os dois foram chamados pra uma conversa, concordaram que foi estranho e seguiram como amigos.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Ovo agora segue os grupos-ovo dos jogos.</b> Além de serem de <b>gêneros opostos</b>, os dois precisam ter um <b>grupo-ovo em comum</b> — Gyarados e Magikarp dividem o grupo Dragão e dão ovo; Pikachu e Gyarados não dividem nada e não dão mais.',
-        '<b>Quem é do grupo "sem ovos" não bota, nem com outro do mesmo grupo:</b> lendário, mítico, os bebês — e a <b>Nidoqueen</b>, que é a surpresa da lista e é assim nos jogos de verdade.',
-        'Pra combinar o casal, o jogo olha a ficha de espécie de quem está no esconderijo. Se ela ainda não chegou, <b>nenhum ovo aparece</b> — melhor nenhum ovo que ovo errado.'
-      ] },
-      { nome: 'Correções', itens: [
-        'Se você baixou um mapa pra jogar offline, a <b>⚙ Ajustes</b> vai pedir pra baixar de novo (de novo, desculpe): o grupo-ovo é mais um dado da ficha de cada espécie, e sem ele o esconderijo não tem como formar casal nenhum no avião.'
-      ] }
-    ] },
-  { versao: '2.46', data: '2026-10-02', titulo: '🥚 Apareceu um ovo no esconderijo e ninguém quer explicar como', piada: 'Perguntamos aos dois Pokémon do esconderijo de onde veio o ovo. Um olhou pro teto, o outro assobiou. Encerramos a investigação por falta de provas e porque o ovo estava chocando.',
+  { versao: '4.1', data: '2026-10-02', titulo: '🥚 Apareceu um ovo no esconderijo e ninguém quer explicar como', piada: 'Perguntamos aos dois Pokémon do esconderijo de onde tinha vindo o ovo. Um olhou para o teto. O outro assobiou — era um Chatot, então saiu uma melodia inteira. Encerramos a investigação por falta de provas e porque o ovo já estava chocando.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Agora tem ovo.</b> Dois parceiros de <b>gêneros opostos</b> esperando no 📦 esconderijo podem aparecer com um <b>ovo</b> do nada. Nenhum dos dois comenta o assunto. Cabem <b>3 ovos</b> ao mesmo tempo.',
@@ -66,13 +47,17 @@ export const PATCH_NOTES = [
         '<b>O que tem dentro é segredo.</b> Você vê "🥚 Ovo misterioso" e a barra, e mais nada, até ele trincar. Quando abre, nasce a <b>forma base da mãe</b> no <b>Nv. 5</b>, com <b>um golpe herdado do pai</b> e <b>3 IVs</b> puxados do melhor dos dois. E sim: ele pode nascer <b>shiny</b>.',
         '<b>Ovo pronto não se perde.</b> Com a equipe e o esconderijo lotados, ele fica trincando parado até você abrir uma vaga — em vez de sumir com as suas 300 explorações.',
         '<b>🥚 Criadouro</b> (nova conquista de conta): choque <b>100 ovos</b> somando a carreira e <b>toda jornada nova começa com o ovo de um pseudo-lendário</b> sorteado. Qual? Segredo, até chocar.',
-        '<b>🐣 Guardião do ninho:</b> <b>1.000 ovos</b> chocados e você também começa toda jornada com o ovo de um <b>lendário ou mítico</b>. É de longe a conquista mais longa do jogo, junto com o milhão de dano. Boa sorte.'
+        '<b>🐣 Guardião do ninho:</b> <b>1.000 ovos</b> chocados e você também começa toda jornada com o ovo de um <b>lendário ou mítico</b>. É de longe a conquista mais longa do jogo, junto com o milhão de dano. Boa sorte.',
+        '<b>Ovo agora segue os grupos-ovo dos jogos.</b> Além de serem de <b>gêneros opostos</b>, os dois precisam ter um <b>grupo-ovo em comum</b> — Gyarados e Magikarp dividem o grupo Dragão e dão ovo; Pikachu e Gyarados não dividem nada e não dão mais.',
+        '<b>Quem é do grupo "sem ovos" não bota, nem com outro do mesmo grupo:</b> lendário, mítico, os bebês — e a <b>Nidoqueen</b>, que é a surpresa da lista e é assim nos jogos de verdade.',
+        'Pra combinar o casal, o jogo olha a ficha de espécie de quem está no esconderijo. Se ela ainda não chegou, <b>nenhum ovo aparece</b> — melhor nenhum ovo que ovo errado.'
       ] },
       { nome: 'Correções', itens: [
-        'Se você baixou um mapa pra jogar offline, a tela de <b>⚙ Ajustes</b> vai pedir pra baixar de novo: quantas explorações cada ovo pede é um dado novo da ficha de cada espécie, e sem ele o ovo de lendário chocaria tão rápido quanto um de Magikarp. Com internet, chega sozinho.'
+        'Se você baixou um mapa pra jogar offline, a tela de <b>⚙ Ajustes</b> vai pedir pra baixar de novo: quantas explorações cada ovo pede é um dado novo da ficha de cada espécie, e sem ele o ovo de lendário chocaria tão rápido quanto um de Magikarp. Com internet, chega sozinho.',
+        'Se você baixou um mapa pra jogar offline, a <b>⚙ Ajustes</b> vai pedir pra baixar de novo (de novo, desculpe): o grupo-ovo é mais um dado da ficha de cada espécie, e sem ele o esconderijo não tem como formar casal nenhum no avião.'
       ] }
     ] },
-  { versao: '2.45', data: '2026-10-02', titulo: '♂♀ Agora todo Pokémon tem gênero — e isso muda a batalha', piada: 'O Combee macho que virou Vespiquen em 2026 foi notificado de que sua transformação era irregular. Ele apresentou recurso. O recurso foi lido por uma Vespiquen, que é fêmea, e negado por conflito de interesses.',
+  { versao: '4.0', data: '2026-10-02', titulo: '♂♀ Agora todo Pokémon tem gênero — e isso muda a batalha', piada: 'O Combee macho que virou Vespiquen apresentou recurso formal. O recurso foi analisado por uma Vespiquen — que, por definição da espécie, é fêmea — e negado por conflito de interesses. Ele hoje é um Combee muito bem informado.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Todo Pokémon nasce com gênero</b>, sorteado pela proporção real da espécie — Vulpix é fêmea em 75% das vezes, Tauros é sempre macho, e quem não tem gênero (Magnemite, Voltorb, quase todo lendário) continua sem. O ♂ ou ♀ aparece na plaquinha de batalha, na ficha e no cartão da sala.',
@@ -86,15 +71,7 @@ export const PATCH_NOTES = [
         'Se você baixou um mapa pra jogar offline, a tela de <b>⚙ Ajustes</b> vai pedir pra baixar de novo: o gênero é um dado novo da ficha de cada espécie e sem ele, no avião, todo mundo nasceria sem gênero. Com internet, chega sozinho na primeira vez que o jogo falar com a PokéAPI.'
       ] }
     ] },
-  { versao: '2.44', data: '2026-10-02', titulo: '🧊 Congelado agora derrete: fogo quebra o gelo e o sol não deixa congelar', piada: 'Um Charizard passou três turnos congelado cuspindo lança-chamas sem notar o gelo nas asas. Avisamos. Ele ficou constrangido e pediu pra não aparecer na nota. Está na nota.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>Golpe de Fogo descongela quem leva.</b> Um inimigo congelado levava Lança-Chamas na cara e continuava congeladinho — nos jogos, o calor quebra o gelo na hora. Agora quebra aqui também (e <b>Água Fervente</b> e companhia, que também derretem, contam).',
-        '<b>Golpe quente descongela quem usa.</b> Estar congelado travava TUDO, inclusive <b>Roda de Fogo</b>, <b>Fogo Sagrado</b>, <b>Investida Flamejante</b>, <b>Água Fervente</b> e <b>Bola de Fogo</b> — justamente os golpes que existem pra te tirar do gelo. Agora saem normalmente e te descongelam de quebra.',
-        '<b>Sol forte não deixa mais ninguém congelar.</b> Fazia 40 graus no campo e o Raio Congelante congelava do mesmo jeito. Não congela mais.'
-      ] }
-    ] },
-  { versao: '2.43', data: '2026-10-02', titulo: '⚖ Golpe de peso agora pesa: Heavy Slam, Low Kick, Psyshock e Body Press', piada: 'Descobrimos que o Snorlax levava Low Kick como se fosse um Joltik de 0,6 kg. Ele agradeceu os anos de tratamento gentil e pediu que não contassem a ninguém. Contamos.',
+  { versao: '3.9', data: '2026-10-02', titulo: '⚖ As contas do golpe: peso, defesa certa e o gelo que derrete', piada: 'Descobrimos que o Snorlax levava Low Kick como se pesasse 0,6 kg e que um Charizard congelado cuspia Lança-Chamas sem notar o gelo nas próprias asas. Os dois pediram para não aparecer na nota. Estão na nota.',
     secoes: [
       { nome: 'Correções', itens: [
         '<b>Golpe que depende de peso finalmente pesa.</b> <b>Low Kick</b> e <b>Grass Knot</b> batiam com força fixa, igual contra um Caterpie e contra um Snorlax — agora valem mais quanto mais pesado é o alvo (até 120 de poder contra bicho de 200 kg ou mais). <b>Heavy Slam</b> e <b>Heat Crash</b> olham a <b>diferença</b>: ser 5 vezes mais pesado que o alvo é o golpe mais forte que você tem.',
@@ -102,10 +79,13 @@ export const PATCH_NOTES = [
         '<b>Body Press usava o seu Ataque</b> em vez da sua <b>Defesa</b>, que é a razão de o golpe existir: agora quanto mais duro você é, mais forte ele bate. E <b>Foul Play</b> passou a usar o Ataque do <b>inimigo</b> contra ele mesmo, como deveria desde sempre.',
         '<b>Stored Power, Power Trip e Punishment</b> ignoravam os aumentos de atributo que deveriam contar: cada degrau a mais soma <b>+20 de poder</b> (os seus, nos dois primeiros; os do alvo, no Punishment). <b>Wring Out</b> e <b>Crush Grip</b> agora batem mais forte quanto mais cheia está a vida do alvo.',
         '<b>O inimigo aprendeu tudo isso junto.</b> A IA calcula o dano pela mesma conta, então um Alfa pesado agora SABE que o Heavy Slam dele vale a pena contra alvo leve. Boa sorte.',
-        'Um detalhe chato: o jogo não guardava o peso dos Pokémon — ele passou a vir junto com o resto da ficha. Se você baixou um mapa pra jogar offline antes desta atualização, o peso chega na primeira vez que o jogo falar com a internet; até lá esses golpes usam a força antiga, em vez de achar que todo mundo pesa zero.'
+        'Um detalhe chato: o jogo não guardava o peso dos Pokémon — ele passou a vir junto com o resto da ficha. Se você baixou um mapa pra jogar offline antes desta atualização, o peso chega na primeira vez que o jogo falar com a internet; até lá esses golpes usam a força antiga, em vez de achar que todo mundo pesa zero.',
+        '<b>Golpe de Fogo descongela quem leva.</b> Um inimigo congelado levava Lança-Chamas na cara e continuava congeladinho — nos jogos, o calor quebra o gelo na hora. Agora quebra aqui também (e <b>Água Fervente</b> e companhia, que também derretem, contam).',
+        '<b>Golpe quente descongela quem usa.</b> Estar congelado travava TUDO, inclusive <b>Roda de Fogo</b>, <b>Fogo Sagrado</b>, <b>Investida Flamejante</b>, <b>Água Fervente</b> e <b>Bola de Fogo</b> — justamente os golpes que existem pra te tirar do gelo. Agora saem normalmente e te descongelam de quebra.',
+        '<b>Sol forte não deixa mais ninguém congelar.</b> Fazia 40 graus no campo e o Raio Congelante congelava do mesmo jeito. Não congela mais.'
       ] }
     ] },
-  { versao: '2.42', data: '2026-10-01', titulo: '🗺 180 missões novas: cada rota das 9 Gens tem as suas', piada: 'O Rattata da Rota 1 pediu reforço sindical quando soube que a meta subiu de 10 pra 24. Negamos. Ele mordeu o escrivão.',
+  { versao: '3.8', data: '2026-10-01', titulo: '🗺 180 missões novas: cada rota das 9 Gens tem as suas', piada: 'O Rattata da Rota 1 soube que a meta subiu de 10 para 24 e convocou assembleia geral. Compareceram 24 Rattata. A assembleia foi encerrada por motivos óbvios.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Cada rota do jogo agora tem duas missões próprias:</b> uma de <b>espécie</b> (derrote tantos daquele bicho que vive ali) e uma de <b>Alfa</b> (derrote o Alfa da rota). São <b>10 rotas x 9 Gens</b> — e a corrente vai da primeira rota até os lendários, com a última valendo "Campeão da região".',
@@ -118,7 +98,7 @@ export const PATCH_NOTES = [
         '<b>A trilha dos Alfas pulava três rotas.</b> Usina Elétrica, Ilhas Espuma e Estrada Vitória não tinham missão nenhuma — justamente o trecho mais longo da jornada. E a 5ª da fila aparecia por nível, não pela rota anterior, entao o jogo te oferecia a Torre Pokémon enquanto você ainda estava na Rota 24.'
       ] }
     ] },
-  { versao: '2.41', data: '2026-10-01', titulo: '🧬 Potencial máximo: um milhão de dano, IVs perfeitos pra sempre', piada: 'Fizemos a conta de quanto dano o jogo já levou desde que abriu. O número era tão alto que o contador pediu férias. Agora ele trabalha pra você.',
+  { versao: '3.7', data: '2026-10-01', titulo: '🧬 Potencial máximo: um milhão de dano, IVs perfeitos pra sempre', piada: 'Somamos todo o dano que você já causou desde a primeira jornada. O número passou de um milhão, o contador pediu férias e voltou trazendo seis IVs 31 de presente.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Nova insígnia: 🧬 Potencial máximo.</b> Cause <b>1.000.000 de dano</b> com os seus golpes, somando a carreira inteira — e, a partir daí, <b>todo Pokémon que você começar a jogar nasce com os 6 IVs em 31</b>, o teto. Não é por jornada: é pra sempre, em qualquer modo, como as outras insígnias.',
@@ -126,16 +106,32 @@ export const PATCH_NOTES = [
         'Ela é a <b>segunda insígnia da história do jogo a mudar uma regra</b> em vez de dar item ou dinheiro — a outra é a loja de graça do Senhor dos céus. Como todas, ela é desligada pelo interruptor <b>“jogar sem as vantagens da conta”</b> na criação: o bônus de pontuação continua sendo pra quem começa do zero de verdade.'
       ] }
     ] },
-  { versao: '2.40', data: '2026-10-01', titulo: '🏛 Arceus e 🗿 Regigigas entram na roda dos chefes', piada: 'O Regigigas chegou atrasado, bocejando, e levou cinco turnos pra entender que a luta já tinha começado. Depois disso, pediu desculpas batendo no chão.',
+  { versao: '3.6', data: '2026-10-01', titulo: '☄ Os chefes da semana: 16 chefes, itens de raide e o calendário', piada: 'O Eternatus pediu para constar que não é ele que está atrasado: é o resto do universo que chegou cedo. O Regigigas, que entrou em campo cinco turnos depois de todo mundo, concordou — mas só no sexto turno.',
     secoes: [
       { nome: 'Novidades', itens: [
+        '<b>Evento semanal:</b> um chefe por semana, que vira toda <b>segunda-feira à meia-noite</b> (horário de Brasília), na rota final da Gen dele, só no <b>Roguelike</b> e no <b>Hardcore</b>. Ele aparece numa caixa roxa brilhante acima dos lendários, o mapa da Gen mostra o sprite dele na escolha, e a tela inicial traz a <b>agenda dos próximos 3 chefes</b> com as datas. Uma tentativa a cada <b>8 horas</b>.',
+        'São <b>14 chefes</b>, e depois do último a lista recomeça: Eternatus Eternamax → Mega Rayquaza → Groudon Primal → Kyogre Primal → Mega Mewtwo → Necrozma Ultra → Calyrex Cavaleiro Espectral → Zacian Coroada → Kyurem Negro → Giratina Origem → Dialga Origem → Terapagos Estelar → Ursaluna Lua de Sangue → Zygarde Completo.',
+        'Cada um é <b>muito difícil</b> e tem a sua mecânica. O <b>Eternatus</b> tem uma couraça de energia que corta o dano até se romper, o <b>Eternabeam</b> carregado com aviso (dá pra interromper causando dano suficiente no mesmo turno) e três fases. A <b>Mega Rayquaza</b> não tem couraça: tem um ponto fraco que muda a cada duas ações e o Dragon Ascent carregado. <b>Groudon e Kyogre</b> nascem com Sol e Chuva permanentes e anulam Água e Fogo; o <b>Giratina</b> abre o <b>Mundo Reverso</b> (a tabela de tipos inverte); o <b>Terapagos</b> resiste ao tipo do último golpe; a <b>Ursaluna</b> se cura com o dano que causa; o <b>Zygarde</b> se regenera; o <b>Calyrex</b> cresce a cada Pokémon seu que derruba. Todos são imunes a status e não dá pra fugir — mas perder não encerra a sua jornada.',
+        '<b>Chefe no co-op:</b> na sala, o botão ☄ desafia o chefe da semana com o grupo. O HP dele cresce com o número de jogadores, mas menos que proporcional — jogar junto compensa. O golpe carregado atinge <b>o time todo</b>. Quem ficar sem nenhum Pokémon de pé pode <b>usar um Revive</b> (até 3 por luta) enquanto os outros seguram, e volta com metade do HP.',
+        '<b>Itens de raide</b>, dados como prêmio e só válidos na luta do chefe (um de cada por luta): <b>Cristal de Ruptura</b> (expõe o chefe na hora), <b>Selo de Interrupção</b> (corta o golpe que ele está carregando) e <b>Escudo Astral</b> (o próximo golpe carregado causa metade do dano no time todo). No co-op qualquer jogador do grupo pode usar, sem gastar o turno.',
+        'Derrotar um chefe libera a espécie dele na Pokédex e pra começar jornadas, dá a <b>insígnia de evento</b> dele (Domador do Infinito, Guardião do Pilar Celeste…) com título incluído, e um prêmio uma vez por semana. Na tela 👤 Conta você escolhe <b>uma</b> insígnia pra mostrar ao lado do seu nome — ela aparece também na sala do multiplayer, na lista de amigos e no ranking, e o servidor só mostra a de quem realmente venceu aquele chefe.',
+        'Prêmio da Raide completo: 7 itens <b>consumíveis</b> novos (Cinza Vulcânica, Escama Abissal, Prisma de Luz, Espelho Reverso, Relógio de Areia, Fragmento Tera, Célula Zygarde) e 7 <b>segurados</b> novos que valem em qualquer batalha (Núcleo Eternamax, Escama do Céu, Cristal Psíquico, Rédea Espectral, Emblema da Coroa, Cristal Gélido, Presa da Lua) — todos só vêm de vencer o chefe da semana.',
+        '🧪 <b>Modo beta temporário</b>: a espera de 8 horas entre tentativas contra o chefe da semana está DESLIGADA, pra facilitar os testes da Raide (Arena, dentro da run, ou em grupo). Volta a valer depois do período de teste.',
+        'A tela da <b>Arena do Chefe</b> ganhou um cartão "👥 Jogar em grupo" explicando que ela é só single-player (Hall da Fama) e levando direto pro Multiplayer, onde dá pra montar uma sala de até 6 jogadores (3 Pokémon cada) pra encarar o chefe em co-op.',
+        'Todo <b>item de raide</b> agora diz <b>o que faz</b> e <b>contra quais chefes serve</b>, na dica do botão, na mochila e numa tabela nova em <b>❓ Como funcionam os chefes da semana</b> (que também mostra quem dá cada item de prêmio).',
+        'O prêmio dos chefes gira em rodízio e não combina com o chefe: o Groudon dá Prisma de Luz (que só serve contra chefe com ponto fraco, e ele não tem), e o Calyrex dá Célula Zygarde (que só serve contra o Zygarde). Por isso, na caixa do chefe da semana, uma linha separa os seus itens em <b>servem</b> e <b>não servem contra ele</b>, pra você não gastar à toa.',
         '<b>Arceus é o 15º chefe da semana</b> (Gen 4): a cada duas ações ele <b>troca de Prato</b> — e o Prato é <b>sorteado</b> entre os 17, não tem ordem pra decorar. Só golpes do tipo do Prato da vez machucam de verdade (×2); os outros quase não arranham. A troca tem <b>animação</b>: um anel com a cor de cada tipo gira em volta dele e o Prato sorteado fica brilhando. Ele ainda tem couraça e carrega o <b>Julgamento</b> — e o <b>Prisma de Luz</b> arranca a armadura de Prato na hora.',
         '<b>Regigigas é o 16º</b> (Gen 4), o líder dos Regis: ele entra <b>adormecido</b> (Slow Start — metade do Ataque e da Velocidade nos 5 primeiros turnos) e vai acordando a cada fase, até o <b>Esmagamento Colossal</b>. A couraça dele é a mais grossa do jogo; quem demora a derrubá-lo enfrenta outro bicho no fim.',
         'Como sempre, derrotar cada um dá o Pokémon (Pokédex e jornadas novas), uma insígnia com título e prêmio. Eles entraram <b>no fim da fila</b>: o chefe desta semana continua sendo o mesmo de antes.',
         '<b>A tela inicial agora mostra o calendário do ano inteiro.</b> Abaixo dos próximos 3 chefes tem um “📅 Calendário do ano inteiro”: abriu, você vê semana a semana quem vem, com a data de cada segunda-feira — dá pra planejar a jornada pro chefe que você quer enfrentar.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Sucker Punch</b> (e Thunderclap) agora só funciona se o alvo escolheu um golpe de dano neste turno e ainda não agiu. Antes era só um golpe de prioridade que nunca falhava.',
+        'Uma jornada que termina (fim de Roguelike/Hardcore, vitória na Arena ou no chefe em grupo) agora tenta de novo sozinha se a sincronização com a nuvem falhar na hora — antes era uma tentativa só, e uma rede instável bem na tela de Game Over podia deixar o Pokémon de fora do Hall da Fama.',
+        'O <b>Espelho Reverso</b> dizia que inverte os tipos "a seu favor". Na verdade ele inverte a tabela nos golpes que <b>você</b> dá: ajuda contra quem resiste aos seus tipos e <b>atrapalha</b> contra quem é fraco a eles. A descrição agora avisa.'
       ] }
     ] },
-  { versao: '2.39', data: '2026-09-30', titulo: '🔒 Faxina de segurança: sua conta, sua mochila e sua run', piada: 'Contratamos alguém pra tentar invadir o jogo. Ele conseguiu sete vezes, anotou tudo num caderninho e foi embora. Passamos o dia lendo o caderninho.',
+  { versao: '3.5', data: '2026-09-30', titulo: '🔒 Faxina de segurança: sua conta, sua mochila e sua run', piada: 'Contratamos alguém para tentar invadir o jogo. Ele entrou sete vezes, anotou tudo num caderninho e foi embora sem se despedir. Passamos o dia lendo o caderninho. Hoje o caderninho está vazio, e nós dormimos bem melhor.',
     secoes: [
       { nome: 'Segurança', itens: [
         '<b>Ninguém mais gasta os SEUS itens numa sala.</b> Antes, o que saía da sua mochila durante uma luta em grupo era decidido pelo que chegava pela rede. Agora o jogo só desconta o que <i>você</i> pediu: se a mensagem disser que você usou quarenta Poções, ela é ignorada. Vale também pro inventário da Sala de Raide, que é comprado com o seu saldo.',
@@ -148,16 +144,7 @@ export const PATCH_NOTES = [
         'Também apertamos os bastidores: os geradores de dados dos mapas e das Megas passaram a recusar nome estranho vindo da PokéAPI em vez de embutir do jeito que vier — era o tipo de coisa que, num dia ruim, deixa o jogo inteiro sem carregar.'
       ] }
     ] },
-  { versao: '2.38', data: '2026-09-30', titulo: '⚡ Dois itens rápidos, nas teclas 1 e 2', piada: 'A Poção estava no fundo da mochila, embaixo de dezessete frutas e uma pedra. Agora ela mora na porta, como manda o bom senso de qualquer geladeira.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Marque até 2 itens como rápidos e eles ficam junto dos botões principais.</b> Na mochila, cada item tem um botão <b>⚡</b>: marcado, ele aparece do lado de <i>Explorar</i> fora da luta e do lado de <i>Mochila</i> e <i>Fugir</i> dentro dela. Chega de abrir a mochila e caçar a Poção a cada turno.',
-        '<b>E eles têm atalho de teclado: 1 e 2.</b> O primeiro item rápido é o 1, o segundo é o 2 — o próprio botão mostra qual tecla é a dele.',
-        'A escolha vale pra <b>jornada</b> (os itens são seus, dessa run). Se o item acabar, o atalho some da barra e <b>volta sozinho</b> quando você comprar outro — não precisa reconfigurar.',
-        'Isso nasceu de um pedido de "botões pra subir e descer os itens da mochila". O que incomodava não era a ordem da lista, era a procura: um atalho fixo resolve sem mexer na mochila.'
-      ] }
-    ] },
-  { versao: '2.37', data: '2026-09-30', titulo: 'A Mega Evolução voltou a trazer o clima dela', piada: 'O Mega Charizard Y vinha aparecendo em campo com o sol no bolso. Dizia que estava “guardando pra depois”. Não estava.',
+  { versao: '3.4', data: '2026-09-30', titulo: '☀ A Mega Evolução voltou a trazer o clima dela', piada: 'O Mega Charizard Y vinha entrando em campo com o sol guardado no bolso, dizendo que era "para depois". Não era para depois. Era para agora — e o Solar Beam estava esperando há semanas, de braços cruzados.',
     secoes: [
       { nome: 'Correções', itens: [
         '<b>Megaevoluir agora ativa a habilidade da nova forma na hora.</b> O Mega Charizard Y põe o sol forte, o Mega Abomasnow começa a nevar, o Mega Mawile intimida — como nos jogos, porque a forma <i>entra em campo</i> naquele momento. Antes a habilidade só valia se você já tivesse entrado na luta com ela, ou seja: nunca. Vale pros dois lados e também no co-op.',
@@ -165,155 +152,78 @@ export const PATCH_NOTES = [
         '<b>A busca da lista de desbloqueados, na criação de jornada, filtra de novo.</b> Digitar “gengar” ou “94” esconde o resto. Um estilo da grade passava por cima do “esconder”, então o jogo escondia os botões e o navegador insistia em mostrá-los.'
       ] }
     ] },
-  { versao: '2.36', data: '2026-09-30', titulo: 'Frutas e itens de segurar agora caem no chão', piada: 'Os itens estavam todos trancados na loja. O lojista alegou que “é assim que funciona o comércio”, mas ninguém explicou por que havia uma Fruta Yache atrás do balcão e nenhuma no mato.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>As frutas agora aparecem explorando, em qualquer rota.</b> São 20 no total — Oran, Sitrus, Lum e as 17 de aperto por tipo (Occa pro fogo, Yache pro gelo, Shuca pra terra…) —, e cerca de 1 em cada 6 itens achados é uma delas. Como são muitas, cada fruta específica continua sendo sorte: achar a Yache justo antes de encarar um Pokémon de Gelo é o tipo de coisa que dá vontade de contar pra alguém.',
-        '<b>Os itens de segurar permanentes também caem, da 4ª rota em diante.</b> Restos, Orbe da Vida, Faixa de Foco, Faixa Escolha, Eviolite, Balão de Ar e companhia entram no mesmo degrau dos itens de evolução — quem não passa na loja não fica mais sem conhecer a mecânica.',
-        '<b>Os itens de prêmio de raide continuam sendo só de prêmio.</b> Achar um Núcleo Eternamax no chão tiraria o motivo de enfrentar o chefe da semana.',
-        'A chance de <b>item de evolução</b> e de <b>Escama do Coração</b> ficou exatamente onde estava: o que mudou foi o que apareceria como item comum.'
-      ] }
-    ] },
-  { versao: '2.35', data: '2026-09-30', titulo: 'Cada golpe tem o seu som (e a sua cor) ao acertar', piada: 'Antes todo golpe fazia o mesmo nada. O Charizard reclamou que a labareda dele soava igual a um tapa do Snorlax — tinha razão, soava igual porque não soava.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Golpe que acerta agora faz barulho, e o barulho é do tipo do golpe.</b> Fogo é uma labareda; Voador e Dragão são uma lufada de ar; Água é um baque molhado; Gelo trinca; Elétrico estala; Aço soa como metal batendo; Grama e Inseto farfalham; Terra e Pedra são um estrondo grave; Fantasma, Psíquico, Sombrio, Fada e Venenoso têm um lamento; Normal e Lutador são pancada seca. Vale pros <b>dois lados</b>: quando você acerta e quando você apanha.',
-        '<b>A piscada de dano ganhou a cor do tipo.</b> Levar um golpe de fogo acende laranja no sprite, um de água acende azul — as mesmas cores dos selos de tipo. Dano sem tipo (confusão, o esforço do próprio golpe, veneno) continua no vermelho.',
-        '<b>Agora dá pra desligar as animações de combate</b> em <b>⚙ Ajustes → Som e animações</b>, separado do som. Sem animação o combate fica mais <b>rápido</b> de propósito: a pausa entre as mensagens existia pra dar tempo de ver a tremida e ouvir o impacto, então ela encurta junto. Quem já pediu “reduzir animações” no próprio aparelho não precisa mexer em nada.'
-      ] }
-    ] },
-  { versao: '2.34', data: '2026-09-30', titulo: 'Tema de batalha, som de nível e Pokémon do tamanho certo', piada: 'O Meowth vinha sendo exibido do tamanho de um Onix. Ele gostou e não queria voltar, mas foi convencido.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>A batalha tem música própria agora.</b> Antes era o tema da rota tocando mais rápido; agora existe uma melodia de luta (e outra, mais pesada, pro chefe) que toca em qualquer rota — a rota continua entrando pela tonalidade.',
-        '<b>A troca de música virou uma passagem.</b> A faixa antiga desce, tem um respiro de silêncio e a nova entra subindo: dá pra sentir que você mudou de lugar, sem o corte seco de antes.',
-        '<b>Som de derrota</b> quando a jornada acaba mal, <b>som de subir de nível</b> (seu e dos aliados) e um <b>“ca-ching” ao comprar</b> na loja.',
-        '<b>Na tela inicial, o Pokémon que você seleciona solta o grito dele.</b> Dá pra escolher pelo ouvido também.',
-        'Tudo isso continua em <b>⚙ Ajustes → Som</b>, desligado por padrão.'
-      ] },
-      { nome: 'Correções', itens: [
-        '<b>Sumiu o retângulo escuro atrás do seu Pokémon na batalha.</b> Era um estilo da ficha vazando pra cena da luta.',
-        '<b>Os sprites não são mais esticados pra encher a caixa.</b> Cada Pokémon aparece no tamanho de verdade dele: acabou o serrilhado de imagem ampliada, e as espécies voltaram a ter tamanhos diferentes entre si.'
-      ] }
-    ] },
-  { versao: '2.33', data: '2026-09-30', titulo: 'A Pedra do Rei agora serve pras duas coisas', piada: 'Ela passou a vida só evoluindo Poliwhirl, sem saber que também sabia dar cascudo. Terapia resolveu.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Seis itens de evolução agora também funcionam segurados</b>, como nos jogos: <b>Pedra do Rei</b> e <b>Presa Afiada</b> (10% de chance de fazer o alvo recuar), <b>Garra Afiada</b> (mais crítico), <b>Revestimento Metálico</b> (golpes de Aço +20%) e <b>Dente</b> e <b>Escama Abissal</b> (dobram At. e Def. Especial — só no Clamperl, o dono de direito).',
-        'Eles continuam guardados em <b>💎 Evolução</b> e continuam evoluindo quem sempre evoluíram. A diferença é que agora dá pra equipar em vez de deixar parado na mochila esperando o nível certo.',
-        '<b>E evoluir funciona com o item na mochila ou na mão.</b> Antes, se você equipasse a Pedra do Rei, o seu Poliwhirl simplesmente não evoluía e o jogo não explicava por quê.'
-      ] }
-    ] },
-  { versao: '2.32', data: '2026-09-30', titulo: 'Soak, itens novos e o fim do atalho contra o chefe', piada: 'Descobrimos que dava pra derrubar o chefe da semana quase inteiro com um golpe só, estando com 1 de HP. Foi divertido enquanto durou.',
+  { versao: '3.3', data: '2026-09-30', titulo: '🎒 Itens: na loja, no mato e na mão', piada: 'Havia uma Fruta Yache atrás do balcão da loja e nenhuma no mato inteiro, o que levanta a questão de quem plantou aquilo. O lojista disse que "é assim que funciona o comércio". Abrimos o mato. O lojista está bem.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Golpes que trocam o tipo do alvo.</b> <b>Soak</b> deixa qualquer um Água puro e <b>Pó Mágico</b> deixa Psíquico; <b>Maldição da Floresta</b> e <b>Doces ou Travessuras</b> acrescentam Planta ou Fantasma. Vale pra tudo — o que é super efetivo contra ele, o STAB dele, o terreno, as imunidades — e dura até o fim da luta. Soak num Voador, por exemplo, tira a imunidade a golpe Terrestre.',
         '<b>6 itens segurados novos na loja:</b> <b>Balão de Ar</b> (você flutua: golpe Terrestre não te acerta, até o balão estourar), <b>Apólice de Fraqueza</b> (levou super efetivo? Ataque e At. Especial sobem 2 de uma vez), <b>Lente de Mira</b> (mais crítico) e as ervas <b>Branca</b> (desfaz queda de atributo), <b>Mental</b> (livra de Provocação, Bis, Desativar e Tormento) e <b>do Poder</b> (Solar Beam e companhia saem sem turno de carga).',
-        '<b>As 17 frutas de aperto por tipo</b> — Occa, Passho, Wacan, Yache e o resto da turma. Cada uma corta pela metade UM golpe super efetivo daquele tipo. É a rede de segurança contra aquele golpe que te derrubaria de uma vez.'
+        '<b>As 17 frutas de aperto por tipo</b> — Occa, Passho, Wacan, Yache e o resto da turma. Cada uma corta pela metade UM golpe super efetivo daquele tipo. É a rede de segurança contra aquele golpe que te derrubaria de uma vez.',
+        '<b>Seis itens de evolução agora também funcionam segurados</b>, como nos jogos: <b>Pedra do Rei</b> e <b>Presa Afiada</b> (10% de chance de fazer o alvo recuar), <b>Garra Afiada</b> (mais crítico), <b>Revestimento Metálico</b> (golpes de Aço +20%) e <b>Dente</b> e <b>Escama Abissal</b> (dobram At. e Def. Especial — só no Clamperl, o dono de direito).',
+        'Eles continuam guardados em <b>💎 Evolução</b> e continuam evoluindo quem sempre evoluíram. A diferença é que agora dá pra equipar em vez de deixar parado na mochila esperando o nível certo.',
+        '<b>E evoluir funciona com o item na mochila ou na mão.</b> Antes, se você equipasse a Pedra do Rei, o seu Poliwhirl simplesmente não evoluía e o jogo não explicava por quê.',
+        '<b>As frutas agora aparecem explorando, em qualquer rota.</b> São 20 no total — Oran, Sitrus, Lum e as 17 de aperto por tipo (Occa pro fogo, Yache pro gelo, Shuca pra terra…) —, e cerca de 1 em cada 6 itens achados é uma delas. Como são muitas, cada fruta específica continua sendo sorte: achar a Yache justo antes de encarar um Pokémon de Gelo é o tipo de coisa que dá vontade de contar pra alguém.',
+        '<b>Os itens de segurar permanentes também caem, da 4ª rota em diante.</b> Restos, Orbe da Vida, Faixa de Foco, Faixa Escolha, Eviolite, Balão de Ar e companhia entram no mesmo degrau dos itens de evolução — quem não passa na loja não fica mais sem conhecer a mecânica.',
+        '<b>Os itens de prêmio de raide continuam sendo só de prêmio.</b> Achar um Núcleo Eternamax no chão tiraria o motivo de enfrentar o chefe da semana.',
+        'A chance de <b>item de evolução</b> e de <b>Escama do Coração</b> ficou exatamente onde estava: o que mudou foi o que apareceria como item comum.',
+        '<b>Marque até 2 itens como rápidos e eles ficam junto dos botões principais.</b> Na mochila, cada item tem um botão <b>⚡</b>: marcado, ele aparece do lado de <i>Explorar</i> fora da luta e do lado de <i>Mochila</i> e <i>Fugir</i> dentro dela. Chega de abrir a mochila e caçar a Poção a cada turno.',
+        '<b>E eles têm atalho de teclado: 1 e 2.</b> O primeiro item rápido é o 1, o segundo é o 2 — o próprio botão mostra qual tecla é a dele.',
+        'A escolha vale pra <b>jornada</b> (os itens são seus, dessa run). Se o item acabar, o atalho some da barra e <b>volta sozinho</b> quando você comprar outro — não precisa reconfigurar.',
+        'Isso nasceu de um pedido de "botões pra subir e descer os itens da mochila". O que incomodava não era a ordem da lista, era a procura: um atalho fixo resolve sem mexer na mochila.'
       ] },
       { nome: 'Equilíbrio', itens: [
         '<b>Endeavor não é mais um botão de vitória contra o chefe da semana.</b> Ele iguala o HP do alvo ao seu — e contra o chefe isso passava por cima da couraça de energia e de todas as defesas dele: bastava estar quase morto pra acabar com a luta. Agora o dano dele entra pelas mesmas regras de qualquer outro golpe. Contra o chefe continua valendo muito a pena; só não decide mais a luta sozinho.',
         'Fora do chefe, o Endeavor não mudou em nada.'
       ] }
     ] },
-  { versao: '2.31', data: '2026-09-30', titulo: 'As músicas agora têm melodia de verdade', piada: 'O compositor da casa vinha tocando notas sorteadas e chamando aquilo de improviso. Sentaram com ele e explicaram o que é uma melodia.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>As músicas foram reescritas.</b> Antes cada nota era sorteada na hora: nenhuma soava errada, mas a música não ia a lugar nenhum. Agora cada tema tem uma <b>frase própria, escrita nota por nota</b>, que se repete e dá pra reconhecer — do jeito que música de jogo funciona.',
-        'Continua tendo variação pra não ficar mecânico, mas agora ela é o tempero, não o prato.'
-      ] }
-    ] },
-  { versao: '2.30', data: '2026-09-30', titulo: 'Os gritos voltaram (desculpa)', piada: 'Na tentativa de fazer o grito sair na hora, ele passou a sair nunca. Tecnicamente não está mais atrasado.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>O grito do Pokémon voltou a tocar.</b> A correção de ontem, que era justamente pra ele não atrasar, deixou ele mudo na <b>primeira</b> vez que cada espécie aparecia — ou seja, quase sempre. Agora toca na hora tanto na primeira vez quanto nas seguintes.',
-        'Se o áudio demorar muito pra chegar (internet ruim), ele é <b>descartado</b> em vez de gritar fora de hora, quando a cena já passou.'
-      ] }
-    ] },
-  { versao: '2.29', data: '2026-09-30', titulo: 'O som afinou: cada rota tem a sua música, e ele cala a boca quando você sai', piada: 'O grito do Pokémon chegava tão atrasado que dava tempo de ele desmaiar antes de gritar. Agora ele grita na hora, como todo mundo que leva um golpe de verdade.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>O grito não atrasa mais.</b> Ele era baixado no instante em que devia tocar — e chegava depois da cena. Agora vem pronto de antemão: sai junto com o Pokémon aparecendo.',
-        '<b>Trocou de aba? O som para.</b> Antes a música continuava tocando por cima de tudo, inclusive com o celular na sua bolsa. Voltando pra aba, ela volta de onde estava.',
-        '<b>Bem menos agudo.</b> A trilha tinha notas altas demais e cansava o ouvido em poucos minutos. As melodias desceram de oitava e um filtro corta o que sobrava de estridente.'
-      ] },
-      { nome: 'Novidades', itens: [
-        '<b>Cada rota tem a sua música.</b> Caverna soa como caverna, mar soa como mar — e vulcão, deserto, gelo, floresta, usina, ruínas assombradas, montanha e o Santuário também. A trilha lê o tema da rota, o mesmo que já decide o cenário da batalha, então as 99 rotas do jogo têm tonalidade própria.',
-        '<b>As telas fora do jogo ganharam trilha</b> — Carreira, Pokédex, Conquistas, Ranking e companhia agora têm um fundo calmo em vez do silêncio.'
-      ] }
-    ] },
-  { versao: '2.28', data: '2026-09-30', titulo: 'O jogo ganhou som (desligado, até você ligar)', piada: 'O compositor da casa não sabe tocar nenhum instrumento de verdade. Ele só sabe fazer um computador fingir que sabe, 16 vezes por segundo, pra sempre.',
+  { versao: '3.2', data: '2026-09-30', titulo: '🔊 O jogo ganhou som (desligado, até você ligar)', piada: 'O compositor da casa é um Loudred com um sintetizador e nenhuma formação musical. Ele não sabe tocar nada: sabe fazer um computador fingir que sabe, dezesseis vezes por segundo, para sempre. Pedimos que baixasse o tom. Ele baixou uma oitava inteira, por via das dúvidas.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Som, em ⚙ Ajustes → Som — desligado por padrão.</b> Liga o grito de quem aparece na luta (o mesmo grito dos jogos de verdade, vindo da PokéAPI) e uma música que toca sozinha.',
         'A música não é arquivo nenhum: o jogo <b>compõe ela na hora</b>, com uma faixa diferente pra tela inicial, pra exploração, pra batalha comum, pra batalha de chefe/lendário, e uma fanfarra curta quando você vence. Nunca se repete nota por nota — é gerada de novo a cada vez, dentro de uma escala que combina com o clima da tela.',
-        'Sem trilha pronta de propósito: música de verdade dos jogos é direito autoral de outra empresa. O jeito era compor, não tocar.'
-      ] }
-    ] },
-  { versao: '2.27', data: '2026-09-29', titulo: 'Anexar print num relato agora pede conta', piada: 'A caixa de prints era um contêiner aberto na calçada com uma placa escrita "coloque o que quiser". Surpreendentemente, ninguém abusou. Mas a placa saiu.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>Anexar imagem num relato agora exige estar na sua conta.</b> Mandar o relato continua <b>sem precisar de conta</b> — isso não mudou e não vai mudar. O que precisa de conta é o print.',
-        'O porquê, sem enrolação: a caixa onde os prints ficam guardados aceitava envio de qualquer pessoa, sem limite nenhum. Uns poucos milhares de arquivos de 2 MB e o espaço do jogo acabava — e sem conta não tem como saber de quem veio pra segurar. Com conta, cada envio tem dono, e aí dá pra limitar.',
-        'A tela não esconde isso: sem conta, o lugar do print <b>explica o motivo</b> e deixa o botão de entrar ali do lado, em vez de simplesmente não aparecer.',
-        'Se você tinha um relato guardado esperando internet e ele levava print, ele <b>sobe do mesmo jeito</b> — sem a imagem, e a tela avisa. Antes de mais nada o seu texto chega; era o que importava.'
-      ] }
-    ] },
-  { versao: '2.26', data: '2026-09-29', titulo: 'A sala parou de acreditar em tudo que os outros mandam', piada: 'A sala era aquele porteiro que deixa entrar qualquer um que chegue de terno. Agora ela confere o terno, o crachá, e se a pessoa cabe na porta.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>Segurança da sala de multiplayer.</b> A sala aceitava de olhos fechados tudo o que chegava pela internet — e parte disso ia direto pra tela. Quem estivesse na mesma sala podia mandar um pacote torto e fazer coisa que ninguém deveria poder fazer no seu navegador, incluindo mexer com a sua conta. Agora <b>todo pacote é conferido antes de encostar no jogo</b>: número tem que ser número, texto tem que ser texto, e endereço de imagem só vale se vier dos servidores de sprite de sempre. O que não passa é jogado fora e vai pro diagnóstico da sala (o 🔎 lá embaixo).',
-        'De quebra, o mesmo cuidado conserta um jeito silencioso de <b>estragar a sua jornada</b>: uma recompensa que chegasse torta no fim de uma luta em grupo podia embaralhar o seu dinheiro no save.',
-        '<b>Pacote que se diz do anfitrião agora é conferido.</b> Estado da luta, fim de luta e configuração do lobby só valem se vierem de quem realmente está hospedando.',
-        'Sala com <b>pacote sem pé nem cabeça</b> não deixa mais a tela em branco: ela ignora e segue, em vez de travar no meio.'
-      ] }
-    ] },
-  { versao: '2.25', data: '2026-09-29', titulo: 'O multiplayer foi refeito (e a luta em grupo virou uma batalha de verdade)', piada: 'A luta em sala era uma lista de fichinhas de 64 pixels. Acompanhar aquilo era como assistir a um jogo de futebol lendo a tabela de escanteios.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'A <b>luta em sala virou uma cena de verdade</b>: campo ao fundo, sprites grandes (o seu de costas, como manda a tradição), placa de papel com tipos, HP e — finalmente — <b>status e mudanças de atributo</b>. Antes dava pra passar a luta inteira envenenado sem ver isso em lugar nenhum. Com muita gente em campo, tudo encolhe sozinho pra caber.',
-        '<b>🔗 Convite por link</b>: um toque copia um endereço que já entra na sua sala. Quem receber cai direto no lobby, sem digitar nada. O <b>📋 código</b> continua ali, agora em letras garrafais pra ditar sem erro.',
-        '<b>👁 Só assistir</b>: dá pra entrar numa sala sem entrar no time, acompanhar a luta e conversar no chat. Bom pra ver a Raide dos amigos sem atrapalhar.',
-        'O lobby mostra <b>em que pé cada um está</b> — 👑 anfitrião, ✅ pronto, ⏳ escolhendo, 👁 assistindo — e o <b>✅ Pronto passou a valer em todos os modos</b>, não só na Sala de Raide. Quando o botão de começar está apagado, agora ele <b>diz por quê</b>, com nome e tudo.',
-        'Durante o turno: <b>barra de tempo</b> que esvazia (e fica vermelha na reta final), <b>fichas de quem já escolheu</b> no lugar de uma frase com nomes, e <b>📜 turnos anteriores</b>, pra reler o que passou voando.',
-        'Escolher com o que você entra (jornada, Hall da Fama, convidado ou só assistir) agora acontece <b>dentro da sala</b>, onde você já vê o tipo de luta e quem chegou. E <b>Pokémon desmaiado não impede mais de entrar</b>: o Centro Pokémon está ali no lobby.'
+        'Sem trilha pronta de propósito: música de verdade dos jogos é direito autoral de outra empresa. O jeito era compor, não tocar.',
+        '<b>Cada rota tem a sua música.</b> Caverna soa como caverna, mar soa como mar — e vulcão, deserto, gelo, floresta, usina, ruínas assombradas, montanha e o Santuário também. A trilha lê o tema da rota, o mesmo que já decide o cenário da batalha, então as 99 rotas do jogo têm tonalidade própria.',
+        '<b>As telas fora do jogo ganharam trilha</b> — Carreira, Pokédex, Conquistas, Ranking e companhia agora têm um fundo calmo em vez do silêncio.',
+        '<b>As músicas foram reescritas.</b> Antes cada nota era sorteada na hora: nenhuma soava errada, mas a música não ia a lugar nenhum. Agora cada tema tem uma <b>frase própria, escrita nota por nota</b>, que se repete e dá pra reconhecer — do jeito que música de jogo funciona.',
+        'Continua tendo variação pra não ficar mecânico, mas agora ela é o tempero, não o prato.',
+        '<b>A batalha tem música própria agora.</b> Antes era o tema da rota tocando mais rápido; agora existe uma melodia de luta (e outra, mais pesada, pro chefe) que toca em qualquer rota — a rota continua entrando pela tonalidade.',
+        '<b>A troca de música virou uma passagem.</b> A faixa antiga desce, tem um respiro de silêncio e a nova entra subindo: dá pra sentir que você mudou de lugar, sem o corte seco de antes.',
+        '<b>Som de derrota</b> quando a jornada acaba mal, <b>som de subir de nível</b> (seu e dos aliados) e um <b>“ca-ching” ao comprar</b> na loja.',
+        '<b>Na tela inicial, o Pokémon que você seleciona solta o grito dele.</b> Dá pra escolher pelo ouvido também.',
+        '<b>Golpe que acerta agora faz barulho, e o barulho é do tipo do golpe.</b> Fogo é uma labareda; Voador e Dragão são uma lufada de ar; Água é um baque molhado; Gelo trinca; Elétrico estala; Aço soa como metal batendo; Grama e Inseto farfalham; Terra e Pedra são um estrondo grave; Fantasma, Psíquico, Sombrio, Fada e Venenoso têm um lamento; Normal e Lutador são pancada seca. Vale pros <b>dois lados</b>: quando você acerta e quando você apanha.',
+        '<b>A piscada de dano ganhou a cor do tipo.</b> Levar um golpe de fogo acende laranja no sprite, um de água acende azul — as mesmas cores dos selos de tipo. Dano sem tipo (confusão, o esforço do próprio golpe, veneno) continua no vermelho.',
+        '<b>Agora dá pra desligar as animações de combate</b> em <b>⚙ Ajustes → Som e animações</b>, separado do som. Sem animação o combate fica mais <b>rápido</b> de propósito: a pausa entre as mensagens existia pra dar tempo de ver a tremida e ouvir o impacto, então ela encurta junto. Quem já pediu “reduzir animações” no próprio aparelho não precisa mexer em nada.'
       ] },
       { nome: 'Correções', itens: [
-        'A sala <b>parou de piscar</b>. O anfitrião mandava a batalha inteira de quatro em quatro segundos e a cada escolha de qualquer um, e cada pacote desses redesenhava a tela toda. Agora o que viaja é um sinal curtinho, e o que não mudou não é redesenhado: menos internet gasta, menos tremedeira, e o que você está digitando no chat fica onde estava.',
-        'Se algo der errado ao desenhar a sala, ela não fica mais <b>meia velha e meia nova</b> contando duas histórias diferentes: ou aparece inteira, ou aparece o erro.'
+        '<b>O grito não atrasa mais.</b> Ele era baixado no instante em que devia tocar — e chegava depois da cena. Agora vem pronto de antemão: sai junto com o Pokémon aparecendo.',
+        '<b>Trocou de aba? O som para.</b> Antes a música continuava tocando por cima de tudo, inclusive com o celular na sua bolsa. Voltando pra aba, ela volta de onde estava.',
+        '<b>Bem menos agudo.</b> A trilha tinha notas altas demais e cansava o ouvido em poucos minutos. As melodias desceram de oitava e um filtro corta o que sobrava de estridente.',
+        'Se o áudio demorar muito pra chegar (internet ruim), ele é <b>descartado</b> em vez de gritar fora de hora, quando a cena já passou.',
+        '<b>Sumiu o retângulo escuro atrás do seu Pokémon na batalha.</b> Era um estilo da ficha vazando pra cena da luta.',
+        '<b>Os sprites não são mais esticados pra encher a caixa.</b> Cada Pokémon aparece no tamanho de verdade dele: acabou o serrilhado de imagem ampliada, e as espécies voltaram a ter tamanhos diferentes entre si.'
       ] }
     ] },
-  { versao: '2.24', data: '2026-09-29', titulo: 'Aquele aviso de cookies apareceu (e ainda não tem anúncio nenhum)', piada: 'O jogo pede permissão pra uma coisa que ainda não faz. É o equivalente a pedir licença antes de entrar num quarto onde você já mora.',
+  { versao: '3.1', data: '2026-09-29', titulo: '📄 O site em volta do jogo: páginas, guia, privacidade e cookies', piada: 'A Política de Privacidade morava numa tela que só abria para quem já estava dentro do jogo, como um aviso de incêndio trancado por dentro do prédio. O Guia morava na cabeça de um amigo seu. Os dois se mudaram para endereços de verdade.',
     secoes: [
       { nome: 'Novidades', itens: [
+        'Nova tela <b>🔒 Privacidade</b>, explicando em português claro o que fica só no seu aparelho, o que a conta guarda (se você tiver uma) e o que a PokéAPI/Supabase recebem.',
+        'Cinco páginas novas, com endereço próprio e abertas a quem nem começou a jogar: <b>Sobre</b> (o que é o jogo e como ele foi feito), <b>Guia</b> (dificuldades, rotas e Alfas, batalha, clima, aliados, as quatro transformações e o progresso de carreira), <b>Privacidade</b>, <b>Termos de Uso</b> e <b>Contato</b>.',
+        'Todas elas ficam a um clique de qualquer tela, num <b>rodapé novo</b> — que some sozinho durante a batalha, porque ali ele só atrapalharia.',
+        'Agora existe um <b>e-mail de contato</b> de verdade, pra privacidade, direitos autorais ou qualquer assunto que não caiba em 🐞 Bugs e sugestões. Pra bug e sugestão a tela de dentro do jogo continua sendo o caminho mais rápido: ela aceita print, funciona sem internet e mostra o andamento.',
+        'O <b>Guia</b> deixou de ser uma página só e virou <b>seis capítulos</b>, cada um com endereço próprio (dá pra mandar o link do tema certo pra quem está começando): <b>Como começar</b>, <b>A batalha</b>, <b>Mundo e rotas</b>, <b>Transformações</b>, <b>Progresso</b> e <b>Multiplayer</b>. Chega-se a ele pelo rodapé de qualquer tela.',
+        'Ele explica o que o jogo nunca teve espaço pra explicar: como a ordem do turno é decidida de verdade, por que clima e terreno mudam tanto uma luta, o que a Pokédex da rota está te dizendo, como cada uma das quatro transformações é conquistada, e — a parte que mais gente descobre tarde — <b>o que continua valendo depois de uma jornada perdida</b>.',
+        'Também responde o que costuma aparecer em 🐞 Bugs e sugestões: por que uma luta de multiplayer às vezes não dá XP (a resposta é "nível real"), por que uma rota parou de dar encontros e pra que serve o saldo que sobra de cada jornada.',
+        'Os capítulos se ligam entre si e ao índice, então dá pra ler em ordem ou pular direto pro assunto — e ficam guardados junto com o jogo, ou seja, <b>funcionam sem internet</b>, como o resto.',
         'Você vai ver um <b>aviso de cookies</b> no pé da tela, uma vez. Explicação honesta: o jogo é de graça e a ideia é sustentar ele com anúncio, e pra isso o Google precisa analisar o site antes — o que exige que o código dele esteja aqui. <b>Nenhum anúncio é exibido ainda</b>, e nada mudou no jogo.',
         'Antes de você responder qualquer coisa, o jogo já diz ao Google que o consentimento está <b>negado</b>: nada de cookie de anúncio e nada de personalização. <b>Recusar não limita absolutamente nada</b> — e a escolha pode ser mudada quando quiser em <b>⚙ Ajustes → Cookies de anúncio</b>.',
         'Quando os anúncios existirem de verdade, eles vão ficar nas <b>páginas do guia</b> e no <b>fim da tela inicial</b>. Nunca perto dos botões de batalha: além de ser irritante, clique acidental é o jeito mais rápido de o projeto perder a conta de anúncios.',
         'A <b>Política de Privacidade</b> foi atualizada junto pra contar exatamente esse estado — ela já dizia o que aconteceria; agora diz também o que já acontece.'
-      ] }
-    ] },
-  { versao: '2.23', data: '2026-09-29', titulo: 'O jogo ganhou um guia de verdade', piada: 'Até agora, a documentação oficial era um amigo seu dizendo "acho que é assim".',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'O <b>Guia</b> deixou de ser uma página só e virou <b>seis capítulos</b>, cada um com endereço próprio (dá pra mandar o link do tema certo pra quem está começando): <b>Como começar</b>, <b>A batalha</b>, <b>Mundo e rotas</b>, <b>Transformações</b>, <b>Progresso</b> e <b>Multiplayer</b>. Chega-se a ele pelo rodapé de qualquer tela.',
-        'Ele explica o que o jogo nunca teve espaço pra explicar: como a ordem do turno é decidida de verdade, por que clima e terreno mudam tanto uma luta, o que a Pokédex da rota está te dizendo, como cada uma das quatro transformações é conquistada, e — a parte que mais gente descobre tarde — <b>o que continua valendo depois de uma jornada perdida</b>.',
-        'Também responde o que costuma aparecer em 🐞 Bugs e sugestões: por que uma luta de multiplayer às vezes não dá XP (a resposta é "nível real"), por que uma rota parou de dar encontros e pra que serve o saldo que sobra de cada jornada.',
-        'Os capítulos se ligam entre si e ao índice, então dá pra ler em ordem ou pular direto pro assunto — e ficam guardados junto com o jogo, ou seja, <b>funcionam sem internet</b>, como o resto.'
-      ] }
-    ] },
-  { versao: '2.22', data: '2026-09-29', titulo: 'O jogo ganhou as páginas que todo site tem', piada: 'A política de privacidade existia, mas morava numa tela que só aparecia se você já estivesse dentro. Como um aviso de incêndio trancado por dentro do prédio.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'Cinco páginas novas, com endereço próprio e abertas a quem nem começou a jogar: <b>Sobre</b> (o que é o jogo e como ele foi feito), <b>Guia</b> (dificuldades, rotas e Alfas, batalha, clima, aliados, as quatro transformações e o progresso de carreira), <b>Privacidade</b>, <b>Termos de Uso</b> e <b>Contato</b>.',
-        'Todas elas ficam a um clique de qualquer tela, num <b>rodapé novo</b> — que some sozinho durante a batalha, porque ali ele só atrapalharia.',
-        'Agora existe um <b>e-mail de contato</b> de verdade, pra privacidade, direitos autorais ou qualquer assunto que não caiba em 🐞 Bugs e sugestões. Pra bug e sugestão a tela de dentro do jogo continua sendo o caminho mais rápido: ela aceita print, funciona sem internet e mostra o andamento.'
       ] },
       { nome: 'Correções', itens: [
         'A <b>Política de Privacidade</b> contava menos do que o jogo realmente faz. Foi reescrita e ficou bem mais completa e honesta: agora fala do banco de dados local que guarda os Pokémon baixados, do que os outros veem de você numa sala de multiplayer, do que acontece com as imagens que você anexa num relato, e de todos os serviços que o jogo toca. Ganhou também data de atualização, seus direitos pela LGPD e pelo GDPR, por quanto tempo cada coisa fica guardada e pra onde escrever.',
         'A política que aparece dentro do jogo e a da página pública passaram a ser <b>o mesmo texto</b>, escrito num lugar só — não tem como uma dizer uma coisa e a outra dizer outra.'
       ] }
     ] },
-  { versao: '2.21', data: '2026-09-29', titulo: 'Agora dá pra saber no que deu', piada: 'Mandar relato era como jogar bilhete no mar. O mar respondia, mas só em pensamento.',
+  { versao: '3.0', data: '2026-09-29', titulo: '🐞 Relatos: agora dá pra saber no que deu', piada: 'Mandar um relato era como entregar um bilhete a um Psyduck: ele guardava, ele entendia, ele até resolvia — mas a cara dele continuava exatamente a mesma. Agora o Psyduck responde por escrito.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Em <b>🐞 Relatar</b>, a lista "Seus relatos" agora mostra <b>a situação de cada um</b>: ⏳ Aguardando, 👀 Em análise, <b>✅ Atendido</b> ou 📦 Arquivado — e, quando houver, um recado de quem cuida do jogo dizendo o que foi feito. Antes aparecia só uma palavra solta do banco de dados, que não dizia nada.',
@@ -322,10 +232,14 @@ export const PATCH_NOTES = [
       ] },
       { nome: 'Correções', itens: [
         '<b>Todos os relatos abertos foram respondidos</b> — os de bug viraram correção, e os pedidos que já existiam no jogo foram marcados como atendidos. Obrigado a quem mandou. 💛',
-        'Estas <b>notas de atualização</b> foram compiladas: eram 96 versões, muitas do mesmo assunto, e várias só corrigiam um problema que a leva anterior tinha criado. Agora cada entrada conta um tema inteiro, da primeira versão ao estado de hoje.'
+        'Estas <b>notas de atualização</b> foram compiladas: eram 96 versões, muitas do mesmo assunto, e várias só corrigiam um problema que a leva anterior tinha criado. Agora cada entrada conta um tema inteiro, da primeira versão ao estado de hoje.',
+        '<b>Anexar imagem num relato agora exige estar na sua conta.</b> Mandar o relato continua <b>sem precisar de conta</b> — isso não mudou e não vai mudar. O que precisa de conta é o print.',
+        'O porquê, sem enrolação: a caixa onde os prints ficam guardados aceitava envio de qualquer pessoa, sem limite nenhum. Uns poucos milhares de arquivos de 2 MB e o espaço do jogo acabava — e sem conta não tem como saber de quem veio pra segurar. Com conta, cada envio tem dono, e aí dá pra limitar.',
+        'A tela não esconde isso: sem conta, o lugar do print <b>explica o motivo</b> e deixa o botão de entrar ali do lado, em vez de simplesmente não aparecer.',
+        'Se você tinha um relato guardado esperando internet e ele levava print, ele <b>sobe do mesmo jeito</b> — sem a imagem, e a tela avisa. Antes de mais nada o seu texto chega; era o que importava.'
       ] }
     ] },
-  { versao: '2.20', data: '2026-09-29', titulo: 'O Tera convence, a caçada começa e a faixa branca sumiu', piada: 'O Pokémon selvagem via você virar de cristal, aplaudia educadamente e continuava batendo no tipo antigo.',
+  { versao: '2.9', data: '2026-09-29', titulo: '🔧 Faxina de correções: Tera, caçada, Mega no registro e os campos brancos', piada: 'Você terastalizava bem na frente do Pokémon selvagem. Ele via o cristal, aplaudia educadamente e continuava batendo exatamente no seu tipo antigo. Muito gentil da parte dele. Completamente errado.',
     secoes: [
       { nome: 'Correções', itens: [
         '<b>O botão da 🎯 Caça Shiny não fazia nada.</b> Você revelava a rota inteira, a lista de Pokémon aparecia, você clicava — e nada acontecia, nem escolha, nem aviso, nem erro. Corrigido: escolher (e parar) a caça funciona, só o escolhido aparece na rota, e a mudança agora sai num aviso bem visível, não só numa borda que passava despercebida.',
@@ -339,22 +253,31 @@ export const PATCH_NOTES = [
         'Clicar em <b>Novo jogo</b> durante uma batalha não fazia nada — nem abria, nem explicava. Continua trancado de propósito (sair no meio da luta seria fuga), mas agora ele diz isso; vale pra todas as ações que a batalha tranca.'
       ] }
     ] },
-  { versao: '2.19', data: '2026-09-29', titulo: 'Multiplayer: o Hall da Fama entra na sala', piada: 'Três Swampert com o mesmo nome atacando ao mesmo tempo: parecia um turno, era uma reunião de condomínio.',
+  { versao: '2.8', data: '2026-09-29', titulo: '🎮 A sala virou uma batalha de verdade', piada: 'Três Swampert com o mesmo nome atacando no mesmo turno, e o registro repetindo "Swampert usou Surf" três vezes sem dizer qual. Parecia um turno; era uma reunião de condomínio. Agora são Swampert 1, 2 e 3 — e o 2 continua sendo o problemático.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Agora dá pra entrar numa sala (Co-op ou PvP) com os seus <b>Pokémon do Hall da Fama</b> — sem precisar de uma jornada em andamento e sem se contentar com um convidado de nível 5. A escolha "Com qual Pokémon você entra?" também aparece <b>dentro da sala</b>, no lobby: dá pra trocar entre a sua run, o Hall da Fama e um convidado a qualquer momento antes da luta, sem sair e perder o código.',
         'O turno <b>não aparece mais todo de uma vez</b>: as linhas saem uma a uma e o cartão de <b>quem está agindo naquele momento</b> fica destacado. Pokémon de mesmo nome no seu time viraram numerados (Swampert 1, Swampert 2, Swampert 3) — sem isso o registro não dizia qual dos três tinha atacado. Quem liga "reduzir animações" no aparelho continua recebendo o turno inteiro de uma vez.',
-        'Todo <b>item de raide</b> agora diz <b>o que faz</b> e <b>contra quais chefes serve</b>, na dica do botão, na mochila e numa tabela nova em <b>❓ Como funcionam os chefes da semana</b> (que também mostra quem dá cada item de prêmio).',
-        'O prêmio dos chefes gira em rodízio e não combina com o chefe: o Groudon dá Prisma de Luz (que só serve contra chefe com ponto fraco, e ele não tem), e o Calyrex dá Célula Zygarde (que só serve contra o Zygarde). Por isso, na caixa do chefe da semana, uma linha separa os seus itens em <b>servem</b> e <b>não servem contra ele</b>, pra você não gastar à toa.'
+        'A <b>luta em sala virou uma cena de verdade</b>: campo ao fundo, sprites grandes (o seu de costas, como manda a tradição), placa de papel com tipos, HP e — finalmente — <b>status e mudanças de atributo</b>. Antes dava pra passar a luta inteira envenenado sem ver isso em lugar nenhum. Com muita gente em campo, tudo encolhe sozinho pra caber.',
+        '<b>🔗 Convite por link</b>: um toque copia um endereço que já entra na sua sala. Quem receber cai direto no lobby, sem digitar nada. O <b>📋 código</b> continua ali, agora em letras garrafais pra ditar sem erro.',
+        '<b>👁 Só assistir</b>: dá pra entrar numa sala sem entrar no time, acompanhar a luta e conversar no chat. Bom pra ver a Raide dos amigos sem atrapalhar.',
+        'O lobby mostra <b>em que pé cada um está</b> — 👑 anfitrião, ✅ pronto, ⏳ escolhendo, 👁 assistindo — e o <b>✅ Pronto passou a valer em todos os modos</b>, não só na Sala de Raide. Quando o botão de começar está apagado, agora ele <b>diz por quê</b>, com nome e tudo.',
+        'Durante o turno: <b>barra de tempo</b> que esvazia (e fica vermelha na reta final), <b>fichas de quem já escolheu</b> no lugar de uma frase com nomes, e <b>📜 turnos anteriores</b>, pra reler o que passou voando.',
+        'Escolher com o que você entra (jornada, Hall da Fama, convidado ou só assistir) agora acontece <b>dentro da sala</b>, onde você já vê o tipo de luta e quem chegou. E <b>Pokémon desmaiado não impede mais de entrar</b>: o Centro Pokémon está ali no lobby.'
       ] },
       { nome: 'Correções', itens: [
         '<b>Quem criava a sala travava depois da primeira rodada</b>: dava pra atacar uma vez e nunca mais, a tela ficava em "Escolhas enviadas" e os turnos passavam sozinhos enquanto o chefe batia. Numa luta nova acontecia já no turno 1. Quem entrava numa sala dos outros nunca foi afetado.',
         'A ☄ Sala de Raide não abria a escolha de Pokémon pra quem tinha um <b>shiny</b> no Hall da Fama: a tela quebrava na metade, o topo já dizia "Sala de Raide" e a parte de baixo continuava mostrando as opções de Co-op, sem nenhum aviso. E o resumo no topo dizia "Co-op" (com uma rota) mesmo no modo Raide.',
         'Quando algo quebra ao desenhar a sala, agora aparece o erro na tela em vez de ficar meia tela velha fingindo que está tudo certo.',
-        'O <b>Espelho Reverso</b> dizia que inverte os tipos "a seu favor". Na verdade ele inverte a tabela nos golpes que <b>você</b> dá: ajuda contra quem resiste aos seus tipos e <b>atrapalha</b> contra quem é fraco a eles. A descrição agora avisa.'
+        'A sala <b>parou de piscar</b>. O anfitrião mandava a batalha inteira de quatro em quatro segundos e a cada escolha de qualquer um, e cada pacote desses redesenhava a tela toda. Agora o que viaja é um sinal curtinho, e o que não mudou não é redesenhado: menos internet gasta, menos tremedeira, e o que você está digitando no chat fica onde estava.',
+        'Se algo der errado ao desenhar a sala, ela não fica mais <b>meia velha e meia nova</b> contando duas histórias diferentes: ou aparece inteira, ou aparece o erro.',
+        '<b>Segurança da sala de multiplayer.</b> A sala aceitava de olhos fechados tudo o que chegava pela internet — e parte disso ia direto pra tela. Quem estivesse na mesma sala podia mandar um pacote torto e fazer coisa que ninguém deveria poder fazer no seu navegador, incluindo mexer com a sua conta. Agora <b>todo pacote é conferido antes de encostar no jogo</b>: número tem que ser número, texto tem que ser texto, e endereço de imagem só vale se vier dos servidores de sprite de sempre. O que não passa é jogado fora e vai pro diagnóstico da sala (o 🔎 lá embaixo).',
+        'De quebra, o mesmo cuidado conserta um jeito silencioso de <b>estragar a sua jornada</b>: uma recompensa que chegasse torta no fim de uma luta em grupo podia embaralhar o seu dinheiro no save.',
+        '<b>Pacote que se diz do anfitrião agora é conferido.</b> Estado da luta, fim de luta e configuração do lobby só valem se vierem de quem realmente está hospedando.',
+        'Sala com <b>pacote sem pé nem cabeça</b> não deixa mais a tela em branco: ela ignora e segue, em vez de travar no meio.'
       ] }
     ] },
-  { versao: '2.18', data: '2026-09-29', titulo: 'Inimigos que pensam, e golpes que tiram você da luta', piada: 'Provocaram o Pokémon e ele, ofendidíssimo, esqueceu que tinha golpe de status. O inimigo aprendeu a fazer o mesmo com você.',
+  { versao: '2.7', data: '2026-09-29', titulo: '🧠 Inimigos que pensam, e golpes que tiram você da luta', piada: 'Ensinamos o inimigo a provocar. No primeiro teste ele provocou uma Chansey, que esqueceu que sabia curar e passou a luta inteira dando Pound. Pedimos desculpas à Chansey e mantivemos o recurso.',
     secoes: [
       { nome: 'Novidades', itens: [
         'A IA dos inimigos foi refeita: em vez de "sempre o golpe de maior dano", cada golpe ganha uma <b>nota</b> pela situação da luta (quem apanha, o clima, as telas, o HP dos dois). <b>Selvagens</b> continuam como eram — batem no que dói mais e erram bastante.',
@@ -372,25 +295,24 @@ export const PATCH_NOTES = [
         'Em luta de sala (multiplayer) os golpes que tiram da luta ainda não valem: eles avisam que não funcionam ali, em vez de fingir.'
       ] }
     ] },
-  { versao: '2.17', data: '2026-09-28', titulo: 'Loja de preparo na Arena', piada: 'O saldo de conta chegou dizendo que 10% de tudo é um bom começo de poupança.',
+  { versao: '2.6', data: '2026-09-28', titulo: '🏟 A sua conta: Arena, Hall da Fama, perfil e loja de preparo', piada: 'A Insígnia Alpha é uma Poké Ball de ouro maciço, segundo ela própria. O Meowth pediu para morder só por precaução. Negamos. Ele considerou a negativa uma confissão.',
     secoes: [
       { nome: 'Novidades', itens: [
+        '<b>🏟 Arena do Chefe:</b> enfrente o chefe da semana <b>sem precisar fazer uma run até a Gen dele</b> (chegar ao Eternatus exigia passar pelas 8 Gens). Ela está no menu e na tela inicial, não usa nenhuma jornada em andamento, e perder não custa nada.',
+        '<b>Hall da Fama:</b> o Pokémon principal de cada jornada <b>Roguelike ou Hardcore que você termina</b> (venceu, perdeu ou encerrou) entra no Hall com o nível que tinha. Na Arena você leva de 1 a 3 deles contra o chefe. Os itens de raide que sobram numa jornada que termina vão para a sua conta, e o prêmio da Arena também.',
+        'Quem criou a conta durante o Alpha ganha a <b>Insígnia Alpha</b>: uma Poké Ball dourada com o α, num cartão na tela 👤 Conta e uma versão pequena ao lado do seu nome no topo. Ela é sua para sempre — quem entrar depois que o Beta abrir não consegue.',
+        '<b>👤 Ver perfil:</b> na lista de amigos cada amigo tem um botão <b>Ver perfil</b>: ícone, insígnia escolhida, se é <b>Treinador do Alpha</b>, desde quando joga, os números das jornadas (vitórias, Gens fechadas, melhor pontuação, maior nível, Pokémon derrotados, shinies, espécies desbloqueadas, mais jogado), todas as <b>insígnias de evento</b> e as <b>últimas 5 runs</b>. Também dá pra ver o seu próprio perfil, como os amigos veem. Só amigos veem o perfil um do outro.',
+        'Três badges novas de <b>parceiros</b> na tela 🏅 Conquistas: <b>Casa cheia</b> (feche uma Gen com a equipe e o esconderijo lotados), <b>Lobo solitário</b> (feche uma Gen sem recrutar ninguém) e <b>Cemitério de parceiros</b> (perca 15 parceiros numa mesma run). Fora do modo Fácil.',
+        'Nova explicação <b>"Como funcionam os chefes da semana"</b> na tela inicial e na Arena, com uma <b>tabela dos 3 caminhos</b> (Arena, dentro de uma run e em grupo): o que cada um precisa e o que muda em cada um.',
         'Toda jornada terminada deixa 10% do seu dinheiro máximo como <b>saldo de conta</b>, pra sempre — contando a carreira inteira, inclusive as jornadas que você fechou antes desta atualização. Na 🏟 Arena, esse saldo abre a "Loja de preparo": cura, revive, itens de stat e itens de segurar, pelo mesmo preço da loja normal, e você escolhe quem equipa cada item antes de entrar na luta.',
         'A Arena ganhou <b>Reviver</b> (traz um aliado caído de volta no meio da luta, sem esperar o time inteiro cair) e <b>usar item</b> durante o combate, igual numa jornada de verdade.'
-      ] }
-    ] },
-  { versao: '2.16', data: '2026-09-28', titulo: 'Raide: 14 itens novos, e nada de esperar', piada: 'O Eternatus reclamou que agora não tem nem tempo de tomar um café entre uma surra e outra.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'Prêmio da Raide completo: 7 itens <b>consumíveis</b> novos (Cinza Vulcânica, Escama Abissal, Prisma de Luz, Espelho Reverso, Relógio de Areia, Fragmento Tera, Célula Zygarde) e 7 <b>segurados</b> novos que valem em qualquer batalha (Núcleo Eternamax, Escama do Céu, Cristal Psíquico, Rédea Espectral, Emblema da Coroa, Cristal Gélido, Presa da Lua) — todos só vêm de vencer o chefe da semana.',
-        '🧪 <b>Modo beta temporário</b>: a espera de 8 horas entre tentativas contra o chefe da semana está DESLIGADA, pra facilitar os testes da Raide (Arena, dentro da run, ou em grupo). Volta a valer depois do período de teste.',
-        'A tela da <b>Arena do Chefe</b> ganhou um cartão "👥 Jogar em grupo" explicando que ela é só single-player (Hall da Fama) e levando direto pro Multiplayer, onde dá pra montar uma sala de até 6 jogadores (3 Pokémon cada) pra encarar o chefe em co-op.'
       ] },
       { nome: 'Correções', itens: [
-        'Uma jornada que termina (fim de Roguelike/Hardcore, vitória na Arena ou no chefe em grupo) agora tenta de novo sozinha se a sincronização com a nuvem falhar na hora — antes era uma tentativa só, e uma rede instável bem na tela de Game Over podia deixar o Pokémon de fora do Hall da Fama.'
+        'Enviar uma <b>sugestão</b> na tela de bugs e sugestões dava "violates row-level security policy". A regra do servidor recusava relatos sem contexto técnico (só o bug tem). Corrigido — e o que já estava na fila de envio sai sozinho.',
+        'O aviso de <b>jornadas de outro aparelho</b> voltava depois de você guardar ou excluir: a sincronização rodava duas vezes ao mesmo tempo e perguntava de novo.'
       ] }
     ] },
-  { versao: '2.15', data: '2026-09-28', titulo: 'Mochila no multiplayer, golpes na ordem e quem está jogando', piada: 'Os Restos finalmente descobriram que sala de multiplayer também tem HP pra curar.',
+  { versao: '2.5', data: '2026-09-28', titulo: 'Mochila no multiplayer, golpes na ordem e quem está jogando', piada: 'Os Restos passaram semanas sem curar ninguém nas salas de multiplayer, alegando que ali estavam "fora do expediente". Mostramos o contrato. Agora eles curam em qualquer endereço.',
     secoes: [
       { nome: 'Novidades', itens: [
         'O <b>item segurado</b> do seu Pokémon (Restos, Orbe da Vida, Faixa de Foco, Sino-Concha, Elmo Rochoso, Vínculo de Batalha…) agora funciona em qualquer luta de multiplayer — antes não fazia efeito nenhum em sala. Também dá pra usar um <b>item comum</b> da mochila (Potion, X Attack, curas de status, Éter…) na sua vez, dentro de uma sala: ocupa o turno, sempre em você mesmo.',
@@ -399,27 +321,22 @@ export const PATCH_NOTES = [
         '3 habilidades novas com efeito real: <b>Sheer Force</b> (golpe com efeito secundário bate mais forte, mas perde o efeito), <b>Unnerve</b> (o oponente não consegue comer a própria fruta logo depois de levar um golpe seu) e <b>Friend Guard</b> (reduz o dano que um aliado seu recebe).'
       ] }
     ] },
-  { versao: '2.14', data: '2026-09-28', titulo: 'O jogo ganhou vida', piada: 'O Pokémon que apanha agora pisca vermelho. O que era antes, silêncio e dignidade.',
+  { versao: '2.4', data: '2026-09-28', titulo: '🎬 Sprites 3D, animados — e o jogo ganhou vida', piada: 'O Pikachu é pixel art desde 1996 e tem opinião formada sobre o assunto. Oferecemos três estilos: clássico, 3D e animado. Ele escolheu os três, dependendo do dia e do humor.',
     secoes: [
       { nome: 'Novidades', itens: [
+        '<b>Estilo de sprite</b> (⚙ Ajustes → Sprites): além do <b>Clássico</b> (o pixel-art de sempre), agora tem <b>🧊 3D</b> (o render usado em Pokémon HOME) e <b>🎬 Animado</b> (os GIFs do Pokémon Showdown, com versão de costas de verdade).',
+        'O 3D não tem versão de costas — nesse estilo, na batalha, o seu Pokémon aparece de frente também. Os dois estilos têm download opcional em ⚙ Ajustes → Jogar offline, à parte do download normal.',
         'A <b>barra de HP</b> anima ao tomar dano ou se curar, em vez de saltar pro número novo. A de <b>XP</b> faz o mesmo, e o número de <b>PP</b> pisca quando você usa um golpe.',
         'Cena de batalha com mais vida: quem ataca dá um pulo, quem apanha pisca vermelho, quem se cura pisca verde, e status/mudanças de atributo pulsam sutilmente enquanto durarem.',
         'Botões reagem ao toque (um leve "afundar") e as telas trocam com uma transição suave em vez de aparecer seco. Na tela inicial, o marcador "jogando agora" pulsa, o Pokémon da prévia flutua sozinho e a grade de iniciais levanta um pouco no toque.',
         'Batalha no celular <b>deitado</b>: a cena vira uma coluna fixa à esquerda em vez de ficar presa no topo, aproveitando a tela larga e baixa.',
         'Tudo isso respeita a preferência de <b>"reduzir animações"</b> do aparelho — quem a liga continua vendo as mudanças na hora, sem transição.'
-      ] }
-    ] },
-  { versao: '2.13', data: '2026-09-27', titulo: 'Sprites 3D e animados', piada: 'O Pikachu clássico é pixel art desde 1996. Agora ele também pode aparecer renderizado — ou simplesmente se mexendo.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Estilo de sprite</b> (⚙ Ajustes → Sprites): além do <b>Clássico</b> (o pixel-art de sempre), agora tem <b>🧊 3D</b> (o render usado em Pokémon HOME) e <b>🎬 Animado</b> (os GIFs do Pokémon Showdown, com versão de costas de verdade).',
-        'O 3D não tem versão de costas — nesse estilo, na batalha, o seu Pokémon aparece de frente também. Os dois estilos têm download opcional em ⚙ Ajustes → Jogar offline, à parte do download normal.'
       ] },
       { nome: 'Correções', itens: [
         'Os <b>GIFs animados</b> esticavam pra caber numa caixa quadrada, ficando com a proporção errada — cada Pokémon tem um tamanho de sprite diferente lá. Agora encolhem mantendo a forma certa.'
       ] }
     ] },
-  { versao: '2.12', data: '2026-09-27', titulo: 'Ash-Greninja, e a pedra na prateleira', piada: 'A Pedra-Chave sempre serviu pra qualquer Mega. Só faltava alguém te contar que ela existia.',
+  { versao: '2.3', data: '2026-09-27', titulo: '🥷 Ash-Greninja, e a pedra na prateleira', piada: 'O Greninja derrubou mil oponentes antes de alguém reparar que ele trocava de forma no meio da luta. Ele não comentou nada. Greninja não comenta.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>🥷 Vínculo de Batalha:</b> conquiste <b>1.000 golpes finais sendo Greninja</b> pra liberar a compra do item (₽15.000). Segurando-o, derrubar um oponente transforma seu Greninja em <b>Ash-Greninja</b> pro resto da luta — atributos mais altos e <b>Water Shuriken</b> vira poder fixo 20 com <b>sempre 3 acertos</b> (a versão normal é 2 a 5, aleatório). Não precisa apertar botão nenhum: acontece sozinho, como uma habilidade.',
@@ -429,7 +346,7 @@ export const PATCH_NOTES = [
         'A <b>loja escondia a Pedra Mega, o Cristal Z e o Vínculo de Batalha</b> — às vezes os três de uma vez, às vezes a loja inteira nem abria. Eram três causas somadas: a checagem dos três era feita numa tentativa só (um problema em qualquer um apagava todos), ela tentava ler o Pokémon de dentro de uma luta que não estava acontecendo (ou seja, quase sempre, já que quase toda compra é fora de batalha), e não tinha plano B se o progresso da conta falhasse. Agora cada item é verificado por conta própria, sempre olhando pro Pokémon certo, e se o progresso permanente falhar a conta é refeita a partir das suas jornadas — a loja nunca deixa de abrir por causa disso.'
       ] }
     ] },
-  { versao: '2.11', data: '2026-09-27', titulo: 'Vender itens, e o shiny que desbloqueia de verdade', piada: 'O Beedrill shiny reclamou anos sem crédito no currículo. Agora ele finalmente entrou na ficha.',
+  { versao: '2.2', data: '2026-09-27', titulo: '💰 Vender itens, e o shiny que desbloqueia de verdade', piada: 'O Beedrill shiny passou a carreira inteira sendo verde-limão sem receber crédito nenhum por isso. Agora ele desbloqueia a espécie. Pediu retroativo. Teve retroativo.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>💰 Vender ou jogar fora:</b> cada item da mochila ganhou um botão pra vender (metade do preço de compra) ou jogar fora, pra quem não tem preço de loja. Mesmo HUD de quantidade da compra, só que ao contrário.'
@@ -440,16 +357,41 @@ export const PATCH_NOTES = [
         'A ficha de cada espécie na Pokédex mostra também o progresso ESPECÍFICO do Roguelike (que só conta o que foi feito em jornadas Roguelike) — antes só dava pra ver o total da carreira inteira, o que confundia quem via "derrotou 12" e achava que já tinha passado dos 10 exigidos.'
       ] }
     ] },
-  { versao: '2.10', data: '2026-09-27', titulo: 'Política de Privacidade, e 6 habilidades novas', piada: 'O jogo agora tem uma página inteira só pra dizer que não guarda quase nada sobre você. Ironicamente, é a página mais longa do site.',
+  { versao: '2.1', data: '2026-09-27', titulo: 'Mais de 50 habilidades com efeito real', piada: 'O Slakoth pediu para constar que a habilidade nova dele (Truant) está funcionando perfeitamente. Ele provou descansando. No turno seguinte, provou de novo.',
     secoes: [
       { nome: 'Novidades', itens: [
-        'Nova tela <b>🔒 Privacidade</b>, explicando em português claro o que fica só no seu aparelho, o que a conta guarda (se você tiver uma) e o que a PokéAPI/Supabase recebem.',
+        'Mais de <b>50 habilidades</b> passam a valer em batalha, entre elas <b>Moxie</b>, <b>Defiant</b>, <b>Competitive</b>, <b>Contrary</b>, <b>Simple</b>, <b>Unaware</b>, <b>Mirror Armor</b>, <b>Poison Heal</b>, <b>Truant</b>, <b>Pressure</b>, <b>Iron Fist</b>, <b>Strong Jaw</b>, <b>Sharpness</b> e <b>Steelworker</b>.',
+        'Habilidades que <b>reagem a levar um golpe</b>: Steam Engine, Water Compaction, Stamina, Weak Armor, Justified, Rattled, Anger Point, Sand Spit e Seed Sower. Também entram Gooey e Tangling Hair (baixam a Velocidade de quem encosta), Poison Touch, Wonder Skin e as três que barram golpe de prioridade (Dazzling, Queenly Majesty, Armor Tail).',
+        'Defesa e entrada em campo: <b>Fur Coat</b> e <b>Ice Scales</b> (metade do dano físico / especial), <b>Super Luck</b> (crítico mais fácil), <b>Intrepid Sword</b> e <b>Dauntless Shield</b> (sobem um atributo ao entrar), Grass Pelt e Flower Gift. Hadron Engine e Orichalcum Pulse ligam o terreno elétrico / o sol e ainda dão o bônus de atributo junto.',
         'Seis <b>habilidades</b> novas com efeito real em batalha: <b>Protosynthesis</b> e <b>Quark Drive</b> (reforçam seu maior atributo no sol ou no Campo Elétrico), <b>Magnet Pull</b> (prende selvagens do tipo Aço, nem fugir adianta), <b>Anticipation</b> (avisa se o oponente tem golpe perigoso), <b>Synchronize</b> (devolve queimadura, paralisia ou veneno pra quem causou) e <b>Stench</b> (chance extra de fazer o oponente recuar).'
+      ] },
+      { nome: 'Equilíbrio', itens: [
+        'A <b>XP por vitória caiu para 60%</b>: são mais batalhas por nível e a jornada dura cerca de <b>1,65× mais</b>. O equilíbrio relativo não mudou — treinador continua valendo 1,5× de um selvagem, e o modo escolhido continua pesando igual.',
+        'Mexemos na XP ganha, e não na curva de nível: a curva vem da PokéAPI e fica guardada no seu aparelho, então mudá-la quebraria a comparação com as jornadas que você já terminou.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Download</b> agora lê o oponente: sobe o Ataque se a Defesa dele é menor que a Defesa Especial, e o Ataque Especial no caso contrário (antes subia sempre o Ataque Especial).',
+        '<b>Guard Dog</b> sobe o Ataque quando alguém tenta intimidar, em vez de só impedir a queda. <b>Sand Force</b> dá +30% em golpes de Pedra, Terra e Aço na tempestade de areia. <b>Effect Spore</b> sorteia entre sono, paralisia e veneno, como no jogo, e não pega em Grama.',
+        '<b>Water Bubble</b> também dobra os seus golpes de Água. <b>Toxic Boost</b> só vale envenenado e <b>Flare Boost</b> só queimado. <b>Magic Guard</b> bloqueia todo dano indireto (veneno, queimadura, recuo, armadilhas, Rough Skin…), e não só o clima.',
+        'Inner Focus, Own Tempo e Oblivious agora são imunes à Intimidação. E no <b>multiplayer</b> a Intimidação, o Download e as habilidades de degrau ao entrar em campo finalmente funcionam (antes só valiam no single player).'
       ] }
     ] },
-  { versao: '2.9', data: '2026-09-25', titulo: 'Gimmicks pra todo mundo', piada: 'O treinador gigantamaxou o Pokémon e esqueceu que ele ainda precisava caber na Poké Ball. O Alfa acha que o Z-Move é um cristal de decoração — e às vezes ele é.',
+  { versao: '2.0', data: '2026-09-25', titulo: '⚡ As quatro transformações: Mega, Tera, Z-Move e Gigantamax', piada: 'Mil golpes finais depois, a pedra reagiu. Mil e um, para ser exato: ela também estava contando, só que no ritmo dela. Pedra é assim. O Rayquaza, que não precisa de pedra nenhuma, assistiu a tudo lá de cima achando a maior graça.',
     secoes: [
       { nome: 'Novidades', itens: [
+        'A <b>Mega Evolução</b> chegou. Conquistada a Pedra Mega de uma espécie (1.000 golpes finais dados sendo ela, na evolução final), aparece um botão ⚡ na batalha — e ele <b>não gasta o seu turno</b>: você megaevolui e ataca na mesma rodada. A forma Mega muda status, tipos, habilidade e aparência de verdade, e dura até o fim da batalha. Charizard e Mewtwo perguntam qual forma você quer (X ou Y), e Groudon e Kyogre entram pela mesma porta com o nome certo: <b>Reversão Primitiva</b>.',
+        'A <b>Pedra Mega</b> existe de verdade: conquistar a Mega de uma espécie libera a <b>compra</b> da pedra (₽15.000 na loja, só para a sua espécie), e é preciso <b>segurá-la</b> para megaevoluir. Rayquaza é a exceção, como nos jogos: ele megaevolui por saber <b>Dragon Ascent</b>, sem pedra nenhuma.',
+        'O outro lado também joga esse jogo: <b>Alfa, lendários e treinadores</b> podem megaevoluir, e fazem isso quando caem à metade do HP. A luta tem segunda fase agora. Selvagem de rota continua selvagem de rota, e só você megaevolui — aliado não, mesmo que a espécie dele esteja liberada.',
+        'São <b>95 formas cobrindo 89 espécies</b>, e a tela de Conquistas ganhou o <b>catálogo das Megas</b>: dá para ver todas elas, de todas as Gens, e quais você já conquistou.',
+        'Dá para <b>acompanhar uma conquista da conta</b> durante a jornada: o botão 📌 na tela de Conquistas fixa uma, ela aparece no painel de Missões com o quanto falta, e ao completar você é avisado e <b>ganha a recompensa nesta run</b> — além de valer nas próximas.',
+        'A tela de batalha agora tem a <b>cara da rota</b>: caverna, mar, usina, vulcão, floresta, gelo e mais, cada uma com céu, chão e luz próprios. E a lista de espécies desbloqueadas ganhou <b>busca</b> (por nome ou número) e vem sempre em ordem de Pokédex, com o número visível.',
+        'A <b>Terastalização</b> chegou. Cada tipo é conquistado à parte (200 derrotados daquele tipo), e na batalha você escolhe entre os que já tem: o botão 💎 <b>não gasta o turno</b>, igual à Mega.',
+        'Terastalizado, você passa a ter <b>um tipo só</b> para receber golpe — é o que muda a luta: um Charizard Tera Água deixa de tomar 4× de Pedra. No ataque, a regra é a dos jogos: golpe do tipo Tera que você <b>já tinha</b> bate ×2, um tipo Tera novo bate ×1,5, e o STAB que você já tinha continua valendo. Dá para usar Tera e Mega na mesma batalha — são conquistas diferentes, cada uma com o seu custo.',
+        'O <b>Z-Move</b> chegou. Conquistado um Z (250 eliminações com o golpe, ou 500 com golpes do mesmo elemento), a loja passa a vender o <b>Cristal Z</b> por ₽12.000 — e, segurando o cristal, o botão 🌀 converte um golpe seu num golpe muito mais forte, uma vez por batalha.',
+        'Ao contrário da Mega e da Tera, o <b>Z-Move é o seu turno</b>: ele não transforma nada, ele é o ataque da rodada (e gasta o PP do golpe). O botão é laranja justamente para não ser clicado achando que é de graça. A conversão segue a tabela dos jogos, achatada no topo: um golpe de 60 vira 120, um de 120 vira 190 — usar o Z no golpe fraco rende mais.',
+        'O <b>Gigantamax</b> chegou, e com ele as quatro gimmicks estão jogáveis. Conquistado (nível 50 com a espécie em 25 jornadas), o botão 🔴 <b>dobra o seu HP</b> por 3 turnos e transforma todo golpe num golpe Max — e o seu Pokémon fica <b>gigante na tela</b>. É a única das quatro que <b>não pede item</b>: quem levou 25 jornadas para chegar aqui já pagou o preço.',
+        'O HP do Gigantamax volta na mesma proporção ao encolher: se você estava com metade da vida gigante, volta com metade da vida normal. E a tabela do golpe Max é mais modesta que a do Z de propósito — o Z é um tiro único, o Max vale três turnos.',
+        'O <b>inimigo agora terastaliza</b>: Alfa, lendários e treinadores, ao cair à metade do HP, como já acontecia com a Mega. Mas só uma virada por luta — quem já megaevoluiu não terastaliza também, senão o combate viraria de cabeça para baixo de uma vez só.',
         '<b>Gimmicks no co-op:</b> na luta em grupo (selvagens, Alfa e chefe da semana) o seu Pokémon <b>principal</b> pode <b>Mega Evoluir, Terastalizar, Gigantamaxar e usar Z-Move</b>, com as mesmas regras do single player: conquista da sua conta, Pedra Mega e Cristal Z segurados, uma vez de cada por luta. Aliados, Pokémon convidado e PvP ficam de fora, e nada disso muda o Pokémon da sua run depois da luta.',
         '<b>Gigantamax do inimigo:</b> só Pokémon de <b>treinador</b> gigantamaxam — na metade do HP, como a Mega e a Tera dele. Ele dobra o HP, os golpes viram Max por 3 turnos e depois encolhe. Ainda vale <b>uma virada por luta</b>: quem não tem Mega sorteia entre Tera e Gigantamax.',
         '<b>Z-Move do inimigo:</b> só <b>treinadores e Alfas</b>. O treinador sempre carrega um Z; o Alfa só de vez em quando (chance baixa, sorteada no começo da luta). Uma vez por luta, num golpe de dano.',
@@ -466,36 +408,7 @@ export const PATCH_NOTES = [
         'A tela de Conquistas cortava a lista da Mega em 24 espécies, mesmo as já conquistadas. Agora toda Mega conquistada aparece; o corte vale só pras barras em andamento.'
       ] }
     ] },
-  { versao: '2.8', data: '2026-09-25', titulo: 'A sua conta: insígnia do Alpha, perfil e o Hall da Fama', piada: 'A Poké Ball dourada garante que é de ouro maciço. O Meowth já pediu para avaliar, por precaução.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>🏟 Arena do Chefe:</b> enfrente o chefe da semana <b>sem precisar fazer uma run até a Gen dele</b> (chegar ao Eternatus exigia passar pelas 8 Gens). Ela está no menu e na tela inicial, não usa nenhuma jornada em andamento, e perder não custa nada.',
-        '<b>Hall da Fama:</b> o Pokémon principal de cada jornada <b>Roguelike ou Hardcore que você termina</b> (venceu, perdeu ou encerrou) entra no Hall com o nível que tinha. Na Arena você leva de 1 a 3 deles contra o chefe. Os itens de raide que sobram numa jornada que termina vão para a sua conta, e o prêmio da Arena também.',
-        'Quem criou a conta durante o Alpha ganha a <b>Insígnia Alpha</b>: uma Poké Ball dourada com o α, num cartão na tela 👤 Conta e uma versão pequena ao lado do seu nome no topo. Ela é sua para sempre — quem entrar depois que o Beta abrir não consegue.',
-        '<b>👤 Ver perfil:</b> na lista de amigos cada amigo tem um botão <b>Ver perfil</b>: ícone, insígnia escolhida, se é <b>Treinador do Alpha</b>, desde quando joga, os números das jornadas (vitórias, Gens fechadas, melhor pontuação, maior nível, Pokémon derrotados, shinies, espécies desbloqueadas, mais jogado), todas as <b>insígnias de evento</b> e as <b>últimas 5 runs</b>. Também dá pra ver o seu próprio perfil, como os amigos veem. Só amigos veem o perfil um do outro.',
-        'Três badges novas de <b>parceiros</b> na tela 🏅 Conquistas: <b>Casa cheia</b> (feche uma Gen com a equipe e o esconderijo lotados), <b>Lobo solitário</b> (feche uma Gen sem recrutar ninguém) e <b>Cemitério de parceiros</b> (perca 15 parceiros numa mesma run). Fora do modo Fácil.',
-        'Nova explicação <b>"Como funcionam os chefes da semana"</b> na tela inicial e na Arena, com uma <b>tabela dos 3 caminhos</b> (Arena, dentro de uma run e em grupo): o que cada um precisa e o que muda em cada um.'
-      ] },
-      { nome: 'Correções', itens: [
-        'Enviar uma <b>sugestão</b> na tela de bugs e sugestões dava "violates row-level security policy". A regra do servidor recusava relatos sem contexto técnico (só o bug tem). Corrigido — e o que já estava na fila de envio sai sozinho.',
-        'O aviso de <b>jornadas de outro aparelho</b> voltava depois de você guardar ou excluir: a sincronização rodava duas vezes ao mesmo tempo e perguntava de novo.'
-      ] }
-    ] },
-  { versao: '2.7', data: '2026-09-25', titulo: 'O céu racha: os 14 chefes da semana', piada: 'O Eternatus pediu para avisar que não é ele que está atrasado: é o resto do universo que chegou cedo. O Zygarde pediu para constar que a fila é longa, mas ele não tem pressa: ele se regenera enquanto espera.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Evento semanal:</b> um chefe por semana, que vira toda <b>segunda-feira à meia-noite</b> (horário de Brasília), na rota final da Gen dele, só no <b>Roguelike</b> e no <b>Hardcore</b>. Ele aparece numa caixa roxa brilhante acima dos lendários, o mapa da Gen mostra o sprite dele na escolha, e a tela inicial traz a <b>agenda dos próximos 3 chefes</b> com as datas. Uma tentativa a cada <b>8 horas</b>.',
-        'São <b>14 chefes</b>, e depois do último a lista recomeça: Eternatus Eternamax → Mega Rayquaza → Groudon Primal → Kyogre Primal → Mega Mewtwo → Necrozma Ultra → Calyrex Cavaleiro Espectral → Zacian Coroada → Kyurem Negro → Giratina Origem → Dialga Origem → Terapagos Estelar → Ursaluna Lua de Sangue → Zygarde Completo.',
-        'Cada um é <b>muito difícil</b> e tem a sua mecânica. O <b>Eternatus</b> tem uma couraça de energia que corta o dano até se romper, o <b>Eternabeam</b> carregado com aviso (dá pra interromper causando dano suficiente no mesmo turno) e três fases. A <b>Mega Rayquaza</b> não tem couraça: tem um ponto fraco que muda a cada duas ações e o Dragon Ascent carregado. <b>Groudon e Kyogre</b> nascem com Sol e Chuva permanentes e anulam Água e Fogo; o <b>Giratina</b> abre o <b>Mundo Reverso</b> (a tabela de tipos inverte); o <b>Terapagos</b> resiste ao tipo do último golpe; a <b>Ursaluna</b> se cura com o dano que causa; o <b>Zygarde</b> se regenera; o <b>Calyrex</b> cresce a cada Pokémon seu que derruba. Todos são imunes a status e não dá pra fugir — mas perder não encerra a sua jornada.',
-        '<b>Chefe no co-op:</b> na sala, o botão ☄ desafia o chefe da semana com o grupo. O HP dele cresce com o número de jogadores, mas menos que proporcional — jogar junto compensa. O golpe carregado atinge <b>o time todo</b>. Quem ficar sem nenhum Pokémon de pé pode <b>usar um Revive</b> (até 3 por luta) enquanto os outros seguram, e volta com metade do HP.',
-        '<b>Itens de raide</b>, dados como prêmio e só válidos na luta do chefe (um de cada por luta): <b>Cristal de Ruptura</b> (expõe o chefe na hora), <b>Selo de Interrupção</b> (corta o golpe que ele está carregando) e <b>Escudo Astral</b> (o próximo golpe carregado causa metade do dano no time todo). No co-op qualquer jogador do grupo pode usar, sem gastar o turno.',
-        'Derrotar um chefe libera a espécie dele na Pokédex e pra começar jornadas, dá a <b>insígnia de evento</b> dele (Domador do Infinito, Guardião do Pilar Celeste…) com título incluído, e um prêmio uma vez por semana. Na tela 👤 Conta você escolhe <b>uma</b> insígnia pra mostrar ao lado do seu nome — ela aparece também na sala do multiplayer, na lista de amigos e no ranking, e o servidor só mostra a de quem realmente venceu aquele chefe.'
-      ] },
-      { nome: 'Correções', itens: [
-        '<b>Sucker Punch</b> (e Thunderclap) agora só funciona se o alvo escolheu um golpe de dano neste turno e ainda não agiu. Antes era só um golpe de prioridade que nunca falhava.'
-      ] }
-    ] },
-  { versao: '2.6', data: '2026-09-25', titulo: 'Carteira, compras em atacado e curas pro nível 100', piada: 'Uma Potion de 20 HP num Pokémon nível 100 é tipo jogar um copo d\'água num incêndio. O lojista finalmente estocou o balde.',
+  { versao: '1.9', data: '2026-09-25', titulo: '💰 Carteira, compras em atacado e curas pro nível 100', piada: 'Uma Potion de 20 HP num Pokémon nível 100 é um copo d’água num Magcargo. O lojista ouviu as reclamações, assentiu com seriedade e passou a estocar o balde — por ₽2.500, sem desconto.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>💰 Carteira:</b> o dinheiro virou uma pílula grande no topo, sempre fora do menu ☰ (feito pra quem joga no celular). Na <b>batalha</b> ele também aparece na barra de turno, que não sai da tela, e a <b>loja</b> abre com "Você tem ₽X". Quando o valor muda, aparece um <b>+₽ / −₽</b> ao lado.',
@@ -507,9 +420,15 @@ export const PATCH_NOTES = [
         'Explorando agora dá pra achar mais variedade: Super, Hyper e Mega Potion, Burn Heal, Ice Heal e todos os X-itens.'
       ] }
     ] },
-  { versao: '2.5', data: '2026-09-25', titulo: 'O tempo das rotas', piada: 'A Caverna Gelada avisa que o granizo é cortesia da casa. O guarda-chuva do Psyduck continua sendo cobrado à parte.',
+  { versao: '1.8', data: '2026-09-25', titulo: '🌦 Clima, terreno e o tempo de cada rota', piada: 'O departamento meteorológico de Kanto pede desculpas pelos trinta anos de sol ininterrupto. O responsável, um Torkoal, alegou que estava apenas respirando. Foi transferido para o deserto de Hoenn, onde o defeito dele virou currículo.',
     secoes: [
       { nome: 'Novidades', itens: [
+        'As batalhas agora têm <b>clima</b>: sol forte, chuva, tempestade de areia, granizo e neve. Ele aparece no topo da luta, com quantos turnos ainda faltam. Sol deixa os golpes de Fogo 50% mais fortes e afraquece os de Água; a chuva faz o contrário. Areia e granizo machucam todo turno quem não for do tipo certo, e a neve dá mais Defesa pros Pokémon de Gelo.',
+        'Chegaram os <b>terrenos</b>: Campo Elétrico, Campo de Grama, Campo Psíquico e Campo de Névoa, que também duram 5 turnos e aparecem no topo da luta junto do clima. Elétrico deixa os golpes Elétricos 30% mais fortes e ninguém dorme; Grama fortalece golpes de Planta e cura um pouquinho todo turno; Psíquico fortalece os Psíquicos e barra golpes de prioridade; Névoa corta o dano de Dragão pela metade e bloqueia qualquer status.',
+        'O terreno só vale pra quem está <b>NO CHÃO</b>: Pokémon do tipo Voador e quem tem Levitate flutuam e ficam de fora — inclusive da cura e da proteção.',
+        'Rain Dance, Sunny Day, Sandstorm, Hail, Snowscape, Electric Terrain, Grassy Terrain, Psychic Terrain e Misty Terrain funcionam: ligam o tempo ou o chão por 5 turnos, valendo pros dois lados.',
+        'Habilidades de clima e terreno entraram em peso: Drizzle, Drought, Sand Stream e Snow Warning mudam o tempo assim que o Pokémon aparece, e Electric Surge, Grassy Surge, Psychic Surge e Misty Surge ligam o campo. Swift Swim, Chlorophyll, Sand Rush, Slush Rush e Surge Surfer dobram a velocidade no ambiente certo; Rain Dish, Ice Body e Dry Skin curam; Sand Veil e Snow Cloak fazem o inimigo errar mais; Hydration limpa status na chuva; Leaf Guard protege no sol; Solar Power troca poder por HP.',
+        'Thunder e Hurricane nunca erram na chuva (e ficam bem imprecisos no sol) e Blizzard acerta sempre no granizo e na neve. Solar Beam e Solar Blade disparam na hora quando está sol.',
         '<b>Clima e terreno de rota:</b> 27 rotas já começam a luta com o tempo da paisagem — neve nas geladas, <b>tempestade de areia</b> nos desertos, <b>sol forte</b> nos vulcões e praias, chuva nos lagos e pântanos — e 20 com terreno próprio (grama nos bosques, elétrico nas usinas, psíquico nas ruínas, névoa em Rivière e Glimwood). Vale para os dois lados, no single player e no co-op.',
         'O efeito da rota é <b>permanente</b>: só sai quando um golpe ou habilidade troca o tempo ou o chão. A troca dura os 5 turnos de sempre e, quando acaba, a rota volta ao que era. O selo na cena mostra <b>da rota</b> no lugar da contagem de turnos.',
         'Nova opção na tela inicial: <b>🌦 Clima e terreno das rotas</b>. No <b>Roguelike</b> e no <b>Hardcore</b> ela é sempre ligada; nos outros modos vem <b>desligada</b> e você liga se quiser. Só dá pra escolher no começo da jornada.',
@@ -517,25 +436,7 @@ export const PATCH_NOTES = [
         '<b>Castform</b> agora muda de forma com o tempo (Forecast): vira Fogo no sol, Água na chuva e Gelo no granizo ou na neve — os tipos e o sprite acompanham, inclusive o tempo da rota, e ele volta ao normal no fim da luta.'
       ] }
     ] },
-  { versao: '2.4', data: '2026-09-25', titulo: 'Habilidades de verdade', piada: 'O Slakoth pediu para constar que a nova habilidade dele está funcionando perfeitamente. Ele descansou, para provar.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'Mais de <b>50 habilidades</b> passam a valer em batalha, entre elas <b>Moxie</b>, <b>Defiant</b>, <b>Competitive</b>, <b>Contrary</b>, <b>Simple</b>, <b>Unaware</b>, <b>Mirror Armor</b>, <b>Poison Heal</b>, <b>Truant</b>, <b>Pressure</b>, <b>Iron Fist</b>, <b>Strong Jaw</b>, <b>Sharpness</b> e <b>Steelworker</b>.',
-        'Habilidades que <b>reagem a levar um golpe</b>: Steam Engine, Water Compaction, Stamina, Weak Armor, Justified, Rattled, Anger Point, Sand Spit e Seed Sower. Também entram Gooey e Tangling Hair (baixam a Velocidade de quem encosta), Poison Touch, Wonder Skin e as três que barram golpe de prioridade (Dazzling, Queenly Majesty, Armor Tail).',
-        'Defesa e entrada em campo: <b>Fur Coat</b> e <b>Ice Scales</b> (metade do dano físico / especial), <b>Super Luck</b> (crítico mais fácil), <b>Intrepid Sword</b> e <b>Dauntless Shield</b> (sobem um atributo ao entrar), Grass Pelt e Flower Gift. Hadron Engine e Orichalcum Pulse ligam o terreno elétrico / o sol e ainda dão o bônus de atributo junto.'
-      ] },
-      { nome: 'Equilíbrio', itens: [
-        'A <b>XP por vitória caiu para 60%</b>: são mais batalhas por nível e a jornada dura cerca de <b>1,65× mais</b>. O equilíbrio relativo não mudou — treinador continua valendo 1,5× de um selvagem, e o modo escolhido continua pesando igual.',
-        'Mexemos na XP ganha, e não na curva de nível: a curva vem da PokéAPI e fica guardada no seu aparelho, então mudá-la quebraria a comparação com as jornadas que você já terminou.'
-      ] },
-      { nome: 'Correções', itens: [
-        '<b>Download</b> agora lê o oponente: sobe o Ataque se a Defesa dele é menor que a Defesa Especial, e o Ataque Especial no caso contrário (antes subia sempre o Ataque Especial).',
-        '<b>Guard Dog</b> sobe o Ataque quando alguém tenta intimidar, em vez de só impedir a queda. <b>Sand Force</b> dá +30% em golpes de Pedra, Terra e Aço na tempestade de areia. <b>Effect Spore</b> sorteia entre sono, paralisia e veneno, como no jogo, e não pega em Grama.',
-        '<b>Water Bubble</b> também dobra os seus golpes de Água. <b>Toxic Boost</b> só vale envenenado e <b>Flare Boost</b> só queimado. <b>Magic Guard</b> bloqueia todo dano indireto (veneno, queimadura, recuo, armadilhas, Rough Skin…), e não só o clima.',
-        'Inner Focus, Own Tempo e Oblivious agora são imunes à Intimidação. E no <b>multiplayer</b> a Intimidação, o Download e as habilidades de degrau ao entrar em campo finalmente funcionam (antes só valiam no single player).'
-      ] }
-    ] },
-  { versao: '2.3', data: '2026-09-24', titulo: 'Para quem não decorou a tabela, e o esconderijo', piada: 'Descobrimos que nem todo mundo nasce sabendo que Planta é fraco contra Inseto. Corrigimos o jogo, não as pessoas.',
+  { versao: '1.7', data: '2026-09-24', titulo: 'A eficácia no próprio botão, e o esconderijo', piada: 'Ninguém nasce com a tabela de tipos decorada — só os Alakazam, e eles não compartilham. Agora o próprio botão conta se o golpe é bom. Corrigimos o jogo, não as pessoas.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Cada golpe seu agora mostra, no próprio botão, <b>o quanto ele é vantajoso</b> contra quem está na sua frente: extremamente efetivo (⏫), super efetivo (🔼), dano normal, pouco efetivo (🔽), quase sem efeito (⏬) ou não afeta (✖). Vem com cor, seta e texto ao mesmo tempo — cor sozinha não serve para quem não a distingue.',
@@ -546,30 +447,7 @@ export const PATCH_NOTES = [
         'Mais 16 habilidades ativas em batalha, entre elas <b>Battle Armor</b> e <b>Shell Armor</b> (o golpe nunca sai crítico contra você, nem quando seria garantido), Earth Eater, Purifying Salt, Victory Star e No Guard.'
       ] }
     ] },
-  { versao: '2.2', data: '2026-09-24', titulo: 'Terastalização, Z-Move e Gigantamax', piada: 'Seu Charizard finalmente pode olhar para uma pedra sem suar frio. O Alfa leu as notas, achou injusto e foi atrás do próprio cristal.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'A <b>Terastalização</b> chegou. Cada tipo é conquistado à parte (200 derrotados daquele tipo), e na batalha você escolhe entre os que já tem: o botão 💎 <b>não gasta o turno</b>, igual à Mega.',
-        'Terastalizado, você passa a ter <b>um tipo só</b> para receber golpe — é o que muda a luta: um Charizard Tera Água deixa de tomar 4× de Pedra. No ataque, a regra é a dos jogos: golpe do tipo Tera que você <b>já tinha</b> bate ×2, um tipo Tera novo bate ×1,5, e o STAB que você já tinha continua valendo. Dá para usar Tera e Mega na mesma batalha — são conquistas diferentes, cada uma com o seu custo.',
-        'O <b>Z-Move</b> chegou. Conquistado um Z (250 eliminações com o golpe, ou 500 com golpes do mesmo elemento), a loja passa a vender o <b>Cristal Z</b> por ₽12.000 — e, segurando o cristal, o botão 🌀 converte um golpe seu num golpe muito mais forte, uma vez por batalha.',
-        'Ao contrário da Mega e da Tera, o <b>Z-Move é o seu turno</b>: ele não transforma nada, ele é o ataque da rodada (e gasta o PP do golpe). O botão é laranja justamente para não ser clicado achando que é de graça. A conversão segue a tabela dos jogos, achatada no topo: um golpe de 60 vira 120, um de 120 vira 190 — usar o Z no golpe fraco rende mais.',
-        'O <b>Gigantamax</b> chegou, e com ele as quatro gimmicks estão jogáveis. Conquistado (nível 50 com a espécie em 25 jornadas), o botão 🔴 <b>dobra o seu HP</b> por 3 turnos e transforma todo golpe num golpe Max — e o seu Pokémon fica <b>gigante na tela</b>. É a única das quatro que <b>não pede item</b>: quem levou 25 jornadas para chegar aqui já pagou o preço.',
-        'O HP do Gigantamax volta na mesma proporção ao encolher: se você estava com metade da vida gigante, volta com metade da vida normal. E a tabela do golpe Max é mais modesta que a do Z de propósito — o Z é um tiro único, o Max vale três turnos.',
-        'O <b>inimigo agora terastaliza</b>: Alfa, lendários e treinadores, ao cair à metade do HP, como já acontecia com a Mega. Mas só uma virada por luta — quem já megaevoluiu não terastaliza também, senão o combate viraria de cabeça para baixo de uma vez só.'
-      ] }
-    ] },
-  { versao: '2.1', data: '2026-09-24', titulo: 'Mega Evolução', piada: 'Mil vitórias depois, a pedra finalmente reagiu. Dava pra ter reagido na quingentésima, mas pedra é assim.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'A <b>Mega Evolução</b> chegou. Conquistada a Pedra Mega de uma espécie (1.000 golpes finais dados sendo ela, na evolução final), aparece um botão ⚡ na batalha — e ele <b>não gasta o seu turno</b>: você megaevolui e ataca na mesma rodada. A forma Mega muda status, tipos, habilidade e aparência de verdade, e dura até o fim da batalha. Charizard e Mewtwo perguntam qual forma você quer (X ou Y), e Groudon e Kyogre entram pela mesma porta com o nome certo: <b>Reversão Primitiva</b>.',
-        'A <b>Pedra Mega</b> existe de verdade: conquistar a Mega de uma espécie libera a <b>compra</b> da pedra (₽15.000 na loja, só para a sua espécie), e é preciso <b>segurá-la</b> para megaevoluir. Rayquaza é a exceção, como nos jogos: ele megaevolui por saber <b>Dragon Ascent</b>, sem pedra nenhuma.',
-        'O outro lado também joga esse jogo: <b>Alfa, lendários e treinadores</b> podem megaevoluir, e fazem isso quando caem à metade do HP. A luta tem segunda fase agora. Selvagem de rota continua selvagem de rota, e só você megaevolui — aliado não, mesmo que a espécie dele esteja liberada.',
-        'São <b>95 formas cobrindo 89 espécies</b>, e a tela de Conquistas ganhou o <b>catálogo das Megas</b>: dá para ver todas elas, de todas as Gens, e quais você já conquistou.',
-        'Dá para <b>acompanhar uma conquista da conta</b> durante a jornada: o botão 📌 na tela de Conquistas fixa uma, ela aparece no painel de Missões com o quanto falta, e ao completar você é avisado e <b>ganha a recompensa nesta run</b> — além de valer nas próximas.',
-        'A tela de batalha agora tem a <b>cara da rota</b>: caverna, mar, usina, vulcão, floresta, gelo e mais, cada uma com céu, chão e luz próprios. E a lista de espécies desbloqueadas ganhou <b>busca</b> (por nome ou número) e vem sempre em ordem de Pokédex, com o número visível.'
-      ] }
-    ] },
-  { versao: '2.0', data: '2026-09-24', titulo: 'A região decide a forma, e a rota não acaba antes da missão', piada: 'O Exeggcute foi passar férias em Alola e voltou com um sotaque de Dragão. Coisas que acontecem.',
+  { versao: '1.6', data: '2026-09-24', titulo: 'A região decide a forma, e a rota não acaba antes da missão', piada: 'O Exeggcute passou duas semanas em Alola e voltou com onze metros de altura, tipo Dragão e um chapéu de palha. A alfândega de Kanto olhou aquilo por um tempo e liberou sem perguntas.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Evoluir <b>dentro da região</b> agora dá a forma regional: use a Pedra da Folha num Exeggcute em Alola e vem o Exeggutor de Alola, não o de Kanto. Vale pra todas as regiões e todas as formas que existem no mapa — Alola, Galar, Hisui e Paldea. Antes a evolução saía sempre na forma padrão, e a única maneira de ter uma forma regional era encontrar uma pronta no Santuário.',
@@ -586,9 +464,24 @@ export const PATCH_NOTES = [
         'A tela de Bugs e sugestões dizia "sem conexão" para qualquer falha de envio — inclusive quando o servidor recusava o relato. Agora ela diz o motivo de verdade e tenta reenviar a fila toda vez que você abre a tela, em vez de esperar um aviso de "internet voltou" que podia nunca chegar.'
       ] }
     ] },
-  { versao: '1.9', data: '2026-09-24', titulo: 'Não era a sua internet', piada: 'O jogo passou dias jurando que a culpa era da sua conexão. Metade das vezes a culpa era de uma função que nunca foi escrita. Pedimos desculpas à sua operadora.',
+  { versao: '1.5', data: '2026-09-24', titulo: '📥 Jogar offline de verdade (e não era a sua internet)', piada: 'O navegador contou 1.082 sprites de 600 bytes e concluiu, com absoluta convicção, que aquilo pesava 20 GB. No mesmo dia descobrimos que metade dos "a conexão falhou" era uma função que ninguém nunca escreveu. Pedimos desculpas à sua operadora.',
     secoes: [
+      { nome: 'Novidades', itens: [
+        'Em ⚙ Ajustes tem uma seção nova: baixe um mapa inteiro (Pokémon, golpes e sprites) pra jogar sem internet sem faltar nada. Antes, offline, só aparecia quem você já tinha encontrado — e Pokémon novo ficava sem imagem.',
+        'A tela mostra quantos Pokémon daquele mapa já estão guardados no aparelho e marca com ✅ os mapas completos.',
+        'Dá pra baixar o JOGO INTEIRO pra jogar sem internet: ⚙ Ajustes → Jogar offline → "⬇⬇ Baixar o jogo inteiro". São os 9 mapas, com dados, golpes e sprites de todo mundo.',
+        'O que o jogo guarda no aparelho saiu da caixinha apertada de antes e foi pro armazenamento grande do navegador — é o que permite guardar todos os sprites sem estourar o limite. A mesma tela mostra quanto espaço está em uso.',
+        'Os iniciais das 9 regiões (e as evoluções deles) não aparecem mais soltos nas rotas: escolher o seu no começo da jornada volta a significar alguma coisa. Pikachu e Eevee continuam aparecendo normalmente.',
+        'Treinadores de rota não têm mais só bicho da rota: metade da equipe deles pode ser qualquer espécie do mapa, sempre no nível da rota. Eles viajam, afinal.'
+      ] },
       { nome: 'Correções', itens: [
+        'A tela de "Jogar offline" dizia que o jogo ocupava mais de <b>20 GB</b> no aparelho. Não ocupava: os sprites são minúsculos (cerca de 600 bytes cada) e o jogo inteiro cabe em uns 20 MB. O número inflado vinha de como as imagens eram pedidas, e isso também podia fazer o download do jogo inteiro falhar por "falta de espaço" sem motivo nenhum. O espaço antigo é liberado sozinho na próxima vez que você abrir o jogo.',
+        'Quando a internet do celular piscava, a exploração morria com um "Failed to fetch". Agora o jogo tenta de novo sozinho (até 3 vezes, com uma pausa entre elas) antes de desistir — o que resolve a maioria dessas falhas.',
+        'As mensagens de erro de rede foram reescritas pra quem joga: falam de conexão instável, de limite da PokéAPI ou de erro do servidor, e lembram que dá pra baixar o mapa inteiro em ⚙ Ajustes → Jogar offline. Os avisos de "sem internet" do Alfa, dos lendários e da exploração também apontam pra lá.',
+        "Evolução agora entrega os golpes que ela deveria entregar: o golpe assinatura da forma nova (o King's Shield do Aegislash é o caso clássico) era perdido para sempre por quem evoluía acima do nível 1. A habilidade também acompanha a evolução direito, mantendo o slot — quem tinha habilidade oculta continua com a oculta, e o jogo avisa no registro quando ela muda de nome.",
+        'Se a internet cair bem na hora de uma evolução, ela não some mais: fica pendente, aparece na ficha e acontece sozinha assim que a rede volta.',
+        'Item sem imagem na PokéAPI (Coroa Galárica e companhia) mostra um ícone de caixinha no lugar do buraco que ficava antes.',
+        'O menu ☰ do celular estava com menos opções do que as telas ofereciam. Agora ele mostra os mesmos acessos: Início, Jornadas, Carreira, Ranking, Multiplayer, Conta, Novidades, Ajustes e Bugs — além de Layout e Novo jogo.',
         'Clicar num Pokémon na tela de criação dava "A conexão falhou ao buscar um dado da PokéAPI" e não deixava começar jornada nenhuma. Não era a conexão: a prévia chamava uma função que nunca tinha sido escrita, e o erro caía no mesmo tratamento da busca de rede. Por isso limpar cache, trocar de rede e baixar tudo de novo não adiantavam — e por isso o Full Randomizer continuava funcionando, já que ele não desenha a prévia. A função que faltava é a opção <b>✨ Começar shiny</b>, que agora existe de verdade. <b>Erro de código não se disfarça mais de erro de rede.</b>',
         'Não dava pra começar uma jornada quando a conexão estava ruim, mesmo com o mapa todo baixado. O jogo tinha o dado guardado, mas só aceitava a versão guardada quando o aparelho se declarava SEM internet — e wi-fi de metrô, portal cativo de hotel e 4G fraco contam como "com internet" pro navegador. Agora, se a rede falhar, o jogo segue com o que já está guardado.',
         'As imagens agora vêm de um CDN (o jsDelivr, que espelha o mesmo repositório de sprites). O endereço antigo é bloqueado em várias redes — provedor, DNS de celular, rede corporativa — e quando isso acontece TODA imagem do jogo some de uma vez, online inclusive.',
@@ -600,9 +493,14 @@ export const PATCH_NOTES = [
         'Aliado que usava Self-Destruct no Roguelike quebrava o turno inteiro ("Algo deu errado neste turno"): ele é perdido na hora, e a tela ainda tentava mostrar quem estava agindo usando a posição dele na equipe, que já não existia.'
       ] }
     ] },
-  { versao: '1.8', data: '2026-09-23', titulo: 'Badges, e cada mapa uma história', piada: 'As medalhas antigas ficavam só bonitas na parede. Estas aqui vêm com uma Potion dentro.',
+  { versao: '1.4', data: '2026-09-23', titulo: '🏅 A conta começou a contar: Conquistas, Pokédex e badges', piada: 'O contador de vitórias já existia, mas só fazia contato visual com o Pokémon derrotado e anotava mentalmente. Agora ele tem prancheta, caneta e uma medalha para te entregar.',
     secoes: [
       { nome: 'Novidades', itens: [
+        'Nova tela <b>🏅 Conquistas</b>: tudo o que a sua conta acumulou ao longo da carreira inteira, incluindo a jornada em andamento. A partir de agora o jogo registra, a cada vitória, os tipos do Pokémon derrotado, a espécie que você estava usando, o golpe que finalizou e o elemento dele — é o que vai desbloquear as gimmicks quando elas chegarem. Com marcos de caçada de 1.000, 10.000, 100.000 e 1.000.000 de Pokémon derrotados.',
+        'O abate do aliado conta para a espécie que você está usando (ele luta ao seu lado, afinal), mas tipo e golpe só contam quando o golpe final foi seu.',
+        'Nova tela <b>📖 Pokédex</b>: as 1025 espécies do jogo, as que você já encontrou com sprite e nome, as outras ainda como "?". Toque em quem você conhece pra abrir a ficha completa: tipos, atributos base, habilidades com descrição, quantas vezes você já viu, derrotou e recrutou, e <b>onde</b> aquele Pokémon aparece (quais rotas de quais mapas, com a chance de encontro, avisando quando ele é Alfa ou participa de uma luta final).',
+        'Recrutou um Pokémon <b>shiny</b>? A espécie dele fica desbloqueada na hora — e você pode começar jornadas novas jogando com ele ✨ shiny, quantas vezes quiser. Encontrar um é 1 em 4096; o direito é seu pra sempre.',
+        'Os <b>Alfas de rota</b> foram refeitos: nenhum se repete mais dentro do mesmo mapa, cada um combina com o tema da rota (nada de Aggron guardando o Mar de Hoenn) e cada mapa fecha com seu pseudo-lendário — Dragonite, Tyranitar, Salamence, Garchomp, Hydreigon, Goodra, Kommo-o, Dragapult e Archaludon. E o lendário da luta final agora é sorteado a cada jornada: fechar Kanto não é mais sempre Mewtwo.',
         'Fechar uma Gen agora ENCERRA a jornada em vitória: o seu Pokémon se aposenta como campeão daquele mapa, a jornada é pontuada e entra na carreira, e a próxima começa do zero na Gen seguinte — outro Pokémon, nível 5, mapa nos níveis normais dele. A tela de fim já propõe o mapa seguinte.',
         'Seguir com o MESMO Pokémon continua sendo possível, escolhendo ali na hora: você leva equipe, mochila e dinheiro, e o mapa novo se ajusta ao seu nível. Só que cada continuação vale 20% menos pontos no ranking (com piso de metade), porque chegar num mapa novo já forte é bem mais fácil.',
         '<b>Badges da conta:</b> conquistas de longo prazo na tela 🏅 Conquistas — marcos de caçada, um especialista por tipo, Pokédex regional e nacional, 100 aliados recrutados, recrutar um lendário, recrutar um shiny, fechar uma Gen no Hardcore, terminar uma jornada sem usar o Centro Pokémon, e mais.',
@@ -611,16 +509,6 @@ export const PATCH_NOTES = [
       ] },
       { nome: 'Equilíbrio', itens: [
         'No Roguelike, quando o seu nível passa do dobro do teto de uma rota, ela fica esgotada: não aparece mais ninguém pra lutar ali. Você continua entrando e vendo a Pokédex da rota — o que acaba é o farm em rota fraca. Nos outros modos nada muda.'
-      ] }
-    ] },
-  { versao: '1.7', data: '2026-09-23', titulo: 'A conta começou a contar: Conquistas e Pokédex', piada: 'Instalamos um contador na sua conta. Ele já estava lá antes, mas só fazia contato visual com os Pokémon derrotados e anotava mentalmente.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'Nova tela <b>🏅 Conquistas</b>: tudo o que a sua conta acumulou ao longo da carreira inteira, incluindo a jornada em andamento. A partir de agora o jogo registra, a cada vitória, os tipos do Pokémon derrotado, a espécie que você estava usando, o golpe que finalizou e o elemento dele — é o que vai desbloquear as gimmicks quando elas chegarem. Com marcos de caçada de 1.000, 10.000, 100.000 e 1.000.000 de Pokémon derrotados.',
-        'O abate do aliado conta para a espécie que você está usando (ele luta ao seu lado, afinal), mas tipo e golpe só contam quando o golpe final foi seu.',
-        'Nova tela <b>📖 Pokédex</b>: as 1025 espécies do jogo, as que você já encontrou com sprite e nome, as outras ainda como "?". Toque em quem você conhece pra abrir a ficha completa: tipos, atributos base, habilidades com descrição, quantas vezes você já viu, derrotou e recrutou, e <b>onde</b> aquele Pokémon aparece (quais rotas de quais mapas, com a chance de encontro, avisando quando ele é Alfa ou participa de uma luta final).',
-        'Recrutou um Pokémon <b>shiny</b>? A espécie dele fica desbloqueada na hora — e você pode começar jornadas novas jogando com ele ✨ shiny, quantas vezes quiser. Encontrar um é 1 em 4096; o direito é seu pra sempre.',
-        'Os <b>Alfas de rota</b> foram refeitos: nenhum se repete mais dentro do mesmo mapa, cada um combina com o tema da rota (nada de Aggron guardando o Mar de Hoenn) e cada mapa fecha com seu pseudo-lendário — Dragonite, Tyranitar, Salamence, Garchomp, Hydreigon, Goodra, Kommo-o, Dragapult e Archaludon. E o lendário da luta final agora é sorteado a cada jornada: fechar Kanto não é mais sempre Mewtwo.'
       ] },
       { nome: 'Correções', itens: [
         'As conquistas da conta estavam sendo <b>perdidas no fim de cada jornada</b>: o contador subia enquanto você jogava e a carreira nunca recebia nada. E o que sobrevivia era recalculado a partir do histórico, então apagar uma jornada da carreira apagava junto o que ela tinha liberado. Agora as espécies desbloqueadas e o progresso das gimmicks ficam gravados na conta, em lugar próprio, e <b>só crescem</b> — nada do que você conquistou se perde. Com conta, isso sobe pra nuvem e volta em qualquer aparelho.',
@@ -628,7 +516,7 @@ export const PATCH_NOTES = [
         'A tela de Conquistas estava com texto montado em cima das barras de progresso nas linhas sem sprite (tipos e golpes).'
       ] }
     ] },
-  { versao: '1.6', data: '2026-09-23', titulo: 'O Santuário: a Gen inteira, depois da vitória', piada: 'Os iniciais aceitaram sair do sindicato e voltar a aparecer — mas só no bairro nobre, e só para quem já venceu os lendários.',
+  { versao: '1.3', data: '2026-09-23', titulo: '🏛 O Santuário: a Gen inteira, depois da vitória', piada: 'Os iniciais só aceitaram voltar a aparecer no mato sob três condições: bairro nobre, grama aparada e porteiro. Chamamos aquilo de Santuário e fingimos que a ideia tinha sido nossa.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Cada mapa ganhou uma 11ª área, o <b>🏛 Santuário</b>, que abre quando você vence os lendários daquela Gen. Nele vive a Gen inteira: todas as espécies, com as linhas evolutivas completas, mais os iniciais, os lendários e os míticos. Com isso, dá para encontrar todo Pokémon de uma Gen depois de fechá-la — nenhuma espécie fica inalcançável.',
@@ -638,14 +526,14 @@ export const PATCH_NOTES = [
         'Lendários e míticos encontrados no Santuário aceitam petisco e podem virar aliados, mas confiam bem mais devagar que um Pokémon comum: espere mais de uma dezena de ofertas.'
       ] }
     ] },
-  { versao: '1.5', data: '2026-09-23', titulo: 'Golpes, telas e armadilhas', piada: 'As Pedras Afiadas agora cobram pedágio na entrada. O sindicato dos Charizard já entrou com recurso. O Aegislash, esse, passou o jogo inteiro segurando o escudo na frente e a espada atrás.',
+  { versao: '1.2', data: '2026-09-23', titulo: 'Golpes, telas e armadilhas', piada: 'Instalamos Pedras Afiadas na entrada do campo. O sindicato dos Charizard entrou com liminar alegando metade do HP só por chegar. Negada: está nos jogos desde 2006, e eles sabem disso.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Cada lado da batalha passou a ter o seu campo, e o que está no ar aparece no topo da luta: 🛡 do seu lado, ⚔ do lado do inimigo.',
         '<b>Telas:</b> Reflect corta pela metade o dano dos golpes físicos, Light Screen o dos especiais e Aurora Veil os dois (mas só funciona no granizo ou na neve). Duram 5 turnos e não empilham. <b>Safeguard</b> bloqueia status vindos do inimigo por 5 turnos (e não atrapalha quando você mesmo se põe pra dormir com Rest), <b>Mist</b> impede o inimigo de baixar os seus atributos e <b>Tailwind</b> dobra a velocidade do seu lado por 4 turnos.',
         '<b>Armadilhas de entrada:</b> Stealth Rock machuca conforme a fraqueza de quem entra (dobra em Voador!), Spikes empilha até 3 camadas e Toxic Spikes até 2 (a segunda envenena gravemente). Quem é Venenoso e anda no chão limpa os espinhos venenosos ao entrar. Elas pegam o próximo Pokémon que entra em campo — os do treinador e a fila de lendários; como você nunca troca de Pokémon, o jogo avisa na hora de usar que, do seu lado, não há em quem pegar.',
-        '<b>Mudança de Postura</b> entrou no jogo: o Aegislash vira a Forma Lâmina quando ataca (ataque altíssimo, defesa de papel) e volta para a Forma Escudo quando usa King\'s Shield. É a primeira habilidade do jogo que troca a forma do Pokémon no meio da batalha.',
-        'As <b>barreiras</b> deixaram de ser todas iguais: King\'s Shield tira 2 de Ataque de quem tenta encostar, Obstruct tira 2 de Defesa, Spiky Shield machuca, Baneful Bunker envenena, Silk Trap tira Velocidade e Burning Bulwark queima. Só vale para golpes físicos — quem ataca de longe é bloqueado sem se machucar.',
+        "<b>Mudança de Postura</b> entrou no jogo: o Aegislash vira a Forma Lâmina quando ataca (ataque altíssimo, defesa de papel) e volta para a Forma Escudo quando usa King's Shield. É a primeira habilidade do jogo que troca a forma do Pokémon no meio da batalha.",
+        "As <b>barreiras</b> deixaram de ser todas iguais: King's Shield tira 2 de Ataque de quem tenta encostar, Obstruct tira 2 de Defesa, Spiky Shield machuca, Baneful Bunker envenena, Silk Trap tira Velocidade e Burning Bulwark queima. Só vale para golpes físicos — quem ataca de longe é bloqueado sem se machucar.",
         '<b>Escama do Coração</b> (₽5.000): faz o Pokémon relembrar um golpe que ele já podia ter aprendido subindo de nível e que você deixou passar. Também aparece, bem raramente, entre os itens achados explorando.',
         '<b>Disco Técnico</b> (₽8.000, só na loja): ensina um golpe que a Pokédex diz que a espécie aprende por MT, tutor ou herança — golpes que nunca apareceriam subindo de nível. Cada Disco usado deixa o próximo ₽4.000 mais caro. Os dois funcionam em você e em qualquer aliado, e é você quem escolhe qual golpe sai pra dar lugar ao novo.',
         'Aliado que aprende um golpe sozinho agora tem vontade própria: metade das vezes ele prefere ficar com o que já sabe, e quando troca, troca um golpe qualquer — nada de sempre descartar o mais fraco pelo mais forte.',
@@ -653,52 +541,12 @@ export const PATCH_NOTES = [
       ] },
       { nome: 'Correções', itens: [
         'Flame Charge (e todo golpe que dá bônus a quem usa: Power-Up Punch, Ancient Power, Charge Beam…) estava aumentando o atributo do OPONENTE. Agora o bônus vai para quem usou o golpe — e os golpes que cobram um preço de quem usa, como Close Combat e Draco Meteor, continuam baixando os atributos do próprio usuário.',
-        'Evoluir não reescreve mais o moveset inteiro: a evolução entrega o golpe que ela realmente concede (o Stomp do Exeggutor, o King\'s Shield do Aegislash), e não toda a lista de golpes que a forma nova saberia se tivesse acabado de nascer.',
+        "Evoluir não reescreve mais o moveset inteiro: a evolução entrega o golpe que ela realmente concede (o Stomp do Exeggutor, o King's Shield do Aegislash), e não toda a lista de golpes que a forma nova saberia se tivesse acabado de nascer.",
         'O <b>Disco Técnico</b> não funcionava em jornadas começadas antes dele existir: a ficha do Pokémon guarda uma cópia dos dados da espécie, e essa cópia não tinha a lista de golpes de MT, tutor e herança. Agora ela é atualizada sozinha na primeira vez que você usa o item com internet.',
         'Os Alfas que eram formas evoluídas de inicial estavam anunciando um nome e aparecendo com o corpo de outro Pokémon. Agora o nome e a espécie do Alfa mudam sempre juntos.'
       ] }
     ] },
-  { versao: '1.4', data: '2026-09-23', titulo: 'O jogo inteiro no bolso (e os iniciais em greve)', piada: 'O navegador olhou 1082 figurinhas de 600 bytes e anunciou, com toda a confiança, que elas pesavam 20 gigabytes. Pedimos uma segunda opinião.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'Dá pra baixar o JOGO INTEIRO pra jogar sem internet: ⚙ Ajustes → Jogar offline → "⬇⬇ Baixar o jogo inteiro". São os 9 mapas, com dados, golpes e sprites de todo mundo.',
-        'O que o jogo guarda no aparelho saiu da caixinha apertada de antes e foi pro armazenamento grande do navegador — é o que permite guardar todos os sprites sem estourar o limite. A mesma tela mostra quanto espaço está em uso.',
-        'Os iniciais das 9 regiões (e as evoluções deles) não aparecem mais soltos nas rotas: escolher o seu no começo da jornada volta a significar alguma coisa. Pikachu e Eevee continuam aparecendo normalmente.',
-        'Treinadores de rota não têm mais só bicho da rota: metade da equipe deles pode ser qualquer espécie do mapa, sempre no nível da rota. Eles viajam, afinal.'
-      ] },
-      { nome: 'Correções', itens: [
-        'A tela de "Jogar offline" dizia que o jogo ocupava mais de <b>20 GB</b> no aparelho. Não ocupava: os sprites são minúsculos (cerca de 600 bytes cada) e o jogo inteiro cabe em uns 20 MB. O número inflado vinha de como as imagens eram pedidas, e isso também podia fazer o download do jogo inteiro falhar por "falta de espaço" sem motivo nenhum. O espaço antigo é liberado sozinho na próxima vez que você abrir o jogo.',
-        'Quando a internet do celular piscava, a exploração morria com um "Failed to fetch". Agora o jogo tenta de novo sozinho (até 3 vezes, com uma pausa entre elas) antes de desistir — o que resolve a maioria dessas falhas.',
-        'As mensagens de erro de rede foram reescritas pra quem joga: falam de conexão instável, de limite da PokéAPI ou de erro do servidor, e lembram que dá pra baixar o mapa inteiro em ⚙ Ajustes → Jogar offline. Os avisos de "sem internet" do Alfa, dos lendários e da exploração também apontam pra lá.',
-        'Evolução agora entrega os golpes que ela deveria entregar: o golpe assinatura da forma nova (o King\'s Shield do Aegislash é o caso clássico) era perdido para sempre por quem evoluía acima do nível 1. A habilidade também acompanha a evolução direito, mantendo o slot — quem tinha habilidade oculta continua com a oculta, e o jogo avisa no registro quando ela muda de nome.',
-        'Se a internet cair bem na hora de uma evolução, ela não some mais: fica pendente, aparece na ficha e acontece sozinha assim que a rede volta.',
-        'Item sem imagem na PokéAPI (Coroa Galárica e companhia) mostra um ícone de caixinha no lugar do buraco que ficava antes.',
-        'O menu ☰ do celular estava com menos opções do que as telas ofereciam. Agora ele mostra os mesmos acessos: Início, Jornadas, Carreira, Ranking, Multiplayer, Conta, Novidades, Ajustes e Bugs — além de Layout e Novo jogo.'
-      ] }
-    ] },
-
-  { versao: '1.3', data: '2026-09-22', titulo: 'Offline de verdade e itens mais fáceis de achar', piada: 'O Porygon foi baixado com sucesso. Ele pediu pra avisar que agora mora no seu aparelho.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'Em ⚙ Ajustes tem uma seção nova: baixe um mapa inteiro (Pokémon, golpes e sprites) pra jogar sem internet sem faltar nada. Antes, offline, só aparecia quem você já tinha encontrado — e Pokémon novo ficava sem imagem.',
-        'A tela mostra quantos Pokémon daquele mapa já estão guardados no aparelho e marca com ✅ os mapas completos.',
-        'A ficha agora tem atalho: se você tem um item pra segurar na mochila, dá pra equipar direto ali, sem procurar.',
-        'Uma Fruta Oran pode ser achada explorando, então a mecânica de segurar item aparece mesmo pra quem não passou na loja.',
-        'A loja ganhou uma frase explicando cada divisão (para segurar, evolução, exploração).'
-      ] }
-    ] },
-  { versao: '1.2', data: '2026-09-22', titulo: 'Agora chove, e o chão entrou na briga', piada: 'O departamento meteorológico de Kanto pede desculpas pelos 30 anos de sol constante. O Campo de Grama foi aparado; o jardineiro de Paldea agradece as mensagens de carinho.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        'As batalhas agora têm <b>clima</b>: sol forte, chuva, tempestade de areia, granizo e neve. Ele aparece no topo da luta, com quantos turnos ainda faltam. Sol deixa os golpes de Fogo 50% mais fortes e afraquece os de Água; a chuva faz o contrário. Areia e granizo machucam todo turno quem não for do tipo certo, e a neve dá mais Defesa pros Pokémon de Gelo.',
-        'Chegaram os <b>terrenos</b>: Campo Elétrico, Campo de Grama, Campo Psíquico e Campo de Névoa, que também duram 5 turnos e aparecem no topo da luta junto do clima. Elétrico deixa os golpes Elétricos 30% mais fortes e ninguém dorme; Grama fortalece golpes de Planta e cura um pouquinho todo turno; Psíquico fortalece os Psíquicos e barra golpes de prioridade; Névoa corta o dano de Dragão pela metade e bloqueia qualquer status.',
-        'O terreno só vale pra quem está <b>NO CHÃO</b>: Pokémon do tipo Voador e quem tem Levitate flutuam e ficam de fora — inclusive da cura e da proteção.',
-        'Rain Dance, Sunny Day, Sandstorm, Hail, Snowscape, Electric Terrain, Grassy Terrain, Psychic Terrain e Misty Terrain funcionam: ligam o tempo ou o chão por 5 turnos, valendo pros dois lados.',
-        'Habilidades de clima e terreno entraram em peso: Drizzle, Drought, Sand Stream e Snow Warning mudam o tempo assim que o Pokémon aparece, e Electric Surge, Grassy Surge, Psychic Surge e Misty Surge ligam o campo. Swift Swim, Chlorophyll, Sand Rush, Slush Rush e Surge Surfer dobram a velocidade no ambiente certo; Rain Dish, Ice Body e Dry Skin curam; Sand Veil e Snow Cloak fazem o inimigo errar mais; Hydration limpa status na chuva; Leaf Guard protege no sol; Solar Power troca poder por HP.',
-        'Thunder e Hurricane nunca erram na chuva (e ficam bem imprecisos no sol) e Blizzard acerta sempre no granizo e na neve. Solar Beam e Solar Blade disparam na hora quando está sol.'
-      ] }
-    ] },
-  { versao: '1.1', data: '2026-09-22', titulo: 'Celular, sala mais firme e Caça Shiny', piada: 'Um Fake Out estava sendo usado até no meio da conversa. Agora ele só assusta uma vez, como manda a boa educação.',
+  { versao: '1.1', data: '2026-09-22', titulo: 'Celular, sala mais firme e 🎯 Caça Shiny', piada: 'O Fake Out estava funcionando no turno nove, o que tecnicamente faz dele um Fake Out Permanente. O Hitmonchan adorou. A tabela de prioridade, nem tanto.',
     secoes: [
       { nome: 'Novidades', itens: [
         'No celular, a batalha virou tela fixa: a cena do combate fica presa no topo e o resto da página (golpes, registro, ficha, aliados e mochila) rola normalmente por baixo, então dá pra ver o seu Pokémon e o inimigo enquanto escolhe o que fazer.',
@@ -706,32 +554,34 @@ export const PATCH_NOTES = [
         'Dois <b>repelentes</b> na loja: o Seletivo (30 explorações) deixa passar só a espécie que você escolher da rota, e o Total (40 explorações) espanta todos os selvagens. Com eles ligados você segue achando treinadores, itens e dinheiro normalmente.',
         'Na sala multiplayer agora tem Centro Pokémon: dá pra curar a equipe entre as lutas sem sair da sala.'
       ] },
+      { nome: 'Equilíbrio', itens: [
+        'O inimigo não sorteia mais qualquer golpe: agora ele tende a escolher o que dá mais dano em você, olhando tipo e eficácia.',
+        'O quanto ele acerta a escolha depende de quem é: selvagem erra bastante (metade das vezes), treinador pensa melhor, e Alfa e lendário quase sempre escolhem o melhor golpe. Vale também nas batalhas multiplayer.'
+      ] },
       { nome: 'Correções', itens: [
         'Dava pra escapar de qualquer batalha "sem fuga" — treinador, Alfa, lendário — só recarregando a página. A batalha em andamento agora vai junto no save e volta do jeito que estava, no mesmo turno.',
         'Fake Out (e First Impression) só funcionam no primeiro golpe da batalha. Antes dava pra usar em qualquer turno e fazer o inimigo recuar sempre.',
         'Sala multiplayer: as escolhas às vezes não chegavam no anfitrião e o turno só saía quando o prazo de 45 segundos estourava. Agora cada mensagem é reenviada quando falha, o anfitrião repete o estado da luta de tempos em tempos e existe um botão 🔄 Sincronizar.',
         'Trocar de aba não derruba mais você da sala: a conexão tenta voltar sozinha, e o jogo espera o anfitrião reaparecer antes de encerrar a sala. A sala também mostra o estado da conexão (conectado / instável / sem conexão) e tem um diagnóstico com as últimas mensagens trocadas.'
-      ] },
-      { nome: 'Equilíbrio', itens: [
-        'O inimigo não sorteia mais qualquer golpe: agora ele tende a escolher o que dá mais dano em você, olhando tipo e eficácia.',
-        'O quanto ele acerta a escolha depende de quem é: selvagem erra bastante (metade das vezes), treinador pensa melhor, e Alfa e lendário quase sempre escolhem o melhor golpe. Vale também nas batalhas multiplayer.'
       ] }
     ] },
-  { versao: '1.0', data: '2026-09-22', titulo: 'Itens para segurar, mochila arrumada e estas notas', piada: 'Um Snorlax segurando Restos entrou em recursão e quase comeu o servidor. Já foi contido.',
+  { versao: '1.0', data: '2026-09-22', titulo: 'Itens para segurar e a mochila arrumada', piada: 'Demos Restos a um Snorlax. Ele curou. Comeu os Restos. Curou de novo. Em algum ponto o servidor pediu para sair. O Snorlax não percebeu nada e segue dormindo na Rota 12.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Cada Pokémon da equipe pode segurar um item, que age sozinho na batalha. São 13 para começar: Restos, Lodo Negro, Orbe da Vida, Faixa de Foco, Sino-Concha, Elmo Rochoso, Cinto do Perito, Faixa Muscular, Óculos do Sábio, Colete de Assalto e as frutas Oran, Sitrus e Lum.',
         'Para equipar: na mochila, divisão 🎒 Para segurar, toque em "Segurar" e escolha quem leva. A ficha mostra o que cada um está segurando, com um botão para guardar de volta.',
         'As frutas são comidas sozinhas na hora do aperto: Oran e Sitrus quando o HP cai à metade, Lum quando você pega qualquer status.',
         'A mochila e a loja agora têm divisões: 🧪 Cura e status, ⚔ Em batalha, 🎒 Para segurar, 💎 Evolução, 🍖 Petiscos e ✨ Especiais. Fica bem mais fácil achar as coisas.',
-        'Nova tela 📜 Novidades: estas notas de atualização, para você acompanhar o que muda no jogo a cada leva.'
+        'Nova tela 📜 Novidades: estas notas de atualização, para você acompanhar o que muda no jogo a cada leva.',
+        'A ficha agora tem atalho: se você tem um item pra segurar na mochila, dá pra equipar direto ali, sem procurar.',
+        'Uma Fruta Oran pode ser achada explorando, então a mecânica de segurar item aparece mesmo pra quem não passou na loja.',
+        'A loja ganhou uma frase explicando cada divisão (para segurar, evolução, exploração).'
       ] },
       { nome: 'Equilíbrio', itens: [
         'O Orbe da Vida bate 30% mais forte, mas cobra 10% do seu HP máximo a cada golpe. O Colete de Assalto dá 50% de Defesa Especial, mas tranca os golpes de status. Escolha com carinho.'
       ] }
     ] },
-
-  { versao: '0.9', data: '2026-09-19', titulo: 'Um mapa para cada geração', piada: 'Os lendários exigiram um camarim maior, então demos uma rota inteira só para eles.',
+  { versao: '0.9', data: '2026-09-19', titulo: 'Um mapa para cada geração', piada: 'Os lendários se recusaram a dividir rota com Rattata. Negociamos três semanas. Eles ficaram com a rota 10 inteira e o Rattata ficou com a rota 1 inteira, onde ele já mandava mesmo.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Agora existe um mapa para cada geração — Kanto, Johto, Hoenn, Sinnoh, Unova, Kalos, Alola, Galar e Paldea —, cada um com 10 rotas que vão abrindo conforme você sobe de nível, do 2 até por volta do 62.',
@@ -746,11 +596,13 @@ export const PATCH_NOTES = [
         'A antiga Fenda Dimensional saiu do jogo. Quem tinha uma jornada parada lá recomeça a explorar pela primeira rota, sem perder nada.'
       ] }
     ] },
-
-  { versao: '0.8', data: '2026-09-09', titulo: 'Golpes especiais funcionando de verdade', piada: 'Corrigido um bug em que Explosion era só um susto seguido de um pedido de desculpas.',
+  { versao: '0.8', data: '2026-09-09', titulo: 'Golpes especiais funcionando de verdade', piada: 'O Electrode usava Explosion e continuava em campo, constrangido, olhando para os lados. Agora o sacrifício é um sacrifício. Ele pediu para registrar que preferia o bug.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Todos os golpes que algum Pokémon aprende por nível foram conferidos um a um contra o motor de batalha. A primeira leva de correções entrou agora, e o que ainda falta (clima, terrenos, itens segurados e golpes de lado do campo) já está mapeado para as próximas atualizações.'
+      ] },
+      { nome: 'Equilíbrio', itens: [
+        'Poder variável de verdade em Flail, Reversal, Eruption, Water Spout, Gyro Ball, Electro Ball, Hex, Facade, Venoshock e Brine: agora eles olham o HP, a velocidade ou o status antes de decidir a força. Endeavor iguala o HP do alvo ao seu.'
       ] },
       { nome: 'Correções', itens: [
         'Protect, Detect e a turma toda protegem de verdade: o golpe do inimigo simplesmente falha. Usar várias vezes seguidas fica cada vez menos confiável, como nos jogos.',
@@ -759,13 +611,9 @@ export const PATCH_NOTES = [
         'Toxic envenena gravemente e o dano cresce a cada turno. Leech Seed drena um pedaço do HP do alvo por turno para quem plantou, e Pokémon do tipo Planta são imunes. Dream Eater só funciona com o alvo dormindo.',
         'Golpes de dois turnos (Solar Beam, Sky Attack, Fly, Dig, Dive…) carregam num turno e saem no seguinte, e quem voa ou cava fica fora de alcance enquanto isso. Hyper Beam, Giga Impact e parecidos obrigam a recarregar depois — mas só se o golpe tiver acertado.',
         'Thrash, Outrage e Petal Dance atacam sozinhos por dois ou três turnos e deixam quem usou confuso no fim. Fissure, Guillotine, Sheer Cold e Horn Drill voltaram a derrubar de um golpe só, com chance ligada à diferença de nível — e nunca funcionam contra quem é mais forte que você.'
-      ] },
-      { nome: 'Equilíbrio', itens: [
-        'Poder variável de verdade em Flail, Reversal, Eruption, Water Spout, Gyro Ball, Electro Ball, Hex, Facade, Venoshock e Brine: agora eles olham o HP, a velocidade ou o status antes de decidir a força. Endeavor iguala o HP do alvo ao seu.'
       ] }
     ] },
-
-  { versao: '0.7', data: '2026-08-26', titulo: 'Evoluções especiais', piada: 'Kadabra finalmente aceitou que o Cabo de Conexão conta como troca. Machoke ainda resmunga.',
+  { versao: '0.7', data: '2026-08-26', titulo: 'Evoluções especiais', piada: 'Explicamos ao Kadabra que o Cabo de Conexão vale como troca. Ele leu o cabo inteiro com a colher, concordou que era legítimo e evoluiu na hora. O Machoke ainda quer ver o contrato.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Chegaram as 10 pedras de evolução (Fogo, Água, Trovão, Folha, Lua, Sol, Brilhante, Crepúsculo, Aurora e Gelo) e itens como a Maçã Doce, o Bule Rachado e a Armadura Auspiciosa. As pedras e o Cabo de Conexão são vendidos na loja; o resto você acha explorando, da quarta rota em diante, e como prêmio de Alfa.',
@@ -774,12 +622,11 @@ export const PATCH_NOTES = [
         'A hora do dia conta: o jogo usa o relógio do seu aparelho, com dia das 6h às 18h e noite das 18h às 6h.',
         'Outras condições dos jogos também valem: saber um golpe específico, ter um aliado de certa espécie ou tipo, comparar Ataque com Defesa (o caso do Tyrogue) e segurar determinados itens.',
         'Shedinja: quando Nincada vira Ninjask, a casca ganha vida. Se houver vaga na equipe, Shedinja entra sozinho como aliado; com a equipe cheia, você escolhe em qual dos dois o seu Pokémon vira.',
-        'Evoluções que dependiam de coisas que este jogo não tem ganharam uma regra equivalente: Sirfetch\'d com 3 críticos numa batalha, Runerigus ao aguentar 49 de dano, Kingambit ao derrotar 3 Bisharp e Annihilape sabendo Rage Fist. A ficha mostra exatamente o que falta para cada evolução possível.',
+        "Evoluções que dependiam de coisas que este jogo não tem ganharam uma regra equivalente: Sirfetch'd com 3 críticos numa batalha, Runerigus ao aguentar 49 de dano, Kingambit ao derrotar 3 Bisharp e Annihilape sabendo Rage Fist. A ficha mostra exatamente o que falta para cada evolução possível.",
         'Os seus aliados também evoluem, e o jogo sempre pergunta antes de deixar acontecer.'
       ] }
     ] },
-
-  { versao: '0.6', data: '2026-08-13', titulo: 'Jornadas salvas, navegação e fontes', piada: 'Corrigido um bug em que Slowpoke demorava três dias para abrir a lista de jornadas.',
+  { versao: '0.6', data: '2026-08-13', titulo: 'Jornadas salvas, navegação e fontes', piada: 'O Slowpoke foi contratado para carregar a lista de jornadas salvas. Ele entregou. Três dias depois, mas entregou. Agradecemos os serviços e contratamos um Jolteon.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Dá para ter várias jornadas em andamento ao mesmo tempo. Em "Novo jogo", escolha "Guardar e começar outra" (nada se perde) ou "Encerrar". Cabem até 12 guardadas.',
@@ -793,8 +640,7 @@ export const PATCH_NOTES = [
         'No celular, o menu ☰ fecha sozinho ao tocar num botão, ao tocar fora dele ou com Esc, em vez de ficar aberto por cima da tela seguinte.'
       ] }
     ] },
-
-  { versao: '0.5', data: '2026-07-30', titulo: 'Habilidades com efeito de verdade', piada: 'Wonder Guard deixou de ser uma sugestão. Shedinja agradece e pede para não ser lembrado disso.',
+  { versao: '0.5', data: '2026-07-30', titulo: 'Habilidades com efeito de verdade', piada: 'O Shedinja passou meses com "Wonder Guard" escrito na ficha e apanhando de Tackle mesmo assim. Agora a habilidade funciona. Ele chorou de emoção, o que foi arriscado: ele tem 1 de HP.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Cerca de 60 habilidades passaram a ter efeito de verdade na batalha, e funcionam igualzinho no jogo sozinho e no multiplayer. A ficha marca quais das suas estão ativas.',
@@ -809,8 +655,7 @@ export const PATCH_NOTES = [
         'Golpe ou habilidade que ainda não tem efeito diz isso com todas as letras, em vez de fingir que funcionou.'
       ] }
     ] },
-
-  { versao: '0.4', data: '2026-07-16', titulo: 'Ícone, amigos e canal de bugs', piada: 'Corrigido um bug em que os Ditto se transformavam no ícone de outro jogador.',
+  { versao: '0.4', data: '2026-07-16', titulo: 'Ícone, amigos e canal de bugs', piada: 'Um Ditto copiou o ícone de outro jogador e passou dois dias respondendo pelo nome dele na lista de amigos. Ninguém notou, nem o original. O Ditto trabalha no suporte agora.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Escolha o seu ícone entre os 1025 Pokémon, normal ou ✨ shiny. Ele aparece no topo da tela, no ranking, nas salas de multiplayer e para os seus amigos.',
@@ -824,8 +669,7 @@ export const PATCH_NOTES = [
         'Sem conta, o ícone fica salvo só no seu navegador — e sobe para a conta no primeiro login, sem você precisar escolher de novo.'
       ] }
     ] },
-
-  { versao: '0.3', data: '2026-06-30', titulo: 'Multiplayer: co-op e PvP', piada: 'Removido o Magikarp que entrava nas salas só para dar Splash em todo mundo.',
+  { versao: '0.3', data: '2026-06-30', titulo: 'Multiplayer: co-op e PvP', piada: 'Um Magikarp entrou em sete salas seguidas e usou Splash em todas. Ninguém foi ferido, ninguém foi curado, ninguém entendeu. Ele hoje é mascote oficial do PvP.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Multiplayer por sala: um jogador cria e passa o código de 4 letras, e até 6 pessoas entram. Não precisa de conta.',
@@ -840,8 +684,7 @@ export const PATCH_NOTES = [
         'O PvP é amistoso: não gasta HP nem PP, só conta vitórias e derrotas, e dá para desistir. Cada um escolhe o golpe e o alvo dos seus Pokémon, e o turno sai quando todos escolherem ou em 45 segundos, no automático.'
       ] }
     ] },
-
-  { versao: '0.2', data: '2026-06-11', titulo: 'Roguelike e ranking global', piada: 'O ranking passou a recusar pontuações impossíveis. Sim, aquele Bidoof de nível 340 era você.',
+  { versao: '0.2', data: '2026-06-11', titulo: 'Roguelike e ranking global', piada: 'Um Bidoof nível 340 liderava o ranking com nove trilhões de pontos. Foi convidado a explicar. Respondeu "Bi". O servidor entendeu como confissão.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Chegou o modo Roguelike, agora o principal do jogo: cada jornada é uma run. Você começa só com os iniciais e, jogando, vai desbloqueando novas espécies para as próximas runs.',
@@ -857,8 +700,7 @@ export const PATCH_NOTES = [
         'A pontuação do ranking é recalculada no servidor a partir dos números da jornada, e valores impossíveis são recusados. Uma jornada recusada não trava o envio das outras.'
       ] }
     ] },
-
-  { versao: '0.1', data: '2026-05-20', titulo: 'O começo: você é o Pokémon', piada: 'Zubat continuam aparecendo o tempo todo. Isso não é bug, é tradição.',
+  { versao: '0.1', data: '2026-05-20', titulo: 'O começo: você é o Pokémon', piada: 'Um Zubat apareceu. Depois outro. Depois mais onze. Fomos conferir a taxa de encontro no código e descobrimos que o Zubat não está no código: ele simplesmente se convidou.',
     secoes: [
       { nome: 'Novidades', itens: [
         'Primeira versão do PokéRPG: aqui você é o Pokémon, sem treinador e sem Pokébola. Escolha entre os iniciais das nove regiões, mais Pikachu e Eevee, e saia explorando as rotas.',
