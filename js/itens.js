@@ -6,17 +6,18 @@ import { say, ask, toast } from './ui.js';
 import { render } from './render.js';
 import { changeStats } from './efeitos.js';
 import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.js';
-import { ITEMS, ST_SHORT } from './dados.js';
+import { ITEMS, ST_SHORT, STATS, STAT_PT } from './dados.js';
 import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO, recalc, ivsParaMaximizar } from './regras.js';
 import { guardar, trazer } from './esconderijo.js';
 import { usarItemDeRaide } from './boss.js';
 import { loadPokemon } from './api.js';
-import { esc, fmt, offline } from './util.js';
+import { esc, fmt, offline, pick } from './util.js';
 
-// mensagem quando ninguém da equipe se beneficiaria
-const SEM_EFEITO = { heal: 'O HP já está cheio.', healPct: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)' };
+// mensagem quando ninguém da equipe se beneficiaria. As chaves são as marcas do item (dados.ITEMS); as duas
+// últimas são VALORES de `treino`, que carrega dois efeitos diferentes numa marca só (ver o `tipo` em useItem).
+const SEM_EFEITO = { heal: 'O HP já está cheio.', healPct: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)', evs: 'Os EVs já estão zerados: não há treino pra desfazer.', iv: 'Os 6 IVs já estão no máximo (31). A tampa não teria o que melhorar.' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
 
@@ -195,10 +196,13 @@ export async function useItem(id, inBattle) {
   if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
   if (it.repelente) { if (inBattle) { await say('Repelente só funciona explorando.'); return false; } return usarRepelente(id); }
   if (it.ensina) { if (inBattle) { await say('Dá pra mexer nos golpes só fora da batalha.'); return false; } return ensinarGolpe(id); }
+  // itens de treino (dados.ITENS_TREINO): mexem nos atributos BASE, então recalculam o HP máximo — nada disso
+  // no meio de uma luta. Daqui pra baixo é o caminho comum: "usar em quem?", mochila e mensagem.
+  if (it.treino && inBattle) { await say('Treino é coisa de fora da batalha.'); return false; }
   const equipe = ladoJogador();
   const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
   if (!alvos.length) {
-    const tipo = Object.keys(SEM_EFEITO).find(k => it[k]);
+    const tipo = it.treino || Object.keys(SEM_EFEITO).find(k => it[k]);
     await say(tipo ? SEM_EFEITO[tipo] + (equipe.length > 1 ? ' (ninguém da equipe precisa)' : '') : 'Não teria efeito agora.');
     return false;
   }
@@ -232,6 +236,18 @@ export async function useItem(id, inBattle) {
   } else if (it.stage) {
     await say(`Você usou ${it.name}${em}.`);
     await changeStats(M, [{ stat: it.stage, change: 2 }]);
+  } else if (it.treino === 'evs') {
+    M.evs = Object.fromEntries(STATS.map(s => [s, 0]));
+    /* `recalc` desce o HP atual junto com o máximo, e ele pode chegar a 0: 252 EVs de HP no nível 100 valem 63
+       pontos, então usar o mochi com 1 de HP deixaria o Pokémon desmaiado FORA de batalha. Piso de 1. */
+    recalc(M); M.hp = Math.max(1, M.hp); render();
+    await say(`Você usou ${it.name}${em}. Os EVs de ${nm(M)} voltaram a zero — o treino começa de novo.`, 'good');
+  } else if (it.treino === 'iv') {
+    const s = pick(ivsParaMaximizar(M));
+    // cópia, nunca escrita em cima: `mon.ivs` pode ser o mapa CONGELADO e compartilhado de "Potencial máximo" (pokemon.IVS_MAX)
+    M.ivs = { ...M.ivs, [s]: 31 };
+    recalc(M); render();
+    await say(`Você usou ${it.name}${em}. O treino intenso levou o IV de <b>${STAT_PT[s]}</b> de ${nm(M)} ao máximo (31)!`, 'good');
   } else if (it.candy) {
     await say(M === P ? `Você comeu uma ${it.name}.` : `${nm(M)} comeu uma ${it.name}.`);
     if (M === P) await gainExp(S.meta.growth[M.level + 1] - M.exp);

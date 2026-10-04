@@ -380,6 +380,20 @@ export const ITENS_GOLPE = {
 };
 Object.assign(ITEMS, ITENS_GOLPE);
 
+/* Itens de TREINO (itens.js, `treino`): os únicos que mexem nos números de NASCENÇA de um Pokémon, e por isso
+   os mais caros do jogo. Não entram em `FIND_ITEMS` nem em prêmio de Alfa de propósito (pedido do usuário):
+   achar isso numa rota tiraria o peso da decisão — só na loja, a ₽250.000 cada.
+   `treino: 'iv'` sorteia QUAL IV sobe, entre os que ainda não estão em 31 (nunca repete um que já está no
+   máximo). Não deixar escolher é a trava de balanceamento: com escolha, ₽1,5 milhão compraria um Pokémon
+   perfeito; sem ela, cada tampa é uma aposta e os últimos IVs ficam caros de verdade. */
+export const PRECO_TREINO = 250000;
+export const ITENS_TREINO = {
+  // "Fresh Start Mochi" (Gen 9) e "Bottle Cap" (Treino Intenso, Gen 7) — itens reais, mesmo papel
+  'fresh-start-mochi': { name: 'Mochi do Recomeço', desc: 'Zera os EVs de um Pokémon da equipe: os pontos de treino que ele ganhou derrotando outros voltam a 0 e os atributos caem junto. Serve pra treinar de novo do zero. Só fora de batalha.', treino: 'evs', price: PRECO_TREINO },
+  'bottle-cap': { name: 'Tampa de Garrafa', desc: 'Leva UM IV ao máximo (31) num Pokémon da equipe. Qual deles é SORTEADO entre os que ainda não estão em 31 — você não escolhe, e nenhuma tampa é desperdiçada num que já está no máximo. Só fora de batalha.', treino: 'iv', price: PRECO_TREINO }
+};
+Object.assign(ITEMS, ITENS_TREINO);
+
 // Divisões da mochila e da loja, na ordem em que aparecem. `de(it)` diz a que divisão o item pertence.
 export const CATEGORIAS_ITEM = [
   { id: 'cura', nome: '🧪 Cura e status', de: it => it.heal || it.healPct || it.cure || it.ether || it.revive },
@@ -392,7 +406,7 @@ export const CATEGORIAS_ITEM = [
   { id: 'exploracao', nome: '🧭 Exploração', de: it => it.repelente },
   { id: 'golpes', nome: '📀 Golpes', de: it => it.ensina },
   { id: 'petisco', nome: '🍖 Petiscos (amizade)', de: it => it.afinidade },
-  { id: 'especial', nome: '✨ Especiais', de: it => it.candy },
+  { id: 'especial', nome: '✨ Especiais', de: it => it.candy || it.treino },
   { id: 'outros', nome: '📦 Outros', de: () => true }
 ];
 export const categoriaDoItem = it => (CATEGORIAS_ITEM.find(c => it && c.de(it)) || CATEGORIAS_ITEM.at(-1)).id;

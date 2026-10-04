@@ -1003,8 +1003,12 @@ button.dexr:hover{border-color:var(--yellow);transform:translateY(-1px)}
 .missao.rastreada{border-left:3px solid var(--yellow);padding-left:8px}
 .bag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;width:100%}
 .item-btn{display:grid;grid-template-columns:30px 1fr;align-items:center;gap:2px 8px;text-align:left;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:8px}
-.item-btn img{grid-row:span 2;width:30px;height:30px;image-rendering:pixelated}
+.item-btn img{grid-row:1/-1;align-self:start;width:30px;height:30px;image-rendering:pixelated}
 .item-btn small{color:var(--muted);font-size:12px}
+/* Loja: o cartão tem uma 3ª linha com a descrição do item (render.js), que no celular é a única forma de saber o
+   que a coisa faz — não há `title` pra passar o mouse. Coluna mais larga que a da mochila pra o texto respirar. */
+.loja-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.item-btn .item-desc{font-size:11px;line-height:1.35;white-space:normal}
 .item-btn:hover:not(:disabled){border-color:var(--yellow)}
 /* ⚡ itens rápidos (render.barraRapidos): o mesmo cartão da mochila, em destaque junto dos botões principais.
    O ⚡ da mochila usa o .on amarelo das outras listas selecionáveis. */

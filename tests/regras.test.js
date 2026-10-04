@@ -12,9 +12,9 @@ import {
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda, alternarRapido, MAX_RAPIDOS,
   caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW,
-  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo
+  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar
 } from '../js/regras.js';
-import { CHART, ITEMS } from '../js/dados.js';
+import { CHART, ITEMS, STATS } from '../js/dados.js';
 import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
 import { AINDA_EVOLUI } from '../js/dados-evolucao-restante.js';
 
@@ -481,6 +481,30 @@ test('itemTemEfeito: só em quem se beneficia, nunca em desmaiado', () => {
   assert.equal(itemTemEfeito({ candy: true }, cheio), true);
   assert.equal(itemTemEfeito({ candy: true }, cheio, false), false); // aliado sem curva de XP
   assert.equal(itemTemEfeito({ candy: true }, mon({ moves: golpes(), level: 100 })), false);
+});
+
+test('itens de treino: EVs pra zerar e IVs que ainda cabem em 31', () => {
+  const zerado = mon();                                        // ivs e evs todos em 0
+  const treinado = mon({ evs: { ...zeros(), speed: 252 } });
+  const perfeito = mon({ ivs: Object.fromEntries(STATS.map(s => [s, 31])) });
+  assert.equal(temEvs(zerado), false);
+  assert.equal(temEvs(treinado), true);
+  assert.deepEqual(ivsParaMaximizar(perfeito), []);
+  assert.deepEqual(ivsParaMaximizar(mon({ ivs: { ...Object.fromEntries(STATS.map(s => [s, 31])), speed: 30 } })), ['speed']);
+  assert.equal(ivsParaMaximizar(zerado).length, STATS.length);
+  // é a MESMA conta que diz se o item aparece como usável — senão a loja venderia uma tampa inútil
+  assert.equal(itemTemEfeito({ treino: 'evs' }, zerado), false);
+  assert.equal(itemTemEfeito({ treino: 'evs' }, treinado), true);
+  assert.equal(itemTemEfeito({ treino: 'iv' }, perfeito), false);
+  assert.equal(itemTemEfeito({ treino: 'iv' }, zerado), true);
+  assert.equal(itemTemEfeito({ treino: 'iv' }, mon({ hp: 0 })), false);   // desmaiado não treina
+  // zerar 252 EVs de HP derruba o HP máximo: o item precisa do piso de 1 (itens.js) pra não desmaiar fora da luta
+  const comHp = mon({ level: 100, data: { base: { ...zeros(), hp: 100 }, types: ['normal'] }, evs: { ...zeros(), hp: 252 } });
+  comHp.stats = calcStats(comHp); comHp.hp = 1;
+  const antes = comHp.stats.hp;
+  comHp.evs = zeros(); recalc(comHp);
+  assert.equal(antes - comHp.stats.hp, 63, 'zerar 252 EVs de HP no nível 100 vale 63 pontos');
+  assert.equal(comHp.hp, 0, 'recalc sozinho chega a 0 — daí o Math.max(1) em itens.js');
 });
 
 test('zonaLiberada e chefe (Alfa)', () => {

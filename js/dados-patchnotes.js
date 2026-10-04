@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '4.6', data: '2026-10-04', titulo: '🏋 Dá pra desfazer treino e corrigir o azar de nascença — por um preço', piada: 'O Machamp da loja passou duas gerações jurando que "IV ruim é destino". Depois apareceu com uma caixa de tampinhas de garrafa debaixo do balcão e a cobrança de um quarto de milhão por unidade, alegando "treino personalizado". Ninguém conseguiu provar nada e o preço continua esse.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Mochi do Recomeço (₽250.000):</b> zera os <b>EVs</b> de um Pokémon da equipe. Tudo que ele treinou derrubando outros volta a 0 (e os atributos caem junto) — serve pra recomeçar o treino em outros atributos quando o seu se encheu dos errados.',
+        '<b>Tampa de Garrafa (₽250.000):</b> leva <b>um IV ao máximo (31)</b>. <b>Qual deles é sorteado</b> entre os que ainda não estão em 31 — você não escolhe. A boa notícia: nenhuma tampa é desperdiçada num IV que já está no máximo, então a última custa caro mas acerta na certa.',
+        '<b>Só na loja.</b> Nenhum dos dois aparece explorando nem como prêmio de Alfa, e os dois só funcionam fora da batalha. Com aliados na equipe, o jogo pergunta em quem usar. Os EVs e os IVs de cada um aparecem na ficha, nas colunas <b>EV</b> e <b>IV</b>.',
+        '<b>A loja agora diz o que cada item faz.</b> A descrição aparece dentro do próprio cartão, junto do nome e do preço — antes ela era só uma dica ao passar o mouse, o que no celular significava <b>nenhuma descrição</b>.'
+      ] }
+    ] },
   { versao: '4.5', data: '2026-10-04', titulo: '💯 O XP depois do nível 100 parou de cair no vazio', piada: 'Um Blissey nível 100 derrubou mais mil Pokémon e recebeu, em troca, exatamente nada: a barra de XP já estava cheia e ninguém tinha pensado no assunto. Ela não reclamou (Blissey não reclama), mas o Chansey do sindicato reclamou por ela. Agora cada XP depois do teto vira pontuação.',
     secoes: [
       { nome: 'Novidades', itens: [

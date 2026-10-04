@@ -1028,6 +1028,7 @@ export function itemTemEfeito(it, M, podeSubir = true) {
   if (it.cure) return !!M.status && (it.cure === 'all' || it.cure.includes(M.status));
   if (it.ether) return M.moves.some(m => m.ppLeft < m.pp);
   if (it.stage) return true;
+  if (it.treino) return it.treino === 'evs' ? temEvs(M) : ivsParaMaximizar(M).length > 0;
   if (it.candy) return podeSubir && M.level < 100;
   return false;
 }
@@ -1262,6 +1263,11 @@ export function ganhoDeEVs(evs, effort) {
   }
   return out;
 }
+/* O que os itens de treino (dados.ITENS_TREINO) têm pra fazer neste Pokémon. Puros, e separados do sorteio de
+   propósito: a MESMA conta diz se o item aparece como usável (itemTemEfeito) e de onde o IV é sorteado
+   (itens.js) — senão a loja ofereceria uma Tampa de ₽250.000 pra quem já tem os 6 IVs em 31. */
+export const temEvs = m => STATS.some(s => (m?.evs?.[s] || 0) > 0);
+export const ivsParaMaximizar = m => STATS.filter(s => (m?.ivs?.[s] ?? 31) < 31);
 
 /* ---- 🤖 Auto-explorar (só admin, auto.js) ----
    A estatística da caçada: quantos de cada espécie o laço derrubou e quanto isso dá em porcentagem, pra comparar

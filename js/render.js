@@ -602,7 +602,7 @@ function renderActions() {
     }
     if (G.panel === 'bag') {
       const E = G.B.enemy, T = G.B.trainer;
-      const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy && !ITEMS[k].afinidade && !ITEMS[k].evo && !ITEMS[k].troca && !ITEMS[k].segurar);
+      const items = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k] && !ITEMS[k].candy && !ITEMS[k].afinidade && !ITEMS[k].evo && !ITEMS[k].troca && !ITEMS[k].segurar && !ITEMS[k].treino);
       const petiscos = Object.entries(S.bag).filter(([k, n]) => n > 0 && ITEMS[k]?.afinidade);
       // petisco: destaca os que o tipo do alvo gosta
       const gosta = k => E.data.types.some(t => ITEMS[k].afinidade.includes(t));
@@ -656,11 +656,14 @@ function renderActions() {
     const forSale = Object.entries(ITEMS).filter(([, it]) =>
       it.price && (!it.soComMega || gimmicks.mega) && (!it.soComZ || gimmicks.z) && (!it.soComVinculo || gimmicks.vinculo));
     // o preço vem de precoItem (regras.js): quase todo item é fixo, mas o Disco Técnico encarece a cada uso
-    const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small></button>`; };
-    const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.' };
+    /* A descrição vai DENTRO do botão, não só no `title`: no celular não existe passar o mouse, então a loja era
+       uma prateleira de nomes e preços sem dizer o que cada coisa faz (pedido de quem joga no celular). A mochila
+       já mostrava a descrição assim — a loja era a única tela de item que escondia. O `title` fica pro desktop. */
+    const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small><small class="item-desc">${esc(it.desc)}</small></button>`; };
+    const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.', especial: 'Mexem nos números de um Pokémon da equipe. Caros, e só aqui: não se acham explorando.' };
     a.innerHTML = `<p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>
       <div class="subrow"><button class="btn ghost sm" data-act="panel" data-v="main">Sair da loja</button></div>
-      ${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
+      ${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid loja-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()

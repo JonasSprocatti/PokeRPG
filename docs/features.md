@@ -5,6 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
+- 🏋 Itens de treino: zerar EVs e maximizar um IV + a loja no celular (04/10/2026)
 - Ovos e criação no esconderijo (02/10/2026)
 - Gênero (02/10/2026)
 - Congelamento: o que faltava (02/10/2026)
@@ -2525,3 +2526,59 @@ a política `save: tudo no próprio` está correta e com a chave anônima ningu�
 **Sem teste automatizado**: `dev.js` não importa no Node (cadeia `render.js` → `ui.js` → `matchMedia`), e o que o
 forjar acrescenta é um `filter`+`slice` sobre lista já testada mais chamadas a `recalc`/`checkEvolution`, que têm
 teste próprio. Não está no README nem nos patch notes de propósito: o painel 🧪 inteiro é invisível pra quem joga.
+
+## 🏋 Itens de treino: zerar EVs e maximizar um IV (04/10/2026)
+
+Pedido do usuário: *"um item para resetar os EVs, tem que ser muito caro e não pode ser possível pegar ele nas
+rotas, acho que 250 mil; e o mesmo para um item para maximizar um IV aleatório — o jogador não escolhe, um dos
+IVs aleatoriamente é maximizado, mas ele não pode maximizar novamente um que já está em 31"*.
+
+**Como ficou** (`dados.ITENS_TREINO`): dois itens de `price: 250000`, marcados com **uma só** propriedade,
+`treino: 'evs'` / `treino: 'iv'`. Itens reais da franquia, com o papel que têm lá: o **Fresh Start Mochi** (Gen 9)
+zera EVs e a **Bottle Cap** (Treino Intenso, Gen 7) sobe um IV ao máximo — a única licença é o IV ser SORTEADO em
+vez de escolhido, que foi o pedido. O mochi não tem sprite no repositório da PokéAPI e cai no ícone de caixinha
+(`ITEM_SPR_RESERVA`), como meia dúzia de itens de Gen 8/9 já fazem.
+
+**Decisões**:
+- **Uma propriedade com dois valores, não duas propriedades.** Cada marca nova de item custa uma negação na
+  lista de filtros que já existe (a mochila de batalha em `render.js` tem seis) e uma linha em
+  `CATEGORIAS_ITEM`/`itemTemEfeito`. Com `treino` guardando os dois, cada ponto desses leva **um** `!it.treino`.
+  O preço disso é o `SEM_EFEITO` de `itens.js`, que é indexado pela MARCA do item: resolvido com
+  `const tipo = it.treino || Object.keys(SEM_EFEITO).find(...)` — as chaves `evs`/`iv` são valores de `treino`,
+  não marcas, e o comentário no arquivo avisa.
+- **A regra "não pode maximizar o que já está em 31" é a MESMA conta que decide se o item é usável.**
+  `regras.ivsParaMaximizar(m)` devolve a lista de atributos abaixo de 31; `itemTemEfeito` pergunta se ela tem
+  alguém e `itens.js` sorteia DELA (`pick`). Duas contas separadas deixariam a loja vender uma tampa de ₽250.000
+  pra quem já tem os 6 IVs em 31 — e seria a mesma classe de bug do `golpesPermitidos` (regra que a tela aplica e
+  o motor não).
+- **IV aleatório, não escolhido** (pedido, e também balanceamento): com escolha, ₽1,5 milhão compraria um Pokémon
+  perfeito; sorteado, cada tampa é uma aposta e os últimos IVs custam de verdade. O sorteio é `util.pick` sobre a
+  lista filtrada, então ele nunca "perde" uma tampa num 31.
+- **`M.ivs` é reescrito por CÓPIA** (`{ ...M.ivs, [s]: 31 }`), nunca em cima. A badge "Potencial máximo" passa
+  `pokemon.IVS_MAX` — um objeto **congelado e compartilhado** — pra todo Pokémon criado; escrever nele estouraria
+  (ou, sem `strict`, mudaria o IV de todos). Hoje esse caso nem chega aqui (6× 31 = lista vazia = item não
+  usável), mas o `Object.freeze` existe justamente pra não depender dessa coincidência.
+- **O piso de 1 HP depois de zerar EVs.** `regras.recalc` desce o HP ATUAL junto com o máximo e clampa em **0** —
+  252 EVs de HP no nível 100 valem 63 pontos, então usar o mochi com 1 de HP deixaria o Pokémon **desmaiado fora
+  de batalha**, estado que nada na tela de exploração sabe tratar. `Math.max(1, M.hp)` logo depois do `recalc`,
+  com teste cobrindo que o `recalc` sozinho chega a 0.
+- **Bloqueados em batalha**: mexem no HP máximo no meio do turno. Entram na lista de exclusão da mochila de
+  batalha (não aparecem lá) **e** recusam em `useItem` — a tela esconde, o caminho confere.
+- **Não se acham explorando**: basta não entrar em `FIND_ITEMS` nem em `ITENS_EVO_ACHADOS`. O 🗺 Editor de rotas
+  (só admin) continua listando todos os `ITEMS` no seletor de prêmio da rota; não vale uma trava, é escolha manual
+  de quem edita o jogo.
+
+**Ficou de fora**: o requisito de **nível 100** que o Treino Intenso tem nos jogos (não foi pedido, e aqui a run
+acaba muito antes de 100 na maioria dos modos) e a **Gold Bottle Cap** (maximiza todos de uma vez) — ela é
+exatamente o que o "aleatório" deste pedido existe pra evitar.
+
+### A loja no celular não dizia o que os itens fazem (04/10/2026)
+Mesmo pedido, terceira parte: *"quero que a loja no mobile seja melhor, não tem uma descrição clara dos itens na
+loja"*. A causa era pequena e específica: o cartão da loja (`render.js`, `G.panel === 'shop'`) punha `it.desc` só
+no **`title`** da `<button>` — tooltip de passar o mouse, que **não existe no celular**. A mochila, do lado, já
+mostrava a descrição num `<small>` dentro da linha desde sempre; a loja era a única tela de item que escondia.
+
+**Conserto**: um `<small class="item-desc">` dentro do botão (o `title` fica, pro desktop), `.item-btn img` passa
+de `grid-row:span 2` pra **`1/-1`** (senão a terceira linha cai na coluna do ícone) com `align-self:start`, e a
+grade da loja ganha `.loja-grid` com coluna mínima de **240px** em vez dos 150px da mochila — com 150px e um
+texto de 200 caracteres o cartão virava uma tira vertical. No celular isso dá uma coluna de largura cheia.
