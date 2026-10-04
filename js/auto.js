@@ -15,7 +15,11 @@
    - **Sobreviver importa mais que a estatística**: abaixo de `FUGIR_ABAIXO` do HP ele tenta fugir, e entre
      batalhas passa no Centro. No Roguelike um desmaio encerra a run — um laço automático que perde a jornada de
      quem o ligou é um defeito, não um risco aceitável. Se mesmo assim o HP zerar, `motivoDeParar` corta o laço.
-   - **Teto de explorações**: laço sem fim é bug. Chegou no teto, para e conta por quê. */
+   - **Teto de explorações**: laço sem fim é bug. Chegou no teto, para e conta por quê.
+   - **Segue rodando com o jogo em segundo plano** (`acordado.js`): sair pro WhatsApp não pode parar a caçada —
+     foi pedido explícito. Em segundo plano o navegador limita cada `setTimeout` a ~1 por segundo, então a
+     narração (`ui.say`) para de esperar com a aba escondida: ninguém está lendo, e 420 ms de pausa por linha
+     viravam 1 segundo cada. */
 import { G, save, zone } from './estado.js';
 import { render } from './render.js';
 import { log, ask, semAnimacao } from './ui.js';
@@ -24,6 +28,7 @@ import { turn, melhorGolpe } from './batalha.js';
 import { motivoDeParar, precisaReporPP } from './regras.js';
 import { ehAdmin } from './nuvem.js';
 import { notificar, pedirPermissao } from './notificacoes.js';
+import { manterAcordado, soltarAcordado } from './acordado.js';
 import { esc, fmt, sleep } from './util.js';
 
 export const TETO_EXPLORACOES = 500;   // ~meia hora de laço; depois disso é mais honesto parar e perguntar de novo
@@ -51,7 +56,9 @@ export async function escolherAlvoAuto() {
 
 export async function iniciarAuto(alvo) {
   if (!ehAdmin() || G.auto?.ativo || G.busy || G.mode !== 'explore') return;
-  await pedirPermissao();   // estamos dentro do clique: é a única hora em que o navegador aceita perguntar
+  // ainda dentro do clique: é a única hora em que o navegador aceita perguntar da notificação e ligar o áudio
+  await pedirPermissao();
+  await manterAcordado();
   const z = zone();
   G.auto = { ativo: true, alvo, rota: z.id, rotaNome: z.name, exploracoes: 0, batalhas: 0, abates: {}, motivo: null, inicio: Date.now() };
   log(`🤖 Auto-explorar ligado em ${esc(z.name)}: procurando <b>${esc(fmt(alvo))}</b>.`, 'muted');
@@ -115,6 +122,7 @@ const TEXTO = {
 };
 
 async function encerrar() {
+  await soltarAcordado();   // some o ícone de som da aba e devolve a tela ao comportamento normal
   const a = G.auto; if (!a) return;
   a.ativo = false; a.motivo ||= 'parado';
   const [titulo, corpo] = (TEXTO[a.motivo] || TEXTO.parado)(a);

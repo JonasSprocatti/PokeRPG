@@ -60,7 +60,11 @@ export function logRaw(l) {
   el.appendChild(p); el.scrollTop = el.scrollHeight;
 }
 export function log(html, cls = '') { const l = { html, cls }; logRaw(l); if (G.S) (G.S.log ||= []).push(l); }
-export async function say(html, cls) { log(html, cls); await sleep(semAnimacao() ? 80 : 420); }
+/* A pausa entre as linhas é pra dar tempo de LER. Com a aba escondida não há ninguém lendo — e, pior, o
+   navegador limita cada `setTimeout` de aba em segundo plano a ~1 por segundo, então a pausa de 420 ms viraria
+   1 segundo por linha e deixaria o 🤖 auto-explorar (que precisa seguir rodando quando você sai pro outro app)
+   a passo de tartaruga. Sem timer nenhum, o laço corre na velocidade do próprio jogo. */
+export async function say(html, cls) { log(html, cls); if (!document.hidden) await sleep(semAnimacao() ? 80 : 420); }
 export function ask(html, options, extra = '') {
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
