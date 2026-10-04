@@ -125,13 +125,14 @@ Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Pa
 ### Mochila e loja em divisões
 Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para segurar · 💎 Evolução · 🍖 Petiscos · ✨ Especiais, tanto na mochila quanto na loja. **Na loja, cada item mostra a descrição do que faz dentro do próprio cartão** — antes isso só existia como dica ao passar o mouse, que no celular não existe.
 
-### 🏋 Mochi do Recomeço e Tampa de Garrafa (₽250.000 cada)
-Os dois itens mais caros do jogo, e os únicos que mexem nos **números de nascença** de um Pokémon. Só na loja: não aparecem explorando nem como prêmio de Alfa.
+### 🏋 Itens de treino (₽250.000 cada)
+Os itens mais caros do jogo, e os únicos que mexem no que um Pokémon trouxe **de nascença**. Só na loja: não aparecem explorando nem como prêmio de Alfa.
 
 - **Mochi do Recomeço:** zera os **EVs** de um Pokémon da equipe. Os pontos de treino que ele ganhou derrotando outros voltam a 0 e os atributos caem junto — serve pra treinar de novo do zero, em outros atributos. (A ficha mostra os EVs de cada um na coluna EV.)
 - **Tampa de Garrafa:** leva **um IV ao máximo (31)**. Qual deles é **sorteado** entre os que ainda não estão em 31 — você não escolhe, e nenhuma tampa é gasta num que já está no máximo. Deixar escolher transformaria ₽1,5 milhão num Pokémon perfeito; assim cada tampa é uma aposta, e os últimos IVs custam de verdade.
+- **Cápsula de Habilidade:** troca a habilidade por **outra da mesma espécie**, inclusive a **oculta**, e aqui **você escolhe** — a lista mostra o nome, o que cada uma faz e se ela já tem efeito em batalha, como na tela de criação. Espécie de habilidade única não tem pra onde trocar, e a cápsula avisa em vez de ser gasta.
 
-Os dois só funcionam fora de batalha (mexem no HP máximo) e perguntam em quem usar quando você tem aliados.
+Os três só funcionam fora de batalha e perguntam em quem usar quando você tem aliados.
 
 ### ⚡ Itens rápidos (até 2, com atalho de teclado)
 Na mochila, o botão **⚡** de um item o coloca **junto dos botões principais da tela** — ao lado de *Explorar* fora da luta, ao lado de *Mochila* e *Fugir* dentro dela. Dá para marcar **até dois**, e eles respondem às teclas **1** e **2**. Serve para não abrir a mochila e procurar a Poção a cada turno. A escolha vale para a jornada e some se o item acabar (volta sozinha quando você comprar outro).

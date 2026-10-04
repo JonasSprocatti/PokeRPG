@@ -9,15 +9,16 @@ import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.j
 import { ITEMS, ST_SHORT, STATS, STAT_PT } from './dados.js';
 import { pokedexDaRota, somarRegistros } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO, recalc, ivsParaMaximizar } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO, recalc, ivsParaMaximizar, habilidadesParaTrocar } from './regras.js';
+import { IMPL } from './habilidades.js';
 import { guardar, trazer } from './esconderijo.js';
 import { usarItemDeRaide } from './boss.js';
-import { loadPokemon } from './api.js';
+import { loadPokemon, loadAbility, syncGet } from './api.js';
 import { esc, fmt, offline, pick } from './util.js';
 
 // mensagem quando ninguém da equipe se beneficiaria. As chaves são as marcas do item (dados.ITEMS); as duas
 // últimas são VALORES de `treino`, que carrega dois efeitos diferentes numa marca só (ver o `tipo` em useItem).
-const SEM_EFEITO = { heal: 'O HP já está cheio.', healPct: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)', evs: 'Os EVs já estão zerados: não há treino pra desfazer.', iv: 'Os 6 IVs já estão no máximo (31). A tampa não teria o que melhorar.' };
+const SEM_EFEITO = { heal: 'O HP já está cheio.', healPct: 'O HP já está cheio.', cure: 'Não teria efeito agora.', ether: 'Os PP já estão cheios.', candy: 'Já está no nível máximo.', revive: 'Ninguém está desmaiado. (Em você, o Revive é usado sozinho quando precisar.)', evs: 'Os EVs já estão zerados: não há treino pra desfazer.', iv: 'Os 6 IVs já estão no máximo (31). A tampa não teria o que melhorar.', habilidade: 'A espécie tem uma habilidade só: não há pra onde trocar.' };
 
 export const addItem = (k, n) => { G.S.bag[k] = (G.S.bag[k] || 0) + n; };
 
@@ -182,6 +183,21 @@ async function usarRaide(id) {
   if (r.recarregaTera) G.B.teraUsada = false;
   render(); return true;
 }
+/* Cápsula de Habilidade: escolher entre as OUTRAS habilidades da espécie (normais e oculta). Mostra as mesmas
+   três informações que a tela de criação (criacao.js) mostra na escolha original — nome, descrição e se a
+   habilidade tem efeito de verdade: `IMPL` tem 217 das 314, e trocar por uma das outras 97 sem aviso seria
+   gastar ₽250.000 em "será ajustado em atualizações futuras". Devolve o nome escolhido, ou null se cancelou. */
+async function escolherHabilidade(M) {
+  const opcoes = habilidadesParaTrocar(M);
+  // a descrição mora no cache da PokéAPI: buscar ANTES de perguntar, senão a escolha é às cegas. Offline cai no genérico.
+  await Promise.all(opcoes.map(a => loadAbility(a).catch(() => null)));
+  const i = await ask(`Qual habilidade <b>${nm(M)}</b> vai ter agora?<br><small class="muted">A atual é <b>${esc(fmt(M.ability))}</b>.</small>`,
+    [...opcoes.map((a, j) => ({
+      value: j,
+      label: `${esc(fmt(a.name))}${a.hidden ? ' (oculta)' : ''}${IMPL.has(a.name) ? '' : ' — sem efeito em batalha ainda'}<br><small>${esc(syncGet('ab:' + a.name)?.effect || 'Sem descrição.')}</small>`
+    })), { label: 'Cancelar', value: -1, ghost: true }]);
+  return i < 0 ? null : opcoes[i].name;
+}
 export async function useItem(id, inBattle) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it || !S.bag[id]) return false;
@@ -196,8 +212,9 @@ export async function useItem(id, inBattle) {
   if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
   if (it.repelente) { if (inBattle) { await say('Repelente só funciona explorando.'); return false; } return usarRepelente(id); }
   if (it.ensina) { if (inBattle) { await say('Dá pra mexer nos golpes só fora da batalha.'); return false; } return ensinarGolpe(id); }
-  // itens de treino (dados.ITENS_TREINO): mexem nos atributos BASE, então recalculam o HP máximo — nada disso
-  // no meio de uma luta. Daqui pra baixo é o caminho comum: "usar em quem?", mochila e mensagem.
+  /* Itens de treino (dados.ITENS_TREINO): mexem no que o Pokémon trouxe de nascença — EVs e IVs recalculam o HP
+     máximo, e a habilidade já teria entrado em campo com os ganchos dela rodados. Nada disso no meio de uma luta.
+     Daqui pra baixo é o caminho comum: "usar em quem?", debitar a mochila e a mensagem. */
   if (it.treino && inBattle) { await say('Treino é coisa de fora da batalha.'); return false; }
   const equipe = ladoJogador();
   const alvos = equipe.filter(M => itemTemEfeito(it, M, M === P || !!M.growth));
@@ -213,6 +230,10 @@ export async function useItem(id, inBattle) {
     if (i < 0) return false;
     M = alvos[i];
   }
+  /* A escolha da Cápsula acontece ANTES de a mochila ser debitada: daqui pra baixo o item JÁ FOI gasto, e
+     cancelar o modal não pode consumir ₽250.000. Mesmo motivo pelo qual "usar em quem?" também vem antes. */
+  const novaHab = it.treino === 'habilidade' ? await escolherHabilidade(M) : null;
+  if (it.treino === 'habilidade' && !novaHab) return false;
   const em = M === P ? '' : ` em ${nm(M)}`;
   S.bag[id]--;
   if (it.heal || it.healPct) {
@@ -248,6 +269,10 @@ export async function useItem(id, inBattle) {
     M.ivs = { ...M.ivs, [s]: 31 };
     recalc(M); render();
     await say(`Você usou ${it.name}${em}. O treino intenso levou o IV de <b>${STAT_PT[s]}</b> de ${nm(M)} ao máximo (31)!`, 'good');
+  } else if (it.treino === 'habilidade') {
+    const antiga = fmt(M.ability);
+    M.ability = novaHab; render();
+    await say(`Você usou ${it.name}${em}. A habilidade de ${nm(M)} mudou de <b>${esc(antiga)}</b> pra <b>${esc(fmt(novaHab))}</b>.`, 'good');
   } else if (it.candy) {
     await say(M === P ? `Você comeu uma ${it.name}.` : `${nm(M)} comeu uma ${it.name}.`);
     if (M === P) await gainExp(S.meta.growth[M.level + 1] - M.exp);

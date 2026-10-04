@@ -5,7 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
-- 🏋 Itens de treino: zerar EVs e maximizar um IV + a loja no celular (04/10/2026)
+- 🏋 Itens de treino (EVs, IV, habilidade) + a loja no celular (04/10/2026)
 - Ovos e criação no esconderijo (02/10/2026)
 - Gênero (02/10/2026)
 - Congelamento: o que faltava (02/10/2026)
@@ -2527,25 +2527,28 @@ a política `save: tudo no próprio` está correta e com a chave anônima ningu�
 forjar acrescenta é um `filter`+`slice` sobre lista já testada mais chamadas a `recalc`/`checkEvolution`, que têm
 teste próprio. Não está no README nem nos patch notes de propósito: o painel 🧪 inteiro é invisível pra quem joga.
 
-## 🏋 Itens de treino: zerar EVs e maximizar um IV (04/10/2026)
+## 🏋 Itens de treino: zerar EVs, maximizar um IV e trocar de habilidade (04/10/2026)
 
 Pedido do usuário: *"um item para resetar os EVs, tem que ser muito caro e não pode ser possível pegar ele nas
 rotas, acho que 250 mil; e o mesmo para um item para maximizar um IV aleatório — o jogador não escolhe, um dos
 IVs aleatoriamente é maximizado, mas ele não pode maximizar novamente um que já está em 31"*.
 
-**Como ficou** (`dados.ITENS_TREINO`): dois itens de `price: 250000`, marcados com **uma só** propriedade,
-`treino: 'evs'` / `treino: 'iv'`. Itens reais da franquia, com o papel que têm lá: o **Fresh Start Mochi** (Gen 9)
-zera EVs e a **Bottle Cap** (Treino Intenso, Gen 7) sobe um IV ao máximo — a única licença é o IV ser SORTEADO em
-vez de escolhido, que foi o pedido. O mochi não tem sprite no repositório da PokéAPI e cai no ícone de caixinha
+Em seguida, no mesmo dia: *"também um item para mudar a habilidade do pokemon"*.
+
+**Como ficou** (`dados.ITENS_TREINO`): três itens de `price: 250000`, marcados com **uma só** propriedade,
+`treino: 'evs'` / `'iv'` / `'habilidade'`. Itens reais da franquia, com o papel que têm lá: o **Fresh Start
+Mochi** (Gen 9) zera EVs, a **Bottle Cap** (Treino Intenso, Gen 7) sobe um IV ao máximo e a **Ability Capsule**
+troca de habilidade. O mochi não tem sprite no repositório da PokéAPI e cai no ícone de caixinha
 (`ITEM_SPR_RESERVA`), como meia dúzia de itens de Gen 8/9 já fazem.
 
 **Decisões**:
-- **Uma propriedade com dois valores, não duas propriedades.** Cada marca nova de item custa uma negação na
+- **Uma propriedade com três valores, não três propriedades.** Cada marca nova de item custa uma negação na
   lista de filtros que já existe (a mochila de batalha em `render.js` tem seis) e uma linha em
-  `CATEGORIAS_ITEM`/`itemTemEfeito`. Com `treino` guardando os dois, cada ponto desses leva **um** `!it.treino`.
-  O preço disso é o `SEM_EFEITO` de `itens.js`, que é indexado pela MARCA do item: resolvido com
-  `const tipo = it.treino || Object.keys(SEM_EFEITO).find(...)` — as chaves `evs`/`iv` são valores de `treino`,
-  não marcas, e o comentário no arquivo avisa.
+  `CATEGORIAS_ITEM`/`itemTemEfeito`. Com `treino` guardando os três, cada ponto desses leva **um** `!it.treino` —
+  e a Cápsula, que chegou depois, não custou nenhuma linha nesses pontos: entrou pronta na categoria ✨ Especiais,
+  fora da mochila de batalha e já recusada dentro da luta. O preço disso é o `SEM_EFEITO` de `itens.js`, que é
+  indexado pela MARCA do item: resolvido com `const tipo = it.treino || Object.keys(SEM_EFEITO).find(...)` — as
+  chaves `evs`/`iv`/`habilidade` são valores de `treino`, não marcas, e o comentário no arquivo avisa.
 - **A regra "não pode maximizar o que já está em 31" é a MESMA conta que decide se o item é usável.**
   `regras.ivsParaMaximizar(m)` devolve a lista de atributos abaixo de 31; `itemTemEfeito` pergunta se ela tem
   alguém e `itens.js` sorteia DELA (`pick`). Duas contas separadas deixariam a loja vender uma tampa de ₽250.000
@@ -2567,6 +2570,28 @@ vez de escolhido, que foi o pedido. O mochi não tem sprite no repositório da P
 - **Não se acham explorando**: basta não entrar em `FIND_ITEMS` nem em `ITENS_EVO_ACHADOS`. O 🗺 Editor de rotas
   (só admin) continua listando todos os `ITEMS` no seletor de prêmio da rota; não vale uma trava, é escolha manual
   de quem edita o jogo.
+
+### A Cápsula de Habilidade (04/10/2026)
+Mesma prateleira, mas com **três diferenças de desenho** em relação à tampa:
+
+- **Aqui o jogador ESCOLHE.** Um IV 31 é melhor que um IV 7 sem discussão, então sortear é a trava de preço; uma
+  habilidade é troca LATERAL (Blaze × Solar Power depende do que você está montando), e nesse caso sortear seria
+  só perder ₽250.000 sem saber no que. `habilidadesParaTrocar` devolve as outras habilidades da espécie —
+  **inclusive a oculta**, que nos jogos é outro item (o Ability Patch). Um item só: dois seria uma distinção que
+  este jogo não faz em lugar nenhum, já que a criação também oferece a oculta junto das normais.
+- **O modal mostra `IMPL`.** São 217 habilidades com efeito de verdade em 314 reais, e trocar por uma das outras
+  97 sem aviso seria pagar um quarto de milhão por "será ajustado em atualizações futuras". As três informações
+  do modal (nome, descrição da PokéAPI e "✓ ativa em batalha") são as MESMAS que `criacao.js` mostra na escolha
+  original — é a mesma escolha, feita no meio da run. A descrição é buscada com `loadAbility` **antes** de abrir o
+  modal, senão a primeira vez seria às cegas (`syncGet` devolve só o que já está em memória).
+- **A escolha vem ANTES de debitar a mochila.** O caminho comum de `useItem` faz `S.bag[id]--` e só então entra no
+  encadeado de efeitos — cancelar um modal aberto depois disso comeria o item. Então a pergunta sobe pra junto do
+  "usar em quem?", que já estava do lado certo, em vez de devolver o item à mochila no cancelamento (restaurar
+  estado é sempre a versão errada de nunca ter mexido nele).
+
+Não precisa de `recalc`: habilidade não entra em `calcStats` (o efeito dela é gancho de batalha, lido ao vivo). E
+`habilidadeDaEvolucao` continua valendo sem mudança nenhuma — ela decide por **slot** (oculta → oculta, 1ª normal
+→ 1ª normal), então evoluir depois de usar a cápsula preserva a troca.
 
 **Ficou de fora**: o requisito de **nível 100** que o Treino Intenso tem nos jogos (não foi pedido, e aqui a run
 acaba muito antes de 100 na maioria dos modos) e a **Gold Bottle Cap** (maximiza todos de uma vez) — ela é

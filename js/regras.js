@@ -1028,7 +1028,9 @@ export function itemTemEfeito(it, M, podeSubir = true) {
   if (it.cure) return !!M.status && (it.cure === 'all' || it.cure.includes(M.status));
   if (it.ether) return M.moves.some(m => m.ppLeft < m.pp);
   if (it.stage) return true;
-  if (it.treino) return it.treino === 'evs' ? temEvs(M) : ivsParaMaximizar(M).length > 0;
+  if (it.treino === 'evs') return temEvs(M);
+  if (it.treino === 'iv') return ivsParaMaximizar(M).length > 0;
+  if (it.treino === 'habilidade') return habilidadesParaTrocar(M).length > 0;
   if (it.candy) return podeSubir && M.level < 100;
   return false;
 }
@@ -1268,6 +1270,8 @@ export function ganhoDeEVs(evs, effort) {
    (itens.js) — senão a loja ofereceria uma Tampa de ₽250.000 pra quem já tem os 6 IVs em 31. */
 export const temEvs = m => STATS.some(s => (m?.evs?.[s] || 0) > 0);
 export const ivsParaMaximizar = m => STATS.filter(s => (m?.ivs?.[s] ?? 31) < 31);
+// as outras habilidades da espécie (as normais e a oculta), do jeito que vêm de `api.slimPokemon`: [{name, url, hidden}]
+export const habilidadesParaTrocar = m => (m?.data?.abilities || []).filter(a => a.name !== m.ability);
 
 /* ---- 🤖 Auto-explorar (só admin, auto.js) ----
    A estatística da caçada: quantos de cada espécie o laço derrubou e quanto isso dá em porcentagem, pra comparar

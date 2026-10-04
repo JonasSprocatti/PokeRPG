@@ -12,7 +12,7 @@ import {
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda, alternarRapido, MAX_RAPIDOS,
   caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW,
-  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar
+  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar, habilidadesParaTrocar
 } from '../js/regras.js';
 import { CHART, ITEMS, STATS } from '../js/dados.js';
 import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
@@ -498,6 +498,15 @@ test('itens de treino: EVs pra zerar e IVs que ainda cabem em 31', () => {
   assert.equal(itemTemEfeito({ treino: 'iv' }, perfeito), false);
   assert.equal(itemTemEfeito({ treino: 'iv' }, zerado), true);
   assert.equal(itemTemEfeito({ treino: 'iv' }, mon({ hp: 0 })), false);   // desmaiado não treina
+  // Cápsula de Habilidade: só as OUTRAS habilidades da espécie, e espécie de habilidade única não tem pra onde trocar
+  const abis = [{ name: 'blaze', hidden: false }, { name: 'solar-power', hidden: true }];
+  const duas = mon({ ability: 'blaze', data: { base: zeros(), types: ['fire'], abilities: abis } });
+  const uma = mon({ ability: 'blaze', data: { base: zeros(), types: ['fire'], abilities: [abis[0]] } });
+  assert.deepEqual(habilidadesParaTrocar(duas).map(a => a.name), ['solar-power']);
+  assert.deepEqual(habilidadesParaTrocar(uma), []);
+  assert.equal(itemTemEfeito({ treino: 'habilidade' }, duas), true);
+  assert.equal(itemTemEfeito({ treino: 'habilidade' }, uma), false);
+  assert.equal(itemTemEfeito({ treino: 'habilidade' }, mon({ ability: 'blaze', hp: 0, data: { base: zeros(), types: ['fire'], abilities: abis } })), false);
   // zerar 252 EVs de HP derruba o HP máximo: o item precisa do piso de 1 (itens.js) pra não desmaiar fora da luta
   const comHp = mon({ level: 100, data: { base: { ...zeros(), hp: 100 }, types: ['normal'] }, evs: { ...zeros(), hp: 252 } });
   comHp.stats = calcStats(comHp); comHp.hp = 1;

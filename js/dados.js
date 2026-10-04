@@ -385,12 +385,17 @@ Object.assign(ITEMS, ITENS_GOLPE);
    achar isso numa rota tiraria o peso da decisão — só na loja, a ₽250.000 cada.
    `treino: 'iv'` sorteia QUAL IV sobe, entre os que ainda não estão em 31 (nunca repete um que já está no
    máximo). Não deixar escolher é a trava de balanceamento: com escolha, ₽1,5 milhão compraria um Pokémon
-   perfeito; sem ela, cada tampa é uma aposta e os últimos IVs ficam caros de verdade. */
+   perfeito; sem ela, cada tampa é uma aposta e os últimos IVs ficam caros de verdade.
+   `treino: 'habilidade'`, ao contrário, DEIXA escolher: habilidade não tem "melhor" absoluto como um IV 31 —
+   a troca é lateral, e escolher às cegas num item deste preço seria pegadinha. */
 export const PRECO_TREINO = 250000;
 export const ITENS_TREINO = {
   // "Fresh Start Mochi" (Gen 9) e "Bottle Cap" (Treino Intenso, Gen 7) — itens reais, mesmo papel
   'fresh-start-mochi': { name: 'Mochi do Recomeço', desc: 'Zera os EVs de um Pokémon da equipe: os pontos de treino que ele ganhou derrotando outros voltam a 0 e os atributos caem junto. Serve pra treinar de novo do zero. Só fora de batalha.', treino: 'evs', price: PRECO_TREINO },
-  'bottle-cap': { name: 'Tampa de Garrafa', desc: 'Leva UM IV ao máximo (31) num Pokémon da equipe. Qual deles é SORTEADO entre os que ainda não estão em 31 — você não escolhe, e nenhuma tampa é desperdiçada num que já está no máximo. Só fora de batalha.', treino: 'iv', price: PRECO_TREINO }
+  'bottle-cap': { name: 'Tampa de Garrafa', desc: 'Leva UM IV ao máximo (31) num Pokémon da equipe. Qual deles é SORTEADO entre os que ainda não estão em 31 — você não escolhe, e nenhuma tampa é desperdiçada num que já está no máximo. Só fora de batalha.', treino: 'iv', price: PRECO_TREINO },
+  // a Cápsula troca por qualquer OUTRA habilidade da espécie, inclusive a oculta — nos jogos isso são dois itens
+  // (Cápsula entre as normais, Adesivo pra oculta); aqui é um só, e quem escolhe é o jogador, com a descrição na mão
+  'ability-capsule': { name: 'Cápsula de Habilidade', desc: 'Troca a habilidade de um Pokémon da equipe por outra da MESMA espécie, você escolhendo qual — inclusive a oculta. A lista mostra o que cada uma faz. Espécie de habilidade única não tem pra onde trocar. Só fora de batalha.', treino: 'habilidade', price: PRECO_TREINO }
 };
 Object.assign(ITEMS, ITENS_TREINO);
 
