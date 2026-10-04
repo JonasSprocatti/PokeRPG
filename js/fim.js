@@ -67,7 +67,10 @@ const n = v => (v || 0).toLocaleString('pt-BR');
 // linhas da tela: [rótulo, campo, formatação]
 const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jogo', 'tempoMs', formatarTempo], ['Vitórias', 'vitorias'],
   ['Pokémon derrotados', 'derrotados'], ['Treinadores', 'treinadores'], ['Alfas', 'alfas'], ['Amigos', 'amigos'], ['Evoluções', 'evolucoes'],
-  ['Missões', 'missoes'], ['Gens fechadas', 'gens'], ['Mais dinheiro de uma vez', 'maxDinheiro', v => '₽' + n(v)]];
+  ['Missões', 'missoes'], ['Gens fechadas', 'gens'], ['Mais dinheiro de uma vez', 'maxDinheiro', v => '₽' + n(v)],
+  // XP depois do nível 100 (regras.xpExcedente): só aparece pra quem chegou lá — linha zerada em toda jornada
+  // normal seria ruído na tela de fim
+  ['XP além do nível 100', 'xpExtra', n, r => r.xpExtra > 0]];
 
 function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
   G.mode = 'fim'; limparTopo();
@@ -85,7 +88,7 @@ function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
         <p class="muted">${esc(fmt(r.especie))}${r.especieFinal !== r.especie ? ` → ${esc(fmt(r.especieFinal))}` : ''} · modo ${DIFICULDADES[r.dificuldade].nome} (pontos ×${DIFICULDADES[r.dificuldade].multPontos}) · ${jornadas}ª jornada com ${esc(fmt(r.especie))}</p>
         ${novoRecorde ? `<p class="selo-recorde">🏆 ${anterior ? 'Novo recorde' : 'Primeiro recorde'} com esta espécie!</p>` : ''}
         ${desbloqueios.length ? `<div class="desbloq-novo"><b>🔓 Desbloqueado pra próxima jornada Roguelike:</b><div class="picks">${desbloqueios.map(p => `<div class="pick" title="${esc(textoProgresso(p))}"><img src="${SPR(p.id)}" alt="">${esc(fmt(p.especie))}</div>`).join('')}</div></div>` : ''}
-        <div class="stats-fim">${LINHAS.map(l => {
+        <div class="stats-fim">${LINHAS.filter(l => !l[3] || l[3](r)).map(l => {
           const v = r[l[1]], a = anterior?.[l[1]];
           return `<div class="stat-fim"><span>${l[0]}</span><b>${f(l, v)}</b>${anterior ? `<small class="${v > a ? 'up' : v < a ? 'down' : ''}">recorde ${f(l, a)}</small>` : ''}</div>`;
         }).join('')}</div>

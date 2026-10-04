@@ -13,6 +13,14 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '4.5', data: '2026-10-04', titulo: '💯 O XP depois do nível 100 parou de cair no vazio', piada: 'Um Blissey nível 100 derrubou mais mil Pokémon e recebeu, em troca, exatamente nada: a barra de XP já estava cheia e ninguém tinha pensado no assunto. Ela não reclamou (Blissey não reclama), mas o Chansey do sindicato reclamou por ela. Agora cada XP depois do teto vira pontuação.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Todo XP ganho depois do nível 100 agora conta na pontuação da jornada.</b> Antes o teto era o fim da linha: continuar jogando com o Pokémon no 100 não mudava mais nada no placar.',
+        '<b>Quanto vale:</b> cada <b>1.000 de XP</b> no teto rende <b>3 pontos</b> — na prática, ganhar o equivalente a mais um nível lá em cima vale quase o mesmo que os 100 pontos de um nível de verdade. A tela de fim de jornada mostra a linha <b>"XP além do nível 100"</b> pra quem chegou lá.',
+        '<b>Vale retroativamente dentro da jornada em andamento:</b> a conta sai do XP que o seu Pokémon já tem acumulado, e não de um contador que começou agora — quem está no 100 há horas não perdeu nada.'
+      ] }
+    ] },
   { versao: '4.4', data: '2026-10-03', titulo: '🔔 O jogo agora sabe te chamar quando você está em outra aba', piada: 'Um jogador deixou o jogo aberto numa aba, foi fazer outra coisa e voltou vinte minutos depois pra descobrir que o que ele procurava tinha aparecido havia dezenove. O Chatot foi designado para avisar daqui em diante. Ele aceitou na hora: finalmente alguém quer ouvir o que ele tem a dizer.',
     secoes: [
       { nome: 'Novidades', itens: [

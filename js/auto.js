@@ -9,7 +9,8 @@
    - **O laço só chama o que a UI já chama** (`explore`, `turn`, `curarNoCentro`). Nada de caminho paralelo: se
      um golpe, um item ou uma missão se comportam diferente aqui, o bug não existiria pra quem joga.
    - **Para ANTES de atacar o alvo.** Quem caça quer decidir o que fazer com ele (petisco, bola, olhar) — matar
-     o Pokémon procurado seria o oposto do pedido.
+     o Pokémon procurado seria o oposto do pedido. **Um shiny para do mesmo jeito**, seja ele quem for: 1 em
+     4096 não pode ser atropelado por um laço automático.
    - **A escolha do golpe é a mesma IA do chefe** (`regras.escolhaIA` no degrau `ESPERTEZA.chefe`), sobre
      `golpesPermitidos`. Reimplementar "qual é o melhor golpe" aqui seria uma segunda regra pra manter.
    - **Sobreviver importa mais que a estatística**: abaixo de `FUGIR_ABAIXO` do HP ele tenta fugir, e entre
@@ -83,6 +84,10 @@ async function laco() {
     if (motivo) { a.motivo = motivo; break; }
     if (G.B) {
       const E = G.B.enemy;
+      /* Shiny para a caçada mesmo não sendo quem você procurava (pedido do usuário): 1 em 4096 é raro demais
+         pra um laço automático atropelar — e aqui vale QUALQUER inimigo brilhante, inclusive o de treinador e o
+         Alfa, porque a chance é a mesma e perder um desses é igualmente irreversível. */
+      if (E?.shiny) { a.motivo = 'shiny'; a.shiny = especieDe(E); break; }
       if (selvagem(G.B) && especieDe(E) === a.alvo) { a.motivo = 'achou'; break; }
       if (!naLuta && selvagem(G.B)) { naLuta = E; a.batalhas++; }
       await atacar(P, E);
@@ -112,6 +117,7 @@ async function atacar(P, E) {
 }
 
 const TEXTO = {
+  shiny: a => [`✨ Um ${fmt(a.shiny)} SHINY!`, `Em ${a.rotaNome}, na ${a.exploracoes}ª exploração. A caçada parou aqui — ele está na tela, esperando você.`],
   achou: a => [`🎯 Achei ${fmt(a.alvo)}!`, `Em ${a.rotaNome}, depois de ${a.exploracoes} explorações e ${a.batalhas} batalhas. Ele está esperando na tela.`],
   desmaiou: a => ['🤖 Auto-explorar parou', `${fmt(a.alvo)} não apareceu: seu Pokémon caiu depois de ${a.exploracoes} explorações.`],
   semPP: a => ['🤖 Auto-explorar parou', `Os golpes acabaram e não deu pra pagar o Centro Pokémon depois de ${a.exploracoes} explorações.`],

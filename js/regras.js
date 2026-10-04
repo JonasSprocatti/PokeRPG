@@ -1107,11 +1107,18 @@ export const desmaioPrecisaRevive = (n, livres) => livres != null && n > livres;
 
 const soma = o => Object.values(o || {}).reduce((a, n) => a + n, 0);
 // Números da jornada, tirados do save. Espécie = a inicial (S.especieInicial; save antigo cai na atual).
+/* XP que sobrou acima do nível 100. DERIVADO de `exp`, não acumulado num contador: `exp` nunca para de crescer
+   (`progressao.gainExp` soma sempre; o que para no 100 é o laço de subir de nível), então a conta é exata, vale
+   retroativamente pra quem já estava no teto antes desta regra existir e não precisa de campo novo no save.
+   `growth` é a curva da espécie (`S.meta.growth`, da PokéAPI) — sem ela não dá pra saber onde o 100 começa, e
+   devolver 0 é o certo: melhor não pontuar do que pontuar errado. */
+export const xpExcedente = (exp, growth) => Math.max(0, Math.floor((exp || 0) - (growth?.[100] ?? Infinity)));
+
 export function estatisticasDaJornada(S) {
   const r = S.registro || {};
   return {
     especie: S.especieInicial || S.player.data.speciesName, especieFinal: S.player.data.speciesName,
-    nivel: S.player.level, vitorias: S.wins || 0, derrotados: soma(r.derrotados), treinadores: S.treinadoresVencidos || 0,
+    nivel: S.player.level, xpExtra: xpExcedente(S.player.exp, S.meta?.growth), vitorias: S.wins || 0, derrotados: soma(r.derrotados), treinadores: S.treinadoresVencidos || 0,
     alfas: Object.keys(S.chefes || {}).length, amigos: soma(r.amigos), evolucoes: soma(r.evolucoes),
     missoes: (S.missoesFeitas || []).length, capturas: S.capturas || 0,
     ovosChocados: S.ovosChocados || 0,   // badges 'ovos100'/'ovos1000' (ovos.js): somadas do progresso permanente
@@ -1135,7 +1142,11 @@ export function estatisticasDaJornada(S) {
   };
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)
-export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 300, amigos: 100, evolucoes: 150, missoes: 120, gens: 2000 };
+/* `xpExtra` = XP ganho DEPOIS do nível 100 (pedido do usuário: no teto, o XP não podia mais virar nada e farmar
+   deixava de valer). O peso é fracionário de propósito: 0,003 × os ~30 mil de XP que separam o nível 99 do 100
+   na curva média dá ~89 pontos, ou seja, continuar farmando no teto rende quase o mesmo que ganhar um nível de
+   verdade (100) — sem passar na frente de quem jogou a run inteira. */
+export const PESOS_PONTOS = { nivel: 100, vitorias: 10, treinadores: 50, alfas: 300, amigos: 100, evolucoes: 150, missoes: 120, gens: 2000, xpExtra: 0.003 };
 /* Continuar a mesma jornada no mapa seguinte (em vez de começar outra do zero) é mais fácil: você chega no mapa
    novo já em nível alto. Cada continuação tira 20% da pontuação, com piso de metade — o suficiente pra escolher
    recomeçar valer a pena no ranking, sem zerar quem prefere levar o veterano até o fim.

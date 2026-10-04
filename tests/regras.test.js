@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  resumoDeAbates, motivoDeParar, precisaReporPP,
+  resumoDeAbates, motivoDeParar, precisaReporPP, xpExcedente, PESOS_PONTOS,
   typeEff, natureMod, natureLabel, calcStats, recalc, freshVol, stageMul, effStat, defaultMoves,
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
   jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
@@ -589,7 +589,7 @@ test('estatisticasDaJornada + pontuacao', () => {
   const e = estatisticasDaJornada({ ...S, money: 800, maxDinheiro: 1500, gasto: 400 });
   const { registro, ...numeros } = e;
   assert.deepEqual(numeros, { especie: 'charmander', especieFinal: 'charmeleon', nivel: 16, vitorias: 12, derrotados: 10, treinadores: 2,
-    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, ovosChocados: 0, gen: 1, gens: 0, tempoMs: 90000, shiny: true,
+    alfas: 2, amigos: 1, evolucoes: 1, missoes: 3, capturas: 0, ovosChocados: 0, gen: 1, gens: 0, tempoMs: 90000, shiny: true, xpExtra: 0,
     continuacoes: 0, campeaoDe: [], semVantagens: false, semCentro: true,
     maxDinheiro: 1500, gasto: 400, shiniesVistos: 0, shiniesAmigos: 0 });
   assert.deepEqual(registro.derrotados, { pidgey: 4, rattata: 6 });
@@ -603,6 +603,21 @@ test('estatisticasDaJornada + pontuacao', () => {
   const g2 = estatisticasDaJornada({ ...S, gen: 3, gensVencidas: [1, 2] });
   assert.deepEqual([g2.gen, g2.gens], [3, 2]);
   assert.equal(pontuacao(g2), 3030 + 4000);
+});
+
+/* XP depois do nível 100 (pedido do usuário): no teto o XP virava nada e farmar deixava de valer. É DERIVADO de
+   `exp` (que nunca para de crescer), então vale retroativamente pra quem já estava no 100. */
+test('xpExcedente: só o que passou do nível 100, e 0 sem a curva', () => {
+  const growth = { 99: 970299, 100: 1000000 };
+  assert.equal(xpExcedente(1234567, growth), 234567);
+  assert.equal(xpExcedente(1000000, growth), 0, 'exatamente no 100 ainda não sobrou nada');
+  assert.equal(xpExcedente(500000, growth), 0, 'antes do 100 não existe sobra');
+  assert.equal(xpExcedente(1234567, null), 0, 'sem curva: 0, nunca NaN nem Infinity');
+  assert.equal(xpExcedente(undefined, growth), 0);
+  // e ele entra na pontuação pelo peso de PESOS_PONTOS (0,003: ~30 mil de XP ≈ os 100 pontos de um nível)
+  const est = { nivel: 100, xpExtra: 29701 };
+  assert.equal(pontuacao(est), Math.round(100 * 100 + 29701 * 0.003));
+  assert.ok(Math.abs(29701 * PESOS_PONTOS.xpExtra - PESOS_PONTOS.nivel) < 15, 'um "nível" de XP no teto ≈ um nível de verdade');
 });
 
 test('caminhoNaArvore: acha o caminho da raiz até o nó, ou null sem o nó', () => {
