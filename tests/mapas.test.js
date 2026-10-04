@@ -272,3 +272,18 @@ test('nenhuma forma regional colide com um id de Mega da mesma espécie', () => 
   const regionais = GENS.flatMap(g => g.rotas.flatMap(z => z.pool.filter(p => p.f)));
   assert.ok(regionais.length >= 50, `só ${regionais.length} formas regionais varridas`);
 });
+
+/* Item de evolução na mochila dobra o peso de quem evolui com ele. O que importa travar é que o SORTEIO e a TAXA
+   MOSTRADA leiam o mesmo peso — a tela prometer 25% e o sorteio entregar 40% foi o bug #74/#75. */
+test('dobrar espécie: taxa mostrada e sorteio usam o mesmo peso', () => {
+  const z = { pool: [{ id: 1, n: 'applin', p: 1 }, { id: 2, n: 'pidgey', p: 1 }] };
+  const dobrar = new Set(['applin']);
+  assert.equal(taxaNaRota(z, 1), 50, 'sem item, meio a meio');
+  assert.ok(Math.abs(taxaNaRota(z, 1, dobrar) - 200 / 3) < 1e-9, 'com item, 2 de 3 partes');
+  assert.ok(Math.abs(taxaNaRota(z, 2, dobrar) - 100 / 3) < 1e-9);
+  // o sorteio percorre o pool subtraindo peso: com 2+1 partes, sorte=0.6 (1,8 de 3) ainda cai no primeiro
+  assert.equal(sortearDaRota(z, null, () => 0.6, dobrar).n, 'applin');
+  assert.equal(sortearDaRota(z, null, () => 0.6).n, 'pidgey', 'sem dobrar, 1,2 de 2 passa do primeiro');
+  // espécie de fora do pool na lista não muda nada
+  assert.equal(taxaNaRota(z, 1, new Set(['magikarp'])), 50);
+});

@@ -28,7 +28,7 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   modo ficar jogável (hoje nada disso aparece pra quem joga).
 - **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
-- **Habilidades**: 217 de 314. Boa parte das 99 restantes está documentada como intencionalmente fora (ver `docs/features.md`).
+- **Habilidades**: 249 de 314. As 65 restantes estão documentadas como intencionalmente fora, por quatro motivos, no fim da tabela em `js/habilidades.js` (troca de Pokémon, forma dinâmica, estado de turno que o motor não guarda, regra compartilhada arriscada).
 
 - **Heavy-Duty Boots** (pedido em 30/09/2026, **não construído de propósito**): o item ignora armadilha de entrada,
   e aqui isso não existe pro jogador. `golpe.aplicarArmadilhas` só é chamado quando o **inimigo** entra em campo

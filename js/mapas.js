@@ -105,12 +105,17 @@ export function rotaNaJornada(z, S) {
 }
 
 // sorteio ponderado pela taxa de aparição. `filtro(id)` (ex.: offline, só o que está no cache). null = nada sobrou.
-export function sortearDaRota(z, filtro = null, sorte = Math.random) {
+/* `dobrar` = conjunto de nomes de espécie com peso em dobro (regras.especiesDobradas: item de evolução dela na
+   mochila). Um peso só pra todo mundo: o sorteio e a taxa MOSTRADA leem a mesma função, senão a tela promete uma
+   porcentagem que o sorteio não cumpre. */
+export const MULT_ITEM_EVO = 2;
+const pesoNaRota = (p, dobrar) => p.p * (dobrar?.has(p.n) ? MULT_ITEM_EVO : 1);
+export function sortearDaRota(z, filtro = null, sorte = Math.random, dobrar = null) {
   const pool = filtro ? z.pool.filter(p => filtro(p.id)) : z.pool;
-  const total = pool.reduce((a, p) => a + p.p, 0);
+  const total = pool.reduce((a, p) => a + pesoNaRota(p, dobrar), 0);
   if (!total) return null;
   let r = sorte() * total;
-  for (const p of pool) { r -= p.p; if (r < 0) return p; }
+  for (const p of pool) { r -= pesoNaRota(p, dobrar); if (r < 0) return p; }
   return pool[pool.length - 1];
 }
 /* ---- o id que representa uma espécie no registro (`registro.ids`) ----
@@ -161,9 +166,9 @@ export function especiesLendarias() {
   return [...out];
 }
 // chance (0–100) de cada encontro selvagem na rota ser esta espécie
-export function taxaNaRota(z, id) {
-  const total = z.pool.reduce((a, p) => a + p.p, 0), e = z.pool.find(p => p.id === id);
-  return e && total ? e.p / total * 100 : 0;
+export function taxaNaRota(z, id, dobrar = null) {
+  const total = z.pool.reduce((a, p) => a + pesoNaRota(p, dobrar), 0), e = z.pool.find(p => p.id === id);
+  return e && total ? pesoNaRota(e, dobrar) / total * 100 : 0;
 }
 /* Texto da taxa: uma casa (raros, duas) e sempre TRUNCADO pra baixo.
    ⚠️ Bugs #74 e #75 (03/10/2026): a soma das taxas MOSTRADAS passava de 100% (101,8% na Estrada da Vitória da
@@ -187,13 +192,13 @@ export function somarRegistros(registros) {
 }
 // Pokédex da rota: estado de cada espécie do pool
 //   oculto    = nunca enfrentou ("?")        silhueta = já enfrentou         revelado = REVELA_DERROTADOS derrotados (cor + taxa)
-export function pokedexDaRota(z, saber) {
+export function pokedexDaRota(z, saber, dobrar = null) {
   return z.pool.map(p => {
     const vistos = saber.vistos[p.n] || 0, derrotados = saber.derrotados[p.n] || 0;
     const estado = derrotados >= REVELA_DERROTADOS ? 'revelado' : vistos || derrotados ? 'silhueta' : 'oculto';
     // `f` = forma regional (raichu-alola): o nome mostrado é o da forma, mas o registro continua na espécie (p.n),
     // que é a chave que o jogo usa pra contar visto/derrotado desde sempre
-    return { id: p.id, n: p.n, forma: p.f || null, nome: p.f || p.n, mitico: !!p.m, lendario: !!p.l, estado, derrotados, taxa: taxaNaRota(z, p.id) };
+    return { id: p.id, n: p.n, forma: p.f || null, nome: p.f || p.n, mitico: !!p.m, lendario: !!p.l, estado, derrotados, taxa: taxaNaRota(z, p.id, dobrar), dobrado: !!dobrar?.has(p.n) };
   });
 }
 

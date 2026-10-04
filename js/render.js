@@ -12,7 +12,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { resumoDeAbates, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas } from './regras.js';
+import { resumoDeAbates, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -542,13 +542,14 @@ function blocoCaca(z, dex) {
 }
 // Pokédex da rota: "?" = nunca enfrentou; silhueta = já enfrentou; colorido + taxa = REVELA_DERROTADOS derrotados
 function pokedexRota(z) {
-  const dex = pokedexDaRota(z, conhecimento()), vistos = dex.filter(p => p.estado !== 'oculto').length;
+  // `especiesDobradas`: item de evolução na mochila dobra o peso da espécie — a taxa mostrada tem de contar isso
+  const dex = pokedexDaRota(z, conhecimento(), especiesDobradas(G.S.bag)), vistos = dex.filter(p => p.estado !== 'oculto').length;
   const item = p => p.estado === 'oculto'
     ? `<div class="dexr oculto ${p.mitico ? 'mitico' : ''}" title="${p.mitico ? 'Algo muito raro vive aqui…' : 'Ainda não encontrado'}"><span>${p.mitico ? '✦' : '?'}</span></div>`
     /* Quem você já encontrou vira BOTÃO: abre a ficha dele na Pokédex (tela-pokedex.abrirNaPokedex).
        Se ele já está registrado, a ficha já é sua — e era estranho ver o bicho ali e não poder olhar. */
     : `<button class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" data-act="dex-rota" data-v="${p.id}" title="${esc(fmt(p.nome))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`} · clique pra ver na Pokédex">
-        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.nome))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</button>`;
+        <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.nome))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}${p.dobrado ? ' ×2' : ''}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</button>`;
   return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados.</p>
     ${blocoCaca(z, dex)}
     <ul class="dex-legenda small muted">
@@ -579,7 +580,8 @@ function blocoAuto() {
   const a = G.auto; if (!a) return '';
   const { total, linhas } = resumoDeAbates(a.abates);
   const z = rotasAtuais().find(x => x.id === a.rota) || zone();
-  const esperado = n => { const p = z.pool.find(x => x.n === n); return p ? textoTaxa(taxaNaRota(z, p.id)) : '—'; };
+  const dobrar = especiesDobradas(G.S.bag);
+  const esperado = n => { const p = z.pool.find(x => x.n === n); return p ? textoTaxa(taxaNaRota(z, p.id, dobrar)) : '—'; };
   const num = n => n.toFixed(1).replace('.', ',');
   return `<div class="auto-box${a.ativo ? ' on' : ''}">
     <p class="auto-topo"><b>🤖 ${a.ativo ? 'Caçando' : 'Caçada encerrada:'} ${esc(fmt(a.alvo))}</b>

@@ -8,6 +8,7 @@ import { especial } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem, multEviolite, multStatDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
 import { GOLPE_FLAGS } from './dados-golpe-flags.js';
+import { ESPECIE_DO_ITEM_EVO } from './dados-evolucao-restante.js';
 
 export function typeEff(atk, defs) {
   const c = CHART[atk]; if (!c) return 1;
@@ -94,6 +95,15 @@ export const tiposDefensivos = m => m?.tera ? [m.tera] : tiposDe(m);
    com o dos antigos (é o que `multStab` calcula). Esta lista serve ao julgamento grosso da IA (`melhorGolpe`),
    que só pergunta "esse golpe tem STAB?"; a conta de verdade do dano continua em `multStab`. */
 export const tiposOfensivos = m => m?.tera ? [...new Set([m.tera, ...tiposDe(m)])] : tiposDe(m);
+/* Eficácia do golpe contando a habilidade de QUEM ATACA. Hoje só `ignoraImunidade` (Scrappy, Mind's Eye: Normal e
+   Lutador acertam Fantasma), e ela vale SÓ quando a eficácia é ZERO. Tirar o tipo da conta sempre seria outra
+   coisa: um golpe Sombrio em Gengar (Fantasma/Venenoso) perderia o super efetivo sem motivo nenhum. Toda decisão
+   de "esse golpe faz algo?" passa por aqui: o dano (calcDamage), o motor (golpe.executar, OHKO incluído) e a IA. */
+export function eficacia(hu, tipo, alvo) {
+  const tipos = tiposDefensivos(alvo), e = typeEff(tipo, tipos);
+  if (e !== 0 || !hu?.ignoraImunidade) return e;
+  return typeEff(tipo, tipos.filter(d => !hu.ignoraImunidade.includes(d)));
+}
 /* Tipo Tera SORTEADO do inimigo: qualquer um dos 18, do tipo dele ou não, com a mesma chance. O fator surpresa é
    não dar pra prever pra onde ele vira. `rnd` injetável pros testes. */
 export function sortearTipoTera(rnd = Math.random) {
@@ -284,8 +294,10 @@ export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, n
 export const TELA_TURNOS = 5, VENTO_TURNOS = 4;
 export const MAX_ESPINHOS = 3, MAX_TOXINAS = 2;
 // dano cortado pelas telas do lado de quem DEFENDE (Aurora Veil vale pros dois tipos de golpe)
-export function multTelas(lado, move) {
-  if (!lado) return 1;
+// `atravessa` = Infiltrator: pra quem tem, a tela do outro lado é como se não existisse (e a Salvaguarda também,
+// em golpe.aplicarStatus — é a mesma habilidade, lida nos dois pontos)
+export function multTelas(lado, move, atravessa = false) {
+  if (!lado || atravessa) return 1;
   const fisico = move.cls === 'physical';
   if (lado.veu > 0 || (fisico ? lado.reflect > 0 : lado.luz > 0)) return 0.5;
   return 1;
@@ -456,7 +468,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * (esperado ? 92.5 : rand(85, 100)) / 100;
   mod *= multStab(u, move.type, hu.stab || 1.5);                                      // STAB (Adaptability = ×2; Tera muda a conta)
-  const ef = typeEff(move.type, tiposDefensivos(t));                                  // terastalizado defende pelo tipo Tera
+  const ef = eficacia(hu, move.type, t);                                              // Tera defende pelo tipo Tera; Scrappy ignora a imunidade
   mod *= ef;
   if (ef > 1 && ht.superEfetivo) mod *= ht.superEfetivo;                            // Filter, Solid Rock
   if (ef < 1 && hu.poucoEfetivo) mod *= hu.poucoEfetivo;                            // Tinted Lens
@@ -475,11 +487,22 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   if (u.vol.flashFire && move.type === 'fire') mod *= 1.5;
   if (ht.resiste?.[move.type]) mod *= ht.resiste[move.type];                        // Thick Fat, Heatproof
   if (ht.hpCheio && t.hp >= t.stats.hp) mod *= ht.hpCheio;                          // Multiscale
+  /* Os quatro Tesouros da Ruína (Chi-Yu e cia.): quem tem baixa 25% de um atributo de TODO MUNDO menos de si.
+     Numa luta de 1 contra 1 isso é exatamente o mesmo que mexer no dano deste golpe, e é assim que entra aqui:
+     o atributo caído é de QUEM ESTÁ DO OUTRO LADO. Ataque/At. Esp. caído em quem ataca (`ht.ruina`) = ×0,75;
+     Defesa/Def. Esp. caída em quem defende (`hu.ruina`) = ×4/3, que é o 1/0,75 da divisão.
+     Simplificação assumida: com ALIADO em campo, o aliado não sente a ruína (o motor só tem os dois do golpe). */
+  if (ht.ruina === (phys ? 'attack' : 'special-attack')) mod *= 0.75;
+  if (hu.ruina === (phys ? 'defense' : 'special-defense')) mod *= 4 / 3;
+  /* Dark Aura / Fairy Aura: reforçam o tipo pra TODO MUNDO em campo, dos dois lados — então basta um dos dois do
+     golpe ter a habilidade. Aura Break (de qualquer lado) inverte o reforço em enfraquecimento, como nos jogos. */
+  const aura = hu.aura?.tipo === move.type ? hu.aura : ht.aura?.tipo === move.type ? ht.aura : null;
+  if (aura) mod *= (hu.anulaAura || ht.anulaAura) ? 0.75 : aura.mult;
   mod *= resisteDoItem(t, move.type, ef);                                            // Escama do Céu, Cristal Psíquico/Gélido, frutas de aperto
   mod *= multDanoDoItem(u, { ef, fisico: phys, tipo: move.type });                    // item segurado (Orbe da Vida, Núcleo Eternamax…)
   mod *= multClima(clima, move.type);                                                // sol/chuva (regras.CLIMAS)
   mod *= multTerreno(terreno, move.type, u);                                         // terreno, pra quem está no chão
-  mod *= multTelas(ladoAlvo, move);                                                  // telas do lado de quem defende
+  mod *= multTelas(ladoAlvo, move, !!hu.atravessaTelas);                             // telas do lado de quem defende (Infiltrator passa)
   mod *= multResisteRaide(ladoAlvo, move.type);                                      // Cinza Vulcânica/Escama Abissal (raide)
   return { dmg: Math.max(1, Math.floor(base * mod)), crit };
 }
@@ -527,6 +550,18 @@ export function danoResidual(m) {
   if (m.status === 'poison' && m.vol?.toxico) return Math.max(1, Math.floor(m.stats.hp * m.vol.toxico / 16));
   const frac = m.status === 'burn' ? 16 : m.status === 'poison' ? 8 : 0;
   return frac ? Math.max(1, Math.floor(m.stats.hp / frac)) : 0;
+}
+
+/* Item de evolução na mochila DOBRA a chance de encontrar quem evolui com ele (pedido do usuário): achou a Maçã
+   Doce, o Applin passa a aparecer duas vezes mais nessa rota. Devolve o conjunto de nomes de espécie; quem pesa o
+   pool é `mapas.sortearDaRota`, e a MESMA lista vai pro `mapas.taxaNaRota` — a porcentagem na tela da rota tem de
+   contar o dobro também, senão a soma mostrada mente (foi o bug #74/#75).
+   Fora: o Cabo de Conexão, que evolui por TROCA e não nomeia espécie na tabela da PokéAPI (seriam 30+ de uma vez,
+   e ele se compra na loja). O multiplicador em si é `mapas.MULT_ITEM_EVO`, onde o pool é pesado. */
+export function especiesDobradas(bag = {}) {
+  const dobram = new Set();
+  for (const k in bag) if (bag[k] > 0) for (const e of ESPECIE_DO_ITEM_EVO[k] || []) dobram.add(e);
+  return dobram;
 }
 
 /* fuga: Run Away ou ser mais rápido garante; senão a chance sobe 30/256 a cada tentativa. `preso` = o oponente
@@ -755,7 +790,7 @@ export function notaDoGolpe(g, c) {
 
   // ---- golpe de dano ----
   if (g.cls !== 'status') {
-    const ef = typeEff(g.type, tiposDefensivos(alvo));
+    const ef = eficacia(hu, g.type, alvo);                                                   // Scrappy: a IA sabe que Fantasma não é mais imune
     if (ef === 0 || ht.imuneTipo === g.type || ht.absorve === g.type) return IMPOSSIVEL;      // imune, ou ainda cura o alvo
     if (ht.imuneFlag && temFlag(g, ht.imuneFlag)) return IMPOSSIVEL;                          // Soundproof, Bulletproof
     if (esp.soDormindo && alvo.status !== 'sleep') return IMPOSSIVEL;

@@ -55,13 +55,14 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/layout.js` · `js/paineis.js` | Modelo puro do layout dos painéis (testado) · o DOM de arrastar e redimensionar. |
 | `js/pokemon.js` · `js/efeitos.js` | `makeMon()` = instância jogável · efeitos + `CTX` (narração do single player). |
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
-| `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 217 de 314 reais). Gancho novo = código no motor + teste. |
+| `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 249 de 314 reais). Gancho novo = código no motor + teste. |
 | `js/especiais.js` | Golpes cujo efeito não cabe no `meta` da PokéAPI. Sem imports. |
 | `js/segurados.js` | Itens segurados (puro). `seg(m)` é o ÚNICO ponto por onde toda leitura de item passa. |
 | `js/batalha.js` | `turn(action)` é a única entrada da UI. Começo de batalha, vitória, derrota, captura, `endBattle`. |
 | `js/progressao.js` · `js/evolucao.js` | XP, aprender golpe, evolução por nível · evoluções especiais (puro), `EVO_ALTERNATIVAS` = os 19 casos sem suporte. |
 | `js/itens.js` · `js/amizade.js` · `js/missoes.js` | Mochila, equipar, ensinar, repelente · petisco, recrutar, despedir · `verificarMissoes()`. |
 | `js/mundo.js` · `js/criacao.js` · `js/fim.js` | Explorar, chefe, evento · tela de criação e `iniciarJornada` · `encerrarJornada` e o resumo. |
+| `img/itens/` | Sprite de item que a PokéAPI não desenhou (Gen 8/9), baixado pelo gerador. Único lugar com imagem de item nossa. |
 | `js/carreira.js` | Carreira = jornadas terminadas. Também monta as gimmicks da loja e o Hall da conta. |
 | `js/progresso-conta.js` | Progresso permanente (puro). Regra única: **nunca encolhe**; `bancar()` idempotente por id de jornada. |
 | `js/conquistas.js` · `js/tela-conquistas.js` | Conquistas da conta. As gimmicks somam a CARREIRA, não a run. |
@@ -97,7 +98,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/ads.js` · `js/tela-privacidade.js` | Banner, sinal pro Google e os slots. O script do Google vem no `<head>` **sempre**; `blocoAds` só desenha com `AD_SLOT_*` preenchido. |
 | `js/site.js` · `js/texto-privacidade.js` | Site fora do jogo: `URL_SITE`, `PAGINAS`, `CAPITULOS_GUIA`, rodapé · texto da política. Sem DOM. |
 | páginas estáticas · `sitemap.xml` | **GERADOS** por `ferramentas/gerar-paginas.mjs` — não editar à mão. Capítulo novo do guia = `CAPITULOS_GUIA` + corpo + linha no `PRECACHE`. |
-| `js/dados-megas.js` · `dados-golpe-flags.js` · `dados-evolucao-restante.js` · `dados-item-sprites.js` | **GERADOS** por `ferramentas/` — não editar à mão. |
+| `js/dados-megas.js` · `dados-golpe-flags.js` · `dados-evolucao-restante.js` · `dados-item-sprites.js` | **GERADOS** por `ferramentas/` — não editar à mão. `dados-item-sprites.SPRITE_DO_ITEM` resolve as 51 chaves que não acham arquivo na PokéAPI; valor com barra é PNG nosso em `img/itens/` (**arquivo novo lá = linha no `PRECACHE`**, `tests/sw.test.js` cobra). |
 
 ## Armadilhas (o que já quebrou — detalhe em `docs/historico.md`)
 
@@ -129,6 +130,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 - **Nunca assumir "só 1 do meu lado"** — é a base do multiplayer e dos aliados.
 - **Do lado do jogador ninguém troca de Pokémon**, então armadilha de entrada ali é inerte (o golpe avisa em vez de fingir). Roar/Baton Pass provavelmente nunca entram por isso.
 - **Ler rota por `zone()`/`rotasAtuais()`**, nunca `ZONES` direto na jornada (elas aplicam `rotaNaJornada`, com níveis escalados).
+- **O peso de uma espécie no pool sai de `mapas.pesoNaRota`**, lido pelo sorteio (`sortearDaRota`) E pela taxa mostrada (`taxaNaRota`). Dois pesos = a tela promete uma chance que o sorteio não cumpre (foi o bug #74/#75). Quem dobra hoje é `regras.especiesDobradas` (item de evolução na mochila).
 - **`tirarIniciais` e `especiesDaGen` PULAM rotas `posVitoria`** (o Santuário). Quem varrer rotas pra filtrar conteúdo tem de pular também, senão o Santuário deixa de garantir a completude da Pokédex.
 - **Ao mexer em velocidade, lembrar do clima** — a ordem do turno usa `effStat(..., clima)` nos DOIS motores.
 - **Cuidado com o nome**: `espetos` é o Elmo Rochoso (item); `espinhos` é o Spikes (campo).

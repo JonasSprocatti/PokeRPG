@@ -13,6 +13,13 @@ test('todo js/*.js está no PRECACHE do sw.js', () => {
   assert.deepEqual(faltando, [], `adicione em PRECACHE (sw.js): ${faltando.join(', ')}`);
 });
 
+// Os sprites de item que a PokéAPI não tem são arquivos NOSSOS (img/itens/). Fora do PRECACHE, a mochila offline
+// mostra a caixinha de reserva no lugar — o mesmo buraco que eles vieram tapar.
+test('todo img/itens/*.png está no PRECACHE do sw.js', () => {
+  const faltando = readdirSync(new URL('img/itens/', raiz)).filter(f => f.endsWith('.png')).map(f => './img/itens/' + f).filter(f => !precache.includes(f));
+  assert.deepEqual(faltando, [], `adicione em PRECACHE (sw.js): ${faltando.join(', ')}`);
+});
+
 test('PRECACHE não aponta pra arquivo que não existe (o install do service worker falharia inteiro)', () => {
   for (const f of precache.filter(f => f !== './')) assert.doesNotThrow(() => readFileSync(new URL(f, raiz)), `${f} não existe`);
 });

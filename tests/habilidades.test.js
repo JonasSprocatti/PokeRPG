@@ -82,7 +82,12 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     'avisaGolpeForte', 'revelaItem', 'moody', 'ripen', 'curaBerryExtra', 'semItemEmBatalha', 'algodaoCai',
     'trocaHabilidadeContato',
     // gênero (regras.sortearGenero): Rivalry no dano, Cute Charm pelo `contato` com status 'infatuation'
-    'rivalidade']);
+    'rivalidade',
+    // oitava leva
+    'ruina', 'aura', 'anulaAura', 'ignoraImunidade', 'atravessaTelas', 'semSaidaForcada', 'aoRecuar',
+    'corpoMaldito', 'tipoDoProprioGolpe', 'tipoDoGolpeRecebido', 'venenoConfunde',
+    'zeraEstagiosAoEntrar', 'limpaTelas', 'curaAliadoAoEntrar', 'copiaEstagiosDoAliado',
+    'estagioInimigoAoEntrar', 'pesadelo']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {
@@ -879,4 +884,151 @@ test('Flower Veil: Grama no lado (você ou aliado) não perde atributo nem pega 
   const c2 = { ...ctx(), aliadosDe: m => (m === naoGrama ? [guarda] : []) };
   await mudarEstagios(naoGrama, [{ stat: 'attack', change: -1 }], c2, mon());
   assert.equal(naoGrama.vol.stages.attack, -1, 'sem ser Grama, o Véu de Flores não protege');
+});
+
+/* ---- 8ª leva ---- */
+
+// Os quatro Tesouros da Ruína entram como multiplicador do golpe (regras.calcDamage): o atributo caído é sempre
+// o de QUEM ESTÁ DO OUTRO LADO, nunca o próprio — é essa troca de lado que o teste trava.
+test('Tesouros da Ruína: derrubam atributo do OUTRO lado, nunca o próprio', t => {
+  t.mock.method(Math, 'random', () => 0.99);          // sem crítico, dano máximo fixo
+  const base = calcDamage(mon(), mon(), golpe(), null, null, null, true).dmg;
+  const fis = golpe(), esp = golpe({ cls: 'special' });
+  // Espada da Ruína em quem ATACA: a Defesa do alvo caiu → dano físico sobe
+  assert.ok(calcDamage(mon({ ability: 'sword-of-ruin' }), mon(), fis, null, null, null, true).dmg > base);
+  // a mesma habilidade em quem DEFENDE não muda nada (a Defesa dele é a única que não cai)
+  assert.equal(calcDamage(mon(), mon({ ability: 'sword-of-ruin' }), fis, null, null, null, true).dmg, base);
+  // Tábuas da Ruína em quem DEFENDE: o Ataque de quem bate caiu → dano físico desce
+  assert.ok(calcDamage(mon(), mon({ ability: 'tablets-of-ruin' }), fis, null, null, null, true).dmg < base);
+  // e cada uma mexe só no par certo: Tábuas (Ataque) não encosta no golpe especial
+  const baseEsp = calcDamage(mon(), mon(), esp, null, null, null, true).dmg;
+  assert.equal(calcDamage(mon(), mon({ ability: 'tablets-of-ruin' }), esp, null, null, null, true).dmg, baseEsp);
+  assert.ok(calcDamage(mon(), mon({ ability: 'vessel-of-ruin' }), esp, null, null, null, true).dmg < baseEsp);
+});
+
+test('Dark Aura vale pros DOIS lados e Aura Break inverte', t => {
+  t.mock.method(Math, 'random', () => 0.99);
+  const dark = golpe({ type: 'dark' });
+  const base = calcDamage(mon(), mon(), dark, null, null, null, true).dmg;
+  assert.ok(calcDamage(mon({ ability: 'dark-aura' }), mon(), dark, null, null, null, true).dmg > base, 'em quem ataca');
+  assert.ok(calcDamage(mon(), mon({ ability: 'dark-aura' }), dark, null, null, null, true).dmg > base, 'em quem defende também');
+  // Aura Break do outro lado: o reforço vira enfraquecimento
+  assert.ok(calcDamage(mon({ ability: 'dark-aura' }), mon({ ability: 'aura-break' }), dark, null, null, null, true).dmg < base);
+  // tipo de fora da aura não muda (base própria: o golpe Normal de um Pokémon Normal tem STAB)
+  const baseNormal = calcDamage(mon(), mon(), golpe(), null, null, null, true).dmg;
+  assert.equal(calcDamage(mon({ ability: 'dark-aura' }), mon(), golpe(), null, null, null, true).dmg, baseNormal);
+});
+
+/* Scrappy / Mind's Eye: a imunidade do Fantasma a Normal/Lutador cai. O que o teste precisa provar é que a
+   habilidade NÃO mexe em eficácia que não seja zero — tirar o tipo da conta sempre baixaria o super efetivo. */
+test('Scrappy acerta Fantasma sem estragar as outras eficácias', async () => {
+  const fantasma = mon({ data: { types: ['ghost'] } });
+  const c = ctx();
+  await usarGolpe(mon(), fantasma, golpe(), true, c);
+  assert.equal(fantasma.hp, 100, 'sem a habilidade, Normal não afeta');
+  const alvo = mon({ data: { types: ['ghost'] } });
+  await usarGolpe(mon({ ability: 'scrappy' }), alvo, golpe(), true, ctx());
+  assert.ok(alvo.hp < 100, 'com Scrappy, acerta');
+  // golpe Sombrio em Fantasma continua super efetivo (e não vira "neutro sem o tipo")
+  const base = calcDamage(mon(), fantasma, golpe({ type: 'dark' }), null, null, null, true).dmg;
+  assert.equal(calcDamage(mon({ ability: 'scrappy' }), fantasma, golpe({ type: 'dark' }), null, null, null, true).dmg, base);
+});
+
+test('Suction Cups não sai de campo por golpe, mas Wimp Out ainda sai por conta própria', async () => {
+  const agarrado = mon({ ability: 'suction-cups' });
+  let pedidos = 0;
+  const c = { ...ctx(), forcarSaida: async () => { pedidos++; return true; } };
+  // o motor PEDE a saída (golpe.sairDeCampo) — a habilidade recusa antes de chegar em quem tira de campo
+  await usarGolpe(mon(), agarrado, golpe({ name: 'dragon-tail' }), true, c);
+  assert.equal(pedidos, 0, 'arrastar pra fora não acontece');
+  const medroso = mon({ ability: 'wimp-out', hp: 60 });   // 60 > metade: um golpe qualquer cruza a linha
+  const c2 = { ...ctx(), forcarSaida: async () => { pedidos++; return true; } };
+  await usarGolpe(mon(), medroso, golpe({ power: 80 }), true, c2);
+  assert.ok(pedidos >= 1, 'sair por vontade própria continua valendo');
+});
+
+test('Steadfast: perder o turno recuando sobe a Velocidade', async () => {
+  const m = mon({ ability: 'steadfast' });
+  m.vol.flinch = true;
+  await usarGolpe(m, mon(), golpe(), true, ctx());
+  assert.equal(m.vol.stages.speed, 1);
+  // sem a habilidade, o recuo é só prejuízo
+  const n = mon(); n.vol.flinch = true;
+  await usarGolpe(n, mon(), golpe(), true, ctx());
+  assert.equal(n.vol.stages.speed, 0);
+});
+
+test('Protean troca o próprio tipo uma vez por entrada; Color Change troca sempre', async () => {
+  const p = mon({ ability: 'protean' });
+  await usarGolpe(p, mon(), golpe({ type: 'water' }), true, ctx());
+  assert.deepEqual(p.vol.tipos, ['water']);
+  await usarGolpe(p, mon(), golpe({ type: 'fire' }), true, ctx());
+  assert.deepEqual(p.vol.tipos, ['water'], 'uma vez só por entrada em campo (Gen 9)');
+  const cc = mon({ ability: 'color-change' });
+  await usarGolpe(mon(), cc, golpe({ type: 'water' }), true, ctx());
+  assert.deepEqual(cc.vol.tipos, ['water']);
+  await usarGolpe(mon(), cc, golpe({ type: 'fire' }), true, ctx());
+  assert.deepEqual(cc.vol.tipos, ['fire'], 'toda vez que apanha');
+});
+
+test('Cursed Body desativa o golpe que acertou, pela trava do Disable', async t => {
+  t.mock.method(Math, 'random', () => 0.1);           // 10% < 30%: ativa
+  const atacante = mon();
+  await usarGolpe(atacante, mon({ ability: 'cursed-body' }), golpe(), true, ctx());
+  assert.equal(atacante.vol.desativado?.golpe, 'tackle');
+  t.mock.restoreAll();
+  t.mock.method(Math, 'random', () => 0.9);           // 90% > 30%: não ativa
+  const outro = mon();
+  await usarGolpe(outro, mon({ ability: 'cursed-body' }), golpe(), true, ctx());
+  assert.equal(outro.vol.desativado, undefined);
+});
+
+test('Bad Dreams castiga quem dorme do outro lado, e só quem dorme', async () => {
+  const darkrai = mon({ ability: 'bad-dreams' });
+  const dormindo = mon({ status: 'sleep', sleep: 3 }), acordado = mon();
+  const c = { ...ctx(), oponentesDe: () => [dormindo, acordado] };
+  await fimDeTurno(darkrai, c);
+  assert.equal(dormindo.hp, 100 - Math.floor(100 / 8));
+  assert.equal(acordado.hp, 100);
+});
+
+test('Toxic Chain envenena GRAVE sem precisar encostar', async t => {
+  t.mock.method(Math, 'random', () => 0.1);
+  const alvo = mon();
+  await usarGolpe(mon({ ability: 'toxic-chain' }), alvo, golpe({ name: 'swift', power: 60 }), true, ctx());
+  assert.equal(alvo.status, 'poison');
+  assert.equal(alvo.vol.toxico, 1, 'veneno grave');
+});
+
+test('entrada em campo: Curious Medicine zera, Costar copia, Hospitality cura, Supersweet Syrup baixa a evasão', async () => {
+  const oponentesDe = alvos => () => alvos;
+  // Curious Medicine: zera o lado todo (o dele e o do aliado), bom e ruim
+  const aliado = mon(); aliado.vol.stages.attack = 2;
+  const medico = mon({ ability: 'curious-medicine' }); medico.vol.stages.speed = -1;
+  await aoEntrarEmCampo([medico], oponentesDe([]), { ...ctx(), aliadosDe: () => [aliado] });
+  assert.equal(aliado.vol.stages.attack, 0);
+  assert.equal(medico.vol.stages.speed, 0);
+  // Costar: entra copiando os degraus do aliado
+  const forte = mon(); forte.vol.stages.attack = 2;
+  const copia = mon({ ability: 'costar' });
+  await aoEntrarEmCampo([copia], oponentesDe([]), { ...ctx(), aliadosDe: () => [forte] });
+  assert.equal(copia.vol.stages.attack, 2);
+  // Hospitality: 25% do HP MÁXIMO do aliado
+  const ferido = mon({ hp: 40 });
+  await aoEntrarEmCampo([mon({ ability: 'hospitality' })], oponentesDe([]), { ...ctx(), aliadosDe: () => [ferido] });
+  assert.equal(ferido.hp, 65);
+  // Supersweet Syrup: baixa a evasão do outro lado, uma vez por batalha
+  const inimigo = mon();
+  const xarope = mon({ ability: 'supersweet-syrup' });
+  await aoEntrarEmCampo([xarope], oponentesDe([inimigo]), ctx());
+  assert.equal(inimigo.vol.stages.evasion, -1);
+  await aoEntrarEmCampo([xarope], oponentesDe([inimigo]), ctx());
+  assert.equal(inimigo.vol.stages.evasion, -1, 'não repete na mesma batalha');
+});
+
+test('Screen Cleaner estilhaça as telas dos DOIS lados', async () => {
+  const campo = { lados: { jogador: { reflect: 3, luz: 0, veu: 0 }, inimigo: { reflect: 0, luz: 4, veu: 2 } } };
+  await aoEntrarEmCampo([mon({ ability: 'screen-cleaner' })], () => [], { ...ctx(), campo });
+  assert.deepEqual(campo.lados.jogador, { reflect: 0, luz: 0, veu: 0 });
+  assert.deepEqual(campo.lados.inimigo, { reflect: 0, luz: 0, veu: 0 });
 });

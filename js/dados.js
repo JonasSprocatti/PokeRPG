@@ -2,7 +2,7 @@
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 import { GENS as GENS_DO_MAPA } from './dados-mapas.js';
 import { ALFAS, MISSOES_ROTA } from './dados-rotas.js';
-import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO } from './dados-item-sprites.js';
+import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO, SPRITE_DO_ITEM } from './dados-item-sprites.js';
 /* Os mapas chegam em DUAS camadas: `dados-mapas.js` é gerado da PokéAPI (pools, níveis, Alfa sorteado) e
    `dados-rotas.js` é gerado pelo editor de rotas do jogo, com as escolhas de DESENHO por cima — hoje só o Alfa
    trocado. Elas se juntam aqui, no único arquivo que importa `dados-mapas.js`: `mapas.js` e `pokedex-conta.js`
@@ -64,7 +64,13 @@ export const SPR_ANIM_SHINY_COSTAS = id => `${SPRITES}/pokemon/other/showdown/ba
 /* Grito (pedido do usuário, som.js): repositório IRMÃO do de sprites (PokeAPI/cries), mesmo espelho jsDelivr e
    mesma regra — montado pelo id, sem precisar buscar o Pokémon de novo pra achar a URL. */
 export const CRY = id => `https://cdn.jsdelivr.net/gh/PokeAPI/cries@main/cries/pokemon/latest/${id}.ogg`;
-export const ITEM_SPR = n => `${SPRITES}/items/${n}.png`;
+/* A chave do item É o nome do arquivo na PokéAPI — menos nas 51 em que não é (item com chave em português, item
+   inventado deste jogo, item real que a PokéAPI não desenhou). `SPRITE_DO_ITEM` (GERADO, ver
+   ferramentas/gerar-item-sprites.mjs) resolve essas: valor com barra é arquivo nosso, sem barra é item da PokéAPI. */
+export const ITEM_SPR = n => {
+  const a = SPRITE_DO_ITEM[n];
+  return a?.includes('/') ? a : `${SPRITES}/items/${a || n}.png`;
+};
 /* Alguns itens novos (Gen 8/9) simplesmente NÃO têm imagem no repositório de sprites da PokéAPI — Coroa Galárica,
    Armadura Auspiciosa, Pote Rachado... Antes a figura quebrada era escondida (visibility:hidden) e sobrava um buraco:
    parecia bug de renderização. Agora cai neste ícone de caixinha (SVG embutido, não depende de rede).
@@ -182,14 +188,18 @@ export const ITEMS = {
 // 'use-item'); `troca: true` = o Cabo de Conexão (gatilho 'trade'); `segurar: true` = a evolução pede ele na mochila
 // (troca segurando, ou subir de nível segurando — some ao evoluir). Pedras e o Cabo vendem na loja; o resto se acha
 // explorando rotas a partir da 4ª (ITENS_EVO_ACHADOS) ou vem de prêmio de Alfa.
-const pedra = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}).`, evo: true, price: 2100 });
-const segurado = (name, desc) => ({ name, desc: `Evolução por troca ou por nível: fica na mochila e é gasto ao evoluir (${desc}).`, segurar: true });
-const especial = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}).`, evo: true });
+/* Todo item de evolução DOBRA a chance de encontrar quem evolui com ele enquanto está na mochila
+   (regras.especiesDobradas → mapas.sortearDaRota). Entra na descrição porque é regra que muda o que o jogador faz:
+   guardar a Maçã Doce é o jeito de achar um Applin. */
+const ISCA = 'Na mochila, quem evolui com ele aparece em dobro explorando.';
+const pedra = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}). ${ISCA}`, evo: true, price: 2100 });
+const segurado = (name, desc) => ({ name, desc: `Evolução por troca ou por nível: fica na mochila e é gasto ao evoluir (${desc}). ${ISCA}`, segurar: true });
+const especial = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}). ${ISCA}`, evo: true });
 /* Item de EVOLUÇÃO que também tem efeito em BATALHA se estiver segurado — é como funciona nos jogos: a Pedra do
    Rei evolui Poliwhirl e dá 10% de recuo na mão. Um id só, `segurar` (evolui) + `segurado` (equipável); o efeito
    de luta mora em segurados.js, na mesma chave. Continua sem preço, como todo item de evolução: vem explorando.
    Segurado ele sai da mochila, e a evolução por item aceita as duas coisas (progressao.contexto/pagar). */
-const duplo = (name, efeito, quem) => ({ name, desc: `${efeito} Também evolui, sendo gasto: ${quem}.`, segurar: true, segurado: true });
+const duplo = (name, efeito, quem) => ({ name, desc: `${efeito} Também evolui, sendo gasto: ${quem}. ${ISCA}`, segurar: true, segurado: true });
 export const ITENS_EVO = {
   'fire-stone': pedra('Pedra do Fogo', 'Vulpix, Growlithe, Eevee…'), 'water-stone': pedra('Pedra da Água', 'Poliwhirl, Shellder, Eevee…'),
   'thunder-stone': pedra('Pedra do Trovão', 'Pikachu, Eevee, Magneton…'), 'leaf-stone': pedra('Pedra da Folha', 'Gloom, Weepinbell, Eevee…'),

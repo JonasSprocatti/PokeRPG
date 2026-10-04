@@ -29,7 +29,9 @@ export const CTX = {
   refDe: m => m === G.B?.enemy ? 'E' : ladoJogador().indexOf(m),
   monPorRef: r => r === 'E' ? G.B?.enemy : ladoJogador()[r],
   // aliados vivos de m, no MESMO lado (Friend Guard): você só tem um inimigo por vez, então do lado dele é só ele
-  aliadosDe: m => (ladoJogador().includes(m) ? ladoJogador() : [G.B?.enemy]).filter(x => x && x !== m && x.hp > 0)
+  aliadosDe: m => (ladoJogador().includes(m) ? ladoJogador() : [G.B?.enemy]).filter(x => x && x !== m && x.hp > 0),
+  // quem está vivo do OUTRO lado (Bad Dreams no fim do turno — `aoEntrarEmCampo` recebe a sua própria lista)
+  oponentesDe: m => (ladoJogador().includes(m) ? [G.B?.enemy] : ladoJogador()).filter(x => x && x.hp > 0)
 };
 // `fonte` = quem causou (outro Pokémon → Clear Body, Hyper Cutter… podem impedir a queda). Itens: sem fonte.
 export const changeStats = (m, changes, fonte = null) => mudarEstagios(m, changes, CTX, fonte);

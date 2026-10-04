@@ -169,6 +169,34 @@
 //                          encostou muda: 'contagio' = vira a SUA (Mummy, Lingering Aroma), 'troca' = as duas
 //                          trocam de lugar (Wandering Spirit) (golpe.executar; desfeito no fim da batalha,
 //                          `golpe.desfazerTrace`, mesmo mecanismo do Trace)
+//
+//   ---- 8ª leva: o resto do que dava pra fazer sem mecânica de TROCA de Pokémon nem forma dinâmica (o que sobrou
+//   está documentado no fim da tabela, e o desenho das duas está em docs/features.md). ----
+//   ruina: stat           os quatro Tesouros da Ruína: 25% a menos DAQUELE atributo em todo mundo menos em si
+//                         (regras.calcDamage, resolvido como multiplicador do golpe — ver o comentário lá)
+//   aura: {tipo, mult}    reforça esse tipo de golpe pros DOIS lados do campo (Dark Aura, Fairy Aura);
+//                         `anulaAura` inverte o reforço em ×0,75 (Aura Break) (regras.calcDamage)
+//   ignoraImunidade: [tipo]  a imunidade de TIPO do alvo não vale (Scrappy, Mind's Eye: Fantasma não escapa de
+//                         Normal/Lutador). Só mexe quando a eficácia é ZERO (regras.eficacia)
+//   atravessaTelas        Refletir/Tela de Luz/Véu e a Salvaguarda do outro lado não valem contra você
+//                         (regras.multTelas, golpe.aplicarStatus) — Infiltrator
+//   semSaidaForcada       golpe/item não arrasta você pra fora de campo (golpe.sairDeCampo) — Suction Cups
+//   aoRecuar: [stat, n]   perder o turno por recuo sobe n desse atributo (golpe.usarGolpe) — Steadfast
+//   corpoMaldito: n       n% de desativar o golpe que te acertou, pela MESMA trava do Disable (golpe.executar) — Cursed Body
+//   tipoDoProprioGolpe    ao atacar, o SEU tipo vira o do golpe; uma vez por entrada em campo, como na Gen 9
+//                         (golpe.executar, em `vol.tipos`) — Protean, Libero
+//   tipoDoGolpeRecebido   levar golpe de dano troca o SEU tipo pelo do golpe, sempre (golpe.executar) — Color Change
+//   venenoConfunde        quem VOCÊ envenena fica confuso de tabela (golpe.aplicarStatus) — Poison Puppeteer
+//   toque também aceita: `qualquer` (não precisa encostar, qualquer golpe que acertou serve) e `grave` (o veneno
+//                         sai GRAVE) — Toxic Chain
+//   zeraEstagiosAoEntrar  ao entrar, zera os degraus de atributo do seu lado, bons e ruins — Curious Medicine
+//   limpaTelas            ao entrar, estilhaça as telas dos DOIS lados — Screen Cleaner
+//   curaAliadoAoEntrar: f ao entrar, cura essa fração do HP máximo de um ALIADO — Hospitality
+//   copiaEstagiosDoAliado ao entrar, copia os degraus de atributo do aliado — Costar
+//   estagioInimigoAoEntrar: [stat, n]  ao entrar, mexe nesse atributo de quem está do outro lado; uma vez por
+//                         batalha (golpe.aoEntrarEmCampo) — Supersweet Syrup
+//   pesadelo: fração      no fim do turno, quem está DORMINDO do outro lado perde essa fração do HP máximo
+//                         (golpe.fimDeTurno, por `ctx.oponentesDe` — novo nos dois ctx) — Bad Dreams
 export const HABILIDADES = {
   // clima: ligam o tempo ao entrar em campo ou se aproveitam dele
   drizzle: { climaAoEntrar: 'chuva' }, drought: { climaAoEntrar: 'sol' }, 'sand-stream': { climaAoEntrar: 'areia' }, 'snow-warning': { climaAoEntrar: 'neve' },
@@ -379,20 +407,71 @@ export const HABILIDADES = {
   // fruta
   ripen: { ripen: true }, 'cheek-pouch': { curaBerryExtra: 1 / 3 },
   // fim de turno
-  moody: { moody: true }
-  /* FICARAM DE FORA de propósito, por não ter como ser fiel: Regenerator e Natural Cure agem ao TROCAR de
-     Pokémon, e você nunca troca; Mold Breaker & cia. pedem ignorar a habilidade do alvo em TODO cálculo do motor;
-     Stakeout (dobra o dano em quem "acabou de entrar") e Dancer (reagir a golpe de dança de OUTRO Pokémon) pedem
-     um estado de turno que o motor não rastreia igual nos dois lados; Neutralizing Gas suprimiria a habilidade de
-     TODO mundo em campo — invasivo demais pra entrar como mais uma linha; Ice Face, Gulp Missile, Schooling,
-     Shields Down, Hunger Switch, Zen Mode, Battle Bond (já existe aqui como item, não habilidade), Power
-     Construct, Comatose e Disguise são formas dinâmicas de UMA espécie só, cada uma exigiria sprite e regra
-     própria; Screen Cleaner (remove telas dos dois lados ao entrar) e Mimicry (tipo muda com o terreno, como o
-     Forecast do Castform) ficaram pra uma leva futura, sem gancho novo hoje; Gorilla Tactics (trava no primeiro
-     golpe, +50% de Ataque) precisaria mexer no MESMO cheque de trava que hoje só olha item (`seg(m).choice`) em
-     TRÊS telas diferentes (render.js, arena.js, multiplayer.js) — arriscado sem poder testar visualmente numa
-     sessão sem navegador. Habilidade sem efeito fiel fica como descrição: a ficha só promete "✓ ativa em
-     batalha" pra quem está aqui. */
+  moody: { moody: true },
+  /* ---- 8ª leva ---- */
+  // dano por flag/tipo e defesa por flag: uma linha, ganchos que já existiam
+  fluffy: { resisteFlag: { flag: 'contact', mult: 0.5 }, resiste: { fire: 2 } },
+  'aura-guard': { resisteFlag: { flag: 'contact', mult: 0.5 } },
+  'fire-mane': { danoTipo: { fire: 1.5 } },
+  dragonize: { converteTipo: { de: 'normal', para: 'dragon', mult: 1.2 } },
+  // Eelevate flutua: `imuneTipo: 'ground'` já tira Terrestre E as armadilhas do chão (regras.noChao lê daqui).
+  // O extra dela nos jogos (roubar a velocidade de quem ela derruba) fica pra uma leva futura.
+  eelevate: { imuneTipo: 'ground' },
+  // Tera Shell: com HP cheio, TUDO entra pouco efetivo. `hpCheio` é um multiplicador fixo, então sai como ×0,5
+  'tera-shell': { hpCheio: 0.5 },
+  // As One = Unnerve + Chilling/Grim Neigh na mesma habilidade (as duas metades já existiam)
+  'as-one-glastrier': { unnerve: true, aoNocautear: ['attack', 1] },
+  'as-one-spectrier': { unnerve: true, aoNocautear: ['special-attack', 1] },
+  // os quatro Tesouros da Ruína: cada um derruba 25% de um atributo de todo mundo menos de si
+  'sword-of-ruin': { ruina: 'defense' }, 'tablets-of-ruin': { ruina: 'attack' },
+  'vessel-of-ruin': { ruina: 'special-attack' }, 'beads-of-ruin': { ruina: 'special-defense' },
+  // auras: valem pros dois lados do campo; Aura Break inverte
+  'dark-aura': { aura: { tipo: 'dark', mult: 1.33 } }, 'fairy-aura': { aura: { tipo: 'fairy', mult: 1.33 } },
+  'aura-break': { anulaAura: true },
+  // Scrappy acerta Fantasma. Mind's Eye faz o mesmo e ainda não deixa baixarem sua precisão — a parte de ignorar
+  // a EVASÃO do alvo ficou de fora (o gancho que existe, `ignoraEstagios`, ignoraria todos os degraus dele)
+  scrappy: { ignoraImunidade: ['ghost'] },
+  'minds-eye': { ignoraImunidade: ['ghost'], semQueda: ['accuracy'] },
+  infiltrator: { atravessaTelas: true },
+  'suction-cups': { semSaidaForcada: true },
+  steadfast: { aoRecuar: ['speed', 1] },
+  'cursed-body': { corpoMaldito: 30 },
+  // tipo que muda: ao atacar (uma vez por entrada) ou ao apanhar (sempre)
+  protean: { tipoDoProprioGolpe: true }, libero: { tipoDoProprioGolpe: true },
+  'color-change': { tipoDoGolpeRecebido: true },
+  'poison-puppeteer': { venenoConfunde: true },
+  'toxic-chain': { toque: { status: 'poison', chance: 30, qualquer: true, grave: true } },
+  // entrada em campo: campo, aliado e o outro lado
+  'curious-medicine': { zeraEstagiosAoEntrar: true }, 'screen-cleaner': { limpaTelas: true },
+  hospitality: { curaAliadoAoEntrar: 0.25 }, costar: { copiaEstagiosDoAliado: true },
+  'supersweet-syrup': { estagioInimigoAoEntrar: ['evasion', -1] },
+  'bad-dreams': { pesadelo: 1 / 8 }
+  /* FICARAM DE FORA de propósito. Quatro motivos, e todos continuam valendo depois da 8ª leva:
+
+     1. DEPENDEM DE TROCAR DE POKÉMON, e no jogo ninguém do seu lado troca (você É o Pokémon). Regenerator e
+        Natural Cure já estão aqui com o gatilho adaptado ("ao sair" = ao vencer a luta, `curaAoVencer`/
+        `limpaStatusAoVencer`); Zero to Hero (muda de forma ao sair), Commander (entra na boca do Dondozo),
+        Ball Fetch, Honey Gather e Pickup (item depois da luta) e Telepathy (não leva golpe de aliado) não têm
+        nem gatilho equivalente nem efeito que daria pra sentir. Ver docs/features.md.
+     2. FORMA DINÂMICA DE UMA ESPÉCIE SÓ: cada uma pede sprite, atributos e regra próprios. Ice Face, Gulp
+        Missile, Schooling, Shields Down, Hunger Switch, Zen Mode, Power Construct, Disguise, Illusion, Imposter
+        (Transform), Tera Shift, Embody Aspect, Multitype e RKS System. Battle Bond existe no jogo como ITEM.
+     3. PEDEM ESTADO DE TURNO QUE O MOTOR NÃO GUARDA IGUAL NOS DOIS LADOS: Dancer (copiar golpe de dança de
+        outro), Analytic (saber que agiu por último na hora de calcular o dano), Opportunist (copiar o que o
+        outro subiu), Wind Power / Electromorphosis (guardar "o próximo golpe Elétrico sai em dobro"), Harvest e
+        Cud Chew (devolver a fruta já comida), Unburden, Symbiosis, Soul Heart e Receiver / Power of Alchemy
+        (reagir ao desmaio de um terceiro), Magic Bounce, Perish Body, Supreme Overlord, Toxic Debris.
+     4. MEXERIAM EM REGRA COMPARTILHADA, e o risco não paga uma linha de tabela: Mold Breaker, Turboblaze e
+        Teravolt (ignorar a habilidade do alvo em TODO ponto do motor, não só no dano); Neutralizing Gas
+        (suprimir a habilidade de todo mundo em campo); Cloud Nine e Air Lock (anular o clima — ele é lido em
+        dano, atributo, precisão, cura e fim de turno, cada um com seu caminho); Gorilla Tactics e Mycelium
+        Might (a trava de escolha de golpe hoje só olha item, `seg(m).choice`, em TRÊS telas); Damp, Heavy/Light
+        Metal (peso não existe no jogo), Gluttony (as duas frutas de HP do jogo, Oran e Sitrus, JÁ são comidas em
+        50% — a habilidade não teria o que adiantar), Mimicry, Propeller Tail e Stalwart (não há redirecionamento de golpe),
+        Unseen Fist e Piercing Drill (furar Proteção), Healer, Mega Sol, Spicy Spray, Delta Stream, Teraform Zero.
+
+     Habilidade fora daqui joga normal, só sem o efeito: a ficha promete "✓ ativa em batalha" apenas pra quem
+     está nesta tabela. */
 };
 export const hab = m => HABILIDADES[m?.ability] || {};
 /* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).

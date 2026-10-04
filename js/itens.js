@@ -185,7 +185,7 @@ async function usarRaide(id) {
 }
 /* Cápsula de Habilidade: escolher entre as OUTRAS habilidades da espécie (normais e oculta). Mostra as mesmas
    três informações que a tela de criação (criacao.js) mostra na escolha original — nome, descrição e se a
-   habilidade tem efeito de verdade: `IMPL` tem 217 das 314, e trocar por uma das outras 97 sem aviso seria
+   habilidade tem efeito de verdade: `IMPL` tem 249 das 314, e trocar por uma das outras 65 sem aviso seria
    gastar ₽250.000 em "será ajustado em atualizações futuras". Devolve o nome escolhido, ou null se cancelou. */
 async function escolherHabilidade(M) {
   const opcoes = habilidadesParaTrocar(M);

@@ -21,7 +21,7 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano, especiesDobradas
 } from './regras.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate, registrarDano } from './conquistas.js';
@@ -69,7 +69,8 @@ function sortearOponente(z) {
     const alvo = z.pool.find(x => x.n === caca);
     if (alvo && (!offline() || pokemonEmCache(alvo.id))) return { id: alvo.id, level: rand(z.min, z.max) };
   }
-  const p = sortearDaRota(z, offline() ? pokemonEmCache : null);
+  // item de evolução na mochila dobra o peso de quem evolui com ele (regras.especiesDobradas)
+  const p = sortearDaRota(z, offline() ? pokemonEmCache : null, Math.random, especiesDobradas(G.S.bag));
   if (!p) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma rota que você já explorou, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   return { id: p.id, level: rand(z.min, z.max) };
 }

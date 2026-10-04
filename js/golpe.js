@@ -20,7 +20,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
-  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca } from './regras.js';
+  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -306,6 +306,53 @@ export async function aoEntrarEmCampo(entrantes, oponentesDe, ctx) {
     // passa por mudarEstagios, então Clear Body e Névoa continuam valendo — é o mesmo caminho da Intimidação
     if (est) await mudarEstagios(m, [{ stat: est[0], change: est[1] }], ctx, m);
   }
+  /* Habilidades de ENTRADA que mexem no campo ou no aliado. Ficam aqui porque este é o único ponto que já tem
+     quem entrou E os oponentes de cada um; as que mudam degrau passam por `mudarEstagios`, então Clear Body e
+     Névoa continuam valendo, como na Intimidação. */
+  for (const m of entrantes) {
+    const h = hab(m);
+    // Curious Medicine: zera os degraus de atributo do próprio lado (ele e os aliados), os bons e os ruins
+    if (h.zeraEstagiosAoEntrar) {
+      for (const a of [m, ...(ctx.aliadosDe?.(m) || [])]) for (const k in a.vol?.stages || {}) a.vol.stages[k] = 0;
+      up(ctx); await ctx.say(`${ctx.nome(m)} mexe um remédio estranho: os atributos do seu lado voltaram ao normal.`, 'status');
+    }
+    // Screen Cleaner: limpa as telas dos DOIS lados (nos jogos não escolhe lado — quebra tudo)
+    if (h.limpaTelas && ctx.campo?.lados) {
+      let tinha = false;
+      for (const lado of Object.values(ctx.campo.lados)) {
+        if (lado.reflect || lado.luz || lado.veu) tinha = true;
+        lado.reflect = 0; lado.luz = 0; lado.veu = 0;
+      }
+      if (tinha) await ctx.say(`${ctx.nome(m)} estilhaçou todas as telas do campo!`, 'status');
+    }
+    // Hospitality: serve algo ao aliado e cura uma fração do HP MÁXIMO dele
+    if (h.curaAliadoAoEntrar) {
+      const amigo = (ctx.aliadosDe?.(m) || []).find(a => a.hp > 0 && a.hp < a.stats.hp);
+      if (amigo) {
+        const cura = Math.max(1, Math.floor(amigo.stats.hp * h.curaAliadoAoEntrar));
+        heal(amigo, cura); up(ctx);
+        await ctx.say(`${ctx.nome(m)} serve algo quente: ${ctx.nome(amigo)} recuperou ${cura} HP.`, 'good');
+      }
+    }
+    // Costar: entra copiando os degraus de atributo do aliado (inclusive os ruins)
+    if (h.copiaEstagiosDoAliado) {
+      const amigo = (ctx.aliadosDe?.(m) || []).find(a => a.hp > 0 && Object.values(a.vol?.stages || {}).some(v => v));
+      if (amigo) {
+        m.vol.stages = { ...amigo.vol.stages };
+        up(ctx); await ctx.say(`${ctx.nome(m)} imitou ${ctx.nome(amigo)} e copiou os atributos dele!`, 'status');
+      }
+    }
+    // Supersweet Syrup: o xarope baixa a evasão de quem está do outro lado. Uma vez por batalha, como nos jogos
+    if (h.estagioInimigoAoEntrar && !m.vol.xaropeUsado) {
+      const alvos = oponentesDe(m).filter(o => o.hp > 0);
+      if (alvos.length) {
+        m.vol.xaropeUsado = true;
+        await ctx.say(`${ctx.nome(m)} espalha um cheiro adocicado pelo campo!`, 'status');
+        const [stat, change] = h.estagioInimigoAoEntrar;
+        for (const o of alvos) await mudarEstagios(o, [{ stat, change }], ctx, m);
+      }
+    }
+  }
   for (const m of entrantes) await ajustarForma(m, ctx);   // Castform já entra na forma do tempo (o da rota ou o que acabou de ser ligado)
   // Anticipation: só avisa (não muda nada) se algum oponente tem golpe super efetivo, OHKO ou autodestrutivo contra quem entrou
   for (const m of entrantes) if (hab(m).anticipa) {
@@ -374,7 +421,7 @@ export async function aplicarArmadilhas(m, ctx) {
 // `fonte` = quem causou (Salvaguarda só protege de status vindo do inimigo, como nos jogos)
 export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
   if (t.boss) { if (avisar) await ctx.say(`Não afeta ${ctx.nome(t)}... (chefe de evento: imune a status)`); return; }
-  if (fonte && fonte !== t && temSalvaguarda(ladoDoCampo(ctx, t))) {
+  if (fonte && fonte !== t && temSalvaguarda(ladoDoCampo(ctx, t)) && !hab(fonte).atravessaTelas) {
     if (avisar) await ctx.say(`${NOME_LADO.salvaguarda} protege ${ctx.nome(t)}!`);
     return;
   }
@@ -426,6 +473,11 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
   if (hab(t).sincroniza && fonte && fonte !== t && fonte.hp > 0 && !fonte.status && ['burn', 'paralysis', 'poison'].includes(ail)) {
     await ctx.say(`A Sincronia de ${ctx.nome(t)} passa a condição para ${ctx.nome(fonte)}!`, 'status');
     await aplicarStatus(fonte, ail, ctx, false, null);
+  }
+  // Poison Puppeteer (Pecharunt): quem ELE envenena fica confuso de tabela
+  if (ail === 'poison' && fonte && fonte !== t && hab(fonte).venenoConfunde && t.vol.conf <= 0) {
+    await ctx.say(`O veneno de ${ctx.nome(fonte)} embaralha a cabeça de ${ctx.nome(t)}!`, 'status');
+    await aplicarStatus(t, 'confusion', ctx, false, fonte);
   }
   return true;
 }
@@ -578,7 +630,17 @@ async function golpeDeStatus(u, t, g, selfT, ctx, primeiro) {
    O motor não sabe COMO: quem tem a batalha (batalha.forcarSaida no single player) decide o que "sair" quer dizer —
    selvagem foge, treinador manda outro, aliado sai da luta. `ctx.forcarSaida` é opcional: sem ele (multiplayer) devolve
    `undefined`, e quem chamou diz que o golpe não funciona ali. Devolve true/false quando o ctx sabe responder. */
-async function sairDeCampo(m, ctx, motivo) { return ctx.forcarSaida ? !!(await ctx.forcarSaida(m, { motivo })) : undefined; }
+/* Suction Cups (`semSaidaForcada`): quem tem não é arrastado pra fora por golpe alheio — Roar, Whirlwind, Dragon
+   Tail, Cartão Vermelho. Fica AQUI, o único ponto por onde o motor pede saída, e não em `batalha.forcarSaida`:
+   assim vale igual no single player e em qualquer outro ctx. Saída por vontade própria (`medo`, do Wimp Out) não
+   é bloqueada — é a habilidade DELE agindo, não um golpe do outro. */
+async function sairDeCampo(m, ctx, motivo) {
+  if (motivo !== 'medo' && hab(m).semSaidaForcada) {
+    await ctx.say(`${ctx.nome(m)} se agarrou no chão com ${fmt(m.ability)} e não saiu!`, 'status');
+    return false;
+  }
+  return ctx.forcarSaida ? !!(await ctx.forcarSaida(m, { motivo })) : undefined;
+}
 
 // `primeiro` = u agiu antes de t neste turno (recuo só vale assim)
 /* `opcoes.extra` = o mesmo golpe do chefe caindo em OUTRO alvo (o golpe carregado atinge o time inteiro no co-op — mp-motor): não
@@ -609,7 +671,13 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
     else { interromper(u); await ctx.say(`${U} está congelado!`); return; }
   }
   if (u.status === 'paralysis' && Math.random() < 0.25) { interromper(u); await ctx.say(`${U} está paralisado e não consegue se mover!`); return; }
-  if (u.vol.flinch) { u.vol.flinch = false; interromper(u); await ctx.say(`${U} recuou e não conseguiu atacar!`); return; }
+  if (u.vol.flinch) {
+    u.vol.flinch = false; interromper(u);
+    await ctx.say(`${U} recuou e não conseguiu atacar!`);
+    // Steadfast: perder o turno recuando sobe a Velocidade (o único jeito de levar algo bom de um recuo)
+    if (hu.aoRecuar) await mudarEstagios(u, [{ stat: hu.aoRecuar[0], change: hu.aoRecuar[1] }], ctx, u);
+    return;
+  }
   // Paixão (Attract / Cute Charm): metade dos turnos ele não consegue atacar. Antes da confusão, como nos jogos.
   if (u.vol.paixao) {
     await ctx.say(`${U} está apaixonado...`);
@@ -697,6 +765,13 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   g = golpeDoBattleBond(g, u);            // Water Shuriken vira fixo (poder 20, 3 acertos) se já é Ash-Greninja
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
+  /* Protean / Libero: ao atacar, o tipo DE QUEM USA vira o tipo do golpe (o STAB vem de graça). Uma vez só por
+     entrada em campo, como na Gen 9 — e `vol` já zera a cada entrada, então a trava é só o próprio campo.
+     O tipo mora em `vol.tipos` (regras.tiposDe), nunca em `m.data`: aquele objeto é compartilhado pela espécie. */
+  if (hu.tipoDoProprioGolpe && !u.vol.trocouTipo && !(tiposDe(u).length === 1 && tiposDe(u)[0] === g.type)) {
+    u.vol.tipos = [g.type]; u.vol.trocouTipo = true;
+    await ctx.say(`${U} virou do tipo ${TYPE_PT[g.type] || g.type} com ${fmt(u.ability)}!`, 'status');
+  }
   // Long Reach: os PRÓPRIOS golpes nunca fazem contato, mesmo os que têm a flag `contact` de verdade
   const encostou = fazContato(g) && !hu.semContato;
   if (!selfT && t.vol.protegido) {
@@ -718,7 +793,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (esp.soDormindo && t.status !== 'sleep') { await ctx.say(`Não afeta ${T}... (só funciona em quem está dormindo)`); return; }
   if (esp.ohko) {
     if (t.boss) { await ctx.say(`Não afeta ${T}... (chefe de evento)`); return; }
-    if (typeEff(g.type, tiposDefensivos(t)) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
+    if (eficacia(hu, g.type, t) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
     if (ht.aguenta) { await ctx.say(`${T} aguentou firme graças a ${fmt(t.ability)}!`); return; }     // Sturdy
     if (Math.random() >= chanceOhko(u, t)) { await ctx.say(t.level > u.level ? 'Mas falhou! (o alvo tem nível maior)' : 'Mas errou!'); return; }
     somarAmeaca(u, t.stats.hp);   // ⚔ nocaute de um golpe: a ameaça é o HP inteiro que ele tirou
@@ -740,7 +815,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   }
   // Balão de Ar: quem flutua não é alcançado por golpe Terrestre (o balão só estoura com golpe que ACERTA)
   if (g.type === 'ground' && t.vol?.balao) { await ctx.say(`${T} está flutuando no Balão de Ar!`); return; }
-  const ef = typeEff(g.type, tiposDefensivos(t));                                     // terastalizado defende pelo tipo Tera
+  const ef = eficacia(hu, g.type, t);                        // Tera defende pelo tipo Tera; Scrappy/Mind's Eye ignoram a imunidade
   if (ef === 0) { await ctx.say(`Não afeta ${T}...`); return; }
   if (ht.soSuperEfetivo && ef <= 1) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; } // Wonder Guard
 
@@ -915,8 +990,26 @@ async function executar(u, t, g, primeiro, ctx, esp) {
       await ctx.say(`A habilidade ${fmt(alvo)} de ${T} tomou conta de ${U}!`, 'status');
     }
   }
-  // Poison Touch: o golpe de quem tem a habilidade envenena ao ENCOSTAR (Shield Dust protege)
-  if (encostou && hu.toque && t.hp > 0 && !t.status && !ht.semSecundario && Math.random() * 100 < hu.toque.chance) await aplicarStatus(t, hu.toque.status, ctx, false, u);
+  /* Poison Touch: o golpe de quem tem a habilidade envenena ao ENCOSTAR (Shield Dust protege).
+     `toque.qualquer` (Toxic Chain): não precisa encostar, qualquer golpe que acertou serve; `toque.grave` deixa o
+     veneno GRAVE (o `vol.toxico`, o mesmo que as toxinas do campo usam). */
+  if ((encostou || hu.toque?.qualquer) && hu.toque && total > 0 && t.hp > 0 && !t.status && !ht.semSecundario && Math.random() * 100 < hu.toque.chance) {
+    await aplicarStatus(t, hu.toque.status, ctx, false, u);
+    if (hu.toque.grave && t.status === hu.toque.status) { t.vol.toxico = 1; await ctx.say(`O veneno em ${T} é grave!`, 'status'); }
+  }
+  /* Color Change: levar um golpe de dano troca o tipo de quem apanhou pelo tipo DO GOLPE (sem limite por entrada,
+     ao contrário do Protean). Mesmo caminho do Soak: `vol.tipos`. */
+  if (total > 0 && t.hp > 0 && ht.tipoDoGolpeRecebido && !(tiposDe(t).length === 1 && tiposDe(t)[0] === g.type)) {
+    t.vol.tipos = [g.type];
+    await ctx.say(`${T} mudou de cor e virou do tipo ${TYPE_PT[g.type] || g.type}!`, 'status');
+  }
+  /* Cursed Body: 30% de desativar o golpe que acertou. É a MESMA trava do Disable (`vol.desativado`, lida por
+     regras.golpesPermitidos), então a IA, as telas e o motor respeitam sem nenhuma regra nova. Não empilha:
+     quem já está com um golpe desativado não leva outro. */
+  if (total > 0 && u.hp > 0 && ht.corpoMaldito && !u.vol.desativado && u !== t && Math.random() * 100 < ht.corpoMaldito) {
+    u.vol.desativado = { golpe: g.name, turnos: TURNOS_TRAVA.disable };
+    await ctx.say(`${fmt(g.name)} de ${U} foi desativado pelo ${fmt(t.ability)} de ${T}!`, 'status');
+  }
   /* Sair de campo por causa do golpe (o que nos jogos seria trocar de Pokémon). Cada um só acontece se o ctx souber tirar
      alguém de campo (single player) — e na ordem em que valem: o golpe que empurra, o item, a habilidade de quem apanhou. */
   if (esp.forcaSaida && total > 0 && t.hp > 0 && u.hp > 0) await sairDeCampo(t, ctx, 'forcada');           // Dragon Tail, Circle Throw
@@ -994,6 +1087,17 @@ export async function fimDeTurno(m, ctx) {
     const desce = restantes[rand(0, restantes.length - 1)];
     await ctx.say(`A instabilidade de ${ctx.nome(m)} muda seus atributos!`, 'status');
     await mudarEstagios(m, [{ stat: sobe, change: 2 }, { stat: desce, change: -1 }], ctx, m);
+  }
+  /* Bad Dreams (Darkrai): no fim do turno, quem está DORMINDO do outro lado perde 1/8 do HP máximo. Pede a lista
+     do outro lado — `ctx.oponentesDe`, o mesmo gancho do `aliadosDe` do Friend Guard, presente nos dois ctx.
+     Magic Guard do adormecido segura o dano (é dano indireto). */
+  if (m.hp > 0 && h.pesadelo) {
+    for (const o of (ctx.oponentesDe?.(m) || [])) {
+      if (o.status !== 'sleep' || o.hp <= 0 || indireto(o)) continue;
+      const n = Math.max(1, Math.floor(o.stats.hp * h.pesadelo));
+      o.hp = Math.max(0, o.hp - n); up(ctx);
+      await ctx.say(`${ctx.nome(o)} tem pesadelos com ${ctx.nome(m)}. (−${n})`, 'hit');
+    }
   }
   await comerFruta(m, ctx);
   await ajustarForma(m, ctx);

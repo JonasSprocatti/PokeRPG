@@ -645,6 +645,42 @@ um de referência do mesmo poder mexendo só no atributo que deveria pesar, em v
   pra uma leva futura, sem gancho novo hoje) e Gorilla Tactics (a trava de golpe único hoje só olha item,
   `seg(m).choice`, em TRÊS telas — render.js, arena.js, multiplayer.js —, e mexer nas três sem poder testar
   visualmente numa sessão sem navegador era risco alto demais pra esta leva).
+  **8ª leva** (04/10/2026, pedido do usuário: "termine as habilidades restantes") — 32 habilidades novas
+  (217→249 de 314). O corte desta leva foi por CUSTO, não por ordem de lista: entrou tudo que cabia em linha de
+  tabela com gancho existente ou em um gancho pequeno e localizado; ficou fora o que exigiria mecânica de troca
+  de Pokémon, forma dinâmica ou mudança em regra lida por várias telas (os quatro motivos estão escritos no fim
+  da tabela em `habilidades.js`, substituindo o comentário antigo — que já estava errado, porque listava Stakeout
+  e Screen Cleaner como pendentes quando o primeiro já existia).
+  **Sem código novo** (só linha de tabela, provando que os ganchos antigos pagam juros): Fluffy e Aura Guard
+  (`resisteFlag` de contato + `resiste.fire` dobrado), Fire Mane (`danoTipo`), Dragonize (`converteTipo`),
+  Eelevate (`imuneTipo: 'ground'` — e `regras.noChao` lê daí, então as armadilhas de chão já vêm de graça),
+  Tera Shell (`hpCheio: 0.5`), As One nas duas versões (`unnerve` + `aoNocautear`, as duas metades já existiam).
+  **Ganchos novos em `regras.calcDamage`**: `ruina` (os quatro Tesouros da Ruína — num 1×1 "baixar 25% de um
+  atributo de todo mundo menos o meu" É multiplicar o dano deste golpe, então saiu em duas linhas, uma pra quem
+  ataca e uma pra quem defende; com aliado em campo o aliado não sente, e isso está anotado), `aura`/`anulaAura`
+  (Dark/Fairy Aura valem pros DOIS lados, então basta um dos dois do golpe ter; Aura Break inverte pra ×0,75) e
+  `eficacia(hu, tipo, alvo)` — função nova, hoje só pra `ignoraImunidade` (Scrappy/Mind's Eye), que vale **só
+  quando a eficácia é ZERO**: filtrar o tipo do alvo sempre baixaria um Sombrio em Gengar sem motivo. Os quatro
+  pontos que decidem "o golpe faz algo?" passam a ler essa função (dano, motor, OHKO e a IA em `notaDoGolpe`).
+  **Ganchos novos em `golpe.js`**: `semSaidaForcada` (Suction Cups, dentro de `sairDeCampo` — o único ponto por
+  onde o motor PEDE saída, então vale igual em todo ctx, e `motivo: 'medo'` do Wimp Out continua passando, porque
+  ali quem sai é por vontade própria), `aoRecuar` (Steadfast), `corpoMaldito` (Cursed Body reusa a trava do
+  Disable, `vol.desativado`, então IA/telas/motor respeitam sem regra nova), `tipoDoProprioGolpe` (Protean/Libero
+  — uma vez por entrada em campo, como na Gen 9, e a trava é o próprio `vol`, que já zera ao entrar) e
+  `tipoDoGolpeRecebido` (Color Change, sem limite), os dois gravando em `vol.tipos`, o MESMO lugar do Soak —
+  nunca em `m.data`, que é compartilhado pela espécie; `atravessaTelas` (Infiltrator, lido em `multTelas` E na
+  Salvaguarda de `aplicarStatus` — é uma habilidade, dois pontos), `venenoConfunde` (Poison Puppeteer),
+  `toque.qualquer`/`toque.grave` (Toxic Chain: mesmo gancho do Poison Touch, agora sem precisar encostar e com
+  veneno grave), `pesadelo` (Bad Dreams) e cinco de ENTRADA em campo: `zeraEstagiosAoEntrar` (Curious Medicine),
+  `limpaTelas` (Screen Cleaner), `curaAliadoAoEntrar` (Hospitality), `copiaEstagiosDoAliado` (Costar) e
+  `estagioInimigoAoEntrar` (Supersweet Syrup, uma vez por batalha).
+  **`ctx.oponentesDe` é novo nos DOIS ctx** (`efeitos.CTX` e o que `mp-motor` monta): o Bad Dreams precisa da
+  lista do outro lado no fim do turno, e `aoEntrarEmCampo` recebia a sua por parâmetro mas `fimDeTurno` não tinha
+  como saber. Mesmo movimento do `aliadosDe` na 6ª leva — gancho faltando num dos ctx = habilidade inerte lá.
+  **Gluttony foi RECUSADA de propósito**: as duas frutas de HP do jogo (Oran e Sitrus) já comem em 50%, que é
+  exatamente o limiar que a habilidade adiantaria — ligar ela seria prometer efeito e não entregar nenhum. O
+  primeiro rascunho tinha um parâmetro `guloso` em `segurados.frutaAgora`; ele saiu junto, pra não deixar código
+  morto fingindo que a habilidade existe.
 - ✅ FEITO (28/09/2026) — **"Flags" de golpe** (Contato, Som, Projétil/Bola e mais). A PokéAPI pública
   (`pokeapi.co/api/v2`) não expõe isso, mas o repositório-fonte que a GERA tem, em CSV puro sem chave nenhuma:
   `move_flags.csv` (21 flags), `move_flag_map.csv` (golpe → flag, por id) e `moves.csv` (id → nome kebab-case,
@@ -1239,6 +1275,46 @@ Sem tipo elegível ainda, cai no Anel Z (`z-power-ring`, item real e genérico a
 **Vínculo de Batalha não tem item nenhum nos jogos** (Battle Bond é habilidade, não item segurado) — ícone
 próprio, um SVG embutido de shuriken (tema ninja do Greninja), em vez de fingir que existe um sprite oficial.
 
+### Os 53 itens que apareciam como caixinha (04/10/2026)
+Pedido do usuário: "revise todos os itens sem sprites definidos, olhe em outros lugares, sei que alguns tem no
+Pokémon Showdown ou outros lugares". Levantamento feito batendo TODA chave de `ITEMS`/`BOLAS`/`ITENS_EVO` contra
+o CDN de sprites (161 chaves, script descartável): **53 caíam no `ITEM_SPR_RESERVA`**. Não era um problema só, eram
+três, e a correção é uma tabela nova — `SPRITE_DO_ITEM` em `js/dados-item-sprites.js` (GERADO) —, lida por
+`ITEM_SPR`: valor COM barra é arquivo nosso, valor sem barra é nome de item na PokéAPI.
+1. **Item real com chave em português** (18): os 17 Pratos do Arceus (`prato-chama` → `flame-plate`…) e o Lenço
+   de Seda. O sprite sempre existiu; a chave do jogo é que não era o nome do arquivo.
+2. **Item inventado deste jogo** (17): os de raide (`cristal-de-ruptura`, `relogio-de-areia`…) e a Mega Potion.
+   Não existe sprite pra buscar, então aponta pro item REAL mais parecido (`red-shard`, `x-speed`, `soot-sack`,
+   `zygarde-cube`…) — mesmo critério da Pedra-Chave genérica acima: ícone coerente com o nome bate a caixinha.
+3. **Item real que a PokéAPI não desenhou** (15, Gen 8/9): Pergaminhos do Kubfu, armaduras do Charcadet, Augurita
+   Negra, Bloco de Turfa, Mochi do Recomeço, Cabo de Conexão, Maçãs, Bule Rachado, Braceletes Galarica, Doce de
+   Morango, Rédea Espectral. Esses foram **VENDORIZADOS**: o gerador baixa o PNG (do `msikma/pokesprite` via
+   jsDelivr quando tem, do Serebii quando não) e grava em `img/itens/`, servido pelo nosso domínio.
+**Por que vendorizar em vez de linkar**: o Showdown não serve ícone de item avulso — são todos um SPRITESHEET
+único (`itemicons-sheet.png` + um `spritenum` por item), e recortar sheet exige `background-position`, ou seja
+trocar as 14 `<img src>` de item do jogo por `<span>` com CSS. O Bulbagarden Archives resolve o endereço certo
+pela API mas **devolve 403 na imagem** (bloqueia hotlink). O Serebii serve, mas depender de fansite em tempo de
+jogo quebra sem avisar. Com o PNG no repo (136 KB nos 15) o custo é uma linha no `PRECACHE` do `sw.js` (coberta
+por `tests/sw.test.js`, teste novo) e o ganho é funcionar **offline** e não ter terceiro no caminho.
+O `onerror="${ITEM_ERRO}"` continua em toda `<img>` de item: a caixinha deixou de ser o caso comum, mas segue
+sendo a rede de segurança.
+
+### Item de evolução na mochila dobra o encontro (04/10/2026)
+Pedido do usuário: "quando um item evolui um pokémon específico, a chance de encontrar ele dobra durante a
+exploração". A regra pura é `regras.especiesDobradas(bag)` → conjunto de nomes de espécie, e o dado vem de
+`ESPECIE_DO_ITEM_EVO` (`js/dados-evolucao-restante.js`, GERADO): o gerador passou a ler também
+`pokemon_evolution.csv` + `items.csv`, cruzando `trigger_item_id` (usar a pedra/maçã) e `held_item_id` (evoluir
+segurando) com o `evolves_from_species_id` da evoluída — a espécie que entra na lista é a **de antes**, que é a
+que você encontra explorando. 50 itens mapeados; coluna certa é `trigger_item_id`, não `evolution_item_id` (o
+primeiro palpite trouxe só as 24 de item segurado e nenhuma pedra, sinal fácil de perceber).
+**O peso mora num lugar só** (`mapas.pesoNaRota`, com `MULT_ITEM_EVO = 2`), lido pelo sorteio (`sortearDaRota`) E
+pela taxa mostrada (`taxaNaRota`, que `pokedexDaRota` repassa com a marca `dobrado`). Isso não é capricho: os
+bugs #74/#75 foram exatamente a tela prometer uma porcentagem que o sorteio não cumpria. A Pokédex da rota mostra
+`×2` ao lado da taxa, e a descrição dos itens de evolução ganhou a frase (uma constante `ISCA` nos quatro
+templates de `dados.js`, então todos os ~35 itens dizem a mesma coisa).
+**Fora de propósito**: o Cabo de Conexão. Ele evolui por TROCA, não nomeia espécie na tabela da PokéAPI (seriam
+30+ de uma vez) e se compra na loja — dobraria metade da rota por ₽2.100.
+
 ### Animação da barra de HP (27/09/2026)
 Pedido do usuário (junto do backlog de animações): a barra saltava direto pro número novo, sem transição. O
 `.fill` já tinha `transition: width .45s ease` no CSS — o problema é que `render()` não faz diffing (destrói e
@@ -1789,7 +1865,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 217 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 249 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -2579,7 +2655,7 @@ Mesma prateleira, mas com **três diferenças de desenho** em relação à tampa
   só perder ₽250.000 sem saber no que. `habilidadesParaTrocar` devolve as outras habilidades da espécie —
   **inclusive a oculta**, que nos jogos é outro item (o Ability Patch). Um item só: dois seria uma distinção que
   este jogo não faz em lugar nenhum, já que a criação também oferece a oculta junto das normais.
-- **O modal mostra `IMPL`.** São 217 habilidades com efeito de verdade em 314 reais, e trocar por uma das outras
+- **O modal mostra `IMPL`.** São 249 habilidades com efeito de verdade em 314 reais, e trocar por uma das outras
   97 sem aviso seria pagar um quarto de milhão por "será ajustado em atualizações futuras". As três informações
   do modal (nome, descrição da PokéAPI e "✓ ativa em batalha") são as MESMAS que `criacao.js` mostra na escolha
   original — é a mesma escolha, feita no meio da run. A descrição é buscada com `loadAbility` **antes** de abrir o

@@ -12,7 +12,7 @@ import {
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda, alternarRapido, MAX_RAPIDOS,
   caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW,
-  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar, habilidadesParaTrocar
+  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar, habilidadesParaTrocar, especiesDobradas
 } from '../js/regras.js';
 import { CHART, ITEMS, STATS } from '../js/dados.js';
 import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
@@ -827,4 +827,14 @@ test('auto-explorar: repor PP antes de ficar sem golpe', () => {
   // e o laço para quando não dá pra repor (sem dinheiro pro Centro)
   assert.equal(motivoDeParar({ modo: 'explore', hp: 100, semPP: true, teto: 500 }), 'semPP');
   assert.equal(motivoDeParar({ modo: 'explore', hp: 0, semPP: true, teto: 500 }), 'desmaiou', 'desmaio vem antes');
+});
+
+test('especiesDobradas: item de evolução na mochila marca quem evolui com ele', () => {
+  assert.deepEqual([...especiesDobradas({ 'sweet-apple': 1 })], ['applin']);
+  assert.ok(especiesDobradas({ 'fire-stone': 1 }).has('vulpix'), 'pedra vale pra todas as espécies dela');
+  assert.equal(especiesDobradas({ 'sweet-apple': 0 }).size, 0, 'item zerado na mochila não conta');
+  assert.equal(especiesDobradas({ potion: 3 }).size, 0, 'item que não evolui ninguém não conta');
+  assert.equal(especiesDobradas().size, 0);
+  // o Cabo de Conexão evolui por TROCA e fica de fora de propósito (seriam 30+ espécies, e ele se compra na loja)
+  assert.equal(especiesDobradas({ 'linking-cord': 1 }).size, 0);
 });

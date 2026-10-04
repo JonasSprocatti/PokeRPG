@@ -10,6 +10,14 @@ const CACHE_JOGO = 'pokerpg-jogo-v1';
 const CACHE_EXTERNO = 'pokerpg-externo-v2';
 const PRECACHE = [
   './', './index.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
+  /* Sprites de item que a PokéAPI não desenhou (img/itens/, baixados por ferramentas/gerar-item-sprites.mjs e
+     apontados por SPRITE_DO_ITEM). São arquivos NOSSOS, não do CDN de sprites: sem eles aqui, a mochila offline
+     volta a mostrar a caixinha de reserva. Arquivo novo na pasta = linha nova aqui (tests/sw.test.js cobra). */
+  './img/itens/auspicious-armor.png', './img/itens/black-augurite.png', './img/itens/cracked-pot.png',
+  './img/itens/fresh-start-mochi.png', './img/itens/galarica-cuff.png', './img/itens/galarica-wreath.png',
+  './img/itens/linking-cord.png', './img/itens/malicious-armor.png', './img/itens/peat-block.png',
+  './img/itens/redea-espectral.png', './img/itens/scroll-of-darkness.png', './img/itens/scroll-of-waters.png',
+  './img/itens/strawberry-sweet.png', './img/itens/sweet-apple.png', './img/itens/tart-apple.png',
   // páginas estáticas do site (GERADAS por ferramentas/gerar-paginas.mjs). Entram aqui porque o rodapé do jogo
   // linka pra elas: offline, um link que leva a "não foi possível conectar" é pior que link nenhum.
   './sobre.html', './guia.html', './privacidade.html', './termos.html', './contato.html',

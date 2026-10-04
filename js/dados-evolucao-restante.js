@@ -1,5 +1,6 @@
 /* GERADO por ferramentas/gerar-evolucao-restante.mjs a partir do repositório-fonte da PokéAPI
-   (pokemon_species.csv, github.com/PokeAPI/pokeapi) — não editar à mão, rode o gerador de novo.
+   (pokemon_species.csv + pokemon_evolution.csv + items.csv, github.com/PokeAPI/pokeapi) — não editar à mão, rode
+   o gerador de novo.
    AINDA_EVOLUI: nomes de espécie (o mesmo speciesName usado em todo o jogo) que têm PELO MENOS UMA outra espécie
    evoluindo A PARTIR delas (`evolves_from_species_id` apontando pra elas). É o que decide o Eviolite
    (segurados.js): só vale segurado por quem ainda não chegou na forma final. Espécie fora desta lista = forma
@@ -465,3 +466,201 @@ export const AINDA_EVOLUI = new Set([
   "zubat",
   "zweilous"
 ]);
+/* Item de evolução -> espécies que evoluem COM ELE (a de antes, a que você encontra explorando). Lido por
+   regras.especiesDobradas: item na mochila = essa espécie aparece em dobro na rota. */
+export const ESPECIE_DO_ITEM_EVO = {
+  "auspicious-armor": [
+    "charcadet"
+  ],
+  "berry-sweet": [
+    "milcery"
+  ],
+  "black-augurite": [
+    "scyther"
+  ],
+  "chipped-pot": [
+    "sinistea"
+  ],
+  "clover-sweet": [
+    "milcery"
+  ],
+  "cracked-pot": [
+    "sinistea"
+  ],
+  "dawn-stone": [
+    "kirlia",
+    "snorunt"
+  ],
+  "deep-sea-scale": [
+    "clamperl"
+  ],
+  "deep-sea-tooth": [
+    "clamperl"
+  ],
+  "dragon-scale": [
+    "seadra"
+  ],
+  "dubious-disc": [
+    "porygon2"
+  ],
+  "dusk-stone": [
+    "doublade",
+    "lampent",
+    "misdreavus",
+    "murkrow"
+  ],
+  electirizer: [
+    "electabuzz"
+  ],
+  "fire-stone": [
+    "capsakid",
+    "eevee",
+    "growlithe",
+    "pansear",
+    "vulpix"
+  ],
+  "flower-sweet": [
+    "milcery"
+  ],
+  "galarica-cuff": [
+    "slowpoke"
+  ],
+  "galarica-wreath": [
+    "slowpoke"
+  ],
+  "ice-stone": [
+    "cetoddle",
+    "crabrawler",
+    "darumaka",
+    "eevee",
+    "sandshrew",
+    "vulpix"
+  ],
+  "kings-rock": [
+    "poliwhirl",
+    "slowpoke"
+  ],
+  "leaf-stone": [
+    "eevee",
+    "exeggcute",
+    "gloom",
+    "nuzleaf",
+    "pansage",
+    "voltorb",
+    "weepinbell"
+  ],
+  "love-sweet": [
+    "milcery"
+  ],
+  magmarizer: [
+    "magmar"
+  ],
+  "malicious-armor": [
+    "charcadet"
+  ],
+  "masterpiece-teacup": [
+    "poltchageist"
+  ],
+  "metal-alloy": [
+    "duraludon"
+  ],
+  "metal-coat": [
+    "onix",
+    "scyther"
+  ],
+  "moon-stone": [
+    "clefairy",
+    "jigglypuff",
+    "munna",
+    "nidorina",
+    "nidorino",
+    "skitty"
+  ],
+  "oval-stone": [
+    "happiny"
+  ],
+  "peat-block": [
+    "ursaring"
+  ],
+  "prism-scale": [
+    "feebas"
+  ],
+  protector: [
+    "rhydon"
+  ],
+  "razor-claw": [
+    "sneasel"
+  ],
+  "razor-fang": [
+    "gligar"
+  ],
+  "reaper-cloth": [
+    "dusclops"
+  ],
+  "ribbon-sweet": [
+    "milcery"
+  ],
+  sachet: [
+    "spritzee"
+  ],
+  "scroll-of-darkness": [
+    "kubfu"
+  ],
+  "scroll-of-waters": [
+    "kubfu"
+  ],
+  "shiny-stone": [
+    "floette",
+    "minccino",
+    "roselia",
+    "togetic"
+  ],
+  "star-sweet": [
+    "milcery"
+  ],
+  "strawberry-sweet": [
+    "milcery"
+  ],
+  "sun-stone": [
+    "cottonee",
+    "gloom",
+    "helioptile",
+    "petilil",
+    "sunkern"
+  ],
+  "sweet-apple": [
+    "applin"
+  ],
+  "syrupy-apple": [
+    "applin"
+  ],
+  "tart-apple": [
+    "applin"
+  ],
+  "thunder-stone": [
+    "charjabug",
+    "eelektrik",
+    "eevee",
+    "magneton",
+    "nosepass",
+    "pikachu",
+    "tadbulb"
+  ],
+  "unremarkable-teacup": [
+    "poltchageist"
+  ],
+  "up-grade": [
+    "porygon"
+  ],
+  "water-stone": [
+    "eevee",
+    "lombre",
+    "panpour",
+    "poliwhirl",
+    "shellder",
+    "staryu"
+  ],
+  "whipped-dream": [
+    "swirlix"
+  ]
+};

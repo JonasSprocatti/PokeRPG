@@ -5,11 +5,59 @@
 // inglês do item, "Allows X to Mega Evolve") e casa as pedras de espécies que NÃO são Mega oficial dos jogos
 // (Meganium, Chesnaught, Greninja...) pelo nome (prefixo comum — o nome do item nesses casos É o nome da espécie
 // com sufixo trocado, ex. "meganiumite" pra Meganium). Roda de novo se `js/dados-megas.js` ganhar espécie nova.
-import { writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { MEGAS } from '../js/dados-megas.js';
 
 const API = 'https://pokeapi.co/api/v2';
 const CDN = 'https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/items';
+
+/* ---- itens cuja CHAVE no jogo não acha arquivo nenhum em `ITEM_SPR(chave)` ----
+   Levantamento feito batendo todo `ITEMS`/`BOLAS`/`ITENS_EVO`/`SEGURADOS` contra o CDN: 53 chaves caíam na
+   caixinha de reserva (`ITEM_SPR_RESERVA`). Três saídas, por motivo diferente:
+
+   1. APELIDO — é um item REAL, só com chave em português no jogo (os 17 pratos do Arceus, o Lenço de Seda).
+      O sprite da PokéAPI existe, o nome é que é outro.
+   2. PARECIDO — é um item INVENTADO deste jogo (os de raide, a Mega Potion). Não existe sprite pra buscar, então
+      aponta pra um item real de visual coerente — o mesmo critério da Pedra-Chave genérica em PEDRAS_MEGA: um
+      ícone que combina com o nome é melhor que a caixinha.
+   3. VENDORIZADO — é um item real que a PokéAPI simplesmente não desenhou (Gen 8/9: pergaminhos do Kubfu,
+      armaduras do Charcadet, Mochi…). O PNG vem do pokesprite (jsDelivr) ou do Serebii e é GRAVADO em
+      `img/itens/` pelo próprio gerador: servido pelo nosso domínio, funciona offline e não depende de terceiro
+      na hora de jogar (hotlink de fansite quebra sem avisar). Arquivo novo aqui = linha nova no PRECACHE do sw.js. */
+const APELIDO = {
+  'prato-chama': 'flame-plate', 'prato-aquatico': 'splash-plate', 'prato-eletrico': 'zap-plate',
+  'prato-campo': 'meadow-plate', 'prato-gelido': 'icicle-plate', 'prato-punho': 'fist-plate',
+  'prato-toxico': 'toxic-plate', 'prato-terra': 'earth-plate', 'prato-ceu': 'sky-plate',
+  'prato-mente': 'mind-plate', 'prato-inseto': 'insect-plate', 'prato-pedra': 'stone-plate',
+  'prato-fantasma': 'spooky-plate', 'prato-draconico': 'draco-plate', 'prato-pavor': 'dread-plate',
+  'prato-ferro': 'iron-plate', 'prato-fada': 'pixie-plate', 'lenco-de-seda': 'silk-scarf',
+  // Pedra Mega e Cristal Z têm tabela própria (render.spriteItem passa pela espécie/tipo); isto é só a rede de
+  // segurança pra quem chamar ITEM_SPR com a chave crua.
+  'pedra-mega': 'key-stone', 'cristal-z': 'z-power-ring'
+};
+const PARECIDO = {
+  'mega-potion': 'moomoo-milk',
+  'cristal-de-ruptura': 'red-shard', 'selo-de-interrupcao': 'odd-keystone', 'escudo-astral': 'light-clay',
+  'cinza-vulcanica': 'soot-sack', 'escama-abissal': 'deep-sea-scale', 'prisma-de-luz': 'light-stone',
+  'espelho-reverso': 'star-piece', 'relogio-de-areia': 'x-speed', 'fragmento-tera': 'comet-shard',
+  'celula-zygarde': 'zygarde-cube', 'nucleo-eternamax': 'griseous-orb', 'escama-do-ceu': 'pretty-wing',
+  'cristal-psiquico': 'psychic-gem', 'emblema-da-coroa': 'relic-crown', 'cristal-gelido': 'ice-gem',
+  'presa-da-lua': 'razor-fang'
+};
+const POKESPRITE = 'https://cdn.jsdelivr.net/gh/msikma/pokesprite@master/items';
+const SEREBII = 'https://www.serebii.net/itemdex/sprites';
+const VENDORIZADO = {
+  'sweet-apple': `${POKESPRITE}/evo-item/sweet-apple.png`, 'tart-apple': `${POKESPRITE}/evo-item/tart-apple.png`,
+  'cracked-pot': `${POKESPRITE}/evo-item/cracked-pot.png`, 'galarica-cuff': `${POKESPRITE}/evo-item/galarica-cuff.png`,
+  'galarica-wreath': `${POKESPRITE}/evo-item/galarica-wreath.png`, 'strawberry-sweet': `${POKESPRITE}/evo-item/strawberry-sweet.png`,
+  // Rédea Espectral é item de raide inventado, mas a Reins of Unity do Calyrex existe de verdade — sprite real, só não na PokéAPI
+  'redea-espectral': `${POKESPRITE}/key-item/reins-of-unity.png`,
+  'auspicious-armor': `${SEREBII}/sv/auspiciousarmor.png`, 'malicious-armor': `${SEREBII}/sv/maliciousarmor.png`,
+  'black-augurite': `${SEREBII}/sv/blackaugurite.png`, 'peat-block': `${SEREBII}/sv/peatblock.png`,
+  'scroll-of-darkness': `${SEREBII}/sv/scrollofdarkness.png`, 'scroll-of-waters': `${SEREBII}/sv/scrollofwaters.png`,
+  'linking-cord': `${SEREBII}/linkingcord.png`, 'fresh-start-mochi': `${SEREBII}/sv/fresh-startmochi.png`
+};
+const PASTA_ITENS = new URL('../img/itens/', import.meta.url);
 
 async function comRetentativa(fn, tentativas = 3) {
   for (let i = 1; i <= tentativas; i++) {
@@ -84,6 +132,25 @@ async function main() {
     if (!(await existeSprite(`${nome}--held`))) throw new Error(`cristal Z sem sprite: ${tipo} -> ${nome}`);
   }
 
+  // 1 e 2: confere que o item apontado existe mesmo no CDN (nome errado aqui viraria caixinha de reserva calada)
+  const alias = {};
+  for (const [chave, nome] of Object.entries({ ...APELIDO, ...PARECIDO })) {
+    if (!(await existeSprite(nome))) throw new Error(`apelido sem sprite no CDN: ${chave} -> ${nome}`);
+    alias[chave] = nome;
+  }
+  // 3: baixa o que falta pra img/itens/ (só uma vez; depois o arquivo está no repo)
+  mkdirSync(PASTA_ITENS, { recursive: true });
+  for (const [chave, url] of Object.entries(VENDORIZADO)) {
+    const destino = new URL(`${chave}.png`, PASTA_ITENS);
+    if (!existsSync(destino)) {
+      const r = await comRetentativa(() => fetch(url));
+      if (!r.ok) throw new Error(`sprite vendorizado falhou: ${chave} (${url}) HTTP ${r.status}`);
+      writeFileSync(destino, Buffer.from(await r.arrayBuffer()));
+      console.log('baixado img/itens/' + chave + '.png');
+    }
+    alias[chave] = `img/itens/${chave}.png`;
+  }
+
   const saida = `/* GERADO por ferramentas/gerar-item-sprites.mjs a partir da PokéAPI — não editar à mão (rode de novo).
    Pedra Mega (dados.ITEM_PEDRA_MEGA) e Cristal Z (dados.ITEM_CRISTAL_Z) são itens ÚNICOS e genéricos no jogo —
    isso aqui é só pro SPRITE mudar pra pedra/cristal de verdade conforme a espécie/tipo, em vez do ícone genérico.
@@ -96,6 +163,11 @@ export const PEDRAS_MEGA = ${JSON.stringify(pedras, null, 2).replace(/"([a-z0-9-
 export const CHAVE_MEGA_GENERICA = 'key-stone';
 export const CRISTAIS_Z = ${JSON.stringify(cristais, null, 2).replace(/"([a-z0-9-]+)":/g, "$1:")};
 export const ANEL_Z_GENERICO = 'z-power-ring';
+/* Chave do jogo -> sprite, pros itens em que a chave não acha arquivo nenhum na PokéAPI (lido por \`ITEM_SPR\`, em
+   dados.js). Valor COM barra é arquivo nosso em img/itens/ (item real que a PokéAPI não desenhou, baixado pelo
+   gerador); valor sem barra é nome de item na PokéAPI — item real com chave em português (os pratos do Arceus) ou
+   item inventado deste jogo apontando pro real mais parecido. O critério de cada um está no gerador. */
+export const SPRITE_DO_ITEM = ${JSON.stringify(alias, null, 2).replace(/"([a-z0-9]+)":/g, "$1:")};
 `;
   writeFileSync(new URL('../js/dados-item-sprites.js', import.meta.url), saida);
   console.log(`ok: ${Object.keys(pedras).length}/${especies.length} espécies com pedra própria -> js/dados-item-sprites.js`);
