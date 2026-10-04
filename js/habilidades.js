@@ -180,7 +180,8 @@
 //                         Normal/Lutador). Só mexe quando a eficácia é ZERO (regras.eficacia)
 //   atravessaTelas        Refletir/Tela de Luz/Véu e a Salvaguarda do outro lado não valem contra você
 //                         (regras.multTelas, golpe.aplicarStatus) — Infiltrator
-//   semSaidaForcada       golpe/item não arrasta você pra fora de campo (golpe.sairDeCampo) — Suction Cups
+//   semSaidaForcada       golpe/item de OUTRO não arrasta você pra fora de campo; sair por vontade própria (Wimp
+//                         Out, revezamento do U-turn) continua valendo (golpe.sairDeCampo) — Suction Cups
 //   aoRecuar: [stat, n]   perder o turno por recuo sobe n desse atributo (golpe.usarGolpe) — Steadfast
 //   corpoMaldito: n       n% de desativar o golpe que te acertou, pela MESMA trava do Disable (golpe.executar) — Cursed Body
 //   tipoDoProprioGolpe    ao atacar, o SEU tipo vira o do golpe; uma vez por entrada em campo, como na Gen 9

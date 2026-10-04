@@ -623,7 +623,8 @@ async function golpeDeStatus(u, t, g, selfT, ctx, primeiro) {
     fez = true;
     if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(selfT ? u : t, meta.ailment, ctx, true, u);
   }
-  if (!fez) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted');
+  // Teleport não faz nada ALÉM de sair de campo (quem trata é o `revezamento`, logo depois): não é efeito faltando
+  if (!fez && !especial(g).revezamento) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted');
 }
 
 /* Tirar um Pokémon de campo SEM desmaiar (Roar, Whirlwind, Dragon Tail, Circle Throw, Red Card, Wimp Out, Emergency Exit).
@@ -635,11 +636,19 @@ async function golpeDeStatus(u, t, g, selfT, ctx, primeiro) {
    assim vale igual no single player e em qualquer outro ctx. Saída por vontade própria (`medo`, do Wimp Out) não
    é bloqueada — é a habilidade DELE agindo, não um golpe do outro. */
 async function sairDeCampo(m, ctx, motivo) {
-  if (motivo !== 'medo' && hab(m).semSaidaForcada) {
+  // só a saída EMPURRADA por outro é bloqueada: a por medo (Wimp Out) e o revezamento são escolha de quem sai
+  if (motivo === 'forcada' && hab(m).semSaidaForcada) {
     await ctx.say(`${ctx.nome(m)} se agarrou no chão com ${fmt(m.ability)} e não saiu!`, 'status');
     return false;
   }
   return ctx.forcarSaida ? !!(await ctx.forcarSaida(m, { motivo })) : undefined;
+}
+/* 🔄 Revezamento (U-turn, Volt Switch, Flip Turn, Teleport, Parting Shot): QUEM USOU sai de campo. O dano e o
+   efeito do golpe já aconteceram — a troca é a última parte, e falhar nela não desfaz o resto, como nos jogos. */
+async function revezar(u, ctx) {
+  const r = await sairDeCampo(u, ctx, 'revezamento');
+  if (r === undefined) await ctx.say('Mas não deu pra sair de campo aqui. (luta de sala)');
+  else if (!r) await ctx.say('Mas não havia ninguém pra cobrir o lugar!');
 }
 
 // `primeiro` = u agiu antes de t neste turno (recuo só vale assim)
@@ -802,7 +811,11 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   if (!selfT && g.acc != null && Math.random() > chanceAcerto(g, u, t, climaDoCtx(ctx))) { await ctx.say('Mas errou!'); return; }
   // Good As Gold: imune a QUALQUER golpe de status alheio (o próprio ainda pode usar golpe de status normalmente)
   if (g.cls === 'status' && !selfT && u !== t && ht.imuneGolpeStatus) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
-  if (g.cls === 'status') { await golpeDeStatus(u, t, g, selfT, ctx, primeiro); up(ctx); return; }
+  if (g.cls === 'status') {
+    await golpeDeStatus(u, t, g, selfT, ctx, primeiro); up(ctx);
+    if (esp.revezamento && u.hp > 0) await revezar(u, ctx);     // Teleport, Parting Shot
+    return;
+  }
 
   // imunidades e absorções de tipo por habilidade
   if (ht.imuneTipo === g.type) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
@@ -1013,6 +1026,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   /* Sair de campo por causa do golpe (o que nos jogos seria trocar de Pokémon). Cada um só acontece se o ctx souber tirar
      alguém de campo (single player) — e na ordem em que valem: o golpe que empurra, o item, a habilidade de quem apanhou. */
   if (esp.forcaSaida && total > 0 && t.hp > 0 && u.hp > 0) await sairDeCampo(t, ctx, 'forcada');           // Dragon Tail, Circle Throw
+  if (esp.revezamento && total > 0 && u.hp > 0) await revezar(u, ctx);                                     // U-turn, Volt Switch, Flip Turn
   if (total > 0 && t.hp > 0 && u.hp > 0 && seg(t).cartaoVermelho && u !== t) {                              // Red Card: quem atacou sai; o cartão se gasta
     t.item = null; up(ctx);
     await ctx.say(`${T} mostrou o Cartão Vermelho para ${U}!`, 'status');

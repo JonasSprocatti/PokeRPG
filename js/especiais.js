@@ -31,6 +31,9 @@
 //                    manda outro, no seu lado quem levou sai da luta (batalha.forcarSaida; em sala o golpe falha)
 //   prende           o alvo não consegue mais fugir (Mean Look, Block, Spider Web); Fantasma é imune
 //   passaBonus       passa os estágios de quem usa para um aliado em campo (Baton Pass) — ninguém troca de Pokémon aqui
+//   revezamento      QUEM USA sai de campo (U-turn, Volt Switch, Flip Turn, Teleport, Parting Shot). Do seu lado é o
+//                    🔄 revezamento: fica de fora até o fim da rodada e volta pelas armadilhas e pelas habilidades de
+//                    entrada, com um aliado cobrindo — sem aliado em pé, falha (batalha.forcarSaida)
 //   trava: tipo      restringe os golpes do ALVO (regras.motivoBloqueio): provocar (Taunt: só dano), encore (repete o último),
 //                    disable (desativa o último), tormento (não repete o golpe anterior)
 //   generoOposto     só funciona em quem é do gênero oposto de quem usa (Captivate); sem gênero de um dos dois, falha
@@ -59,6 +62,9 @@ export const GOLPES_ESPECIAIS = {
   toxic: { toxico: true },
   'leech-seed': { semente: true },
   roar: { forcaSaida: true }, whirlwind: { forcaSaida: true }, 'dragon-tail': { forcaSaida: true }, 'circle-throw': { forcaSaida: true },
+  // golpes de TROCA: quem usa sai. Dano primeiro (U-turn e cia. machucam), Teleport/Parting Shot são de status
+  'u-turn': { revezamento: true }, 'volt-switch': { revezamento: true }, 'flip-turn': { revezamento: true },
+  teleport: { revezamento: true }, 'parting-shot': { revezamento: true },
   'mean-look': { prende: true }, block: { prende: true }, 'spider-web': { prende: true }, 'baton-pass': { passaBonus: true },
   taunt: { trava: 'provocar' }, encore: { trava: 'encore' }, disable: { trava: 'disable' }, torment: { trava: 'tormento' },
   // Captivate: os −2 de At.Esp. são comuns, o que a tabela acrescenta é a exigência de gênero (Attract não precisa

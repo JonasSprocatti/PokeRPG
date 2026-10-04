@@ -26,6 +26,7 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'generoOposto',                           // Captivate: só pega quem é do gênero oposto (regras.generoOposto)
     'viraTipo', 'ganhaTipo',                  // Soak/Magic Powder trocam o tipo do alvo; Forest's Curse/Trick-or-Treat acrescentam um
     'forcaSaida', 'prende', 'passaBonus',     // o que nos jogos dependia de trocar de Pokémon (Roar, Mean Look, Baton Pass)
+    'revezamento',                            // 🔄 quem usa sai de campo e volta no fim da rodada (U-turn, Teleport…)
     'puneContato', 'voltaPostura',            // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
     'atkDe', 'atkDoAlvo', 'defDe']);          // golpe que ataca/defende por outro atributo (Body Press, Foul Play, Psyshock) — regras.calcDamage
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade',
@@ -225,4 +226,43 @@ test('Endeavor deixa o alvo com o seu HP', async t => {
   const u = mon({ hp: 30 }), a = mon();
   await usarGolpe(u, a, golpe({ name: 'endeavor', power: null }), true, ctx());
   assert.equal(a.hp, 30);
+});
+
+/* 🔄 Revezamento (U-turn, Volt Switch, Flip Turn, Teleport, Parting Shot): quem USA sai de campo. O motor só
+   PEDE — quem decide o que "sair" significa é `batalha.forcarSaida` (`ctx.forcarSaida`). O que se trava aqui é o
+   contrato: pede com o motivo certo, só depois de o golpe ter feito o que faz, e não desfaz nada ao falhar. */
+test('revezamento: o golpe pede a saída de QUEM USOU, com o motivo certo', async () => {
+  const pedidos = [];
+  const c = ctx({ forcarSaida: async (m, o) => { pedidos.push([m.nome, o.motivo]); return true; } });
+  const eu = mon({ nome: 'EU' }), alvo = mon({ nome: 'ALVO' });
+  await usarGolpe(eu, alvo, golpe({ name: 'u-turn', power: 70 }), true, c);
+  assert.deepEqual(pedidos, [['EU', 'revezamento']], 'quem sai é quem usou, não o alvo');
+  assert.ok(alvo.hp < 160, 'e o dano aconteceu antes da troca');
+  // Teleport é só a saída: não pode cair no aviso de "efeito será ajustado"
+  const c2 = ctx({ forcarSaida: async () => true });
+  await usarGolpe(mon(), mon(), status('teleport'), true, c2);
+  assert.ok(!c2.msgs.some(m => m.includes('será ajustado')), c2.msgs.join(' | '));
+});
+
+test('revezamento: sem ninguém pra cobrir, o golpe avisa e o dano fica de pé', async () => {
+  const c = ctx({ forcarSaida: async () => false });      // batalha.js recusa quando não há aliado em campo
+  const alvo = mon();
+  await usarGolpe(mon(), alvo, golpe({ name: 'u-turn', power: 70 }), true, c);
+  assert.ok(c.msgs.some(m => m.includes('ninguém pra cobrir')), c.msgs.join(' | '));
+  assert.ok(alvo.hp < 160);
+  // na sala (ctx sem forcarSaida) o golpe diz que ali não dá, em vez de fingir que trocou
+  const sala = ctx();
+  await usarGolpe(mon(), mon(), golpe({ name: 'u-turn', power: 70 }), true, sala);
+  assert.ok(sala.msgs.some(m => m.includes('luta de sala')), sala.msgs.join(' | '));
+});
+
+test('Suction Cups segura o arrastão, não a própria vontade de sair', async () => {
+  const motivos = [];
+  const c = ctx({ forcarSaida: async (m, o) => { motivos.push(o.motivo); return true; } });
+  // Roar em quem tem Suction Cups: nem chega a pedir
+  await usarGolpe(mon(), mon({ ability: 'suction-cups' }), status('roar', { target: 'selected-pokemon' }), true, c);
+  assert.deepEqual(motivos, []);
+  // o U-turn DELE mesmo continua funcionando
+  await usarGolpe(mon({ ability: 'suction-cups' }), mon(), golpe({ name: 'u-turn', power: 70 }), true, c);
+  assert.deepEqual(motivos, ['revezamento']);
 });

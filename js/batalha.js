@@ -138,7 +138,7 @@ const habilidadeDaNovaForma = m => aoEntrarEmCampo([m], x => (inimigosEmCampo().
    MARCA o fim (`B.saidaForcada`) e o `turn()` encerra depois, em vez de chamar endBattle no meio do golpe. */
 async function forcarSaida(m, { motivo = 'forcada' } = {}) {
   const B = G.B; if (!B) return false;
-  const P = G.S.player, T = B.trainer, voluntaria = motivo === 'medo';
+  const P = G.S.player, T = B.trainer, voluntaria = motivo === 'medo', revezar = motivo === 'revezamento';
   if (B.inimigos.includes(m)) {
     if (B.chefe || B.evento || B.lendarios || m.boss) return false;
     if (T) {
@@ -154,6 +154,9 @@ async function forcarSaida(m, { motivo = 'forcada' } = {}) {
       if (novo.hp > 0) await intimidar(novo, true);                       // se caiu só com as armadilhas, o turn() resolve como vitória
       return true;
     }
+    /* Selvagem não abandona a luta por REVEZAMENTO: o U-turn é escolha DELE, e fazer a luta terminar sem XP por
+       causa disso seria castigo pelo que você não fez. O golpe acontece (dano e tudo), só não troca ninguém. */
+    if (revezar) return false;
     m.vol.retirado = true; B.saidaForcada = 'inimigo';
     await say(voluntaria ? `${nm(m)} foge assustado!` : `${nm(m)} foi afugentado!`, 'status');
     return true;
@@ -161,6 +164,23 @@ async function forcarSaida(m, { motivo = 'forcada' } = {}) {
   if (!ladoJogador().includes(m)) return false;
   if (voluntaria && m === P) return false;                                // nos SEUS principais isso não vale
   const outros = vivos(emCampo()).filter(x => x !== m);
+  /* 🔄 REVEZAMENTO (U-turn, Volt Switch, Flip Turn, Teleport, Parting Shot — decisão do usuário, 04/10/2026).
+     Do seu lado ninguém troca de Pokémon, então "sair" é ficar DE FORA até o fim da rodada, com um aliado
+     cobrindo, e voltar em `voltarDoRevezamento` — passando pelas armadilhas e pelas habilidades de entrada, como
+     numa troca de verdade (os degraus de atributo vão embora com o `vol`; é pra isso que existe o Baton Pass).
+     Sem ninguém em pé pra cobrir, o golpe FALHA e diz isso: é a mesma honestidade das armadilhas do seu lado.
+     Aqui o gatilho de Regenerator/Natural Cure é o DE VERDADE ("ao sair de campo"), e não o equivalente
+     adaptado do fim da luta — a mesma `regras.efeitosAoVencer` serve nos dois. */
+  if (revezar) {
+    if (!outros.length) return false;
+    m.vol.retirado = true; m.vol.volta = 1;
+    const r = efeitosAoVencer(m);
+    if (r.cura) { m.hp = Math.min(m.stats.hp, m.hp + r.cura); await say(`${nm(m)} recuperou ${r.cura} HP ao sair de campo. (${fmt(m.ability)})`, 'good'); }
+    if (r.limpaStatus) { m.status = null; m.sleep = 0; delete m.vol.toxico; await say(`${nm(m)} se curou do status ao sair de campo. (${fmt(m.ability)})`, 'good'); }
+    await say(`${nm(m)} sai de campo e ${nm(outros[0])} cobre o lugar dele!`, 'status');
+    render();
+    return true;
+  }
   m.vol.retirado = true;
   if (!outros.length) { B.saidaForcada = 'jogador'; await say(`${nm(m)} foi arrastado pra fora da luta! A luta termina.`, 'status'); return true; }
   await say(`${nm(m)} ${voluntaria ? 'foge da luta!' : 'foi arrastado pra fora da luta!'} ${m === P ? 'Seus aliados seguem sem você.' : 'A luta segue sem ele.'}`, 'status');
@@ -168,6 +188,21 @@ async function forcarSaida(m, { motivo = 'forcada' } = {}) {
   return true;
 }
 CTX.forcarSaida = forcarSaida;
+
+/* Quem saiu por revezamento volta no FIM da rodada. Chamado depois do `fimDaRodada` de propósito: é ele que apaga
+   o `recemEntrou`, e quem volta precisa entrar com essa marca ligada (Stakeout e companhia leem dela). */
+async function voltarDoRevezamento() {
+  for (const m of ladoJogador()) {
+    if (!m.vol?.volta || m.hp <= 0) continue;
+    if (--m.vol.volta > 0) continue;
+    m.vol = freshVol(); m.vol.recemEntrou = true;
+    await say(`${nm(m)} volta pra luta!`, 'status');
+    render();
+    await aplicarArmadilhas(m, CTX);          // as armadilhas do seu lado pegam quem entra — inclusive de volta
+    await anunciarQuedas();
+    if (m.hp > 0) await habilidadeDaNovaForma(m);   // Intimidate, Drizzle, Download… de novo, como em toda entrada
+  }
+}
 
 // Regenerator / Natural Cure: nos jogos agem ao trocar de Pokémon. Aqui, "sair" é o fim da luta vencida — vale pra todo o
 // seu lado que ficou de pé, inclusive quem foi arrastado pra fora no meio (regras.efeitosAoVencer).
@@ -610,6 +645,7 @@ export async function turn(action) {
     // veneno, clima e fim de rodada valem pro GRUPO inimigo inteiro (⚔ Saga), não só pra quem está em foco
     if (P.hp > 0 && !grupoInimigoCaiu()) { await vez('fim'); for (const m of [...vivos(emCampo()), ...inimigosEmCampo()]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
     for (const m of [...ladoJogador(), ...B.inimigos]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
+    await voltarDoRevezamento();   // quem saiu com U-turn & cia. volta agora, pelas armadilhas e pelas habilidades de entrada
     // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
     for (const m of [...ladoJogador(), ...B.inimigos]) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
     B.turn++;

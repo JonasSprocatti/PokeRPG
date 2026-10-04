@@ -1315,6 +1315,29 @@ templates de `dados.js`, então todos os ~35 itens dizem a mesma coisa).
 **Fora de propósito**: o Cabo de Conexão. Ele evolui por TROCA, não nomeia espécie na tabela da PokéAPI (seriam
 30+ de uma vez) e se compra na loja — dobraria metade da rota por ₽2.100.
 
+### 🔄 Revezamento: o que fazer com os golpes de "sair de campo" (04/10/2026)
+Decisão do usuário entre quatro desenhos apresentados (revezamento, sacrifício, "sair = fim da luta", pós-batalha):
+**revezamento**. O problema: num jogo em que VOCÊ é o Pokémon, "trocar" não existe, e U-turn, Volt Switch, Flip
+Turn, Teleport e Parting Shot ficavam sem efeito. A saída escolhida reusa duas coisas que já existiam em vez de
+inventar um conceito de "quem está na frente": `vol.retirado` (que `estado.emCampo()` já exclui, criado pro Roar) e
+`golpe.aoEntrarEmCampo`.
+**Como funciona**: `motivo: 'revezamento'` em `batalha.forcarSaida` marca `vol.retirado` + `vol.volta = 1`; no fim
+da rodada, DEPOIS do `fimDaRodada` (é ele que apaga o `recemEntrou`, então a ordem importa),
+`voltarDoRevezamento()` devolve quem saiu com `vol` NOVO + `recemEntrou`, passando pelas armadilhas do seu lado e
+pelas habilidades de entrada. Ou seja: é uma troca de verdade, com o mesmo Pokémon — os degraus de atributo vão
+embora (é exatamente pra isso que o Baton Pass existe, e ele já passa os seus pro aliado).
+**Exige aliado em pé**: sem ninguém pra cobrir, `forcarSaida` devolve false e o golpe diz "não havia ninguém pra
+cobrir o lugar!" — o dano/efeito dele já aconteceu e não é desfeito, como nos jogos. Em sala (`ctx` sem
+`forcarSaida`) o golpe avisa que ali não dá.
+**Dois ganhos de tabela**: (1) este é o primeiro caminho em que ARMADILHA DO SEU LADO do campo faz algo — antes
+Spikes e cia. no seu lado eram inertes por construção; (2) Regenerator e Natural Cure passam a disparar pelo
+gatilho DE VERDADE ("ao sair de campo"), além do equivalente adaptado do fim da luta — a mesma
+`regras.efeitosAoVencer` serve nos dois pontos.
+**Recusas conscientes**: selvagem NÃO sai por revezamento (o U-turn é escolha dele; fazer a luta acabar sem XP
+seria castigo pelo que o jogador não fez) — contra treinador continua valendo o caminho antigo, que já manda o
+próximo. E `semSaidaForcada` (Suction Cups) passou a travar só `motivo: 'forcada'`: ela segura o arrastão de
+outro, não a vontade própria de quem usa U-turn (nem o medo do Wimp Out).
+
 ### Animação da barra de HP (27/09/2026)
 Pedido do usuário (junto do backlog de animações): a barra saltava direto pro número novo, sem transição. O
 `.fill` já tinha `transition: width .45s ease` no CSS — o problema é que `render()` não faz diffing (destrói e
