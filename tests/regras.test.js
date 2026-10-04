@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  resumoDeAbates, motivoDeParar,
+  resumoDeAbates, motivoDeParar, precisaReporPP,
   typeEff, natureMod, natureLabel, calcStats, recalc, freshVol, stageMul, effStat, defaultMoves,
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
   jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
@@ -763,4 +763,20 @@ test('auto-explorar: motivo de parar, na ordem de prioridade', () => {
   assert.equal(motivoDeParar({ ...base, exploracoes: 500 }), 'teto');
   // achar o alvo ganha até do teto: a caçada terminou, não importa quantas explorações levou
   assert.equal(motivoDeParar({ ...base, achou: true, exploracoes: 999 }), 'achou');
+});
+
+/* "Antes de todos os golpes acabarem ele já tem que ir ao Centro repor" (pedido do usuário): o laço não pode
+   descobrir que ficou sem PP batendo Struggle, que machuca quem usa. */
+test('auto-explorar: repor PP antes de ficar sem golpe', () => {
+  const mv = (pp, ppLeft) => ({ pp, ppLeft });
+  assert.equal(precisaReporPP({ moves: [mv(20, 20), mv(20, 20), mv(10, 10), mv(5, 5)] }), false, 'cheio: segue jogando');
+  assert.equal(precisaReporPP({ moves: [mv(20, 12), mv(20, 9), mv(10, 4), mv(5, 2)] }), false, 'meio: ainda dá');
+  assert.equal(precisaReporPP({ moves: [mv(20, 3), mv(20, 2), mv(10, 1), mv(5, 1)] }), true, 'raspando em todos: repõe');
+  assert.equal(precisaReporPP({ moves: [mv(20, 0), mv(20, 0), mv(10, 0), mv(5, 4)] }), true, 'sobrou um: repõe ANTES de acabar');
+  assert.equal(precisaReporPP({ moves: [mv(20, 20), mv(0, 0)] }), true, 'golpe sem pp (Struggle) não conta como golpe de verdade');
+  assert.equal(precisaReporPP({ moves: [] }), false);
+  assert.equal(precisaReporPP(null), false);
+  // e o laço para quando não dá pra repor (sem dinheiro pro Centro)
+  assert.equal(motivoDeParar({ modo: 'explore', hp: 100, semPP: true, teto: 500 }), 'semPP');
+  assert.equal(motivoDeParar({ modo: 'explore', hp: 0, semPP: true, teto: 500 }), 'desmaiou', 'desmaio vem antes');
 });

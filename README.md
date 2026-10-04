@@ -358,7 +358,7 @@ Aparecem só pra quem está logado numa conta com `perfis.admin` no Supabase (`n
 
 - **🧪 Painel de testes** (⚙ Ajustes): libera Megas, espécies e gimmicks na marra, tudo marcado como teste e reversível.
 - **🗺 Editor de rotas**: edita as missões e o Alfa de cada rota e cospe o `dados-rotas.js`.
-- **🤖 Explorar automaticamente** (botão ao lado do *Explorar*): escolhe uma espécie **qualquer** do pool da rota — inclusive a que você nunca encontrou — e o jogo explora e luta sozinho até ela aparecer, **parando antes de atacá-la**. O golpe é escolhido pela mesma IA do chefe da semana, ele foge quando o HP fica abaixo de 25% e passa no Centro Pokémon abaixo de 60%, pra não perder a run. Enquanto roda, um painel mostra **quantos de cada espécie caíram, a porcentagem observada e a que a rota promete** — é o jeito rápido de conferir se o sorteio de encontro está honesto. Ao achar (ou ao parar por qualquer motivo), manda uma **notificação**.
+- **🤖 Explorar automaticamente** (botão ao lado do *Explorar*): escolhe uma espécie **qualquer** do pool da rota — inclusive a que você nunca encontrou — e o jogo explora e luta sozinho até ela aparecer, **parando antes de atacá-la**. O golpe é escolhido pela mesma IA do chefe da semana, ele foge quando o HP fica abaixo de 25% e passa no Centro Pokémon abaixo de 60% de HP **ou quando o PP está acabando** (antes do último golpe zerar — Struggle machuca quem usa), pra não perder a run. Enquanto roda, um painel mostra **quantos de cada espécie caíram, a porcentagem observada e a que a rota promete** — é o jeito rápido de conferir se o sorteio de encontro está honesto. Ao achar (ou ao parar por qualquer motivo), manda uma **notificação**.
 
 ## Testes
 

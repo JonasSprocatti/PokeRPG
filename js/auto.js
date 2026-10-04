@@ -21,7 +21,7 @@ import { render } from './render.js';
 import { log, ask, semAnimacao } from './ui.js';
 import { explore, curarNoCentro } from './mundo.js';
 import { turn, melhorGolpe } from './batalha.js';
-import { motivoDeParar } from './regras.js';
+import { motivoDeParar, precisaReporPP } from './regras.js';
 import { ehAdmin } from './nuvem.js';
 import { notificar, pedirPermissao } from './notificacoes.js';
 import { esc, fmt, sleep } from './util.js';
@@ -29,6 +29,10 @@ import { esc, fmt, sleep } from './util.js';
 export const TETO_EXPLORACOES = 500;   // ~meia hora de laço; depois disso é mais honesto parar e perguntar de novo
 export const FUGIR_ABAIXO = 0.25;      // fração do HP máximo em que a fuga vale mais que o próximo golpe
 export const CURAR_ABAIXO = 0.6;       // entre batalhas: passa no Centro antes de voltar pro mato
+/* PP é motivo de Centro tanto quanto HP (pedido do usuário): o laço tem de repor ANTES do último golpe acabar.
+   Quem descobre que ficou sem PP já no Struggle bate fraco, se machuca a cada golpe e perde a run por teimosia.
+   Quem decide é `regras.precisaReporPP`, e vale pros aliados também — o Centro cura a equipe inteira de uma vez. */
+const semGolpes = () => precisaReporPP(G.S.player) || (G.S.aliados || []).some(precisaReporPP);
 
 const especieDe = m => m?.data?.speciesName || m?.name || '';
 // só encontro SELVAGEM conta como "achei": o Alfa, o treinador e o lendário da rota não são o que se está caçando
@@ -68,7 +72,7 @@ async function laco() {
   let naLuta = null;   // o selvagem desta batalha, guardado pra contar o abate quando ela terminar
   while (a.ativo) {
     const P = G.S?.player;
-    const motivo = motivoDeParar({ modo: G.mode, hp: P?.hp ?? 0, exploracoes: a.exploracoes, teto: TETO_EXPLORACOES });
+    const motivo = motivoDeParar({ modo: G.mode, hp: P?.hp ?? 0, semPP: !!a.semPP, exploracoes: a.exploracoes, teto: TETO_EXPLORACOES });
     if (motivo) { a.motivo = motivo; break; }
     if (G.B) {
       const E = G.B.enemy;
@@ -78,7 +82,11 @@ async function laco() {
     } else {
       // a batalha anterior acabou: só conta quem ficou no chão (fuga, captura e amizade não são abate)
       if (naLuta) { if (naLuta.hp <= 0) a.abates[especieDe(naLuta)] = (a.abates[especieDe(naLuta)] || 0) + 1; naLuta = null; }
-      if (P.hp / P.stats.hp < CURAR_ABAIXO) await curarNoCentro();
+      if (P.hp / P.stats.hp < CURAR_ABAIXO || semGolpes()) await curarNoCentro();
+      /* Continua sem PP depois da passada no Centro = não deu pra pagar. Volta ao topo sem explorar: quem
+         decide parar é `motivoDeParar`, num lugar só. */
+      a.semPP = semGolpes();
+      if (a.semPP) continue;
       a.exploracoes++;
       await explore();
     }
@@ -99,6 +107,7 @@ async function atacar(P, E) {
 const TEXTO = {
   achou: a => [`🎯 Achei ${fmt(a.alvo)}!`, `Em ${a.rotaNome}, depois de ${a.exploracoes} explorações e ${a.batalhas} batalhas. Ele está esperando na tela.`],
   desmaiou: a => ['🤖 Auto-explorar parou', `${fmt(a.alvo)} não apareceu: seu Pokémon caiu depois de ${a.exploracoes} explorações.`],
+  semPP: a => ['🤖 Auto-explorar parou', `Os golpes acabaram e não deu pra pagar o Centro Pokémon depois de ${a.exploracoes} explorações.`],
   teto: a => ['🤖 Auto-explorar parou', `${TETO_EXPLORACOES} explorações sem achar ${fmt(a.alvo)}. É só ligar de novo.`],
   saiu: a => ['🤖 Auto-explorar parou', `A jornada saiu da rota depois de ${a.exploracoes} explorações.`],
   erro: a => ['🤖 Auto-explorar parou', `Deu erro depois de ${a.exploracoes} explorações — o registro da partida tem o motivo.`],

@@ -1261,15 +1261,28 @@ export function resumoDeAbates(contagem = {}) {
   for (const l of linhas) l.pct = total ? l.n / total * 100 : 0;
   return { total, linhas: linhas.sort((a, b) => b.n - a.n || a.especie.localeCompare(b.especie)) };
 }
+/* Hora de voltar ao Centro pra repor PP — ANTES do último golpe acabar (pedido do usuário). Quem chega no
+   Struggle bate fraco, se machuca a cada golpe e transforma uma caçada tranquila em run perdida por teimosia.
+   Dois gatilhos, porque um só erra metade dos casos: "sobrou um golpe" pega quem tem poucos golpes de PP alto,
+   e a fração do PP total pega quem tem quatro golpes e está raspando em todos. Golpe de `pp` 0 (Struggle) fica
+   de fora da conta. */
+export function precisaReporPP(m, fracao = 0.25) {
+  const moves = (m?.moves || []).filter(g => g.pp > 0);
+  if (!moves.length) return false;
+  const total = moves.reduce((a, g) => a + g.pp, 0), resta = moves.reduce((a, g) => a + (g.ppLeft || 0), 0);
+  return moves.filter(g => g.ppLeft > 0).length <= 1 || resta / total < fracao;
+}
 /* Por que o laço para. A ordem é a prioridade: achar o alvo ganha de tudo, e qualquer coisa que tire o jogo da
    rota (fim de jornada, outra tela, desmaio) para na hora — um laço que continua clicando depois do Game Over
    do Roguelike é exatamente o jeito de perder uma run sozinho. `teto` existe porque laço sem fim é bug, não
    funcionalidade. Devolve null quando é pra seguir. */
-export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, exploracoes = 0, teto = Infinity } = {}) {
+export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, semPP = false, exploracoes = 0, teto = Infinity } = {}) {
   if (erro) return 'erro';
   if (achou) return 'achou';
   if (modo !== 'explore' && modo !== 'battle') return 'saiu';
   if (hp <= 0) return 'desmaiou';
+  // sem PP e sem como repor (dinheiro curto): seguir daqui é moer Struggle, que machuca quem usa — para e conta
+  if (semPP) return 'semPP';
   if (exploracoes >= teto) return 'teto';
   return null;
 }
