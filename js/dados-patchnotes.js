@@ -13,6 +13,13 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.1', data: '2026-10-05', titulo: '🤖 A caçada automática parou de queimar dinheiro no Centro Pokémon', piada: 'O atendente do Centro Pokémon tinha descoberto que dava pra cobrar a cura completa da equipe porque um companheiro havia batido o dedinho na pedra. Trinta e sete vezes. Mandamos uma caixa de Poções pra caçada e o rapaz voltou a atender gente doente de verdade.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>O 🤖 Explorar automaticamente agora usa a mochila antes de pagar o Centro.</b> A conta do Centro cobra <b>₽50 + ₽15/nível de cada membro</b> que esteja com 1 HP ou 1 PP faltando — então uma passada por causa do <b>seu</b> HP vinha cobrando a cura inteira dos companheiros que só tinham raspado. Agora o laço abre a mochila primeiro e usa a <b>Poção, Éter ou antídoto mais barato que resolva</b>, e só gasta item que valha menos do que o Centro cobraria por aquele Pokémon. Sem item que sirva, aí sim ele paga.',
+        'Efeito prático: caçada longa de nível alto gastando uma fração do que gastava, e o dinheiro sobrando pra loja. (O 🤖 segue sendo ferramenta <b>só da conta admin</b>.)'
+      ] }
+    ] },
   { versao: '5.0', data: '2026-10-05', titulo: '⚔ O modo Saga ganha cara de RPG japonês: janela de comandos, oito perícias e a Guarda do inimigo quebrando', piada: 'O Aggron passou três semanas plantado na frente da comitiva gritando "mirem em mim" enquanto todo mundo mirava no Alakazam. Instalamos uma Guarda nos inimigos pra ocupar a cabeça deles e, de quebra, ensinamos o Aggron a bradar de verdade. Agora os inimigos prestam atenção nele — e o Alakazam pediu pra registrar que estava torcendo por isso desde o começo.',
     secoes: [
       { nome: 'Novidades', itens: [

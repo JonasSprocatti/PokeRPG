@@ -27,12 +27,13 @@
      foi pedido explícito. Em segundo plano o navegador limita cada `setTimeout` a ~1 por segundo, então a
      narração (`ui.say`) para de esperar com a aba escondida: ninguém está lendo, e 420 ms de pausa por linha
      viravam 1 segundo cada. */
-import { G, save, zone, rotulo } from './estado.js';
+import { G, save, zone, rotulo, ladoJogador } from './estado.js';
 import { render } from './render.js';
 import { log, ask, semAnimacao } from './ui.js';
 import { explore, curarNoCentro } from './mundo.js';
 import { turn, melhorGolpe } from './batalha.js';
-import { motivoDeParar, precisaReporPP, objetivoAuto } from './regras.js';
+import { useItem } from './itens.js';
+import { motivoDeParar, precisaReporPP, objetivoAuto, precisaCurar, itemEmVezDoCentro } from './regras.js';
 import { ehAdmin } from './nuvem.js';
 import { notificar, pedirPermissao } from './notificacoes.js';
 import { manterAcordado, soltarAcordado } from './acordado.js';
@@ -49,6 +50,22 @@ export const CURAR_ABAIXO = 0.45;
    Quem descobre que ficou sem PP já no Struggle bate fraco, se machuca a cada golpe e perde a run por teimosia.
    Quem decide é `regras.precisaReporPP`, e vale pros aliados também — o Centro cura a equipe inteira de uma vez. */
 const semGolpes = () => precisaReporPP(G.S.player) || (G.S.aliados || []).some(precisaReporPP);
+// hora de descansar? É a MESMA pergunta antes e depois da mochila — é ela que decide se o Centro ainda é preciso.
+const precisaDescansar = () => G.S.player.hp / G.S.player.stats.hp < CURAR_ABAIXO || semGolpes();
+
+/* Mochila antes do caixa (pedido do usuário: o laço gastava demais no Centro). A passada cobra `custoCentro` de
+   TODO MUNDO que esteja com 1 HP ou 1 PP faltando, então vale tanto curar você quanto topar o aliado que raspou:
+   cada um que sai do `precisaCurar` sai da conta. Quem escolhe o item é `regras.itemEmVezDoCentro` (puro,
+   testado, e só aceita item mais barato que o Centro cobraria); quem gasta é o `useItem` da mochila — o laço não
+   tem caminho próprio pra usar item. Teto de 4 por Pokémon: Éter repõe 10 PP de cada golpe por vez. */
+async function curarComAMochila() {
+  for (const M of ladoJogador()) {
+    for (let i = 0; i < 4 && precisaCurar(M); i++) {
+      const id = itemEmVezDoCentro(M, G.S.bag, G.S);
+      if (!id || !await useItem(id, false, M)) break;
+    }
+  }
+}
 
 const especieDe = m => m?.data?.speciesName || m?.name || '';
 // só encontro SELVAGEM conta como "achei": o Alfa, o treinador e o lendário da rota não são o que se está caçando
@@ -119,7 +136,9 @@ async function laco() {
     } else {
       // a batalha anterior acabou: só conta quem ficou no chão (fuga, captura e amizade não são abate)
       if (naLuta) { if (naLuta.hp <= 0) a.abates[especieDe(naLuta)] = (a.abates[especieDe(naLuta)] || 0) + 1; naLuta = null; }
-      if (P.hp / P.stats.hp < CURAR_ABAIXO || semGolpes()) await curarNoCentro();
+      // mochila primeiro, e o Centro só se DEPOIS dela ainda faltar algo — senão paga a cura da equipe inteira
+      // por causa do aliado que perdeu 2 HP (era o que torrava o dinheiro da caçada).
+      if (precisaDescansar()) { await curarComAMochila(); if (precisaDescansar()) await curarNoCentro(); }
       /* Continua sem PP depois da passada no Centro = não deu pra pagar. Volta ao topo sem explorar: quem
          decide parar é `motivoDeParar`, num lugar só. */
       a.semPP = semGolpes();

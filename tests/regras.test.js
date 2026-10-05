@@ -5,7 +5,7 @@ import {
   resumoDeAbates, motivoDeParar, precisaReporPP, objetivoAuto, xpExcedente, PESOS_PONTOS,
   typeEff, natureMod, natureLabel, calcStats, recalc, freshVol, stageMul, effStat, defaultMoves,
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
-  jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
+  jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar, itemEmVezDoCentro,
   premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, chancePorBalanco, balancosDaCaptura,
   CHANCE_SHINY, ehShiny, ordenarAcoes, melhorGolpe, ganhoAmizade, podeFazerAmizade, custoCentroEquipe,
   MAX_ALIADOS, AMIZADE_MAX, custoComDesconto, itemTemEfeito, zonaLiberada, statsDeChefe, premioChefe,
@@ -846,6 +846,28 @@ test('auto-explorar: repor PP antes de ficar sem golpe', () => {
   // e o laço para quando não dá pra repor (sem dinheiro pro Centro)
   assert.equal(motivoDeParar({ modo: 'explore', hp: 100, semPP: true, teto: 500 }), 'semPP');
   assert.equal(motivoDeParar({ modo: 'explore', hp: 0, semPP: true, teto: 500 }), 'desmaiou', 'desmaio vem antes');
+});
+
+/* "O auto-explorar gasta muito indo sempre no Centro" (pedido do usuário): a mochila vem antes do caixa, mas só
+   com item que resolve o buraco E custa menos do que o Centro cobraria por aquele Pokémon. */
+test('auto-explorar: item da mochila em vez da passada no Centro', () => {
+  const mon = (level, hp, max, extra = {}) => ({ level, hp, stats: { hp: max }, moves: [{ pp: 20, ppLeft: 20 }], ...extra });
+  const bag = { potion: 2, 'super-potion': 1, 'hyper-potion': 1, ether: 1, 'max-ether': 1, antidote: 1, 'x-attack': 3 };
+  const semPP = { moves: [{ pp: 20, ppLeft: 4 }] };
+  // Nv. 40 (Centro ₽650): faltam 50 HP — a Poção de 20 não fecha, a Super (venda ₽300) fecha e é a mais barata
+  assert.equal(itemEmVezDoCentro(mon(40, 250, 300), bag), 'super-potion');
+  assert.equal(itemEmVezDoCentro(mon(40, 290, 300), bag), 'potion', 'faltando 10, a Poção resolve e é mais barata');
+  // Nv. 5 (Centro ₽125): nenhuma poção vale a pena — ₽100 de venda da Poção passa, a Super (₽300) não
+  assert.equal(itemEmVezDoCentro(mon(5, 10, 30), { 'super-potion': 1 }), null, 'item mais caro que o Centro não é economia');
+  assert.equal(itemEmVezDoCentro(mon(5, 25, 30), { potion: 1 }), 'potion');
+  assert.equal(itemEmVezDoCentro(mon(40, 300, 300, semPP), bag), 'ether', 'HP cheio e PP faltando: o Éter mais barato que o Centro');
+  assert.equal(itemEmVezDoCentro(mon(5, 30, 30, semPP), { 'max-ether': 1 }), null, 'Éter Máximo vale mais que o Centro do Nv. 5');
+  assert.equal(itemEmVezDoCentro(mon(40, 300, 300, { moves: [{ pp: 20, ppLeft: 20 }], status: 'poison' }), bag), 'antidote');
+  assert.equal(itemEmVezDoCentro(mon(40, 300, 300, semPP), { 'x-attack': 3 }), null, 'item de batalha não cura nada');
+  assert.equal(itemEmVezDoCentro(mon(40, 300, 300), bag), null, 'nada faltando: não gasta item nenhum');
+  assert.equal(itemEmVezDoCentro(mon(40, 250, 300), {}), null, 'mochila vazia: paga o Centro');
+  assert.equal(itemEmVezDoCentro(mon(40, 250, 300), { potion: 0, 'super-potion': 0 }), null, 'item zerado não conta');
+  assert.equal(itemEmVezDoCentro(mon(40, 10, 300), { 'rare-candy': 1, 'fire-stone': 1 }), null, 'item que não cura não entra');
 });
 
 test('especiesDobradas: item de evolução na mochila marca quem evolui com ele', () => {

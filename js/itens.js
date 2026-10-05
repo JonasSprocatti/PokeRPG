@@ -198,7 +198,7 @@ async function escolherHabilidade(M) {
     })), { label: 'Cancelar', value: -1, ghost: true }]);
   return i < 0 ? null : opcoes[i].name;
 }
-export async function useItem(id, inBattle) {
+export async function useItem(id, inBattle, quem = null) {
   const S = G.S, it = ITEMS[id], P = S.player;
   if (!it || !S.bag[id]) return false;
   if (it.battle && !inBattle) { await say('Esse item só funciona durante uma batalha.'); return false; }
@@ -223,8 +223,10 @@ export async function useItem(id, inBattle) {
     await say(tipo ? SEM_EFEITO[tipo] + (equipe.length > 1 ? ' (ninguém da equipe precisa)' : '') : 'Não teria efeito agora.');
     return false;
   }
-  let M = alvos[0];
-  if (alvos.length > 1) {
+  // `quem` = alvo já decidido por quem chamou (🤖 auto-explorar cura a equipe com a mochila): não pergunta.
+  if (quem && !alvos.includes(quem)) return false;
+  let M = quem || alvos[0];
+  if (!quem && alvos.length > 1) {
     const i = await ask(`Usar <b>${it.name}</b> em quem?`,
       [...alvos.map((A, j) => ({ label: `${esc(rotulo(A))} · Nv. ${A.level} · HP ${A.hp}/${A.stats.hp}${A.status ? ' · ' + ST_SHORT[A.status] : ''}`, value: j })), { label: 'Cancelar', value: -1, ghost: true }]);
     if (i < 0) return false;

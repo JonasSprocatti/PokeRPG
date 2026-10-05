@@ -634,6 +634,30 @@ export const custoCentro = nivel => 50 + 15 * nivel;
 // algo pra curar? (HP, status ou PP) — com tudo cheio o Centro não cobra nem cura
 export const precisaCurar = m => m.hp < m.stats.hp || !!m.status || m.moves.some(mv => mv.ppLeft < mv.pp);
 
+/* Item da mochila que substitui a passada no Centro pra ESTE Pokémon, ou null (🤖 auto-explorar, pedido do
+   usuário: "indo sempre no Centro gasta muito"). O Centro cobra `custoCentro` de CADA um que tenha 1 HP ou 1 PP
+   faltando (`precisaCurar` → `custoCentroEquipe`), então topar o aliado que raspou com uma Poção achada no mato
+   tira ele da conta inteira.
+   Dois crivos, e os dois importam:
+   - **resolve o que falta** — Poção que não fecha o buraco de HP não entra (usar duas e ainda pagar o Centro é o
+     pior dos dois mundos); pra PP e status basta o item servir.
+   - **custa menos que o Centro cobraria por ele** (`precoVenda` x `custoCentro(nível)`) — queimar uma Hyper
+     Potion de ₽600 de venda pra economizar ₽125 de Centro no Nv. 5 é o mesmo desperdício ao contrário.
+   Entre os que passam, o mais barato. Item sem preço de loja (achado explorando) vale 0 e ganha sempre.
+   HP primeiro: enquanto falta HP é ele que decide, porque é o que mantém a caçada viva. */
+export function itemEmVezDoCentro(M, bag, S) {
+  const teto = custoCentro(M.level), falta = M.stats.hp - M.hp;
+  const serve = it => {
+    if (it.battle || it.raide || it.segurado) return false;
+    if (falta > 0) return !!(it.heal || it.healPct) && (it.healPct ? Math.ceil(M.stats.hp * it.healPct / 100) : it.heal) >= falta;
+    if (M.status && it.cure) return it.cure === 'all' || it.cure.includes(M.status);
+    return !!it.ether && M.moves.some(mv => mv.ppLeft < mv.pp);
+  };
+  return Object.keys(bag || {})
+    .filter(id => bag[id] > 0 && ITEMS[id] && serve(ITEMS[id]) && precoVenda(id, S) <= teto)
+    .sort((a, b) => precoVenda(a, S) - precoVenda(b, S))[0] || null;
+}
+
 /* `MULT_XP` estica a jornada: menos XP por vitória = mais batalhas por nível = run mais longa (pedido do
    usuário). Mexer aqui, e não na curva da PokéAPI, é de propósito — a curva vem da API e fica no cache de quem
    joga, então mudá-la exigiria invalidar o cache de todo mundo e quebraria comparação com jornadas antigas.
