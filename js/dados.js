@@ -193,7 +193,10 @@ export const ITEMS = {
    guardar a Maçã Doce é o jeito de achar um Applin. */
 const ISCA = 'Na mochila, quem evolui com ele aparece em dobro explorando.';
 const pedra = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}). ${ISCA}`, evo: true, price: 2100 });
-const segurado = (name, desc) => ({ name, desc: `Evolução por troca ou por nível: fica na mochila e é gasto ao evoluir (${desc}). ${ISCA}`, segurar: true });
+// `segurar` = o item age ESTANDO na mochila: não tem botão de usar, e é o Cabo de Conexão (ou subir de nível, em
+// alguns casos) que dispara a evolução. Isso precisa estar escrito: sem a frase, o item parece defeituoso — foi
+// relato de quem joga ("o Eletrizador está funcionando?").
+const segurado = (name, desc) => ({ name, desc: `Não tem botão: fica na mochila e é gasto quando ${desc} evolui — use o Cabo de Conexão nele (ou suba de nível, se a evolução dele for assim). ${ISCA}`, segurar: true });
 const especial = (name, desc) => ({ name, desc: `Faz certos Pokémon evoluírem na hora (${desc}). ${ISCA}`, evo: true });
 /* Item de EVOLUÇÃO que também tem efeito em BATALHA se estiver segurado — é como funciona nos jogos: a Pedra do
    Rei evolui Poliwhirl e dá 10% de recuo na mão. Um id só, `segurar` (evolui) + `segurado` (equipável); o efeito

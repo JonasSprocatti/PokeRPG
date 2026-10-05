@@ -294,6 +294,13 @@ async function aoClicar(e) {
       return ok ? encerrarJornada('venceu', { genVencida: G.S.genVencida }) : undefined;
     }
     case 'panel': G.panel = v; return render();
+    /* Divisão da mochila abrindo/fechando (`<details>` nativo). O navegador já virou o `open` no clique; aqui só
+       se GRAVA isso em `G.bagAbertas`, senão o próximo `render()` (que refaz o DOM inteiro) fechava de novo. */
+    case 'bag-cat': {
+      const abertas = (G.bagAbertas ||= new Set());
+      abertas.has(v) ? abertas.delete(v) : abertas.add(v);
+      return render();
+    }
     // o botão já vem desativado quando não há o que curar; `curarNoCentro` (mundo.js) confere de novo e é o
     // MESMO Centro que o 🤖 auto-explorar usa entre uma batalha e outra
     case 'heal': await curarNoCentro(); return render();

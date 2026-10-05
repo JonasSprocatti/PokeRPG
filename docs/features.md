@@ -1315,6 +1315,27 @@ templates de `dados.js`, então todos os ~35 itens dizem a mesma coisa).
 **Fora de propósito**: o Cabo de Conexão. Ele evolui por TROCA, não nomeia espécie na tabela da PokéAPI (seriam
 30+ de uma vez) e se compra na loja — dobraria metade da rota por ₽2.100.
 
+### Mochila: marcador de evolução e divisão que abre (05/10/2026)
+Relato de quem joga, três coisas no mesmo pedido: *"o Eletrizador está funcionando para evoluir o Electabuzz?"*,
+*"deixe os itens que evoluem um Pokémon com um marcador visível"* e *"a bag quando tem muitos itens fica muito
+confusa… ela expande e fica enorme, muito ruim de descer a tela no mobile"*.
+**O Eletrizador funcionava.** Conferido contra a PokéAPI: `electabuzz → electivire` é
+`{ trigger: 'trade', held_item: 'electirizer' }`, e `evolucao.detalheCumprido` com `gatilho: 'trade'` +
+`bag.electirizer > 0` devolve `{ name: 'electivire', consome: 'electirizer' }`. O que faltava era a TELA dizer
+isso: item `segurar: true` não tem botão nenhum na mochila (quem dispara é o Cabo de Conexão, ₽3.000), então
+parecia defeito. **Bug de comunicação, não de regra** — e o conserto é de texto e marcador, não de motor.
+**Marcador**: `regras.quemEvoluiComItem(item, mons)` cruza `ESPECIE_DO_ITEM_EVO` (o MESMO dado gerado do dobro de
+encontro, lido pelo outro lado) com o seu lado. Síncrono de propósito: a árvore de evolução de verdade vem da API
+e serve pra DECIDIR a evolução; pra marcar uma linha de lista não vale pedir rede. Sem ninguém que use, a marca é
+um `💎 Evolução` discreto; com alguém, acende e diz o nome (`.tag-evo.pronto`).
+**Divisão que abre**: cada categoria virou `<details>`/`<summary>` NATIVO, com a contagem no cabeçalho — nada de
+JS de acordeão. O estado mora em `G.bagAbertas` (tela, não save) porque `render()` refaz o DOM inteiro a cada
+ação: sem isso, usar uma Poção fechava a divisão que você acabou de abrir. A primeira divisão (cura) nasce aberta;
+mochila VAZIA não inicializa o Set, senão quem abre a mochila antes do primeiro item travaria tudo fechado.
+No celular, `ul.bag small` ganhou `-webkit-line-clamp: 2` (o texto inteiro fica no `title`) — a descrição era o
+que fazia a lista crescer sem fim, e ela cresceu de propósito quando a loja passou a explicar cada item.
+**Não mexi na LOJA**, que tem a mesma forma: lá navegar a prateleira inteira é o objetivo, e ninguém reclamou.
+
 ### 🔄 Revezamento: o que fazer com os golpes de "sair de campo" (04/10/2026)
 Decisão do usuário entre quatro desenhos apresentados (revezamento, sacrifício, "sair = fim da luta", pós-batalha):
 **revezamento**. O problema: num jogo em que VOCÊ é o Pokémon, "trocar" não existe, e U-turn, Volt Switch, Flip

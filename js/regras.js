@@ -563,6 +563,14 @@ export function especiesDobradas(bag = {}) {
   for (const k in bag) if (bag[k] > 0) for (const e of ESPECIE_DO_ITEM_EVO[k] || []) dobram.add(e);
   return dobram;
 }
+/* Quem, do seu lado, evolui COM este item — a MESMA tabela do dobro de encontro, lida pelo outro lado. É o
+   marcador da mochila: item de evolução sem ninguém pra usar é só um item guardado; com alguém, a mochila diz o
+   nome dele. Síncrono de propósito: a árvore de evolução de verdade mora na API (e vale pro caso de ter mais de
+   um caminho), mas pra MARCAR a linha da mochila não vale pedir rede nem esperar cache. */
+export const quemEvoluiComItem = (item, mons = []) => {
+  const alvos = ESPECIE_DO_ITEM_EVO[item];
+  return alvos ? mons.filter(m => alvos.includes(m?.data?.speciesName)) : [];
+};
 
 /* fuga: Run Away ou ser mais rápido garante; senão a chance sobe 30/256 a cada tentativa. `preso` = o oponente
    tem Magnet Pull e você é do tipo Aço (regras.js não sabe de habilidade — quem chama já resolveu isso em

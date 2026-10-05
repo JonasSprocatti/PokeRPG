@@ -12,7 +12,7 @@ import {
   progressoCondicao, situacaoMissoes, desmaioPrecisaRevive, estatisticasDaJornada, pontuacao, formatarTempo,
   golpeDoAliado, escolhaIA, ESPERTEZA, DIVISOR_AMIZADE_LENDARIO, multContinuacao, PENAL_MINIMO, rotaEsgotada, FATOR_ESGOTADA, MARGEM_ESGOTADA, limiteDaRota, MULT_XP, sortearTipoTera, precoItem, precoVenda, alternarRapido, MAX_RAPIDOS,
   caminhoNaArvore, especiesShinyDoJogador, moverGolpe, fazContato, temFlag, ativouQuickClaw, CHANCE_QUICK_CLAW,
-  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar, habilidadesParaTrocar, especiesDobradas
+  CHANCE_QUICK_DRAW, sempreUltimo, prioridadeEfetiva, golpeDaConversaoDeTipo, temEvs, ivsParaMaximizar, habilidadesParaTrocar, especiesDobradas, quemEvoluiComItem
 } from '../js/regras.js';
 import { CHART, ITEMS, STATS } from '../js/dados.js';
 import { GOLPE_FLAGS, FLAGS_VALIDAS } from '../js/dados-golpe-flags.js';
@@ -837,4 +837,15 @@ test('especiesDobradas: item de evolução na mochila marca quem evolui com ele'
   assert.equal(especiesDobradas().size, 0);
   // o Cabo de Conexão evolui por TROCA e fica de fora de propósito (seriam 30+ espécies, e ele se compra na loja)
   assert.equal(especiesDobradas({ 'linking-cord': 1 }).size, 0);
+});
+
+test('quemEvoluiComItem: o marcador da mochila acha quem do seu lado usa o item', () => {
+  const mon = (especie, nome = especie) => ({ name: nome, data: { speciesName: especie } });
+  const equipe = [mon('electabuzz'), mon('pikachu')];
+  assert.deepEqual(quemEvoluiComItem('electirizer', equipe).map(m => m.name), ['electabuzz']);
+  assert.deepEqual(quemEvoluiComItem('magmarizer', equipe), [], 'ninguém da equipe usa');
+  assert.deepEqual(quemEvoluiComItem('potion', equipe), [], 'item que não é de evolução');
+  // a Pedra do Trovão evolui o Pikachu: mesma tabela, item de usar na hora
+  assert.deepEqual(quemEvoluiComItem('thunder-stone', equipe).map(m => m.name), ['pikachu']);
+  assert.deepEqual(quemEvoluiComItem('electirizer'), [], 'sem lista de Pokémon não estoura');
 });

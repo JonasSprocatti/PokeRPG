@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '4.8', data: '2026-10-05', titulo: '💎 A mochila abre por divisão e diz pra quem serve cada item de evolução', piada: 'Um jogador passou a tarde segurando um Eletrizador do lado de um Electabuzz esperando algo acontecer. O item estava funcionando perfeitamente: ele só não dizia, em lugar nenhum, que precisava do Cabo de Conexão pra terminar o serviço. O Electabuzz pediu desculpas pelo mal-entendido e evoluiu na hora seguinte.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Marcador 💎 nos itens de evolução.</b> Eles sumiam no meio da lista. Agora todos levam a marca — e quando o item serve pra alguém do seu lado, a marca <b>diz o nome dele</b>: <i>"💎 Serve pro seu Electabuzz"</i>.',
+        '<b>Os itens que não têm botão agora explicam por quê.</b> Eletrizador, Magmatizador, Revestimento Metálico, Escama de Dragão e companhia funcionam <b>estando na mochila</b>: quem termina o serviço é o <b>Cabo de Conexão</b> (₽3.000 na loja) usado no Pokémon, ou subir de nível, quando a evolução dele é assim. A descrição de cada um diz isso agora, em vez de deixar parecendo defeito.',
+        '<b>A mochila abre por divisão.</b> Cada parte (🧪 Cura e status, ⚔ Em batalha, 🎒 Para segurar, 💎 Evolução, 🍖 Petiscos, ✨ Especiais) abre e fecha num toque, com a <b>contagem de itens</b> no cabeçalho. Fechada, a mochila inteira cabe em seis linhas — antes, com a mochila cheia, era uma lista única enorme e achar algo no celular dava rolagem sem fim. A divisão que você abre fica aberta enquanto você mexe nela.',
+        '<b>No celular, a descrição de cada item ocupa no máximo duas linhas</b> (o texto inteiro continua no toque longo). Era ela que fazia a lista crescer sem parar.'
+      ] }
+    ] },
   { versao: '4.7', data: '2026-10-04', titulo: '🧩 Todo item tem figura, a pedra na mochila atrai quem evolui com ela e mais 32 habilidades funcionando', piada: 'O Scyther passou três gerações ouvindo falar de uma tal Augurita Negra que ninguém nunca tinha visto. Não era lenda: a figura dela simplesmente não existia no catálogo, e o item aparecia na mochila como uma caixinha anônima. Mandamos buscar em outro arquivo. O Scyther olhou, aprovou e virou Kleavor na mesma tarde.',
     secoes: [
       { nome: 'Novidades', itens: [

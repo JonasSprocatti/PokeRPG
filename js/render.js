@@ -12,7 +12,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { resumoDeAbates, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas } from './regras.js';
+import { resumoDeAbates, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -437,9 +437,32 @@ function renderMochila() {
     return `<button class="btn ghost sm ${on ? 'on' : ''}" data-act="rapido" data-v="${k}" ${G.busy ? 'disabled' : ''}
       title="${on ? `Tirar dos itens rápidos (hoje é a tecla ${i + 1})` : `Deixar à mão na barra de ações (até ${MAX_RAPIDOS})`}">⚡${on ? ` ${i + 1}` : ''}</button>`;
   };
-  const linha = ([k, n]) => `<li><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}<small>${ITEMS[k].desc}</small></span><div class="bag-acoes">${botaoRapido(k)}${botao(k)}${botaoVender(k)}</div></li>`;
+  /* 💎 Marcador de item de evolução (pedido de quem joga: "o Eletrizador está funcionando?"). Item de evolução
+     era indistinguível do resto da lista, e os `segurar` (Eletrizador, Revestimento Metálico…) nem botão têm —
+     eles agem ESTANDO na mochila, pela troca (Cabo de Conexão) ou subindo de nível. Parecia defeito.
+     Quando a espécie bate com alguém do seu lado (`regras.quemEvoluiComItem`), o marcador diz o NOME dele. */
+  const evolui = k => {
+    const it = ITEMS[k];
+    if (!it.evo && !it.troca && !it.segurar) return '';
+    const quem = quemEvoluiComItem(k, [S.player, ...(S.aliados || [])]);
+    if (!quem.length) return '<b class="tag-evo">💎 Evolução</b>';
+    const nomes = quem.map(m => esc(m.nick || fmt(m.name))).join(' e ');
+    return `<b class="tag-evo pronto">💎 Serve pro seu ${nomes}</b>`;
+  };
+  const linha = ([k, n]) => `<li><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span><b>${ITEMS[k].name}</b> ×${n}${evolui(k)}<small title="${esc(ITEMS[k].desc)}">${ITEMS[k].desc}</small></span><div class="bag-acoes">${botaoRapido(k)}${botao(k)}${botaoVender(k)}</div></li>`;
+  /* A mochila cheia virava uma lista de 40 linhas abertas de uma vez — no celular, rolar até achar algo era pior
+     que não ter divisão nenhuma (relato de quem joga). Cada divisão agora é um `<details>` NATIVO: o corpo abre
+     num toque, o cabeçalho mostra quantos itens tem dentro e a mochila fechada ocupa seis linhas.
+     Quais estão abertas vive em `G.bagAbertas` (estado de TELA, não vai pro save) porque `render()` refaz o DOM
+     inteiro a cada ação — sem isso, usar uma Poção fechava a divisão que você acabou de abrir. */
+  const cats = porCategoria(bag);
+  // na primeira vez, a divisão de cima já vem aberta (é a de cura, a mais usada). Mochila vazia não decide nada:
+  // senão quem abre a mochila antes de achar o primeiro item travaria o Set vazio e veria tudo fechado depois.
+  if (cats.length && !G.bagAbertas) G.bagAbertas = new Set([cats[0].id]);
   $('#p-mochila').innerHTML = bag.length
-    ? porCategoria(bag).map(c => `<h4 class="bag-div">${c.nome} <span class="muted">(${c.itens.length})</span></h4><ul class="bag">${c.itens.map(linha).join('')}</ul>`).join('')
+    ? cats.map(c => `<details class="bag-cat" ${G.bagAbertas?.has(c.id) ? 'open' : ''}>
+        <summary data-act="bag-cat" data-v="${c.id}">${c.nome} <span class="muted">(${c.itens.length})</span></summary>
+        <ul class="bag">${c.itens.map(linha).join('')}</ul></details>`).join('')
     : '<p class="small muted">Vazia. Explore para achar itens ou passe na loja.</p>';
 }
 // nome antigo mantido: blocoHabilidade() chama renderSheet quando a descrição da habilidade chega da API

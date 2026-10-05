@@ -126,7 +126,7 @@ Cada Pokémon da equipe pode segurar **um item**, que age sozinho na batalha. Pa
 - **Pedra Mega**, **Cristal Z** e **Vínculo de Batalha** mostram, na mochila e na loja, a pedra/cristal de verdade da sua espécie/tipo (quando existe na PokéAPI) em vez do ícone genérico — Charizard vê a Charizardita, um golpe de Fogo conquistado mostra o Cristal Ígneo, e assim por diante. Metade das Megas deste jogo (Meganium, Greninja, Zeraora…) não existe nos jogos de verdade e não tem pedra desenhada — nesses casos aparece a **Pedra-Chave**, o item real que ativa qualquer Mega Evolução.
 
 ### Mochila e loja em divisões
-Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para segurar · 💎 Evolução · 🍖 Petiscos · ✨ Especiais, tanto na mochila quanto na loja. **Na loja, cada item mostra a descrição do que faz dentro do próprio cartão** — antes isso só existia como dica ao passar o mouse, que no celular não existe.
+Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para segurar · 💎 Evolução · 🍖 Petiscos · ✨ Especiais, tanto na mochila quanto na loja. **Na mochila, cada divisão abre e fecha num toque** e o cabeçalho diz quantos itens tem dentro — com a mochila cheia, a lista aberta de uma vez era grande demais pra achar algo no celular. **Item de evolução leva um marcador 💎**, e quando ele serve pra alguém do seu lado o marcador diz o nome: *"💎 Serve pro seu Electabuzz"*. **Na loja, cada item mostra a descrição do que faz dentro do próprio cartão** — antes isso só existia como dica ao passar o mouse, que no celular não existe.
 
 ### 🏋 Itens de treino (₽250.000 cada)
 Os itens mais caros do jogo, e os únicos que mexem no que um Pokémon trouxe **de nascença**. Só na loja: não aparecem explorando nem como prêmio de Alfa.
