@@ -15,17 +15,24 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   (Guardião, Curandeiro, Arcano, Guerreiro, Encantador, Bardo), ameaça/aggro, perícias com recarga, Brecha/Ruína,
   comitiva de 4, NPCs Pokémon com diálogo, três facções e caminhos com consequência. **O plano combinado está em
   `docs/plano-saga.md`** — ler de lá antes de mexer. Entrega em 4 fases; a fase 1 é o combate.
-  **Feito até agora**: `js/oficios.js` (o ofício lido dos stats base + learnset, congelado em `m.oficio`); o modo
-  `saga` em `DIFICULDADES` (`admin: true`, `aliadosEmCampo: 3`, `ameaca: true`) com teto de equipe por modo
-  (`regras.tetoDaEquipe`); o passo 4 da criação pra escolher a comitiva; e a **ameaça** (`regras.alvoPorAmeaca`,
-  lida por `batalha.js`, acumulada em `golpe.js`, mostrada por `render.seloOficio`).
-  Também já feito, **pedido em 02/10/2026 fora do plano original**: **grupo inimigo** (1 a 3 por rota, Alfa com
-  dois lacaios) — o lado inimigo virou lista (`B.inimigos` + `B.foco`, com `B.enemy` como getter em
-  `estado.ligarInimigos`) — e a **cena meio-termo FF** (placas do inimigo, alvo clicável, fila do turno).
-  **Falta na fase 1**: as 8 perícias + o painel delas, Brecha/Ruína, e a redução de dano do Guardião.
-  **Fora de propósito por ora**: ameaça no `mp-motor` (não existe Saga em sala); grupo em luta de treinador e de
-  lendários (a fila deles é o balanceamento dos outros modos). README e patch note entram quando o
-  modo ficar jogável (hoje nada disso aparece pra quem joga).
+  **✅ A FASE 1 (o combate) ESTÁ FECHADA em 05/10/2026** e o registro foi todo pra `docs/features.md` → "⚔ Saga,
+  fase 1 fechada": ofícios (`js/oficios.js`), ameaça/aggro, grupo inimigo de 1 a 3 com o lado inimigo virando
+  lista, comandar a comitiva, as **8 perícias** (`js/pericias.js`, recarga em turnos), **Brecha/Ruína**
+  (`regras.GUARDA`/`abrirBrecha`/`multSaga`) e a **identidade de JRPG** (flag `jrpg`: janela de comandos, moldura,
+  fila da rodada, vocabulário). README e patch note (versão 5.0) já saíram.
+  **Falta, e é o que mantém o modo `admin: true`**: a **fase 2** (Juramentos, ordens por ofício, tela de comitiva)
+  e a **fase 3/4** — o MUNDO do modo: trilhas em grafo de nós, NPCs Pokémon com diálogo, três facções com
+  reputação, capítulos e finais. O trabalho da fase 3 é **escrever**, não programar.
+  **Fora de propósito por ora**: ameaça e Brecha no `mp-motor` (não existe Saga em sala); grupo em luta de
+  treinador e de lendários (a fila deles é o balanceamento dos outros modos); seleção manual de alvo aliado;
+  Limit Break (as 4 gimmicks já são o ultimate do modo) e Brave/Default (mexeria na economia do turno, que é
+  compartilhada pelos dois motores) — os dois últimos com o motivo medido em `docs/features.md`.
+- **Teste de `data-act` emitido × `case` tratado** (ideia nascida de um bug real em 05/10/2026): a fileira de
+  comandar a comitiva desenhava e **o clique não fazia nada** — `render.js` emitia `data-act="comandar"` e
+  `"comandar-auto"` e nenhum dos dois existia no `switch` do `main.js`. É da família do `SPR_SHINY`: só aparece
+  pra quem joga. Ficou de fora por ora porque o `switch` tem ~150 casos, alguns `data-act` são montados por
+  concatenação (`'ed-' + x`) e outros são tratados fora do switch (`closest('[data-painel-acao]')`), então a
+  varredura ingênua daria falso positivo demais pra confiar. Vale fazer com uma lista de exceções explícita.
 - **Lendários no co-op**.
 - **Roar & cia. em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
 - **Habilidades**: 249 de 314. As 65 restantes estão documentadas como intencionalmente fora, por quatro motivos, no fim da tabela em `js/habilidades.js` (troca de Pokémon, forma dinâmica, estado de turno que o motor não guarda, regra compartilhada arriscada).

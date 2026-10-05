@@ -56,6 +56,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/pokemon.js` · `js/efeitos.js` | `makeMon()` = instância jogável · efeitos + `CTX` (narração do single player). |
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
 | `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 249 de 314 reais). Gancho novo = código no motor + teste. |
+| `js/oficios.js` · `js/pericias.js` | ⚔ Saga (puros, sem imports — são CHÃO do grafo): os 6 ofícios lidos dos stats base + learnset · as 8 perícias (recarga em `m.vol.cd`). Quem EXECUTA perícia é `batalha.usarPericia`. |
 | `js/especiais.js` | Golpes cujo efeito não cabe no `meta` da PokéAPI. Sem imports. |
 | `js/segurados.js` | Itens segurados (puro). `seg(m)` é o ÚNICO ponto por onde toda leitura de item passa. |
 | `js/batalha.js` | `turn(action)` é a única entrada da UI. Começo de batalha, vitória, derrota, captura, `endBattle`. |
@@ -162,6 +163,14 @@ considerado, o que foi simplificado) está em `docs/features.md`.
 - **Gimmicks**: conquistadas na CARREIRA, uma por batalha, não gastam o turno (o Z **é** o turno). O inimigo também usa.
 - **Batalha sobrevive ao F5**: `S.batalha = ganchosSave.serializarBatalha(G.B)`; `restaurarBatalha` reaponta `B.enemy` pra `trainer.equipe[atual]`.
 - **Segredo do brilho**: jogador shiny ganha XP e dinheiro em dobro e Centro grátis. **É segredo — não entra no README nem nos patch notes.**
+
+### ⚔ Saga (modo `saga`, `admin: true` — fase 1 do plano, FECHADA)
+Lê sempre as FLAGS: `jrpg` (janela de comandos, perícias, Brecha/Ruína, vocabulário), `ameaca` (alvo por aggro), `grupos` (1 a 3 inimigos), `aliadosEmCampo: 3`. **Nunca o nome do modo.**
+- **Ofício** congelado em `m.oficio` (`oficios.oficioDe`, decidido uma vez em `makeMon`, não muda na evolução).
+- **Perícia** (`pericias.js`, 8) é a **AÇÃO da rodada**, não gasta PP, custa recarga em `m.vol.cd`. Só o ofício MAIOR dá perícia. `batalha.usarPericia` executa e **reconfere `periciaPronta`** (plano é escrito antes do turno rodar). Perícia sem o que fazer **não gasta recarga**.
+- **Brecha/Ruína**: `vol.guardaMax`/`guarda` só nos INIMIGOS (`batalha.armarGuarda`, chamada em TODA entrada em campo do lado de lá). O motor só PEDE por **`ctx.abrirBrecha`** (mesmo padrão do `ctx.forcarSaida`) e lê **`regras.multSaga`** uma vez no dano (Ruína ×1,5 · Muralha ×0,5 · Marca ×1,25). Sem o gancho (multiplayer) e sem `guardaMax` (outros modos), tudo vira no-op.
+- **Fim de rodada**: `passarSaga(m)` + `passarRecargas(m)` ao lado de `fimDaRodada(m)`. `vol.muralha` morre no `fimDaRodada`; `vol.selo`/`vol.estocada` são consumidos pelo próximo golpe em `usarGolpe`.
+- Painel padrão do turno é **`G.panel = 'comandos'`** (`batalha.painelInicial`); `moves`/`pericias`/`bag` são submenus. `B.planos[chave]` aceita `{ idx, alvo }` **ou** `{ pericia }`.
 
 ### Multiplayer
 Sala por código (4 caracteres), até `MAX_JOGADORES` = 6, funciona sem login. Anfitrião é a autoridade: monta os lados, junta as escolhas, prazo de 45 s, roda `mp-motor` e publica.

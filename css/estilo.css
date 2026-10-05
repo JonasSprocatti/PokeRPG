@@ -718,11 +718,55 @@ button.mon.alvo:hover::after,button.mon.alvo:focus-visible::after{background:col
 .cmd .ok{font-style:normal;color:#5ac46a;font-weight:700}
 .cmd.on .ok{color:#1b1b2f}
 .cmd-dica{margin:0 0 8px}
-/* celular deitado: a cena é apertada: a fila some (a informação está nas placas) e os sprites encolhem */
+/* ============ ⚔ Saga: a cara de RPG japonês ============
+   Referência declarada: a janela de comandos do Final Fantasy — retângulo azul-noite de MOLDURA DUPLA, texto
+   claro, comandos um embaixo do outro (desenho da Kazuko Shibuya, que virou a assinatura visual da série).
+   Aqui ela é 2×2 e não 4×1: no celular, quatro linhas empurrariam o resto da tela pra baixo, e o que a cena
+   presa no topo resolveu (ver o bloco "celular") não pode ser desfeito por uma janela bonita.
+   Tipografia: --display (Fredoka) no comando e no nome da perícia, --body no texto do efeito. Não há animação
+   nova aqui de propósito — `prefers-reduced-motion` já é global, e moldura não precisa piscar pra ter cara. */
+.scene.battle.saga{border:3px double color-mix(in srgb,#8fa6e8 55%,transparent);
+  box-shadow:inset 0 0 0 2px rgba(8,12,38,.7),0 6px 14px -10px #0009}
+.saga-janela{display:grid;gap:8px;margin:0 0 10px;padding:10px;border:2px solid #8fa6e8;border-radius:10px;
+  background:linear-gradient(180deg,#141d46,#0a1030);box-shadow:inset 0 0 0 2px #080c26,0 2px 0 #050818}
+.saga-janela.comandos{grid-template-columns:1fr 1fr}
+.cmd-jrpg{display:grid;gap:2px;text-align:left;background:transparent;color:var(--text);border:2px solid transparent;
+  border-radius:8px;padding:9px 12px;cursor:pointer;min-height:52px}
+.cmd-jrpg b{font:700 18px var(--display);letter-spacing:.01em}
+.cmd-jrpg small{font-size:12px;color:#aeb9e4}
+.cmd-jrpg:hover:not(:disabled),.cmd-jrpg:focus-visible{border-color:var(--yellow);background:rgba(255,255,255,.06)}
+.cmd-jrpg:disabled{opacity:.45;cursor:default}
+/* perícia: lista, não grade — o que decide o turno é o TEXTO do efeito, e ele precisa de linha inteira */
+.saga-janela.pericias{grid-template-columns:1fr}
+.pericia{display:grid;gap:3px;text-align:left;background:rgba(255,255,255,.04);color:var(--text);
+  border:2px solid #3b4a86;border-radius:8px;padding:8px 12px;cursor:pointer}
+.pericia b{font:700 17px var(--display)}
+.pericia small{font-size:12.5px;color:#aeb9e4;font-family:var(--body)}
+.pericia .pp{font:600 12px var(--display);color:var(--yellow)}
+.pericia:hover:not(:disabled),.pericia:focus-visible{border-color:var(--yellow);background:rgba(255,255,255,.09)}
+.pericia:disabled{opacity:.5;cursor:default}
+.pericia.fria .pp{color:#aeb9e4}
+/* Guarda do inimigo (Brecha/Ruína), logo abaixo do HP na placa: escudos contáveis, não barra */
+.guarda{display:flex;align-items:center;gap:6px;margin-top:3px;font:700 13px var(--display);color:#3b4a86;cursor:help}
+.guarda b{letter-spacing:1px;font-size:14px}
+.guarda small{font-weight:400;color:#6b6250;font-size:11px}
+.guarda.ruiu{color:#b3360f;background:#ffd9c8;border-radius:999px;padding:1px 8px;letter-spacing:.06em}
+.fila-item.ruiu{background:#5a2414;color:#ffd0bf}
+/* celular deitado: a cena é apertada: a fila fica só com os ícones (ela é o que mais ensina o turno, então
+   ESCONDER era pior que encolher) e os sprites diminuem */
 @media(max-height:520px){
-  .fila-turno{display:none}
+  .fila-turno{padding:3px 8px}
+  .fila-item b{display:none}
+  .fila-item{padding:2px 5px}
   .scene.battle.saga .mon.mini{width:62px;height:62px}
   .scene.battle.saga .mon.mini .spr{width:58px;height:58px}
+}
+/* celular retrato: a janela de comandos continua 2×2, só mais baixa; a descrição da perícia some pro title */
+@media(max-width:520px){
+  .cmd-jrpg{min-height:46px;padding:7px 10px}
+  .cmd-jrpg b{font-size:16px}
+  .cmd-jrpg small{font-size:11px}
+  .pericia small{display:none}
 }
 @media(max-width:520px){.side.me{flex-wrap:wrap}.mon.mini{width:60px;height:60px}.mon.mini .spr{width:56px;height:56px}}
 .hp.amz .fill{background:#e86fa0}

@@ -3,7 +3,7 @@
 // declara `data-act` (+ `data-v`), então re-render total não precisa religar handler nenhum.
 import { G, SAVE_KEY, save, nm, zone, ladoJogador, ganchosSave, rotasAtuais, migrarShiniesAmigos } from './estado.js';
 import { $, log, logRaw, ask, iniciarMenu, toast, pedirQuantidade } from './ui.js';
-import { render, buildGame, spriteItem, precisaEscolherAlvo } from './render.js';
+import { render, buildGame, spriteItem, precisaEscolherAlvo, modoJRPG } from './render.js';
 import { showCreate, previewSearch, renderPreview, renderDificuldade, sortearEspecie, startGame, fullRandomizer, porNaComitiva, tirarDaComitiva } from './criacao.js';
 import { encerrarJornada, telaCarreira, telaEscolherGen } from './fim.js';
 import { guardadas, guardar, retirar, excluir, MAX_GUARDADAS } from './saves.js';
@@ -67,17 +67,28 @@ function travadoPelaBatalha(msg = 'Termine a batalha primeiro — no meio da lut
   return true;
 }
 document.addEventListener('click', e => { aoClicar(e).catch(avisarErro); });
-/* ⚔ Saga: um golpe escolhido é PLANO (de um companheiro, guardado pro turno) ou AÇÃO (a sua, que resolve o
-   turno). Um ponto só, porque os dois caminhos entram pelo mesmo botão de golpe — e porque a ordem importa:
-   o plano tem de estar guardado ANTES de `turn()` rodar. */
+/* ⚔ Saga: um comando escolhido é PLANO (de um companheiro, guardado pro turno) ou AÇÃO (a sua, que resolve o
+   turno). Um ponto só pra golpe e um pra perícia, porque os dois caminhos entram pelo mesmo botão — e porque a
+   ordem importa: o plano tem de estar guardado ANTES de `turn()` rodar. */
+const voltarAosComandos = () => { G.comandando = 'p'; if (modoJRPG(G.S)) G.panel = 'comandos'; };
 function escolherGolpe(idx, alvo) {
   const quem = G.comandando || 'p';
   if (quem !== 'p' && G.B) {
     (G.B.planos ||= {})[quem] = { idx, alvo };
-    G.comandando = 'p';          // comandou um: volta pros seus golpes, que são o que fecha o turno
+    voltarAosComandos();         // comandou um: volta pros SEUS comandos, que são o que fecha o turno
     return render();
   }
   return turn({ type: 'move', idx, alvo });
+}
+// ⚔ Saga: a perícia do ofício (pericias.js). Mesma economia do golpe — do companheiro é plano, sua é a ação.
+function escolherPericia(id) {
+  const quem = G.comandando || 'p';
+  if (quem !== 'p' && G.B) {
+    (G.B.planos ||= {})[quem] = { pericia: id };
+    voltarAosComandos();
+    return render();
+  }
+  return turn({ type: 'pericia', id });
 }
 async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
@@ -367,14 +378,31 @@ async function aoClicar(e) {
        confirmar o óbvio seria atrito puro. */
     case 'move': {
       if (precisaEscolherAlvo()) { G.alvoDe = +v; return render(); }
-      return turn({ type: 'move', idx: +v });
+      return escolherGolpe(+v);
     }
     case 'alvo': {
       const idx = G.alvoDe; G.alvoDe = null;
       if (idx == null) return render();
-      return turn({ type: 'move', idx, alvo: +v });
+      return escolherGolpe(idx, +v);
     }
     case 'alvo-cancelar': G.alvoDe = null; return render();
+    /* ⚔ Saga — comandar a comitiva. `comandar` troca de quem é o painel ('p' = você, 'a<i>' = o companheiro) e
+       abre a janela de comandos DELE; `comandar-auto` apaga o plano e devolve o turno pra Ordem do companheiro.
+       Sem estes dois casos a fileira de comandar desenhava e o clique não fazia nada. */
+    case 'comandar': {
+      if (G.busy || !G.B) return;
+      G.comandando = v; G.alvoDe = null;
+      if (modoJRPG(G.S)) G.panel = 'comandos';
+      return render();
+    }
+    case 'comandar-auto': {
+      if (G.busy || !G.B) return;
+      if (G.B.planos) delete G.B.planos[v];
+      voltarAosComandos();
+      return render();
+    }
+    // ✨ perícia do ofício: a sua resolve o turno; a de um companheiro comandado fica guardada como plano
+    case 'pericia': return escolherPericia(v);
     // nenhum dos dois passa por `turn`: megaevoluir e terastalizar não gastam o turno
     case 'mega': return usarMega();
     case 'tera': return usarTera();

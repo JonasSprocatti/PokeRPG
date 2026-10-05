@@ -455,8 +455,11 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   // Focus Energy e golpe de crítico garantido — é exatamente pra isso que a habilidade existe.
   // `focoBase` (Super Luck): a habilidade já nasce com um degrau de crítico, somado ao do golpe e ao Focus Energy
   // `critContraStatus` (Merciless): contra alvo com esse status o crítico é garantido (ainda respeitando o semCritico)
+  // `vol.estocada` (⚔ Saga, perícia do Guerreiro): crítico garantido — e ainda assim respeitando `semCritico`,
+  // que é exatamente pra isso que Battle Armor/Shell Armor existem.
   const crit = !esperado && !ht.semCritico
-    && ((hu.critContraStatus && t.status === hu.critContraStatus)
+    && (!!u.vol?.estocada
+      || (hu.critContraStatus && t.status === hu.critContraStatus)
       || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0) + (seg(u).critExtra || 0))]);
   // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
   /* O par de atributos sai do `cls` do golpe, MENOS quando a tabela de especiais diz outra coisa: Body Press
@@ -516,6 +519,9 @@ export const heal = (m, h) => { m.hp = Math.min(m.stats.hp, m.hp + h); };
 
 // probabilidade de acertar: precisão do golpe × estágio de precisão de quem usa contra evasão do alvo
 export function chanceAcerto(move, user, target, clima = null) {
+  // ⚔ Saga, ⚔ Estocada (perícia do Guerreiro): o próximo golpe NÃO erra. A marca é consumida pelo golpe em
+  // golpe.usarGolpe; fora da Saga ela nunca existe no `vol`, então nada muda.
+  if (user?.vol?.estocada) return 1;
   const h = hab(user), ht = hab(target);
   // Unaware: quem ataca ignora a evasão do alvo; quem é atacado ignora a precisão de quem ataca
   const n = clamp((ht.ignoraEstagios ? 0 : user.vol.stages.accuracy || 0) - (h.ignoraEstagios ? 0 : target.vol.stages.evasion || 0), -6, 6);
@@ -1032,6 +1038,78 @@ export function tamanhoDoGrupo(iRota, sorte = Math.random) {
 
 // um golpe causou dano: quem bateu ganha ameaça. Chamado pelo motor único (golpe.js), nunca por uma tela.
 export const somarAmeaca = (m, n) => { if (m?.vol && n > 0) m.vol.ameaca = (m.vol.ameaca || 0) + n; };
+
+/* ---- ⚔ Saga: BRECHA e RUÍNA (o "break" de RPG japonês) ----
+
+   Referências de verdade, pesquisadas pra desenhar isto (anotadas em `docs/features.md`):
+   - **Octopath Traveler**, Break & Shield Points: cada inimigo tem N escudos e uma lista de fraquezas; acertar a
+     fraqueza tira 1 escudo, zerar DERRUBA o inimigo — ele perde a ação, fica fraco a tudo e toma dano em dobro.
+     É daqui que vem a forma inteira: Guarda = Shield Points, Brecha = o escudo que cai, Ruína = o Break.
+   - **Final Fantasy VII Remake**, stagger: a barra de pressão fica VISÍVEL na placa do inimigo e o momento de
+     "staggered" é a janela em que a festa despeja tudo. É daqui que vem a Guarda aparecer na CENA, embaixo do HP:
+     um break invisível não é mecânica, é sorte.
+   - **Persona**, crítico que concede "1 More": crítico também abre Brecha aqui. Sem isso o Guerreiro (que bate
+     forte mas não escolhe tipo) não participaria da abertura, e a Brecha seria só do Arcano.
+
+   Por que ESTA mecânica e não Brave/Default (Bravely Default) ou o CTB de FFX: as duas mexem na ECONOMIA DO
+   TURNO (adiantar turnos, fila por contador de agilidade), e o turno aqui é o do Pokémon — prioridade, Quick
+   Claw, velocidade efetiva com clima, lido pelos DOIS motores (`ordenarAcoes`). Trocar isso quebraria todos os
+   modos por uma mecânica de um só. Brecha/Ruína mexe na RESOLUÇÃO do golpe, onde já havia gancho (`eficacia`),
+   e é exatamente o que faltava pra a comitiva ser montada por TIPO em vez de por barra de dano.
+
+   O que fica de fora de propósito: fraqueza por ARMA (Octopath tem espada/lança/arco…) — aqui o tipo do golpe já
+   é a fraqueza, e é a tabela que o jogo inteiro usa; e o Boost (gastar pontos pra reforçar o golpe), porque
+   "guardar recurso pra soltar junto" é o papel que a RECARGA das perícias já faz no modo.
+
+   Só quem tem `vol.guardaMax` tem Guarda — e isso é posto por `batalha.js` nos inimigos de um modo com a flag
+   `jrpg`. Fora dali tudo aqui é no-op: nenhum outro modo muda de comportamento. */
+export const GUARDA = { selvagem: 3, alfa: 6, chefe: 10 };
+/* `RUINA_TURNOS` = 2 por uma razão de leitura: a Ruína é marcada NO MEIO de uma rodada (o golpe que fecha a
+   Guarda), então o primeiro turno que ela consome é o resto da rodada em que caiu — quem já agiu não perde nada.
+   Com 1, derrubar a Guarda com o último a agir não custava NADA ao inimigo. Com 2 ele perde o resto da rodada e
+   a rodada seguinte inteira, que é o "perde o próximo turno" do desenho. Afinar é mexer aqui. */
+export const RUINA_TURNOS = 2;
+export const MULT_RUINA = 1.5;      // em Ruína, tudo dói 50% mais
+export const MULT_MURALHA = 0.5;    // 🧱 Muralha (perícia do Guardião): a comitiva toma metade
+export const MULT_MARCA = 1.25;     // 🕯 Marca (perícia do Encantador): o marcado toma 25% mais
+export const BRECHA_SUPER = 1;      // golpe super efetivo abre uma Brecha inteira
+export const BRECHA_CRITICO = 1;    // crítico também (Persona: o crítico é tão bom quanto a fraqueza)
+export const BRECHA_STATUS = 0.5;   // status e Marca abrem meia
+export const BRECHA_SELO = 2;       // 🔮 Selo Arcano: +2 no golpe seguinte
+export const MARCA_TURNOS = 2;
+export const BRADO_TURNOS = 2;
+export const BRADO_MULT = 3;        // 🛡 Brado de Ferro: ameaça ×3 (lido por `ameacaDe` via `vol.provocou`)
+
+// quantos escudos o inimigo traz. Alfa e lendário aguentam o dobro; o chefe da semana, muito mais.
+export const guardaInicial = ({ chefe = false, alfa = false } = {}) => chefe ? GUARDA.chefe : alfa ? GUARDA.alfa : GUARDA.selvagem;
+export const temGuarda = m => (m?.vol?.guardaMax || 0) > 0;
+export const emRuina = m => (m?.vol?.ruina || 0) > 0;
+/* Tira `n` da Guarda. Devolve null quando não há o que fazer (sem Guarda, já em Ruína, `n` inútil) — quem chama
+   usa isso pra decidir se narra. MUTA o `vol`, como `somarAmeaca`: é estado de luta, nunca do save.
+   Ruir também APAGA os degraus positivos do inimigo: o Swords Dance que ele acumulou vai pro chão junto com a
+   guarda, que é a outra metade do que torna a Brecha uma jogada e não só mais dano. */
+export function abrirBrecha(m, n) {
+  if (!temGuarda(m) || emRuina(m) || !(n > 0)) return null;
+  const antes = m.vol.guarda ?? m.vol.guardaMax;
+  m.vol.guarda = Math.max(0, antes - n);
+  if (m.vol.guarda > 0) return { antes, agora: m.vol.guarda, max: m.vol.guardaMax, ruiu: false };
+  m.vol.ruina = RUINA_TURNOS;
+  for (const s of Object.keys(m.vol.stages || {})) if (m.vol.stages[s] > 0) m.vol.stages[s] = 0;
+  return { antes, agora: 0, max: m.vol.guardaMax, ruiu: true };
+}
+/* O multiplicador de dano da Saga, num ponto só (lido pelo motor em `golpe.executar`): Ruína, Muralha e Marca.
+   Fora da Saga nenhuma dessas marcas existe no `vol`, então devolve 1 e o dano é exatamente o de antes. */
+export const multSaga = (u, t) => (emRuina(t) ? MULT_RUINA : 1)
+  * (t?.vol?.muralha ? MULT_MURALHA : 1)
+  * (t?.vol?.marca > 0 ? MULT_MARCA : 1);
+/* Fim de rodada da Saga: Ruína, Marca e Brado perdem um turno. Ruína que acaba DEVOLVE a Guarda cheia (como em
+   Octopath: quebrou, aproveitou, e o escudo volta) — senão a segunda Brecha seria de graça pra sempre. */
+export function passarSaga(m) {
+  const v = m?.vol; if (!v) return;
+  if (v.ruina > 0 && --v.ruina <= 0) { delete v.ruina; if (v.guardaMax) v.guarda = v.guardaMax; }
+  if (v.marca > 0 && --v.marca <= 0) delete v.marca;
+  if (v.provocouTurnos > 0 && --v.provocouTurnos <= 0) { delete v.provocouTurnos; delete v.provocou; }
+}
 
 /* ---- amizade (Etapa 3.2) ---- */
 export const MAX_ALIADOS = 2;

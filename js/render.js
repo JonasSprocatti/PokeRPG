@@ -2,6 +2,7 @@
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais, emCampo, vivos } from './estado.js';
 import { OFICIOS } from './oficios.js';
+import { PERICIAS, periciasDe, periciaPronta, recargaDe, temPericiaPronta } from './pericias.js';
 import { $, semAnimacao } from './ui.js';
 import { SPR, SPR_SHINY, SPR_SHINY_COSTAS, SPR_3D, SPR_3D_SHINY, SPR_ANIM, SPR_ANIM_COSTAS, SPR_ANIM_SHINY, SPR_ANIM_SHINY_COSTAS, espelhar, outroServidor, ITEM_SPR, ITEM_SPR_MEGA, ITEM_SPR_Z, ITEM_SPR_VINCULO, ITEM_PEDRA_MEGA, ITEM_CRISTAL_Z, ITEM_VINCULO, ITEM_ERRO, BOLAS, DIFICULDADES, STATS, STAT_PT, STAGE_SHORT, TYPE_PT, TC, DARK_TEXT, CLS_PT, NATURES, ST_SHORT, ITEMS, MISSOES, ORDENS, porCategoria } from './dados.js';
 import { estiloSpriteAtual } from './ajustes.js';
@@ -12,7 +13,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { resumoDeAbates, objetivoAuto, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem } from './regras.js';
+import { resumoDeAbates, objetivoAuto, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem, emRuina, MULT_RUINA } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -128,7 +129,21 @@ function plate(m, chave) {
      justamente o dado que explica por que o seu golpe acertou fraco. Usa `badgesDeTipo`, então mostra o tipo
      Tera de quem terastalizou, que é o que vale pra defesa. */
   return `<div class="pl-top"><span>${brilho(m)}${esc(label)}${sexo(m)}</span><span>Nv. ${m.level}</span></div>
-    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m, chave)}${blocoChefe(m)}${amizadeBar(m)}${chipsFor(m)}`;
+    <div class="types pl-tipos">${badgesDeTipo(m)}</div>${hpbar(m, chave)}${blocoGuarda(m)}${blocoChefe(m)}${amizadeBar(m)}${chipsFor(m)}`;
+}
+/* ⚔ Saga — a GUARDA do inimigo, logo abaixo do HP (regras.abrirBrecha).
+   Fica na CENA, e não no registro, por decisão de desenho copiada do medidor de pressão do Final Fantasy VII
+   Remake: um "break" que o jogador não vê acontecer não é mecânica, é sorte. Os escudos são desenhados um por um
+   (◆ cheio · ◈ meio · ◇ aberto) em vez de barra: "faltam 2 golpes super efetivos" é uma CONTAGEM, e contar
+   quadradinho é mais rápido que estimar uma fração de barra.
+   Só aparece em quem tem `vol.guardaMax`, que é posto por `batalha.armarGuarda` nos inimigos de um modo `jrpg`. */
+function blocoGuarda(m) {
+  const max = m.vol?.guardaMax; if (!max) return '';
+  if (emRuina(m)) return `<div class="guarda ruiu" role="status" title="Ruína: ele perde o turno, perdeu os bônus que tinha e toma ${Math.round((MULT_RUINA - 1) * 100)}% mais de dano">💥 RUIU</div>`;
+  const g = Math.max(0, Math.min(max, m.vol.guarda ?? max));
+  const cheios = Math.floor(g), meio = g - cheios >= 0.5;
+  const pips = '◆'.repeat(cheios) + (meio ? '◈' : '') + '◇'.repeat(Math.max(0, max - cheios - (meio ? 1 : 0)));
+  return `<div class="guarda" title="Guarda: golpe super efetivo e crítico abrem 1 Brecha; status e a Marca abrem meia. Zerar a Guarda põe o inimigo em Ruína.">🛡 <b>${pips}</b> <small>${g} de ${max}</small></div>`;
 }
 // chefe do evento semanal (boss.js): barra da couraça, fase e o aviso do golpe carregado — o que decide o turno
 function blocoChefe(m) {
@@ -161,11 +176,14 @@ function blocoEvento(g) {
     Sem estar nesta Gen? Use a <button class="link" data-act="arena" ${G.busy ? 'disabled' : ''}>🏟 Arena do Chefe</button> com os Pokémon do seu Hall da Fama.</small></div>${botao}</div>`;
 }
 /* ⚔ Saga: a FILA DO TURNO — quem age antes de quem, como em RPG de turno.
-   Não é previsão nova: `regras.ordenarAcoes` já decide a ordem por prioridade e velocidade, e aqui a mesma conta
-   é feita só com a velocidade efetiva (o golpe de cada um ainda não foi escolhido, então prioridade e Quick Claw
-   não dão pra saber). É por isso que a fila diz "ordem provável": um Quick Attack muda tudo, e prometer exatidão
+   Inspirada na **janela CTB do Final Fantasy X**, que mostra a fila de quem vai agir e deixa o jogador planejar
+   em cima dela. A diferença é deliberada: no FFX a fila é a VERDADE do motor (cada ação tem um atraso próprio e
+   o jogador vê o efeito antes de confirmar). Aqui o turno é o do Pokémon — prioridade, Quick Claw e velocidade
+   efetiva com clima (`regras.ordenarAcoes`) —, e a prioridade depende do golpe que ninguém escolheu ainda. Então
+   a fila ordena pela velocidade efetiva e diz "ordem provável": um Quick Attack muda tudo, e prometer exatidão
    que o motor não garante seria pior que não mostrar.
-   Só aparece no modo com a flag — e só com mais de dois na luta, senão não informa nada. */
+   Quem está em Ruína aparece com 💥 e no fim: ele não age nesta rodada.
+   Só aparece no modo com a flag, e com pelo menos dois na luta (sozinho não informa nada). */
 function filaDoTurno(B, P, AL, FOES) {
   if (!modoComAmeaca(G.S)) return '';
   const clima = climaDe(B.campo), terreno = terrenoDe(B.campo);
@@ -174,17 +192,25 @@ function filaDoTurno(B, P, AL, FOES) {
     ...AL.filter(([A]) => A.hp > 0).map(([A, i]) => [A, 'a' + i]),
     ...FOES.filter(F => F.hp > 0 && !F.vol?.retirado).map((F, i) => [F, 'e' + i])
   ];
-  if (lutando.length < 3) return '';
-  const ordem = lutando.sort((x, y) => effStat(y[0], 'speed', false, true, clima, terreno) - effStat(x[0], 'speed', false, true, clima, terreno));
+  if (lutando.length < 2) return '';
+  const vel = m => effStat(m, 'speed', false, true, clima, terreno);
+  // em Ruína vai pro fim da fila (ele não age nesta rodada): dentro de cada grupo, a velocidade decide
+  const ordem = lutando.sort((x, y) => (emRuina(x[0]) ? 1 : 0) - (emRuina(y[0]) ? 1 : 0) || vel(y[0]) - vel(x[0]));
   return `<div class="fila-turno" aria-label="Ordem provável do turno">${ordem.map(([m, chave]) => {
     const meu = chave === 'p' || chave[0] === 'a';
-    return `<span class="fila-item ${meu ? 'meu' : 'foe'} ${B.vez === chave || (B.vez === 'e' && chave[0] === 'e') ? 'agora' : ''}" title="${esc(rotulo(m))} · Vel. ${effStat(m, 'speed', false, true, clima, terreno)}">${m.oficio && OFICIOS[m.oficio] ? OFICIOS[m.oficio].emoji : meu ? '•' : '✦'}<b>${esc((m.nick || fmt(m.name)).slice(0, 8))}</b></span>`;
+    const ruiu = emRuina(m);
+    const icone = ruiu ? '💥' : m.oficio && OFICIOS[m.oficio] ? OFICIOS[m.oficio].emoji : meu ? '•' : '✦';
+    return `<span class="fila-item ${meu ? 'meu' : 'foe'} ${ruiu ? 'ruiu' : ''} ${B.vez === chave || (B.vez === 'e' && chave[0] === 'e') ? 'agora' : ''}" title="${esc(rotulo(m))} · Vel. ${vel(m)}${ruiu ? ' · em Ruína: não age nesta rodada' : ''}">${icone}<b>${esc((m.nick || fmt(m.name)).slice(0, 8))}</b></span>`;
   }).join('<i class="fila-seta">▸</i>')}</div>`;
 }
 // barra no topo da batalha: número do turno + o que está acontecendo agora (lê G.B.vez, setado por turn())
 function turnoBar(B, P, E) {
   const T = B.trainer;
-  const fase = !G.busy ? 'Escolha sua ação'
+  /* ⚔ Saga: o vocabulário do modo (ver `docs/plano-saga.md`). A rodada é "rodada", a escolha é um "comando", e
+     é a mesma palavra que está na janela de comandos — ter dois nomes pra mesma coisa é o que faz um modo
+     parecer um remendo do outro. Fora da Saga, o texto é o de sempre. */
+  const jrpg = modoJRPG(G.S);
+  const fase = !G.busy ? (jrpg ? 'Escolha o comando' : 'Escolha sua ação')
     : B.vez === 'p' ? `${esc(rotulo(P))} está agindo`
     : B.vez === 'e' ? `${esc(rotulo(E))} está agindo`
     : B.vez === 't' ? `${esc(T.nome)} está mirando uma bola`
@@ -209,7 +235,7 @@ function turnoBar(B, P, E) {
     if (l.toxinas) p.push(`Toxinas ×${l.toxinas}`);
     return p.length ? `<span class="clima-selo lado-${k}" title="${k === 'jogador' ? 'No seu lado' : 'No lado do inimigo'}">${k === 'jogador' ? '🛡' : '⚔'} ${esc(p.join(' · '))}</span>` : '';
   }).join('');
-  return `<div class="turno-bar"><span class="turno-n">Turno <b>${B.turn}</b></span>${clima}${terreno}${selosLado}${info}<span class="carteira-mini" title="Seu dinheiro" aria-label="Dinheiro: ${brl(G.S.money)}">💰 ${brl(G.S.money)}</span><span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
+  return `<div class="turno-bar"><span class="turno-n">${jrpg ? 'Rodada' : 'Turno'} <b>${B.turn}</b></span>${clima}${terreno}${selosLado}${info}<span class="carteira-mini" title="Seu dinheiro" aria-label="Dinheiro: ${brl(G.S.money)}">💰 ${brl(G.S.money)}</span><span class="turno-fase ${!G.busy ? 'sua-vez' : ''}">${fase}</span></div>`;
 }
 // contador de desmaios do Médio pra cima: "2/3 livres", depois "precisa de Revive (tem N)"
 function desmaiosTxt(S) {
@@ -257,6 +283,9 @@ const listaGolpes = (M, quem) => `<div class="sec mlist"><h3>Golpes</h3>
    `🎯` sai de `alvoPorAmeaca` com sorteio DESLIGADO (sorte: () => 1, nunca < RUIDO): mostra o alvo provável, não
    uma previsão de um sorteio que ainda vai acontecer. Só aparece no modo com a flag. */
 export const modoComAmeaca = S => !!DIFICULDADES[dificuldadeDe(S)]?.ameaca;
+/* A flag da CARA e das mecânicas de RPG japonês (`jrpg` em DIFICULDADES): janela de comandos, perícias,
+   Brecha/Ruína e o vocabulário. Lida pela FLAG, nunca pelo nome do modo. */
+export const modoJRPG = S => !!DIFICULDADES[dificuldadeDe(S)]?.jrpg;
 /* Tocar no golpe deve pedir o alvo? Só quando a escolha EXISTE: modo com grupo e mais de um inimigo de pé.
    Um ponto único (main.js e a cena leem daqui) — a alternativa era cada tela decidir por conta, e aí uma delas
    acaba pedindo alvo onde não há o que escolher. */
@@ -279,18 +308,62 @@ function barraComitiva(P, dis) {
   const quem = G.comandando || 'p';
   const botao = (m, chave, rotulo) => {
     const o = m.oficio && OFICIOS[m.oficio] ? OFICIOS[m.oficio].emoji : '•';
-    const pronto = chave !== 'p' && planos[chave] ? '<i class="ok">✓</i>' : '';
+    // ✓ = já tem plano neste turno; ✨ = o plano é uma perícia (distinguir importa: perícia não gasta PP)
+    const p = chave !== 'p' ? planos[chave] : null;
+    const pronto = p ? `<i class="ok">${p.pericia ? '✨' : '✓'}</i>` : '';
     return `<button class="cmd ${quem === chave ? 'on' : ''}" data-act="comandar" data-v="${chave}" ${dis}
-      title="${chave === 'p' ? 'Seus golpes' : `Comandar ${esc(rotulo(m))}`}">${o} ${esc((m.nick || fmt(m.name)).slice(0, 9))}${pronto}</button>`;
+      title="${chave === 'p' ? 'Seus comandos' : `Comandar ${esc(rotulo(m))} (${esc(OFICIOS[m.oficio]?.nome || 'sem ofício')})`}">${o} ${esc((m.nick || fmt(m.name)).slice(0, 9))}${pronto}</button>`;
   };
   return `<div class="comitiva-cmd" aria-label="Quem você está comandando">
       ${botao(P, 'p', rotulo)}${AL.map(([A, i]) => botao(A, 'a' + i, rotulo)).join('')}
     </div>
     <p class="small muted cmd-dica">${quem === 'p'
-      ? 'Toque num companheiro pra escolher o golpe dele. Quem você não comandar segue a Ordem. <b>Seu golpe fecha o turno.</b>'
-      : 'Escolha o golpe dele — o turno só resolve quando VOCÊ atacar.'}</p>`;
+      ? 'Toque num companheiro pra dar o comando dele (golpe ou perícia). Quem você não comandar segue a Ordem. <b>Seu comando fecha a rodada.</b>'
+      : 'Dê o comando dele — a rodada só resolve quando VOCÊ agir.'}</p>`;
 }
 export const precisaEscolherAlvo = () => !!G.B && (G.B.inimigos || []).filter(m => m.hp > 0 && !m.vol?.retirado).length > 1;
+
+/* ⚔ Saga — a JANELA DE COMANDOS.
+   Referência: o **menu de batalha do Final Fantasy** (Lutar / Magia / Item / Fugir numa janela azul de moldura
+   dupla, desenho da Kazuko Shibuya que virou a assinatura visual da série). O jogo base põe os quatro golpes
+   direto na tela, que é o idioma de Pokémon; a Saga põe primeiro o COMANDO, que é o idioma de JRPG — e é essa
+   troca que dá a cara própria que o modo não tinha.
+   O custo é um toque a mais pra atacar. Vale porque: (1) é onde ✨ Perícia passa a existir como irmã de ⚔ Atacar
+   em vez de um botão perdido embaixo dos golpes; (2) no celular a janela de 2×2 é MAIS BAIXA que a grade de
+   quatro golpes com descrição, então não come tela — e não esconde nada da cena, que continua presa no topo
+   (ver a armadilha "não reintroduzir esconder painel por aba" no CLAUDE.md).
+   Comandando um companheiro, os dois últimos comandos viram "deixar ele decidir" e "voltar": mochila e fuga são
+   suas, não dele. */
+function janelaDeComandos(M, P, dis) {
+  const meu = M === P;
+  const per = periciasDe(M), prontas = per.filter(id => periciaPronta(M, id));
+  const subPericia = !per.length ? `${esc(rotulo(M))} não tem ofício` : prontas.length ? `${prontas.length} de ${per.length} pronta${prontas.length > 1 ? 's' : ''}` : 'tomando fôlego';
+  const ordem = ORDENS[M.ordem || 'livre'].nome;
+  return `<div class="saga-janela comandos" role="group" aria-label="Comandos de ${esc(rotulo(M))}">
+      <button class="cmd-jrpg" data-act="panel" data-v="moves" ${dis}><b>⚔ Atacar</b><small>Golpes de ${esc(rotulo(M))}</small></button>
+      <button class="cmd-jrpg" data-act="panel" data-v="pericias" ${dis || !temPericiaPronta(M) ? 'disabled' : ''}
+        title="${per.length ? esc(per.map(id => PERICIAS[id].nome).join(' · ')) : 'O ofício sai dos atributos e do que a espécie aprende'}"><b>✨ Perícia</b><small>${esc(subPericia)}</small></button>
+      ${meu
+        ? `<button class="cmd-jrpg" data-act="panel" data-v="bag" ${dis}><b>🎒 Mochila</b><small>Itens e petiscos</small></button>
+           <button class="cmd-jrpg" data-act="run" ${dis}><b>🏃 Fugir</b><small>Tentar escapar da luta</small></button>`
+        : `<button class="cmd-jrpg" data-act="comandar-auto" data-v="${esc(G.comandando || 'p')}" ${dis}><b>⚡ Decidir só</b><small>Ordem: ${esc(ordem)}</small></button>
+           <button class="cmd-jrpg" data-act="comandar" data-v="p" ${dis}><b>↩ Voltar</b><small>Seus comandos</small></button>`}
+    </div>`;
+}
+/* ⚔ Saga — o painel das PERÍCIAS (pericias.js). Uma lista, não uma grade: o que importa em cada linha é o TEXTO
+   do efeito e a recarga, e descrição longa em coluna estreita é ilegível no celular. */
+function painelPericias(M, P, dis) {
+  const ids = periciasDe(M);
+  const voltar = `<div class="subrow"><button class="btn ghost" data-act="panel" data-v="comandos" ${dis}>↩ Comandos</button></div>`;
+  if (!ids.length) return `<p class="small muted">${esc(rotulo(M))} não tem um ofício definido, então não tem perícia. O ofício sai dos atributos da espécie e do que ela aprende — veja o selo ao lado do nome na ficha.</p>${voltar}`;
+  return `<div class="saga-janela pericias" role="group" aria-label="Perícias de ${esc(rotulo(M))}">${ids.map(id => {
+    const p = PERICIAS[id], cd = recargaDe(M, id);
+    return `<button class="pericia ${cd ? 'fria' : ''}" data-act="pericia" data-v="${id}" ${dis || cd ? 'disabled' : ''} title="${esc(p.desc)}">
+        <b>${p.icone} ${esc(p.nome)}</b><small>${esc(p.desc)}</small>
+        <span class="pp">${cd ? `⏳ volta em ${cd} turno${cd > 1 ? 's' : ''}` : `pronta · recarrega em ${p.recarga}`}</span></button>`;
+  }).join('')}</div>
+    <p class="small muted">Perícia não gasta PP: custa <b>recarga em turnos</b>. Ela é a sua ação da rodada, como um golpe.</p>${voltar}`;
+}
 export function seloOficio(m) {
   if (!modoComAmeaca(G.S) || !m?.oficio) return '';
   const o = OFICIOS[m.oficio]; if (!o) return '';
@@ -500,7 +573,7 @@ function renderScene() {
         <div class="plates foe-plates">${FOES.map((F, i) => `<div class="plate ${grupo ? 'mini' : ''} ${B.vez === 'e' && B.foco === i ? 'agindo' : ''}">${plate(F, 'e' + i)}</div>`).join('')}</div>
         <div class="mons-lado foe-mons">${FOES.map(sprFoe).join('')}</div>
       </div>
-      ${escolhendo ? `<p class="pedir-alvo" role="status">🎯 Em quem usar <b>${esc(fmt(P.moves[G.alvoDe]?.name || 'o golpe'))}</b>? Toque num inimigo.
+      ${escolhendo ? `<p class="pedir-alvo" role="status">🎯 Em quem usar <b>${esc(fmt(alvoDoPainel(P).moves[G.alvoDe]?.name || 'o golpe'))}</b>? Toque num inimigo.
         <button class="btn ghost sm" data-act="alvo-cancelar">Cancelar</button></p>` : ''}
       <div class="side me">
         <div class="mons-lado">
@@ -638,7 +711,9 @@ function renderActions() {
         : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';
       a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${spriteItem(k, P)}" alt="" onerror="${ITEM_ERRO}"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
         <h4 class="bag-sec">Fazer amizade com ${esc(fmt(E.name))} <span class="muted">(${E.data.types.map(t => TYPE_PT[t]).join('/')})</span></h4>${secPetisco}
-        <div class="subrow"><button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button></div>`;
+        <div class="subrow">${modoJRPG(S)
+          ? `<button class="btn ghost" data-act="panel" data-v="comandos" ${dis}>↩ Comandos</button>`
+          : `<button class="btn ghost" data-act="panel" data-v="moves" ${dis}>Voltar aos golpes</button>`}</div>`;
       return;
     }
     /* ⚔ Saga: dá pra COMANDAR cada membro da comitiva em vez de deixar a Ordem decidir (`G.comandando` = de
@@ -648,6 +723,13 @@ function renderActions() {
        comandar é opcional — toca no aliado quando importa, ignora quando não. Forçar quatro escolhas por luta
        comum transformaria cada encontro de grama alta numa sessão de xadrez. */
     const M = alvoDoPainel(P);
+    /* ⚔ Saga: a janela de comandos é a tela padrão do turno, e ⚔ Atacar / ✨ Perícia são submenus dela. Fora da
+       Saga nada disto existe e os golpes continuam sendo a primeira coisa na tela, como sempre foram. */
+    if (modoJRPG(S) && (G.panel === 'comandos' || G.panel === 'pericias')) {
+      const corpo = G.panel === 'pericias' ? painelPericias(M, P, dis) : janelaDeComandos(M, P, dis);
+      a.innerHTML = `${blocoAuto()}${barraComitiva(P, dis)}${corpo}${M === P && G.panel === 'comandos' ? `${botaoMega(dis)}${barraRapidos(dis)}` : ''}`;
+      return;
+    }
     const permitidos = golpesPermitidos(M);
     const noPP = !permitidos.length;
     a.innerHTML = `${blocoAuto()}${barraComitiva(P, dis)}<div class="moves">${noPP ? `<button class="mv" style="--c:#A8A77A" data-act="move" data-v="-1" ${dis}><b>Struggle</b><small>Nenhum golpe disponível: ataque desesperado com recuo.</small></button>`
@@ -660,10 +742,11 @@ function renderActions() {
         return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 || presoAqui ? 'disabled' : ''} title="${presoAqui ? esc(`Não pode: ${motivoBloqueio(P, golpeBase)?.texto || 'bloqueado'}`) : `${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}`}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
       }).join('')}</div>
       ${resumoTravas(M).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
-      ${M === P ? `${botaoMega(dis)}${barraRapidos(dis)}
+      ${modoJRPG(S) ? `<div class="subrow"><button class="btn ghost" data-act="panel" data-v="comandos" ${dis}>↩ Comandos</button></div>`
+      : M === P ? `${botaoMega(dis)}${barraRapidos(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`
       : `<div class="subrow"><button class="btn ghost" data-act="comandar" data-v="p" ${dis}>↩ Voltar pros seus golpes</button>
-        <button class="btn ghost" data-act="comandar-auto" data-v="${G.comandando}" ${dis}>⚡ Deixar ele decidir (Ordem: ${esc(ORDENS[M.ordem || 'livre'].nome)})</button></div>`}`;
+        <button class="btn ghost" data-act="comandar-auto" data-v="${esc(G.comandando || 'p')}" ${dis}>⚡ Deixar ele decidir (Ordem: ${esc(ORDENS[M.ordem || 'livre'].nome)})</button></div>`}`;
   } else if (G.panel === 'shop') {
     // loja nas mesmas divisões da mochila
     /* `soComMega` (a Pedra Mega) só entra na prateleira quando a SUA espécie já tem a Mega conquistada na conta.

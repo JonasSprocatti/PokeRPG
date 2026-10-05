@@ -8,7 +8,7 @@ import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, reg
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
-import { healFull, CTX } from './efeitos.js';
+import { healFull, CTX, changeStats } from './efeitos.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
@@ -21,8 +21,11 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano, especiesDobradas
+  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano, especiesDobradas,
+  guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT
 } from './regras.js';
+import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
+import { OFICIOS } from './oficios.js';
 import { verificarMissoes } from './missoes.js';
 import { registrarAbate, registrarDano } from './conquistas.js';
 import { megasDoJogador, megasDisponiveis, megaevoluir, desfazerMega, preCarregarMegas, inimigoPodeMega, inimigoMegaLiberada, inimigoTeraGmaxLiberado, HP_MEGA_INIMIGO, verboDaForma } from './mega.js';
@@ -58,6 +61,100 @@ export function melhorGolpe(m, alvo, esperteza = ESPERTEZA.chefe) {
   return escolhaIA(golpesPermitidos(m), tiposOfensivos(m), tiposDefensivos(alvo), esperteza, undefined, contexto) || STRUGGLE;
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
+
+/* ================= ⚔ Saga: Guarda, Brecha/Ruína e as perícias =================
+   As REGRAS são puras (`regras.guardaInicial`/`abrirBrecha`/`passarSaga`/`multSaga` e `pericias.js`); aqui fica o
+   que precisa de `G`, de narração e de tela. Tudo lê a FLAG do modo (`jrpg`), nunca o nome dele. */
+const modoJogoJRPG = () => !!DIFICULDADES[dificuldadeDe(G.S)]?.jrpg;
+// painel padrão da batalha: na Saga o turno começa na JANELA DE COMANDOS (⚔ Atacar · ✨ Perícia · 🎒 · 🏃)
+const painelInicial = () => (modoJogoJRPG() ? 'comandos' : 'moves');
+/* A Guarda só existe no lado INIMIGO (é o "break" que a comitiva abre) e só num modo com a flag. Precisa ser
+   chamada em TODA entrada em campo do lado de lá, não só no começo: `freshVol()` apaga o `vol` de quem entra, e
+   um Pokémon de treinador chegando sem Guarda ficaria imune a Brecha pelo resto da luta. */
+function armarGuarda(E) {
+  if (!E?.vol || !modoJogoJRPG()) return;
+  const B = G.B;
+  E.vol.guardaMax = guardaInicial({ chefe: !!B?.evento || !!E.boss, alfa: !!E.statsChefe || !!E.lendario });
+  E.vol.guarda = E.vol.guardaMax;
+}
+/* O gancho que o motor do golpe PEDE (`ctx.abrirBrecha`). Narrar a trinca é de propósito: a Guarda aparece na
+   cena, mas é a linha no registro que ensina POR QUE ela caiu (o golpe foi super efetivo / foi crítico). */
+async function abrirBrechaNaCena(alvo, n) {
+  const r = abrirBrecha(alvo, n);
+  if (!r) return;
+  render();
+  if (!r.ruiu) { await say(`A guarda de ${nm(alvo)} trinca. <span class="muted">(${r.agora} de ${r.max})</span>`, 'status'); return; }
+  await say(`💥 <b>A guarda de ${nm(alvo)} se parte — ${nm(alvo)} RUIU!</b>`, 'crit');
+  await say('Ele perde o fôlego, os bônus que tinha somem, e tudo o que vier agora dói 50% mais.', 'good');
+}
+CTX.abrirBrecha = abrirBrechaNaCena;
+
+const nomeDoOficio = m => OFICIOS[m?.oficio]?.nome || 'sem ofício';
+/* ⚔ PERÍCIA: o feito do ofício (tabela em `pericias.js`). Não é golpe e não gasta PP — custa RECARGA em turnos
+   (`vol.cd`, que o `vol` apaga no fim da batalha). Cada uma chama o que JÁ existe: `mudarEstagios`,
+   `aplicarStatus` (pela limpeza), a cura dos itens e `abrirBrecha`. Nenhuma reimplementa golpe — `golpe.js`
+   continua sendo o único lugar que resolve um golpe.
+   A trava é conferida AQUI, no motor, e não só no botão: a recarga pode ter mudado entre a escolha e o turno (o
+   plano de um companheiro é escrito antes da rodada rodar), e regra que só existe na tela não é regra.
+   Perícia que não teria o que fazer (Bálsamo sem ninguém ferido) NÃO entra em recarga: avisa e o turno segue. */
+async function usarPericia(m, id) {
+  const p = PERICIAS[id];
+  if (!p) return;
+  if (!periciaPronta(m, id)) {
+    const r = recargaDe(m, id);
+    await say(r ? `${nm(m)} ainda está tomando fôlego: ${esc(p.nome)} volta em ${r} turno${r > 1 ? 's' : ''}.`
+      : `${nm(m)} não tem a perícia ${esc(p.nome)} — ela é do ofício ${esc(OFICIOS[p.oficio]?.nome || p.oficio)}.`, 'muted');
+    return;
+  }
+  const comitiva = vivos(emCampo());
+  // o que a perícia precisa pra valer a pena: sem isso ela nem é invocada (e a recarga não é gasta)
+  if (id === 'balsamo' && !comitiva.some(x => x.hp < x.stats.hp)) { await say(`Ninguém na comitiva está ferido: ${nm(m)} guarda o bálsamo.`, 'muted'); return; }
+  if (id === 'purificar' && !comitiva.some(x => x.status || x.vol?.conf > 0 || x.vol?.paixao)) { await say(`Ninguém na comitiva está maculado: ${nm(m)} guarda a bênção.`, 'muted'); return; }
+  const alvo = G.B?.enemy;
+  if ((p.alvo === 'inimigo') && !(alvo?.hp > 0)) { await say('Não há ninguém em pé do outro lado.', 'muted'); return; }
+
+  marcarRecarga(m, id);
+  await say(`${nm(m)} invoca <b>${p.icone} ${esc(p.nome)}</b>! <span class="muted">(${esc(nomeDoOficio(m))})</span>`, 'level');
+  if (id === 'brado') {
+    m.vol.provocou = BRADO_MULT; m.vol.provocouTurnos = BRADO_TURNOS;
+    await say(`O brado ecoa: por ${BRADO_TURNOS} turnos a fúria inimiga é toda de ${nm(m)}.`, 'status');
+    await changeStats(m, [{ stat: 'defense', change: 1 }], m);
+  } else if (id === 'muralha') {
+    for (const A of comitiva) A.vol.muralha = 1;
+    await say('Uma muralha se ergue na frente da comitiva: todo golpe desta rodada dói pela metade.', 'good');
+  } else if (id === 'balsamo') {
+    const ferido = comitiva.filter(x => x.hp < x.stats.hp).sort((a, b) => a.hp / a.stats.hp - b.hp / b.stats.hp)[0];
+    const cura = Math.min(ferido.stats.hp - ferido.hp, Math.max(1, Math.floor(ferido.stats.hp / 3)));
+    ferido.hp += cura; render();
+    await say(`O bálsamo fecha as feridas de ${nm(ferido)}. <b>+${cura} HP</b>`, 'good');
+    // curar chama atenção: é por isso que o Curandeiro é o segundo alvo em todo RPG de turno (regras.AMEACA)
+    somarAmeaca(m, Math.floor(cura * 1.5));
+  } else if (id === 'purificar') {
+    const limpos = [];
+    for (const A of comitiva) {
+      if (!A.status && !(A.vol?.conf > 0) && !A.vol?.paixao) continue;
+      A.status = null; A.sleep = 0;
+      if (A.vol) { A.vol.conf = 0; delete A.vol.toxico; delete A.vol.paixao; }
+      limpos.push(nm(A));
+    }
+    render();
+    await say(`A bênção lava ${limpos.join(', ')}: sem status, sem confusão, sem paixão.`, 'good');
+  } else if (id === 'selo') {
+    m.vol.selo = 1;
+    await say(`Um selo arde no ar: o próximo golpe de ${nm(m)} abre duas Brechas a mais e nenhuma resistência o segura.`, 'status');
+  } else if (id === 'estocada') {
+    m.vol.estocada = 1;
+    await say(`${nm(m)} mede a guarda do inimigo: o próximo golpe dele não erra e sai crítico.`, 'status');
+  } else if (id === 'marca') {
+    alvo.vol.marca = MARCA_TURNOS;
+    await say(`Uma marca negra se fixa em ${nm(alvo)}: por ${MARCA_TURNOS} turnos ele toma 25% mais de todo dano.`, 'status');
+    await abrirBrechaNaCena(alvo, BRECHA_STATUS);
+  } else if (id === 'cancao') {
+    await say('A canção de guerra sobe e a comitiva fecha a formação.', 'good');
+    for (const A of comitiva) await changeStats(A, [{ stat: 'attack', change: 1 }, { stat: 'speed', change: 1 }], A);
+  }
+  render();
+}
 
 /* ---- início de batalha ---- */
 // selvagem: da lista da rota, pela taxa de aparição de cada um (mapas.js). Míticos da Gen: bem raros, nas rotas altas.
@@ -98,7 +195,8 @@ function iniciar(B) {
   // `zInimigo`: o lado inimigo carrega um Z-Move nesta luta? (treinador sempre; Alfa só às vezes — zmove.inimigoTemZ)
   G.B = ligarInimigos({ caidos: new Set(), campo: novoCampo(climaDasRotasAtivo(G.S) ? G.S?.zone : null), ...B, foco: 0 }, lista);
   G.B.zInimigo = inimigoTemZ(G.B);     // depende de trainer/chefe, que já estão no objeto
-  G.mode = 'battle'; G.panel = 'moves';
+  for (const E of lista) armarGuarda(E);   // ⚔ Saga: a Guarda de cada inimigo (Brecha/Ruína)
+  G.mode = 'battle'; G.panel = painelInicial();
   for (const E of lista) registrarVisto(E);
   render();
   // a rota tinge a faixa (som.js lê o tema por cenario.climaDaRota, o mesmo que pinta a cena)
@@ -146,7 +244,7 @@ async function forcarSaida(m, { motivo = 'forcada' } = {}) {
       if (i < 0) return false;                                            // não tem ninguém pra mandar no lugar
       m.vol = freshVol(); m.vol.retirado = true;                          // o turno dele acaba aqui (turn() pula quem tem `retirado`)
       T.atual = i; const novo = T.equipe[i]; novo.vol = freshVol(); novo.vol.recemEntrou = true;
-      B.inimigos[B.inimigos.indexOf(m)] = novo; registrarVisto(novo); render();
+      B.inimigos[B.inimigos.indexOf(m)] = novo; armarGuarda(novo); registrarVisto(novo); render();
       await say(`${voluntaria ? `${nm(m)} perde a coragem e sai de campo!` : `${nm(m)} foi arrastado pra fora da luta!`}`, 'status');
       await say(`${esc(T.nome)} envia <b>${esc(fmt(novo.name))}</b> (Nv. ${novo.level})!${novo.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
       await aplicarArmadilhas(novo, CTX);                                 // Stealth Rock e cia. pegam quem entra
@@ -528,7 +626,7 @@ export async function turn(action) {
   if (B.turnoNoLog !== B.turn) { log(`Turno ${B.turn}`, 'turno'); B.turnoNoLog = B.turn; }
   try {
     // 1) sua ação que não é golpe resolve antes de tudo (fuga, item, petisco) — como item nos jogos
-    let pm = null;
+    let pm = null, minhaPericia = null;
     if (action.type === 'run' && B.evento) {
       await say('Não dá pra fugir do chefe da semana!', 'hit'); return;   // não gasta o turno
     }
@@ -546,16 +644,19 @@ export async function turn(action) {
     } else if (action.type === 'item') {
       await vez('p');
       if (!(await useItem(action.id, true))) return;
-      G.panel = 'moves';
+      G.panel = painelInicial();
     } else if (action.type === 'oferecer') {
       await vez('p');
       const r = await oferecer(action.id, E);
       if (r === 'cancelado') return;
       if (r === 'fim') { endBattle(); return; }
-      G.panel = 'moves';
+      G.panel = painelInicial();
     } else if (action.type === 'passar') { /* você foi tirado da luta: só assiste os aliados */ }
+    /* ⚔ Saga: PERÍCIA é ação do turno, como um golpe — entra na ordem por velocidade e o resto da rodada corre
+       normal. Não gasta PP e não passa por `golpe.js` (não é golpe); a trava está em `usarPericia`. */
+    else if (action.type === 'pericia') { minhaPericia = PERICIAS[action.id] ? action.id : null; }
     else pm = action.idx === -1 ? STRUGGLE : P.moves[action.idx];
-    if (P.vol.retirado) pm = null;
+    if (P.vol.retirado) { pm = null; minhaPericia = null; }
     if (pm && pm !== STRUGGLE && !golpeTravado(P)) pm = golpeForcado(P) || pm;   // Encore: a escolha vira o golpe repetido — vale já na prioridade do turno
     /* Z-Move: liga a marca no `vol` (regras.calcDamage converte o poder) e gasta a vez da batalha. O flag é
        desligado no `finally` deste turno — um Z que "vazasse" pro turno seguinte dobraria o dano de graça. */
@@ -566,12 +667,15 @@ export async function turn(action) {
     const acoes = [], clima = climaDe(B.campo), terreno = terrenoDe(B.campo); // clima e terreno entram na velocidade
     // Vento de Cauda (Tailwind) dobra a velocidade do lado dele (regras.multVento)
     const vel = m => effStat(m, 'speed', false, true, clima, terreno) * multVento(B.campo.lados?.[CTX.ladoDe(m)]);
-    if (pm) acoes.push({ quem: P, golpe: pm, prio: prioridadeEfetiva(P, pm), vel: vel(P), rapido: ativouQuickClaw(P), lento: sempreUltimo(P) });
+    if (minhaPericia) acoes.push({ quem: P, pericia: minhaPericia, prio: 0, vel: vel(P) });
+    else if (pm) acoes.push({ quem: P, golpe: pm, prio: prioridadeEfetiva(P, pm), vel: vel(P), rapido: ativouQuickClaw(P), lento: sempreUltimo(P) });
     /* Aliados: o PLANO que você deu neste turno (⚔ Saga, `B.planos`) manda; sem plano, vale a Ordem dele
        (golpeDoAliado). O plano passa pelas mesmas travas — `golpesPermitidos` é a única fonte, e um golpe que
        virou proibido depois de você escolher (o inimigo mais rápido te provocou) não pode escapar por aqui. */
     for (const A of vivos(emCampo()).filter(m => m !== P)) {
       const chave = 'a' + S.aliados.indexOf(A), plano = B.planos?.[chave];
+      // ⚔ Saga: o plano pode ser uma PERÍCIA em vez de um golpe (é o que faz valer mandar o Curandeiro curar)
+      if (plano?.pericia && PERICIAS[plano.pericia]) { acoes.push({ quem: A, pericia: plano.pericia, prio: 0, vel: vel(A) }); continue; }
       let g = golpeDoPlano(plano, A.moves, golpesPermitidos(A), STRUGGLE);
       // o alvo do plano vale pro FOCO só se ele ainda está de pé (o grupo muda no meio do turno)
       if (g && plano.alvo != null && B.inimigos[plano.alvo]?.hp > 0) B.foco = Number(plano.alvo);
@@ -601,6 +705,12 @@ export async function turn(action) {
       E = B.enemy;
       if (P.hp <= 0 || grupoInimigoCaiu() || B.capturado || B.saidaForcada) break;
       if (a.quem.hp <= 0 || a.quem.vol?.retirado) continue;   // caiu, ou foi tirado da luta antes de agir
+      /* ⚔ Saga — RUÍNA: a guarda caiu, ele não age. Conferido AQUI (e não na montagem das ações) porque a
+         Brecha pode se abrir no meio da rodada, depois de as ações já estarem na fila: quem ruiu antes de agir
+         perde o resto desta rodada, que é a metade boa do break (regras.RUINA_TURNOS). */
+      if (emRuina(a.quem)) { await vez(B.inimigos.includes(a.quem) ? 'e' : idVez(a.quem)); await say(`${nm(a.quem)} está em <b>Ruína</b> e não consegue agir.`, 'muted'); continue; }
+      // ⚔ Saga: perícia (não é golpe — ver usarPericia). Vale pra você e pros companheiros comandados.
+      if (a.pericia) { await vez(idVez(a.quem)); await usarPericia(a.quem, a.pericia); await anunciarQuedas(); continue; }
       if (a.bola) { await vez('t'); await lancarBola(P); continue; }
       if (a.parado) { await vez(idVez(a.quem)); await say(`${nm(a.quem)} ${a.parado}`, 'muted'); continue; }
       if (B.inimigos.includes(a.quem)) {
@@ -644,7 +754,9 @@ export async function turn(action) {
     if (B.saidaForcada) { endBattle(); return; }   // selvagem afugentado, ou o último do seu lado arrastado: acaba como uma fuga, sem XP nem penalidade
     // veneno, clima e fim de rodada valem pro GRUPO inimigo inteiro (⚔ Saga), não só pra quem está em foco
     if (P.hp > 0 && !grupoInimigoCaiu()) { await vez('fim'); for (const m of [...vivos(emCampo()), ...inimigosEmCampo()]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
-    for (const m of [...ladoJogador(), ...B.inimigos]) fimDaRodada(m);  // recuo, Protect e Endure valem só um turno
+    // recuo, Protect e Endure valem só um turno; `passarSaga`/`passarRecargas` cuidam de Ruína, Marca, Brado e
+    // da recarga das perícias (⚔ Saga). Fora da Saga nenhuma dessas marcas existe no `vol` e as duas são no-op.
+    for (const m of [...ladoJogador(), ...B.inimigos]) { fimDaRodada(m); passarSaga(m); passarRecargas(m); }
     await voltarDoRevezamento();   // quem saiu com U-turn & cia. volta agora, pelas armadilhas e pelas habilidades de entrada
     // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
     for (const m of [...ladoJogador(), ...B.inimigos]) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
@@ -658,6 +770,8 @@ export async function turn(action) {
     B.vez = null;
     G.alvoDe = null;       // alvo pendente é da ESCOLHA, não do turno: some ao resolver (senão o próximo golpe herdaria)
     G.comandando = 'p';    // o painel volta pros seus golpes
+    // ⚔ Saga: a rodada nova começa na janela de comandos, não no submenu em que a anterior terminou
+    if (G.S && G.B && modoJogoJRPG()) G.panel = 'comandos';
     B.planos = {};         // plano é DO TURNO: um golpe comandado não se repete sozinho na rodada seguinte
     delete P.vol.zAtivo;   // vale só pelo turno em que foi acionado (ver o `action.z` acima)
     // missões no fim de TODO turno (inclusive fuga/amizade que saem cedo com `return`); G.S some no fim de jogo do Hardcore
@@ -708,7 +822,7 @@ async function win() {
        todos os modos, e não é o que foi pedido. A lista do lado inimigo passa a ter o que acabou de entrar. */
     T.atual = proximo;
     B.inimigos = [T.equipe[T.atual]]; B.foco = 0;
-    B.enemy.vol = freshVol(); B.enemy.vol.recemEntrou = true; registrarVisto(B.enemy); render();
+    B.enemy.vol = freshVol(); B.enemy.vol.recemEntrou = true; armarGuarda(B.enemy); registrarVisto(B.enemy); render();
     await say(T.lendarios ? `Outro lendário surge: <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Shiny!' : ''}`
       : `${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
     await aplicarArmadilhas(B.enemy, CTX); // Stealth Rock e cia. pegam quem entra

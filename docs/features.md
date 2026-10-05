@@ -2727,3 +2727,157 @@ mostrava a descrição num `<small>` dentro da linha desde sempre; a loja era a 
 de `grid-row:span 2` pra **`1/-1`** (senão a terceira linha cai na coluna do ícone) com `align-self:start`, e a
 grade da loja ganha `.loja-grid` com coluna mínima de **240px** em vez dos 150px da mochila — com 150px e um
 texto de 200 caracteres o cartão virava uma tira vertical. No celular isso dá uma coluna de largura cheia.
+
+## ⚔ Saga, fase 1 fechada: identidade de JRPG, 8 perícias e Brecha/Ruína (05/10/2026)
+
+Pedido do usuário: *"Quero que o modo saga seja totalmente inspirado nos RPG's japoneses, de Final Fantasy,
+quero que invista e me traga um protótipo muito bom, está muito cru e ainda se parece muito com o jogo inicial
+que estamos fazendo, seja criativo, procure referências da internet."*
+
+O diagnóstico dele estava certo e é específico: a Saga tinha MECÂNICA nova (ofício, ameaça, grupo inimigo,
+comandar companheiro) e **nenhuma CARA nova**. Mesma cena, mesma grade de quatro golpes, mesmas palavras. Num
+jogo de texto, metade de "ser outro gênero" é o vocabulário e o ritmo da tela — e os dois eram do jogo base.
+
+Isto fecha a **fase 1** do `docs/plano-saga.md` (o que faltava: as 8 perícias e o Brecha/Ruína).
+
+### As referências, e por que cada uma entrou ou ficou de fora
+
+Pesquisadas na internet pra este trabalho, não de memória:
+
+| Referência | O que faz lá | O que virou aqui |
+|---|---|---|
+| **Octopath Traveler** — *Break & Shield Points* | cada inimigo tem N escudos e fraquezas; acertar a fraqueza tira 1, zerar derruba o inimigo (perde a ação, fica fraco a tudo, toma o dobro) | **a forma inteira de Brecha/Ruína**: Guarda = Shield Points, Brecha = o escudo que cai, Ruína = o Break |
+| **Final Fantasy VII Remake** — *stagger* | a barra de pressão fica VISÍVEL na placa do inimigo; o "staggered" é a janela pra despejar tudo | a **Guarda desenhada na cena**, abaixo do HP, em escudos contáveis (◆◈◇) |
+| **Persona** — *1 More* no crítico | crítico vale tanto quanto a fraqueza | **crítico também abre 1 Brecha** — sem isso o Guerreiro não participaria da abertura |
+| **Final Fantasy** (I–X), *menu de comandos* | janela azul de moldura dupla com Lutar / Magia / Item / Fugir (desenho da Kazuko Shibuya) | a **janela de comandos** da Saga: ⚔ Atacar · ✨ Perícia · 🎒 Mochila · 🏃 Fugir |
+| **Final Fantasy X** — *CTB*, janela de ordem de turno | a fila de quem age, usada pra planejar | a **fila da rodada** no topo da cena (já existia; ganhou a Ruína e passou a valer com 2 lutadores) |
+| **Final Fantasy VII** — *Limit Break* | enche apanhando, estoura uma vez | **ficou de fora**: as 4 gimmicks (Mega/Z/Tera/Dynamax) já são "uma por batalha, não gasta o turno". Seria um segundo ultimate competindo com o primeiro (ver "Ultimate: não construir", `docs/plano-saga.md`) |
+| **Bravely Default** — *Brave / Default* | adiantar até 4 turnos tomando dívida, ou guardar | **ficou de fora, e é a decisão mais importante aqui** — ver abaixo |
+| **Sea of Stars / Chained Echoes** — timing e combo | apertar no tempo certo reforça o golpe | **ficou de fora**: é mecânica de reflexo num jogo de TEXTO que se joga com leitura, e quebraria no celular e pra quem usa teclado |
+
+**Por que Brecha/Ruína e não Brave/Default.** As duas eram candidatas boas, e a escolha foi por onde elas
+TOCAM o código. Brave/Default (e o CTB do FFX) mexem na **economia do turno**: quantas ações cada um tem, e em
+que ordem. Aqui o turno é o do Pokémon — prioridade, Quick Claw, velocidade efetiva com clima e terreno — e ele é
+lido por **dois motores** (`regras.ordenarAcoes`, usado por `batalha.js` e por `mp-motor.js`). Trocar isso
+significaria um segundo sistema de turno convivendo com o primeiro, ou mudar o multiplayer e os cinco outros
+modos por causa de um. Brecha/Ruína mexe na **resolução do golpe**, onde já havia o gancho exato de que ela
+precisa (`eficacia`, o super efetivo) — e é, além disso, a mecânica que responde ao problema de desenho que a
+Saga tinha: **dar motivo pra montar a comitiva por TIPO** em vez de por barra de dano. Virou a decisão nova de
+jogo que o modo não tinha.
+
+### Brecha e Ruína (`regras.js`, puro e testado)
+
+- **Guarda** por inimigo: **3** selvagem, **6** Alfa/lendário, **10** chefe da semana (`regras.GUARDA`). Vive em
+  `m.vol.guardaMax`/`m.vol.guarda` — `vol` é apagado em todo início e fim de batalha, então **nada vai pro save**.
+- **Quem abre**: super efetivo 1, crítico 1, status vindo de fora ½, Marca ½, 🔮 Selo Arcano +2.
+- **Ruiu**: `vol.ruina = RUINA_TURNOS` (2), os degraus **positivos** dele vão a zero, e todo dano nele é ×1,5.
+  Quando acaba, a **Guarda volta cheia** (como em Octopath: quebrou, aproveitou, o escudo volta).
+- **`RUINA_TURNOS` = 2 tem motivo.** A Ruína é marcada NO MEIO de uma rodada, pelo golpe que fecha a Guarda, e
+  a contagem cai no fim da rodada. Com 1, derrubar a Guarda com o último a agir não custava **nada** ao inimigo
+  (ele já tinha agido). Com 2 ele perde o resto da rodada e a seguinte inteira, que é o "perde o próximo turno"
+  do desenho. É o número de afinar se a luta comum ficar fácil demais.
+
+**Onde encosta no motor**: quatro pontos em `golpe.js`, todos pedindo a quem sabe, nunca decidindo. O motor chama
+`ctx.abrirBrecha?.(alvo, n)` — **o mesmo padrão do `ctx.forcarSaida`** (o motor PEDE, `batalha.js` faz e narra) —
+e lê `regras.multSaga(u, t)` uma vez no dano, que junta Ruína, Muralha e Marca num multiplicador só. O
+multiplayer não passa o gancho, então na sala nada disso acontece; e fora da Saga `vol.guardaMax` nunca é
+posto, então `multSaga` devolve 1 e o dano é **exatamente o de antes**. Nenhum outro modo muda de comportamento.
+
+### As 8 perícias (`js/pericias.js`, puro e sem imports)
+
+| Ofício | Perícia | O que faz | Recarga |
+|---|---|---|---|
+| 🛡 Guardião | **Brado de Ferro** | ameaça ×3 por 2 turnos, +1 Def | 3 |
+| 🛡 Guardião | **Muralha** | a comitiva toma metade do dano nesta rodada | 5 |
+| 💚 Curandeiro | **Bálsamo** | cura ⅓ do HP máximo de quem está mais ferido; a ameaça sobe | 2 |
+| 💚 Curandeiro | **Purificar** | tira status, confusão e paixão da comitiva | 4 |
+| 🔮 Arcano | **Selo Arcano** | próximo golpe: +2 Brechas e nenhuma resistência o reduz | 3 |
+| ⚔ Guerreiro | **Estocada** | próximo golpe não erra e sai crítico | 3 |
+| 🕯 Encantador | **Marca** | o alvo em foco toma +25% por 2 turnos, e já perde ½ Brecha | 4 |
+| 🎻 Bardo | **Canção de Guerra** | +1 Atk e +1 Vel na comitiva toda | 4 |
+
+**Recarga em turnos, não mana** (decisão do plano, confirmada ao construir): mana é uma segunda barra pra
+administrar — e pra encher fora da luta, o que exigiria pousada ou item —, e a Saga já administra HP, PP, itens e
+amizade. Recarga é zero UI nova além do número no botão, e a decisão continua sendo "agora ou guardo?".
+
+**Perícia é a AÇÃO da rodada, como um golpe.** Entra em `acoes` no `turn()` com `prio: 0` e a velocidade de quem
+usa, e o resto da rodada corre normal. A alternativa (perícia de graça, antes de tudo, como um item) daria quatro
+ações por rodada a uma comitiva de quatro e tornaria toda luta trivial.
+
+**Nenhuma reimplementa golpe.** Cada uma chama o que já existia: `efeitos.changeStats` (que é
+`golpe.mudarEstagios`), a limpeza de status por escrita direta no `vol`, a cura igual à dos itens, e
+`regras.abrirBrecha`. `golpe.js` continua sendo o único lugar que resolve um golpe.
+
+**Só o ofício MAIOR dá perícia.** O ofício menor existe pra LER o bicho ("Curandeiro-Guardião"); se ele dobrasse
+o arsenal, um Miltank com quatro perícias faria a comitiva de quatro virar uma de dois.
+
+**Dá pra comandar a perícia de um companheiro** pela mesma fileira que já comandava o golpe (`B.planos[chave]`
+passa a aceitar `{ pericia }` além de `{ idx, alvo }`). Sem isso a mecânica seria quase inútil: o Curandeiro e o
+Guardião da sua comitiva quase nunca são **você**, e o Bálsamo é metade da tática do modo.
+
+**A trava é conferida no motor, não só no botão.** `usarPericia` reconfere `periciaPronta` — a recarga pode ter
+mudado entre a escolha e o turno (o plano de um companheiro é escrito ANTES da rodada rodar), e regra que só
+existe na tela não é regra. Mesmo princípio de `golpesPermitidos` e de `golpeDoPlano`.
+
+**Perícia que não teria o que fazer não entra em recarga**: Bálsamo sem ninguém ferido e Purificar sem ninguém
+maculado avisam e deixam a rodada seguir. Gastar 2 a 4 turnos de recarga num clique que não fez nada é o tipo de
+punição que ensina a pessoa a não usar o botão.
+
+### A cara: janela de comandos, moldura e vocabulário
+
+- **`G.panel = 'comandos'`** é o painel padrão do turno na Saga (`batalha.painelInicial`), e ⚔ Atacar / ✨ Perícia
+  são submenus dele. O custo é **um toque a mais pra atacar** — aceito porque é onde ✨ Perícia passa a existir
+  como irmã de ⚔ Atacar em vez de um botão perdido embaixo dos golpes, e porque **no celular a janela 2×2 é mais
+  BAIXA que a grade de quatro golpes com descrição**. Ela vive em `#actions`, abaixo da cena presa no topo:
+  **não esconde nada** (ver a armadilha "não reintroduzir esconder painel por aba" no `CLAUDE.md`).
+- **Moldura dupla** (`border: 3px double`) na cena e na janela, azul-noite, `--display` no comando e no nome da
+  perícia, `--body` no texto do efeito. **Nenhuma animação nova**: moldura não precisa piscar pra ter cara, e
+  `prefers-reduced-motion` já é global.
+- **Vocabulário**: "Rodada N" em vez de "Turno N", "Escolha o comando" em vez de "Escolha sua ação", "comitiva",
+  "ofício", "perícia", "invoca". Perícia é sempre PT-BR e golpe segue em inglês ("Protect") — é a regra que deixa
+  "Muralha" legível ao lado de Reflect sem ser a tradução dele.
+- **A fila da rodada** passou a valer com **2** lutadores (era 3), ganhou 💥 e o fim da fila pra quem está em
+  Ruína, e **no celular deitado deixou de sumir**: agora encolhe pros ícones. Esconder o elemento que mais ensina
+  o turno era pior que encolher.
+- **A flag é `jrpg`**, nova em `DIFICULDADES.saga`, separada de `ameaca` e `grupos` de propósito: aquelas duas
+  são regras (quem é o alvo, quantos inimigos) e podem valer sozinhas um dia; esta é "o modo se apresenta como
+  JRPG". Lida pela FLAG, nunca pelo nome do modo.
+
+### O bug que esta leva achou: comandar companheiro nunca funcionou
+
+A fileira de comandar (entregue em 03/10/2026) desenhava certo — nome, ofício, ✓ de quem já tinha plano — e **o
+clique não fazia nada**. `render.js` emitia `data-act="comandar"` e `data-act="comandar-auto"`, e **nenhum dos
+dois existia no `switch` do `main.js`**; a função `escolherGolpe`, escrita justamente pra separar "plano de
+companheiro" de "minha ação", estava definida e **nunca era chamada** (`case 'move'` ia direto no `turn`).
+Ou seja: a funcionalidade inteira estava ligada só de um lado.
+
+É a mesma família do `SPR_SHINY` e do `gimmicksNaLoja` — erro que só aparece pra quem joga, nunca num teste —, só
+que num eixo que nenhum teste cobre hoje: **`tests/referencias.test.js` confere função chamada em template
+literal, `tests/imports.test.js` confere import nomeado, e ninguém confere `data-act` emitido × `case` tratado.**
+Um teste desses é tentador e ficou de fora por ora: o `switch` do `main.js` tem ~150 casos, vários `data-act` são
+montados por concatenação (`'ed-' + x`) e outros são tratados por `closest('[data-painel-acao]')` fora do switch,
+então a varredura ingênua daria falso positivo demais pra confiar. Está anotado em `docs/backlog.md`.
+
+### Conferido com jsdom
+
+Comitiva de 4 (Alakazam Arcano, Aggron Guardião, Miltank Curandeira, Togekiss Bardo) contra grupo de 3, turnos
+reais: a janela de comandos abriu com os quatro botões e a fileira da comitiva com o emoji de cada ofício; a cena
+desenhou 3 sprites e 3 placas inimigas, 4 do seu lado, a fila na ordem de velocidade e `🛡 ◆◆◆ 3 de 3` em cada
+inimigo; "Rodada 1 · Escolha o comando". O painel de perícia mostrou **1** pro Arcano e **2** pro Aggron. Num
+turno só: o plano de Brado do Aggron rodou (recarga marcada, `provocou ×3`, Def +1) e o Selo Arcano ficou
+guardado; na rodada seguinte o Psychic selado fechou a Guarda do Machop — *"A guarda de Zubat trinca. (2 de 3)"*,
+*"💥 A guarda de Machop se parte — Machop RUIU!"* —, a placa virou `💥 RUIU`, a fila jogou ele pro fim com 💥, e
+ele perdeu **duas** rodadas (*"está em Ruína e não consegue agir"*). O Bálsamo da Miltank mirou sozinho o mais
+ferido (36 → 76 de 120) e a ameaça dela subiu. Perícia de outro ofício foi recusada sem gastar recarga. Nenhum
+render estourou.
+
+### O que ficou de fora de propósito
+
+- **Limit Break** e **Brave/Default** (acima).
+- **Seleção manual de alvo aliado**: "o mais ferido" e "a comitiva toda" cobrem as 8 perícias de hoje. Continua
+  sendo decisão fechada do plano.
+- **Marca escolhendo o alvo**: ela cai em quem está **em foco** na cena, que é o alvo que você já escolhe com um
+  toque. Um segundo seletor de alvo só pra uma perícia seria UI nova pra um caso.
+- **Ameaça e Brecha no `mp-motor`**: não existe Saga em sala. As funções são as mesmas quando chegar a hora.
+- **O mundo da Saga** (trilhas, NPCs Pokémon, facções com reputação): é a fase 3 do plano, e o trabalho lá é
+  ESCREVER, não programar. Por isso o modo continua `admin: true`.

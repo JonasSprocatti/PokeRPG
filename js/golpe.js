@@ -9,6 +9,9 @@
 //   ctx.atacar(m)    animação de quem usou o golpe — opcional
 //   ctx.refDe(m) / ctx.monPorRef(ref)  identificam quem plantou Leech Seed (pra curar no fim do turno) — opcionais
 //   ctx.campo        objeto do campo da batalha, compartilhado pelos dois lados: { clima, turnos } — opcional
+//   ctx.abrirBrecha(alvo, n)  ⚔ Saga: tira `n` da Guarda do alvo e narra a Ruína — opcional, como ctx.forcarSaida.
+//                    O motor só PEDE; quem tem Guarda e quem narra é batalha.js. Sem o gancho (multiplayer),
+//                    nada acontece, e nenhum outro modo muda de comportamento.
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
 // Sem DOM: importável no Node (tests/golpe.test.js).
 import { STAT_PT, AIL_MSG, SELF_TARGETS, TYPE_PT } from './dados.js';
@@ -20,7 +23,8 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
-  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia } from './regras.js';
+  fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia,
+  multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -103,7 +107,8 @@ export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || nul
 // Algo impediu de agir: carga e fúria se perdem (como nos jogos)
 function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.vol.furia; }
 // Fim da rodada (depois de todos agirem): proteções de um turno só acabam
-export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; }
+// `muralha` (⚔ Saga, perícia do Guardião) tem exatamente a vida de `protegido`/`aguenta`: vale a rodada e acaba
+export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; delete m.vol.muralha; }
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
 /* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
@@ -454,7 +459,9 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
   }
   if (ail === 'confusion') {
     if (t.vol.conf > 0) { if (avisar) await ctx.say(`${ctx.nome(t)} já está confuso!`); return; }
-    t.vol.conf = rand(2, 5); await ctx.say(`${ctx.nome(t)} ficou confuso!`, 'status'); return;
+    t.vol.conf = rand(2, 5); await ctx.say(`${ctx.nome(t)} ficou confuso!`, 'status');
+    if (fonte && fonte !== t) await ctx.abrirBrecha?.(t, BRECHA_STATUS);   // ⚔ Saga: status abre meia Brecha
+    return;
   }
   /* Paixão (Attract, Cute Charm): só pega quem é do gênero OPOSTO de quem causou — sem gênero de um dos dois
      (Magnemite, lendário, save de antes do gênero existir) o efeito falha. Vive no `vol`, como a confusão, então
@@ -468,6 +475,9 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
   if (t.status) { if (avisar) await ctx.say(`${ctx.nome(t)} já tem uma condição de status.`); return; }
   t.status = ail; delete t.vol.toxico; if (ail === 'sleep') t.sleep = rand(2, 4);
   up(ctx); await ctx.say(`${ctx.nome(t)} ${AIL_MSG[ail]}!`, 'status');
+  /* ⚔ Saga: status abre MEIA Brecha — é o que faz o Encantador participar da abertura sem ter golpe super
+     efetivo. Só status vindo de FORA (`fonte !== t`): Rest em si mesmo não deveria quebrar a própria guarda. */
+  if (fonte && fonte !== t) await ctx.abrirBrecha?.(t, BRECHA_STATUS);
   // Synchronize: devolve queimadura/paralisia/veneno pra quem causou (não sono/congelamento). `fonte: null` na
   // chamada espelhada evita ping-pong se os dois tiverem a habilidade — só a aplicação ORIGINAL espelha.
   if (hab(t).sincroniza && fonte && fonte !== t && fonte.hp > 0 && !fonte.status && ['burn', 'paralysis', 'poison'].includes(ail)) {
@@ -758,6 +768,11 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   if (esp.soPrimeiroTurno && !primeiroGolpe) { await ctx.say('Mas falhou! (só funciona no primeiro golpe da batalha)'); return; }
 
   const res = await executar(u, t, g, primeiro, ctx, esp);
+  /* ⚔ Saga: 🔮 Selo Arcano e ⚔ Estocada valem pelo PRÓXIMO GOLPE, e é aqui que ele acaba — inclusive quando o
+     golpe errou, foi barrado por Protect ou era de status. "O próximo golpe" é o próximo golpe, não o próximo que
+     der certo; senão a perícia viraria um buff permanente até acertar. Perícia não passa por aqui (ela não é
+     golpe), então a marca nunca é consumida pelo turno em que foi invocada. */
+  delete u.vol.selo; delete u.vol.estocada;
   if (esp.autoDesmaio && u.hp > 0) { u.hp = 0; up(ctx); (ctx.tremer || nada)(u); await ctx.say(`${U} desmaiou com o esforço!`, 'hit'); }
   if (esp.recarga && res === 'acertou' && u.hp > 0) u.vol.recarga = true;
   if (u.vol.furia && --u.vol.furia.turnos <= 0) {
@@ -828,8 +843,11 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   }
   // Balão de Ar: quem flutua não é alcançado por golpe Terrestre (o balão só estoura com golpe que ACERTA)
   if (g.type === 'ground' && t.vol?.balao) { await ctx.say(`${T} está flutuando no Balão de Ar!`); return; }
-  const ef = eficacia(hu, g.type, t);                        // Tera defende pelo tipo Tera; Scrappy/Mind's Eye ignoram a imunidade
+  let ef = eficacia(hu, g.type, t);                          // Tera defende pelo tipo Tera; Scrappy/Mind's Eye ignoram a imunidade
   if (ef === 0) { await ctx.say(`Não afeta ${T}...`); return; }
+  // ⚔ Saga, 🔮 Selo Arcano: nenhuma RESISTÊNCIA reduz o golpe selado. Imunidade (ef 0) continua valendo — o selo
+  // não inventa um golpe que afeta quem não pode ser afetado; isso seria apagar a tabela de tipos, não reforçá-la.
+  if (u.vol.selo && ef < 1) { ef = 1; await ctx.say(`O Selo Arcano rompe a resistência de ${T}!`, 'good'); }
   if (ht.soSuperEfetivo && ef <= 1) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; } // Wonder Guard
 
   /* Endeavor iguala o HP do alvo ao seu. Contra o CHEFE DE EVENTO isso era um atalho que anulava a luta: ele tem
@@ -872,6 +890,8 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     let dano = danoNoChefe(t, r.dmg, g.type, ef);   // chefe de evento: couraça, exposição, ponto fraco, anula, Mundo Reverso, adaptação (sem `t.boss` devolve o mesmo)
     if (friendGuard < 1) dano = Math.max(1, Math.floor(dano * friendGuard));            // Friend Guard: nunca zera o golpe
     if (boostAliado !== 1) dano = Math.floor(dano * boostAliado);                       // Battery, Power Spot, Steely Spirit, Plus/Minus
+    // ⚔ Saga num ponto só (regras.multSaga): Ruína (+50%), 🧱 Muralha (−50%) e 🕯 Marca (+25%). Fora da Saga é ×1.
+    const ms = multSaga(u, t); if (ms !== 1) dano = Math.max(1, Math.floor(dano * ms));
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
     else if (seg(t).aguentaCheio && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; faixa = t.item; t.item = null; } // Faixa de Foco
@@ -883,6 +903,13 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   up(ctx); (ctx.tremer || nada)(t, g.type);
   if (crit) await ctx.say('Um golpe crítico!', 'crit');
   if (ef > 1) await ctx.say('É super efetivo!', 'good'); else if (ef < 1) await ctx.say('Não é muito efetivo...');
+  /* ⚔ Saga — BRECHA: golpe super efetivo e crítico abrem uma cada; o Selo Arcano soma 2. O motor só PEDE
+     (`ctx.abrirBrecha`), como no `ctx.forcarSaida`: quem tem Guarda, quem narra e quem desenha é batalha.js.
+     Depois do texto de eficácia de propósito — "é super efetivo" antes de "a guarda trinca" é a ordem que se lê. */
+  if (total > 0 && ctx.abrirBrecha) {
+    const brechas = (ef > 1 ? BRECHA_SUPER : 0) + (crit ? BRECHA_CRITICO : 0) + (u.vol.selo ? BRECHA_SELO : 0);
+    if (brechas > 0) await ctx.abrirBrecha(t, brechas);
+  }
   if (hits > 1) await ctx.say(`Acertou ${acertos} vez${acertos > 1 ? 'es' : ''}!`);
   await ctx.say(`${T} perdeu ${total} HP.`, 'hit');
   if (t.boss && total === 0 && anulaTexto(t, g.type)) await ctx.say(`🚫 ${anulaTexto(t, g.type)}: o golpe não faz nada!`, 'muted');

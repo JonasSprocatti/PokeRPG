@@ -48,6 +48,32 @@ A tela inicial e a tela 🏅 Conquistas mostram os desbloqueados e os que estão
 
 Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
+### ⚔ Saga (em construção, só na conta admin)
+
+Um modo separado, de **RPG japonês** medieval fantástico: você anda com uma **comitiva de quatro**, cada Pokémon
+tem um **ofício** na luta e os inimigos vêm em grupo. O combate já está jogável de ponta a ponta; o mundo
+(trilhas, NPCs Pokémon, facções) ainda não existe — por isso o modo continua escondido de quem joga.
+
+- **Seis ofícios**, lidos dos atributos e do que a espécie aprende (nada de tabela escrita à mão): 🛡 **Guardião**
+  segura a linha · 💚 **Curandeiro** cura e limpa · 🔮 **Arcano** lança o fogo de longe · ⚔ **Guerreiro** abate ·
+  🕯 **Encantador** enfeitiça · 🎻 **Bardo** ergue a comitiva. Quem tem dois perfis sai com o nome composto
+  (Miltank é **Curandeiro-Guardião**); o ofício não muda na evolução.
+- **Ameaça (aggro)**: o inimigo não mira mais alguém aleatório — mira **quem mais chamou atenção**. O Guardião
+  atrai o dobro só por existir, e curar atrai 1,5×. É o que faz um "tanque" existir.
+- **Janela de comandos** no espírito dos Final Fantasy clássicos: **⚔ Atacar · ✨ Perícia · 🎒 Mochila · 🏃 Fugir**.
+- **Oito perícias** (duas do Guardião e do Curandeiro, uma dos outros quatro): **não gastam PP**, custam
+  **recarga em turnos**. Brado de Ferro, Muralha, Bálsamo, Purificar, Selo Arcano, Estocada, Marca e Canção de
+  Guerra. A perícia é a sua ação da rodada, como um golpe.
+- **🛡 Guarda, Brecha e Ruína**: cada inimigo traz escudos (3 um selvagem, 6 um Alfa, 10 o chefe da semana),
+  visíveis na cena abaixo do HP. Golpe **super efetivo** e **crítico** abrem 1 Brecha; status e a Marca abrem
+  meia. Zerar a Guarda põe o inimigo em **Ruína**: ele perde o turno, os bônus que acumulou somem e tudo dói
+  **50% mais** — depois a Guarda volta cheia.
+- **Comande a comitiva**: toque num companheiro pra escolher o golpe *ou a perícia* dele. Quem você não comandar
+  segue a Ordem de sempre. **Seu comando fecha a rodada.**
+- **Grupo inimigo de 1 a 3** por rota (nas três primeiras ainda pode ser 1×1), e o **Alfa vem com dois lacaios**.
+  Escolher o alvo é um segundo toque; com um inimigo só, ataca direto.
+- **Fila da rodada** no topo da cena: a ordem provável, por velocidade (quem está em Ruína vai pro fim com 💥).
+
 ### O mundo
 - **Um mapa por Gen** (Kanto, Johto, Hoenn, Sinnoh, Unova, Kalos, Alola, Galar, Paldea), cada um com **10 rotas** que abrem por nível (do 2 ao ~62). Os selvagens de cada mapa são os daquela Gen, cada um na rota que combina com o nível e o tipo dele. Nenhuma rota tem todos os Pokémon: para achar todos, você passa pelos vários mapas. **Os iniciais das nove regiões (e as evoluções deles) não aparecem nas rotas comuns** — escolher o seu no começo da jornada é o que dá acesso a eles. Pikachu e Eevee são exceção: continuam aparecendo no mundo.
 - **No Roguelike, vencer não encerra na marra:** ao derrotar os lendários, a vitória já fica garantida (o mapa seguinte libera) e você escolhe entre encerrar a run ou continuar no Santuário. Se seguir e desmaiar lá, a run acaba em derrota — mas a Gen vencida continua liberada. Lendários e míticos do Santuário aceitam petisco e podem virar aliados, só que confiam bem mais devagar.

@@ -2,8 +2,14 @@
 
 Modo de jogo **separado**, de RPG medieval fantástico, em que cada Pokémon tem um **ofício** na luta (quem segura
 a linha, quem cura, quem lança o fogo), com NPCs Pokémon pra conversar, escolhas com consequência e vários
-caminhos. Pedido do usuário em 02/10/2026. **Nada disto está construído ainda** — este arquivo é o desenho
-combinado, não registro de entrega. Item concluído sai daqui e vira seção em `docs/features.md`.
+caminhos. Pedido do usuário em 02/10/2026. Este arquivo é o desenho combinado, não registro de entrega: item
+concluído sai daqui e vira seção em `docs/features.md`.
+
+> **Estado em 05/10/2026: a FASE 1 (o combate) está FECHADA e jogável.** Ofícios, ameaça, grupo inimigo,
+> comandar a comitiva, as 8 perícias e Brecha/Ruína, com a cara de JRPG (janela de comandos, moldura, fila da
+> rodada, vocabulário). O registro de como foi construído está em `docs/features.md` → "⚔ Saga, fase 1 fechada".
+> **O que falta neste arquivo são as fases 2 a 4**: Juramentos, e depois o MUNDO (trilhas, NPCs, facções) — é por
+> causa dele que o modo continua `admin: true`.
 
 > **O nome**: "Expedição" (primeiro rascunho) era geográfico e sério demais. **Saga** é o nome do modo; o
 > vocabulário todo segue o mesmo registro — ofício em vez de papel, perícia em vez de habilidade de classe.
@@ -86,37 +92,24 @@ propósito — e congelar evita que uma calibragem futura da fórmula troque o o
 mirando, com a ameaça no `title`. Sem isso a mecânica é invisível e não há como jogar com ela. O 🎯 chama
 `alvoPorAmeaca` com o sorteio desligado: mostra o alvo provável, não uma previsão do sorteio que ainda vai rolar.
 
-## 3. Perícias — uma por ofício, **recarga em turnos**, não gasta PP
+## 3. Perícias, 4. Brecha/Ruína e a cara de JRPG — **CONSTRUÍDO em 05/10/2026**
 
-Painel novo (`G.panel = 'pericias'`) ao lado dos golpes. Estado em `m.vol.cd = {pericia: turnos}` — `vol` já é
-zerado no fim da batalha, então **nada vaza pro save**.
+As 8 perícias com recarga em turnos, o Brecha/Ruína e a identidade visual do modo (janela de comandos, moldura,
+fila da rodada, vocabulário) foram entregues em 05/10/2026, a pedido do usuário: *"quero que o modo saga seja
+totalmente inspirado nos RPG's japoneses, de Final Fantasy… está muito cru e ainda se parece muito com o jogo
+inicial"*.
 
-| Ofício | Perícia | Efeito | Recarga |
-|---|---|---|---|
-| 🛡 Guardião | **Brado de Ferro** | ameaça ×3 por 2 turnos, +1 Def | 3 |
-| 🛡 Guardião | **Muralha** | a comitiva toda toma −50% neste turno | 5 |
-| 💚 Curandeiro | **Bálsamo** | cura ⅓ do HP máximo do aliado mais ferido | 2 |
-| 💚 Curandeiro | **Purificar** | tira status e confusão da comitiva | 4 |
-| 🔮 Arcano | **Selo Arcano** | próximo golpe: +2 Brechas e ignora resistência | 3 |
-| ⚔ Guerreiro | **Estocada** | crítico garantido, nunca erra | 3 |
-| 🕯 Encantador | **Marca** | alvo toma +25% de todo dano da comitiva por 2 turnos | 4 |
-| 🎻 Bardo | **Canção de Guerra** | +1 Atk e Vel na comitiva toda | 4 |
+**O registro completo — as referências pesquisadas (Octopath Traveler, FF VII Remake, Persona, o menu de
+comandos do Final Fantasy, o CTB do FF X), por que Brave/Default e Limit Break ficaram de fora, os números e o
+que cada perícia faz — está em `docs/features.md` → "⚔ Saga, fase 1 fechada".** Não duplicar aqui.
 
-Todas se escrevem chamando o que já existe (`mudarEstagios`, `aplicarStatus`, cura dos itens). **Nenhuma precisa
-de código novo no motor de golpe** — e nenhuma deve reimplementar golpe fora de `golpe.js`.
+Resumo do que mudou em relação ao desenho original: `js/pericias.js` (tabela pura), `regras.GUARDA`/`abrirBrecha`/
+`multSaga`/`passarSaga`, o gancho `ctx.abrirBrecha` em `golpe.js` (mesmo padrão do `ctx.forcarSaida`), a flag
+`jrpg` em `DIFICULDADES.saga`, e `B.planos` aceitando `{ pericia }` pra dar perícia a um companheiro. Duas coisas
+saíram diferentes do que estava desenhado: a **perícia é a AÇÃO da rodada** (e não um extra de graça, que daria
+quatro ações a uma comitiva de quatro) e o **Selo Arcano não ignora IMUNIDADE**, só resistência.
 
-**Perícia nunca se confunde com golpe na tela** porque golpe segue em inglês na UI ("Protect", "Mean Look") e
-perícia é sempre PT-BR. É a regra que mantém "Muralha" legível ao lado de Reflect sem ser a tradução dele.
-
-**O Bálsamo mira sozinho o aliado mais ferido**, de propósito: seleção manual de alvo aliado não existe no single
-player (a UI sempre mira o inimigo) e seria a parte mais caríssima do desenho. Volta na fase 2 se fizer falta.
-
-## 4. Brecha e Ruína (o "break" de Octopath / Sea of Stars)
-
-O inimigo tem uma **Guarda** (3 num selvagem, 6 num Alfa, 10 num chefe de capítulo). Golpe super-efetivo abre
-**1 Brecha**; status e Marca abrem meia. Guarda vencida → o inimigo **Ruiu**: perde o próximo turno, toma
-+50% e perde os buffs. É o que dá motivo pra comitiva ser montada por TIPO, e faz o Arcano ser quem abre a brecha
-em vez de só a maior barra de dano. A Guarda aparece na cena, abaixo do HP.
+**Com isto a fase 1 está fechada.** A próxima é a 2 (Juramentos, ordens por ofício, tela de comitiva).
 
 ## 4.5 Grupo inimigo e a cena meio-FF (pedido em 02/10/2026, CONSTRUÍDO)
 
