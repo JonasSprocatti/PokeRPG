@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  resumoDeAbates, motivoDeParar, precisaReporPP, xpExcedente, PESOS_PONTOS,
+  resumoDeAbates, motivoDeParar, precisaReporPP, objetivoAuto, xpExcedente, PESOS_PONTOS,
   typeEff, natureMod, natureLabel, calcStats, recalc, freshVol, stageMul, effStat, defaultMoves,
   calcDamage, confDamage, heal, chanceAcerto, imuneAoStatus, danoResidual, consegueFugir,
   jogadorAgePrimeiro, xpPorVitoria, ganhoDeEVs, custoCentro, precisaCurar,
@@ -812,6 +812,22 @@ test('auto-explorar: motivo de parar, na ordem de prioridade', () => {
   // achar o alvo ganha até do teto: a caçada terminou, não importa quantas explorações levou
   assert.equal(motivoDeParar({ ...base, achou: true, exploracoes: 999 }), 'achou');
 });
+/* Objetivo "subir até o nível N" (pedido do usuário): sem alvo de espécie, o laço mói até o nível chegar. */
+test('auto-explorar: parar no nível pedido', () => {
+  const base = { modo: 'explore', hp: 100, teto: 500 };
+  assert.equal(motivoDeParar({ ...base, nivel: 14, nivelAlvo: 15 }), null);
+  assert.equal(motivoDeParar({ ...base, nivel: 15, nivelAlvo: 15 }), 'nivel');
+  assert.equal(motivoDeParar({ ...base, nivel: 23, nivelAlvo: 15 }), 'nivel', 'passou do nível também para');
+  assert.equal(motivoDeParar({ ...base, nivel: 99, nivelAlvo: 0 }), null, 'sem nível alvo o nível não para nada');
+  assert.equal(motivoDeParar({ ...base, nivel: 15, nivelAlvo: 15, exploracoes: 999 }), 'nivel', 'ganha do teto');
+  assert.equal(motivoDeParar({ ...base, nivel: 15, nivelAlvo: 15, achou: true }), 'achou');
+});
+test('objetivoAuto: a mesma frase pro painel e pra narração', () => {
+  assert.equal(objetivoAuto({ alvo: 'mr-mime' }), 'Mr Mime');
+  assert.equal(objetivoAuto({ nivelAlvo: 40 }), 'o nível 40');
+  assert.equal(objetivoAuto({}), 'um shiny', 'sem alvo e sem nível, o laço caça shiny');
+  assert.equal(objetivoAuto(null), 'um shiny');
+});
 
 /* "Antes de todos os golpes acabarem ele já tem que ir ao Centro repor" (pedido do usuário): o laço não pode
    descobrir que ficou sem PP batendo Struggle, que machuca quem usa. */
@@ -820,8 +836,11 @@ test('auto-explorar: repor PP antes de ficar sem golpe', () => {
   assert.equal(precisaReporPP({ moves: [mv(20, 20), mv(20, 20), mv(10, 10), mv(5, 5)] }), false, 'cheio: segue jogando');
   assert.equal(precisaReporPP({ moves: [mv(20, 12), mv(20, 9), mv(10, 4), mv(5, 2)] }), false, 'meio: ainda dá');
   assert.equal(precisaReporPP({ moves: [mv(20, 3), mv(20, 2), mv(10, 1), mv(5, 1)] }), true, 'raspando em todos: repõe');
-  assert.equal(precisaReporPP({ moves: [mv(20, 0), mv(20, 0), mv(10, 0), mv(5, 4)] }), true, 'sobrou um: repõe ANTES de acabar');
-  assert.equal(precisaReporPP({ moves: [mv(20, 20), mv(0, 0)] }), true, 'golpe sem pp (Struggle) não conta como golpe de verdade');
+  assert.equal(precisaReporPP({ moves: [mv(20, 0), mv(20, 0), mv(10, 0), mv(5, 4)] }), true, 'sobrou um fiapo: repõe ANTES de acabar');
+  assert.equal(precisaReporPP({ moves: [mv(20, 1), mv(20, 0), mv(10, 1), mv(5, 0)] }), true, 'tudo em 1 PP: o próximo turno pode ser o último');
+  // "só quando for necessário" (pedido do usuário): um golpe cheio ainda dá 20 turnos, não é hora de Centro
+  assert.equal(precisaReporPP({ moves: [mv(20, 0), mv(20, 0), mv(10, 0), mv(40, 40)] }), false, 'sobrou um golpe CHEIO: segue caçando');
+  assert.equal(precisaReporPP({ moves: [mv(20, 20), mv(0, 0)] }), false, 'golpe sem pp (Struggle) não conta, e o de verdade está cheio');
   assert.equal(precisaReporPP({ moves: [] }), false);
   assert.equal(precisaReporPP(null), false);
   // e o laço para quando não dá pra repor (sem dinheiro pro Centro)

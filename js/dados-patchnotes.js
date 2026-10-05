@@ -13,6 +13,13 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '4.9', data: '2026-10-05', titulo: '🤖 A exploração automática sobe de nível, caça shiny sem alvo e só vai ao Centro quando precisa', piada: 'A enfermeira do Centro Pokémon faturou uma fortuna com um robô que aparecia a cada três passos pedindo cura completa com 59% de vida e três golpes cheios. Ela não vai devolver o dinheiro, mas pediu pra avisar que agora tem tempo pro almoço.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Três objetivos para a exploração automática.</b> Além de procurar <b>uma espécie</b>, agora dá pra escolher <b>📈 subir até um nível</b> (ele mói até o seu Pokémon chegar lá e para na hora) ou <b>✨ nenhum alvo</b> — aí ele fica caçando e <b>só para quando aparecer um shiny</b>.',
+        '<b>O Centro Pokémon virou visita necessária, não rotina.</b> Antes ele voltava com 60% de vida, ou quando sobrava um único golpe — mesmo que esse golpe estivesse <b>cheio</b>, com 20 usos pela frente —, e cada passada cobrava a cura da equipe inteira. Agora ele só vai abaixo de <b>45% de vida</b> ou quando os golpes estão de fato no fim (nenhum com mais de 1 PP sobrando).'
+      ] }
+    ] },
   { versao: '4.8', data: '2026-10-05', titulo: '💎 A mochila abre por divisão e diz pra quem serve cada item de evolução', piada: 'Um jogador passou a tarde segurando um Eletrizador do lado de um Electabuzz esperando algo acontecer. O item estava funcionando perfeitamente: ele só não dizia, em lugar nenhum, que precisava do Cabo de Conexão pra terminar o serviço. O Electabuzz pediu desculpas pelo mal-entendido e evoluiu na hora seguinte.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -1327,22 +1327,27 @@ export function resumoDeAbates(contagem = {}) {
 }
 /* Hora de voltar ao Centro pra repor PP — ANTES do último golpe acabar (pedido do usuário). Quem chega no
    Struggle bate fraco, se machuca a cada golpe e transforma uma caçada tranquila em run perdida por teimosia.
-   Dois gatilhos, porque um só erra metade dos casos: "sobrou um golpe" pega quem tem poucos golpes de PP alto,
-   e a fração do PP total pega quem tem quatro golpes e está raspando em todos. Golpe de `pp` 0 (Struggle) fica
-   de fora da conta. */
+   Dois gatilhos, porque um só erra metade dos casos: "nenhum golpe tem mais de 1 PP" pega quem está no
+   finzinho, e a fração do PP total pega quem tem quatro golpes e está raspando em todos. Golpe de `pp` 0
+   (Struggle) fica de fora da conta.
+   A primeira regra já foi "sobrou UM golpe com PP" e era eager demais (2º pedido do usuário): quem tem três
+   golpes zerados e um com 20 PP cheios ainda luta 20 turnos — mandar essa pessoa pro Centro é gastar dinheiro e
+   cortar a caçada por nada. O gatilho é o golpe em 1 PP, que é quando o próximo turno pode ser o último. */
 export function precisaReporPP(m, fracao = 0.25) {
   const moves = (m?.moves || []).filter(g => g.pp > 0);
   if (!moves.length) return false;
   const total = moves.reduce((a, g) => a + g.pp, 0), resta = moves.reduce((a, g) => a + (g.ppLeft || 0), 0);
-  return moves.filter(g => g.ppLeft > 0).length <= 1 || resta / total < fracao;
+  return !moves.some(g => (g.ppLeft || 0) > 1) || resta / total < fracao;
 }
 /* Por que o laço para. A ordem é a prioridade: achar o alvo ganha de tudo, e qualquer coisa que tire o jogo da
    rota (fim de jornada, outra tela, desmaio) para na hora — um laço que continua clicando depois do Game Over
    do Roguelike é exatamente o jeito de perder uma run sozinho. `teto` existe porque laço sem fim é bug, não
    funcionalidade. Devolve null quando é pra seguir. */
-export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, semPP = false, exploracoes = 0, teto = Infinity } = {}) {
+export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, nivel = 0, nivelAlvo = 0, semPP = false, exploracoes = 0, teto = Infinity } = {}) {
   if (erro) return 'erro';
   if (achou) return 'achou';
+  // chegar no nível pedido é objetivo cumprido, igual a achar a espécie — ganha de desmaio, teto e PP
+  if (nivelAlvo && nivel >= nivelAlvo) return 'nivel';
   if (modo !== 'explore' && modo !== 'battle') return 'saiu';
   if (hp <= 0) return 'desmaiou';
   // sem PP e sem como repor (dinheiro curto): seguir daqui é moer Struggle, que machuca quem usa — para e conta
@@ -1350,3 +1355,8 @@ export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, semPP
   if (exploracoes >= teto) return 'teto';
   return null;
 }
+/* O que a caçada está procurando, em texto. São três objetivos (pedido do usuário): uma espécie, um nível do
+   Pokémon principal, ou nada — e "nada" significa rodar até sair um shiny, que para o laço em qualquer caso.
+   Mora aqui porque o painel (`render.blocoAuto`) e a narração (`auto.js`) precisam da MESMA frase, e render não
+   pode importar auto (ciclo). */
+export const objetivoAuto = a => a?.alvo ? fmt(a.alvo) : a?.nivelAlvo ? `o nível ${a.nivelAlvo}` : 'um shiny';

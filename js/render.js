@@ -12,7 +12,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { resumoDeAbates, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem } from './regras.js';
+import { resumoDeAbates, objetivoAuto, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -607,7 +607,7 @@ function blocoAuto() {
   const esperado = n => { const p = z.pool.find(x => x.n === n); return p ? textoTaxa(taxaNaRota(z, p.id, dobrar)) : '—'; };
   const num = n => n.toFixed(1).replace('.', ',');
   return `<div class="auto-box${a.ativo ? ' on' : ''}">
-    <p class="auto-topo"><b>🤖 ${a.ativo ? 'Caçando' : 'Caçada encerrada:'} ${esc(fmt(a.alvo))}</b>
+    <p class="auto-topo"><b>🤖 ${a.ativo ? 'Caçando' : 'Caçada encerrada:'} ${esc(objetivoAuto(a))}</b>
       <span class="muted small">${esc(a.rotaNome)} · ${a.exploracoes} explorações · ${total} derrotados</span></p>
     ${linhas.length ? `<ul class="auto-stats">${linhas.map(l => `<li><span>${esc(fmt(l.especie))}</span><b>${l.n}</b>
       <span class="muted">${num(l.pct)}%</span><small class="muted">esperado ${esperado(l.especie)}</small></li>`).join('')}</ul>`
