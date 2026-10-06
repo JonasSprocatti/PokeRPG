@@ -13,7 +13,7 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
-  { versao: '5.3', data: '2026-10-06', titulo: '📦 Rotas e missões podem ser atualizadas sem atualizar o jogo', piada: 'A missão da Rota 1 pedia 24 Rattata porque alguém digitou 24 numa planilha em 2026 e aquilo virou lei do universo. Agora a lei do universo pode ser alterada por quem digitou, de onde ele estiver, sem reiniciar o universo. O Rattata pediu vista do processo.',
+  { versao: '5.1', data: '2026-10-06', titulo: '📦 Rotas e missões podem ser atualizadas sem atualizar o jogo', piada: 'A missão da Rota 1 pedia 24 Rattata porque alguém digitou 24 numa planilha em 2026 e aquilo virou lei do universo. Agora a lei do universo pode ser alterada por quem digitou, de onde ele estiver, sem reiniciar o universo. O Rattata pediu vista do processo.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Conteúdo do jogo deixou de depender de atualização do jogo.</b> As rotas e as missões agora chegam num <b>pacote guardado no seu aparelho</b>: o jogo abre com o que você tem — <b>inclusive sem internet</b> — e, quando há conexão, confere se saiu versão nova.',
@@ -21,7 +21,7 @@ export const PATCH_NOTES = [
         'Offline continua offline: sem internet, você joga com o pacote que já está no aparelho, e nada muda sem avisar.'
       ] }
     ] },
-  { versao: '5.2', data: '2026-10-06', titulo: '🔄 Recuar virou comando — e o treinador do outro lado aprendeu a trocar de Pokémon', piada: 'Um treinador de Pewter passou dois anos vendo o Geodude dele tomar Surf em silêncio porque ninguém tinha avisado que era permitido chamar o bicho de volta. Avisamos. Ele pediu desculpas ao Geodude e agora troca na cara dura, no melhor momento possível, e ninguém mais acha isso simpático.',
+  { versao: '5.0', data: '2026-10-06', titulo: '🔄 Recuar virou comando — e o treinador do outro lado aprendeu a trocar de Pokémon', piada: 'Um treinador de Pewter passou dois anos vendo o Geodude dele tomar Surf em silêncio porque ninguém tinha avisado que era permitido chamar o bicho de volta. Avisamos. Ele pediu desculpas ao Geodude e agora troca na cara dura, no melhor momento possível, e ninguém mais acha isso simpático.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>🔄 Recuar.</b> No lugar de atacar, dá pra <b>sair de campo por uma rodada</b> e deixar um <b>aliado cobrindo</b>. O botão fica junto de Mochila e Fugir, e só aparece quando há alguém de pé pra cobrir o seu lugar.',
@@ -31,7 +31,7 @@ export const PATCH_NOTES = [
         'Efeito prático: luta de treinador deixou de ser uma fila e virou uma conversa. Vale a pena guardar um golpe pro que vem depois.'
       ] }
     ] },
-  { versao: '5.1', data: '2026-10-06', titulo: '🎁 O selvagem agora aparece segurando item — e dá pra roubar', piada: 'Um Rattata foi visto guardando uma Fruta Oran debaixo da pedra. Perguntado sobre a procedência, alegou que "estava lá". Os Pokémon com Pickpocket foram informados e já estão a caminho.',
+  { versao: '4.9', data: '2026-10-06', titulo: '🎁 O selvagem agora aparece segurando item — e dá pra roubar', piada: 'Um Rattata foi visto guardando uma Fruta Oran debaixo da pedra. Perguntado sobre a procedência, alegou que "estava lá". Os Pokémon com Pickpocket foram informados e já estão a caminho.',
     secoes: [
       { nome: 'Novidades', itens: [
         '<b>Cerca de 1 em 12 selvagens aparece com um item na mão.</b> Coisa barata — <b>Fruta Oran</b>, <b>Lum</b>, <b>Sitrus</b>, uma das 17 <b>frutas de aperto</b> por tipo, <b>Faixa Muscular</b> ou <b>Óculos do Sábio</b> —, e ele <b>usa</b>: aquele Golbat que se curou na metade do HP não é defeito, é a fruta dele. Pra você não ser pego de surpresa, o item aparece num <b>chip 🎁 na plaquinha</b>, do lado do nome, antes de ser usado. Vale pro selvagem comum, pro grupo e pros acompanhantes do Alfa; o <b>Alfa, os lendários e o chefe da semana não seguram nada</b> — já vêm fortes o bastante.',
@@ -43,20 +43,6 @@ export const PATCH_NOTES = [
       { nome: 'Correções', itens: [
         '<b>Petisco na tecla de atalho funciona.</b> Pôr o Mel Silvestre no ⚡ item rápido e apertar a tecla no meio da batalha não fazia <b>absolutamente nada</b> — a barra mandava o petisco pelo caminho dos itens de cura, que não sabe o que é oferecer comida a um selvagem. Agora qualquer caminho (tecla, mochila, atalho) chega no lugar certo.',
         'Usar petisco <b>fora</b> da batalha dizia "não teria efeito agora", que não explicava nada. Agora diz o que fazer com ele.'
-      ] }
-    ] },
-  { versao: '5.0', data: '2026-10-05', titulo: '🤖 A caçada automática parou de queimar dinheiro no Centro Pokémon', piada: 'O atendente do Centro Pokémon tinha descoberto que dava pra cobrar a cura completa da equipe porque um companheiro havia batido o dedinho na pedra. Trinta e sete vezes. Mandamos uma caixa de Poções pra caçada e o rapaz voltou a atender gente doente de verdade.',
-    secoes: [
-      { nome: 'Correções', itens: [
-        '<b>O 🤖 Explorar automaticamente agora usa a mochila antes de pagar o Centro.</b> A conta do Centro cobra <b>₽50 + ₽15/nível de cada membro</b> que esteja com 1 HP ou 1 PP faltando — então uma passada por causa do <b>seu</b> HP vinha cobrando a cura inteira dos companheiros que só tinham raspado. Agora o laço abre a mochila primeiro e usa a <b>Poção, Éter ou antídoto mais barato que resolva</b>, e só gasta item que valha menos do que o Centro cobraria por aquele Pokémon. Sem item que sirva, aí sim ele paga.',
-        'Efeito prático: caçada longa de nível alto gastando uma fração do que gastava, e o dinheiro sobrando pra loja. (O 🤖 segue sendo ferramenta <b>só da conta admin</b>.)'
-      ] }
-    ] },
-  { versao: '4.9', data: '2026-10-05', titulo: '🤖 A exploração automática sobe de nível, caça shiny sem alvo e só vai ao Centro quando precisa', piada: 'A enfermeira do Centro Pokémon faturou uma fortuna com um robô que aparecia a cada três passos pedindo cura completa com 59% de vida e três golpes cheios. Ela não vai devolver o dinheiro, mas pediu pra avisar que agora tem tempo pro almoço.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>Três objetivos para a exploração automática.</b> Além de procurar <b>uma espécie</b>, agora dá pra escolher <b>📈 subir até um nível</b> (ele mói até o seu Pokémon chegar lá e para na hora) ou <b>✨ nenhum alvo</b> — aí ele fica caçando e <b>só para quando aparecer um shiny</b>.',
-        '<b>O Centro Pokémon virou visita necessária, não rotina.</b> Antes ele voltava com 60% de vida, ou quando sobrava um único golpe — mesmo que esse golpe estivesse <b>cheio</b>, com 20 usos pela frente —, e cada passada cobrava a cura da equipe inteira. Agora ele só vai abaixo de <b>45% de vida</b> ou quando os golpes estão de fato no fim (nenhum com mais de 1 PP sobrando).'
       ] }
     ] },
   { versao: '4.8', data: '2026-10-05', titulo: '💎 A mochila abre por divisão e diz pra quem serve cada item de evolução', piada: 'Um jogador passou a tarde segurando um Eletrizador do lado de um Electabuzz esperando algo acontecer. O item estava funcionando perfeitamente: ele só não dizia, em lugar nenhum, que precisava do Cabo de Conexão pra terminar o serviço. O Electabuzz pediu desculpas pelo mal-entendido e evoluiu na hora seguinte.',

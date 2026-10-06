@@ -643,7 +643,9 @@ export async function turn(action) {
      barra: qualquer outro caminho que mande um petisco como item (tecla, 🤖 auto, ação nova) já entra certo. */
   if (action.type === 'item' && ITEMS[action.id]?.afinidade) action = { ...action, type: 'oferecer' };
   G.busy = true;
-  const B = G.B, S = G.S, P = S.player;
+  // `T` = o treinador do outro lado, ou null num encontro selvagem. Lido aqui porque a troca tática dele (1.5,
+  // mais abaixo) precisa da equipe — era a linha que faltava, e sem ela TODO turno estourava em "T is not defined".
+  const B = G.B, S = G.S, P = S.player, T = B.trainer;
   /* ⚔ Saga: o alvo do seu golpe vem na ação (`action.alvo` = índice em B.inimigos, escolhido na cena). Sem ele
      (todo modo de um inimigo só, e a IA dos aliados) vale o foco. O foco também é o que os aliados atacam:
      concentrar fogo é a decisão tática do turno, e dividir dano por conta própria desfaria a escolha do jogador. */

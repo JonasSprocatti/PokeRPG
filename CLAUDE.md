@@ -208,7 +208,8 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 
 ## Convenções
 
-- **Toda funcionalidade nova atualiza o `README.md`** e vira **uma versão nova em `dados-patchnotes.js`** — pedido explícito do usuário, vale sempre. **Exceção única: o ⚔ modo Saga NÃO entra nos patch notes** enquanto for `admin: true` (decisão do usuário, 06/10/2026 — a tela 📜 Novidades é pra quem joga, e esse modo ninguém alcança). Quando o modo abrir pra todos, sai UMA entrada contando o modo inteiro.
+- **Toda funcionalidade nova atualiza o `README.md`** e vira **uma versão nova em `dados-patchnotes.js`** — pedido explícito do usuário, vale sempre.
+- **O que é EXCLUSIVO DE ADMIN não entra nos patch notes** (decisão do usuário, 06/10/2026). A tela 📜 Novidades é pra **quem joga**: anunciar ali o que ninguém alcança é promessa, não changelog. Vale pro **⚔ modo Saga** (`admin: true`), pro **🤖 Explorar automaticamente**, pro **🗺 Editor de rotas** e pra qualquer ferramenta de manutenção. O teste é "um jogador comum consegue usar isto?" — **não** "isto é interessante?". Quando algo assim abrir pra todos, sai UMA entrada contando a coisa inteira. README e `docs/features.md` continuam registrando tudo: lá o público é quem mexe no código.
 - Fontes: `--display` (Fredoka) para títulos e números, `--body` (Atkinson Hyperlegible) para texto. Não voltar a usar fonte pixelada em número (a Pixelify Sans saiu porque confundia 2/5/8).
 - Telas fora do jogo limpam o topo com **`limparTopo()`**, nunca `#topr.innerHTML = ''`.
 - Tela nova = `barraTelas('id')` + entrada em `navegacao.TELAS`.
