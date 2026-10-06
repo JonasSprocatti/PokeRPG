@@ -13,6 +13,16 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.4', data: '2026-10-06', titulo: '🥎 O caçador agora mira nos seus aliados — e ser capturado virou a sua última cartada', piada: 'Um caçador passou a carreira inteira ignorando o Pokémon selvagem que lutava ao seu lado, porque ele tecnicamente não constava no formulário. O formulário foi atualizado. Ele pediu para avisar que agora tem interesse em todos e que o interesse é recíproco em relação ao cinto dele.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>A bola do treinador não é mais só pra você.</b> Com o HP na metade ou menos, ele mira em <b>qualquer um do seu lado</b> — e escolhe o <b>mais fraco</b>, porque é o que um caçador faria. Antes ele olhava o seu companheiro lutando ao seu lado e, por algum motivo, não tinha interesse nenhum.',
+        '<b>E ser capturado deixou de ser o fim na hora.</b> Se a bola se fechar em você e <b>ainda houver aliado de pé</b>, a luta <b>continua sem você</b>: eles partem pra cima do treinador, e <b>derrotar ele te liberta</b>. A tela mostra quem ainda está lutando por você. Se todos caírem, aí sim ele te leva embora.',
+        '<b>Aliado preso volta se você vencer.</b> A bola se abre no fim da luta e ele continua na sua equipe, como se nada tivesse acontecido.',
+        '<b>Mas se você fugir ou perder, ele fica com o treinador — e você não o vê mais.</b> É perda definitiva, igual à do Roguelike. Fugir de uma luta em que um companheiro seu está dentro de uma bola passou a ser uma decisão de verdade.',
+        'Nos modos <b>Fácil</b> e <b>Médio</b> você continua sempre escapando da bola no último segundo. O aliado, não — mas como ele volta ao vencer, a promessa daqueles modos (a sua jornada não acaba por captura) continua valendo inteira.'
+      ] }
+    ] },
   { versao: '5.3', data: '2026-10-06', titulo: '🐺 Matilhas, enxames e cardumes — e o treinador que joga 3 Pokémon de uma vez', piada: 'Os Weedle da Floresta de Viridian estavam sindicalizados desde 2026 e ninguém havia notado. Eles andam em 24. Conseguimos negociar para 3 por vez. O representante do sindicato pediu para registrar que foi uma concessão generosa e que eles poderiam ter vindo em 24.',
     secoes: [
       { nome: 'Novidades', itens: [

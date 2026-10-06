@@ -170,3 +170,58 @@ test('selvagem segurando item: o turno roda e o item aparece no inimigo', async 
   // não testa o efeito (isso é dos testes puros): testa que item no inimigo não quebra render nem motor
   assert.ok(B.inimigos[0]);
 });
+
+/* ---- 🥎 A bola do treinador (três pedidos do usuário, 06/10/2026) ----
+   1. ele pode mirar num ALIADO; 2. vencer liberta quem foi preso; 3. você na bola não é o fim — os aliados
+   seguem lutando. O que torna isto arriscado de implementar é que "preso" reusa o `vol.retirado` do revezamento:
+   se algum caminho esquecer de limpar, o aliado volta de graça; se o `endBattle` esquecer de descontar, nunca se
+   perde. Os dois lados estão testados aqui. */
+const comTreinador = (equipe, extra = {}) => ({
+  nome: 'Caçador Teste', equipe, emCampo: equipe.map((_, k) => k).slice(0, 1), atual: 0, campo: 1,
+  bola: 'poke-ball', bolas: 3, ...extra
+});
+
+test('vencer SOLTA quem estava preso, e ele volta pra equipe', async () => {
+  const inimigo = mon({ name: 'pidgey', id: 16, hp: 1 });   // cai no primeiro golpe → win()
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  const aliado = mon({ name: 'bulbasaur', id: 1 });
+  G.S.aliados = [aliado];
+  G.B = batalhaFalsa([inimigo], { trainer: comTreinador([inimigo]), taxaCaptura: 45, presos: [aliado] });
+  aliado.vol.retirado = true;                                // como `prender` o deixa
+  await batalha.turn({ type: 'move', idx: 0 });
+  assert.ok(!aliado.vol.retirado, 'a bola abriu: ele voltou pra campo');
+  assert.ok(G.S.aliados.includes(aliado), 'e continua na equipe');
+});
+
+test('VOCÊ preso e vencendo: a bola abre e você segue na jornada', async () => {
+  const inimigo = mon({ name: 'pidgey', id: 16, hp: 1 });
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  const aliado = mon({ name: 'bulbasaur', id: 1 });
+  G.S.aliados = [aliado];
+  const P = G.S.player; P.vol.retirado = true;
+  G.B = batalhaFalsa([inimigo], { trainer: comTreinador([inimigo]), taxaCaptura: 45, presos: [P], naBola: true });
+  await batalha.turn({ type: 'passar' });                    // você não age: quem luta são os aliados
+  assert.ok(!P.vol.retirado, 'você saiu da bola');
+  assert.ok(!G.B || !G.B.naBola, 'e a marca de bola foi desfeita');
+});
+
+test('aliado preso e a luta acabando SEM vitória: ele é perdido de verdade', async () => {
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  const aliado = mon({ name: 'bulbasaur', id: 1 });
+  G.S.aliados = [aliado];
+  const inimigo = mon({ name: 'pidgey', id: 16 });
+  G.B = batalhaFalsa([inimigo], { trainer: comTreinador([inimigo]), taxaCaptura: 45, presos: [aliado] });
+  aliado.vol.retirado = true;
+  batalha.endBattle();                                       // fuga, derrota, saída forçada: tudo passa por aqui
+  assert.ok(!G.S.aliados.includes(aliado), 'o treinador levou ele embora');
+});
+
+test('você preso NÃO é removido da equipe pelo endBattle (você não é aliado)', () => {
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.abertos = new Set();
+  const P = G.S.player;
+  const inimigo = mon({ name: 'pidgey', id: 16 });
+  G.S.aliados = [];
+  G.B = batalhaFalsa([inimigo], { trainer: comTreinador([inimigo]), taxaCaptura: 45, presos: [P], naBola: true });
+  batalha.endBattle();
+  assert.equal(G.S.player, P, 'você continua sendo você — quem resolve a sua captura é `serCapturado`');
+});

@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 import {
   GRUPO_MAX, CHANCE_GRUPO_MAX, ROTAS_SEM_GRUPO, chanceDeGrupo, tetoDoGrupo, tamanhoDoEncontro,
   nomeDoGrupo, NOME_DO_GRUPO, EQUIPE_TREINADOR, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador,
-  itemDeTreinador, chanceItemDoTreinador, orcamentoDoTreinador, CHANCE_ITEM_TREINADOR, FRACAO_PISO_TREINADOR, ITENS_FORA_DO_TREINADOR
+  itemDeTreinador, chanceItemDoTreinador, orcamentoDoTreinador, CHANCE_ITEM_TREINADOR, FRACAO_PISO_TREINADOR, ITENS_FORA_DO_TREINADOR,
+  alvoDaBola, FRACAO_BOLA
 } from '../js/regras.js';
 import { ITEMS } from '../js/dados.js';
 
@@ -183,4 +184,33 @@ test('o que atrapalharia o dono fica de fora, com motivo', () => {
 test('pool vazio não quebra nem inventa item', () => {
   assert.equal(itemDeTreinador(50, [], () => 0, () => 0), null);
   assert.equal(itemDeTreinador(50, undefined, () => 0, () => 0), null);
+});
+
+/* ---- 🥎 Em quem o treinador lança a bola (regras.alvoDaBola) ---- */
+const comHp = (hp, hpMax = 100, o = {}) => ({ hp, stats: { hp: hpMax }, vol: {}, ...o });
+
+test('a bola só mira em quem está na metade do HP ou menos', () => {
+  assert.equal(alvoDaBola([comHp(100)]), null, 'HP cheio: ninguém pra pegar');
+  assert.equal(alvoDaBola([comHp(51)]), null, 'acima da metade: ainda não');
+  assert.ok(alvoDaBola([comHp(50)]), 'na metade exata: pode');
+  // é a MESMA fração de `treinadorLancaBola`: duas condições pro mesmo "está fraco" ninguém reconcilia depois
+  assert.equal(FRACAO_BOLA, 0.5);
+});
+
+test('entre os alvos possíveis, ele pega o mais fraco — é o que um caçador faria', () => {
+  const quase = comHp(10), meio = comHp(45), cheio = comHp(90);
+  assert.equal(alvoDaBola([cheio, meio, quase]), quase);
+  assert.equal(alvoDaBola([quase, meio]), quase, 'a ordem da lista não muda a escolha');
+  // fração, não valor absoluto: 10 de 100 é mais fraco que 20 de 200? Não — 10% x 10%, empate; 5 de 100 ganha
+  assert.equal(alvoDaBola([comHp(20, 200), comHp(5, 100)]).hp, 5);
+});
+
+test('quem já está preso, caído ou fora de campo não é alvo', () => {
+  const preso = comHp(10), caido = comHp(0), fora = comHp(10, 100, { vol: { retirado: true } }), bom = comHp(40);
+  assert.equal(alvoDaBola([preso, bom], [preso]), bom, 'não lança duas bolas no mesmo');
+  assert.equal(alvoDaBola([caido]), null, 'em quem desmaiou não se usa bola');
+  assert.equal(alvoDaBola([fora]), null, 'quem saiu de campo não está lá pra ser pego');
+  assert.equal(alvoDaBola([]), null);
+  assert.equal(alvoDaBola(), null);
+  assert.equal(alvoDaBola([null, undefined, bom]), bom, 'lista com buraco não quebra');
 });

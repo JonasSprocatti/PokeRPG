@@ -24,7 +24,8 @@ import {
   prioridadeEfetiva, sempreUltimo, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, GRUPO_MAX, golpeDoPlano, especiesDobradas,
   guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT,
   itemDeSelvagem, itemCaiComoEspolio, trocaDoTreinador,
-  tamanhoDoEncontro, tetoDoGrupo, nomeDoGrupo, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador, itemDeTreinador
+  tamanhoDoEncontro, tetoDoGrupo, nomeDoGrupo, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador, itemDeTreinador,
+  alvoDaBola, TAXA_CAPTURA_ALIADO
 } from './regras.js';
 import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
 import { OFICIOS } from './oficios.js';
@@ -510,21 +511,67 @@ export async function startTrainerBattle(z) {
 async function vez(v) { G.B.vez = v; render(); }
 // o lado inimigo: em batalha de treinador, ele pode gastar a vez lançando bola em vez do Pokémon dele atacar
 function acaoDoInimigo(E, P) {
-  const T = G.B.trainer;
-  if (T && treinadorLancaBola(P.hp, P.stats.hp, T.bolas)) return { bola: true };
+  const B = G.B, T = B.trainer;
+  /* A bola deixou de ser só pra você: `regras.alvoDaBola` escolhe entre você e os aliados em campo, pegando quem
+     está mais perto de ser capturado. `treinadorLancaBola` segue decidindo SE ele gasta a vez com isso. */
+  if (T) {
+    const alvo = alvoDaBola(vivos(emCampo()), B.presos || []);
+    if (alvo && treinadorLancaBola(alvo.hp, alvo.stats.hp, T.bolas)) return { bola: true, alvo };
+  }
   return { move: chooseEnemyMove(E) };
 }
-async function lancarBola(P) {
-  const B = G.B, T = B.trainer, bola = BOLAS[T.bola];
+/* 🥎 A bola. Três pedidos do usuário (06/10/2026) moram aqui:
+     1. o alvo pode ser um ALIADO, não só você;
+     2. aliado capturado volta se você VENCER o treinador;
+     3. você capturado não é o fim na hora — os aliados em pé seguem lutando pra te tirar da bola.
+   Quem está preso entra em `B.presos` e sai de campo com `vol.retirado`, a MESMA marca do revezamento — então o
+   `turn()` já o pula sem nenhuma linha nova. Quem decide o destino deles é `win()` (soltos) e a derrota ou a fuga
+   (perdidos de verdade). */
+async function lancarBola(alvo) {
+  const B = G.B, S = G.S, T = B.trainer, P = S.player, bola = BOLAS[T.bola];
+  const M = alvo || P, euMesmo = M === P;
   T.bolas--;
-  await say(`${esc(T.nome)} lançou uma <b>${bola.nome}</b> em você!`, 'status');
-  const real = balancosDaCaptura(valorCaptura(P.hp, P.stats.hp, B.taxaCaptura, bola.mult, P.status));
-  const regra = DIFICULDADES[dificuldadeDe(G.S)];
-  const balancos = regra.semCaptura ? Math.min(real, 3) : real; // Fácil/Médio: nunca fecha
+  await say(`${esc(T.nome)} lançou uma <b>${bola.nome}</b> em ${euMesmo ? 'você' : `<b>${esc(rotulo(M))}</b>`}!`, 'status');
+  // a taxa do seu principal vem da espécie; a de aliado é a média da franquia (regras.TAXA_CAPTURA_ALIADO)
+  const taxa = euMesmo ? B.taxaCaptura : TAXA_CAPTURA_ALIADO;
+  const real = balancosDaCaptura(valorCaptura(M.hp, M.stats.hp, taxa, bola.mult, M.status));
+  const regra = DIFICULDADES[dificuldadeDe(S)];
+  /* `semCaptura` (Fácil/Médio) protege VOCÊ, não o aliado. A promessa daqueles modos é que a sua jornada não
+     acaba por captura — e aliado preso não acaba nada: ele volta se você vencer. */
+  const balancos = regra.semCaptura && euMesmo ? Math.min(real, 3) : real;
   for (let i = 0; i < Math.min(balancos, 3); i++) await say('A bola balança...', 'muted');
-  if (balancos >= 4) { B.capturado = true; await say('Clique! A bola se fechou. Você foi capturado...', 'hit'); return; }
-  if (regra.semCaptura && real >= 4) await say(`Por pouco! Você arrebenta a bola no último segundo. (modo ${regra.nome}: você sempre escapa)`, 'good');
-  else await say('Você se debate e escapa da bola!', 'good');
+  if (balancos >= 4) return prender(M);
+  if (regra.semCaptura && euMesmo && real >= 4) await say(`Por pouco! Você arrebenta a bola no último segundo. (modo ${regra.nome}: você sempre escapa)`, 'good');
+  else await say(`${euMesmo ? 'Você se debate e escapa' : `${nm(M)} se debate e escapa`} da bola!`, 'good');
+}
+/* A bola fechou. Ninguém é perdido AQUI: o preso sai de campo e a luta continua. Só a derrota (ou a fuga) torna a
+   captura definitiva, e vencer desfaz tudo. É o que transforma "você foi capturado" de fim de jogo em última
+   cartada — enquanto houver aliado em pé, há chance.
+   Nunca chamar `serCapturado`/`endBattle` de dentro de uma ação: marca e o `turn()` encerra (regra do projeto). */
+async function prender(M) {
+  const B = G.B, P = G.S.player, euMesmo = M === P;
+  (B.presos ||= []).push(M);
+  M.vol.retirado = true;
+  if (euMesmo) B.naBola = true;
+  render();
+  await say(`Clique! A bola se fechou${euMesmo ? '. Você foi capturado...' : ` em ${nm(M)}...`}`, 'hit');
+  const sobraram = vivos(emCampo());
+  if (!sobraram.length) { B.capturado = true; return; }       // ninguém de pé: a captura vale
+  if (euMesmo) await say(`<b>${sobraram.map(m => nm(m)).join(' e ')}</b> ${sobraram.length > 1 ? 'partem' : 'parte'} pra cima de ${esc(B.trainer.nome)}! Derrote ele e você sai dessa bola.`, 'level');
+  else await say(`${esc(B.trainer.nome)} prende a bola no cinto. Derrote ele pra trazer ${nm(M)} de volta.`, 'status');
+}
+/* Vocês venceram: toda bola se abre. É o pedido "derrotar o treinador com um aliado seu capturado te liberta",
+   valendo nos dois sentidos — pra você e pros aliados. Chamado de `win()`, antes de qualquer recompensa, porque
+   quem sai da bola participa do XP (ele lutou até ser preso). */
+async function soltarPresos() {
+  const B = G.B; if (!B.presos?.length) return;
+  for (const M of B.presos) {
+    delete M.vol.retirado; delete M.vol.volta;
+    if (M.hp <= 0) M.hp = 1;                                  // sai tonto, mas sai
+    await say(`🥎 A bola de ${esc(B.trainer?.nome || 'o treinador')} se abre: <b>${esc(rotulo(M))}</b> está livre!`, 'level');
+  }
+  B.presos = []; B.naBola = false;
+  render();
 }
 // id do destaque de quem age: 'p' você, 'a0'/'a1' aliados
 const idVez = m => m === G.S.player ? 'p' : 'a' + G.S.aliados.indexOf(m);
@@ -798,7 +845,7 @@ export async function turn(action) {
     for (const F of inimigosEmCampo()) {
       if (F.vol?.semAcao) continue;      // acabou de entrar numa troca tática: trocar FOI a ação do treinador
       const ea = acaoDoInimigo(F, P);
-      acoes.push(ea.bola ? { quem: F, bola: true, prio: 99, vel: 0 }
+      acoes.push(ea.bola ? { quem: F, bola: true, alvoBola: ea.alvo, prio: 99, vel: 0 }
         : { quem: F, golpe: ea.move, prio: prioridadeEfetiva(F, ea.move), vel: vel(F), rapido: ativouQuickClaw(F), lento: sempreUltimo(F) });
     }
     // o que cada um vai usar neste turno (Sucker Punch olha isso: só funciona contra quem vai atacar). Golpe travado (carga/fúria) vale.
@@ -820,7 +867,7 @@ export async function turn(action) {
       if (emRuina(a.quem)) { await vez(B.inimigos.includes(a.quem) ? 'e' : idVez(a.quem)); await say(`${nm(a.quem)} está em <b>Ruína</b> e não consegue agir.`, 'muted'); continue; }
       // ⚔ Saga: perícia (não é golpe — ver usarPericia). Vale pra você e pros companheiros comandados.
       if (a.pericia) { await vez(idVez(a.quem)); await usarPericia(a.quem, a.pericia); await anunciarQuedas(); continue; }
-      if (a.bola) { await vez('t'); await lancarBola(P); continue; }
+      if (a.bola) { await vez('t'); await lancarBola(a.alvoBola); continue; }
       if (a.parado) { await vez(idVez(a.quem)); await say(`${nm(a.quem)} ${a.parado}`, 'muted'); continue; }
       if (B.inimigos.includes(a.quem)) {
         const F = a.quem;
@@ -874,7 +921,11 @@ export async function turn(action) {
     B.turn++;
     if (P.hp <= 0) await lose();
     else if (grupoInimigoCaiu()) await win();
-    else if (!vivos(emCampo()).length) { await say('Não sobrou ninguém em campo: a luta termina.', 'muted'); endBattle(); }   // você foi tirado e os aliados caíram
+    else if (!vivos(emCampo()).length) {
+      // você foi tirado de campo e os aliados caíram. Se você estava NA BOLA, é agora que a captura vale de verdade
+      if (B.naBola) await serCapturado();
+      else { await say('Não sobrou ninguém em campo: a luta termina.', 'muted'); endBattle(); }
+    }
   } catch (e) {
     console.error(e); log('Algo deu errado neste turno: ' + esc(e.message), 'hit');
   } finally {
@@ -899,6 +950,10 @@ export async function turn(action) {
    golpe interrompendo a rodada pela metade. */
 async function win() {
   const S = G.S, B = G.B, T = B.trainer, P = S.player;
+  /* 🥎 Vocês venceram: toda bola se abre. Vem ANTES de medir o `fora` lá embaixo de propósito — quem saiu da
+     bola lutou até ser preso e participa do XP. É o pedido "derrotar o treinador com um aliado seu capturado te
+     liberta", valendo nos dois sentidos. */
+  await soltarPresos();
   const caidos = B.inimigos.filter(m => m.hp <= 0 && !m.vol?.retirado);
   const E = caidos[0] || B.inimigos[0];        // o "principal" da luta: é dele que saem chefe/registro/abate
   const mult = multShiny(S); // segredo do brilho: shiny ganha XP e dinheiro em dobro (regras.js)
@@ -1074,6 +1129,18 @@ async function serCapturado() {
    é ignorado): é mais seguro varrer a equipe do que lembrar quem virou. Sem isto o Pokémon ficaria Mega pra
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
 export function endBattle() {
+  /* 🥎 Aliado que ficou NA BOLA quando a luta terminou sem vitória (você fugiu, foi derrotado, a luta se desfez)
+     foi levado pelo treinador — e é perda de verdade, igual ao permadeath do Roguelike. `win()` solta todo mundo
+     ANTES de chegar aqui, então quem sobrou em `B.presos` neste ponto é exatamente quem se perdeu.
+     Fica no `endBattle` de propósito: é a porta ÚNICA do fim de batalha, e espalhar isso por fuga, derrota e
+     saída forçada deixaria algum caminho sem a regra — que é como um aliado voltaria de graça. */
+  const levados = (G.B?.presos || []).filter(m => m !== G.S?.player);
+  for (const A of levados) {
+    const i = G.S?.aliados?.indexOf(A) ?? -1;
+    if (i >= 0) G.S.aliados.splice(i, 1);
+    log(`🥎 ${esc(A.nick || fmt(A.name))} ficou com ${esc(G.B?.trainer?.nome || 'o treinador')}. Você não vai mais vê-lo.`, 'hit');
+  }
+  if (levados.length) G.abertos?.clear();
   G.alvoDe = null;
   G.B = null; G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar', G.S ? zone() : null);
   for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); desfazerTrace(m); m.vol = freshVol(); }

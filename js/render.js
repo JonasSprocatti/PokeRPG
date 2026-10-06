@@ -746,7 +746,15 @@ function renderActions() {
     const P = S.player;
     // arrastado pra fora da luta (Roar & cia.) com aliados ainda lutando: não há o que escolher, só assistir o turno
     if (P.vol?.retirado) {
-      a.innerHTML = `<p class="small muted">${nm(P)} foi tirado da luta. Os aliados continuam sem você.</p><div class="subrow"><button class="btn big" data-act="passar" ${dis}>⏭ Assistir o turno</button></div>`;
+      /* 🥎 Na bola é diferente de "arrastado pra fora": é a última cartada. Enquanto um aliado estiver de pé a
+         luta continua, e derrotar o treinador te liberta — se eles caírem, a captura vale. A tela tem de dizer
+         isso, senão "assistir o turno" parece que a run já acabou e o jogador fecha o jogo. */
+      a.innerHTML = G.B.naBola
+        ? `<p class="small"><b>🥎 Você está dentro da bola de ${esc(G.B.trainer?.nome || 'o treinador')}.</b> ${nm(P)} não consegue agir — mas
+             <b>${vivos(emCampo()).map(m => esc(rotulo(m))).join(' e ')}</b> ainda ${vivos(emCampo()).length > 1 ? 'estão' : 'está'} de pé.
+             <b>Derrote o treinador e você sai dessa.</b> Se todos caírem, ele te leva embora.</p>
+           <div class="subrow"><button class="btn big" data-act="passar" ${dis}>⏭ Torcer pelos seus</button></div>`
+        : `<p class="small muted">${nm(P)} foi tirado da luta. Os aliados continuam sem você.</p><div class="subrow"><button class="btn big" data-act="passar" ${dis}>⏭ Assistir o turno</button></div>`;
       return;
     }
     if (G.panel === 'bag') {

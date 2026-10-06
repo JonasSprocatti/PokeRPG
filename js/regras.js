@@ -1591,6 +1591,27 @@ export const bolaPorNivel = nivel => nivel < 20 ? 'poke-ball' : nivel < 40 ? 'gr
 // o treinador gasta a vez lançando bola só quando você está com metade do HP ou menos (60% de chance a cada turno)
 export const treinadorLancaBola = (hp, hpMax, bolas, sorte = Math.random()) => bolas > 0 && hp <= hpMax / 2 && sorte < 0.6;
 
+/* ---- 🥎 Em QUEM o treinador lança a bola (pedido do usuário, 06/10/2026) ----
+   "Treinadores também vão poder tentar capturar Pokémon aliados, não só você."
+
+   Até aqui a bola só existia pra você, e isso dizia uma coisa estranha do mundo do jogo: um caçador olhava um
+   Pokémon selvagem lutando ao seu lado e não tinha interesse nenhum. Agora o lado dele escolhe — e escolhe BEM,
+   pegando quem está mais perto de ser capturado (menor fração de HP), porque é o que um caçador faria.
+   Devolve o Pokémon, ou null se ninguém está na faixa. `FRACAO_BOLA` é a mesma metade de `treinadorLancaBola`:
+   duas condições diferentes pro mesmo "está fraco o bastante" é o tipo de coisa que ninguém reconcilia depois. */
+export const FRACAO_BOLA = 0.5;
+export function alvoDaBola(lado = [], jaPresos = []) {
+  const candidatos = lado.filter(m => m && m.hp > 0 && !m.vol?.retirado && !jaPresos.includes(m)
+    && m.hp <= m.stats.hp * FRACAO_BOLA);
+  if (!candidatos.length) return null;
+  return candidatos.reduce((pior, m) => (m.hp / m.stats.hp < pior.hp / pior.stats.hp ? m : pior));
+}
+/* Taxa de captura de um ALIADO. A do seu principal vem da espécie (`B.taxaCaptura`, buscada no começo da luta);
+   a de um aliado exigiria uma busca de rede DENTRO do turno, e buscar no caminho crítico é a armadilha que o
+   CLAUDE.md nomeia. Então vale a média da franquia — e ela é generosa com o jogador, porque 45 é mais baixo que
+   a taxa da maioria dos Pokémon comuns que viram aliados. */
+export const TAXA_CAPTURA_ALIADO = 45;
+
 // Fórmula de captura da Gen 3/4. `a` ≥ 255 = captura garantida; senão cada um dos 4 balanços passa com chance b/65536.
 export const BONUS_STATUS_CAPTURA = { sleep: 2, freeze: 2, paralysis: 1.5, burn: 1.5, poison: 1.5 };
 export function valorCaptura(hp, hpMax, taxa, multBola, status) {
