@@ -2,7 +2,7 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
-import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS } from './dados.js';
+import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS, ITENS_DE_SELVAGEM } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem, multEviolite, multStatDoItem } from './segurados.js';
@@ -578,6 +578,26 @@ export const quemEvoluiComItem = (item, mons = []) => {
   return alvos ? mons.filter(m => alvos.includes(m?.data?.speciesName)) : [];
 };
 
+/* Item na mão do SELVAGEM (relato #77/#70). Duas constantes, e são as duas que você mexe pra calibrar:
+     CHANCE_ITEM_SELVAGEM  quantos selvagens aparecem segurando algo
+     CHANCE_ESPOLIO_ITEM   dos que seguravam, quantos DEIXAM o item cair ao serem derrotados
+   O caminho normal pra ficar com o item é o GOLPE (Thief, Covet) ou a HABILIDADE (Pickpocket, Magician) — o
+   espólio é o acidente raro, não a torneira. Multiplicadas, as duas dão ~0,2% das vitórias contra selvagem:
+   decisão do usuário em 06/10/2026, justamente pra não virar renda na 🤖 caçada automática, que faz centenas de
+   lutas seguidas. Se um dia a ideia for "item de selvagem é fonte de renda", sobe a SEGUNDA, não a primeira.
+   `sorte` entra por parâmetro (como em `ganhoAmizade`/`consegueFugir`) porque efeito de chance se testa fixando
+   o sorteio, nunca por amostragem. */
+export const CHANCE_ITEM_SELVAGEM = 0.08;
+export const CHANCE_ESPOLIO_ITEM = 0.025;
+export function itemDeSelvagem(sorte = Math.random(), sorteio = Math.random(), lista = ITENS_DE_SELVAGEM) {
+  if (!(sorte < CHANCE_ITEM_SELVAGEM) || !lista.length) return null;
+  const total = lista.reduce((s, e) => s + e.p, 0);
+  let x = clamp(sorteio, 0, 0.999999) * total;
+  return (lista.find(e => (x -= e.p) < 0) || lista[lista.length - 1]).id;
+}
+// o selvagem derrotado deixou o item cair? Só faz sentido chamar em quem ESTAVA segurando algo.
+export const itemCaiComoEspolio = (sorte = Math.random()) => sorte < CHANCE_ESPOLIO_ITEM;
+
 /* fuga: Run Away ou ser mais rápido garante; senão a chance sobe 30/256 a cada tentativa. `preso` = o oponente
    tem Magnet Pull e você é do tipo Aço (regras.js não sabe de habilidade — quem chama já resolveu isso em
    `hab(inimigo).prendeTipo`) — nem a velocidade ajuda, só Run Away escapa disso, como nos jogos. */
@@ -842,6 +862,9 @@ export function notaDoGolpe(g, c) {
     if (esp.recarga || esp.carga) nota *= esp.invulneravel ? 0.75 : 0.6;                     // gasta 2 turnos
     if (esp.furia) nota *= 0.9;
     if (esp.soSeAlvoAtaca) nota *= 0.7;
+    // Thief/Covet (roubam) e Knock Off (derruba) valem um pouco mais quando há item na mão do alvo. São golpes de
+    // DANO, então a nota base já vem de cima: isto é só o desempate contra outro golpe de poder parecido.
+    if (alvo.item && ((esp.roubaItem && !u.item) || esp.derrubaItem)) nota += 8;
     return nota;
   }
 

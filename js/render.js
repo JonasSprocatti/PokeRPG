@@ -119,6 +119,10 @@ export function chipsFor(m) {
   if (m.vol?.paixao) h += `<span class="st" title="Metade dos turnos não consegue atacar">PAIXÃO</span>`;
   if (m.vol?.foco) h += `<span class="st" title="Crítico mais fácil">FOCO</span>`;
   for (const [s, v] of Object.entries(m.vol?.stages || {})) if (v) h += `<span class="stg ${v > 0 ? 'up' : 'down'}">${STAGE_SHORT[s]} ${v > 0 ? '+' : ''}${v}</span>`;
+  /* O item SEGURADO na plaquinha. Virou necessário quando o selvagem passou a segurar item
+     (dados.ITENS_DE_SELVAGEM): sem isso, ele comer uma Fruta Oran na metade do HP pareceria defeito, não item —
+     e a graça de Thief/Knock Off é ver o que há pra roubar. Vale pros dois lados: no seu, poupa abrir a ficha. */
+  if (m.item && ITEMS[m.item]) h += `<span class="st st-item" title="${esc(ITEMS[m.item].desc || '')}">🎁 ${esc(ITEMS[m.item].name)}</span>`;
   return `<div class="chips">${h}</div>`;
 }
 // barra de amizade (só aparece no selvagem depois do primeiro petisco)
@@ -621,7 +625,10 @@ function avisoRepelente(z) {
   const txt = r.tipo === 'total' ? 'Nenhum selvagem aparece'
     : fora ? `Só <b>${esc(fmt(r.especie))}</b> passaria — e ele não vive nesta rota, então nenhum selvagem aparece aqui`
     : `Só <b>${esc(fmt(r.especie))}</b> aparece`;
-  return `<p class="small repel-aviso">🚫 <b>Repelente ativo</b> · ${txt} · restam <b>${r.passos}</b> explorações. Treinadores, itens e dinheiro seguem normais.</p>`;
+  /* O botão de cancelar é pedido de quem joga (relato #69): o repelente seletivo prende a rota numa espécie só, e
+     quem mudava de ideia ficava esperando os passos acabarem. Cancelar NÃO devolve o item — ele já foi usado. */
+  return `<p class="small repel-aviso">🚫 <b>Repelente ativo</b> · ${txt} · restam <b>${r.passos}</b> explorações. Treinadores, itens e dinheiro seguem normais.
+    <button class="btn ghost sm" data-act="repel-cancelar" ${G.busy ? 'disabled' : ''}>✕ Cancelar efeito</button></p>`;
 }
 // Caça Shiny (só no modo ligado na criação): com a rota inteira revelada, escolha uma espécie e só ela aparece.
 function blocoCaca(z, dex) {

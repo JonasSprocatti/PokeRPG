@@ -28,6 +28,7 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'forcaSaida', 'prende', 'passaBonus',     // o que nos jogos dependia de trocar de Pokémon (Roar, Mean Look, Baton Pass)
     'revezamento',                            // 🔄 quem usa sai de campo e volta no fim da rodada (U-turn, Teleport…)
     'puneContato', 'voltaPostura',            // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
+    'roubaItem', 'derrubaItem',             // Thief/Covet roubam o item do alvo; Knock Off derruba (o item se perde)
     'atkDe', 'atkDoAlvo', 'defDe']);          // golpe que ataca/defende por outro atributo (Body Press, Foul Play, Psyshock) — regras.calcDamage
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade',
     'pesoDoAlvo', 'pesoRelativo', 'estagios', 'estagiosDoAlvo', 'hpDoAlvo']);

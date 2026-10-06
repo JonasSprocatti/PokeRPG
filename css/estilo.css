@@ -492,6 +492,7 @@ a.btn{display:inline-block;text-decoration:none}
 /* ⚔ Saga: selo de ofício ao lado do nome (🛡/💚/🔮…) e o 🎯 de quem o inimigo está mirando (render.seloOficio) */
 .oficio{margin-left:6px;font-size:.95em;cursor:help}
 .st{font:700 11px/1.7 var(--display);padding:0 7px;border-radius:5px;background:#555;color:#fff}
+.st-item{background:#3c4a63;font-weight:600;max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .st-burn{background:#d9532b}.st-poison{background:#9b3fa0}.st-paralysis{background:#c9a400;color:#222}.st-sleep{background:#6c7086}.st-freeze{background:#4fb3c9;color:#12303a}
 .stg{font:700 11px/1.7 var(--display);padding:0 6px;border-radius:5px}
 .stg.up{background:#2f7a45;color:#e8ffe9}.stg.down{background:#8f3526;color:#ffe9e4}

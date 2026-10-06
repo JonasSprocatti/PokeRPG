@@ -7,7 +7,7 @@ import { render } from './render.js';
 import { changeStats } from './efeitos.js';
 import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.js';
 import { ITEMS, ST_SHORT, STATS, STAT_PT } from './dados.js';
-import { pokedexDaRota, somarRegistros } from './mapas.js';
+import { pokedexDaRota, somarRegistros, repelenteAtivo } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
 import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO, recalc, ivsParaMaximizar, habilidadesParaTrocar } from './regras.js';
 import { IMPL } from './habilidades.js';
@@ -111,6 +111,18 @@ async function usarRepelente(id) {
     : `Você usa ${it.name}. Por ${it.passos} explorações, nenhum selvagem chega perto.`, 'good');
   return true;
 }
+/* Cancelar o efeito que está valendo (pedido de quem joga, relato #69): o seletivo prende a rota numa espécie só,
+   e quem mudava de ideia esperava os passos acabarem. Confirma antes porque os passos que sobraram são perdidos —
+   o item já foi gasto e não volta pra mochila. Botão no próprio aviso (render.avisoRepelente). */
+export async function cancelarRepelente() {
+  const S = G.S, r = repelenteAtivo(S); if (!r || G.busy || G.mode !== 'explore') return;
+  const i = await ask(`Cancelar o repelente agora? Restam <b>${r.passos}</b> explorações e elas são <b>perdidas</b> — o item já foi usado e não volta pra mochila.`,
+    [{ label: 'Cancelar o efeito', value: 1 }, { label: 'Deixar como está', value: -1, ghost: true }]);
+  if (i < 0) return;
+  delete S.repelente;
+  render(); save();
+  await say('🚫 Repelente cancelado. Os selvagens voltam a aparecer normalmente.', 'muted');
+}
 /* Itens de golpe (dados.ITENS_GOLPE): Escama do Coração relembra golpe de NÍVEL que você deixou passar; Disco
    Técnico ensina golpe de MT/tutor/herança, que nunca apareceria subindo de nível. Os dois perguntam em quem e
    qual golpe, e só são gastos se o golpe entrar mesmo no moveset (aprender devolve true).
@@ -208,6 +220,8 @@ export async function useItem(id, inBattle, quem = null) {
     return evoluirComItem(id);
   }
   if (it.raide) return usarRaide(id);      // itens de raide: só na luta do chefe da semana
+  // petisco: em batalha `batalha.turn` já desvia pra `oferecer` — aqui sobra só o caso de usar fora da luta
+  if (it.afinidade) { await say(`${it.name} é petisco: ofereça a um selvagem no meio da batalha, pela mochila ou pelo ⚡ item rápido.`, 'muted'); return false; }
   if (it.segurar) { await say(`${it.name} fica na mochila: é gasto sozinho quando a evolução que pede ele acontecer.`, 'muted'); return false; }
   if (it.segurado) { await equiparItem(id, inBattle); return false; } // item pra segurar: não é gasto agora
   if (it.repelente) { if (inBattle) { await say('Repelente só funciona explorando.'); return false; } return usarRepelente(id); }

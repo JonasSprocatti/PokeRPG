@@ -40,6 +40,10 @@
 //   viraTipo: [t]    o ALVO passa a ser desse tipo (Soak: Água pura). Vale pra defesa, STAB, status e terreno —
 //                    a fonte é `regras.tiposDe`, e o tipo novo mora no `vol` (nunca em `m.data`, que é do cache)
 //   ganhaTipo: t     ACRESCENTA um tipo ao alvo sem tirar os dele (Forest's Curse, Trick-or-Treat)
+//   roubaItem        pega o item segurado do alvo, se quem usa está SEM item (Thief, Covet) — mesmo bloco de
+//                    Pickpocket/Magician em golpe.js; Sticky Hold do alvo barra
+//   derrubaItem      o item segurado do alvo se PERDE (Knock Off): não vai pra ninguém, e vale mesmo com quem
+//                    usa já segurando algo; Sticky Hold barra
 export const GOLPES_ESPECIAIS = {
   /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
      FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
@@ -65,6 +69,13 @@ export const GOLPES_ESPECIAIS = {
   // golpes de TROCA: quem usa sai. Dano primeiro (U-turn e cia. machucam), Teleport/Parting Shot são de status
   'u-turn': { revezamento: true }, 'volt-switch': { revezamento: true }, 'flip-turn': { revezamento: true },
   teleport: { revezamento: true }, 'parting-shot': { revezamento: true },
+  /* Itens do ALVO. Os três só passaram a valer quando o selvagem começou a segurar item
+     (dados.ITENS_DE_SELVAGEM, relato #77/#70): antes disso Thief acertava e não havia nada pra roubar, então
+     ficaram de fora de propósito. `roubaItem` reusa o bloco de Pickpocket/Magician em golpe.js — a regra é a
+     mesma (só rouba quem está sem item; Sticky Hold do alvo barra). `derrubaItem` é o Knock Off: o item não vai
+     pra ninguém, se perde — e por isso ele funciona mesmo com quem usa já segurando algo. */
+  thief: { roubaItem: true }, covet: { roubaItem: true },
+  'knock-off': { derrubaItem: true },
   'mean-look': { prende: true }, block: { prende: true }, 'spider-web': { prende: true }, 'baton-pass': { passaBonus: true },
   taunt: { trava: 'provocar' }, encore: { trava: 'encore' }, disable: { trava: 'disable' }, torment: { trava: 'tormento' },
   // Captivate: os −2 de At.Esp. são comuns, o que a tabela acrescenta é a exigência de gênero (Attract não precisa

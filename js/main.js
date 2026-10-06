@@ -33,7 +33,7 @@ import { telaPerfil } from './perfil-amigo.js';
 import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim,
   arenaComprarComum, arenaComprarSegurado, arenaEquipar, arenaUsarItem, arenaReviver } from './arena.js';
 import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
-import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem, marcarRapido } from './itens.js';
+import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem, marcarRapido, cancelarRepelente } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem, precoVenda, moverGolpe } from './regras.js';
@@ -373,6 +373,7 @@ async function aoClicar(e) {
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
     case 'rapido': return marcarRapido(v);   // ⚡ na mochila: liga/desliga o atalho (regras.alternarRapido)
+    case 'repel-cancelar': return cancelarRepelente();   // ✕ no aviso de repelente ativo (relato #69)
     /* ⚔ Saga: com mais de um inimigo de pé, tocar no golpe PEDE o alvo (a cena vira botões) em vez de atacar —
        escolher em quem bater é a decisão tática do modo. Com um inimigo só, ataca direto: um segundo toque pra
        confirmar o óbvio seria atrito puro. */

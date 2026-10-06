@@ -962,11 +962,19 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   }
   if (meta.heal > 0 && u.hp > 0) { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); }
 
-  // Pickpocket (só contato) / Magician (qualquer golpe de dano que acertou): rouba o item de quem foi atingido,
-  // se quem ataca estiver sem item — Sticky Hold (protegeItem) bloqueia o roubo
-  if (total > 0 && t.hp > 0 && u.hp > 0 && !u.item && t.item && !ht.protegeItem && hu.roubaItem && (hu.roubaItem === 'ataque' || encostou)) {
+  /* Item do alvo. Três donos do mesmo bloco, porque a regra é idêntica e só muda de onde vem a permissão:
+     HABILIDADE Pickpocket (só contato) / Magician (qualquer golpe de dano que acertou) e GOLPE Thief/Covet
+     (`esp.roubaItem`, especiais.js). Em todos: só rouba quem está sem item, e Sticky Hold (protegeItem) barra.
+     Knock Off (`esp.derrubaItem`) é o caso separado logo abaixo — lá o item se PERDE, então não exige mão vazia. */
+  const roubo = hu.roubaItem && (hu.roubaItem === 'ataque' || encostou) ? fmt(u.ability) : esp.roubaItem ? fmt(g.name) : null;
+  if (total > 0 && t.hp > 0 && u.hp > 0 && !u.item && t.item && !ht.protegeItem && roubo) {
+    const nome = ITEMS[t.item]?.name || 'o item';
     u.item = t.item; t.item = null; up(ctx);
-    await ctx.say(`${U} roubou o item de ${T} com ${fmt(u.ability)}!`, 'good');
+    await ctx.say(`${U} roubou <b>${nome}</b> de ${T}! (${roubo})`, 'good');
+  } else if (total > 0 && t.item && esp.derrubaItem) {
+    // Knock Off: o item não troca de mão, se perde. Sticky Hold barra; quem já segura algo também consegue derrubar.
+    if (ht.protegeItem) await ctx.say(`${T} não solta o item de jeito nenhum. (${fmt(t.ability)})`, 'muted');
+    else { const nome = ITEMS[t.item]?.name || 'o item'; t.item = null; up(ctx); await ctx.say(`${U} derrubou <b>${nome}</b> de ${T}! O item se perdeu.`, 'good'); }
   }
 
   // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo; Sheer Force os apaga (já bateu mais forte lá em cima)

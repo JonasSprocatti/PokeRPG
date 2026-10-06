@@ -13,6 +13,20 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.1', data: '2026-10-06', titulo: '🎁 O selvagem agora aparece segurando item — e dá pra roubar', piada: 'Um Rattata foi visto guardando uma Fruta Oran debaixo da pedra. Perguntado sobre a procedência, alegou que "estava lá". Os Pokémon com Pickpocket foram informados e já estão a caminho.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Cerca de 1 em 12 selvagens aparece com um item na mão.</b> Coisa barata — <b>Fruta Oran</b>, <b>Lum</b>, <b>Sitrus</b>, uma das 17 <b>frutas de aperto</b> por tipo, <b>Faixa Muscular</b> ou <b>Óculos do Sábio</b> —, e ele <b>usa</b>: aquele Golbat que se curou na metade do HP não é defeito, é a fruta dele. Pra você não ser pego de surpresa, o item aparece num <b>chip 🎁 na plaquinha</b>, do lado do nome, antes de ser usado. Vale pro selvagem comum, pro grupo e pros acompanhantes do Alfa; o <b>Alfa, os lendários e o chefe da semana não seguram nada</b> — já vêm fortes o bastante.',
+        '<b>Três golpes saíram do limbo.</b> <b>Thief</b> e <b>Covet</b> roubam o item do alvo (se o seu Pokémon estiver de mãos vazias) e <b>Knock Off</b> <i>derruba</i> — não vai pra ninguém, se perde, e funciona mesmo se você já estiver segurando algo. Os três não faziam nada até agora pelo melhor dos motivos: não havia nada pra roubar. <b>Pickpocket</b> e <b>Magician</b>, que já existiam, finalmente têm serviço.',
+        '<b>Vencer na porrada quase nunca entrega o item:</b> ele cai no chão em <b>2,5%</b> das vitórias contra quem estava segurando. É de propósito — o jeito certo de ficar com a fruta é tomar, não moer. Já quem <b>vira seu aliado</b> com um petisco chega segurando o que tinha.',
+        '<b>✕ Cancelar o repelente.</b> O aviso de repelente ativo ganhou um botão: mudou de ideia no meio das 30 explorações, desliga na hora. As que sobraram são perdidas — o item já tinha sido gasto.',
+        '<b>Três fontes novas em ⚙ Ajustes → Fonte</b>, agora <b>nove</b> no total: <b>Gordinha</b> (bem redonda, cara de livro infantil), <b>Delicada</b> (fina e arejada) e <b>Geométrica</b> (círculos perfeitos, ar de app). As seis de antes foram escolhidas por legibilidade; estas três, por gosto. Todas continuam com 2, 5 e 8 impossíveis de confundir.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Petisco na tecla de atalho funciona.</b> Pôr o Mel Silvestre no ⚡ item rápido e apertar a tecla no meio da batalha não fazia <b>absolutamente nada</b> — a barra mandava o petisco pelo caminho dos itens de cura, que não sabe o que é oferecer comida a um selvagem. Agora qualquer caminho (tecla, mochila, atalho) chega no lugar certo.',
+        'Usar petisco <b>fora</b> da batalha dizia "não teria efeito agora", que não explicava nada. Agora diz o que fazer com ele.'
+      ] }
+    ] },
   { versao: '5.0', data: '2026-10-05', titulo: '🤖 A caçada automática parou de queimar dinheiro no Centro Pokémon', piada: 'O atendente do Centro Pokémon tinha descoberto que dava pra cobrar a cura completa da equipe porque um companheiro havia batido o dedinho na pedra. Trinta e sete vezes. Mandamos uma caixa de Poções pra caçada e o rapaz voltou a atender gente doente de verdade.',
     secoes: [
       { nome: 'Correções', itens: [

@@ -934,14 +934,20 @@ test('Scrappy acerta Fantasma sem estragar as outras eficácias', async () => {
   assert.equal(calcDamage(mon({ ability: 'scrappy' }), fantasma, golpe({ type: 'dark' }), null, null, null, true).dmg, base);
 });
 
-test('Suction Cups não sai de campo por golpe, mas Wimp Out ainda sai por conta própria', async () => {
+/* O `mock` do sorteio não é zelo: sem ele este teste falhava sozinho em ~1 de 20 rodadas. O golpe de poder 80
+   tira 47–56 do medroso, que tem 60 — mas num CRÍTICO (1/24) passa de 70 e o DERRUBA, e Wimp Out não dispara em
+   quem caiu (`t.hp > 0` na condição). Um código certo virava defeito fantasma no CI. 0,9 não é crítico, acerta e
+   dá um roll de dano alto: a armadilha do CLAUDE.md é exatamente esta — efeito de chance se testa FIXANDO o
+   sorteio, nunca por amostragem. */
+test('Suction Cups não sai de campo por golpe, mas Wimp Out ainda sai por conta própria', async t => {
+  t.mock.method(Math, 'random', () => 0.9);
   const agarrado = mon({ ability: 'suction-cups' });
   let pedidos = 0;
   const c = { ...ctx(), forcarSaida: async () => { pedidos++; return true; } };
   // o motor PEDE a saída (golpe.sairDeCampo) — a habilidade recusa antes de chegar em quem tira de campo
   await usarGolpe(mon(), agarrado, golpe({ name: 'dragon-tail' }), true, c);
   assert.equal(pedidos, 0, 'arrastar pra fora não acontece');
-  const medroso = mon({ ability: 'wimp-out', hp: 60 });   // 60 > metade: um golpe qualquer cruza a linha
+  const medroso = mon({ ability: 'wimp-out', hp: 60 });   // 60 > metade: o golpe cruza a linha sem derrubar
   const c2 = { ...ctx(), forcarSaida: async () => { pedidos++; return true; } };
   await usarGolpe(mon(), medroso, golpe({ power: 80 }), true, c2);
   assert.ok(pedidos >= 1, 'sair por vontade própria continua valendo');

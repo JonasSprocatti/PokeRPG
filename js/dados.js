@@ -280,6 +280,24 @@ export const ITENS_FRUTA_TIPO = Object.fromEntries(Object.entries(FRUTA_DO_TIPO)
   [id, ter(nome, `Corta pela metade um golpe de ${TYPE_PT[tipo]} super efetivo contra você. Gasta-se no uso.`, 1200)]));
 Object.assign(ITEMS, ITENS_SEGURADOS, ITENS_FRUTA_TIPO);
 
+/* Itens que um Pokémon SELVAGEM pode estar segurando (relato #77 + #70, pedido duas vezes: "um rattata segurando
+   uma oran berry, itens baratos"). Sorteado por `regras.itemDeSelvagem` e posto em `batalha.novoOponente` — que é
+   a porta única do selvagem, então vale no encontro comum, no grupo da ⚔ Saga e nos lacaios do Alfa. O ALFA, os
+   lendários e o chefe da semana ficam de fora: já vêm turbinados, e item em cima disso é desequilíbrio.
+   Só itens BARATOS e com efeito que JÁ funciona em `segurados.SEGURADOS` — item inerte na mão do inimigo seria
+   mentira na tela, e o item aparece no chip da plaquinha. O peso é por quanto o efeito atrapalha, não por preço:
+   a Oran cura 10 de HP e quase não muda a luta, a Lum apaga o status que você acabou de encaixar.
+   A soma não precisa dar 100: `itemDeSelvagem` normaliza. */
+export const ITENS_DE_SELVAGEM = [
+  { id: 'oran-berry', p: 40 },     // cura 10 de HP na metade: incômodo pequeno
+  { id: 'lum-berry', p: 16 },      // apaga o status que você acabou de encaixar
+  { id: 'sitrus-berry', p: 12 },   // cura 1/4 do HP na metade
+  { id: 'muscle-band', p: 6 },     // +10% nos golpes físicos dele
+  { id: 'wise-glasses', p: 6 },    // +10% nos especiais dele
+  // as 17 frutas de aperto por tipo (cortam UM golpe super efetivo pela metade): peso 20 no total, dividido
+  ...Object.values(FRUTA_DO_TIPO).map(([id]) => ({ id, p: 20 / 17 }))
+];
+
 /* Itens segurados de PRÊMIO de raide (evento.ev(), gira entre eles junto com os 3 consumíveis de boss.ITENS_DE_RAIDE
    — ver evento.js). Sem `price`: não vendem na loja, só vêm de vencer o chefe da semana (como os outros 3). Ao
    contrário deles, estes são PASSIVOS e valem em qualquer batalha, não só contra o chefe. */

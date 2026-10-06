@@ -21,7 +21,18 @@ export const FONTES = [
   { id: 'nunito', nome: 'Nunito', desc: 'Arredondada e leve, com cara de jogo.',
     familias: ['Nunito:wght@400;600;800'], display: `'Nunito', ${sistema}`, corpo: `'Nunito', ${sistema}` },
   { id: 'mono', nome: 'Monoespaçada', desc: 'IBM Plex Mono: tudo alinhado, números fáceis de comparar.',
-    familias: ['IBM+Plex+Mono:wght@400;600;700'], display: `'IBM Plex Mono', ui-monospace, monospace`, corpo: `'IBM Plex Mono', ui-monospace, monospace` }
+    familias: ['IBM+Plex+Mono:wght@400;600;700'], display: `'IBM Plex Mono', ui-monospace, monospace`, corpo: `'IBM Plex Mono', ui-monospace, monospace` },
+  /* As três de baixo entraram pelo relato #78 ("uma fonte mais bonitinha"): as seis de cima são escolhidas por
+     LEGIBILIDADE, e nenhuma por gosto. Todas continuam com dígitos distintos — a regra do projeto é 2, 5 e 8
+     sem confusão, e é por isso que nenhuma fonte pixelada volta pro jogo. */
+  { id: 'baloo', nome: 'Gordinha', desc: 'Baloo 2: bem redonda e cheia, cara de livro infantil. A mais "bonitinha".',
+    familias: ['Baloo+2:wght@400;600;800'], display: `'Baloo 2', ${sistema}`, corpo: `'Baloo 2', ${sistema}` },
+  { id: 'quicksand', nome: 'Delicada', desc: 'Quicksand nos títulos, Nunito no texto: fina, redonda e arejada.',
+    familias: ['Quicksand:wght@500;600;700', 'Nunito:wght@400;600'],
+    display: `'Quicksand', ${sistema}`, corpo: `'Nunito', ${sistema}` },
+  { id: 'comfortaa', nome: 'Geométrica', desc: 'Comfortaa nos títulos, Lexend no texto: círculos perfeitos, ar de app moderno.',
+    familias: ['Comfortaa:wght@500;700', 'Lexend:wght@400;600'],
+    display: `'Comfortaa', ${sistema}`, corpo: `'Lexend', ${sistema}` }
 ];
 export const fonteDe = id => FONTES.find(f => f.id === id) || FONTES[0];
 export const fonteEscolhida = () => fonteDe(store.get(FONTE_KEY) || 'padrao');

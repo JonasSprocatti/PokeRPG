@@ -10,7 +10,8 @@ test('lista de fontes: ids únicos, pilha com fonte do sistema no fim e família
   for (const f of FONTES) {
     assert.ok(f.nome && f.desc, f.id);
     assert.ok(f.familias.length, `${f.id}: sem família`);
-    for (const fam of f.familias) assert.match(fam, /^[A-Za-z+]+(:wght@[\d;]+)?$/, `${f.id}: família "${fam}"`);
+    // nome de família do Google Fonts pode ter DÍGITO: "Baloo 2" vira "Baloo+2"
+    for (const fam of f.familias) assert.match(fam, /^[A-Za-z\d+]+(:wght@[\d;]+)?$/, `${f.id}: família "${fam}"`);
     // sempre termina numa fonte que existe no aparelho, pra nunca ficar ilegível sem internet
     assert.match(f.display, /(system-ui|monospace)/, `${f.id}: display sem reserva`);
     assert.match(f.corpo, /(system-ui|monospace)/, `${f.id}: corpo sem reserva`);

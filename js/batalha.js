@@ -12,7 +12,7 @@ import { healFull, CTX, changeStats } from './efeitos.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
-import { useItem } from './itens.js';
+import { useItem, addItem } from './itens.js';
 import { oferecer } from './amizade.js';
 import { makeMon } from './pokemon.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
@@ -22,7 +22,8 @@ import {
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
   prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano, especiesDobradas,
-  guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT
+  guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT,
+  itemDeSelvagem, itemCaiComoEspolio
 } from './regras.js';
 import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
 import { OFICIOS } from './oficios.js';
@@ -171,7 +172,16 @@ function sortearOponente(z) {
   if (!p) throw erroOffline(`📴 Sem internet, e nenhum Pokémon de ${z.name} está salvo neste aparelho ainda. Tente uma rota que você já explorou, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   return { id: p.id, level: rand(z.min, z.max) };
 }
-async function novoOponente(z) { const { id, level } = sortearOponente(z); return makeMon(await loadPokemon(id), level); }
+/* Porta ÚNICA do Pokémon selvagem: encontro comum, acompanhante de grupo (⚔ Saga) e lacaio do Alfa saem todos
+   daqui. É por isso que o item segurado é posto AQUI e não em `startBattle` — assim nenhum caminho de selvagem
+   nasce sem passar pelo sorteio, e Alfa/lendário/chefe (que usam `makeMon` direto) seguem sem item de propósito. */
+async function novoOponente(z) {
+  const { id, level } = sortearOponente(z);
+  const M = await makeMon(await loadPokemon(id), level);
+  const item = itemDeSelvagem();
+  if (item) M.item = item;      // `seg(m)` já lê isso dos dois lados: o efeito vale sem mais nenhuma linha
+  return M;
+}
 /* Equipe de treinador: metade dela NÃO sai do pool da rota. Um treinador andou até aqui — a rota diz em que NÍVEL
    ele está, não quais espécies ele criou. O resto continua vindo do pool, pra rota manter a cara dela.
    Vale pra todo treinador de rota (o de emboscada é o único que existe hoje). Offline, só o que está guardado. */
@@ -615,6 +625,12 @@ async function gmaxDoInimigo() {
 
 export async function turn(action) {
   if (G.busy || !G.B) return;
+  /* Petisco (item com `afinidade`) usado em batalha é SEMPRE `oferecer`, nunca `useItem`: a mochila da luta já
+     desenha as duas divisões com `data-act` diferentes, mas a barra de ⚡ itens rápidos manda tudo como `item`
+     (relato #76 — Mel Silvestre na tecla 2 não fazia nada, porque `useItem` não tem ramo pra `afinidade` e
+     morria em "Não teria efeito agora"). O conserto fica AQUI, na porta única das ações de batalha, e não na
+     barra: qualquer outro caminho que mande um petisco como item (tecla, 🤖 auto, ação nova) já entra certo. */
+  if (action.type === 'item' && ITEMS[action.id]?.afinidade) action = { ...action, type: 'oferecer' };
   G.busy = true;
   const B = G.B, S = G.S, P = S.player;
   /* ⚔ Saga: o alvo do seu golpe vem na ação (`action.alvo` = índice em B.inimigos, escolhido na cena). Sem ele
@@ -796,6 +812,16 @@ async function win() {
   if (!fora) for (const F of caidos) for (const [s, add] of ganhoDeEVs(P.evs, F.data.effort)) { P.evs[s] += add; gained.push(`+${add} EV de ${STAT_PT[s]}`); }
   const money = T ? 0 : caidos.reduce((t, F) => t + F.level * rand(8, 14), 0) * mult; // de treinador, o dinheiro vem todo no prêmio final
   S.money += money; S.wins = (S.wins || 0) + 1;
+  /* Espólio do item do selvagem (regras.itemCaiComoEspolio, ~2,5% de quem estava segurando algo). Fica no `win`,
+     depois do `caidos`, porque só vale pra quem CAIU: o que fugiu ou foi arrastado leva o item embora. De
+     treinador não cai nada — ele recolhe as próprias coisas. O jeito normal de ficar com o item continua sendo
+     Thief/Covet/Pickpocket/Magician; isto aqui é o acidente raro. */
+  if (!T) for (const F of caidos) {
+    if (!F.item || !ITEMS[F.item] || !itemCaiComoEspolio()) continue;
+    addItem(F.item, 1);
+    await say(`💎 ${nm(F)} deixou cair <b>${ITEMS[F.item].name}</b>! Foi pra sua mochila.`, 'level');
+    F.item = null;
+  }
   S.vitoriasDesdeCentro = (S.vitoriasDesdeCentro || 0) + 1; // desconto do Centro no modo Médio
   // E.id vira o id da forma Mega enquanto ela está ativa (mega.aplicarForma); se ele desmaiou já mega-evoluído
   // e nada desfaz isso (o inimigo é descartado, não salvo), registrar E.id direto gravaria pra sempre o id da
