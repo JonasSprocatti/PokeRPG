@@ -21,9 +21,10 @@ import {
   freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
-  prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano, especiesDobradas,
+  prioridadeEfetiva, sempreUltimo, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, GRUPO_MAX, golpeDoPlano, especiesDobradas,
   guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT,
-  itemDeSelvagem, itemCaiComoEspolio, trocaDoTreinador
+  itemDeSelvagem, itemCaiComoEspolio, trocaDoTreinador,
+  tamanhoDoEncontro, tetoDoGrupo, nomeDoGrupo, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador
 } from './regras.js';
 import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
 import { OFICIOS } from './oficios.js';
@@ -255,11 +256,21 @@ async function forcarSaida(m, { motivo = 'forcada', para = null } = {}) {
     if (B.chefe || B.evento || B.lendarios || m.boss) return false;
     if (T) {
       /* `para` = o treinador ESCOLHEU quem entra (regras.trocaDoTreinador, a troca por tática). Sem ele vale o de
-         sempre: arrastado à força sorteia, desistência própria pega o primeiro da fila. */
-      const i = para != null && T.equipe[para]?.hp > 0 && para !== T.atual ? para : proximoDoTreinador(T.equipe, T.atual, !voluntaria && para == null);
+         sempre: arrastado à força sorteia, desistência própria pega o primeiro da fila. Com até 3 em campo, o
+         banco é `reservasDoTreinador` — quem está de pé e NÃO está em campo. */
+      const campoAtual = emCampoDoTreinador(T);
+      const reservas = reservasDoTreinador(T.equipe, campoAtual);
+      const i = para != null && reservas.includes(para) ? para
+        : !reservas.length ? -1
+        : !voluntaria && para == null ? reservas[Math.floor(Math.random() * reservas.length)]   // arrastado: sorteia
+        : reservas[0];
       if (i < 0) return false;                                            // não tem ninguém pra mandar no lugar
+      const saiu = T.equipe.indexOf(m);
       m.vol = freshVol(); m.vol.retirado = true;                          // o turno dele acaba aqui (turn() pula quem tem `retirado`)
-      T.atual = i; const novo = T.equipe[i]; novo.vol = freshVol(); novo.vol.recemEntrou = true;
+      // quem saiu deixa a vaga, quem entra ocupa — na MESMA posição, pra a cena não dançar
+      T.emCampo = campoAtual.map(k => (k === saiu ? i : k));
+      T.atual = i;                                                        // vestigial: save antigo e leitura externa
+      const novo = T.equipe[i]; novo.vol = freshVol(); novo.vol.recemEntrou = true;
       /* Quem ENTRA numa troca tática não ataca na mesma rodada: trocar foi a ação do treinador, como nos jogos. É
          o que faz a troca ter preço — o seu golpe deste turno cai no recém-chegado de graça. `turn()` lê isso ao
          montar a fila, e `freshVol()` da próxima entrada em campo limpa sozinho. */
@@ -338,9 +349,23 @@ async function habilidadesAoVencer() {
    Se a busca de um acompanhante falhar, a luta começa com quem deu: um encontro a menos é melhor que um erro de
    rede impedindo de explorar. */
 const modoComGrupos = S => !!DIFICULDADES[dificuldadeDe(S)]?.grupos;
+/* Quem está em campo do lado do treinador, como ÍNDICES em `T.equipe`. Ponto único de leitura, e é ele que
+   aceita os dois formatos: `T.emCampo` (até 3, de hoje) e o `T.atual` dos saves gravados antes disso — um
+   jogador com batalha de treinador salva não pode perder a luta por causa de um campo novo. */
+function emCampoDoTreinador(T) {
+  if (!T?.equipe?.length) return [];
+  const lista = Array.isArray(T.emCampo) ? T.emCampo.filter(i => T.equipe[i]) : [];
+  return lista.length ? lista : [Number.isInteger(T.atual) && T.equipe[T.atual] ? T.atual : 0];
+}
+/* 🐺 Matilha/manada. Na ⚔ Saga o grupo é a REGRA (flag `grupos`); em todos os outros modos ele passou a ser
+   SORTE, pela curva de `regras.chanceDeGrupo` — nada nas três primeiras rotas, subindo até 35% na última. O teto
+   sai de `regras.tetoDoGrupo`, que conta os seus aliados EM PÉ: sem aliado, no máximo 2 contra 1. */
 async function grupoSelvagem(z) {
-  const i = rotasAtuais().findIndex(x => x.id === z.id);
-  const quantos = modoComGrupos(G.S) ? tamanhoDoGrupo(Math.max(0, i)) : 1;
+  const rotas = rotasAtuais();
+  const i = rotas.findIndex(x => x.id === z.id);
+  const quantos = tamanhoDoEncontro(Math.max(0, i), vivos(ladoJogador()).length - 1, {
+    sempre: modoComGrupos(G.S), rotasNoMapa: rotas.length
+  });
   const lista = [await novoOponente(z)];
   for (let k = 1; k < quantos; k++) {
     try { lista.push(await novoOponente(z)); } catch (e) { console.warn('acompanhante:', e.message); break; }
@@ -354,7 +379,8 @@ export async function startBattle(z) {
   for (const M of lista) { const e = z.pool.find(p => p.id === M.id); if (e?.l || e?.m) M.lendario = true; }
   const E = lista[0], entrada = z.pool.find(p => p.id === E.id);
   iniciar({ inimigos: lista, turn: 1, runs: 0 });
-  if (lista.length > 1) await say(`Um grupo de <b>${lista.length}</b> aparece: ${lista.map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(', ')}!`, 'enc');
+  // 🐺 a palavra é metade do encontro: `regras.nomeDoGrupo` lê o tipo em comum dos três (enxame, cardume, revoada…)
+  if (lista.length > 1) await say(`Uma <b>${nomeDoGrupo(lista)}</b> de <b>${lista.length}</b> aparece: ${lista.map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(', ')}!`, 'enc');
   else await say(`Um <b>${esc(fmt(E.name))}</b> selvagem (Nv. ${E.level}) apareceu!`, 'enc');
   if (entrada?.m) await say('🌟 Um Pokémon mítico! Quase ninguém chega a ver um desses.', 'level');
   for (const M of lista) if (M.shiny) await say(`✨ ${esc(fmt(M.name))} brilha! Um Pokémon shiny.`, 'level');
@@ -438,19 +464,35 @@ async function vencerEvento() {
   save();
 }
 // Treinador caçador: 1–3 Pokémon da zona (mais na zona alta), algumas bolas, e quer te capturar
+/* 🎒 Treinador (pedido do usuário, 06/10/2026): EQUIPE de até 6 e CAMPO de 1 a 3 ao mesmo tempo.
+   As duas coisas são sorteadas separadas, e é essa separação que faz render: um treinador de 6 com campo 1 te dá
+   SEIS lutas de um; o mesmo de 6 com campo 3 te dá duas ondas de três. **Só quem tem 6 pode pôr 3** — e o campo
+   ainda é limitado pelo seu lado (`tetoDoGrupo`), senão um de 6 contra você sozinho seria parede, não luta.
+   `T.emCampo` = ÍNDICES em `T.equipe` de quem está em campo agora. Substituiu o `T.atual` (um índice só), que não
+   descreve mais a realidade; `reservasDoTreinador` é quem responde "quem pode entrar". Save antigo com `atual`
+   continua carregando — `emCampoDoTreinador` resolve os dois formatos. */
 export async function startTrainerBattle(z) {
   const P = G.S.player;
-  const nivelRef = z.max;
-  const n = rand(1, Math.min(3, 1 + Math.floor(nivelRef / 15)));
+  const i = rotasAtuais().findIndex(x => x.id === z.id);
+  const n = tamanhoDaEquipeDoTreinador(Math.max(0, i));
   const [equipe, especie] = await Promise.all([
     Promise.all(Array.from({ length: n }, () => novoOponenteTreinador(z))),
     loadSpecies(P.data.speciesUrl).catch(() => ({ captureRate: 45 })) // offline sem cache: taxa média
   ]);
-  const trainer = { nome: `${pick(CLASSES_TREINADOR)} ${pick(NOMES_TREINADOR)}`, equipe, atual: 0, bolas: rand(2, 4), bola: bolaPorNivel(Math.max(...equipe.map(m => m.level))) };
-  iniciar({ enemy: equipe[0], turn: 1, runs: 0, trainer, taxaCaptura: especie.captureRate ?? 45 });
+  const campo = campoDoTreinador(equipe.length, tetoDoGrupo(vivos(ladoJogador()).length - 1));
+  const emCampo = equipe.slice(0, campo).map((_, k) => k);
+  const trainer = {
+    nome: `${pick(CLASSES_TREINADOR)} ${pick(NOMES_TREINADOR)}`, equipe, emCampo, atual: 0, campo,
+    bolas: rand(2, 4), bola: bolaPorNivel(Math.max(...equipe.map(m => m.level)))
+  };
+  const entram = emCampo.map(k => equipe[k]);
+  iniciar({ inimigos: entram, turn: 1, runs: 0, trainer, taxaCaptura: especie.captureRate ?? 45 });
   await say(`⚠ <b>${esc(trainer.nome)}</b> avistou você e quer te capturar! (${n} Pokémon, ${trainer.bolas}× ${BOLAS[trainer.bola].nome})`, 'enc');
-  await say(`${esc(trainer.nome)} envia <b>${esc(fmt(equipe[0].name))}</b> (Nv. ${equipe[0].level})!${equipe[0].shiny ? ' ✨ Um shiny!' : ''}`);
-  await intimidar(equipe[0]);
+  if (n >= 6) await say('😤 Seis Pokémon. Esse treina a sério.', 'hit');
+  await say(entram.length > 1
+    ? `${esc(trainer.nome)} envia <b>${entram.length} de uma vez</b>: ${entram.map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(' e ')}!${entram.some(m => m.shiny) ? ' ✨ Tem um shiny!' : ''}`
+    : `${esc(trainer.nome)} envia <b>${esc(fmt(entram[0].name))}</b> (Nv. ${entram[0].level})!${entram[0].shiny ? ' ✨ Um shiny!' : ''}`);
+  for (const m of entram) await intimidar(m);
 }
 
 /* ---- turno ---- */
@@ -884,21 +926,28 @@ async function win() {
     await say(`${nm(A)} ganhou ${xp} de XP.`, 'muted');
     await gainExpAliado(A, xp);
   }
-  const proximo = T ? proximoDoTreinador(T.equipe, T.atual) : -1;   // o primeiro de pé (Roar pode ter deixado um pra trás)
-  if (T && proximo >= 0) {
-    /* Treinador e lendários continuam vindo UM POR VEZ, inclusive no ⚔ Saga: o grupo é dos encontros selvagens e
-       do Alfa (ver startBattle/startBossBattle). Trocar a fila do treinador por grupo mudaria o balanceamento de
-       todos os modos, e não é o que foi pedido. A lista do lado inimigo passa a ter o que acabou de entrar. */
-    T.atual = proximo;
-    B.inimigos = [T.equipe[T.atual]]; B.foco = 0;
-    B.enemy.vol = freshVol(); B.enemy.vol.recemEntrou = true; armarGuarda(B.enemy); registrarVisto(B.enemy); render();
-    await say(T.lendarios ? `Outro lendário surge: <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Shiny!' : ''}`
-      : `${esc(T.nome)} envia <b>${esc(fmt(B.enemy.name))}</b> (Nv. ${B.enemy.level})!${B.enemy.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
-    await aplicarArmadilhas(B.enemy, CTX); // Stealth Rock e cia. pegam quem entra
+  /* A ONDA seguinte do treinador. Ele agora tem até 6 na equipe e põe até 3 em campo (`T.campo`), então aqui não
+     é "manda o próximo": é REPOR o campo até o tamanho dele, com quem sobrou de pé. Um de 6 com campo 1 faz seis
+     ondas de um; com campo 3, duas de três.
+     Os LENDÁRIOS usam a mesma estrutura de treinador e continuam vindo UM POR VEZ, de propósito: a fila deles é o
+     balanceamento da luta final do mapa, e isso não foi o que foi pedido.
+     O teto do seu lado vale aqui também — se você perdeu os aliados na onda anterior, a próxima não vem com 3. */
+  const alvoDeCampo = T ? (T.lendarios ? 1 : Math.min(Math.max(1, T.campo || 1), tetoDoGrupo(vivos(ladoJogador()).length - 1))) : 0;
+  const entram = T ? reservasDoTreinador(T.equipe, []).slice(0, alvoDeCampo) : [];
+  if (T && entram.length) {
+    T.emCampo = entram; T.atual = entram[0];          // `atual` segue gravado: save antigo e leitura externa
+    B.inimigos = entram.map(i => T.equipe[i]); B.foco = 0;
+    for (const novo of B.inimigos) { novo.vol = freshVol(); novo.vol.recemEntrou = true; armarGuarda(novo); registrarVisto(novo); }
+    render();
+    if (T.lendarios) await say(`Outro lendário surge: <b>${esc(fmt(B.inimigos[0].name))}</b> (Nv. ${B.inimigos[0].level})!${B.inimigos[0].shiny ? ' ✨ Shiny!' : ''}`, 'enc');
+    else await say(B.inimigos.length > 1
+      ? `${esc(T.nome)} envia <b>${B.inimigos.length} de uma vez</b>: ${B.inimigos.map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(' e ')}!${B.inimigos.some(m => m.shiny) ? ' ✨ Tem um shiny!' : ''}`
+      : `${esc(T.nome)} envia <b>${esc(fmt(B.inimigos[0].name))}</b> (Nv. ${B.inimigos[0].level})!${B.inimigos[0].shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
+    for (const novo of B.inimigos) await aplicarArmadilhas(novo, CTX);   // Stealth Rock e cia. pegam cada um que entra
     await anunciarQuedas();
-    // caiu só com as armadilhas: resolve como qualquer derrota (XP e o próximo da fila)
-    if (B.enemy.hp <= 0) { await say(`${nm(B.enemy)} caiu antes mesmo de lutar!`, 'hit'); return win(); }
-    await intimidar(B.enemy, true);
+    // a onda inteira caiu só com as armadilhas: resolve como qualquer derrota (XP e a onda seguinte)
+    if (grupoInimigoCaiu()) { await say('A onda caiu antes mesmo de lutar!', 'hit'); return win(); }
+    for (const novo of vivos(B.inimigos)) await intimidar(novo, true);
     return;
   }
   await habilidadesAoVencer();   // a luta acabou de verdade (não é o próximo da fila): Regenerator e Natural Cure
@@ -1039,7 +1088,12 @@ export function restaurarBatalha(b) {
   const B = { ...resto, caidos: new Set(), vez: null };
   // save de antes do grupo: tinha só `enemy`. Vira lista de um.
   let lista = B.inimigos?.length ? B.inimigos : [enemy];
-  // o inimigo é o Pokémon atual do treinador: sem isso seriam dois objetos iguais e o dano iria só pra um deles
-  if (B.trainer?.equipe?.length) lista = [B.trainer.equipe[B.trainer.atual] || lista[0]];
+  /* O inimigo tem de ser o MESMO objeto da equipe do treinador: depois do JSON seriam dois objetos iguais e o
+     dano aplicado num não apareceria no outro. Com até 3 em campo, são os índices de `emCampo` (e `emCampoDoTreinador`
+     aceita o `atual` dos saves gravados antes do campo existir). */
+  if (B.trainer?.equipe?.length) {
+    const dele = emCampoDoTreinador(B.trainer).map(i => B.trainer.equipe[i]).filter(Boolean);
+    lista = dele.length ? dele : [lista[0]];
+  }
   return ligarInimigos(B, lista);
 }

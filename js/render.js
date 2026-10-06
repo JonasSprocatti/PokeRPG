@@ -224,7 +224,12 @@ function turnoBar(B, P, E) {
   // treinador: equipe (● em pé / ○ derrotado) e bolas que ainda restam
   // lendários (luta final do mapa) usam a mesma sequência do treinador, mas sem bolas
   const bolas = T && !T.lendarios ? ` <img src="${ITEM_SPR(T.bola)}" alt="${BOLAS[T.bola].nome}">×${T.bolas}` : '';
-  const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : 'Pokémon e bolas do treinador'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map(m => m.hp <= 0 ? '○' : '●').join('')}</span>${bolas}</span>` : '';
+  /* Os pontinhos da equipe do treinador. Com até 3 em campo ao mesmo tempo, "de pé ou caído" deixou de bastar:
+     quem está EM CAMPO agora é ◉, quem espera no banco é ●, quem caiu é ○. Sem isso, um treinador de 6 com 3 em
+     campo mostra seis bolinhas iguais e o jogador não sabe quantas ondas ainda vêm — que é justamente o que
+     decide gastar o item agora ou guardar. */
+  const marca = m => m.hp <= 0 ? '○' : B.inimigos?.includes(m) ? '◉' : '●';
+  const info = T ? `<span class="treinador" title="${T.lendarios ? 'Lendários que faltam' : '◉ em campo · ● no banco · ○ derrotado'}">${T.lendarios ? '⚡' : '🎯'} ${esc(T.nome)} <span class="equipe">${T.equipe.map(marca).join('')}</span>${bolas}</span>` : '';
   // clima do campo (regras.CLIMAS): ícone + quantos turnos faltam
   const cl = climaDe(B.campo), te = terrenoDe(B.campo);
   const clima = cl ? `<span class="clima-selo" title="${esc(CLIMAS[cl].nome)}">${CLIMAS[cl].icone} ${esc(CLIMAS[cl].nome)} · ${B.campo.climaFixo ? 'da rota' : B.campo.turnos}</span>` : '';

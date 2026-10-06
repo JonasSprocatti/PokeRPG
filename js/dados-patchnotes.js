@@ -13,6 +13,18 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.3', data: '2026-10-06', titulo: '🐺 Matilhas, enxames e cardumes — e o treinador que joga 3 Pokémon de uma vez', piada: 'Os Weedle da Floresta de Viridian estavam sindicalizados desde 2026 e ninguém havia notado. Eles andam em 24. Conseguimos negociar para 3 por vez. O representante do sindicato pediu para registrar que foi uma concessão generosa e que eles poderiam ter vindo em 24.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Pokémon selvagem agora anda em grupo.</b> Um <b>enxame</b> de Weedle, um <b>cardume</b> de Magikarp, uma <b>revoada</b> de Pidgey, uma <b>alcateia</b> de Houndour — a palavra sai do tipo que eles têm em comum, e cada um dos 18 tipos tem a sua.',
+        '<b>Não é sempre.</b> As <b>três primeiras rotas nunca</b> têm grupo: jornada nova começa no Nv. 5 e sozinha, e cair numa manada ali não é dificuldade, é fim de jogo sem nenhuma decisão no meio. Da quarta rota em diante a chance sobe, até cerca de <b>35%</b> na última do mapa.',
+        '<b>E o grupo nunca é maior que o seu lado + 1.</b> Sozinho, você enfrenta no máximo <b>2</b>; com um aliado, até <b>3</b>. Ou seja: <b>recrutar com petisco virou resposta à manada</b>, não só conforto. Cada um do grupo dá XP, EVs e conta na Pokédex — mais perigo, mais retorno.',
+        '<b>Treinadores agora têm até 6 Pokémon.</b> O de 6 é <b>raro</b> e só aparece em rota avançada — e quando aparece, o jogo avisa.',
+        '<b>E eles não mandam mais um por vez.</b> Cada treinador tem um <b>campo</b> de <b>1, 2 ou 3</b> Pokémon ao mesmo tempo, e <b>só o de 6 consegue pôr 3</b>. Então um treinador de 6 pode te dar <b>seis lutas de um</b>, três de dois, ou <b>duas ondas de três</b> — e as três são lutas completamente diferentes. Derrubou a onda? Ele <b>repõe o campo inteiro</b>.',
+        '<b>A barra de turno passou a mostrar quem é quem:</b> <b>◉</b> em campo · <b>●</b> esperando no banco · <b>○</b> derrotado. Antes eram bolinhas iguais e não dava pra saber quantas ondas ainda vinham — que é justamente o que decide gastar a Poção agora ou guardar.',
+        'Quem entra numa troca <b>não ataca naquela rodada</b>: a janela é sua.'
+      ] }
+    ] },
   { versao: '5.2', data: '2026-10-06', titulo: '🥚 O ninho agora diz o que está acontecendo (os ovos sempre funcionaram — ninguém sabia como)', piada: 'Dois Nidoran passaram a jornada inteira guardados no esconderijo, de sexos opostos, perfeitamente compatíveis, esperando autorização por escrito. A autorização existia desde o começo. O aviso é que não existia. Pedimos desculpas aos Nidoran e instalamos uma placa.',
     secoes: [
       { nome: 'Correções', itens: [

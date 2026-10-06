@@ -1130,6 +1130,92 @@ export function tamanhoDoGrupo(iRota, sorte = Math.random) {
   return piso + Math.floor(sorte() * (teto - piso + 1));
 }
 
+/* ---- 🐺 Matilhas e manadas: grupo selvagem em TODOS os modos (pedido do usuário, 06/10/2026) ----
+   "Acho que é uma mecânica que aumenta a dificuldade, não será sempre, mas terá uma chance."
+   Na ⚔ Saga o grupo é a regra (flag `grupos`, `tamanhoDoGrupo` acima). Fora dela passa a ser SORTE, e a chance
+   cresce com o avanço do mapa: as três primeiras rotas nunca têm manada — uma jornada nova começa no Nv. 5,
+   sozinha, e cair num grupo ali é game over sem decisão nenhuma. Da quarta em diante sobe até `CHANCE_GRUPO_MAX`
+   na última. Mesma fronteira de `tamanhoDoGrupo`, de propósito: duas curvas diferentes pro mesmo conceito é o
+   tipo de coisa que ninguém reconcilia depois. */
+export const CHANCE_GRUPO_MAX = 0.35;
+export const ROTAS_SEM_GRUPO = 3;          // índice 0-based: as rotas 1, 2 e 3 do mapa
+export function chanceDeGrupo(iRota, rotasNoMapa = 10) {
+  const i = Math.max(0, iRota);
+  if (i < ROTAS_SEM_GRUPO) return 0;
+  const ultima = Math.max(ROTAS_SEM_GRUPO, rotasNoMapa - 1);
+  if (i >= ultima) return CHANCE_GRUPO_MAX;
+  return CHANCE_GRUPO_MAX * (i - ROTAS_SEM_GRUPO + 1) / (ultima - ROTAS_SEM_GRUPO + 1);
+}
+
+/* O TETO do lado inimigo, pela decisão do usuário: "o grupo nunca passa de aliados + 1". Seu lado tem 1 + aliados
+   em pé, então o inimigo pode ter no máximo um a mais que isso — sem aliado, 2 contra 1; com um aliado, 3.
+   Não é gentileza: 3 contra 1 no começo da jornada não é dificuldade, é parede, e o jogador não tem o que
+   DECIDIR. Do jeito que ficou, recrutar com petisco virou uma resposta concreta à manada. */
+export const tetoDoGrupo = (aliadosEmPe = 0) => Math.min(GRUPO_MAX, Math.max(1, aliadosEmPe + 2));
+
+/* Quantos inimigos neste encontro selvagem. `sempre` = modo com a flag `grupos` (a Saga), onde o grupo não é
+   sorteado. Devolve 1 quando a sorte não deu — e 1 é o encontro de sempre, não um caso especial. */
+export function tamanhoDoEncontro(iRota, aliadosEmPe = 0, { sempre = false, rotasNoMapa = 10, sorte = Math.random, sorteTamanho = Math.random } = {}) {
+  const teto = tetoDoGrupo(aliadosEmPe);
+  if (teto <= 1) return 1;
+  if (!sempre && !(sorte() < chanceDeGrupo(iRota, rotasNoMapa))) return 1;
+  return Math.min(teto, tamanhoDoGrupo(iRota, sorteTamanho));
+}
+
+/* Como o jogo CHAMA o grupo que apareceu. O usuário pediu "grupos de Pokémon, como matilhas, manadas e etc", e a
+   palavra é metade da mecânica: "um grupo de 3 aparece" é relatório, "um enxame de 3 Weedle aparece" é um
+   encontro. Lê o tipo em comum de todos; sem tipo em comum, cai em `bando`.
+   Fica em `regras.js` porque é decisão sobre DADO (os tipos dos três), não desenho de tela. */
+export const NOME_DO_GRUPO = {
+  water: 'cardume', flying: 'revoada', bug: 'enxame', dark: 'alcateia', fighting: 'gangue',
+  ghost: 'assombração', dragon: 'ninhada', rock: 'avalanche', ground: 'tropa', steel: 'batalhão',
+  grass: 'moita', fire: 'fornalha', electric: 'tempestade', ice: 'nevasca', psychic: 'congregação',
+  poison: 'praga', fairy: 'corte', normal: 'matilha'
+};
+export function nomeDoGrupo(lista = []) {
+  if (lista.length < 2) return null;
+  const tipos = lista.map(m => tiposDe(m) || []);
+  const comuns = tipos[0].filter(t => tipos.every(ts => ts.includes(t)));
+  return NOME_DO_GRUPO[comuns[0]] || 'bando';
+}
+
+/* ---- 🎒 Treinador: equipe de até 6 e CAMPO de 1 a 3 (pedido do usuário, 06/10/2026) ----
+   "Treinadores podem ter 1, 2 ou até 3 Pokémon no campo também, assim aumentando o máximo para 6 nos
+   treinadores. Treinadores com 6 Pokémon são raros e só eles podem jogar 3 Pokémon juntos, ou 2 juntos, ou 1
+   Pokémon apenas, mas fazendo 6 lutas."
+
+   Duas coisas independentes, e é essa separação que faz a mecânica render:
+     EQUIPE  quantos ele tem (1 a 6). Sorteada por faixa de rota — 1 a 3 segue sendo o encontro comum, 4 e 5
+             aparecem do meio do mapa pra frente, e 6 é raro e só em rota avançada.
+     CAMPO   quantos ele põe ao mesmo tempo (1 a 3), e **só quem tem 6 pode pôr 3**. Um de 6 com campo 1 faz
+             seis lutas de um; com campo 3, duas ondas de três. A escolha é dele, e muda a luta inteira.
+   A tabela de pesos É o botão de calibragem: mexer num peso aqui muda a cara dos encontros do mapa todo. */
+export const EQUIPE_TREINADOR = [
+  { ate: 2, pesos: { 1: 60, 2: 40 } },                            // rotas 1–3: no máximo dois
+  { ate: 5, pesos: { 1: 28, 2: 34, 3: 26, 4: 12 } },              // meio do mapa: o quarto começa a aparecer
+  { ate: 8, pesos: { 2: 26, 3: 34, 4: 25, 5: 12, 6: 3 } },        // fim: o de 6 passa a ser possível
+  { ate: 99, pesos: { 3: 28, 4: 30, 5: 27, 6: 15 } }              // rota final e Santuário
+];
+export function tamanhoDaEquipeDoTreinador(iRota, sorte = Math.random, tabela = EQUIPE_TREINADOR) {
+  const faixa = tabela.find(f => Math.max(0, iRota) <= f.ate) || tabela[tabela.length - 1];
+  const entradas = Object.entries(faixa.pesos).map(([n, p]) => [Number(n), p]);
+  const total = entradas.reduce((s, [, p]) => s + p, 0);
+  let x = clamp(sorte(), 0, 0.999999) * total;
+  for (const [n, p] of entradas) if ((x -= p) < 0) return n;
+  return entradas[entradas.length - 1][0];
+}
+/* Quantos ele põe em campo. `teto` é o do lado do jogador (`tetoDoGrupo`): um treinador de 6 contra você sozinho
+   continua limitado a 2 em campo — o tamanho da EQUIPE dele não é desculpa pra uma parede. */
+export function campoDoTreinador(tamanhoEquipe, teto = GRUPO_MAX, sorte = Math.random) {
+  const maximo = Math.min(teto, tamanhoEquipe, tamanhoEquipe >= 6 ? 3 : 2);
+  if (maximo <= 1) return 1;
+  return 1 + Math.floor(clamp(sorte(), 0, 0.999999) * maximo);
+}
+/* Quem do banco pode entrar: de pé e fora de campo. `emCampo` = índices em `equipe` (o treinador deixou de ter um
+   `atual` só, porque agora ele tem até 3 em campo ao mesmo tempo). Devolve índices, na ordem da fila. */
+export const reservasDoTreinador = (equipe = [], emCampo = []) =>
+  equipe.map((_, i) => i).filter(i => equipe[i]?.hp > 0 && !emCampo.includes(i));
+
 // um golpe causou dano: quem bateu ganha ameaça. Chamado pelo motor único (golpe.js), nunca por uma tela.
 export const somarAmeaca = (m, n) => { if (m?.vol && n > 0) m.vol.ameaca = (m.vol.ameaca || 0) + n; };
 

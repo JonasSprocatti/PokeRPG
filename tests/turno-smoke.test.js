@@ -115,6 +115,55 @@ test('petisco pela barra de ⚡ item rápido vira `oferecer`, não `item` (relat
   assert.equal(G.S.bag.honey, undefined, 'o petisco foi oferecido (e gasto), não recusado');
 });
 
+/* 🎒 Treinador de 6 com CAMPO 3 (pedido do usuário, 06/10/2026). O caminho crítico é o `win()`: com até 3 em
+   campo ele deixou de "mandar o próximo" e passou a REPOR o campo. Um erro aqui trava a luta no meio ou manda o
+   mesmo Pokémon duas vezes — e `T.emCampo` são índices, então é fácil de errar calado. */
+test('treinador de 6 com campo 3: a luta começa com 3 em campo', async () => {
+  const equipe = [...Array(6)].map((_, k) => mon({ name: 'bicho' + k, id: 16 + k }));
+  const B = await rodar({ type: 'move', idx: 0 }, {
+    inimigos: equipe.slice(0, 3),
+    extra: { trainer: { nome: 'Treinador Teste', equipe, emCampo: [0, 1, 2], atual: 0, campo: 3, bola: 'poke-ball', bolas: 3 } }
+  });
+  assert.equal(B.inimigos.length, 3, 'os três seguem em campo depois do turno');
+  assert.ok(B.inimigos.every(m => equipe.includes(m)), 'em campo estão os MESMOS objetos da equipe (senão o dano se perde)');
+});
+
+test('a onda seguinte repõe o campo inteiro, e ninguém entra duas vezes', async () => {
+  const equipe = [...Array(6)].map((_, k) => mon({ name: 'bicho' + k, id: 16 + k }));
+  // os três da frente já caíram: o turno tem de trazer os três de trás de uma vez
+  for (const m of equipe.slice(0, 3)) m.hp = 0;
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  G.S.aliados = [mon({ name: 'aliado', id: 1 })];   // teto 3 precisa de aliado em pé (regras.tetoDoGrupo)
+  G.B = batalhaFalsa(equipe.slice(0, 3), { trainer: { nome: 'T', equipe, emCampo: [0, 1, 2], atual: 0, campo: 3, bola: 'poke-ball', bolas: 3 } });
+  await batalha.turn({ type: 'move', idx: 0 });
+  const dentro = G.B.inimigos;
+  assert.equal(dentro.length, 3, 'a onda nova veio com três');
+  assert.ok(dentro.every(m => m.hp > 0), 'e todos de pé');
+  assert.equal(new Set(dentro).size, 3, 'ninguém entrou duas vezes');
+  assert.ok(dentro.every(m => equipe.slice(3).includes(m)), 'são exatamente os três do banco');
+});
+
+test('sem aliado em pé, a onda do treinador de 6 vem com 2, não 3', async () => {
+  const equipe = [...Array(6)].map((_, k) => mon({ name: 'bicho' + k, id: 16 + k }));
+  for (const m of equipe.slice(0, 3)) m.hp = 0;
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  G.S.aliados = [];                                  // você sozinho: `tetoDoGrupo(0)` = 2
+  G.B = batalhaFalsa(equipe.slice(0, 3), { trainer: { nome: 'T', equipe, emCampo: [0, 1, 2], atual: 0, campo: 3, bola: 'poke-ball', bolas: 3 } });
+  await batalha.turn({ type: 'move', idx: 0 });
+  assert.ok(G.B.inimigos.length <= 2, `veio com ${G.B.inimigos.length}: a promessa é no máximo aliados + 2`);
+});
+
+test('save antigo de treinador (só `atual`, sem `emCampo`) continua carregando', () => {
+  const equipe = [mon({ name: 'a', id: 16 }), mon({ name: 'b', id: 17 })];
+  const B = batalha.restaurarBatalha({
+    inimigos: [equipe[1]], foco: 0, turn: 3, runs: 0, campo: { lados: {} }, planos: {},
+    trainer: { nome: 'Velho', equipe, atual: 1, bola: 'poke-ball', bolas: 2 }   // sem `emCampo` nem `campo`
+  });
+  assert.ok(B, 'a batalha voltou');
+  assert.equal(B.inimigos.length, 1);
+  assert.equal(B.inimigos[0], equipe[1], 'o inimigo é o MESMO objeto da equipe, pelo `atual` antigo');
+});
+
 test('selvagem segurando item: o turno roda e o item aparece no inimigo', async () => {
   const comItem = mon({ name: 'pidgey', id: 16, item: 'oran-berry' });
   const B = await rodar({ type: 'move', idx: 0 }, { inimigos: [comItem] });
