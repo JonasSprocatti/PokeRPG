@@ -24,7 +24,7 @@ import {
   prioridadeEfetiva, sempreUltimo, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, GRUPO_MAX, golpeDoPlano, especiesDobradas,
   guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT,
   itemDeSelvagem, itemCaiComoEspolio, trocaDoTreinador,
-  tamanhoDoEncontro, tetoDoGrupo, nomeDoGrupo, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador
+  tamanhoDoEncontro, tetoDoGrupo, nomeDoGrupo, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador, itemDeTreinador
 } from './regras.js';
 import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
 import { OFICIOS } from './oficios.js';
@@ -195,7 +195,17 @@ function sortearDoTreinador(z) {
   }
   return sortearOponente(z); // (offline sem nada guardado: o erro daqui é o mesmo do encontro selvagem)
 }
-async function novoOponenteTreinador(z) { const { id, level } = sortearDoTreinador(z); return makeMon(await loadPokemon(id), level); }
+/* Porta única do Pokémon DE TREINADOR — e é por isso que o item segurado dele é posto aqui: vale pra equipe
+   inteira, de 1 a 6, sem nenhum caminho escapando. O que ele pode dar sai do NÍVEL (`regras.itemDeTreinador`: o
+   PREÇO do item é a curva de poder), então um treinador de rota 1 anda com fruta e um de rota 9 alcança Orbe da
+   Vida e Faixa de Foco. `seg(m)` já lê os dois lados — nenhuma linha a mais pro efeito valer em batalha. */
+async function novoOponenteTreinador(z) {
+  const { id, level } = sortearDoTreinador(z);
+  const M = await makeMon(await loadPokemon(id), level);
+  const item = itemDeTreinador(level, Object.entries(ITEMS));
+  if (item) M.item = item;
+  return M;
+}
 /* Começa a batalha. `B.enemy` (um inimigo) e `B.inimigos` (grupo, ⚔ Saga) são aceitos: tudo é normalizado pra
    lista + `estado.ligarInimigos`, que instala o getter `enemy`. Um ramo só serve aos dois casos. */
 function iniciar(B) {

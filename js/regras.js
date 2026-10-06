@@ -1216,6 +1216,59 @@ export function campoDoTreinador(tamanhoEquipe, teto = GRUPO_MAX, sorte = Math.r
 export const reservasDoTreinador = (equipe = [], emCampo = []) =>
   equipe.map((_, i) => i).filter(i => equipe[i]?.hp > 0 && !emCampo.includes(i));
 
+/* ---- 🎒 O treinador EQUIPA os Pokémon dele (pedido do usuário, 06/10/2026) ----
+   "Quanto mais alto o nível, melhores os itens são para os Pokémon."
+
+   A curva de poder não foi inventada: é o **preço da loja**. Todo item segurado já tem `price` em `dados.js`, e
+   esse número é exatamente "quão forte isso é" — a Fruta Oran custa ₽300, o Orbe da Vida ₽3.000. Então o nível do
+   treinador vira um ORÇAMENTO e ele compra o que cabe. Uma tabela de faixas à mão seria uma segunda opinião sobre
+   o mesmo balanceamento, e a segunda opinião é a que fica velha quando um item novo entra na loja.
+   Efeito prático: Nv. 10 anda com fruta, Nv. 50 já tem Cinto do Perito e Restos, Nv. 80+ alcança Orbe da Vida,
+   Faixa de Foco e os de Escolha. Item novo barato entra sozinho no começo; item novo caro, só no fim.
+
+   A CHANCE também cresce, e isso é de propósito separado do orçamento: um treinador de rota 1 com a equipe toda
+   equipada seria estranho, e um de nível 90 sem nada seria decepcionante. */
+export const CHANCE_ITEM_TREINADOR = { min: 0.25, max: 0.8, nivelCheio: 70 };
+export const orcamentoDoTreinador = nivel => 300 + Math.max(0, nivel) * 45;
+export function chanceItemDoTreinador(nivel) {
+  const { min, max, nivelCheio } = CHANCE_ITEM_TREINADOR;
+  return min + (max - min) * clamp(Math.max(0, nivel) / nivelCheio, 0, 1);
+}
+/* Itens que o treinador NÃO dá pros Pokémon dele, com o motivo. Não é lista de proibição estética: cada um aqui
+   atrapalharia o dono ou não faria nada, e item inerte na mão do inimigo é mentira na tela (o chip 🎁 promete
+   algo que não acontece). */
+export const ITENS_FORA_DO_TREINADOR = new Set([
+  'iron-ball',        // −50% de Velocidade: presente pra VOCÊ, não pra ele
+  'black-sludge',     // machuca quem não é Venenoso, e ele não escolhe a espécie
+  'toxic-orb', 'flame-orb',   // se auto-infligem status; só valem com Guts e cia., que a IA não sabe explorar
+  'eviolite'          // só vale em quem ainda evolui, e metade da equipe dele é forma final
+]);
+/* Devolve o id do item, ou null. `pool` = `[ [id, item] ]` (Object.entries de ITENS_SEGURADOS e companhia): quem
+   chama passa a tabela, este módulo não importa `dados.js` inteiro pra isto. */
+export const FRACAO_PISO_TREINADOR = 0.35;
+export function itemDeTreinador(nivel, pool = [], sorte = Math.random, sorteio = Math.random) {
+  if (!(sorte() < chanceItemDoTreinador(nivel))) return null;
+  const teto = orcamentoDoTreinador(nivel);
+  const serve = ([id, it]) => it?.segurado && it.price > 0 && it.price <= teto
+    && !ITENS_FORA_DO_TREINADOR.has(id) && !it.soComMega && !it.soComZ && !it.soComVinculo;
+  /* O PISO é o que faz o pedido se cumprir de verdade. Sem ele, as 17 frutas de aperto (₽1.200 cada) ficavam com
+     31% dos casos até no Nv. 90 — um treinador de fim de mapa andando com fruta de tipo é o contrário de "quanto
+     mais alto o nível, melhores os itens". Com o piso em 35% do orçamento, ele PARA de comprar o que ficou
+     barato pra ele: no Nv. 90 a fruta de tipo sai da lista e o chão passa a ser Faixa Muscular.
+     Se o piso não deixar nada (nível muito baixo), ele é ignorado — melhor um item barato que nenhum. */
+  const piso = teto * FRACAO_PISO_TREINADOR;
+  const todos = pool.filter(serve);
+  const cabem = todos.filter(([, it]) => it.price >= piso);
+  if (!cabem.length) return todos.length ? todos[Math.floor(clamp(sorteio(), 0, 0.999999) * todos.length)][0] : null;
+  /* Peso pelo PREÇO: dentro do que ele pode pagar, o item melhor é o mais provável. Sem isso, as 17 frutas de
+     aperto (₽1.200 cada) afogariam o Orbe da Vida por pura quantidade, e um treinador de Nv. 90 andaria com
+     fruta — exatamente o contrário do que foi pedido. */
+  const total = cabem.reduce((s, [, it]) => s + it.price, 0);
+  let x = clamp(sorteio(), 0, 0.999999) * total;
+  for (const [id, it] of cabem) if ((x -= it.price) < 0) return id;
+  return cabem[cabem.length - 1][0];
+}
+
 // um golpe causou dano: quem bateu ganha ameaça. Chamado pelo motor único (golpe.js), nunca por uma tela.
 export const somarAmeaca = (m, n) => { if (m?.vol && n > 0) m.vol.ameaca = (m.vol.ameaca || 0) + n; };
 

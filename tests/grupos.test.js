@@ -7,8 +7,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GRUPO_MAX, CHANCE_GRUPO_MAX, ROTAS_SEM_GRUPO, chanceDeGrupo, tetoDoGrupo, tamanhoDoEncontro,
-  nomeDoGrupo, NOME_DO_GRUPO, EQUIPE_TREINADOR, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador
+  nomeDoGrupo, NOME_DO_GRUPO, EQUIPE_TREINADOR, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador,
+  itemDeTreinador, chanceItemDoTreinador, orcamentoDoTreinador, CHANCE_ITEM_TREINADOR, FRACAO_PISO_TREINADOR, ITENS_FORA_DO_TREINADOR
 } from '../js/regras.js';
+import { ITEMS } from '../js/dados.js';
 
 const mon = (tipos, hp = 40) => ({ data: { types: tipos }, hp, vol: {} });
 
@@ -109,4 +111,76 @@ test('reservas: de pé e fora de campo, na ordem da fila', () => {
   assert.deepEqual(reservasDoTreinador(equipe, []), [0, 2, 3], 'ninguém em campo: todos os de pé são reserva');
   assert.deepEqual(reservasDoTreinador([], [0]), []);
   assert.deepEqual(reservasDoTreinador(undefined, undefined), []);
+});
+
+/* ---- 🎒 O treinador equipando os Pokémon dele (pedido do usuário, 06/10/2026) ----
+   "Quanto mais alto o nível, melhores os itens." A curva de poder é o PREÇO da loja, não uma tabela nova — e o
+   que faz o pedido se cumprir de verdade é o PISO: sem ele as 17 frutas de aperto, por pura quantidade, ficavam
+   com 31% dos casos até no Nv. 90. */
+test('a chance de ter item cresce com o nível e para no teto', () => {
+  const { min, max, nivelCheio } = CHANCE_ITEM_TREINADOR;
+  assert.equal(chanceItemDoTreinador(0), min);
+  assert.equal(chanceItemDoTreinador(nivelCheio), max);
+  assert.equal(chanceItemDoTreinador(100), max, 'passar do nível cheio não passa do teto');
+  assert.equal(chanceItemDoTreinador(-5), min, 'nível negativo não vira chance negativa');
+  for (let n = 1; n <= 100; n++) assert.ok(chanceItemDoTreinador(n) >= chanceItemDoTreinador(n - 1), `caiu no Nv. ${n}`);
+});
+
+test('os dois lados do limiar da chance de item', () => {
+  const pool = Object.entries(ITEMS);
+  const c = chanceItemDoTreinador(50);
+  assert.ok(itemDeTreinador(50, pool, () => c - 0.001, () => 0), 'abaixo do limiar: tem item');
+  assert.equal(itemDeTreinador(50, pool, () => c, () => 0), null, 'no limiar exato: sem item');
+  assert.equal(itemDeTreinador(50, pool, () => 0.999, () => 0), null);
+});
+
+test('o orçamento cresce com o nível, e o item nunca passa dele', () => {
+  const pool = Object.entries(ITEMS);
+  for (const nivel of [5, 20, 50, 80, 100]) {
+    const teto = orcamentoDoTreinador(nivel);
+    for (let k = 0; k < 300; k++) {
+      const id = itemDeTreinador(nivel, pool, () => 0, () => k / 300);
+      if (!id) continue;
+      assert.ok(ITEMS[id].price <= teto, `Nv. ${nivel} saiu com ${ITEMS[id].name} (₽${ITEMS[id].price}) acima do orçamento ₽${teto}`);
+      assert.ok(ITEMS[id].segurado, `${id} não é item pra segurar`);
+    }
+  }
+  assert.ok(orcamentoDoTreinador(90) > orcamentoDoTreinador(10));
+});
+
+test('nível alto PARA de carregar o que ficou barato pra ele', () => {
+  const pool = Object.entries(ITEMS);
+  const colher = nivel => {
+    const out = [];
+    for (let k = 0; k < 2000; k++) { const id = itemDeTreinador(nivel, pool, () => 0, () => k / 2000); if (id) out.push(id); }
+    return out;
+  };
+  const fruta = id => /-berry$/.test(id);
+  const baixo = colher(10), alto = colher(80);
+  assert.ok(baixo.every(fruta), 'Nv. 10 anda com fruta, e só');
+  assert.ok(!alto.some(fruta), 'Nv. 80 não carrega fruta nenhuma — é o pedido do usuário');
+  // e o que ele carrega no alto é caro de verdade
+  const piso = orcamentoDoTreinador(80) * FRACAO_PISO_TREINADOR;
+  assert.ok(alto.every(id => ITEMS[id].price >= piso), 'nada abaixo do piso no Nv. 80');
+  assert.ok(alto.some(id => id === 'life-orb'), 'o Orbe da Vida entra na conversa');
+});
+
+test('o que atrapalharia o dono fica de fora, com motivo', () => {
+  const pool = Object.entries(ITEMS);
+  const vistos = new Set();
+  for (const nivel of [10, 40, 70, 100]) for (let k = 0; k < 2000; k++) {
+    const id = itemDeTreinador(nivel, pool, () => 0, () => k / 2000);
+    if (id) vistos.add(id);
+  }
+  for (const proibido of ITENS_FORA_DO_TREINADOR) assert.ok(!vistos.has(proibido), `${proibido} não deveria sair`);
+  // Pedra Mega / Cristal Z / Vínculo são de gimmick e não valem na mão de um Pokémon de rota
+  for (const id of vistos) {
+    assert.ok(!ITEMS[id].soComMega && !ITEMS[id].soComZ && !ITEMS[id].soComVinculo, `${id} é item de gimmick`);
+  }
+  assert.ok(vistos.size > 10, `só ${vistos.size} itens diferentes no total — a variedade quebrou`);
+});
+
+test('pool vazio não quebra nem inventa item', () => {
+  assert.equal(itemDeTreinador(50, [], () => 0, () => 0), null);
+  assert.equal(itemDeTreinador(50, undefined, () => 0, () => 0), null);
 });
