@@ -984,6 +984,53 @@ export function proximoDoTreinador(equipe, atual, aleatorio = false, sorte = Mat
   if (!vivos.length) return -1;
   return aleatorio ? vivos[Math.floor(sorte() * vivos.length)] : vivos[0];
 }
+
+/* ---- O treinador trocando de Pokémon por ESCOLHA (pedido do usuário, 06/10/2026) ----
+   "Os treinadores vão poder trocar de Pokémon a qualquer momento, quando for benéfico pra eles — isso dá uma
+   noção de treinador mesmo fazendo isso." Até aqui a troca do lado de lá só acontecia EMPURRADA (Roar, Cartão
+   Vermelho) ou quando um caía; agora ele recua sozinho de um confronto ruim, como qualquer jogador humano faria.
+
+   `notaDeConfronto` é a conta: o que o Pokémon DEVOLVE menos o que ele TOMA, em multiplicadores de tipo. Lê os
+   golpes de verdade dos dois lados (não os tipos do Pokémon) porque é o golpe que machuca — um Gyarados sem
+   golpe de Água não ameaça um Pokémon de Fogo. Positivo = confronto favorável.
+
+   O treinador "assistiu você lutar": ele enxerga os seus golpes. É a mesma licença que `escolhaIA` já toma, e sem
+   ela a troca seria às cegas e pareceria aleatória — que é justamente o oposto de "noção de treinador".
+
+   TETO DE 3 TROCAS POR LUTA (decisão do usuário, sem limite por Pokémon): sem teto, um treinador de 6 Pokémon
+   consegue enrolar pra sempre trocando a cada turno que o confronto piora, e a luta deixa de ter ritmo. O teto é
+   da luta inteira, então ele pode gastar as três em sequência se valer a pena — a tática é dele. */
+export const MAX_TROCAS_TREINADOR = 3;
+export const GANHO_PRA_TROCAR = 1.5;     // de quanto o confronto tem de melhorar pra valer gastar o turno
+export const HP_PRA_TROCAR = 0.25;       // abaixo disso ele troca por qualquer confronto melhor, nem que seja pouco
+
+export function notaDeConfronto(m, oponente) {
+  const dano = x => (x?.moves || []).filter(g => g.cls !== 'status' && g.ppLeft > 0);
+  const pior = (atacante, defensor) => {
+    const gs = dano(atacante);
+    // sem golpe de dano em PP, o melhor que ele faz é Struggle: eficácia neutra
+    return gs.length ? Math.max(...gs.map(g => typeEff(g.type, tiposDefensivos(defensor)))) : 1;
+  };
+  return pior(m, oponente) - pior(oponente, m);
+}
+
+/* Devolve o índice de quem o treinador quer mandar no lugar do atual, ou -1 pra "fica quem está". Pura: quem
+   troca de verdade é `batalha.forcarSaida({ para })`. `trocasFeitas` é o contador da luta (B.trocasTreinador). */
+export function trocaDoTreinador(equipe, atual, oponente, trocasFeitas = 0, max = MAX_TROCAS_TREINADOR) {
+  if (trocasFeitas >= max) return -1;
+  const E = equipe?.[atual]; if (!E || E.hp <= 0 || !oponente || oponente.hp <= 0) return -1;
+  const minha = notaDeConfronto(E, oponente);
+  const apertado = E.hp / Math.max(1, E.stats.hp) < HP_PRA_TROCAR;
+  // com o HP no fim, qualquer melhora serve: morrer em campo não guarda nada pra depois
+  const precisa = apertado ? 0.0001 : GANHO_PRA_TROCAR;
+  let escolhido = -1, melhor = minha + precisa;
+  for (let i = 0; i < equipe.length; i++) {
+    if (i === atual || equipe[i].hp <= 0) continue;
+    const n = notaDeConfronto(equipe[i], oponente);
+    if (n >= melhor) { melhor = n; escolhido = i; }
+  }
+  return escolhido;
+}
 // O que as habilidades de "saída" fazem quando a luta é vencida (o jogador nunca troca, então a saída é o fim da luta):
 // Regenerator recupera parte do HP, Natural Cure tira o status. Devolve o que vai acontecer, sem mexer em nada.
 export function efeitosAoVencer(m) {

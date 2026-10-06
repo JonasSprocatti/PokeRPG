@@ -23,7 +23,7 @@ import {
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
   prioridadeEfetiva, sempreUltimo, proximoDoTreinador, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, tamanhoDoGrupo, GRUPO_MAX, golpeDoPlano, especiesDobradas,
   guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT,
-  itemDeSelvagem, itemCaiComoEspolio
+  itemDeSelvagem, itemCaiComoEspolio, trocaDoTreinador
 } from './regras.js';
 import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
 import { OFICIOS } from './oficios.js';
@@ -244,18 +244,29 @@ const habilidadeDaNovaForma = m => aoEntrarEmCampo([m], x => (inimigosEmCampo().
                         expulsar contra a vontade) — só os aliados.
    Devolve true se alguém saiu. Quem chama é o motor do golpe (ctx.forcarSaida), no meio de uma ação: por isso aqui só se
    MARCA o fim (`B.saidaForcada`) e o `turn()` encerra depois, em vez de chamar endBattle no meio do golpe. */
-async function forcarSaida(m, { motivo = 'forcada' } = {}) {
+async function forcarSaida(m, { motivo = 'forcada', para = null } = {}) {
   const B = G.B; if (!B) return false;
-  const P = G.S.player, T = B.trainer, voluntaria = motivo === 'medo', revezar = motivo === 'revezamento';
+  const P = G.S.player, T = B.trainer, voluntaria = motivo === 'medo';
+  /* 🔄 `recuar` é a AÇÃO do jogador (data-act="recuar"), e mecanicamente é o mesmo revezamento do U-turn: sair até
+     o fim da rodada com um aliado cobrindo, voltar pelas armadilhas e pelas habilidades de entrada. Só a frase
+     muda — quem usou U-turn não "recuou", foi o golpe que o tirou de lá. */
+  const revezar = motivo === 'revezamento' || motivo === 'recuar';
   if (B.inimigos.includes(m)) {
     if (B.chefe || B.evento || B.lendarios || m.boss) return false;
     if (T) {
-      const i = proximoDoTreinador(T.equipe, T.atual, !voluntaria);
+      /* `para` = o treinador ESCOLHEU quem entra (regras.trocaDoTreinador, a troca por tática). Sem ele vale o de
+         sempre: arrastado à força sorteia, desistência própria pega o primeiro da fila. */
+      const i = para != null && T.equipe[para]?.hp > 0 && para !== T.atual ? para : proximoDoTreinador(T.equipe, T.atual, !voluntaria && para == null);
       if (i < 0) return false;                                            // não tem ninguém pra mandar no lugar
       m.vol = freshVol(); m.vol.retirado = true;                          // o turno dele acaba aqui (turn() pula quem tem `retirado`)
       T.atual = i; const novo = T.equipe[i]; novo.vol = freshVol(); novo.vol.recemEntrou = true;
+      /* Quem ENTRA numa troca tática não ataca na mesma rodada: trocar foi a ação do treinador, como nos jogos. É
+         o que faz a troca ter preço — o seu golpe deste turno cai no recém-chegado de graça. `turn()` lê isso ao
+         montar a fila, e `freshVol()` da próxima entrada em campo limpa sozinho. */
+      if (motivo === 'tatica') novo.vol.semAcao = 1;
       B.inimigos[B.inimigos.indexOf(m)] = novo; armarGuarda(novo); registrarVisto(novo); render();
-      await say(`${voluntaria ? `${nm(m)} perde a coragem e sai de campo!` : `${nm(m)} foi arrastado pra fora da luta!`}`, 'status');
+      await say(motivo === 'tatica' ? `${esc(T.nome)} chama <b>${esc(fmt(m.name))}</b> de volta!`
+        : voluntaria ? `${nm(m)} perde a coragem e sai de campo!` : `${nm(m)} foi arrastado pra fora da luta!`, 'status');
       await say(`${esc(T.nome)} envia <b>${esc(fmt(novo.name))}</b> (Nv. ${novo.level})!${novo.shiny ? ' ✨ Um shiny!' : ''}`, 'enc');
       await aplicarArmadilhas(novo, CTX);                                 // Stealth Rock e cia. pegam quem entra
       await anunciarQuedas();
@@ -285,7 +296,7 @@ async function forcarSaida(m, { motivo = 'forcada' } = {}) {
     const r = efeitosAoVencer(m);
     if (r.cura) { m.hp = Math.min(m.stats.hp, m.hp + r.cura); await say(`${nm(m)} recuperou ${r.cura} HP ao sair de campo. (${fmt(m.ability)})`, 'good'); }
     if (r.limpaStatus) { m.status = null; m.sleep = 0; delete m.vol.toxico; await say(`${nm(m)} se curou do status ao sair de campo. (${fmt(m.ability)})`, 'good'); }
-    await say(`${nm(m)} sai de campo e ${nm(outros[0])} cobre o lugar dele!`, 'status');
+    await say(motivo === 'recuar' ? `🔄 ${nm(m)} RECUA, e ${nm(outros[0])} cobre o lugar dele!` : `${nm(m)} sai de campo e ${nm(outros[0])} cobre o lugar dele!`, 'status');
     render();
     return true;
   }
@@ -667,6 +678,18 @@ export async function turn(action) {
       if (r === 'cancelado') return;
       if (r === 'fim') { endBattle(); return; }
       G.panel = painelInicial();
+    } else if (action.type === 'recuar') {
+      /* 🔄 RECUAR (pedido do usuário, 06/10/2026): sua ação da rodada é SAIR de campo por uma rodada, com um
+         aliado cobrindo. Mecanicamente é o revezamento do U-turn — e é o que faz Regenerator, Natural Cure e
+         companhia dispararem pelo gatilho DE VERDADE ("ao sair de campo"), além de apagar os seus degraus de
+         atributo ruins junto com o `vol`. Sem aliado em pé não há quem cubra: avisa e NÃO gasta o turno, mesma
+         honestidade do golpe de revezamento. */
+      await vez('p');
+      if (!(await forcarSaida(P, { motivo: 'recuar' }))) {
+        await say('Não há mais ninguém de pé pra cobrir o seu lugar — recuar deixaria o campo vazio.', 'muted');
+        return;
+      }
+      G.panel = painelInicial();
     } else if (action.type === 'passar') { /* você foi tirado da luta: só assiste os aliados */ }
     /* ⚔ Saga: PERÍCIA é ação do turno, como um golpe — entra na ordem por velocidade e o resto da rodada corre
        normal. Não gasta PP e não passa por `golpe.js` (não é golpe); a trava está em `usarPericia`. */
@@ -678,6 +701,21 @@ export async function turn(action) {
        desligado no `finally` deste turno — um Z que "vazasse" pro turno seguinte dobraria o dano de graça. */
     if (action.z && pm) { P.vol.zAtivo = true; B.zUsado = true; await say(`<b>${esc(rotulo(P))} concentra a energia Z!</b>`, 'level'); }
 
+    /* 1.5) O TREINADOR pode recuar antes dos golpes (regras.trocaDoTreinador, teto de 3 por luta). Fica AQUI, e
+       não junto das ações, por dois motivos: trocar é a ação dele neste turno (quem entra leva `vol.semAcao`, e a
+       fila logo abaixo o pula), e o seu golpe deste turno cai no recém-chegado — que é exatamente o preço de
+       trocar nos jogos. Antes disto, a troca do lado de lá só acontecia empurrada ou quando alguém caía. */
+    if (T && !B.chefe && !B.evento && !B.lendarios && E?.hp > 0) {
+      const i = trocaDoTreinador(T.equipe, T.atual, P, B.trocasTreinador || 0);
+      if (i >= 0) {
+        await vez('e');
+        if (await forcarSaida(E, { motivo: 'tatica', para: i })) {
+          B.trocasTreinador = (B.trocasTreinador || 0) + 1;
+          E = B.enemy;                                   // o inimigo MUDOU: reler, como o resto do turn() faz
+          if (grupoInimigoCaiu()) return win();          // caiu só com as armadilhas de entrada
+        }
+      }
+    }
     // 2) golpes do turno: você (se escolheu golpe), cada aliado em pé e o lado inimigo, por prioridade e velocidade.
     //    Bola do treinador é item: prioridade máxima, sai antes de qualquer golpe.
     const acoes = [], clima = climaDe(B.campo), terreno = terrenoDe(B.campo); // clima e terreno entram na velocidade
@@ -704,6 +742,7 @@ export async function turn(action) {
     }
     // cada inimigo de pé age (⚔ Saga: o grupo inteiro; nos outros modos a lista tem um só)
     for (const F of inimigosEmCampo()) {
+      if (F.vol?.semAcao) continue;      // acabou de entrar numa troca tática: trocar FOI a ação do treinador
       const ea = acaoDoInimigo(F, P);
       acoes.push(ea.bola ? { quem: F, bola: true, prio: 99, vel: 0 }
         : { quem: F, golpe: ea.move, prio: prioridadeEfetiva(F, ea.move), vel: vel(F), rapido: ativouQuickClaw(F), lento: sempreUltimo(F) });
@@ -773,7 +812,9 @@ export async function turn(action) {
     // recuo, Protect e Endure valem só um turno; `passarSaga`/`passarRecargas` cuidam de Ruína, Marca, Brado e
     // da recarga das perícias (⚔ Saga). Fora da Saga nenhuma dessas marcas existe no `vol` e as duas são no-op.
     for (const m of [...ladoJogador(), ...B.inimigos]) { fimDaRodada(m); passarSaga(m); passarRecargas(m); }
-    await voltarDoRevezamento();   // quem saiu com U-turn & cia. volta agora, pelas armadilhas e pelas habilidades de entrada
+    // quem entrou numa troca tática do treinador já pagou a rodada parado: na próxima ele age
+    for (const m of B.inimigos) delete m.vol?.semAcao;
+    await voltarDoRevezamento();   // quem saiu com U-turn & cia. (e com 🔄 Recuar) volta agora, pelas armadilhas e pelas habilidades de entrada
     // o gigante encolhe no fim da rodada; narrar é importante, senão o HP "some" sem explicação
     for (const m of [...ladoJogador(), ...B.inimigos]) if (passarDynamax(m) === 'acabou') { render(); await say(`${nm(m)} voltou ao tamanho normal.`, 'status'); }
     B.turn++;

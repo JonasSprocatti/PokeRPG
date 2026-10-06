@@ -372,6 +372,7 @@ async function aoClicar(e) {
     }
     case 'item': if (G.busy) return; G.busy = true; render(); try { await useItem(v, false); await verificarMissoes(); } finally { G.busy = false; render(); save(); } return;
     case 'item-b': return turn({ type: 'item', id: v });
+    case 'recuar': return turn({ type: 'recuar' });   // 🔄 sai de campo por uma rodada, com um aliado cobrindo
     case 'rapido': return marcarRapido(v);   // ⚡ na mochila: liga/desliga o atalho (regras.alternarRapido)
     case 'repel-cancelar': return cancelarRepelente();   // ✕ no aviso de repelente ativo (relato #69)
     /* ⚔ Saga: com mais de um inimigo de pé, tocar no golpe PEDE o alvo (a cena vira botões) em vez de atacar —

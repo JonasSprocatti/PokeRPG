@@ -338,6 +338,14 @@ export const precisaEscolherAlvo = () => !!G.B && (G.B.inimigos || []).filter(m 
    (ver a armadilha "não reintroduzir esconder painel por aba" no CLAUDE.md).
    Comandando um companheiro, os dois últimos comandos viram "deixar ele decidir" e "voltar": mochila e fuga são
    suas, não dele. */
+/* 🔄 RECUAR: sair de campo por uma rodada com um aliado cobrindo (batalha.forcarSaida, motivo `recuar`). Só
+   aparece quando HÁ quem cubra — diferente de um item que não serve, aqui o botão sem aliado em pé não tem nenhum
+   resultado possível, então mostrar e avisar depois seria só atrito. O `title` explica pra que serve: o ganho de
+   verdade é limpar os degraus de atributo ruins e disparar Regenerator/Natural Cure pelo gatilho de saída. */
+const podeRecuar = () => G.mode === 'battle' && G.B && !G.S.player?.vol?.retirado && vivos(emCampo()).length > 1;
+const botaoRecuar = dis => podeRecuar()
+  ? `<button class="btn ghost" data-act="recuar" ${dis} title="Sai de campo por uma rodada e um aliado cobre. Os seus degraus de atributo (bons e ruins) vão embora, as armadilhas do seu lado pegam você na volta, e habilidades de saída como Regenerator e Natural Cure disparam.">🔄 Recuar</button>`
+  : '';
 function janelaDeComandos(M, P, dis) {
   const meu = M === P;
   const per = periciasDe(M), prontas = per.filter(id => periciaPronta(M, id));
@@ -349,6 +357,7 @@ function janelaDeComandos(M, P, dis) {
         title="${per.length ? esc(per.map(id => PERICIAS[id].nome).join(' · ')) : 'O ofício sai dos atributos e do que a espécie aprende'}"><b>✨ Perícia</b><small>${esc(subPericia)}</small></button>
       ${meu
         ? `<button class="cmd-jrpg" data-act="panel" data-v="bag" ${dis}><b>🎒 Mochila</b><small>Itens e petiscos</small></button>
+           ${podeRecuar() ? `<button class="cmd-jrpg" data-act="recuar" ${dis}><b>🔄 Recuar</b><small>Sai uma rodada; a comitiva cobre</small></button>` : ''}
            <button class="cmd-jrpg" data-act="run" ${dis}><b>🏃 Fugir</b><small>Tentar escapar da luta</small></button>`
         : `<button class="cmd-jrpg" data-act="comandar-auto" data-v="${esc(G.comandando || 'p')}" ${dis}><b>⚡ Decidir só</b><small>Ordem: ${esc(ordem)}</small></button>
            <button class="cmd-jrpg" data-act="comandar" data-v="p" ${dis}><b>↩ Voltar</b><small>Seus comandos</small></button>`}
@@ -751,7 +760,7 @@ function renderActions() {
       ${resumoTravas(M).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
       ${modoJRPG(S) ? `<div class="subrow"><button class="btn ghost" data-act="panel" data-v="comandos" ${dis}>↩ Comandos</button></div>`
       : M === P ? `${botaoMega(dis)}${barraRapidos(dis)}
-      <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button><button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`
+      <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button>${botaoRecuar(dis)}<button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`
       : `<div class="subrow"><button class="btn ghost" data-act="comandar" data-v="p" ${dis}>↩ Voltar pros seus golpes</button>
         <button class="btn ghost" data-act="comandar-auto" data-v="${esc(G.comandando || 'p')}" ${dis}>⚡ Deixar ele decidir (Ordem: ${esc(ORDENS[M.ordem || 'livre'].nome)})</button></div>`}`;
   } else if (G.panel === 'shop') {

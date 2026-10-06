@@ -13,6 +13,16 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.2', data: '2026-10-06', titulo: '🔄 Recuar virou comando — e o treinador do outro lado aprendeu a trocar de Pokémon', piada: 'Um treinador de Pewter passou dois anos vendo o Geodude dele tomar Surf em silêncio porque ninguém tinha avisado que era permitido chamar o bicho de volta. Avisamos. Ele pediu desculpas ao Geodude e agora troca na cara dura, no melhor momento possível, e ninguém mais acha isso simpático.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🔄 Recuar.</b> No lugar de atacar, dá pra <b>sair de campo por uma rodada</b> e deixar um <b>aliado cobrindo</b>. O botão fica junto de Mochila e Fugir, e só aparece quando há alguém de pé pra cobrir o seu lugar.',
+        '<b>Pra que serve recuar:</b> os seus degraus de atributo vão embora na saída (ótimo quando você tomou três quedas de Defesa, péssimo quando acabou de subir o Ataque), as <b>habilidades de saída disparam pelo gatilho de verdade</b> — <b>Regenerator</b> cura, <b>Natural Cure</b> limpa o status — e na volta você passa pelas armadilhas do seu lado e pelas habilidades de entrada outra vez. É um turno gasto por uma troca de situação.',
+        '<b>O treinador do outro lado também troca agora.</b> Antes ele só mudava de Pokémon quando era <b>empurrado</b> (Roar, Cartão Vermelho) ou quando um caía — dava pra ficar moendo o Pokémon errado dele à vontade. Agora ele <b>recua de um confronto ruim por conta própria</b>: compara o que o bicho em campo devolve com o que ele toma dos <b>seus</b> golpes, e chama outro quando a troca melhora muito a vida dele, ou quando o atual está com o HP no fim.',
+        '<b>E trocar custa o turno dele.</b> Quem entra <b>não ataca naquela rodada</b>, então o seu golpe cai de graça no recém-chegado — é a janela que você tem pra castigar a troca. O teto é de <b>3 trocas por luta</b>: ele pode gastar as três seguidas se for esperto, mas não enrola a luta inteira.',
+        'Efeito prático: luta de treinador deixou de ser uma fila e virou uma conversa. Vale a pena guardar um golpe pro que vem depois.'
+      ] }
+    ] },
   { versao: '5.1', data: '2026-10-06', titulo: '🎁 O selvagem agora aparece segurando item — e dá pra roubar', piada: 'Um Rattata foi visto guardando uma Fruta Oran debaixo da pedra. Perguntado sobre a procedência, alegou que "estava lá". Os Pokémon com Pickpocket foram informados e já estão a caminho.',
     secoes: [
       { nome: 'Novidades', itens: [
