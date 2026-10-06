@@ -439,6 +439,9 @@ export const PRECISAO_CLIMA = { thunder: { chuva: 100, sol: 50 }, hurricane: { c
 // `ladoAlvo` = o lado do campo de quem defende (telas: Reflect, Light Screen, Aurora Veil)
 /* `esperado` = a média, sem sorteio: sem crítico e com a rolagem no meio da faixa (92,5%). É pra IA do inimigo
    comparar golpes (notaDoGolpe) sem que um crítico ou uma rolagem baixa mude a escolha de um turno pro outro. */
+/* Chance de crítico por DEGRAU acumulado (golpe de alto crítico, Focus Energy, Super Luck, Garra Afiada…), como
+   nas Gens 6+. Exportada porque a 📈 tela de Taxas a mostra: a tabela e o sorteio têm de ser o mesmo número. */
+export const DEGRAUS_CRITICO = [1 / 24, 1 / 8, 1 / 2, 1];
 export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = null, esperado = false) {
   if (FIXED[move.name]) return { dmg: Math.max(1, FIXED[move.name](u, t)), crit: false };
   const hu = hab(u), ht = hab(t);
@@ -460,7 +463,7 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   const crit = !esperado && !ht.semCritico
     && (!!u.vol?.estocada
       || (hu.critContraStatus && t.status === hu.critContraStatus)
-      || Math.random() < [1 / 24, 1 / 8, 1 / 2, 1][Math.min(3, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0) + (seg(u).critExtra || 0))]);
+      || Math.random() < DEGRAUS_CRITICO[Math.min(DEGRAUS_CRITICO.length - 1, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0) + (seg(u).critExtra || 0))]);
   // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
   /* O par de atributos sai do `cls` do golpe, MENOS quando a tabela de especiais diz outra coisa: Body Press
      ataca com a sua Defesa, Foul Play com o Ataque do alvo, e Psyshock/Psystrike/Secret Sword são especiais

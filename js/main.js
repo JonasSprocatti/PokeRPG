@@ -11,6 +11,7 @@ import { telaSaves } from './tela-saves.js';
 import { telaAjustes, baixarMapaOffline, baixarImagensOffline, baixarImagens3DOffline, baixarImagensAnimadasOffline, acaoDev } from './tela-ajustes.js';
 import { telaTutorial, tutAvancar, tutVoltar, tutExplorar, tutGolpe, tutComprar, tutRevelarCaptura, tutSair } from './tela-tutorial.js';
 import { telaPatchNotes } from './tela-patchnotes.js';
+import { telaTaxas } from './tela-taxas.js';
 import { telaPrivacidade } from './tela-privacidade.js';
 import { aplicarFonte, definirEstiloSprite, alternarAnimacoes } from './ajustes.js';
 import { GENS, dadosDaGen, entrarNaGen, genDe } from './mapas.js';
@@ -95,7 +96,7 @@ async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'editor'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   /* Trilha das telas fora do jogo (som.js), num lugar só: toda tela de menu é alcançada por um destes `data-act`,
      então nenhuma delas precisa saber de música por conta própria. `inicio` tem a própria faixa (showCreate pede
@@ -120,6 +121,8 @@ async function aoClicar(e) {
     case 'tut-revelar-captura': return tutRevelarCaptura();
     case 'tut-pular': case 'tut-fim': return tutSair();
     case 'patch': if (travadoPelaBatalha()) return; return telaPatchNotes();
+    // 📈 Taxas: todas as chances do jogo, lidas das constantes do próprio sorteio (tela-taxas.js)
+    case 'taxas': if (travadoPelaBatalha()) return; return telaTaxas();
     case 'fonte': aplicarFonte(v); return telaAjustes();
     case 'ads-consentimento': definirConsentimento(v); return telaAjustes();
     case 'baixar-gen': return baixarMapaOffline(v);   // guarda um mapa pra jogar sem internet

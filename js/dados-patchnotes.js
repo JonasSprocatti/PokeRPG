@@ -13,6 +13,14 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.5', data: '2026-10-06', titulo: '📈 Todas as chances do jogo, numa tela só', piada: 'O setor de estatística do jogo passou dois anos calculando as taxas num caderno e se recusando a mostrar a quem perguntava, alegando sigilo metodológico. O caderno foi finalmente localizado. Era o código-fonte, que estava ali o tempo todo, e agora ele se imprime sozinho.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Tela 📈 Taxas:</b> tudo o que o jogo sorteia, com o número de verdade. O que cada clique em <b>Explorar</b> pode dar, <b>qual item você acha</b> e com que chance, a taxa de um <b>Pokémon brilhante</b>, de onde sai a <b>taxa de aparição</b> de uma espécie na rota, a chance de cair numa <b>manada</b> rota por rota, quantos Pokémon um <b>treinador</b> tem e o que eles carregam, a <b>fórmula da captura</b> balanço por balanço, os passos de um <b>ovo</b>, o <b>crítico</b> por degrau, quanto dura cada <b>status</b>, de onde vem cada ₽ e cada ponto de <b>XP</b>, e como a <b>pontuação</b> da jornada é montada.',
+        '<b>Nada ali é estimativa.</b> Cada porcentagem da tela é lida da <b>mesma constante que o sorteio usa</b> — não é um texto escrito à mão que alguém precisa lembrar de atualizar. Se uma chance mudar no jogo, ela muda na tela no mesmo instante.',
+        'Está em <b>📈 Taxas</b>, junto das outras telas (menu ☰ no celular). As taxas de <b>cada espécie</b> continuam onde já estavam: na Pokédex da rota, no 📖 da tela de explorar, que mostra a porcentagem exata de quem vive ali.'
+      ] }
+    ] },
   { versao: '5.4', data: '2026-10-06', titulo: '🥎 O caçador agora mira nos seus aliados — e ser capturado virou a sua última cartada', piada: 'Um caçador passou a carreira inteira ignorando o Pokémon selvagem que lutava ao seu lado, porque ele tecnicamente não constava no formulário. O formulário foi atualizado. Ele pediu para avisar que agora tem interesse em todos e que o interesse é recíproco em relação ao cinto dele.',
     secoes: [
       { nome: 'Novidades', itens: [

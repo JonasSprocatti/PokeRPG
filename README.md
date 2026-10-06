@@ -228,6 +228,9 @@ Quem criou a conta durante o Alpha ganha, para sempre, uma **Poké Ball dourada 
 ### 📜 Novidades (notas de atualização)
 Uma tela com tudo o que mudou no jogo, da versão mais nova para a mais antiga, com as correções e uma piadinha por versão. Quando sai uma atualização nova, o botão fica marcado até você ler.
 
+### 📈 Taxas e probabilidades
+Uma tela com **tudo o que o jogo sorteia**, em números: o que cada clique em "Explorar" pode dar, qual item você acha e com que chance, a taxa de um Pokémon brilhante, como a taxa de aparição de uma espécie na rota é calculada, a chance de cair numa manada rota por rota, quantos Pokémon um treinador tem e o que eles carregam, a fórmula da captura balanço por balanço, os passos de um ovo, o crítico por degrau, a duração de cada status, de onde vem cada ₽ e cada ponto de XP, e como a pontuação da jornada é montada. **Nenhum número é digitado na tela**: cada porcentagem é lida da mesma constante que o sorteio usa, então a página não tem como ficar desatualizada. Fica em **📈 Taxas**, em qualquer tela (menu ☰ no celular).
+
 ### 🟢 Jogando agora
 A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer quem, só quantas. Dá pra desligar em ⚙ Ajustes (detalhes na Política de Privacidade).
 

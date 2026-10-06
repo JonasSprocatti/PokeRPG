@@ -1862,6 +1862,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 | `js/dados.js` | Tabelas fixas: tipos (`CHART`, `TYPE_PT`, `TC`), `NATURES`, `ITEMS`, `ZONES` (= rotas de `dados-mapas.js`), `FLAVOR`, `MISSOES`, `DIFICULDADES`… Sem DOM. `ITEM_SPR(n)` monta a URL do sprite do item; vários itens de Gen 8/9 (Coroa Galárica, Armadura Auspiciosa, Pote Rachado…) **não existem** no repositório de sprites da PokéAPI, então toda `<img>` de item usa `onerror="${ITEM_ERRO}"` e cai no `ITEM_SPR_RESERVA` (SVG embutido de caixinha). Antes a figura quebrada era só escondida e ficava um buraco — parecia bug de tela. |
 | **Rede instável** | `api.getJSON` tenta 3× com pausa (400ms, 800ms) em falha de REDE e em 429; 404/500 não repetem. `apiErr(e)` escreve pro JOGADOR: `file://` → instrução de servidor; `navigator.onLine === false` → sem internet; 429 → "pediu calma"; com `code` → erro do servidor; sem `code` → conexão instável. Todas as mensagens de falta de dado apontam pra **⚙ Ajustes → Jogar offline** (offline.js). Relato real que motivou isso: celular em 5G oscilando mostrava "Failed to fetch" e a antiga mensagem falava de abrir o jogo dentro de um chat. |
 | `js/tutorial.js` / `js/tela-tutorial.js` | **❓ Tutorial** (tour guiado + demonstração, ver "Próximos passos combinados" pra decisão completa). `tutorial.js` puro (`tests/tutorial.test.js`): passos (`TUT_PASSOS`), dados de mentirinha (Pichu/Caterpie/Treinador Theo) e a lógica de golpe/compra/captura — `resultadoCaptura`/o resumo de Runs leem `dados.DIFICULDADES` direto, nunca duplicam o texto. `tela-tutorial.js` desenha em `G.tut` (nunca `G.S`); `telaTutorial()` chama `nuvem.salvarTutorialVisto()` (idempotente) assim que abre. Aberto sozinho no `boot()` de main.js só na primeiríssima visita (sem save); sempre disponível de novo em `navegacao.TELAS` (`❓ Tutorial`). |
+| `js/tela-taxas.js` | **📈 Taxas e probabilidades** (ver a seção própria no fim deste arquivo). Tela de referência com 21 seções do que o jogo sorteia. **Nenhum número é escrito no arquivo**: importa a constante que o sorteio usa (`regras`, `mundo`, `ovos`, `mapas`, `mega`, `zmove`, `evolucao`, `esconderijo`, `dados`) e, quando dá, chama a própria função (`chanceDeGrupo`, `chanceItemDoTreinador`, `chancePorBalanco`, `valorCaptura`, `passosParaChocar`). Pesos (`EQUIPE_TREINADOR`, `ITENS_DE_SELVAGEM`) viram porcentagem na hora. Filtra `DIFICULDADES` por `!d.admin`. Reusa `table.ranking`; CSS próprio só do índice (`.taxas-indice`) e da seção. |
 | `js/navegacao.js` / `js/ajustes.js` / `js/tela-ajustes.js` | **Navegação e ajustes.** `TELAS` é a ÚNICA lista de telas: `barraTelas(atual)` usa nas telas e `render()` usa no `#topr` (o menu ☰ do celular) — tela nova entra lá e aparece nos dois. `barraTelas(atual)` monta a MESMA barra no topo de toda tela fora do jogo (criação, carreira, saves, ranking, mp, conta, ajustes, relatos): `← Voltar` (`rotuloVoltar()`: pro jogo se há `G.S`, senão pro início) + atalhos pras outras (`TELAS`). Tela nova = incluir `barraTelas('id')` e pôr a entrada em `TELAS`. `Esc` clica no botão de voltar (main.js keydown, fora de explore/battle/create e sem modal aberto). `🏠 Início` com jornada aberta não perde nada: `iniciarJornada` guarda a atual (saves.js) antes de trocar. Fonte: `ajustes.js` (`FONTES`, `aplicarFonte` troca as variáveis CSS `--display`/`--body` e injeta o link do Google Fonts; escolha em `pokerpg-fonte`), aplicada no boot de main.js; tela em `tela-ajustes.js` com cada opção escrita na própria fonte. `tests/ajustes.test.js`. |
 | `js/offline.js` | **Baixar um mapa pra jogar offline.** `alvosDaGen(gen)` = todo id do mapa (pool + Alfas + lendários; puro, `tests/offline.test.js`), `quantoFalta`/`jaBaixado` usam `api.pokemonEmCache`, `baixarGen(gen, aoAndar, sinal)` busca em lotes de 6: `loadPokemon` (cai no localStorage), os golpes do learnset até o nível 60 (`loadMove`, deduplicados num Set) e os sprites — pra sprite basta um `fetch(..., {mode:'no-cors'})`, que o service worker guarda no cache EXTERNOS. UI em `tela-ajustes.js` (`htmlOffline`/`baixarMapaOffline`, clique `baixar-gen`). `baixarTudo`/`quantoFaltaTudo`/`totalDoJogo` fazem o mesmo pros 9 mapas de uma vez (botão "⬇⬇ Baixar o jogo inteiro"), o que só passou a ser possível com o cache no IndexedDB (ver `js/api.js`): no localStorage isso estourava a cota e falhava calado. |
 | **Clima** | `regras.CLIMAS` (sol/chuva/areia/granizo/neve) + `CLIMA_TURNOS` (5). Estado no **campo da batalha**, compartilhado pelos dois lados: single player `G.B.campo` (exposto como `CTX.campo`, getter em efeitos.js), multiplayer `estado.campo` (mp-motor). `climaDe(campo)` só devolve o clima com `turnos > 0`. Entra em: `calcDamage(u,t,move,clima)` (`multClima`), `effStat(m,stat,crit,atacando,clima)` (`multStatClima`: habilidade + `CLIMAS.defesaDe` por tipo), `chanceAcerto(move,u,t,clima)` (`PRECISAO_CLIMA` + `escondeNoClima`), `golpe.fimDeTurno` (dano de areia/granizo por `danoClima`, `curaClima`, `danoClimaProprio`, `curaStatusClima`) e `aplicarStatus` (`semStatusClima` = Leaf Guard). `mudarClima(clima, ctx, quem)` liga (golpe com `especiais.clima` ou habilidade `climaAoEntrar` em `intimidar`/1º turno do MP) e `passarClima(campo, ctx)` gasta um turno no fim da rodada (batalha.js e mp-motor). **Ao mexer em velocidade, lembrar do clima**: a ordem do turno usa `effStat(..., clima)` nos dois motores. `tests/clima.test.js`. |
@@ -2881,3 +2882,65 @@ render estourou.
 - **Ameaça e Brecha no `mp-motor`**: não existe Saga em sala. As funções são as mesmas quando chegar a hora.
 - **O mundo da Saga** (trilhas, NPCs Pokémon, facções com reputação): é a fase 3 do plano, e o trabalho lá é
   ESCREVER, não programar. Por isso o modo continua `admin: true`.
+
+## 📈 Taxas e probabilidades: uma tela com tudo o que o jogo sorteia (06/10/2026)
+
+Pedido do usuário: *"Crie uma tela no site que demonstra as taxas, possibilidades, o que pode acontecer em tudo
+no jogo, exemplo, dados dos poke eggs, taxas de aparição de shinies, probabilidade de itens em rotas e em
+pokemons e assim por diante, tudo que puder ter explicações objetivas explique em uma página para os usuários"*.
+
+### A decisão que define a tela: nenhum número é escrito nela
+
+Uma tela de taxas escrita à mão é **pior que nenhuma tela de taxas**. O jogador passa a tomar decisão em cima
+daquele número ("não vale caçar fruta nesta rota"), e no primeiro ajuste de balanceamento a página vira promessa
+quebrada sem ninguém notar — é exatamente o problema que `tests/docs-numeros.test.js` existe pra impedir no
+CLAUDE.md, e ali o público é quem mexe no código, não quem joga.
+
+Então `js/tela-taxas.js` **importa a constante que o sorteio usa** e formata. Onde a constante não existia, ela
+foi **exportada de onde o sorteio acontece**, nunca copiada:
+
+| O que faltava | Onde nasceu |
+|---|---|
+| Os degraus do "Explorar" (10 / 58 / 15 / 7 / 10) estavam como `r < 0.10`, `r < 0.68`… soltos nos `if` | `mundo.CHANCES_EXPLORAR` + um `DEGRAU` acumulado privado, que é o que o `if` compara agora. A tabela ficou mais legível que os números mágicos. |
+| A chance do item de evolução achado (`0.2` cru, ao lado de três constantes nomeadas) | `mundo.CHANCE_ITEM_EVO` |
+| A faixa do dinheiro achado (`rand(20, 80)`) | `mundo.DINHEIRO_ACHADO` |
+| Os degraus de crítico (`[1/24, 1/8, 1/2, 1]` dentro do `calcDamage`) | `regras.DEGRAUS_CRITICO`, e o `Math.min(3, …)` passou a ser `DEGRAUS_CRITICO.length - 1` |
+
+O resto (shiny, manada, equipe do treinador, captura, ovos, clima, pontuação, dificuldades, desbloqueios) já
+tinha constante exportada e é só leitura. Algumas linhas chamam a **própria função** em vez de citar a fórmula:
+`chanceDeGrupo(i, 10)` desenha a curva rota a rota, `chanceItemDoTreinador(10/30/50/70)` mostra a rampa,
+`chancePorBalanco(50/100/200)` mostra o que a fórmula de captura dá na prática, `valorCaptura(...)` dá o exemplo
+com HP cheio e com 10%, `passosParaChocar(...)` traduz os ciclos de ovo em explorações. Pesos viram porcentagem
+na hora (`EQUIPE_TREINADOR`, `ITENS_DE_SELVAGEM`), então mexer num peso reescreve a tela sozinho.
+
+### Forma
+
+21 seções, cada uma `[título, descrição, linhas]` com as linhas em `[o que, o número, como funciona]`, renderizadas
+por uma função de 6 linhas em `table.ranking` (classe que já existia — nenhuma tabela nova de CSS). Índice de
+atalhos no topo (`.taxas-indice`), porque a página é longa de propósito: ela é referência, não leitura.
+
+### O que ficou de fora, e por quê
+
+- **O que é exclusivo de admin** (⚔ Saga, 🤖 auto-explorar, editor de rotas): a convenção do CLAUDE.md vale aqui
+  inteira — a tela é pra quem joga, e anunciar o que ninguém alcança é promessa. Por isso `modos` filtra
+  `DIFICULDADES` por `!d.admin`, derivado, e não uma lista de modos à mão que esqueceria de esconder o próximo.
+- **O segredo do brilho** (o que um Pokémon shiny ganha além do brilho): a CHANCE é informação e está na tela; o
+  prêmio escondido continua se descobrindo jogando. Mesma regra do README e dos patch notes.
+- **A espécie de dentro do ovo**: a seção de ovos explica a mecânica inteira e não revela o que a tela do ninho
+  esconde de propósito.
+- **A taxa de cada espécie, rota por rota**: são ~1.000 linhas e já existem na Pokédex da rota, que mostra a
+  porcentagem exata de onde você está. A tela explica a REGRA (peso ÷ soma dos pesos, e o ×2 do item de evolução)
+  e aponta pra lá. O último parágrafo da página é esse ponteiro.
+- **Página estática no site** (`CAPITULOS_GUIA`): a tela ficou em `navegacao.TELAS` porque os números precisam ser
+  LIDOS do código em tempo de execução. Um capítulo do guia valeria por SEO e seria ~15 linhas em
+  `ferramentas/conteudo-guia.mjs` reusando as mesmas seções — não foi pedido, não foi feito.
+
+### Como foi conferido
+
+Além da suíte (878 testes), a tela foi **renderizada de verdade no Node** com o `document` de mentira de
+`tests/turno-smoke.test.js` (adaptado pra CAPTURAR o `innerHTML` em vez de descartar), e o HTML de 30 KB varrido
+por `undefined`, `NaN`, `null` e `[object Object]`. Foi isso que pegou os dois defeitos que só aparecem desenhando:
+o `<` cru de `"Nv. < 20"`, que o navegador lê como começo de tag e **come a célula inteira** (virou "Até o Nv. 19"),
+e `32,857142857%` numa tabela de leitura (o formatador passou a dar 2 casas só abaixo de 1%, 1 casa até 10% e
+inteiro acima). Também apareceu ali que "Magikarp 100 · a maioria 100" era redundante: 5 ciclos cai no piso de
+`PASSOS_MIN` igual aos 20 do padrão.

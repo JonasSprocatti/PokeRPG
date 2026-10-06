@@ -17,8 +17,16 @@ import { apiErr } from './api.js';
 import { rand, pick, esc } from './util.js';
 
 export const CHANCE_ESCAMA = 0.03;  // fatia dos itens achados que sai Escama do Coração (ver o sorteio de item)
+export const CHANCE_ITEM_EVO = 0.2; // …que sai um item de evolução, só da 4ª rota em diante
 export const CHANCE_FRUTA = 0.18;   // …que sai uma fruta, do que sobrou dos degraus caros (qualquer rota; são 20, cada uma continua rara)
 export const CHANCE_SEGURADO = 0.2; // …que sai um segurado permanente, só da 4ª rota em diante (como o de evolução)
+export const DINHEIRO_ACHADO = [20, 80];
+
+/* O que um clique em "Explorar" pode dar. Tabela em vez de números soltos nos `if` porque a 📈 tela de Taxas
+   MOSTRA esses degraus pro jogador: dois lugares com a mesma porcentagem é o jeito de a tela prometer uma chance
+   que o sorteio não cumpre. `DEGRAU` é o acumulado, na ordem — é o que o sorteio compara. */
+export const CHANCES_EXPLORAR = { treinador: 0.10, selvagem: 0.58, item: 0.15, dinheiro: 0.07, nada: 0.10 };
+const DEGRAU = (() => { let a = 0; return Object.fromEntries(Object.entries(CHANCES_EXPLORAR).map(([k, v]) => [k, a += v])); })();
 
 export async function explore() {
   if (G.busy) return;
@@ -43,10 +51,10 @@ export async function explore() {
     // com repelente ativo o encontro selvagem simplesmente não acontece — treinador, item, dinheiro e
     // ambientação continuam com a MESMA chance de sempre (o sorteio abaixo é o mesmo; só o selvagem vira ambientação)
     const semBicho = semSelvagens(G.S, z);
-    if (r < 0.10) await startTrainerBattle(z);
-    else if (r < 0.68 && semBicho) await say(pick(FLAVOR[z.id] || FLAVOR.default), 'muted');
-    else if (r < 0.68) await startBattle(z);
-    else if (r < 0.83) {
+    if (r < DEGRAU.treinador) await startTrainerBattle(z);
+    else if (r < DEGRAU.selvagem && semBicho) await say(pick(FLAVOR[z.id] || FLAVOR.default), 'muted');
+    else if (r < DEGRAU.selvagem) await startBattle(z);
+    else if (r < DEGRAU.item) {
       // 3% dos achados é uma Escama do Coração (relembrar golpe): raríssima de propósito — na loja ela custa ₽5.000,
       // então achar uma é sorte, não o caminho normal. Da 4ª rota em diante, 1 em 5 achados é um item de evolução.
       /* Da 4ª rota em diante entram os dois degraus caros: item de evolução e segurado permanente. A fruta é
@@ -57,7 +65,7 @@ export async function explore() {
          rasas, ~11% das fundas), e são 20 frutas, então cada uma continua sendo sorte. */
       const fundo = rotasAtuais().findIndex(x => x.id === z.id) >= 3;
       const it = Math.random() < CHANCE_ESCAMA ? 'heart-scale'
-        : fundo && Math.random() < 0.2 ? pick(ITENS_EVO_ACHADOS)
+        : fundo && Math.random() < CHANCE_ITEM_EVO ? pick(ITENS_EVO_ACHADOS)
         : fundo && Math.random() < CHANCE_SEGURADO ? pick(SEGURADOS_ACHADOS)
         : Math.random() < CHANCE_FRUTA ? pick(FRUTAS_ACHADAS)
         : pick(FIND_ITEMS);
@@ -66,7 +74,7 @@ export async function explore() {
       const etiqueta = ITEMS[it].evo || ITEMS[it].segurar ? ' (item de evolução)' : ITEMS[it].segurado ? ' (dá pra segurar)' : '';
       addItem(it, 1); await say(`Você encontrou <b>${ITEMS[it].name}</b>!${etiqueta}`, 'good');
     }
-    else if (r < 0.9) { const m = rand(20, 80); G.S.money += m; await say(`Você achou ₽${m} caídos no chão.`, 'good'); }
+    else if (r < DEGRAU.dinheiro) { const m = rand(...DINHEIRO_ACHADO); G.S.money += m; await say(`Você achou ₽${m} caídos no chão.`, 'good'); }
     else await say(pick(FLAVOR[z.id] || FLAVOR.default));
   } catch (e) {
     console.error(e); G.B = null; G.mode = 'explore'; G.panel = 'main';

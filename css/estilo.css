@@ -548,6 +548,15 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .nav-voltar{white-space:nowrap}
 @media (max-width:560px){ .nav-telas{gap:6px} .nav-voltar{width:100%} }
 /* ---- 📜 novidades / patch notes (tela-patchnotes.js) ---- */
+/* 📈 Taxas: índice de atalhos no topo e as seções. A tabela em si reusa table.ranking. */
+.taxas-indice{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px;max-width:900px}
+.taxas-indice a{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;text-decoration:none}
+.taxas-indice a:hover{border-color:var(--yellow)}
+.taxas-sec{max-width:900px;margin-top:26px;scroll-margin-top:12px}
+.taxas-sec h2{margin:0;font:700 20px var(--display)}
+.taxas-sec table.ranking td:first-child{font-weight:600}
+.taxas-sec table.ranking td.pts{white-space:normal;text-align:left;font-size:14px}
+
 .patches{display:grid;gap:8px;max-width:820px}
 .patch{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px 14px}
 .patch[open]{border-color:var(--yellow)}

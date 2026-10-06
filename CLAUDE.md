@@ -91,6 +91,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/ajustes.js` · `js/tela-ajustes.js` | Fonte, estilo de sprite, animações de combate, presença, download offline. |
 | `js/som.js` | Cries, música procedural e som de impacto por tipo de golpe (`IMPACTOS`). **Nada sai acima de 2 kHz** — é onde o passa-baixa da saída corta. |
 | `js/tutorial.js` · `js/tela-tutorial.js` | ❓ Tutorial (puro + tela). Desenha em `G.tut`, **nunca** `G.S`. |
+| `js/tela-taxas.js` | 📈 Taxas: tudo o que o jogo sorteia, numa tela. **Nenhum número é escrito lá** — tudo vem da constante que o sorteio usa (faltou constante? exportar de onde o sorteio acontece). Nada de admin e nada de segredo. |
 | `js/relatos.js` · `js/imagens-relato.js` | Bugs e sugestões (funciona offline, com fila), até 2 imagens de 2 MB. |
 | `js/conta.js` · `perfil-amigo.js` · `ranking.js` · `saves.js` · `tela-*.js` | Telas. |
 | `js/conteudo.js` · `js/conteudo-nuvem.js` | 📦 Atualização de conteúdo pela nuvem. O primeiro é **puro** (valida um pacote e o aplica MUTANDO `GENS`/`MISSOES` no lugar — `dados.js` não pode ler storage); o segundo tem cache e rede, com os canais `teste` (só admin) e `estavel`. Aplicado no `boot()`. Plano em `docs/plano-config-remota.md`. |
