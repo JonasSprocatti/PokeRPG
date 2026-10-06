@@ -13,6 +13,14 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.3', data: '2026-10-06', titulo: '📦 Rotas e missões podem ser atualizadas sem atualizar o jogo', piada: 'A missão da Rota 1 pedia 24 Rattata porque alguém digitou 24 numa planilha em 2026 e aquilo virou lei do universo. Agora a lei do universo pode ser alterada por quem digitou, de onde ele estiver, sem reiniciar o universo. O Rattata pediu vista do processo.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Conteúdo do jogo deixou de depender de atualização do jogo.</b> As rotas e as missões agora chegam num <b>pacote guardado no seu aparelho</b>: o jogo abre com o que você tem — <b>inclusive sem internet</b> — e, quando há conexão, confere se saiu versão nova.',
+        '<b>E ela não atropela a sua jornada.</b> Se saiu conteúdo novo e <b>nada do que você está fazendo depende do que mudou</b>, passa a valer na hora e o log avisa. Se depende — uma missão que você já começou a cumprir, ou o Alfa justamente da rota em que você está pisando —, a atualização <b>fica guardada e entra na sua próxima jornada</b>. Ninguém vai ter uma missão travada no meio porque o objetivo dela mudou embaixo do pé.',
+        'Offline continua offline: sem internet, você joga com o pacote que já está no aparelho, e nada muda sem avisar.'
+      ] }
+    ] },
   { versao: '5.2', data: '2026-10-06', titulo: '🔄 Recuar virou comando — e o treinador do outro lado aprendeu a trocar de Pokémon', piada: 'Um treinador de Pewter passou dois anos vendo o Geodude dele tomar Surf em silêncio porque ninguém tinha avisado que era permitido chamar o bicho de volta. Avisamos. Ele pediu desculpas ao Geodude e agora troca na cara dura, no melhor momento possível, e ninguém mais acha isso simpático.',
     secoes: [
       { nome: 'Novidades', itens: [

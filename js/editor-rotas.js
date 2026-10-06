@@ -94,6 +94,38 @@ export function dividirQuantidade(total, quantas) {
 // "nidoran-f" → "Nidoran F" (mesma função do arquivo gerado; aqui é pra a tela mostrar antes de gerar)
 export const bonito = n => String(n).split('-').map(p => p ? p[0].toUpperCase() + p.slice(1) : p).join(' ');
 
+/* ---- 📦 o PACOTE publicado (docs/plano-config-remota.md) ---- */
+/* As MESMAS duas fábricas que o arquivo gerado carrega inline, aqui como funções de verdade. Esta é a única cópia
+   que o código EXECUTA; a do arquivo gerado é texto que vira `js/dados-rotas.js`. As duas ficam presas uma na
+   outra por `tests/conteudo-pacote.test.js`: o pacote montado das rotas SEM edição tem de bater, campo por campo,
+   com o `MISSOES_ROTA` que está no repositório hoje — mexeu numa e esqueceu a outra, o teste fala.
+   Vivem AQUI (e não em `conteudo.js`) porque são a linguagem do EDITOR: ele é quem sabe o que é uma missão de
+   espécie e uma de Alfa. `conteudo.js` só valida e aplica o que chega. */
+export const missaoDeEspecie = (gen, rota, nome, alvos, premio) => ({
+  id: `${rota}-esp`, gen, rota, nome, premio,
+  desc: `Derrote ${alvos.map(([n, q]) => `${q} ${bonito(n)}`).join(' e ')}.`,
+  libera: { alvos: alvos.map(([n]) => [n, 1]), qualquer: 1 },
+  objetivo: { alvos }
+});
+export const missaoDeAlfa = (gen, rota, nome, rotulo, antes, premio, lendarios) => ({
+  id: `${rota}-alfa`, gen, rota, nome, premio,
+  desc: lendarios ? `Vença os lendários de ${rotulo} e feche a Gen ${gen}.` : `Derrote o Alfa de ${rotulo}.`,
+  libera: antes ? { chefe: antes } : { nivel: 1 },
+  objetivo: { chefe: rota }
+});
+/* O que o 📤 Publicar manda pra nuvem: a mesma entrada do `gerarArquivo`, em dado puro em vez de código-fonte.
+   `versao` sai 0 — quem numera é `conteudo-nuvem.publicarConteudo`, porque deixar o número na mão de quem publica
+   é o caminho curto pra republicar com número MENOR e o pacote novo ser ignorado em silêncio por todo cache. */
+export function gerarPacote(rotas, formato = 1) {
+  const alfas = {}, missoesRota = [];
+  for (const r of rotas) {
+    if (r.alfa?.trocado) alfas[r.rota] = r.alfa.trocado;
+    missoesRota.push(missaoDeEspecie(r.gen, r.rota, r.missao.nome, r.missao.alvos, r.missao.premio));
+    missoesRota.push(missaoDeAlfa(r.gen, r.rota, r.alfa.nome, r.rotulo, r.antes ?? null, r.alfa.premio, !!r.lendarios));
+  }
+  return { formato, versao: 0, alfas, missoesRota };
+}
+
 /* `rotas` = [{ gen, rota, rotulo, antes, lendarios, missao: { nome, alvos, premio }, alfa: { nome, premio,
    trocado?: { id, nome, nivel } } }], na ordem em que as rotas aparecem nos mapas.
    Devolve o CONTEÚDO de js/dados-rotas.js, pronto pra colar. Gera o mesmo formato que a semente pra o diff do git

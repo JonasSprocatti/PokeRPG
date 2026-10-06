@@ -18,9 +18,10 @@ import { ITEMS, SPR, espelhar, MISSOES } from './dados.js';
 import { GENS, rotasDaGen, especiesDaGen } from './mapas.js';
 import { loadPokemon, apiErr } from './api.js';
 import { ehAdmin } from './nuvem.js';
+import { publicarConteudo, lerCanal } from './conteudo-nuvem.js';
 import {
   bst, curvaDaRota, equilibrioDaRota, vereditoAlfa, candidatosAlfa, quantidadePorPeso, dividirQuantidade,
-  bonito, gerarArquivo, FAIXA_ALFA
+  bonito, gerarArquivo, gerarPacote, FAIXA_ALFA
 } from './editor-rotas.js';
 
 const CHAVE = 'pokerpg-editor-rotas-v1';
@@ -245,6 +246,10 @@ export function acaoEditor(qual, v) {
   if (qual === 'rota') { rotaId = v; return telaEditorRotas(); }
   if (qual === 'recarregar') { erro = ''; bsts = new Map(); return telaEditorRotas(); }
   if (qual === 'alvo-toggle') return telaAtualizarQtd();
+  /* Publicar não depende de ter uma rota aberta: o pacote é do mapa inteiro. Por isso vem ANTES do `if (!r)`,
+     diferente do `copiar`, que já era assim e continua. */
+  if (qual === 'publicar') return publicar('teste');
+  if (qual === 'liberar') return publicar('estavel');
   if (!r) return;
 
   if (qual === 'salvar-missao') {
@@ -323,15 +328,46 @@ function blocoArquivo() {
   const n = Object.keys(rascunho()).length;
   return `<section class="card">
       <h3>📋 O arquivo</h3>
-      <p class="small muted">${n ? `<b>${n} rota(s)</b> editada(s) no rascunho deste navegador.` : 'Nenhuma edição no rascunho: o arquivo sai igual ao que já está no jogo.'}
-        Copie o conteúdo e cole em <code>js/dados-rotas.js</code>.</p>
+      <p class="small muted">${n ? `<b>${n} rota(s)</b> editada(s) no rascunho deste navegador.` : 'Nenhuma edição no rascunho: o que sai é igual ao que já está no jogo.'}
+        <b>Publicar</b> manda pra nuvem e vale sem deploy; <b>📋 Copiar o arquivo</b> continua existindo pro
+        repositório (<code>js/dados-rotas.js</code>) — é o que faz uma instalação nova nascer com a versão certa.</p>
       <div class="subrow">
-        <button class="btn" data-act="ed-copiar">📋 Copiar o arquivo</button>
+        <button class="btn" data-act="ed-publicar">📤 Publicar (só eu vejo)</button>
+        <button class="btn ghost" data-act="ed-liberar">✅ Liberar pra todos</button>
+      </div>
+      <p class="small muted">📤 grava no canal de <b>teste</b>: só a sua conta lê, então dá pra <b>jogar a edição de
+        verdade</b> antes de qualquer outro jogador ver. ✅ promove pra <b>todos</b> — e promove o que está no
+        teste, não o rascunho desta tela, pra você não liberar algo que mudou depois de testar.</p>
+      <div class="subrow">
+        <button class="btn ghost" data-act="ed-copiar">📋 Copiar o arquivo</button>
         ${n ? '<button class="btn ghost" data-act="ed-limpar-tudo">🧹 Apagar o rascunho inteiro</button>' : ''}
       </div>
       <textarea id="ed-saida" rows="8" readonly placeholder="O conteúdo aparece aqui depois de copiar (pra conferir ou copiar à mão)."></textarea>
     </section>`;
 }
+/* 📤 Publicar / ✅ Liberar pra todos (docs/plano-config-remota.md).
+   O 'teste' leva o RASCUNHO desta tela. O 'estavel' leva o que está NO TESTE, não o rascunho: entre testar e
+   liberar o rascunho pode ter mudado, e liberar algo que você não jogou é exatamente o que os dois canais
+   existem pra evitar. Sem nada no teste, ele avisa em vez de publicar o rascunho por conta própria. */
+async function publicar(canal) {
+  let pacote;
+  if (canal === 'estavel') {
+    const noTeste = await lerCanal('teste');
+    if (!noTeste?.pacote) return toast('Não há nada no canal de teste. Use 📤 Publicar primeiro e jogue a edição.');
+    pacote = noTeste.pacote;
+  } else {
+    try { pacote = gerarPacote(todasEditadas()); }
+    catch (e) { console.error('editor de rotas: montar o pacote falhou', e); return toast('Não deu pra montar o pacote: ' + e.message); }
+  }
+  toast(canal === 'teste' ? 'Publicando no canal de teste…' : 'Liberando pra todos…');
+  const r = await publicarConteudo(pacote, canal);
+  if (!r.ok) { console.error('publicar conteúdo:', r.porque); return toast('Não deu pra publicar: ' + r.porque); }
+  toast(canal === 'teste'
+    ? `📤 Publicado no teste (versão ${r.versao}). Recarregue o jogo pra jogar com ele.`
+    : `✅ Liberado pra todos (versão ${r.versao}). Cada jogador pega na próxima vez que abrir com internet.`);
+  return telaEditorRotas();
+}
+
 async function copiarArquivo() {
   let texto;
   try { texto = gerarArquivo(todasEditadas()); }

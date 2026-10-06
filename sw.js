@@ -30,7 +30,7 @@ const PRECACHE = [
   './js/pokemon.js', './js/presenca.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/imagens-relato.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js', './js/som.js',
   './js/tutorial.js', './js/tela-tutorial.js', './js/auto.js', './js/notificacoes.js', './js/acordado.js',
   './js/dados-rotas.js',
-  './js/conteudo.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
+  './js/conteudo.js', './js/conteudo-nuvem.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
   './js/oficios.js', './js/pericias.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)

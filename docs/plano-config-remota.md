@@ -104,7 +104,7 @@ save do jogador:
 
 | # | O quê | Por que nesta ordem |
 |---|---|---|
-| **1** | `conteudo.js` + cache + boot + tabela no banco + 📤 Publicar, valendo pra **ALFAS e MISSOES_ROTA** (o que o editor já edita) | É a fundação, e já entrega controle de verdade sobre o que o editor hoje só sabe cuspir em arquivo. Nada de mecânica nova. |
+| ~~**1**~~ ✅ **FEITA (06/10/2026)** | `conteudo.js` (puro, validar + aplicar) · `conteudo-nuvem.js` (cache, busca, publicar) · `boot()` · migration `20261006120000_conteudo_publicado.sql` com os canais `teste`/`estavel` · 📤 Publicar e ✅ Liberar pra todos no editor · `editor-rotas.gerarPacote` | Fundação pronta pra ALFAS e MISSOES_ROTA. **Ainda não verificada em jogo**: a migration sobe pela integração do GitHub e os dois botões precisam de uma conta admin logada. |
 | **2** | **Criar e excluir rota** · pool e níveis editáveis · integração com `baixarGen`/`VERSAO_DOWNLOAD` | Depende da fundação. Mexe em Santuário, Pokédex da conta, caça shiny e desbloqueio do Roguelike — todos leem a lista de rotas. |
 | **3** | **Missões globais** · itens, loja e badges no pacote | Mesmo mecanismo da fase 1, repetido em outras tabelas. Risco: config ruim quebrando save antigo — daí a validação. |
 | **4** | **Rotas secretas** | Mecânica nova (condição no save, na tela de explorar, no progresso), não editor. Última porque é a única que não é "mover dado pra nuvem". |
@@ -115,3 +115,20 @@ save do jogador:
 - **`dados-rotas.js` continua existindo** como a versão de fábrica. Pacote ausente ou inválido = ele.
 - **Aplicar dentro do `boot()`**, não por reload: é o único ponto que roda depois dos módulos e antes da tela.
 - **Validar e descartar inteiro**, nunca aplicar pela metade.
+
+---
+
+## Estado em 06/10/2026
+
+**Fase 1 está no código e coberta por teste** (`tests/conteudo.test.js`, `tests/conteudo-pacote.test.js` — 17
+casos). O que FALTA conferir, e só dá pra conferir em jogo:
+
+1. **A migration chegou?** A integração do GitHub aplica no push. Lembrar da armadilha do `CLAUDE.md`: não confie
+   no painel, e `select('*', { count: 'exact', head: true })` devolve `error` nulo até pra tabela inexistente. A
+   checagem honesta é `select('canal').limit(1)` e olhar o `error.message`.
+2. **📤 Publicar** com a conta admin logada → recarregar → a rota editada aparece editada.
+3. **Um jogador comum NÃO vê o canal de teste** (a política de RLS depende disso).
+4. **✅ Liberar pra todos** → outro navegador, sem login, pega na próxima abertura.
+
+As duas cópias das fábricas de missão (`editor-rotas.missaoDeEspecie`/`missaoDeAlfa` e a cópia inline que vai pro
+`dados-rotas.js` gerado) estão presas por `tests/conteudo-pacote.test.js`, campo por campo nas 180 missões.

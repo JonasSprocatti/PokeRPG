@@ -39,6 +39,7 @@ import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem, precoVenda, moverGolpe } from './regras.js';
 import { despedir } from './amizade.js';
 import { iniciarCache } from './api.js';
+import { carregarConteudoLocal, buscarConteudo } from './conteudo-nuvem.js';
 import { store, esc, fmt, novoId } from './util.js';
 import { iniciarAds, definirConsentimento } from './ads.js';
 import { rodapeHTML } from './site.js';
@@ -142,6 +143,7 @@ async function aoClicar(e) {
     case 'editor': if (travadoPelaBatalha()) return; return telaEditorRotas();
     case 'ed-gen': case 'ed-rota': case 'ed-recarregar': case 'ed-salvar-missao': case 'ed-salvar-alfa':
     case 'ed-usar-alfa': case 'ed-sugerir': case 'ed-desfazer': case 'ed-copiar': case 'ed-limpar-tudo':
+    case 'ed-publicar': case 'ed-liberar':
       return acaoEditor(b.dataset.act.slice(3), v);
     case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
@@ -580,6 +582,10 @@ iniciarMenu();    // ☰ do topo no celular
 const salaDoLink = new URLSearchParams(location.search).get('sala');
 if (salaDoLink) history.replaceState(null, '', location.pathname);
 iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
+  /* 📦 Conteúdo publicado (docs/plano-config-remota.md), ANTES do save e de qualquer tela: é aqui que `GENS` e
+     `MISSOES` ganham o que o editor publicou. Síncrono e sem rede — lê o cache e cai nas tabelas de fábrica se
+     não houver nada. O jogo nunca depende da nuvem pra abrir. */
+  try { carregarConteudoLocal(); } catch (e) { console.warn('conteúdo', e); }
   const s = store.get(SAVE_KEY);
   if (saveValido(s)) abrirJornada(s, 'Jogo carregado deste navegador.');
   // primeira visita neste navegador (sem save nenhum, ainda não viu o tour): abre o tutorial em vez da criação.
@@ -587,6 +593,13 @@ iniciarCache().catch(e => console.warn('cache', e)).then(function boot() {
   // ❓ Tutorial, sempre disponível no menu (navegacao.TELAS).
   else if (!tutorialVistoLocal()) telaTutorial();
   else showCreate();
+  /* A busca da versão nova vem DEPOIS da tela, e SEM `await`: é busca não essencial, e `await` nela no caminho
+     crítico é a armadilha que o CLAUDE.md nomeia — o jogo já abriu com o cache. Se vier conteúdo novo e nada em
+     andamento depender do que mudou, ele passa a valer na hora e o log avisa; senão espera a próxima jornada. */
+  buscarConteudo(G.S || null).then(r => {
+    if (r?.aplicado) log(`📦 As rotas e missões foram atualizadas (versão ${r.versao}).`, 'level');
+    else if (r?.guardado) log('📦 Há uma atualização de conteúdo guardada: ela entra na sua próxima jornada.', 'muted');
+  }).catch(e => console.warn('conteúdo', e));
 });
 /* Rodapé com os links do site (privacidade, termos, contato…). Vai FORA de `#app` porque render() reescreve o
    `#app` inteiro a cada tela — dentro dele, o rodapé sumiria na primeira re-renderização. Injetado por JS, e
