@@ -492,7 +492,7 @@ export const ZONES = GENS.flatMap(g => g.rotas);
    Esta lista é a das missões GLOBAIS (vitórias, amizade, dinheiro, gasto, treinadores, nível): valem em qualquer
    mapa e não têm `gen`. As missões POR ROTA (uma de espécie e uma de Alfa em cada rota das 9 Gens) vêm de
    `dados-rotas.js`, gerado pelo editor de rotas, e são juntadas em `MISSOES` logo abaixo da tabela. */
-const MISSOES_GLOBAIS = [
+export const MISSOES_GLOBAIS = [
   // começo
   { id: 'primeiros', nome: 'Primeiros passos', desc: 'Vença 3 batalhas.', objetivo: { vitorias: 3 }, premio: { dinheiro: 300 } },
   { id: 'vitorias25', nome: 'Pegando o jeito', desc: 'Vença 25 batalhas.', libera: { missao: 'primeiros' }, objetivo: { vitorias: 25 }, premio: { dinheiro: 1000 } },

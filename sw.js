@@ -29,7 +29,8 @@ const PRECACHE = [
   './js/layout.js', './js/loja-conta.js', './js/main.js', './js/mapas.js', './js/missoes.js', './js/mp-motor.js', './js/mp-sanear.js', './js/mp-regras.js', './js/mp-rede.js', './js/mp-cartao.js', './js/mp-resultado.js', './js/mp-telas.js', './js/multiplayer.js', './js/mundo.js', './js/navegacao.js', './js/novidades.js', './js/offline.js', './js/nuvem.js', './js/paineis.js', './js/segurados.js', './js/tela-ajustes.js', './js/tela-patchnotes.js', './js/tela-conquistas.js', './js/conquistas.js', './js/tela-pokedex.js', './js/pokedex-conta.js', './js/progresso-conta.js', './js/badges.js',
   './js/pokemon.js', './js/presenca.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/imagens-relato.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js', './js/som.js',
   './js/tutorial.js', './js/tela-tutorial.js', './js/auto.js', './js/notificacoes.js', './js/acordado.js',
-  './js/dados-rotas.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
+  './js/dados-rotas.js',
+  './js/conteudo.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
   './js/oficios.js', './js/pericias.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)
