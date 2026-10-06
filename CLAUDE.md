@@ -24,7 +24,7 @@ python3 -m http.server 3000   # na raiz → http://localhost:3000
 
 Duas máquinas de dev:
 - **Windows**: usar PowerShell, não Bash (o Bash embutido falha no fork). **Não há Node** — não tentar rodar `node`; os testes rodam no CI.
-- **Raspberry Pi (Linux/aarch64)**: Node e npm instalados (`node --test` roda a suíte inteira local). Bash normal. É `python3`, não `python`. Sem navegador e sem PIL: pra reproduzir bug de UI, usar **jsdom** (leve; o Pi tem pouca RAM), não Chromium.
+- **Raspberry Pi (Linux/aarch64)**: Node e npm instalados (`node --test` roda a suíte inteira local). Bash normal. É `python3`, não `python`. Sem navegador e sem PIL. **O projeto não tem dependências e não precisa de jsdom**: `tests/turno-smoke.test.js` roda um turno de batalha inteiro com um `document` de mentira de 10 linhas (só o `matchMedia` do corpo do `ui.js` bloqueava o import). Copiar aquele `ligarDomFalso` é mais barato que um `npm install`.
 
 ## Arquitetura
 
@@ -93,6 +93,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/tutorial.js` · `js/tela-tutorial.js` | ❓ Tutorial (puro + tela). Desenha em `G.tut`, **nunca** `G.S`. |
 | `js/relatos.js` · `js/imagens-relato.js` | Bugs e sugestões (funciona offline, com fila), até 2 imagens de 2 MB. |
 | `js/conta.js` · `perfil-amigo.js` · `ranking.js` · `saves.js` · `tela-*.js` | Telas. |
+| `js/conteudo.js` · `js/conteudo-nuvem.js` | 📦 Atualização de conteúdo pela nuvem. O primeiro é **puro** (valida um pacote e o aplica MUTANDO `GENS`/`MISSOES` no lugar — `dados.js` não pode ler storage); o segundo tem cache e rede, com os canais `teste` (só admin) e `estavel`. Aplicado no `boot()`. Plano em `docs/plano-config-remota.md`. |
 | `js/dados-patchnotes.js` · `js/tela-patchnotes.js` | 📜 Novidades. **Toda leva de mudanças vira uma versão nova**, mais nova primeiro, texto PRA JOGADOR e com uma piada. |
 | `js/config.js` | Chaves e slots (vazio = aquela parte desligada). Publisher ID vive em **3 lugares** (aqui, `<head>`, `ads.txt`); `tests/paginas.test.js` compara os três. |
 | `js/consent.js` | **Consent Mode v2**, script CLÁSSICO e síncrono no `<head>`: põe tudo em `denied` **antes** do script do Google. Ordem invertida = anúncio personalizado sem consentimento. |
@@ -106,6 +107,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 - **`try` largo demais vira diagnóstico errado.** Só o que fala com a rede pode reportar erro de rede; o resto mostra o erro de verdade. (Uma função faltando virou "a conexão falhou" e custou horas ao jogador.)
 - **Falha silenciosa em render é o pior bug.** Quando montar uma tela estourar no meio, mostre o erro NA TELA e no console — metade da tela com HTML velho parece funcionalidade faltando, não defeito. Vale pro `renderSala` (multiplayer) e pro `gimmicksNaLoja` (carreira).
 - **Função chamada dentro de template literal só quebra quando a tela é desenhada.** `tests/referencias.test.js` varre isso em dois formatos (colada no `${` e nome em MAIÚSCULA colado no `(`).
+- **Teste puro não vê variável não declarada.** `node --check` passa (identificador solto é JS válido), `tests/referencias.test.js` varre template literal e não statement, e o resto da suíte testa funções PURAS — `batalha.js` nunca era importado. Foi assim que um `T` usado no `turn()` e declarado só no `win()` derrubou TODO turno de batalha em jogo (06/10/2026). O guarda é **`tests/turno-smoke.test.js`**: roda o `turn()` de verdade no Node com um `document` de mentira de 10 linhas (**sem jsdom — o projeto não tem dependências, e não precisa**: só o `matchMedia` do corpo do `ui.js` bloqueava o import). **Caminho novo de ação em `turn()` = um caso lá.**
 - **`node --check` não roda no Windows.** Arquivo novo ou reescrito é o maior risco do projeto; o CI é a única rede lá. (`S?.x ||= []` é erro de sintaxe e derrubou o jogo inteiro.)
 - **`navigator.onLine` mente.** `cached()` cai no registro guardado quando o `loader()` FALHA, não só quando `semRede()`. Todo código que decide por `offline()` precisa de um caminho "tentei e falhou".
 - **Busca não essencial não pode derrubar o fluxo.** Antes de `await` numa busca de rede em caminho crítico, perguntar se o jogo precisa DAQUILO agora.
@@ -193,6 +195,9 @@ Sala por código (4 caracteres), até `MAX_JOGADORES` = 6, funciona sem login. A
 - `tests/schema.test.js` — pesos de pontuação do SQL x `regras.js`. **Mudou num lado, muda no outro.**
 - `tests/sw.test.js` — arquivo novo em `js/` entrou no PRECACHE.
 - `tests/habilidades.test.js` — falha se aparecer gancho desconhecido na tabela.
+- `tests/turno-smoke.test.js` — **um turno de batalha rodando de verdade**, com DOM de mentira e sem dependência. Detector de explosão (variável não declarada, função que não existe, campo lido de `undefined`) no caminho mais quente do jogo; não é teste de regra.
+- `tests/data-act.test.js` — todo `data-act` literal emitido tem quem o trate. A lista de exceções é explícita e hoje está vazia.
+- `tests/conteudo.test.js` · `tests/conteudo-pacote.test.js` — o pacote de conteúdo publicado (validar, aplicar, `podeAplicarAgora`) e as DUAS cópias das fábricas de missão presas uma na outra.
 - **Efeito de chance se testa FIXANDO o sorteio, nunca por amostragem.** "60 golpes, espero ao menos um recuo de 10%" falha 0,2% das rodadas — e no CI isso vira defeito fantasma num código certo. Troque `Math.random` pelos dois lados do limiar (`0.05` recua, `0.50` não) e restaure no `finally`.
 
 ## Supabase
