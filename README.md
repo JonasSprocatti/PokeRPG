@@ -208,6 +208,8 @@ Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia**
 ### 🥚 Ovos e criação
 Quem espera no **esconderijo** não fica só esperando: dois parceiros guardados lá que sejam **de gêneros opostos** e tenham um **grupo-ovo em comum** (os mesmos dos jogos) podem aparecer com um **ovo** — e ninguém conta de onde veio. Lendário, mítico e companhia (o grupo "sem ovos") não botam. O ovo choca **andando**: cada exploração é um passo, e espécie mais demorada pede mais (de **100 a 400 explorações**, seguindo os ciclos de choco dos jogos). Cabem **3 ovos** chocando ao mesmo tempo, e o painel de Aliados mostra só a barra: **o que tem dentro é segredo até ele abrir.**
 
+**O painel de Aliados diz em que pé está o ninho**, mesmo antes de existir ovo: se os guardados formam casal (com os nomes dos dois), se são todos do mesmo sexo, se falta grupo-ovo em comum, ou se é só guardar mais um. Sem isso a mecânica era invisível — dava pra jogar uma jornada inteira sem descobrir que o ninho é o **esconderijo**, não a equipe.
+
 Quando abre, nasce a **forma base da mãe** no **Nv. 5**, com **um golpe herdado do pai** e **3 IVs** puxados do melhor dos dois pais. Ele entra na equipe se houver vaga, ou vai esperar no esconderijo. Ovo pronto sem lugar nenhum pra nascer fica parado até você abrir espaço — não se perde.
 
 Duas conquistas de conta saem daí: **Criadouro** (choque **100 ovos** somando a carreira) faz toda jornada nova começar com o ovo de um **pseudo-lendário** sorteado, e **Guardião do ninho** (**1.000 ovos**) acrescenta o ovo de um **lendário ou mítico**. Esses também são segredo: você só descobre qual era quando ele chocar.

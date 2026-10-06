@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.2', data: '2026-10-06', titulo: '🥚 O ninho agora diz o que está acontecendo (os ovos sempre funcionaram — ninguém sabia como)', piada: 'Dois Nidoran passaram a jornada inteira guardados no esconderijo, de sexos opostos, perfeitamente compatíveis, esperando autorização por escrito. A autorização existia desde o começo. O aviso é que não existia. Pedimos desculpas aos Nidoran e instalamos uma placa.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>O painel de Aliados passou a explicar o ninho.</b> Os ovos funcionam desde que foram feitos, mas nada na tela contava a regra: o esconderijo só falava em "esperar aqui", e a barra do ovo só aparecia <b>depois</b> que já havia um ovo. Dava pra jogar uma jornada inteira sem descobrir que dava pra criar.',
+        '<b>Agora o ninho fala, mesmo vazio:</b> "guarde dois aqui e eles podem deixar um ovo" · "só um aqui, guarde mais um de sexo oposto" · <b>"Nidoran♀ e Nidoran♂ se dão bem: pode aparecer um ovo"</b> (com os nomes, em verde) · "são todos do mesmo sexo, não vai sair ovo" · "precisam de um grupo-ovo em comum" · "alguém aqui não tem sexo e não cruza".',
+        'E quando o jogo ainda <b>não sabe</b> se os dois combinam (a ficha da espécie não está guardada no aparelho), ele diz isso — <b>"ainda não sei, explore um pouco e eu confiro"</b> — em vez de dizer que não dá. Prometer "não" quando a verdade é "não sei" faz desistir de algo que ia funcionar.',
+        'Lembrete que a tela agora dá de graça: o ninho é o <b>esconderijo</b>, não a equipe. Quem está lutando com você não bota ovo.'
+      ] }
+    ] },
   { versao: '5.1', data: '2026-10-06', titulo: '📦 Rotas e missões podem ser atualizadas sem atualizar o jogo', piada: 'A missão da Rota 1 pedia 24 Rattata porque alguém digitou 24 numa planilha em 2026 e aquilo virou lei do universo. Agora a lei do universo pode ser alterada por quem digitou, de onde ele estiver, sem reiniciar o universo. O Rattata pediu vista do processo.',
     secoes: [
       { nome: 'Novidades', itens: [

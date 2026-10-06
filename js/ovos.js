@@ -68,6 +68,33 @@ export function parCompativel(a, b, grupos) {
   return ga.some(g => gb.includes(g));
 }
 
+/* ---- o que a TELA diz sobre o ninho ----
+   O jogador perguntou "os ovos estão funcionando? não vi nenhum até agora" (06/10/2026) — e estavam, desde
+   sempre. O problema era que NADA na tela contava a regra: o esconderijo só falava em "esperar aqui", e o bloco de
+   ovos só aparecia DEPOIS de já existir um ovo. Quem joga não tinha como descobrir que o ninho é o esconderijo
+   (não a equipe), nem que precisa de gênero oposto e de um grupo-ovo em comum.
+   Mecânica sem porta de entrada na tela é mecânica que não existe. Daí esta função: devolve o ESTADO do ninho, com
+   `status` pra tela escolher a frase e `casal` pra ela nomear quem está pronto.
+   Pura e sem rede: `grupos` vem de fora (a tela lê do cache, síncrono), e grupo que FALTA vira `desconhecido` em
+   vez de "não cruza" — na tela, "ainda não sei" e "não dá" são frases diferentes. */
+export function situacaoDoNinho(guardados = [], grupos, quantosOvos = 0) {
+  const n = guardados.length;
+  if (quantosOvos >= MAX_OVOS) return { status: 'ninho-cheio', casal: null };
+  if (n === 0) return { status: 'vazio', casal: null };
+  if (n === 1) return { status: 'sozinho', casal: null };
+  const pares = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (parCompativel(guardados[i], guardados[j], grupos)) pares.push([guardados[i], guardados[j]]);
+  if (pares.length) {
+    const [a, b] = pares[0];
+    return { status: 'pronto', casal: a.genero === 'f' ? [a, b] : [b, a], quantos: pares.length };
+  }
+  // sem par: a tela precisa distinguir "não dá" de "o jogo ainda não sabe" (ficha de espécie fora do cache)
+  if (guardados.some(m => !(grupos?.get?.(m?.data?.speciesName) || []).length)) return { status: 'desconhecido', casal: null };
+  if (guardados.every(m => m.genero && m.genero === guardados[0].genero)) return { status: 'mesmo-sexo', casal: null };
+  if (guardados.some(m => !m.genero)) return { status: 'sem-sexo', casal: null };
+  return { status: 'grupos-diferentes', casal: null };
+}
+
 /* Varredura de todos contra todos: com os 30 do esconderijo dá 435 comparações, não vale índice nenhum.
    A mãe é quem define a espécie do filhote. */
 export function acharPar(lista, grupos, sorte = Math.random) {

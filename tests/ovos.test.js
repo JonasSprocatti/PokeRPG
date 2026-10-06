@@ -7,7 +7,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAX_OVOS, CHANCE_OVO, CICLOS_PADRAO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, IVS_HERDADOS, GRUPO_SEM_OVO,
-  ovos, acharPar, parCompativel, podeCruzar, ivsHerdados, golpeHerdado, criarOvo, ovoDeBadge, andarOvos, tirarOvo, passosParaChocar
+  ovos, acharPar, parCompativel, podeCruzar, ivsHerdados, golpeHerdado, criarOvo, ovoDeBadge, andarOvos, tirarOvo, passosParaChocar,
+  situacaoDoNinho
 } from '../js/ovos.js';
 import { STATS } from '../js/dados.js';
 
@@ -102,4 +103,60 @@ test('a espécie do ovo fica guardada, nunca derivada do que a tela mostra', () 
   assert.equal(o.especie, 'gible');
   assert.equal(o.passos, 0);
   assert.deepEqual(o.de, ['Mãe', 'Pai']);
+});
+
+/* ---- a linha do NINHO na tela (ovos.situacaoDoNinho) ----
+   Nasceu de uma pergunta do jogador: "os ovos estão funcionando? não vi nenhum até agora". Estavam — mas nada na
+   tela contava a regra, então a mecânica era invisível. Cada `status` aqui é uma FRASE diferente em render.js, e o
+   que importa é nunca dizer "não dá" quando a verdade é "ainda não sei": é a diferença entre o jogador desistir e
+   o jogador esperar. */
+test('ninho vazio e ninho com um só: a tela pede o que falta', () => {
+  assert.equal(situacaoDoNinho([], grupos({}), 0).status, 'vazio');
+  assert.equal(situacaoDoNinho([mon('pidgey', 'm')], grupos({ pidgey: ['flying'] }), 0).status, 'sozinho');
+});
+
+test('casal compatível: status pronto, e a MÃE vem primeiro no par', () => {
+  const f = mon('nidoran-f', 'f'), m = mon('nidoran-m', 'm');
+  const g = grupos({ 'nidoran-f': ['monster', 'field'], 'nidoran-m': ['monster', 'field'] });
+  const r = situacaoDoNinho([m, f], g, 0);   // de propósito fora de ordem
+  assert.equal(r.status, 'pronto');
+  assert.equal(r.casal[0].genero, 'f', 'a mãe primeiro: é ela que define a espécie do filhote');
+  assert.equal(r.casal[1].genero, 'm');
+});
+
+test('ninho cheio ganha de qualquer outro estado', () => {
+  const f = mon('nidoran-f', 'f'), m = mon('nidoran-m', 'm');
+  const g = grupos({ 'nidoran-f': ['field'], 'nidoran-m': ['field'] });
+  assert.equal(situacaoDoNinho([f, m], g, MAX_OVOS).status, 'ninho-cheio', 'com o ninho cheio não adianta ter casal');
+  assert.equal(situacaoDoNinho([f, m], g, MAX_OVOS - 1).status, 'pronto');
+});
+
+test('cada motivo de NÃO ter casal tem o seu status — "não sei" nunca vira "não dá"', () => {
+  const g2 = (a, b) => grupos({ a, b });
+  // mesmo sexo
+  assert.equal(situacaoDoNinho([mon('a', 'm'), mon('b', 'm')], g2(['field'], ['field']), 0).status, 'mesmo-sexo');
+  // alguém sem gênero (lendário/mítico): não cruza, e a frase diz isso
+  assert.equal(situacaoDoNinho([mon('a', 'f'), mon('b', null)], g2(['field'], ['field']), 0).status, 'sem-sexo');
+  // sexos certos, grupos sem interseção
+  assert.equal(situacaoDoNinho([mon('a', 'f'), mon('b', 'm')], g2(['water1'], ['field']), 0).status, 'grupos-diferentes');
+  // ficha de espécie fora do cache: "ainda não sei", NÃO "não dá"
+  assert.equal(situacaoDoNinho([mon('a', 'f'), mon('b', 'm')], grupos({ a: ['field'] }), 0).status, 'desconhecido');
+  assert.equal(situacaoDoNinho([mon('a', 'f'), mon('b', 'm')], undefined, 0).status, 'desconhecido', 'sem Map nenhum também é desconhecido');
+  // `no-eggs` é dado CONHECIDO que diz não: não pode cair em "desconhecido"
+  assert.equal(situacaoDoNinho([mon('a', 'f'), mon('b', 'm')], g2([GRUPO_SEM_OVO], ['field']), 0).status, 'grupos-diferentes');
+});
+
+test('o status `pronto` concorda com quem realmente põe o ovo (acharPar)', () => {
+  // a tela não pode prometer ovo que o `talvezPorOvo` não vai produzir, nem o contrário
+  const casos = [
+    [[mon('a', 'f'), mon('b', 'm')], grupos({ a: ['field'], b: ['field'] })],
+    [[mon('a', 'f'), mon('b', 'm')], grupos({ a: ['field'], b: ['water1'] })],
+    [[mon('a', 'm'), mon('b', 'm')], grupos({ a: ['field'], b: ['field'] })],
+    [[mon('a', 'f'), mon('b', null)], grupos({ a: ['field'], b: ['field'] })],
+    [[mon('a', 'f'), mon('b', 'm')], grupos({ a: [GRUPO_SEM_OVO], b: [GRUPO_SEM_OVO] })]
+  ];
+  for (const [lista, g] of casos) {
+    const prometeu = situacaoDoNinho(lista, g, 0).status === 'pronto';
+    assert.equal(prometeu, !!acharPar(lista, g, () => 0), `a tela e o motor discordam em ${lista.map(m => `${m.name}(${m.genero})`).join('+')}`);
+  }
 });

@@ -22,7 +22,7 @@ import { terasDisponiveis } from './tera.js';
 import { zDisponiveis, avisoDoZ, primeiroTipoZ } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
-import { ovos, MAX_OVOS } from './ovos.js';
+import { ovos, MAX_OVOS, situacaoDoNinho } from './ovos.js';
 import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
 import { resumoDoChefe, nivelDoChefe } from './boss.js';
 import { linhaItensDoChefe } from './itens-raide.js';
@@ -482,10 +482,39 @@ function blocoOvos(S) {
 }
 /* 📦 Esconderijo (esconderijo.js): quem não está em campo espera aqui em vez de se despedir pra sempre.
    Só fora de batalha — trocar de time no meio da luta seria outra mecânica inteira. */
+/* 🥚 A linha do NINHO, dentro do esconderijo. Existe porque um jogador perguntou se os ovos funcionavam depois de
+   uma jornada inteira sem ver nenhum: funcionavam, mas a regra não estava escrita em lugar nenhum da tela — o
+   ovo só aparecia DEPOIS de existir, e o esconderijo só falava em "esperar aqui".
+   Os grupos-ovo são dado de ESPÉCIE e saem do cache em memória (`api.syncGet`), síncronos: na prática já estão lá,
+   porque `makeMon` lê a mesma ficha pra sortear o gênero de todo mundo que nasce. Sem a ficha, a frase é "ainda
+   não sei" e não "não dá" — é o mesmo cuidado de `quemEvoluiComItem`, que também não pede rede pra desenhar. */
+function linhaDoNinho(S, guardados) {
+  const grupos = new Map();
+  for (const A of guardados) {
+    const nome = A?.data?.speciesName; if (!nome || grupos.has(nome)) continue;
+    const sp = A.data.speciesUrl ? syncGet('sp2:' + A.data.speciesUrl.replace(/\/$/, '').split('/').pop()) : null;
+    if (sp?.eggGroups) grupos.set(nome, sp.eggGroups);
+  }
+  const { status, casal } = situacaoDoNinho(guardados, grupos, ovos(S).length);
+  const nome = m => `${esc(m.nick || fmt(m.name))}${sexo(m)}`;
+  const txt = {
+    'ninho-cheio': `O ninho está cheio (${MAX_OVOS} ovos). Choque um antes que apareça outro.`,
+    vazio: 'Guarde <b>dois</b> aqui e eles podem deixar um ovo enquanto você explora.',
+    sozinho: 'Só um aqui. Guarde <b>mais um</b>, de <b>sexo oposto</b> e de grupo parecido, e eles podem deixar um ovo.',
+    pronto: casal ? `<b>${nome(casal[0])}</b> e <b>${nome(casal[1])}</b> se dão bem: <b>pode aparecer um ovo</b> enquanto você explora.` : '',
+    'mesmo-sexo': 'Os que estão aqui são todos do <b>mesmo sexo</b> — não vai sair ovo. Guarde alguém de sexo oposto.',
+    'sem-sexo': 'Alguém aqui <b>não tem sexo</b> (lendário, mítico ou espécie sem gênero) e não cruza.',
+    'grupos-diferentes': 'Nenhum casal aqui: eles precisam de um <b>grupo-ovo em comum</b> (bichos parecidos entre si).',
+    desconhecido: 'Ainda não sei se esses dois combinam — explore um pouco (ou entre com internet uma vez) e eu confiro.'
+  }[status] || '';
+  if (!txt) return '';
+  return `<p class="small ${status === 'pronto' ? 'ninho-ok' : 'muted'}">🥚 <b>Ninho:</b> ${txt}</p>`;
+}
 function blocoEsconderijo(AL, guardados) {
   const fora = G.mode === 'explore' && !G.busy;
   const teto = tetoDaEquipe(G.S);
-  if (!guardados.length && AL.length < teto) return '';   // nada guardado e com vaga: não há o que mostrar
+  // mostra também com o esconderijo VAZIO e a equipe com vaga: é justamente aí que a linha do ninho ensina a regra
+  if (!guardados.length && AL.length < teto && G.mode !== 'explore') return '';
   return `<h4 class="bag-sec">📦 Esconderijo <span class="muted small">(${guardados.length}/${MAX_ESCONDIDOS})</span></h4>
     ${guardados.length ? `<div class="aliados esconderijo">${guardados.map((A, i) => `<div class="ali-card guardado">
       <img src="${espelhar(A.data.sprite)}" alt="" loading="lazy">
@@ -495,6 +524,7 @@ function blocoEsconderijo(AL, guardados) {
         title="${AL.length >= teto ? 'Equipe cheia: guarde alguém antes' : fora ? '' : 'Só fora de batalha'}">↩ Trazer</button>
     </div>`).join('')}</div>`
     : '<p class="small muted">Vazio. Aliados que não couberem na equipe podem esperar aqui, em vez de se despedir.</p>'}
+    ${linhaDoNinho(G.S, guardados)}
     ${AL.length ? `<div class="subrow" style="margin-top:8px">${AL.map((A, i) =>
       `<button class="btn ghost sm" data-act="esconderijo-guardar" data-v="${i}" ${fora ? '' : 'disabled'}>📦 Guardar ${esc(A.nick || fmt(A.name))}</button>`).join('')}</div>` : ''}`;
 }
