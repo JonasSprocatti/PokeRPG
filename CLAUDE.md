@@ -208,7 +208,7 @@ Banco atualizado pela **integração do GitHub no painel do Supabase**: *working
 
 ## Convenções
 
-- **Toda funcionalidade nova atualiza o `README.md`** e vira **uma versão nova em `dados-patchnotes.js`** — pedido explícito do usuário, vale sempre.
+- **Toda funcionalidade nova atualiza o `README.md`** e vira **uma versão nova em `dados-patchnotes.js`** — pedido explícito do usuário, vale sempre. **Exceção única: o ⚔ modo Saga NÃO entra nos patch notes** enquanto for `admin: true` (decisão do usuário, 06/10/2026 — a tela 📜 Novidades é pra quem joga, e esse modo ninguém alcança). Quando o modo abrir pra todos, sai UMA entrada contando o modo inteiro.
 - Fontes: `--display` (Fredoka) para títulos e números, `--body` (Atkinson Hyperlegible) para texto. Não voltar a usar fonte pixelada em número (a Pixelify Sans saiu porque confundia 2/5/8).
 - Telas fora do jogo limpam o topo com **`limparTopo()`**, nunca `#topr.innerHTML = ''`.
 - Tela nova = `barraTelas('id')` + entrada em `navegacao.TELAS`.

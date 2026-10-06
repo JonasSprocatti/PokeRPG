@@ -13,26 +13,11 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
-  { versao: '5.1', data: '2026-10-05', titulo: '🤖 A caçada automática parou de queimar dinheiro no Centro Pokémon', piada: 'O atendente do Centro Pokémon tinha descoberto que dava pra cobrar a cura completa da equipe porque um companheiro havia batido o dedinho na pedra. Trinta e sete vezes. Mandamos uma caixa de Poções pra caçada e o rapaz voltou a atender gente doente de verdade.',
+  { versao: '5.0', data: '2026-10-05', titulo: '🤖 A caçada automática parou de queimar dinheiro no Centro Pokémon', piada: 'O atendente do Centro Pokémon tinha descoberto que dava pra cobrar a cura completa da equipe porque um companheiro havia batido o dedinho na pedra. Trinta e sete vezes. Mandamos uma caixa de Poções pra caçada e o rapaz voltou a atender gente doente de verdade.',
     secoes: [
       { nome: 'Correções', itens: [
         '<b>O 🤖 Explorar automaticamente agora usa a mochila antes de pagar o Centro.</b> A conta do Centro cobra <b>₽50 + ₽15/nível de cada membro</b> que esteja com 1 HP ou 1 PP faltando — então uma passada por causa do <b>seu</b> HP vinha cobrando a cura inteira dos companheiros que só tinham raspado. Agora o laço abre a mochila primeiro e usa a <b>Poção, Éter ou antídoto mais barato que resolva</b>, e só gasta item que valha menos do que o Centro cobraria por aquele Pokémon. Sem item que sirva, aí sim ele paga.',
         'Efeito prático: caçada longa de nível alto gastando uma fração do que gastava, e o dinheiro sobrando pra loja. (O 🤖 segue sendo ferramenta <b>só da conta admin</b>.)'
-      ] }
-    ] },
-  { versao: '5.0', data: '2026-10-05', titulo: '⚔ O modo Saga ganha cara de RPG japonês: janela de comandos, oito perícias e a Guarda do inimigo quebrando', piada: 'O Aggron passou três semanas plantado na frente da comitiva gritando "mirem em mim" enquanto todo mundo mirava no Alakazam. Instalamos uma Guarda nos inimigos pra ocupar a cabeça deles e, de quebra, ensinamos o Aggron a bradar de verdade. Agora os inimigos prestam atenção nele — e o Alakazam pediu pra registrar que estava torcendo por isso desde o começo.',
-    secoes: [
-      { nome: 'Novidades', itens: [
-        '<b>A Saga agora PARECE a Saga.</b> O combate do modo tinha a mesma cara do jogo base; agora a batalha abre numa <b>janela de comandos</b> — <b>⚔ Atacar · ✨ Perícia · 🎒 Mochila · 🏃 Fugir</b> —, com moldura, tipografia e vocabulário próprios ("rodada", "comando", "comitiva"). A cena ganhou a <b>fila da rodada</b> legível no topo e a <b>Guarda do inimigo</b> desenhada abaixo do HP.',
-        '<b>Oito perícias, uma por feito de ofício.</b> 🛡 <b>Brado de Ferro</b> (a fúria inimiga vira toda sua por 2 turnos, +1 de Defesa) · 🧱 <b>Muralha</b> (a comitiva toma metade do dano na rodada) · 💚 <b>Bálsamo</b> (cura um terço do HP de quem está mais ferido) · ✨ <b>Purificar</b> (lava status, confusão e paixão da comitiva) · 🔮 <b>Selo Arcano</b> (o próximo golpe abre 2 Brechas a mais e nenhuma resistência o segura) · ⚔ <b>Estocada</b> (o próximo golpe não erra e sai crítico) · 🕯 <b>Marca</b> (o marcado toma 25% mais por 2 turnos) · 🎻 <b>Canção de Guerra</b> (+1 de Ataque e Velocidade em todo mundo).',
-        '<b>Perícia não gasta PP: custa recarga em turnos.</b> Ela é a sua ação da rodada, como um golpe — e dá pra mandar um <b>companheiro</b> usar a dele, pela mesma fileira de comandar que já existia. O ✨ na fileira avisa quem está com perícia planejada.',
-        '<b>🛡 Guarda, Brecha e Ruína.</b> Todo inimigo da Saga traz escudos: <b>3</b> um selvagem, <b>6</b> um Alfa, <b>10</b> o chefe da semana. Golpe <b>super efetivo</b> e <b>crítico</b> abrem 1 Brecha; status e a Marca abrem meia. Quando a Guarda zera o inimigo <b>RUI</b>: perde o turno, <b>os bônus que ele acumulou somem</b> e tudo o que vier dói <b>50% mais</b>. Depois a Guarda volta cheia — a janela é curta, e é pra isso que serve guardar a perícia certa.',
-        'Agora montar a comitiva <b>por tipo</b> vale: é o Arcano que abre a brecha, não a maior barra de dano.',
-        'O ⚔ Saga continua <b>em construção e só na conta admin</b>: o combate está jogável de ponta a ponta, mas o mundo do modo (trilhas, NPCs Pokémon, facções com reputação) ainda não existe. Ele aparece pra todo mundo quando esse mundo existir.'
-      ] },
-      { nome: 'Correções', itens: [
-        '<b>Comandar companheiro realmente funciona.</b> A fileira de comandar desenhava, mostrava o ofício de cada um e o clique não fazia absolutamente nada — nem abrir os golpes dele, nem o "deixar ele decidir". Estava ligada só de um lado.',
-        'Na hora de escolher o alvo, a pergunta "em quem usar <i>X</i>?" mostrava o <b>seu</b> golpe mesmo quando você estava comandando um companheiro.'
       ] }
     ] },
   { versao: '4.9', data: '2026-10-05', titulo: '🤖 A exploração automática sobe de nível, caça shiny sem alvo e só vai ao Centro quando precisa', piada: 'A enfermeira do Centro Pokémon faturou uma fortuna com um robô que aparecia a cada três passos pedindo cura completa com 59% de vida e três golpes cheios. Ela não vai devolver o dinheiro, mas pediu pra avisar que agora tem tempo pro almoço.',

@@ -19,7 +19,12 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   fase 1 fechada": ofícios (`js/oficios.js`), ameaça/aggro, grupo inimigo de 1 a 3 com o lado inimigo virando
   lista, comandar a comitiva, as **8 perícias** (`js/pericias.js`, recarga em turnos), **Brecha/Ruína**
   (`regras.GUARDA`/`abrirBrecha`/`multSaga`) e a **identidade de JRPG** (flag `jrpg`: janela de comandos, moldura,
-  fila da rodada, vocabulário). README e patch note (versão 5.0) já saíram.
+  fila da rodada, vocabulário). README atualizado.
+  **⛔ A Saga NÃO entra nos patch notes** (decisão do usuário, 06/10/2026): a versão 5.0 que falava dela foi
+  APAGADA de `dados-patchnotes.js` e a entrada seguinte renumerada pra 5.0. O modo é admin-only e em construção —
+  a tela 📜 Novidades é pra quem joga, e anunciar um modo que ninguém alcança é promessa. **Enquanto for
+  `admin: true`, nenhuma leva da Saga vira patch note**; quando o modo abrir pra todos, sai UMA entrada contando
+  o modo inteiro.
   **Falta, e é o que mantém o modo `admin: true`**: a **fase 2** (Juramentos, ordens por ofício, tela de comitiva)
   e a **fase 3/4** — o MUNDO do modo: trilhas em grafo de nós, NPCs Pokémon com diálogo, três facções com
   reputação, capítulos e finais. O trabalho da fase 3 é **escrever**, não programar.
