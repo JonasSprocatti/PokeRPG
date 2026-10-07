@@ -163,9 +163,54 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
   };
 }
 
+/* ---- medida por DADO: o que o 🧰 Editor de conteúdo consegue criar ----
+   As badges deste arquivo medem com `mede(ctx)`, uma função — e função não cabe num pacote da nuvem. Badge NOVA
+   publicada traz `medida: { campo, alvo, especie? }`, e `campo` é um caminho dentro do MESMO `ctx` que as de
+   fábrica leem. Então a lista de possibilidades é exatamente esta tabela: o editor monta o seletor dela, e
+   `conteudo.validarBadges` recusa campo que não esteja aqui (campo errado = badge impossível em silêncio, o pior
+   defeito possível numa conquista de carreira).
+
+   O que NÃO virou medida de dado, e não é esquecimento: regra composta (as duas do Rayquaza juntas), "feche uma
+   Gen fazendo X" que precisa de um campo novo no livro-caixa da jornada, e qualquer coisa que o `ctx` não conte.
+   Medida nova = um campo no `contextoBadges` + uma linha aqui. */
+export const MEDIDAS = {
+  'abates.total': { rotulo: 'Pokémon derrotados (carreira inteira)', exemplo: 5000 },
+  'abates.especie': { rotulo: 'Derrotados de uma espécie', especie: true, exemplo: 500 },
+  ...Object.fromEntries(Object.keys(TYPE_PT).map(t => [`abates.tipoAlvo.${t}`, { rotulo: `Derrotados do tipo ${TYPE_PT[t]}`, exemplo: ALVO_TIPO }])),
+  danoCausado: { rotulo: 'Dano causado com os seus golpes', exemplo: 1000000 },
+  conhecidas: { rotulo: 'Espécies vistas na Pokédex da conta', exemplo: 500 },
+  melhorGenCompleta: { rotulo: 'Gens com a Pokédex completa', exemplo: 1 },
+  desbloqueadas: { rotulo: 'Espécies desbloqueadas pra jogar', exemplo: 50 },
+  amigos: { rotulo: 'Aliados recrutados (carreira)', exemplo: ALVO_AMIGOS },
+  lendariosAmigos: { rotulo: 'Lendários recrutados', exemplo: 1 },
+  shiniesAmigos: { rotulo: 'Shinies recrutados', exemplo: 1 },
+  ovosChocados: { rotulo: 'Ovos chocados (carreira)', exemplo: ALVO_OVOS },
+  gensHardcore: { rotulo: 'Gens fechadas no Hardcore', exemplo: 1 },
+  gensRoguelike: { rotulo: 'Gens diferentes fechadas no Roguelike', exemplo: 9 },
+  runsSemCentro: { rotulo: 'Jornadas vencidas sem usar o Centro', exemplo: 1 },
+  runsCasaCheia: { rotulo: 'Jornadas vencidas com equipe e esconderijo lotados', exemplo: 1 },
+  runsSemParceiro: { rotulo: 'Jornadas vencidas sem recrutar ninguém', exemplo: 1 },
+  maxParceirosPerdidos: { rotulo: 'Parceiros perdidos numa mesma jornada', exemplo: ALVO_PERDIDOS },
+  terasLiberadas: { rotulo: 'Tipos de Tera liberados', exemplo: 18 },
+  megasLiberadas: { rotulo: 'Megas liberadas', exemplo: 5 },
+  rayquazaShiny: { rotulo: 'Rayquaza shiny recrutado', exemplo: 1 },
+  rayquazaAbates: { rotulo: 'Rayquaza derrotados', exemplo: ALVOS.mega }
+};
+// `especie: true` quer dizer que o caminho termina no nome da espécie (`abates.especie.pikachu`)
+export const campoDaMedida = medida => (MEDIDAS[medida?.campo]?.especie ? `${medida.campo}.${medida.especie}` : medida?.campo) || '';
+/* Caminho desconhecido vale 0 — nunca estoura. Badge que não mede nada aparece em 0/alvo na tela, e a validação do
+   pacote é quem impede que ela chegue até aqui. */
+export const medirPorDado = medida => c => {
+  const n = campoDaMedida(medida).split('.').reduce((o, k) => (o == null ? o : o[k]), c);
+  return feito(Number(n) || 0, Math.max(1, medida?.alvo || 1));
+};
+
 // estado de cada badge, pronto pra tela
 export function badgesDaConta(ctx) {
-  return BADGES.map(b => { const m = b.mede(ctx); return { ...b, ...m, fracao: Math.min(1, m.n / m.alvo) }; });
+  return BADGES.map(b => {
+    const m = (b.mede || medirPorDado(b.medida))(ctx);
+    return { ...b, ...m, fracao: Math.min(1, m.n / m.alvo) };
+  });
 }
 
 /* O que as badges conquistadas dão na PRÓXIMA jornada. Soma itens (empilham), dinheiro (soma) e marca `lojaGratis`.

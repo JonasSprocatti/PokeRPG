@@ -154,7 +154,7 @@ function secaoBadges() {
     return p.join(' · ') || '—';
   };
   const linha = b => `<li class="${b.completo ? 'feito' : ''}">
-    <span class="sem-sprite badge-ic" aria-hidden="true">${b.icone}</span>
+    <span class="sem-sprite badge-ic" aria-hidden="true">${esc(b.icone || '')}</span>
     <b>${b.completo ? '🏅 ' : ''}${esc(b.nome)}</b>
     ${b.completo ? '' : barra(b.n, b.alvo)}
     <small>${esc(b.desc)}<br><i>Dá: ${premio(b.recompensa || {})}</i>${b.completo ? '' : ` · ${n(b.n)}/${n(b.alvo)}`}</small>

@@ -160,11 +160,11 @@ async function aoClicar(e) {
     case 'em-salvar-tema': case 'em-salvar-contexto': case 'em-desfazer-tema': case 'em-desfazer-contexto':
     case 'em-limpar': case 'em-copiar': case 'em-publicar': case 'em-liberar':
       return acaoEditorMusica(b.dataset.act.slice(3), v);
-    // 🧰 editor de conteúdo: missões de conta, itens e badges (só admin; a tela confere de novo)
+    // 🧰 editor de conteúdo: missões globais, itens e badges (só admin; a tela confere de novo)
     case 'editor-conteudo': if (travadoPelaBatalha()) return; return telaEditorConteudo();
-    case 'ec-missao': case 'ec-badge': case 'ec-filtrar': case 'ec-limpar-filtro': case 'ec-criar-missao':
+    case 'ec-missao': case 'ec-filtrar': case 'ec-limpar-filtro': case 'ec-criar-missao':
     case 'ec-salvar-missao': case 'ec-excluir-missao': case 'ec-desfazer-missoes': case 'ec-salvar-itens':
-    case 'ec-desfazer-item': case 'ec-salvar-badge': case 'ec-desfazer-badge':
+    case 'ec-desfazer-item': case 'ec-salvar-badge': case 'ec-desfazer-badge': case 'ec-criar-badge':
     case 'ec-publicar': case 'ec-liberar': case 'ec-copiar': case 'ec-limpar':
       return acaoEditorConteudo(b.dataset.act.slice(3), v);
     case 'dev-limpar': return acaoDev('limpar');
@@ -462,6 +462,9 @@ document.addEventListener('change', e => {
   // 🗺 editor de rotas: marcar/desmarcar espécie liga o campo de quantidade e redivide o total entre as marcadas
   if (e.target.matches?.('.ed-alvo')) return acaoEditor('alvo-toggle');
   if (e.target.id === 'ed-alfa-esp') return acaoEditor('usar-alfa', e.target.value);
+  /* 🧰 editor de conteúdo: trocar de badge é um `select`, então vem por 'change' — tinha `case 'ec-badge'` no
+     switch do clique e NADA emitia esse `data-act`, então a lista de badges não trocava de badge nenhuma. */
+  if (e.target.id === 'ec-badge') return acaoEditorConteudo('badge', e.target.value);
   if (e.target.matches?.('[data-arena-equipar]')) return arenaEquipar(e.target.dataset.arenaEquipar, e.target.value);
   if (e.target.matches?.('[data-mp-equipar]')) return raideEquiparHall(e.target.dataset.mpEquipar, e.target.value);
   const cfg = e.target.dataset?.mpCfg; // configuração da sala (anfitrião): modo, porJogador, zona, balancear

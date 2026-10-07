@@ -2,16 +2,19 @@
    A fase 3 da atualização por nuvem (docs/plano-config-remota.md): **missões de conta** (as globais), **preço dos
    itens** (que é o que decide a loja) e **texto e prêmio das badges**. A tela é js/tela-editor-conteudo.js.
 
-   O QUE NÃO ENTRA, e não é esquecimento: o EFEITO de um item e a MEDIDA de uma badge são código. `potion` cura 20
-   porque `ITEMS.potion.heal` é lido por `itens.usarItem`, e `mede(ctx)` é uma função que varre o progresso
-   permanente. Então item novo e badge nova continuam sendo commit; o que o pacote move é o que é DADO.
-   `price: 0` é o botão de desligar um item: `render.js` só põe na loja o que tem preço.
+   O QUE NÃO ENTRA, e não é esquecimento: o EFEITO de um item é código (`potion` cura 20 porque `ITEMS.potion.heal`
+   é lido por `itens.usarItem`), então item novo continua sendo commit. `price: 0` é o botão de desligar um item:
+   `render.js` só põe na loja o que tem preço.
+
+   **Badge NOVA entra** (07/10/2026): a medida dela é DADO — um campo de `badges.MEDIDAS` com um alvo, resolvido por
+   `badges.medirPorDado`. O que continua sendo commit é MEDIDA nova: regra que o `contextoBadges` ainda não conta.
 
    Mesmo desenho dos outros dois editores: rascunho no `localStorage` deste navegador, 📤 Publicar pelo canal (quem
    publica é `tela-editor-rotas.publicar`, porque o pacote é UM) e 📋 Copiar pra levar ao repositório. */
 import { store } from './util.js';
 import { MISSOES_GLOBAIS, ITEMS } from './dados.js';
 import { BADGES } from './badges.js';
+import { BADGES_DE_FABRICA } from './conteudo.js';
 
 export const CHAVE_CONTEUDO = 'pokerpg-editor-conteudo-v1';
 // { missoesGlobais?: [missao…], itens?: { id: {price,name,desc} }, badges?: { id: {nome,desc,recompensa} } }
@@ -48,8 +51,8 @@ export function desfazerMissoesGlobais() {
   delete r.missoesGlobais;
   salvar(r);
 }
-// id novo no formato das outras: letra, número e hífen, e sem repetir
-export function idDeMissaoNova(base, jaExistem) {
+// id novo no formato dos que já existem (letra, número e hífen), sem repetir. Serve pra missão e pra badge.
+export function idNovo(base, jaExistem) {
   const limpo = String(base || 'missao').toLowerCase().normalize('NFD').replace(/[^a-z0-9-]/g, '').slice(0, 40) || 'missao';
   if (!jaExistem.has(limpo)) return limpo;
   let n = 2;
@@ -65,6 +68,27 @@ export const itemDeHoje = id => comoEsta(ITEMS, id, ['price', 'name', 'desc']);
 export const badgeDeHoje = id => comoEsta(Object.fromEntries(BADGES.map(b => [b.id, b])), id, ['nome', 'desc', 'recompensa']);
 export const itemEditado = id => ({ ...itemDeHoje(id), ...rascunhoConteudo().itens?.[id] });
 export const badgeEditada = id => ({ ...badgeDeHoje(id), ...rascunhoConteudo().badges?.[id] });
+
+/* ---- badge NOVA ---- */
+/* Badge nova não é remendo e não passa pelo `gravarRemendo`: ela só existe no pacote, então o rascunho guarda a
+   LINHA INTEIRA. Pelo caminho do remendo, campo igual ao que já está na tabela seria apagado do rascunho — e uma
+   badge publicada sem a medida é uma conquista impossível em silêncio.
+   `badgeDeFabrica` separa as duas: a de fábrica só deixa editar texto e prêmio (a medida dela é função). */
+export const badgeDeFabrica = id => !!BADGES_DE_FABRICA[id];
+// a lista que a tela mostra: as da tabela (já com o rascunho por cima) + as que só existem no rascunho
+export function badgesEditadas() {
+  const novas = rascunhoConteudo().badges || {};
+  const naTabela = new Set(BADGES.map(b => b.id));
+  return [
+    ...BADGES.map(b => ({ ...b, ...(novas[b.id] || {}) })),
+    ...Object.entries(novas).filter(([id]) => !naTabela.has(id)).map(([id, b]) => ({ ...b, id }))
+  ];
+}
+export const badgeEditadaPorId = id => badgesEditadas().find(b => b.id === id) || null;
+export function gravarBadgeNova(id, badge) {
+  const r = rascunhoConteudo();
+  salvar({ ...r, badges: { ...r.badges, [id]: badge } });
+}
 
 const mesmoValor = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 export function gravarRemendo(parte, id, valor, deHoje) {
@@ -108,8 +132,17 @@ export function gerarBlocoConteudo({ missoesGlobais, itens, badges }) {
       Object.entries(itens).map(([id, it]) => `ITEMS[${j(id)}] = { ...ITEMS[${j(id)}], ...${j(it)} };`).join('\n')}`);
   }
   if (badges && Object.keys(badges).length) {
-    partes.push(`// ---- js/badges.js: aplicar por cima de BADGES (nome, descrição, recompensa) ----\n${
-      Object.entries(badges).map(([id, b]) => `Object.assign(BADGES.find(x => x.id === ${j(id)}), ${j(b)});`).join('\n')}`);
+    const remendos = Object.entries(badges).filter(([id]) => badgeDeFabrica(id));
+    const novas = Object.entries(badges).filter(([id]) => !badgeDeFabrica(id));
+    if (remendos.length) {
+      partes.push(`// ---- js/badges.js: aplicar por cima de BADGES (nome, descrição, recompensa) ----\n${
+        remendos.map(([id, b]) => `Object.assign(BADGES.find(x => x.id === ${j(id)}), ${j(b)});`).join('\n')}`);
+    }
+    // badge nova vira linha de tabela, com `medida` (dado) em vez de `mede` (função) — badges.medirPorDado resolve
+    if (novas.length) {
+      partes.push(`// ---- js/badges.js: badges novas, pra entrar no corpo de BADGES ----\n${
+        novas.map(([id, b]) => `  ${j({ id, ...b })},`).join('\n')}`);
+    }
   }
   return partes.join('\n\n') || '// nada editado: o rascunho está vazio.';
 }

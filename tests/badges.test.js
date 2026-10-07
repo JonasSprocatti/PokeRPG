@@ -1,7 +1,7 @@
 // Badges da conta (js/badges.js): conquistas de longo prazo que pagam vantagem na próxima jornada.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BADGES, badgesDaConta, contextoBadges, vantagensDe, ALVO_TIPO, ALVO_AMIGOS, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
+import { BADGES, badgesDaConta, contextoBadges, vantagensDe, medirPorDado, campoDaMedida, MEDIDAS, ALVO_TIPO, ALVO_AMIGOS, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
 import { ALVOS, MARCOS_ABATES, MODO_NAO_CONTA, registrarDano, somarAbates } from '../js/conquistas.js';
 import { ITEMS, TYPE_PT } from '../js/dados.js';
 
@@ -180,4 +180,34 @@ test('vantagens somam itens repetidos e nunca contam badge incompleta', () => {
   assert.equal(v.itens.revive, undefined);
   assert.equal(v.dinheiro, 1000);
   assert.deepEqual(v.titulos, ['Lenda']);
+});
+
+/* ---- medida por DADO (badge criada no 🧰 Editor de conteúdo) ----
+   Badge de fábrica mede com uma função; a criada pelo editor traz `medida: { campo, alvo }` e lê o MESMO ctx.
+   O que este teste guarda é o caso silencioso: campo que não existe tem de valer 0 e não estourar a tela de
+   conquistas, que é onde a carreira inteira aparece. */
+test('medirPorDado lê o caminho dentro do ctx, e campo que não existe vale 0', () => {
+  const c = contextoBadges({
+    abates: {
+      total: 1234, especie: { pikachu: 3 }, dano: 0,
+      tipoAlvo: { ...Object.fromEntries(Object.keys(TYPE_PT).map(t => [t, 0])), fire: 7 }
+    },
+    progresso: { porJornada: { a: { amigos: 9, ovosChocados: 4 } } }, dex: { conhecidas: 42 }, conquistas: null
+  });
+  const medir = m => medirPorDado(m)(c);
+  assert.deepEqual(medir({ campo: 'abates.total', alvo: 1000 }), { n: 1000, alvo: 1000, completo: true });
+  assert.deepEqual(medir({ campo: 'abates.tipoAlvo.fire', alvo: 10 }), { n: 7, alvo: 10, completo: false });
+  assert.deepEqual(medir({ campo: 'abates.especie', especie: 'pikachu', alvo: 5 }), { n: 3, alvo: 5, completo: false });
+  assert.deepEqual(medir({ campo: 'conhecidas', alvo: 42 }), { n: 42, alvo: 42, completo: true });
+  assert.deepEqual(medir({ campo: 'amigos', alvo: 9 }), { n: 9, alvo: 9, completo: true });
+  // os três silenciosos: campo inventado, medida ausente e alvo ausente nunca completam de graça
+  assert.deepEqual(medir({ campo: 'nao.existe.nada', alvo: 5 }), { n: 0, alvo: 5, completo: false });
+  assert.equal(medir(undefined).completo, false);
+  assert.equal(medirPorDado({ campo: 'abates.total' })(c).alvo, 1, 'sem alvo o alvo é 1, nunca NaN');
+  // toda medida oferecida ao editor existe de verdade no ctx (rótulo sem campo = badge impossível em silêncio)
+  for (const [campo, def] of Object.entries(MEDIDAS)) {
+    assert.ok(def.rotulo, `${campo} sem rótulo`);
+    const caminho = campoDaMedida({ campo, especie: 'pikachu' });
+    assert.notEqual(caminho.split('.').reduce((o, k) => (o == null ? o : o[k]), c), undefined, `${campo} não existe no ctx`);
+  }
 });

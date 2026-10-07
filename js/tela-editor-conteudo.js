@@ -11,15 +11,16 @@ import { $, limparTopo, toast, ask } from './ui.js';
 import { barraTelas } from './navegacao.js';
 import { esc } from './util.js';
 import { ITEMS, ITEM_SPR, ITEM_ERRO } from './dados.js';
-import { BADGES } from './badges.js';
+import { BADGES, MEDIDAS } from './badges.js';
 import { ehAdmin } from './nuvem.js';
 import { conteudo } from './conteudo-nuvem.js';
 import { validarPacote, pacoteDeFabrica } from './conteudo.js';
 import { publicar, blocoPremio, lerPremio } from './tela-editor-rotas.js';
 import {
-  missoesGlobaisEditadas, missaoGlobal, gravarMissaoGlobal, excluirMissaoGlobal, idDeMissaoNova,
+  missoesGlobaisEditadas, missaoGlobal, gravarMissaoGlobal, excluirMissaoGlobal, idNovo,
   itemEditado, itemDeHoje, badgeEditada, badgeDeHoje, gravarRemendo, desfazerRemendo, desfazerMissoesGlobais,
-  rascunhoConteudo, limparRascunhoConteudo, quantosConteudo, extrasDoConteudo, gerarBlocoConteudo
+  rascunhoConteudo, limparRascunhoConteudo, quantosConteudo, extrasDoConteudo, gerarBlocoConteudo,
+  badgesEditadas, badgeEditadaPorId, badgeDeFabrica, gravarBadgeNova
 } from './editor-conteudo.js';
 
 /* As contagens que uma missão de conta pode medir, no vocabulário de `regras.progressoCondicao` — é dele que sai
@@ -37,16 +38,17 @@ export function telaEditorConteudo() {
   limparTopo();
   const missoes = missoesGlobaisEditadas();
   if (!missaoId || !missoes.some(m => m.id === missaoId)) missaoId = missoes[0]?.id || null;
+  if (!badgeId || !badgesEditadas().some(b => b.id === badgeId)) badgeId = BADGES[0]?.id || null;
   $('#app').innerHTML = `${barraTelas('conteudo')}
     <section class="card">
       <h2>🧰 Editor de conteúdo <span class="muted small">conta de manutenção</span></h2>
-      <p class="small muted">Missões de conta, preço dos itens e o prêmio das badges. O rascunho fica
+      <p class="small muted">Missões globais, preço dos itens e as badges da conta. O rascunho fica
         <b>neste navegador</b> e sai no <b>mesmo pacote</b> do 🗺 Editor de rotas.
         ${quantosConteudo() ? `<b>${quantosConteudo()} edição(ões)</b> no rascunho.` : ''}
         Tocando hoje: versão <b>${conteudo.versao}</b> (${esc(conteudo.canal)}).</p>
-      <p class="small muted">⚠ O <b>efeito</b> de um item e a <b>medida</b> de uma badge são código, não dado:
-        aqui dá pra mexer em preço, texto e prêmio. Item novo e badge nova continuam precisando de uma versão nova
-        do jogo. Preço <b>0</b> tira o item da loja.</p>
+      <p class="small muted">⚠ O <b>efeito</b> de um item é código: aqui dá pra mexer em preço, nome e descrição, e
+        item novo continua precisando de uma versão nova do jogo. Preço <b>0</b> tira o item da loja.
+        <b>Badge nova dá</b> — a medida dela sai da lista de coisas que o jogo já conta na carreira.</p>
     </section>
     ${blocoMissoes(missoes)}
     ${blocoItens()}
@@ -54,14 +56,18 @@ export function telaEditorConteudo() {
     ${blocoPublicar()}`;
 }
 
-/* ---- 📋 missões de conta ---- */
+/* ---- 📋 missões globais ---- */
+/* "Globais" quer dizer **em qualquer mapa**, não "na conta": `regras.progressoCondicao` mede no SAVE DA JORNADA
+   (`S.wins`, `S.money`, `S.registro`), então elas zeram em cada run nova. Quem mede a conta inteira são as
+   BADGES, do bloco mais abaixo. O rótulo "missões de conta" estava aqui e era mentira. */
 function blocoMissoes(missoes) {
   const m = missaoGlobal(missaoId);
   const r = rascunhoConteudo();
   return `<section class="card">
-      <h3>📋 Missões de conta <span class="muted small">${missoes.length} · valem em qualquer mapa</span></h3>
+      <h3>📋 Missões globais <span class="muted small">${missoes.length} · valem em qualquer mapa</span></h3>
       <p class="small muted">As de ROTA (uma de espécie e uma de Alfa por rota) são do 🗺 Editor de rotas. Estas
-        são as que acompanham a jornada inteira: vitórias, amizade, dinheiro, nível.</p>
+        acompanham a jornada inteira (vitórias, amizade, dinheiro, nível) e <b>zeram a cada jornada nova</b> —
+        o que mede a carreira inteira são as 🏅 badges.</p>
       <div class="subrow">
         ${missoes.map(x => `<button class="btn ${x.id === missaoId ? '' : 'ghost'} sm" data-act="ec-missao" data-v="${esc(x.id)}">${esc(x.nome)}</button>`).join('')}
         <button class="btn ghost sm" data-act="ec-criar-missao">➕ Criar missão</button>
@@ -141,24 +147,55 @@ function blocoItens() {
     </section>`;
 }
 /* ---- 🏅 badges ---- */
+/* Duas badges diferentes na mesma tela, e a diferença é `badgeDeFabrica`: a de fábrica mede com uma função em
+   `js/badges.js` e aqui só dá pra mexer em texto e prêmio; a NOVA é inteira dado, então ganha grupo, ícone, a
+   medida (de `badges.MEDIDAS`) e o alvo. Uma tela só porque o formulário é quase o mesmo — e porque "criar badge"
+   ao lado das 58 existentes é o que mostra quais medidas já existem antes de inventar uma. */
 function blocoBadges() {
-  const b = BADGES.find(x => x.id === badgeId) || BADGES[0];
+  const lista = badgesEditadas();
+  const b = badgeEditadaPorId(badgeId) || lista[0];
   if (!b) return '';
-  const atual = badgeEditada(b.id), mudou = !!rascunhoConteudo().badges?.[b.id];
+  const nova = !badgeDeFabrica(b.id);
+  const atual = nova ? b : badgeEditada(b.id), mudou = !!rascunhoConteudo().badges?.[b.id];
+  const md = atual.medida || {};
+  const def = MEDIDAS[md.campo];
   return `<section class="card">
-      <h3>🏅 Badges <span class="muted small">${BADGES.length} · a medida é código, o texto e o prêmio não</span></h3>
-      <label class="campo">Badge
-        <select id="ec-badge">${BADGES.map(x => `<option value="${esc(x.id)}" ${x.id === b.id ? 'selected' : ''}>${x.icone} ${esc(x.nome)}${rascunhoConteudo().badges?.[x.id] ? ' ✏' : ''}</option>`).join('')}</select></label>
-      <p class="small muted">Grupo <b>${esc(b.grupo)}</b>${b.oculta ? ' · oculta até começar' : ''}.
-        A conta que ela mede continua em <code>js/badges.js</code> e não muda por aqui.</p>
+      <h3>🏅 Badges <span class="muted small">${lista.length} · texto, prêmio e as novas</span></h3>
+      <div class="subrow">
+        <label class="campo" style="flex:1">Badge
+          <select id="ec-badge">${lista.map(x => `<option value="${esc(x.id)}" ${x.id === b.id ? 'selected' : ''}>${esc(x.icone || '🏅')} ${esc(x.nome)}${rascunhoConteudo().badges?.[x.id] ? (badgeDeFabrica(x.id) ? ' ✏' : ' ➕') : ''}</option>`).join('')}</select></label>
+        <button class="btn ghost sm" data-act="ec-criar-badge">➕ Criar badge</button>
+      </div>
+      ${nova
+        ? `<p class="small muted">Badge <b>nova</b> (<code>${esc(b.id)}</code>): ela só existe enquanto o pacote estiver
+            publicado. A medida é escolhida da lista abaixo — é tudo o que o jogo já conta na sua carreira.</p>`
+        : `<p class="small muted">Grupo <b>${esc(b.grupo)}</b>${b.oculta ? ' · oculta até começar' : ''}.
+            A conta que ela mede continua em <code>js/badges.js</code> e não muda por aqui.</p>`}
       <label class="campo">Nome <input id="ec-badge-nome" type="text" value="${esc(atual.nome || '')}" maxlength="60"></label>
       <label class="campo">Descrição <input id="ec-badge-desc" type="text" value="${esc(atual.desc || '')}" maxlength="300"></label>
+      ${nova ? `<div class="subrow">
+        <label class="campo">Ícone (um emoji)
+          <input id="ec-badge-icone" type="text" value="${esc(atual.icone || '🏅')}" maxlength="8" style="width:90px"></label>
+        <label class="campo">Grupo (a tela agrupa por ele)
+          <input id="ec-badge-grupo" type="text" value="${esc(atual.grupo || 'Criadas')}" maxlength="40" list="ec-grupos"></label>
+        <datalist id="ec-grupos">${[...new Set(BADGES.map(x => x.grupo))].map(g => `<option value="${esc(g)}"></option>`).join('')}</datalist>
+        <label class="campo">Esconder até começar
+          <select id="ec-badge-oculta"><option value="">não</option><option value="1" ${atual.oculta ? 'selected' : ''}>sim</option></select></label>
+      </div>
+      <div class="subrow">
+        <label class="campo" style="flex:1">O que ela mede
+          <select id="ec-badge-medida">${Object.entries(MEDIDAS).map(([k, m]) => `<option value="${esc(k)}" ${k === md.campo ? 'selected' : ''}>${esc(m.rotulo)}</option>`).join('')}</select></label>
+        <label class="campo">Alvo
+          <input id="ec-badge-alvo" type="number" min="1" max="999999999" value="${md.alvo || def?.exemplo || 1}" style="width:140px"></label>
+      </div>
+      <label class="campo">Espécie <span class="muted small">(só pra medida "de uma espécie": o nome em inglês e minúsculo, ex. <code>pikachu</code>)</span>
+        <input id="ec-badge-especie" type="text" value="${esc(md.especie || '')}" maxlength="40" placeholder="pikachu"></label>` : ''}
       <label class="campo">Título que ela dá (vazio = o nome dela)
         <input id="ec-badge-titulo" type="text" value="${esc(atual.recompensa?.titulo || '')}" maxlength="60"></label>
       ${blocoPremio('ec-badge-premio', atual.recompensa)}
       <div class="subrow">
         <button class="btn sm" data-act="ec-salvar-badge">💾 Guardar a badge</button>
-        ${mudou ? `<button class="btn ghost sm" data-act="ec-desfazer-badge">↩ Voltar ao que está no jogo</button>` : ''}
+        ${mudou ? `<button class="btn ghost sm" data-act="ec-desfazer-badge">${nova ? '🗑 Excluir a badge nova' : '↩ Voltar ao que está no jogo'}</button>` : ''}
       </div>
     </section>`;
 }
@@ -199,7 +236,7 @@ export async function acaoEditorConteudo(qual, v) {
     const nome = criando ? 'Missão nova' : ($('#ec-nome')?.value || '').trim();
     if (!nome) return toast('A missão precisa de um nome.');
     if (criando) {
-      const id = idDeMissaoNova('missao-nova', new Set(missoesGlobaisEditadas().map(m => m.id)));
+      const id = idNovo('missao-nova', new Set(missoesGlobaisEditadas().map(m => m.id)));
       gravarMissaoGlobal(id, { id, nome, desc: 'Descreva o que o jogador tem de fazer.', objetivo: { vitorias: 10 }, premio: { dinheiro: 500 } });
       missaoId = id;
       toast('Missão criada. Ajuste o texto, o objetivo e o prêmio.');
@@ -251,7 +288,18 @@ export async function acaoEditorConteudo(qual, v) {
     return telaEditorConteudo();
   }
   if (qual === 'desfazer-item') { desfazerRemendo('itens', v); return telaEditorConteudo(); }
+  if (qual === 'criar-badge') {
+    const id = idNovo('badge-nova', new Set(badgesEditadas().map(b => b.id)));
+    gravarBadgeNova(id, {
+      nome: 'Badge nova', desc: 'Descreva o que o jogador tem de fazer.', grupo: 'Criadas', icone: '🏅',
+      medida: { campo: 'abates.total', alvo: 5000 }, recompensa: { dinheiro: 2000 }
+    });
+    badgeId = id;
+    toast('Badge criada. Escolha a medida, o alvo e o prêmio.');
+    return telaEditorConteudo();
+  }
   if (qual === 'salvar-badge') {
+    const nova = !badgeDeFabrica(badgeId);
     const titulo = ($('#ec-badge-titulo')?.value || '').trim();
     const premio = lerPremio('ec-badge-premio');
     const valor = {
@@ -260,13 +308,29 @@ export async function acaoEditorConteudo(qual, v) {
       recompensa: { ...premio, ...(titulo ? { titulo } : {}) }
     };
     if (!valor.nome) return toast('A badge precisa de um nome.');
-    const erro = validarPacote({ ...pacoteDeFabrica(), badges: { [badgeId]: valor } });
+    if (nova) {
+      const campo = $('#ec-badge-medida')?.value;
+      const especie = ($('#ec-badge-especie')?.value || '').trim().toLowerCase();
+      Object.assign(valor, {
+        grupo: ($('#ec-badge-grupo')?.value || '').trim() || 'Criadas',
+        icone: ($('#ec-badge-icone')?.value || '').trim() || '🏅',
+        ...($('#ec-badge-oculta')?.value ? { oculta: true } : {}),
+        // `especie` só entra na medida que a usa — a validação recusa sobra, pra não guardar campo que não mede nada
+        medida: { campo, alvo: Number($('#ec-badge-alvo')?.value || 0), ...(MEDIDAS[campo]?.especie ? { especie } : {}) }
+      });
+    }
+    const erro = validarPacote({ ...pacoteDeFabrica(), badges: { ...extrasDoConteudo().badges, [badgeId]: valor } });
     if (!erro.ok) return toast(erro.porque);
-    gravarRemendo('badges', badgeId, valor, badgeDeHoje(badgeId));
+    if (nova) gravarBadgeNova(badgeId, valor);
+    else gravarRemendo('badges', badgeId, valor, badgeDeHoje(badgeId));
     toast('Badge guardada no rascunho.');
     return telaEditorConteudo();
   }
-  if (qual === 'desfazer-badge') { desfazerRemendo('badges', badgeId); return telaEditorConteudo(); }
+  if (qual === 'desfazer-badge') {
+    desfazerRemendo('badges', badgeId);
+    if (!badgeDeFabrica(badgeId)) badgeId = BADGES[0]?.id || null;   // a nova deixou de existir: a tela não pode apontar pra ela
+    return telaEditorConteudo();
+  }
 }
 async function copiarBloco() {
   let texto;

@@ -26,7 +26,7 @@ function htmlPerfil(p, eu) {
     <section class="pv conta"><div><h3>Números</h3>
       <div class="stats-fim">${numerosDoPerfil(p).map(([l, v]) => `<div class="stat-fim"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div></div></section>
     <section class="pv conta"><div><h3>Insígnias de evento <span class="muted small">(${ganhas.length}/${insignias.length})</span></h3>
-      <ul class="insignias">${insignias.map(i => `<li class="insignia ${i.ganha ? 'ganha' : 'bloqueada'}"><span class="insignia-icone" aria-hidden="true">${i.icone}</span>
+      <ul class="insignias">${insignias.map(i => `<li class="insignia ${i.ganha ? 'ganha' : 'bloqueada'}"><span class="insignia-icone" aria-hidden="true">${esc(i.icone || '')}</span>
         <div><b>${esc(i.nome)}</b> ${i.ganha ? `<span class="muted small">título: ${esc(i.titulo)}</span>` : '<span class="muted small">🔒 ainda não</span>'}</div></li>`).join('')}</ul></div></section>
     <section class="pv conta"><div><h3>Últimas runs</h3>
       ${(p.ultimas || []).length ? `<ul class="runs-perfil">${p.ultimas.map(run).join('')}</ul>` : '<p class="small muted">Ainda não terminou nenhuma jornada.</p>'}</div></section>`;

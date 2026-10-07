@@ -1,9 +1,9 @@
-/* 📦 Fases 2 e 3 da atualização de conteúdo pela nuvem: ROTAS (pool, níveis, criar e excluir), MISSÕES DE CONTA,
-   PREÇO DE ITEM e TEXTO/PRÊMIO DE BADGE.
+/* 📦 Fases 2 e 3 da atualização de conteúdo pela nuvem: ROTAS (pool, níveis, criar e excluir), MISSÕES GLOBAIS,
+   PREÇO DE ITEM e BADGES (texto, prêmio e as NOVAS, cuja medida é dado).
    Este é o teste que mais importa das duas fases, pelo mesmo motivo do `tests/conteudo.test.js`: aqui um pacote
    ruim não deixa o jogo feio, deixa a jornada IMPOSSÍVEL — Gen sem rota final não fecha nunca, Santuário fora
-   quebra a promessa de Pokédex completa, e missão de conta com `libera` pendurado em missão que não existe fica
-   escondida pra sempre, sem erro nenhum. */
+   quebra a promessa de Pokédex completa, e missão global com `libera` pendurado em missão que não existe fica
+   escondida pra sempre, sem erro nenhum — e badge nova com medida inventada nunca completa. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -11,10 +11,10 @@ import {
   CAMPOS_DA_ROTA, CAMPOS_DO_POOL
 } from '../js/conteudo.js';
 import { GENS, MISSOES, MISSOES_GLOBAIS, ITEMS } from '../js/dados.js';
-import { BADGES } from '../js/badges.js';
+import { BADGES, badgesDaConta, contextoBadges } from '../js/badges.js';
 import { criarRota, excluirRota, idDeRotaNova, gerarArquivo, gerarPacote } from '../js/editor-rotas.js';
 import {
-  missoesGlobaisEditadas, excluirMissaoGlobal, idDeMissaoNova, extrasDoConteudo, gerarBlocoConteudo
+  missoesGlobaisEditadas, excluirMissaoGlobal, idNovo, extrasDoConteudo, gerarBlocoConteudo
 } from '../js/editor-conteudo.js';
 
 const restaurar = () => aplicarConteudo(pacoteDeFabrica());
@@ -228,9 +228,43 @@ test('badge: nome, descrição e recompensa; a medida continua sendo código', (
   assert.equal(validarBadges({ [id]: { nome: 'Outro nome' } }).ok, true);
   assert.equal(validarBadges({ [id]: { recompensa: { dinheiro: 5000, titulo: 'Chefe' } } }).ok, true);
   assert.equal(validarBadges({ [id]: { mede: 'x' } }).ok, false);
-  assert.equal(validarBadges({ [id]: { alvo: 1 } }).ok, false);
-  assert.equal(validarBadges({ 'badge-inventada': { nome: 'x' } }).ok, false);
+  assert.equal(validarBadges({ [id]: { alvo: 1 } }).ok, false, 'badge de fábrica não troca de medida');
+  assert.equal(validarBadges({ [id]: { medida: { campo: 'amigos', alvo: 1 } } }).ok, false);
+  assert.equal(validarBadges({ 'badge-inventada': { nome: 'x' } }).ok, false, 'badge nova sem medida é impossível em silêncio');
   assert.equal(validarBadges({ [id]: { recompensa: { itens: { 'nao-existe': 1 } } } }).ok, false);
+});
+
+/* Badge NOVA pelo pacote: a medida é um campo de `badges.MEDIDAS` com um alvo. O que a validação tem de barrar é
+   justamente a badge que NUNCA completa — medida inventada, alvo ausente, espécie faltando na medida que pede uma. */
+test('badge nova: a medida é dado, e medida que não existe é recusada', () => {
+  const nova = { nome: 'Teste', desc: 'Faça algo.', grupo: 'Criadas', icone: '🏅', medida: { campo: 'abates.total', alvo: 10 } };
+  assert.equal(validarBadges({ 'badge-teste': nova }).ok, true);
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, oculta: true, recompensa: { dinheiro: 10 } } }).ok, true);
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, medida: { campo: 'inventado', alvo: 10 } } }).ok, false);
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, medida: { campo: 'abates.total' } } }).ok, false, 'sem alvo');
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, medida: { campo: 'abates.total', alvo: 0 } } }).ok, false);
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, grupo: undefined } }).ok, false);
+  assert.equal(validarBadges({ 'Badge Teste': nova }).ok, false, 'id fora do formato');
+  // a medida por espécie exige a espécie, e as outras recusam sobra (campo que não mede nada)
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, medida: { campo: 'abates.especie', alvo: 5 } } }).ok, false);
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, medida: { campo: 'abates.especie', alvo: 5, especie: 'pikachu' } } }).ok, true);
+  assert.equal(validarBadges({ 'badge-teste': { ...nova, medida: { campo: 'abates.total', alvo: 5, especie: 'pikachu' } } }).ok, false);
+});
+
+test('badge nova entra na tabela e SAI quando o pacote seguinte não a traz', t => {
+  t.after(restaurar);
+  const quantas = BADGES.length;
+  const nova = { nome: 'Caçador de ratos', desc: 'Derrote 50 Rattata.', grupo: 'Criadas', icone: '🐀', medida: { campo: 'abates.especie', alvo: 50, especie: 'rattata' } };
+  aplicarConteudo({ ...pacoteDeFabrica(), badges: { 'ratos': nova } });
+  assert.equal(BADGES.length, quantas + 1);
+  const b = badgesDaConta(contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: { rattata: 20 } }, progresso: null, dex: null, conquistas: null }))
+    .find(x => x.id === 'ratos');
+  assert.deepEqual([b.n, b.alvo, b.completo], [20, 50, false]);
+  // aplicar duas vezes não duplica, e o pacote sem ela devolve a tabela ao tamanho de fábrica
+  aplicarConteudo({ ...pacoteDeFabrica(), badges: { 'ratos': nova } });
+  assert.equal(BADGES.length, quantas + 1);
+  aplicarConteudo({ ...pacoteDeFabrica(), badges: {} });
+  assert.equal(BADGES.length, quantas);
 });
 
 test('aplicar o remendo de item e badge, e desfazer pelo de fábrica', t => {
@@ -265,9 +299,9 @@ test('missão de conta não sai se outra depender dela, e o id novo nunca repete
   assert.equal(r.ok, false);
   assert.match(r.porque, /só abre depois desta/);
 
-  assert.equal(idDeMissaoNova('missao-nova', new Set()), 'missao-nova');
-  assert.equal(idDeMissaoNova('missao-nova', new Set(['missao-nova'])), 'missao-nova-2');
-  assert.match(idDeMissaoNova('Missão Com Acento!', new Set()), /^[a-z0-9-]+$/);
+  assert.equal(idNovo('missao-nova', new Set()), 'missao-nova');
+  assert.equal(idNovo('missao-nova', new Set(['missao-nova'])), 'missao-nova-2');
+  assert.match(idNovo('Missão Com Acento!', new Set()), /^[a-z0-9-]+$/);
 });
 
 /* ---- aplicar no meio de uma jornada ---- */

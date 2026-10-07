@@ -47,7 +47,7 @@ const insigniaExibida = () => htmlInsigniaDe(nuvem.badgeExibida);
 function secaoInsigniasEvento() {
   const lista = badgesDaCarreira().filter(b => b.grupo === 'Eventos'); if (!lista.length) return '';
   const cartao = b => `<li class="insignia ${b.completo ? 'ganha' : 'bloqueada'} ${nuvem.badgeExibida === b.id ? 'exibida' : ''}">
-      <span class="insignia-icone" aria-hidden="true">${b.icone}</span>
+      <span class="insignia-icone" aria-hidden="true">${esc(b.icone || '')}</span>
       <div><b>${esc(b.nome)}</b> ${b.completo ? `<span class="muted small">título: ${esc(b.recompensa?.titulo || b.nome)}</span>` : '<span class="muted small">🔒 não conquistada</span>'}
         <div class="small muted">${esc(b.desc)}</div></div>
       ${b.completo ? (nuvem.badgeExibida === b.id

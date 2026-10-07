@@ -18,7 +18,7 @@
    a jornada do jogador. Regra: pacote que não valida é DESCARTADO INTEIRO, nunca aplicado pela metade — meia
    config é pior que nenhuma, porque o jogo fica num estado que ninguém desenhou. */
 import { GENS, MISSOES, MISSOES_GLOBAIS, ITEMS, SO_NO_SANTUARIO } from './dados.js';
-import { BADGES } from './badges.js';
+import { BADGES, MEDIDAS } from './badges.js';
 import { CLIMAS } from './cenario.js';
 import { MISSOES_ROTA } from './dados-rotas.js';
 import {
@@ -334,15 +334,42 @@ export function validarItens(itens) {
   }
   return { ok: true };
 }
+/* Duas formas no mesmo lugar: id DE FÁBRICA é remendo (só nome, descrição e prêmio), id novo é a badge INTEIRA,
+   com a medida lida do dado (`badges.MEDIDAS`). A medida continua não sendo código livre — é um campo daquela
+   tabela com um alvo —, então a regra antiga ("badge nova precisa de commit") vale só pra medida que o `ctx` não
+   conta ainda. */
+const CAMPOS_DA_BADGE = ['nome', 'desc', 'recompensa', 'grupo', 'icone', 'oculta', 'medida'];
 export function validarBadges(badges) {
   if (badges == null) return { ok: true };
   if (typeof badges !== 'object' || Array.isArray(badges)) return { ok: false, porque: 'badges não é objeto' };
   for (const [id, b] of Object.entries(badges)) {
-    if (!BADGES_DE_FABRICA[id]) return { ok: false, porque: `badge que não existe: "${id}" (badge nova precisa de código: a medida é uma função)` };
+    const nova = !BADGES_DE_FABRICA[id];
     if (!b || typeof b !== 'object') return { ok: false, porque: `badge ${id} não é objeto` };
-    for (const k of Object.keys(b)) if (!['nome', 'desc', 'recompensa'].includes(k)) return { ok: false, porque: `badge ${id}: só nome, descrição e recompensa são editáveis (veio "${k}")` };
-    if (b.nome != null && !texto(b.nome, 60)) return { ok: false, porque: `badge ${id}: nome inválido` };
-    if (b.desc != null && !texto(b.desc, 300)) return { ok: false, porque: `badge ${id}: descrição inválida` };
+    const permitidos = nova ? CAMPOS_DA_BADGE : ['nome', 'desc', 'recompensa'];
+    for (const k of Object.keys(b)) if (!permitidos.includes(k)) {
+      return { ok: false, porque: nova ? `badge ${id}: campo desconhecido "${k}"` : `badge ${id}: só nome, descrição e recompensa são editáveis (veio "${k}")` };
+    }
+    if (nova) {
+      if (!ID_ROTA.test(id)) return { ok: false, porque: `badge ${id}: id tem de ser letra minúscula, número e hífen (2 a 40)` };
+      if (!texto(b.nome, 60)) return { ok: false, porque: `badge ${id}: badge nova precisa de nome` };
+      if (!texto(b.desc, 300)) return { ok: false, porque: `badge ${id}: badge nova precisa de descrição` };
+      if (!texto(b.grupo, 40)) return { ok: false, porque: `badge ${id}: badge nova precisa de grupo` };
+      // ícone é um EMOJI e cai dentro de HTML. As telas escapam, mas o filtro aqui também: é a mesma lição do
+      // `urlDeImagem` — duas camadas, porque cada uma sozinha já falhou uma vez.
+      if (!texto(b.icone, 8) || /[<>&"'`\\]/.test(b.icone)) return { ok: false, porque: `badge ${id}: ícone tem de ser um emoji (sem < > & " ' \` \\)` };
+      if (b.oculta != null && typeof b.oculta !== 'boolean') return { ok: false, porque: `badge ${id}: oculta tem de ser sim ou não` };
+      const md = b.medida;
+      if (!md || typeof md !== 'object' || Array.isArray(md)) return { ok: false, porque: `badge ${id}: medida faltando` };
+      for (const k of Object.keys(md)) if (!['campo', 'alvo', 'especie'].includes(k)) return { ok: false, porque: `badge ${id}: medida com campo desconhecido "${k}"` };
+      const def = MEDIDAS[md.campo];
+      if (!def) return { ok: false, porque: `badge ${id}: medida "${md.campo}" não existe (medida nova precisa de código)` };
+      if (def.especie && !texto(md.especie, 40)) return { ok: false, porque: `badge ${id}: esta medida precisa de uma espécie` };
+      if (!def.especie && md.especie != null) return { ok: false, porque: `badge ${id}: a medida "${md.campo}" não usa espécie` };
+      if (!(inteiro(md.alvo) && md.alvo >= 1 && md.alvo <= 999999999)) return { ok: false, porque: `badge ${id}: alvo fora de 1–999.999.999` };
+    } else {
+      if (b.nome != null && !texto(b.nome, 60)) return { ok: false, porque: `badge ${id}: nome inválido` };
+      if (b.desc != null && !texto(b.desc, 300)) return { ok: false, porque: `badge ${id}: descrição inválida` };
+    }
     const r = validarPremio(`badge ${id}`, b.recompensa);
     if (!r.ok) return r;
   }
@@ -448,7 +475,8 @@ export function aplicarConteudo(pacote) {
   MISSOES.push(...MISSOES_GLOBAIS, ...missoes);
 
   const itens = aplicarRemendo(ITEMS, ITENS_DE_FABRICA, pacote.itens, ['price', 'name', 'desc']);
-  const badges = aplicarRemendo(indicePorId(BADGES), BADGES_DE_FABRICA, pacote.badges, ['nome', 'desc', 'recompensa']);
+  const badges = aplicarRemendo(indicePorId(BADGES), BADGES_DE_FABRICA, pacote.badges, ['nome', 'desc', 'recompensa'])
+    + aplicarBadgesNovas(pacote.badges);
   const musica = aplicarMusica(pacote.musica);
 
   return {
@@ -505,6 +533,20 @@ function aplicarRemendo(tabela, fabrica, patch, campos) {
     }
   }
   return trocados;
+}
+
+/* Badge NOVA é uma LINHA A MAIS em `BADGES`, não um remendo: o id não existe de fábrica, então a linha inteira vem
+   no pacote e a medida é dado (`badges.medirPorDado` resolve na hora de medir). Toda aplicação limpa as de pacote
+   anterior primeiro — badge despublicada tem de SAIR da tela, e sem isso ela ficaria no ar até o F5. */
+function aplicarBadgesNovas(patch) {
+  for (let i = BADGES.length - 1; i >= 0; i--) if (!BADGES_DE_FABRICA[BADGES[i].id]) BADGES.splice(i, 1);
+  let novas = 0;
+  for (const [id, b] of Object.entries(patch || {})) {
+    if (BADGES_DE_FABRICA[id]) continue;
+    BADGES.push({ ...clonar(b), id });
+    novas++;
+  }
+  return novas;
 }
 
 /* Muta `TEMAS`/`CONTEXTOS` no lugar (mesmo motivo de `GENS`: o motor de som já guardou a referência). SEMPRE

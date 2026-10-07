@@ -1690,10 +1690,10 @@ Pedido: *"quero colocar a opção de editar as músicas também para o admin, do
   batalha, não é dado de música. Chave desconhecida no pacote é **recusa**, não "ignora": tema que nunca toca é
   pior que um erro.
 
-### 📦 Fases 2 e 3: a rota, as missões de conta, os itens e as badges (07/10/2026)
+### 📦 Fases 2 e 3: a rota, as missões globais, os itens e as badges (07/10/2026)
 Fecham o pedido de 06/10 ("controle completo de criação e edição do máximo de coisas do app"). O que passou a ser
 dado publicável: **a lista de rotas de cada Gen** (pool com peso, níveis, nome, descrição, bioma, criar e excluir),
-**as missões de conta**, o **preço de cada item** e o **nome/descrição/prêmio de cada badge**.
+**as missões globais**, o **preço de cada item** e as **badges** — texto, prêmio e, desde a mesma tarde, **badge NOVA**.
 
 - **Por que a lista INTEIRA de rotas por Gen, e não um remendo por rota.** Criar, excluir e reordenar são a mesma
   operação ("a lista é outra"), e a ORDEM é a corrente do mapa (o `antes` de cada missão de Alfa, o `libera`, a
@@ -1728,10 +1728,32 @@ dado publicável: **a lista de rotas de cada Gen** (pool com peso, níveis, nome
 - **A camada de FÁBRICA das rotas é `dados-rotas.MAPAS`**, aplicada por `dados.js` igual a `ALFAS` (e com
   `semChefeDeRaide`/`ALFAS` por cima dela). Sem isso, mapa editado viveria só na nuvem e uma instalação nova
   nasceria com o mapa velho — o "📋 Copiar o arquivo" existe exatamente pra isso.
-- **Fase 3, onde a linha foi traçada**: o EFEITO de um item e a MEDIDA de uma badge são código (`ITEMS.potion.heal`
-  é lido por `itens.usarItem`; `mede(ctx)` é uma função que varre o progresso permanente). Então o pacote mexe em
-  preço, texto e prêmio, e item/badge novos continuam sendo commit. **`price: 0` é o botão de desligar um item**:
-  `render.js` só põe na loja o que tem preço, e `precoVenda` passa a dar nada por ele — não precisou de flag nova.
+- **Fase 3, onde a linha foi traçada**: o EFEITO de um item é código (`ITEMS.potion.heal` é lido por
+  `itens.usarItem`), então o pacote mexe em preço, nome e descrição, e item novo continua sendo commit.
+  **`price: 0` é o botão de desligar um item**: `render.js` só põe na loja o que tem preço, e `precoVenda` passa a
+  dar nada por ele — não precisou de flag nova.
+- **E onde a linha SE MOVEU, no mesmo dia.** A medida de uma badge estava do lado do código pelo mesmo argumento
+  (`mede(ctx)` é uma função, e função não cabe num pacote da nuvem). O relato foi direto: *"o editor de conteúdo
+  não me permite criar novas badges, quero ter essa possibilidade, crie um template com várias possibilidades
+  para eu poder usar criatividade"*. A resposta não foi publicar código — foi notar que as 58 `mede` de fábrica
+  são quase todas **a mesma função**: ler um número do `ctx` e comparar com um alvo. Então virou DADO:
+  **`badges.MEDIDAS`** é a lista fechada do que o `contextoBadges` conta (38 entradas: os totais da caçada, as 18
+  por tipo, a Pokédex, os laços, os ovos, as jornadas por modo, as gimmicks e o dano), e badge nova traz
+  `medida: { campo, alvo, especie? }`, resolvida por `medirPorDado`. `badgesDaConta` lê `b.mede || medirPorDado(b.medida)`.
+  O que ficou do outro lado da linha é **medida nova**: regra composta (as duas do Rayquaza juntas) ou coisa que o
+  `ctx` não conta ainda continua sendo um campo no `contextoBadges` + uma linha em `MEDIDAS`.
+- **`campo` é caminho com ponto, e por isso as 18 por tipo saem de graça.** `abates.tipoAlvo.fire` é lido por um
+  `reduce` de 1 linha, o mesmo que serve pra `abates.total` e pra `conhecidas` — e `abates.especie` ganhou um
+  `especie: true` na tabela pra que o caminho termine no nome ("derrote 500 Rattata"). Caminho desconhecido vale
+  **0**, nunca estoura: a tela de conquistas é onde a carreira inteira aparece, e a validação do pacote é quem
+  impede que uma medida inventada chegue lá. `tests/badges.test.js` confere que TODA entrada de `MEDIDAS` existe
+  de verdade no `ctx` — rótulo sem campo atrás seria uma badge impossível em silêncio.
+- **`badges` é a única chave do pacote com as DUAS semânticas**: id de fábrica é remendo (nome/desc/prêmio, e a
+  medida dele continua sendo a função); id novo é a linha INTEIRA. E toda aplicação **tira primeiro** as badges
+  de pacote anterior antes de pôr as do novo — badge despublicada tem de sair da tela, não ficar no ar até o F5.
+- **O ícone da badge passou a ser escapado** (`tela-conquistas`, `conta`, `perfil-amigo`): era emoji de tabela
+  nossa e ia cru pro HTML; com badge vinda da nuvem ele é texto de fora. Duas camadas, como sempre: a validação
+  recusa `< > & " ' \` \\` no ícone **e** as três telas chamam `esc()`.
 - **Prêmio com item que não existe passou a ser recusado** (vale pras missões de rota também): `S.bag[id]` guardaria
   uma chave que nenhuma tela desenha, e o jogador receberia "nada" sem erro nenhum.
 - **Condição de missão com chave desconhecida é recusada.** `regras.progressoCondicao` cai no `[0, 1]` dela, o que
@@ -1739,6 +1761,12 @@ dado publicável: **a lista de rotas de cada Gen** (pool com peso, níveis, nome
 - **Duas semânticas no mesmo pacote, e confundi-las é bug**: lista inteira (mapas por Gen, missões globais, música)
   onde ausente = fábrica; remendo por chave (alfas, itens, badges) onde só o que vem muda. `missoesRota` é a
   exceção histórica (ausente = NENHUMA), mantida pra não quebrar pacote já publicado.
+- **"Missões de conta" era um rótulo mentiroso, e o próprio usuário pegou**: *"tem certeza que as missões de conta
+  são para a conta toda? Ou são por Run?"*. São por RUN — `regras.progressoCondicao(cond, S)` mede no save da
+  JORNADA (`S.wins`, `S.money`, `S.registro`), então elas zeram a cada jornada nova. O que mede a conta inteira
+  são as badges. A tela, o `main.js` e este documento passaram a dizer **missões globais** ("globais" = valem em
+  qualquer mapa, que é a oposição real contra as missões de ROTA). O nome da chave do pacote (`missoesGlobais`) já
+  estava certo desde o começo — era só a UI que mentia.
 - **Ficou de fora**: **rotas secretas** (fase 4 — é mecânica nova: condição no save, na tela de explorar e no
   progresso, não "mover dado pra nuvem"); criar ESPÉCIE ou região; e a validação de "inicial de região no pool",
   porque o editor só oferece candidatas já limpas (`candidatasDaGen`) e a lista viria de `mapas.js`, que roda
