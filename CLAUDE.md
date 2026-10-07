@@ -55,7 +55,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/layout.js` · `js/paineis.js` | Modelo puro do layout dos painéis (testado) · o DOM de arrastar e redimensionar. |
 | `js/pokemon.js` · `js/efeitos.js` | `makeMon()` = instância jogável · efeitos + `CTX` (narração do single player). |
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
-| `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 249 de 314 reais). Gancho novo = código no motor + teste. |
+| `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 251 de 314 reais). Gancho novo = código no motor + teste. |
 | `js/oficios.js` · `js/pericias.js` | ⚔ Saga (puros, sem imports — são CHÃO do grafo): os 6 ofícios lidos dos stats base + learnset · as 8 perícias (recarga em `m.vol.cd`). Quem EXECUTA perícia é `batalha.usarPericia`. |
 | `js/especiais.js` | Golpes cujo efeito não cabe no `meta` da PokéAPI. Sem imports. |
 | `js/segurados.js` | Itens segurados (puro). `seg(m)` é o ÚNICO ponto por onde toda leitura de item passa. |

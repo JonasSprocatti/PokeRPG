@@ -132,6 +132,12 @@ export const NATURES = {
 // habilidades com efeito em batalha: js/habilidades.js
 
 export const SELF_TARGETS = new Set(['user', 'users-field', 'user-or-ally', 'user-and-allies', 'entire-field', 'all-allies', 'ally']);
+/* Golpe de ÁREA, pelo `target` da PokéAPI (quem monta a lista de alvos é golpe.alvosDoGolpe; quem pesa na escolha
+   da IA é regras.notaDoGolpe — por isso mora aqui e não lá, pra os dois lerem a mesma tabela).
+   `opponents-field` (Spikes, Stealth Rock) NÃO entra: aquilo cai no lado, não em cada um.
+   `random-opponent` (Outrage, Thrash) também não: ele sorteia UM, que é o que o jogo já faz. */
+export const ALVOS_OPONENTES = new Set(['all-opponents']);              // só o outro lado (Rock Slide, Muddy Water)
+export const ALVOS_TODOS = new Set(['all-other-pokemon', 'all-pokemon']); // o outro lado E o seu aliado (Earthquake, Surf)
 export const STRUGGLE = { name: 'struggle', type: 'normal', cls: 'physical', power: 50, acc: null, priority: 0, target: 'selected-pokemon', meta: { drain: -25 }, stats: [], desc: '' };
 
 export const AIL_MSG = { paralysis: 'ficou paralisado', sleep: 'adormeceu', freeze: 'foi congelado', burn: 'foi queimado', poison: 'foi envenenado' };

@@ -2,7 +2,7 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
-import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS, ITENS_DE_SELVAGEM } from './dados.js';
+import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, ITENS_DE_SELVAGEM } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem, multEviolite, multStatDoItem } from './segurados.js';
@@ -293,6 +293,15 @@ export const CLIMA_TURNOS = 5;
 export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, neblina: 0, vento: 0, pedras: false, espinhos: 0, toxinas: 0, resisteRaide: null });
 export const TELA_TURNOS = 5, VENTO_TURNOS = 4;
 export const MAX_ESPINHOS = 3, MAX_TOXINAS = 2;
+/* Golpe de área (`target` = all-opponents / all-other-pokemon) que pega mais de um alvo bate 25% mais fraco em
+   CADA um, como nas batalhas duplas dos jogos. Pegando só um (grupo de um, ou o resto já caiu) sai cheio.
+   Quem aplica é golpe.executar; a lista de alvos sai de golpe.alvosDoGolpe. */
+export const MULT_AREA = 0.75;
+/* O que o golpe de área vale a mais na cabeça da IA (notaDoGolpe): a nota é "% do HP do alvo que o golpe vale",
+   então um alvo extra vale menos que um alvo inteiro (sai ×MULT_AREA e nem sempre é o alvo que importa), e
+   respingar no próprio aliado machuca mais do que o alvo extra compensa — senão o inimigo usa Earthquake com o
+   bando dele em campo. */
+export const BONUS_AREA = 25, PENA_AREA_ALIADO = 35;
 // dano cortado pelas telas do lado de quem DEFENDE (Aurora Veil vale pros dois tipos de golpe)
 // `atravessa` = Infiltrator: pra quem tem, a tela do outro lado é como se não existisse (e a Salvaguarda também,
 // em golpe.aplicarStatus — é a mesma habilidade, lida nos dois pontos)
@@ -868,6 +877,12 @@ export function notaDoGolpe(g, c) {
     // Thief/Covet (roubam) e Knock Off (derruba) valem um pouco mais quando há item na mão do alvo. São golpes de
     // DANO, então a nota base já vem de cima: isto é só o desempate contra outro golpe de poder parecido.
     if (alvo.item && ((esp.roubaItem && !u.item) || esp.derrubaItem)) nota += 8;
+    /* 🐺 Golpe de ÁREA (dados.ALVOS_*): com grupo em campo ele pega vários, então vale mais — e Earthquake &
+       cia. (`all-other-pokemon`) também respingam no PRÓPRIO aliado, o que a IA precisa saber antes de escolher.
+       Sem contexto de quantos estão em campo (chamador antigo) vale o de sempre: a conta vira 0. */
+    const outrosAlvos = Math.max(0, (c.oponentes || 1) - 1);
+    if (ALVOS_OPONENTES.has(g.target) || ALVOS_TODOS.has(g.target)) nota += outrosAlvos * BONUS_AREA;
+    if (ALVOS_TODOS.has(g.target)) nota -= (c.aliados || 0) * PENA_AREA_ALIADO;
     return nota;
   }
 

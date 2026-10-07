@@ -253,7 +253,9 @@ export function acaoDaIA(e, m, sorte = Math.random, esperteza = ESPERTEZA.selvag
   const alvo = alvos[Math.floor(sorte() * alvos.length)];
   // pensa como no single player: só entre os golpes que as travas deixam, julgados com o contexto (quem apanha, o campo e os lados)
   const lados = e.campo?.lados;
-  const contexto = alvo ? { u: m, alvo, campo: e.campo, ladoU: lados?.[ladoDe(e, m.ref)], ladoAlvo: lados?.[ladoDe(e, alvo.ref)] } : null;
+  // `aliados`/`oponentes` = quantos em campo de cada lado: é com isso que a IA pesa golpe de área (notaDoGolpe)
+  const contexto = alvo ? { u: m, alvo, campo: e.campo, ladoU: lados?.[ladoDe(e, m.ref)], ladoAlvo: lados?.[ladoDe(e, alvo.ref)],
+    aliados: vivosMP(e.lados[ladoDe(e, m.ref)]).filter(x => x !== m).length, oponentes: alvos.length } : null;
   const g = escolhaIA(golpesPermitidos(m), tiposOfensivos(m), alvo ? tiposDefensivos(alvo) : [], esperteza, sorte, contexto);
   return { ref: m.ref, tipo: 'golpe', golpe: g ? m.moves.indexOf(g) : -1, alvo: alvo?.ref };
 }

@@ -60,7 +60,9 @@ function chooseEnemyMove(E) {
    laço automático tem de jogar com a mesma cabeça do inimigo mais esperto, não com uma segunda regra. */
 export function melhorGolpe(m, alvo, esperteza = ESPERTEZA.chefe) {
   const lados = G.B?.campo?.lados;
-  const contexto = { u: m, alvo, campo: G.B?.campo, ladoU: lados?.[CTX.ladoDe(m)], ladoAlvo: lados?.[CTX.ladoDe(alvo)] };
+  // `aliados`/`oponentes` = quantos estão em campo de cada lado de quem escolhe: é o que faz a IA pesar golpe de área
+  const contexto = { u: m, alvo, campo: G.B?.campo, ladoU: lados?.[CTX.ladoDe(m)], ladoAlvo: lados?.[CTX.ladoDe(alvo)],
+    aliados: CTX.aliadosDe(m).length, oponentes: CTX.oponentesDe(m).length };
   return escolhaIA(golpesPermitidos(m), tiposOfensivos(m), tiposDefensivos(alvo), esperteza, undefined, contexto) || STRUGGLE;
 }
 const residual = m => fimDeTurno(m, CTX); // queimadura/veneno + Speed Boost, Shed Skin
@@ -890,16 +892,20 @@ export async function turn(action) {
         try { await useMove(F, alvo, a.golpe, posicao(alvo) === -1 || i < posicao(alvo)); }
         finally { delete F.vol.zAtivo; }
       } else {
-        // você e os aliados batem no FOCO — o alvo que você escolheu neste turno
+        // você e os aliados batem no FOCO — o alvo que você escolheu neste turno (um golpe de ÁREA respinga sozinho
+        // no resto do grupo, por `golpe.alvosDoGolpe`; por isso daqui pra baixo a conta é do LADO INTEIRO)
         const alvoMeu = E;
-        const hpAntes = alvoMeu.hp;
+        const antes = new Map(B.inimigos.map(m => [m, m.hp]));
+        const hpAntes = B.inimigos.reduce((s, m) => s + m.hp, 0);
         await vez(idVez(a.quem)); await useMove(a.quem, alvoMeu, a.golpe, i < posicao(alvoMeu));
-        // quem deu o golpe final (e com qual golpe): é o que as conquistas de conta contam — e elas só contam o
-        // que VOCÊ fez, não o que o aliado fez (conquistas.js / registrarAbate)
-        if (hpAntes > 0 && alvoMeu.hp <= 0) B.abate = { porMim: a.quem === P, golpe: a.golpe };
-        // dano acumulado da conta (badge "Potencial máximo"): aqui é o ÚNICO ponto que já tem o HP antes e depois
-        // de um golpe SEU. Veneno, armadilha e recuo não entram — a badge é sobre o que você bate.
-        if (a.quem === P) registrarDano(S, hpAntes - alvoMeu.hp, dificuldadeDe(S));
+        /* Quem deu o golpe final (e com qual golpe) fica NO PRÓPRIO CAÍDO, não num `B.abate` único: é o que as
+           conquistas de conta contam, e elas só contam o que VOCÊ fez (conquistas.registrarAbate). Um campo só
+           guardava a ÚLTIMA queda da luta inteira, então num grupo de 3 a carreira somava 3 derrotados e as
+           conquistas 1 — era o buraco do relato #80, e o golpe de área o escancararia. */
+        for (const F of B.inimigos) if (antes.get(F) > 0 && F.hp <= 0 && !F.quedaPor) F.quedaPor = { porMim: a.quem === P, golpe: a.golpe };
+        // dano acumulado da conta (badge "Potencial máximo"): mede o LADO INTEIRO antes e depois, senão o respingo
+        // do golpe de área some do contador. Veneno, armadilha e recuo não entram — a badge é sobre o que você bate.
+        if (a.quem === P) registrarDano(S, hpAntes - B.inimigos.reduce((s, m) => s + m.hp, 0), dificuldadeDe(S));
       }
       await anunciarQuedas(); // dano do inimigo ou recuo do próprio golpe
       // o chefe vira na metade do HP: checado depois de cada ação, pra acontecer no golpe que derrubou a barra
@@ -978,11 +984,13 @@ async function win() {
   // Mega em registro.ids — a tela de desbloqueio do Roguelike passou a mostrar "Alakazam #10037" (a Mega).
   // cada um do grupo conta na Pokédex e nas missões, não só o principal
   for (const F of caidos) registrar(S, 'derrotados', F.data.speciesName, F.mega?.antes?.id ?? F.id);
-  /* Conquistas da conta (conquistas.js). A espécie conta sempre — o aliado lutando com você também constrói a sua
-     Pedra Mega. Tipo e golpe só quando o golpe final foi SEU (`B.abate.porMim`, preenchido no laço do turno).
-     Sem `B.abate` o inimigo caiu de veneno/armadilha/recuo: a equipe venceu, mas não há golpe pra creditar. */
-  registrarAbate(S, { porMim: !!B.abate?.porMim, tiposDoAlvo: E.data.types, minhaEspecie: P.data.speciesName, golpe: B.abate?.golpe, modo: dificuldadeDe(S) });
-  B.abate = null;
+  /* Conquistas da conta (conquistas.js), UMA POR CAÍDO — o mesmo laço do `registrar(…, 'derrotados', …)` logo
+     acima. Rodava uma vez só, com o principal, e num grupo de 3 a carreira contava 3 e a conquista 1 (relato #80).
+     A espécie conta sempre — o aliado lutando com você também constrói a sua Pedra Mega. Tipo e golpe só quando o
+     golpe final foi SEU (`F.quedaPor`, preenchido no laço do turno, por Pokémon). Sem `quedaPor` ele caiu de
+     veneno/armadilha/recuo: a equipe venceu, mas não há golpe pra creditar. */
+  for (const F of caidos)
+    registrarAbate(S, { porMim: !!F.quedaPor?.porMim, tiposDoAlvo: F.data.types, minhaEspecie: P.data.speciesName, golpe: F.quedaPor?.golpe, modo: dificuldadeDe(S) });
   if (fora) await say(`${nm(P)} estava fora da luta e não ganhou XP.${money ? ` Vocês acharam ₽${money}.` : ''}`, 'muted');
   else { await say(`${nm(P)} ganhou ${xp} de XP${money ? ` e ₽${money}` : ''}.${gained.length ? ' ' + gained.join(', ') + '.' : ''}`); await gainExp(xp); }
   // aliados em pé ganham o mesmo XP e EVs (como o Exp. Share dos jogos novos)

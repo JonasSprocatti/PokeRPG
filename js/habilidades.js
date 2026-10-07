@@ -129,6 +129,11 @@
 //                          maiorStatBase) em vez de um fixo — Beast Boost
 //   aftermath: fração       ao ser derrubado por um golpe que fez CONTATO, quem derrubou perde essa fração do
 //                          próprio HP máximo (golpe.executar) — Aftermath
+//   abafaExplosao           ninguém EM CAMPO (dos dois lados) consegue usar golpe de autodesmaio — Explosion,
+//                          Self-Destruct, Misty Explosion, Memento. Também cala o Aftermath de quem cai.
+//                          (golpe.usarGolpe/executar, por `ctx.aliadosDe`+`ctx.oponentesDe`) — Damp
+//   imuneGolpeAliado        golpe de ÁREA de um ALIADO (Earthquake, Surf) não respinga nele (golpe.alvosDoGolpe) —
+//                          Telepathy. Só existe desde que o jogo passou a ter mais de um Pokémon por lado.
 //   aoDesmaiarDanoAtacante  ao ser derrubado por QUALQUER golpe de dano (contato ou não), quem derrubou perde HP
 //                          igual ao HP que este tinha um instante antes de cair (golpe.executar) — Innards Out
 //   dreno: 'inverte'        um dreno (Giga Drain e cia.) de quem te ataca vira DANO nele em vez de cura pra ele
@@ -396,6 +401,7 @@ export const HABILIDADES = {
   'beast-boost': { aoNocautearMaior: true },
   // reação a ser derrubado
   aftermath: { aftermath: 1 / 4 }, 'innards-out': { aoDesmaiarDanoAtacante: true },
+  damp: { abafaExplosao: true }, telepathy: { imuneGolpeAliado: true },   // só fazem sentido com mais de um em campo (🐺 grupo)
   // Cotton Down: quem acerta perde Velocidade
   'cotton-down': { algodaoCai: true },
   // troca/contágio de habilidade ao encostar
@@ -452,8 +458,8 @@ export const HABILIDADES = {
      1. DEPENDEM DE TROCAR DE POKÉMON, e no jogo ninguém do seu lado troca (você É o Pokémon). Regenerator e
         Natural Cure já estão aqui com o gatilho adaptado ("ao sair" = ao vencer a luta, `curaAoVencer`/
         `limpaStatusAoVencer`); Zero to Hero (muda de forma ao sair), Commander (entra na boca do Dondozo),
-        Ball Fetch, Honey Gather e Pickup (item depois da luta) e Telepathy (não leva golpe de aliado) não têm
-        nem gatilho equivalente nem efeito que daria pra sentir. Ver docs/features.md.
+        Ball Fetch, Honey Gather e Pickup (item depois da luta) não têm nem gatilho equivalente nem efeito que
+        daria pra sentir. Ver docs/features.md.
      2. FORMA DINÂMICA DE UMA ESPÉCIE SÓ: cada uma pede sprite, atributos e regra próprios. Ice Face, Gulp
         Missile, Schooling, Shields Down, Hunger Switch, Zen Mode, Power Construct, Disguise, Illusion, Imposter
         (Transform), Tera Shift, Embody Aspect, Multitype e RKS System. Battle Bond existe no jogo como ITEM.
@@ -466,7 +472,7 @@ export const HABILIDADES = {
         Teravolt (ignorar a habilidade do alvo em TODO ponto do motor, não só no dano); Neutralizing Gas
         (suprimir a habilidade de todo mundo em campo); Cloud Nine e Air Lock (anular o clima — ele é lido em
         dano, atributo, precisão, cura e fim de turno, cada um com seu caminho); Gorilla Tactics e Mycelium
-        Might (a trava de escolha de golpe hoje só olha item, `seg(m).choice`, em TRÊS telas); Damp, Heavy/Light
+        Might (a trava de escolha de golpe hoje só olha item, `seg(m).choice`, em TRÊS telas); Heavy/Light
         Metal (peso não existe no jogo), Gluttony (as duas frutas de HP do jogo, Oran e Sitrus, JÁ são comidas em
         50% — a habilidade não teria o que adiantar), Mimicry, Propeller Tail e Stalwart (não há redirecionamento de golpe),
         Unseen Fist e Piercing Drill (furar Proteção), Healer, Mega Sol, Spicy Spray, Delta Stream, Teraform Zero.

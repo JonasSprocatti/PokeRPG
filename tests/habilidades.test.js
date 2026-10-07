@@ -87,7 +87,9 @@ test('tabela: ganchos conhecidos, tipos e status válidos', () => {
     'ruina', 'aura', 'anulaAura', 'ignoraImunidade', 'atravessaTelas', 'semSaidaForcada', 'aoRecuar',
     'corpoMaldito', 'tipoDoProprioGolpe', 'tipoDoGolpeRecebido', 'venenoConfunde',
     'zeraEstagiosAoEntrar', 'limpaTelas', 'curaAliadoAoEntrar', 'copiaEstagiosDoAliado',
-    'estagioInimigoAoEntrar', 'pesadelo']);
+    'estagioInimigoAoEntrar', 'pesadelo',
+    // 🐺 grupo: só passaram a ter o que fazer quando o jogo ganhou mais de um Pokémon por lado
+    'abafaExplosao', 'imuneGolpeAliado']);
   const tipos = Object.keys(TYPE_PT);
   const stat = (n, s) => assert.ok(STATS.includes(s), `${n}: atributo "${s}"`);
   for (const [nome, h] of Object.entries(HABILIDADES)) {

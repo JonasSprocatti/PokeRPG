@@ -13,6 +13,21 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.6', data: '2026-10-07', titulo: '💥 Terremoto que acerta um Pokémon só acabou', piada: 'Durante anos o Earthquake deste jogo abalava a crosta terrestre inteira e, por uma questão de etiqueta, derrubava apenas o Pokémon para quem havia sido formalmente apresentado. Os outros dois assistiam de pé, a meio metro de distância, achando aquilo muito estranho e não comentando por educação.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Golpe de área agora pega em área.</b> <b>Earthquake</b>, <b>Surf</b>, <b>Rock Slide</b>, <b>Discharge</b>, <b>Hyper Voice</b>, <b>Heat Wave</b> e toda a família acertam <b>todo mundo que o golpe alcança</b>, em vez de um só. Agora que o jogo tem manada de um lado e aliados do outro, era o que faltava pra eles existirem de verdade.',
+        '<b>E eles não escolhem lado.</b> Os que pegam só o <b>outro lado</b> (Rock Slide, Muddy Water) limpam o grupo inimigo sem risco. Os que pegam <b>todo mundo em volta</b> (Earthquake, Surf, Discharge) <b>respingam no seu próprio aliado</b> — o que, por acaso, também vale pro inimigo, que agora pensa duas vezes antes de usar um com o bando dele em campo.',
+        '<b>Pegando mais de um, o dano em cada alvo sai 25% menor</b>, como nas batalhas duplas dos jogos. Pegando um só, sai cheio. Área é alcance, não dano grátis.',
+        '<b>Damp acordou.</b> Com um <b>Psyduck</b>, <b>Golduck</b>, <b>Politoed</b> ou <b>Wooper</b> em campo — <b>de qualquer um dos dois lados</b> —, <b>ninguém</b> consegue usar Explosion ou Self-Destruct. O <b>Aftermath</b> de quem cai também fica mudo. É a habilidade inteira, exatamente como nos jogos.',
+        '<b>Telepathy também.</b> Quem tem não leva golpe de área do próprio colega: o seu Earthquake passa por baixo dele.',
+        '<b>Friend Guard, Battery, Power Spot, Steely Spirit e Plus/Minus agora valem do lado inimigo também.</b> Elas dependem de ter um aliado ao lado, e até aqui o jogo só enxergava um Pokémon por vez do outro lado da cena — então na prática elas nunca ligavam numa manada. Ligam.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>"Pokémon derrotados" da sua carreira não batia com o das conquistas.</b> Quando você derrubava uma manada de 3, a carreira contava 3 e as conquistas contavam <b>1</b> — o jogo só creditava o Pokémon principal da luta. Quem jogou muito com grupo tinha centenas de abates sumindo das insígnias. Agora cada um que cai conta, com o golpe e o tipo certos. <i>(Relato #80 — obrigado!)</i>',
+        '<b>E o contador de dano da insígnia "Potencial máximo" só via o alvo em foco.</b> Dano que respingasse no resto do grupo não entrava na conta. Agora ele mede o lado inimigo inteiro, antes e depois do seu golpe. <i>(Relato #79)</i>'
+      ] }
+    ] },
   { versao: '5.5', data: '2026-10-06', titulo: '📈 Todas as chances do jogo, numa tela só', piada: 'O setor de estatística do jogo passou dois anos calculando as taxas num caderno e se recusando a mostrar a quem perguntava, alegando sigilo metodológico. O caderno foi finalmente localizado. Era o código-fonte, que estava ali o tempo todo, e agora ele se imprime sozinho.',
     secoes: [
       { nome: 'Novidades', itens: [

@@ -1910,7 +1910,7 @@ cada mecânica está preservado aqui, palavra por palavra, como estava antes. Co
 | `js/nuvem.js` | Supabase sob demanda: login (Google / link por e-mail), `sincronizar()` (carreira + save em andamento), envio do save com espera, `ganchos` que o main.js liga. `idJogador()` (id da conta, ou de visitante persistido) e `sb()` (o cliente) exportados pra `multiplayer.js` e `presenca.js` não duplicarem/abrirem uma 2ª conexão. |
 | `js/presenca.js` | **Marcador "jogando agora"** (tela inicial): canal Realtime global (`pokerpg-presenca-global`, diferente do canal por SALA de `multiplayer.js`), `track({})` vazio — nunca identifica quem, só quanto. Junto, o contador HISTÓRICO admin-only de visitantes sem conta (`registrarVisitanteAnonimo`/`contagemAnonimos`, tabela `visitantes_anonimos`). Interruptor em ⚙ Ajustes (`presencaLigada`/`definirPresenca`), divulgado na tela 🔒 Privacidade — não é telemetria silenciosa. Sem Supabase configurado, tudo aqui é no-op. |
 | `js/golpe.js` | **Motor único do golpe** (single player e multiplayer): usarGolpe, mudarEstagios, aplicarStatus, fimDeTurno, com `ctx` de narração. |
-| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 249 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
+| `js/habilidades.js` | Tabela de habilidades (ganchos) + `hab(m)`, `IMPL`. **Só o que está nessa tabela tem efeito de verdade** (hoje 251 de 314 habilidades reais da PokéAPI — a contagem antiga de "307" vinha de uma auditoria velha; a certa é filtrar `abilities.csv` por `is_main_series`, e a contagem real de implementadas é sempre `IMPL.size`, testada em `tests/habilidades.test.js`. `docs/auditoria-batalha.md` ficou desatualizado depois da 2ª leva e não reflete nem o total nem o implementado — não usar como fonte). O resto joga normal, sem o efeito, e a ficha mostra "(sem efeito ainda)". **Mudança de Postura** (`postura`, Aegislash) é a primeira troca de FORMA: `golpe.trocarPostura(m, paraLamina, ctx)` espelha os atributos base (Ataque ↔ Defesa, At.Esp. ↔ Def.Esp.) — as duas formas do Aegislash são os mesmos números trocados de lado, então não precisa buscar a outra forma na rede no meio do turno. **Sempre copiar `m.data` antes** (`{ ...m.data, base }`): esse objeto vem do cache e é compartilhado por todo Aegislash que aparecer. Golpe de dano → Lâmina (antes de calcular o dano); King's Shield → Escudo (`especiais.voltaPostura`). `tests/postura.test.js`. |
 | **Barreiras que punem contato** | `especiais.puneContato` (`{ estagio: [attr, n] }` / `{ dano: fração }` / `{ status }`): King's Shield tira 2 de Ataque, Obstruct 2 de Defesa, Spiky Shield machuca 1/8, Baneful Bunker envenena, Silk Trap tira Velocidade, Burning Bulwark queima. A barreira guarda o efeito em `u.vol.punicao` ao ser levantada; quem ataca leva a punição no ponto em que o golpe é bloqueado, **só se for golpe físico** (a mesma regra de contato de Static/Elmo Rochoso). `fimDaRodada` limpa junto com `protegido`. Antes eram todos `protege: true` puro — um Protect com outro nome. |
 | `js/especiais.js` | `GOLPES_ESPECIAIS` + `especial(g)`: golpes cujo efeito não cabe no `meta` da PokéAPI. Comportamentos (lidos em `golpe.js`/`regras.js`): `protege`, `aguentaTurno`, `foco`, `descanso`, `autoDesmaio`, `ohko`, `soDormindo`, `toxico`, `semente`, `carga`(+`invulneravel`), `recarga`, `furia`, `poder` (fórmula em `regras.poderEspecial`), `danoIgualHp`. Sem imports. Estado volátil novo em `m.vol`: `protegido`/`aguenta` (1 rodada — limpos por `fimDaRodada(m)`, que substitui o antigo `vol.flinch = false` em `batalha.js` e `mp-motor.js`), `protSeguidas`, `foco`, `toxico` (n/16 por turno), `semente` (ref de quem plantou, via `ctx.refDe`/`ctx.monPorRef`), `carregando` (o golpe), `invul`, `recarga`, `furia {golpe, turnos}`. Pokémon travado (carga/fúria): `usarGolpe` ignora o golpe escolhido e usa `golpeTravado(m)`. Algo que impede de agir (sono, congelado, paralisia, recuo, confusão) chama `interromper(u)` e a carga/fúria se perde. Hyper Beam só recarrega se o golpe conectou (`executar` devolve `'acertou'`). `tests/especiais.test.js`. A auditoria completa (o que ainda falta) está em `docs/auditoria-batalha.md`, gerada da PokéAPI. |
 | `js/relatos.js` | Tela de bugs e sugestões + `contextoTecnico()`. |
@@ -2700,7 +2700,7 @@ Mesma prateleira, mas com **três diferenças de desenho** em relação à tampa
   só perder ₽250.000 sem saber no que. `habilidadesParaTrocar` devolve as outras habilidades da espécie —
   **inclusive a oculta**, que nos jogos é outro item (o Ability Patch). Um item só: dois seria uma distinção que
   este jogo não faz em lugar nenhum, já que a criação também oferece a oculta junto das normais.
-- **O modal mostra `IMPL`.** São 249 habilidades com efeito de verdade em 314 reais, e trocar por uma das outras
+- **O modal mostra `IMPL`.** São 251 habilidades com efeito de verdade em 314 reais, e trocar por uma das outras
   97 sem aviso seria pagar um quarto de milhão por "será ajustado em atualizações futuras". As três informações
   do modal (nome, descrição da PokéAPI e "✓ ativa em batalha") são as MESMAS que `criacao.js` mostra na escolha
   original — é a mesma escolha, feita no meio da run. A descrição é buscada com `loadAbility` **antes** de abrir o
@@ -2944,3 +2944,147 @@ o `<` cru de `"Nv. < 20"`, que o navegador lê como começo de tag e **come a c�
 e `32,857142857%` numa tabela de leitura (o formatador passou a dar 2 casas só abaixo de 1%, 1 casa até 10% e
 inteiro acima). Também apareceu ali que "Magikarp 100 · a maioria 100" era redundante: 5 ciclos cai no piso de
 `PASSOS_MIN` igual aos 20 do padrão.
+
+## 💥 Golpe de área e as habilidades que dependiam de haver mais de um (07/10/2026)
+
+Pedido do usuário, na mesma frase: *"arrumar habilidades como Damp e também fazer moves que pegam em área
+começarem a pegar, agora que temos mais de um Poké como oponente"*. As duas coisas são o mesmo buraco. O jogo
+nasceu com **um** inimigo (`B.enemy`), e tudo que pressupunha dois ou mais ficou pra depois: `target` da PokéAPI
+ignorado, e um grupo inteiro de habilidades (Damp, Telepathy, Friend Guard do lado de lá) sem o que fazer. Quando
+🐺 grupo e aliados chegaram, a premissa caiu — mas o código que a assumia continuou lá.
+
+### A raiz: o `CTX` do single player ainda enxergava um inimigo só
+
+`efeitos.CTX.aliadosDe`/`oponentesDe` nasceram assim:
+
+```js
+aliadosDe:   m => (ladoJogador().includes(m) ? ladoJogador() : [G.B?.enemy])…
+oponentesDe: m => (ladoJogador().includes(m) ? [G.B?.enemy] : ladoJogador())…
+```
+
+Aquele `[G.B?.enemy]` é a premissa velha escrita por extenso: do lado de lá existe UM. O `mp-motor` já fazia certo
+(ele nasceu com lados de N), então o mesmo motor dava respostas diferentes nos dois modos. **Friend Guard,
+Battery, Power Spot, Steely Spirit, Plus/Minus, Bad Dreams, Trace, Frisk, Download, Anticipation e Forewarn do
+lado inimigo só viam quem estava em foco.** Nada disso aparecia como erro: aparecia como "a habilidade não faz
+nada", que é indistinguível de "não foi implementada".
+
+Hoje são `inimigosEmCampo()` e `emCampo()` — e repare que é **em campo**, não `ladoJogador()`: quem está
+descansando no banco não dá nem leva bônus de aliado. O teste de quem é de qual lado passou a ser
+`G.B?.inimigos?.includes(m)`, porque `ladoJogador()` já não serve de referência quando o outro lado também é uma
+lista.
+
+### `alvosDoGolpe`: a lista de alvos sai dos ganchos que já existiam
+
+A tentação era criar uma API nova no `ctx` (`ctx.alvosDe(u, g)`) e implementá-la nos dois motores. Não precisou:
+`oponentesDe` e `aliadosDe` **já estão nos dois ctx** e já dizem exatamente o que o golpe de área precisa saber.
+A função nova (`golpe.alvosDoGolpe`) é derivação pura em cima deles, e o multiplayer ganhou área de graça.
+
+As duas famílias de `target` ficam em `dados.js` (não em `golpe.js`) porque **quem mais lê a tabela é a IA**, em
+`regras.notaDoGolpe` — e `regras` vem antes de `golpe` no grafo de imports:
+
+- `ALVOS_OPONENTES` = `all-opponents` → só o outro lado (Rock Slide, Muddy Water, Hyper Voice).
+- `ALVOS_TODOS` = `all-other-pokemon`, `all-pokemon` → o outro lado **e o seu aliado** (Earthquake, Surf, Discharge).
+
+Dois ficaram **de fora de propósito**, e cada um por um motivo diferente:
+
+- **`opponents-field`** (Spikes, Stealth Rock, Toxic Spikes) parece área e não é: aquilo cai no **lado**, não em
+  cada Pokémon. Rodar o golpe uma vez por alvo poria **3 camadas de Spikes numa tacada**. Isso chegou a estar na
+  primeira versão do `Set` e foi tirado antes de rodar.
+- **`random-opponent`** (Outrage, Thrash, Petal Dance) sorteia UM alvo — que é literalmente o que o jogo já faz.
+  Entrar na lista transformaria um golpe de alvo único em área.
+
+### Por que `executar` roda N vezes, e o que NÃO pode repetir
+
+`usarGolpe` faz tudo o que é "uma vez por ação" (PP, status de quem usa, travas de escolha, Protean, o texto
+"X usou Y!") e só então chama `executar` **uma vez por alvo**. A alternativa — reescrever `executar` pra receber
+uma lista — mexeria em 300 linhas do caminho mais quente do jogo pra entregar a mesma coisa.
+
+O preço é que `executar` tem, no fim, blocos que são **do usuário**, e esses não podem contar por alvo. Os alvos
+extras recebem `area.respingo` e pulam exatamente quatro:
+
+| efeito | por quê |
+|---|---|
+| Orbe da Vida (`seg(u).recuoPorGolpe`) | cobra uma vez por golpe, não por alvo |
+| recuo (`meta.drain < 0`) | nos jogos o recuo sai do dano total, uma vez |
+| cura (`meta.heal`) | idem |
+| queda/subida de atributo do próprio usuário (`mudaOUsuario`) | Make It Rain baixaria o At.Esp. 3× |
+
+E dois ficam **de fora da trava, de propósito**: **dreno** (`meta.drain > 0`) e **Moxie/Beast Boost**
+(`aoNocautear`). Nos jogos os dois contam **por alvo atingido** — Parabolic Charge cura de cada um, e Moxie sobe
+uma vez por queda. A trava não é "efeito do usuário": é "efeito do usuário que vale **uma vez por golpe**".
+
+O laço também para se o usuário morrer no meio (`u.hp <= 0 && i`): Elmo Rochoso ou Orbe da Vida podem derrubar
+quem atacou no primeiro alvo, e um morto não continua batendo nos outros dois.
+
+### `MULT_AREA`: área é alcance, não dano grátis
+
+`regras.MULT_AREA = 0.75`, aplicado **só quando o golpe pega mais de um** (`area.varios`) — como nas duplas dos
+jogos. Pegando um só (grupo de um, ou o resto já caiu), sai cheio. Mora em `regras.js` porque é fórmula, e foi
+pro teste junto com o resto.
+
+### A IA precisava saber, senão o inimigo se explodia sozinho
+
+Esta é a parte que não estava no pedido e sem a qual o pedido vira um bug. Com área ligada, um Golem inimigo com
+dois colegas em campo usaria **Earthquake** e levaria o próprio bando junto — a IA escolhe por `notaDoGolpe`, que
+só olhava o alvo. Duas linhas:
+
+```js
+const outrosAlvos = Math.max(0, (c.oponentes || 1) - 1);
+if (ALVOS_OPONENTES.has(g.target) || ALVOS_TODOS.has(g.target)) nota += outrosAlvos * BONUS_AREA;
+if (ALVOS_TODOS.has(g.target))                                  nota -= (c.aliados || 0) * PENA_AREA_ALIADO;
+```
+
+`BONUS_AREA = 25` e `PENA_AREA_ALIADO = 35`: a pena é **maior** que o bônus de propósito, porque a nota é "% do
+HP do alvo que o golpe vale" e o alvo extra já sai ×0,75 — enquanto o aliado atingido é dano no time dele. O
+contexto (`c.aliados`/`c.oponentes`) é preenchido em `batalha.melhorGolpe` e em `mp-motor.acaoDaIA`; chamador que
+não passe nada cai em `0`/`1` e a conta some, então nada quebra.
+
+### Damp e Telepathy
+
+As duas estavam na lista de "não implementadas" por motivos que **deixaram de valer**. Damp estava no grupo 4
+("mexeria em regra compartilhada") — não mexe: com `ctx.aliadosDe` + `ctx.oponentesDe` já corretos, `quemAbafa()`
+é uma linha que varre os dois lados. Telepathy estava no grupo 1 ("sem gatilho equivalente") — o gatilho é
+exatamente o que acabou de nascer.
+
+- `abafaExplosao` (Damp): barra `esp.autoDesmaio` **depois** do "usou X!" e de gastar o PP (o golpe foi tentado,
+  como nos jogos), e cala o `aftermath` de quem cai. As duas metades da habilidade, não só a primeira.
+- `imuneGolpeAliado` (Telepathy): lido em `alvosDoGolpe`, filtrando o aliado da lista. Não é imunidade a dano —
+  é não estar na lista de alvos, que é o que a habilidade faz de verdade.
+
+`IMPL.size` foi de 249 pra **251**; `tests/docs-numeros.test.js` cobrou a frase no `CLAUDE.md`, no `README.md` e
+aqui, e `tests/habilidades.test.js` cobrou os dois ganchos novos na lista de ganchos conhecidos. As duas redes
+pegaram na primeira rodada.
+
+### Os relatos #79 e #80 eram a mesma coisa, e o golpe de área ia piorar
+
+O jogador relatou dois números que não fechavam: "Pokémon derrotados" na carreira marcava **7.595** e a insígnia
+*Terror das rotas* contava **6.705**; e o dano total da conta estava em 13 mil depois de cinco Gens.
+
+A causa do #80 estava em `batalha.win()`, uma linha abaixo da outra:
+
+```js
+for (const F of caidos) registrar(S, 'derrotados', …);   // laço: cada um do grupo
+registrarAbate(S, { … tiposDoAlvo: E.data.types … });     // UMA vez, com o principal
+```
+
+A carreira contava 3 numa manada de 3; a conquista contava 1. A diferença de 890 é exatamente o acumulado de
+quem jogou com grupo desde que grupo existe. Agora `registrarAbate` roda no **mesmo laço**, e o crédito do golpe
+final deixou de ser `B.abate` (um campo só, que guardava a **última** queda da luta inteira) e passou a morar no
+próprio caído, em `F.quedaPor` — porque um golpe de área derruba mais de um na **mesma ação**, e um campo único
+nunca daria conta.
+
+O #79 é mais simples e tem duas metades. A primeira não é defeito: `registrarDano` nasceu em 01/10/2026, seis
+dias antes do relato, e `progresso-conta.bancar` é idempotente por id de jornada — jornada já contada não
+reprocessa, então as runs anteriores não têm dano gravado e **nunca terão**. É o preço de "o progresso nunca
+encolhe". A segunda é defeito e ia piorar muito com área: a conta era `hpAntes - alvoMeu.hp`, do **foco**, então
+todo respingo sumiria do contador. Agora é a soma do lado inimigo antes e depois do golpe, o que também captura,
+de graça, dano em quem não era o alvo escolhido.
+
+### O que ficou de fora
+
+- **Escolher o alvo de um golpe de área** na interface: não faz sentido, o golpe já pega todos. A cena continua
+  mostrando o foco.
+- **`random-opponent`** (Outrage) sorteando alvo novo a cada turno da fúria: hoje ele bate em quem foi escolhido.
+  É uma mecânica à parte, não é área.
+- **Narração agrupada** ("acertou os 3!"): cada alvo narra o seu bloco, como já fazia. Com `PAUSA_NARRACAO` isso
+  lê bem; se virar parede de texto numa manada de 3, aí sim vale juntar.

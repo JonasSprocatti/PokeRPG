@@ -3,7 +3,7 @@
 // nome em HTML (nm), golpe colorido, pausa entre mensagens (say), redesenho (render), tremida de quem apanha
 // (shake) e "pulo" de quem ataca (atacar) — e os atalhos que batalha/itens usam. O multiplayer usa o mesmo
 // motor com outro ctx (texto puro, sem DOM — por isso `atacar`/`tremer` são OPCIONAIS em golpe.js).
-import { G, nm, ladoJogador } from './estado.js';
+import { G, nm, ladoJogador, emCampo, inimigosEmCampo } from './estado.js';
 import { say, shake, atacar, trocarPratos } from './ui.js';
 import { render } from './render.js';
 import { TC } from './dados.js';
@@ -28,10 +28,12 @@ export const CTX = {
   // Leech Seed: 'E' = inimigo; número = posição no seu lado (você e aliados)
   refDe: m => m === G.B?.enemy ? 'E' : ladoJogador().indexOf(m),
   monPorRef: r => r === 'E' ? G.B?.enemy : ladoJogador()[r],
-  // aliados vivos de m, no MESMO lado (Friend Guard): você só tem um inimigo por vez, então do lado dele é só ele
-  aliadosDe: m => (ladoJogador().includes(m) ? ladoJogador() : [G.B?.enemy]).filter(x => x && x !== m && x.hp > 0),
-  // quem está vivo do OUTRO lado (Bad Dreams no fim do turno — `aoEntrarEmCampo` recebe a sua própria lista)
-  oponentesDe: m => (ladoJogador().includes(m) ? [G.B?.enemy] : ladoJogador()).filter(x => x && x.hp > 0)
+  /* Quem está EM CAMPO de cada lado. Nasceram com `[G.B?.enemy]` do lado de lá, de quando o inimigo era sempre um
+     só; com 🐺 grupo em todos os modos isso virou mentira — Friend Guard, Battery, Bad Dreams e Damp do lado
+     inimigo só enxergavam quem estava em foco, e o golpe de área não teria em quem respingar. Lê `inimigosEmCampo`
+     e `emCampo` (não `ladoJogador()`): quem está descansando não dá nem leva nada. */
+  aliadosDe: m => (G.B?.inimigos?.includes(m) ? inimigosEmCampo() : emCampo()).filter(x => x !== m && x.hp > 0),
+  oponentesDe: m => (G.B?.inimigos?.includes(m) ? emCampo() : inimigosEmCampo()).filter(x => x.hp > 0)
 };
 // `fonte` = quem causou (outro Pokémon → Clear Body, Hyper Cutter… podem impedir a queda). Itens: sem fonte.
 export const changeStats = (m, changes, fonte = null) => mudarEstagios(m, changes, CTX, fonte);

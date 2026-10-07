@@ -14,14 +14,14 @@
 //                    nada acontece, e nenhum outro modo muda de comportamento.
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
 // Sem DOM: importável no Node (tests/golpe.test.js).
-import { STAT_PT, AIL_MSG, SELF_TARGETS, TYPE_PT } from './dados.js';
+import { STAT_PT, AIL_MSG, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, TYPE_PT } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem, frutaDeAperto } from './segurados.js';
 import { ITEMS, ITEM_VINCULO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
-  LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, multTelas, temSalvaguarda, temNeblina,
+  LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, MULT_AREA, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
   fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia,
   multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO } from './regras.js';
@@ -393,6 +393,24 @@ async function aplicarEfeitosChefe(m, efeitos, ctx) {
 }
 // Magic Guard: nenhum dano que não venha direto de um golpe (veneno, queimadura, recuo, armadilha, espinhos…)
 const indireto = m => !!hab(m).semDanoIndireto;
+
+/* ---- golpe de ÁREA (🐺 grupo) ----
+   O `target` da PokéAPI já diz quem o golpe pega; até agora o jogo ignorava e todo golpe batia em um só, porque
+   só havia um inimigo. Com grupo em todos os modos, Earthquake e Rock Slide passam a pegar mesmo.
+   A lista sai dos ganchos que os DOIS ctx já têm (`oponentesDe`/`aliadosDe`) — nenhuma API nova, e o multiplayer
+   ganha de graça. `t` vai sempre na frente: é o alvo escolhido, e é dele que sai a narração principal.
+   `random-opponent` (Outrage, Thrash) fica de fora de propósito: ele sorteia UM, que é o que já acontece. */
+function alvosDoGolpe(u, t, g, ctx) {
+  if (SELF_TARGETS.has(g.target) || u === t) return [t];
+  const op = ALVOS_OPONENTES.has(g.target), todos = ALVOS_TODOS.has(g.target);
+  if (!op && !todos) return [t];
+  const lista = [t, ...(ctx.oponentesDe?.(u) || [])];
+  // `all-other-pokemon`: pega o aliado junto (Earthquake, Surf). Telepathy é justamente quem não leva do colega.
+  if (todos) lista.push(...(ctx.aliadosDe?.(u) || []).filter(a => !hab(a).imuneGolpeAliado));
+  return [...new Set(lista)].filter(m => m && m.hp > 0 && !m.vol?.retirado);
+}
+// Damp: ninguém em campo (dos dois lados) consegue explodir enquanto ele estiver lá
+const quemAbafa = (u, ctx) => [u, ...(ctx.aliadosDe?.(u) || []), ...(ctx.oponentesDe?.(u) || [])].find(m => hab(m).abafaExplosao);
 // Pressure: o oponente gasta 1 PP a mais ao usar um golpe contra quem tem
 const pressao = (u, t, g) => (t !== u && !SELF_TARGETS.has(g.target) && hab(t).pressao ? 1 : 0);
 // Flower Veil: protege QUALQUER Pokémon de tipo Grama que esteja no mesmo lado de quem tem a habilidade (ele
@@ -767,7 +785,21 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   }
   if (esp.soPrimeiroTurno && !primeiroGolpe) { await ctx.say('Mas falhou! (só funciona no primeiro golpe da batalha)'); return; }
 
-  const res = await executar(u, t, g, primeiro, ctx, esp);
+  /* Damp: a explosão nem sai. Depois do "usou X!" e de gastar o PP, como nos jogos — o golpe foi tentado. */
+  if (esp.autoDesmaio) {
+    const abafa = quemAbafa(u, ctx);
+    if (abafa) { await ctx.say(`${fmt(abafa.ability)} de ${ctx.nome(abafa)} impede a explosão!`, 'status'); return; }
+  }
+  /* Golpe de área: `executar` roda uma vez por alvo. Os alvos EXTRAS passam `respingo` pra não cobrar duas vezes
+     o que é do usuário e acontece uma vez só por golpe (recuo, Orbe da Vida, cura e a própria queda de atributo).
+     Dreno e Moxie ficam de fora da trava de propósito: nos jogos eles contam por alvo atingido. */
+  const alvos = alvosDoGolpe(u, t, g, ctx);
+  let res;
+  for (const [i, alvo] of alvos.entries()) {
+    if (u.hp <= 0 && i) break;                      // morreu no respingo (Elmo Rochoso, Orbe): não bate mais
+    const r = await executar(u, alvo, g, primeiro, ctx, esp, { varios: alvos.length > 1, respingo: i > 0 });
+    res ||= r;
+  }
   /* ⚔ Saga: 🔮 Selo Arcano e ⚔ Estocada valem pelo PRÓXIMO GOLPE, e é aqui que ele acaba — inclusive quando o
      golpe errou, foi barrado por Protect ou era de status. "O próximo golpe" é o próximo golpe, não o próximo que
      der certo; senão a perícia viraria um buff permanente até acertar. Perícia não passa por aqui (ela não é
@@ -781,8 +813,10 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   }
 }
 
-// O golpe em si, depois de "X usou Y!". Devolve 'acertou' quando o golpe de dano conectou (Hyper Beam só recarrega assim).
-async function executar(u, t, g, primeiro, ctx, esp) {
+/* O golpe em si, depois de "X usou Y!". Devolve 'acertou' quando o golpe de dano conectou (Hyper Beam só recarrega assim).
+   `area.varios` = o golpe pegou mais de um alvo (dano ×MULT_AREA, como nos jogos);
+   `area.respingo` = este não é o alvo principal, então o que é do USUÁRIO e vale uma vez por golpe não repete. */
+async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   g = golpeDoClima(g, climaDoCtx(ctx));   // Weather Ball: tipo e poder do tempo (o PP já foi gasto no golpe original)
   g = golpeDaConversaoDeTipo(g, u);       // Aerilate/Pixilate/Refrigerate/Galvanize/Normalize: ANTES do Tera (roda com Weather Ball sem clima ativo)
   g = golpeDoTera(g, u);                  // Tera Blast: tipo de quem usa, se estiver terastalizado
@@ -890,6 +924,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     let dano = danoNoChefe(t, r.dmg, g.type, ef);   // chefe de evento: couraça, exposição, ponto fraco, anula, Mundo Reverso, adaptação (sem `t.boss` devolve o mesmo)
     if (friendGuard < 1) dano = Math.max(1, Math.floor(dano * friendGuard));            // Friend Guard: nunca zera o golpe
     if (boostAliado !== 1) dano = Math.floor(dano * boostAliado);                       // Battery, Power Spot, Steely Spirit, Plus/Minus
+    if (area.varios) dano = Math.max(1, Math.floor(dano * MULT_AREA));                  // golpe de área pegando mais de um
     // ⚔ Saga num ponto só (regras.multSaga): Ruína (+50%), 🧱 Muralha (−50%) e 🕯 Marca (+25%). Fora da Saga é ×1.
     const ms = multSaga(u, t); if (ms !== 1) dano = Math.max(1, Math.floor(dano * ms));
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
@@ -927,7 +962,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   // itens segurados de quem ataca: Sino-Concha drena, Orbe da Vida cobra HP; Elmo Rochoso machuca quem encostou
   const si = seg(u);
   if (si.drenaDano && total > 0 && u.hp > 0 && u.hp < u.stats.hp) { const h = Math.max(1, Math.floor(total * si.drenaDano)); heal(u, h); up(ctx); await ctx.say(`${U} recuperou ${h} HP com o Sino-Concha.`, 'good'); }
-  if (si.recuoPorGolpe && total > 0 && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
+  if (si.recuoPorGolpe && total > 0 && u.hp > 0 && !indireto(u) && !area.respingo) { const d = Math.max(1, Math.floor(u.stats.hp * si.recuoPorGolpe)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`O Orbe da Vida cobra o preço: ${U} perdeu ${d} HP.`, 'hit'); }
   if (encostou && seg(t).espetos && u.hp > 0 && !indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp * seg(t).espetos)); u.hp = Math.max(0, u.hp - d); up(ctx); await ctx.say(`${U} se espetou no Elmo Rochoso de ${T}! (−${d})`, 'hit'); }
   await comerFruta(t, ctx, hu.unnerve); await comerFruta(u, ctx, ht.unnerve);                 // Frutas Oran/Sitrus na hora do aperto (Unnerve trava o OUTRO lado)
   // Moxie, Chilling Neigh, Grim Neigh: derrubar o alvo sobe um atributo de quem derrubou; Beast Boost sobe o MAIOR atributo base (empate: Atk>Def>SpA>SpD>Spe)
@@ -942,7 +977,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   // Vínculo de Batalha: derrubar o oponente vira Ash-Greninja (virarAshGreninja confere o item e se já não virou)
   if (t.hp <= 0 && total > 0 && u.hp > 0) await virarAshGreninja(u, ctx);
   // Aftermath (só quem encostou) e Innards Out (qualquer nocaute, contato ou não): quem derruba sofre ao derrubar
-  if (t.hp <= 0 && total > 0 && encostou && u.hp > 0 && ht.aftermath && !indireto(u)) {
+  if (t.hp <= 0 && total > 0 && encostou && u.hp > 0 && ht.aftermath && !indireto(u) && !quemAbafa(u, ctx)) {
     const d = Math.max(1, Math.floor(u.stats.hp * ht.aftermath)); u.hp = Math.max(0, u.hp - d); up(ctx);
     await ctx.say(`${U} sofreu com ${fmt(t.ability)} de ${T}! (−${d})`, 'hit');
   }
@@ -957,10 +992,10 @@ async function executar(u, t, g, primeiro, ctx, esp) {
     if (ht.dreno === 'inverte') { u.hp = Math.max(0, u.hp - h); up(ctx); await ctx.say(`${fmt(t.ability)} de ${T} vira o dreno ao contrário! ${U} perdeu ${h} HP.`, 'hit'); }
     else { heal(u, h); up(ctx); await ctx.say(`${U} drenou ${h} HP.`, 'good'); }
   }
-  else if (meta.drain < 0 && !hu.semDanoRecuo && !indireto(u)) { // Rock Head e Magic Guard evitam; o total de recuo conta pra Basculegion (evolucao.js)
+  else if (meta.drain < 0 && !hu.semDanoRecuo && !indireto(u) && !area.respingo) { // Rock Head e Magic Guard evitam; o total de recuo conta pra Basculegion (evolucao.js)
     const d = Math.max(1, Math.floor(total * -meta.drain / 100)); u.hp = Math.max(0, u.hp - d); u.recuoTotal = (u.recuoTotal || 0) + d; up(ctx); await ctx.say(`${U} sofreu ${d} de dano de recuo.`, 'hit');
   }
-  if (meta.heal > 0 && u.hp > 0) { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); }
+  if (meta.heal > 0 && u.hp > 0 && !area.respingo) { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); }
 
   /* Item do alvo. Três donos do mesmo bloco, porque a regra é idêntica e só muda de onde vem a permissão:
      HABILIDADE Pickpocket (só contato) / Magician (qualquer golpe de dano que acertou) e GOLPE Thief/Covet
@@ -980,7 +1015,7 @@ async function executar(u, t, g, primeiro, ctx, esp) {
   // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo; Sheer Force os apaga (já bateu mais forte lá em cima)
   const chance = p => Math.random() * 100 < p * (hu.chanceSecundaria || 1);
   if (!hu.sheerForce && g.stats.length && chance(meta.statChance || 100)) {
-    if (mudaOUsuario(meta) && u.hp > 0) await mudarEstagios(u, g.stats, ctx, u);
+    if (mudaOUsuario(meta) && u.hp > 0 && !area.respingo) await mudarEstagios(u, g.stats, ctx, u);
     else if (!mudaOUsuario(meta) && t.hp > 0 && !ht.semSecundario) await mudarEstagios(t, g.stats, ctx, u);
   }
   if (!hu.sheerForce && t.hp > 0 && !ht.semSecundario) {
