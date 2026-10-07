@@ -105,9 +105,9 @@ save do jogador:
 | # | O quê | Por que nesta ordem |
 |---|---|---|
 | ~~**1**~~ ✅ **FEITA (06/10/2026)** | `conteudo.js` (puro, validar + aplicar) · `conteudo-nuvem.js` (cache, busca, publicar) · `boot()` · migration `20261006120000_conteudo_publicado.sql` com os canais `teste`/`estavel` · 📤 Publicar e ✅ Liberar pra todos no editor · `editor-rotas.gerarPacote` | Fundação pronta pra ALFAS e MISSOES_ROTA. **Ainda não verificada em jogo**: a migration sobe pela integração do GitHub e os dois botões precisam de uma conta admin logada. |
-| **2** | **Criar e excluir rota** · pool e níveis editáveis · integração com `baixarGen`/`VERSAO_DOWNLOAD` | Depende da fundação. Mexe em Santuário, Pokédex da conta, caça shiny e desbloqueio do Roguelike — todos leem a lista de rotas. |
-| **3** | **Missões globais** · itens, loja e badges no pacote | Mesmo mecanismo da fase 1, repetido em outras tabelas. Risco: config ruim quebrando save antigo — daí a validação. **A 🎵 MÚSICA já entrou (07/10/2026)**, fora de ordem e de propósito: é a tabela mais fácil (não encosta em save nem em jornada, então `podeAplicarAgora` nem precisou mudar), e serviu de segunda prova do mecanismo. Detalhe em `docs/features.md` → "🎵 O editor de músicas DENTRO do jogo". |
-| **4** | **Rotas secretas** | Mecânica nova (condição no save, na tela de explorar, no progresso), não editor. Última porque é a única que não é "mover dado pra nuvem". |
+| ~~**2**~~ ✅ **FEITA (07/10/2026)** | `mapas` no pacote (a lista INTEIRA de rotas por Gen: pool com peso, níveis, nome, descrição, `tema`, criar e excluir) · `dados-rotas.MAPAS` como camada de fábrica · pool/níveis/bioma e ➕/🗑 no editor · impressão do conteúdo na marca de download (`offline.marcaDaGen`) | Depende da fundação. Mexe em Santuário, Pokédex da conta, caça shiny e desbloqueio do Roguelike — todos leem a lista de rotas. **`baixarGen` não precisou mudar**: `alvosDaGen` já deriva de `GENS`. Detalhe em `docs/features.md` → "Fases 2 e 3". |
+| ~~**3**~~ ✅ **FEITA (07/10/2026)** | `missoesGlobais` (as missões de CONTA, com criar e excluir) · `itens` (preço, nome, descrição — e **preço 0 tira da loja**, que é a alavanca da loja) · `badges` (nome, descrição, recompensa) · 🧰 Editor de conteúdo · a 🎵 **música**, que entrou fora de ordem no mesmo dia | Mesmo mecanismo da fase 1 em outras tabelas. **Onde a linha foi traçada**: o EFEITO de um item e a MEDIDA de uma badge são código, então item novo e badge nova continuam sendo commit. Detalhe em `docs/features.md`. |
+| **4** | **Rotas secretas** | Mecânica nova (condição no save, na tela de explorar, no progresso), não editor. Última porque é a única que não é "mover dado pra nuvem". **É o que falta.** |
 
 ## Decisões já fechadas
 
@@ -117,6 +117,14 @@ save do jogador:
 - **Validar e descartar inteiro**, nunca aplicar pela metade.
 
 ---
+
+## Estado em 07/10/2026
+
+**As fases 1, 2 e 3 estão no código e cobertas por teste** (`tests/conteudo.test.js`, `tests/conteudo-pacote.test.js`,
+`tests/conteudo-mapas.test.js` e `tests/editor-musica.test.js`). Falta a **fase 4** (rotas secretas) e,
+principalmente, **a conferência em jogo** — ela é a mesma lista de 06/10, logo abaixo, e nenhum item dela foi
+verificado ainda. Três editores publicam pelo MESMO pacote (`tela-editor-rotas.publicar`), porque
+`conteudo_publicado` tem uma linha por canal.
 
 ## Estado em 06/10/2026
 

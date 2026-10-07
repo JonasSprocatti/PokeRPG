@@ -22,6 +22,7 @@ import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaEditorRotas, acaoEditor } from './tela-editor-rotas.js';
 import { telaEditorMusica, acaoEditorMusica } from './tela-editor-musica.js';
+import { telaEditorConteudo, acaoEditorConteudo } from './tela-editor-conteudo.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, convidarAmigoMP, copiarConviteMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
@@ -98,7 +99,7 @@ async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor', 'editor-musica'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor', 'editor-musica', 'editor-conteudo'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   /* Trilha das telas fora do jogo (som.js), num lugar só: toda tela de menu é alcançada por um destes `data-act`,
      então nenhuma delas precisa saber de música por conta própria. `inicio` tem a própria faixa (showCreate pede
@@ -150,6 +151,8 @@ async function aoClicar(e) {
     case 'ed-gen': case 'ed-rota': case 'ed-recarregar': case 'ed-salvar-missao': case 'ed-salvar-alfa':
     case 'ed-usar-alfa': case 'ed-sugerir': case 'ed-desfazer': case 'ed-copiar': case 'ed-limpar-tudo':
     case 'ed-publicar': case 'ed-liberar':
+    case 'ed-salvar-rota': case 'ed-por-especie': case 'ed-tirar-especie':
+    case 'ed-criar-rota': case 'ed-excluir-rota': case 'ed-desfazer-mapa':
       return acaoEditor(b.dataset.act.slice(3), v);
     // 🎵 editor de músicas (só admin; a tela confere de novo)
     case 'editor-musica': if (travadoPelaBatalha()) return; return telaEditorMusica();
@@ -157,6 +160,13 @@ async function aoClicar(e) {
     case 'em-salvar-tema': case 'em-salvar-contexto': case 'em-desfazer-tema': case 'em-desfazer-contexto':
     case 'em-limpar': case 'em-copiar': case 'em-publicar': case 'em-liberar':
       return acaoEditorMusica(b.dataset.act.slice(3), v);
+    // 🧰 editor de conteúdo: missões de conta, itens e badges (só admin; a tela confere de novo)
+    case 'editor-conteudo': if (travadoPelaBatalha()) return; return telaEditorConteudo();
+    case 'ec-missao': case 'ec-badge': case 'ec-filtrar': case 'ec-limpar-filtro': case 'ec-criar-missao':
+    case 'ec-salvar-missao': case 'ec-excluir-missao': case 'ec-desfazer-missoes': case 'ec-salvar-itens':
+    case 'ec-desfazer-item': case 'ec-salvar-badge': case 'ec-desfazer-badge':
+    case 'ec-publicar': case 'ec-liberar': case 'ec-copiar': case 'ec-limpar':
+      return acaoEditorConteudo(b.dataset.act.slice(3), v);
     case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
       const ok = await ask('Apagar tudo o que está guardado da PokéAPI neste aparelho e baixar este mapa <b>do zero</b>?<br><br>Serve pra quando algo ficou pela metade e baixar por cima não resolve. <b>Seus saves, a carreira e as conquistas não são tocados.</b>',

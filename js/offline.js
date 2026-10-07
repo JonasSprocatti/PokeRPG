@@ -31,7 +31,18 @@ import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache
    Quem baixou numa versão antiga volta a aparecer como incompleto — é de propósito: dizer "já baixado"
    pra um mapa que ainda falha no avião é pior do que pedir um download de novo. */
 export const VERSAO_DOWNLOAD = 6;
-const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}:gen${gen}`;
+/* A marca leva também uma IMPRESSÃO do conteúdo da Gen (07/10/2026, fase 2 da atualização por nuvem). Antes era só
+   a versão: o conteúdo das rotas era código, então subir a constante à mão dava conta. Agora o pool e os níveis
+   chegam pela nuvem — e `VERSAO_DOWNLOAD` só muda com deploy, que é exatamente o que o pacote existe pra evitar.
+   A impressão sai do que o download TRAZ (`alvosDaGen`: pool, Alfa e lendários de cada rota), então pool editado =
+   marca nova = a tela volta a dizer "vale baixar de novo", sozinha. `quantoFalta` já pega a espécie nova; isto
+   pega o resto (espécie que SAIU, nível que mudou não conta — não muda o que se baixa). */
+const impressaoDaGen = gen => {
+  let h = 0;
+  for (const id of alvosDaGen(gen).sort((a, b) => a - b)) h = (h * 31 + id) % 2147483647;
+  return h.toString(36);
+};
+const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}.${impressaoDaGen(gen)}:gen${gen}`;
 
 /* Quem guarda as IMAGENS é o service worker (sw.js): `guardarSprite` só pede a imagem, e é o sw que a intercepta
    e põe no cache. Sem um sw no comando da página, esse pedido vai pra rede e não fica em lugar nenhum — o

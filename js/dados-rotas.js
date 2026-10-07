@@ -1,11 +1,14 @@
 /* GERADO pelo editor de rotas do jogo (js/tela-editor-rotas.js → "📋 Copiar o arquivo") — não editar à mão.
    Semeado em 2026-10-01 por ferramentas/semear-rotas.mjs.
 
-   Duas coisas moram aqui, e as duas são AJUSTES por cima de js/dados-mapas.js (que é gerado da PokéAPI e não deve
+   Três coisas moram aqui, e as três são AJUSTES por cima de js/dados-mapas.js (que é gerado da PokéAPI e não deve
    guardar escolha de desenho):
      ALFAS        → troca o Alfa de uma rota ({ id, nome, nivel }). Rota fora da tabela = o Alfa do mapa.
      MISSOES_ROTA → as missões de espécie e de Alfa de cada rota, uma por rota.
-   Quem aplica os dois é js/dados.js (o ÚNICO que importa dados-mapas.js). Sem imports aqui de propósito: é dado,
+     MAPAS        → a lista INTEIRA de rotas de uma Gen (pool, níveis, rota criada ou excluída). Gen fora da
+                    tabela = as rotas que a PokéAPI gerou. É a camada da fase 2 da atualização por nuvem: o que
+                    o 📤 Publicar manda pelo canal, isto leva pro repositório.
+   Quem aplica os três é js/dados.js (o ÚNICO que importa dados-mapas.js). Sem imports aqui de propósito: é dado,
    e precisa ser legível e carregável sem depender de nada. */
 
 /* Uma missão de espécie. `alvos` = [[espécie, quantidade]…]: mais de uma espécie SOMA (8 Plusle + 8 Minun = 16).
@@ -29,6 +32,9 @@ const bonito = n => n.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join(
 
 // Alfa trocado por rota. Vazio = todos os mapas seguem com o Alfa que a PokéAPI gerou.
 export const ALFAS = {};
+
+// Rotas por Gen, a lista inteira. Vazio = nenhuma Gen foi editada e todas seguem com o mapa gerado.
+export const MAPAS = {};
 
 export const MISSOES_ROTA = [
   // ---- Gen 1: Kanto ----

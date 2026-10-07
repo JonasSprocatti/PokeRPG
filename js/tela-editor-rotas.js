@@ -11,19 +11,21 @@
 
    As contas (curva, veredito do Alfa, geração do arquivo) moram em js/editor-rotas.js, que é puro e testado. Aqui
    é só DOM, rede e o rascunho. */
-import { $, limparTopo, toast } from './ui.js';
+import { $, limparTopo, toast, ask } from './ui.js';
 import { barraTelas } from './navegacao.js';
 import { esc, store } from './util.js';
 import { ITEMS, SPR, espelhar, MISSOES } from './dados.js';
-import { GENS, rotasDaGen, especiesDaGen } from './mapas.js';
+import { GENS, rotasDaGen, especiesDaGen, ehInicialDeRegiao } from './mapas.js';
+import { CLIMAS } from './cenario.js';
 import { loadPokemon, apiErr } from './api.js';
 import { ehAdmin } from './nuvem.js';
 import { publicarConteudo, lerCanal } from './conteudo-nuvem.js';
 import {
   bst, curvaDaRota, equilibrioDaRota, vereditoAlfa, candidatosAlfa, quantidadePorPeso, dividirQuantidade,
-  bonito, gerarArquivo, gerarPacote, FAIXA_ALFA
+  bonito, gerarArquivo, gerarPacote, criarRota, excluirRota, FAIXA_ALFA
 } from './editor-rotas.js';
 import { musicaEditada } from './editor-musica.js';
+import { extrasDoConteudo } from './editor-conteudo.js';
 
 const CHAVE = 'pokerpg-editor-rotas-v1';
 // o rascunho: { [rotaId]: { missao: { nome, alvos, premio }, alfa: { nome, premio, trocado } } }. Rota ausente = o
@@ -31,12 +33,24 @@ const CHAVE = 'pokerpg-editor-rotas-v1';
 const rascunho = () => store.get(CHAVE) || {};
 const salvarRascunho = r => store.set(CHAVE, r);
 
+/* O rascunho dos MAPAS (fase 2) é separado e tem outra forma: `{ [gen]: [rota, rota…] }`, a lista inteira e
+   ORDENADA. Gen ausente = as rotas que estão no jogo. É a mesma forma do pacote (`conteudo.validarMapas`), então
+   o 📤 Publicar passa isto adiante sem converter nada — e criar, excluir e reordenar são "a lista é outra". */
+const CHAVE_MAPAS = 'pokerpg-editor-mapas-v1';
+export const rascunhoMapas = () => store.get(CHAVE_MAPAS) || {};
+const salvarMapas = m => store.set(CHAVE_MAPAS, m);
+const clonar = v => JSON.parse(JSON.stringify(v));
+// a lista de rotas de uma Gen com o rascunho por cima. `rotasDaGen` lê `GENS` crua (sem a escala de jornada), que
+// é o que o editor tem de publicar: nível escalado entraria no mapa como se fosse o nível de projeto.
+const listaDeRotas = g => rascunhoMapas()[g] || rotasDaGen(g);
+const todosOsIds = () => new Set(GENS.flatMap(x => listaDeRotas(x.gen).map(z => z.id)));
+
 let gen = 1, rotaId = null, bsts = new Map(), carregando = false, erro = '';
 
 /* ---- a verdade de hoje: o que está no jogo agora, rota por rota ---- */
 // todas as rotas com missão (o Santuário não tem: é pós-vitória), já com a missão e o Alfa de cada uma
 function rotasComMissao(g) {
-  return rotasDaGen(g).filter(z => !z.posVitoria).map((z, i, lista) => {
+  return listaDeRotas(g).filter(z => !z.posVitoria).map((z, i, lista) => {
     const esp = MISSOES.find(m => m.id === `${z.id}-esp`);
     const alfa = MISSOES.find(m => m.id === `${z.id}-alfa`);
     return {
@@ -120,9 +134,63 @@ function blocoRota(r) {
   return `<section class="card">
       <h3>${esc(r.rotulo)} <span class="muted small">${esc(r.rota)} · Nv. ${r.z.min}–${r.z.max} · abre no nível ${r.z.libera}</span></h3>
       ${blocoCurva(r, curva, eq)}
+      ${blocoDaRota(r)}
       ${blocoMissao(r)}
       ${blocoAlfa(r, curva, vd, bstAlfa)}
     </section>`;
+}
+
+/* ---- 🗺 a rota em si: nome, níveis e pool (fase 2) ---- */
+/* Quem PODE entrar numa rota: toda espécie que aparece em alguma rota da Gen (o Santuário incluído — é lá que
+   mora a Gen inteira), menos lendário, mítico e inicial de região. Não é `especiesDaGen`, que pula o Santuário de
+   propósito: aqui a pergunta é "o que existe nesta região", não "o que um treinador de rota traria". */
+function candidatasDaGen(g) {
+  const vistos = new Map();
+  for (const z of listaDeRotas(g)) for (const p of z.pool || []) {
+    if (p.l || p.m || ehInicialDeRegiao(p.id) || vistos.has(p.id)) continue;
+    vistos.set(p.id, p);
+  }
+  return [...vistos.values()].sort((a, b) => a.id - b.id);
+}
+function blocoDaRota(r) {
+  const z = r.z, pool = z.pool || [];
+  const noPool = new Set(pool.map(p => p.id));
+  const candidatas = candidatasDaGen(gen).filter(p => !noPool.has(p.id));
+  return `<h4 style="margin-top:14px">🗺 A rota</h4>
+    <p class="small muted">Nome, níveis e <b>quem aparece aqui</b>. O peso é relativo: 8 num pool de 8 é tão comum
+      quanto os outros; 1 é a raridade de um Ditto. A chance que cada um vira está na 📈 Taxas, e sai deste mesmo
+      peso. <b>Nível</b> é o do mapa — numa jornada que começou depois da 1ª Gen ele é escalado em cima disto.</p>
+    <div class="subrow">
+      <label class="campo">Nome <input id="ed-rota-nome" type="text" value="${esc(z.name)}" maxlength="60" style="width:200px"></label>
+      <label class="campo">Nv. mínimo <input id="ed-rota-min" type="number" min="1" max="100" value="${z.min}" style="width:80px"></label>
+      <label class="campo">Nv. máximo <input id="ed-rota-max" type="number" min="1" max="100" value="${z.max}" style="width:80px"></label>
+      <label class="campo">Abre no nível <input id="ed-rota-libera" type="number" min="1" max="100" value="${z.libera}" style="width:80px"></label>
+    </div>
+    <label class="campo">Descrição
+      <input id="ed-rota-desc" type="text" value="${esc(z.desc || '')}" maxlength="300"></label>
+    <label class="campo">Bioma (a cena da batalha e a música da rota)
+      <select id="ed-rota-tema"><option value="">— adivinhar pelo nome e pela descrição —</option>
+        ${CLIMAS.map(c => `<option value="${c.id}" ${c.id === z.tema ? 'selected' : ''}>${c.id}</option>`).join('')}
+      </select></label>
+    <div class="ed-grade">${pool.map(p => `<label class="check" title="${esc(p.n)}${p.f ? ` (${esc(p.f)})` : ''}">
+        <img src="${espelhar(SPR(p.id))}" alt="" width="32" height="32" loading="lazy" style="vertical-align:middle">
+        ${esc(bonito(p.n))}${p.l ? ' 👑' : ''}${p.m ? ' ✨' : ''}
+        <input type="number" class="ed-peso" data-esp="${p.id}" min="0.1" max="99" step="0.1" value="${p.p}" style="width:70px">
+        <button class="btn ghost sm" data-act="ed-tirar-especie" data-v="${p.id}" title="Tirar do pool">🗑</button>
+      </label>`).join('')}</div>
+    <div class="subrow">
+      <label class="campo">Pôr no pool
+        <select id="ed-por-especie"><option value="">— escolha —</option>
+          ${candidatas.map(p => `<option value="${p.id}">${esc(bonito(p.n))}</option>`).join('')}
+        </select></label>
+      <button class="btn ghost sm" data-act="ed-por-especie">➕ Pôr na rota</button>
+      <button class="btn sm" data-act="ed-salvar-rota">💾 Guardar a rota</button>
+    </div>
+    <div class="subrow">
+      <button class="btn ghost sm" data-act="ed-criar-rota">➕ Criar uma rota depois desta (clone)</button>
+      <button class="btn ghost sm" data-act="ed-excluir-rota">🗑 Excluir esta rota</button>
+      ${rascunhoMapas()[gen] ? `<button class="btn ghost sm" data-act="ed-desfazer-mapa">↩ Voltar o mapa da Gen ${gen} ao que está no jogo</button>` : ''}
+    </div>`;
 }
 
 /* ---- análise: a curva de stats da rota ---- */
@@ -211,7 +279,10 @@ function blocoCandidatos(curva, especies) {
 }
 
 /* ---- prêmio: dinheiro + itens ---- */
-function blocoPremio(id, premio = {}) {
+/* Exportados: o 🧰 Editor de conteúdo usa os MESMOS campos pra prêmio de missão de conta e de badge. Prêmio tem
+   uma forma só no jogo inteiro (`{ dinheiro, itens }`), então ter duas telas desenhando-o de formas diferentes
+   seria a segunda cópia que fica velha. */
+export function blocoPremio(id, premio = {}) {
   const itens = Object.entries(premio.itens || {});
   return `<div class="subrow" id="${id}">
       <label class="campo">₽ <input class="ed-dinheiro" type="number" min="0" max="999999" step="100" value="${premio.dinheiro || 0}" style="width:110px"></label>
@@ -224,7 +295,7 @@ function blocoPremio(id, premio = {}) {
 }
 // lê um bloco de prêmio da tela. Item sem escolha é ignorado; prêmio vazio volta como `{ dinheiro: 0 }` — o teste
 // de dados cobra "todo prêmio dá algo", então a tela avisa em vez de gerar um arquivo que não passa.
-function lerPremio(id) {
+export function lerPremio(id) {
   const raiz = document.getElementById(id);
   const premio = {};
   const d = Number(raiz.querySelector('.ed-dinheiro')?.value || 0);
@@ -240,7 +311,7 @@ function lerPremio(id) {
 }
 
 /* ---- ações (main.js despacha) ---- */
-export function acaoEditor(qual, v) {
+export async function acaoEditor(qual, v) {
   if (!ehAdmin()) return;
   const r = atual();
   if (qual === 'gen') { gen = Number(v); rotaId = null; return telaEditorRotas(); }
@@ -298,10 +369,93 @@ export function acaoEditor(qual, v) {
   }
   if (qual === 'copiar') return copiarArquivo();
   if (qual === 'limpar-tudo') {
-    salvarRascunho({});
-    toast('Rascunho inteiro apagado.');
+    salvarRascunho({}); salvarMapas({});
+    toast('Rascunho inteiro apagado (missões e mapas).');
     return telaEditorRotas();
   }
+
+  /* ---- 🗺 a rota em si (fase 2) ---- */
+  if (qual === 'salvar-rota') {
+    const nome = ($('#ed-rota-nome')?.value || '').trim();
+    if (!nome) return toast('A rota precisa de um nome.');
+    const min = Number($('#ed-rota-min')?.value), max = Number($('#ed-rota-max')?.value);
+    const libera = Number($('#ed-rota-libera')?.value);
+    if (!(min >= 1 && max <= 100 && min <= max)) return toast('Os níveis têm de ficar entre 1 e 100, com o mínimo abaixo do máximo.');
+    if (!(libera >= 1 && libera <= 100)) return toast('O nível que abre a rota tem de ficar entre 1 e 100.');
+    const pesos = new Map();
+    document.querySelectorAll('.ed-peso').forEach(c => pesos.set(Number(c.dataset.esp), Number(c.value)));
+    const pool = (r.z.pool || []).map(p => ({ ...p, p: pesos.get(p.id) ?? p.p })).filter(p => p.p > 0);
+    if (!pool.length) return toast('A rota ficaria sem ninguém pra encontrar.');
+    const tema = $('#ed-rota-tema')?.value || '';
+    gravarRota(r.rota, {
+      name: nome, desc: ($('#ed-rota-desc')?.value || '').trim(), min, max, libera, pool,
+      // sem bioma escolhido a chave SAI: é ela que decide entre "este bioma" e "adivinhe pelo texto"
+      ...(tema ? { tema } : { tema: undefined })
+    });
+    toast('Rota guardada no rascunho.');
+    return telaEditorRotas();
+  }
+  if (qual === 'por-especie') {
+    const id = Number($('#ed-por-especie')?.value || 0);
+    const nova = candidatasDaGen(gen).find(p => p.id === id);
+    if (!nova) return toast('Escolha uma espécie da lista.');
+    // entra com o peso MEDIANO do pool: nem a mais comum nem a mais rara, que é o palpite menos errado
+    const pesos = (r.z.pool || []).map(p => p.p).sort((a, b) => a - b);
+    const peso = pesos[Math.floor(pesos.length / 2)] || 6;
+    gravarRota(r.rota, { pool: [...(r.z.pool || []), { id: nova.id, n: nova.n, p: peso, ...(nova.f ? { f: nova.f } : {}) }] });
+    toast(`${bonito(nova.n)} entrou no pool (peso ${peso}).`);
+    return telaEditorRotas();
+  }
+  if (qual === 'tirar-especie') {
+    const pool = (r.z.pool || []).filter(p => p.id !== Number(v));
+    if (!pool.length) return toast('A rota ficaria sem ninguém pra encontrar.');
+    gravarRota(r.rota, { pool });
+    return telaEditorRotas();
+  }
+  if (qual === 'criar-rota') {
+    let lista;
+    try { lista = criarRota(listaDeRotas(gen), r.rota, todosOsIds()); }
+    catch (e) { return toast('Não deu pra criar: ' + e.message); }
+    salvarMapas({ ...rascunhoMapas(), [gen]: lista.map(clonar) });
+    const nova = lista[lista.findIndex(z => z.id === r.rota) + 1];
+    /* A rota nova nasce com as missões da que foi clonada, só com o id novo: `gerarPacote` exige missão em TODA
+       rota, e deixar o admin descobrir isso no toast do 📤 seria descobrir tarde. Ele edita por cima. */
+    gravar(nova.id, { missao: r.missao, alfa: { ...r.alfa, trocado: null } });
+    rotaId = nova.id;
+    toast(`Rota "${nova.id}" criada depois de ${r.rota}. Ajuste nome, níveis e pool.`);
+    return telaEditorRotas();
+  }
+  if (qual === 'excluir-rota') {
+    const fora = excluirRota(listaDeRotas(gen), r.rota);
+    if (!fora.ok) return toast(fora.porque);
+    const sim = await ask(`Excluir "${r.rotulo}" do mapa da Gen ${gen}? As duas missões dela saem junto.`,
+      [{ label: 'Excluir', value: true }, { label: 'Cancelar', value: false, ghost: true }]);
+    if (!sim) return;
+    salvarMapas({ ...rascunhoMapas(), [gen]: fora.lista.map(clonar) });
+    const todas = rascunho(); delete todas[r.rota]; salvarRascunho(todas);
+    rotaId = null;
+    toast('Rota excluída do rascunho.');
+    return telaEditorRotas();
+  }
+  if (qual === 'desfazer-mapa') {
+    const todas = rascunhoMapas(); delete todas[gen]; salvarMapas(todas);
+    rotaId = null;
+    toast(`Mapa da Gen ${gen} de volta ao que está no jogo.`);
+    return telaEditorRotas();
+  }
+}
+/* Escreve uma rota no rascunho do MAPA. A lista inteira da Gen é copiada (o rascunho é o que vai pro pacote, e
+   compartilhar referência com `GENS` faria editar o rascunho mexer no jogo em andamento). */
+function gravarRota(id, parte) {
+  const lista = listaDeRotas(gen).map(z => {
+    if (z.id !== id) return clonar(z);
+    const nova = { ...clonar(z), ...clonar(parte) };
+    /* Chave com `undefined` em `parte` quer dizer APAGAR — e o clone por JSON a perderia pelo caminho, deixando a
+       chave velha no ar (foi o que ia acontecer com o `tema` ao voltar pra "adivinhar pelo texto"). */
+    for (const [k, v] of Object.entries(parte)) if (v === undefined) delete nova[k];
+    return nova;
+  });
+  salvarMapas({ ...rascunhoMapas(), [gen]: lista });
 }
 // liga/desliga o campo de quantidade junto com a caixinha, sem re-renderizar a tela toda (perderia o que foi digitado)
 function telaAtualizarQtd() {
@@ -326,10 +480,11 @@ function gravar(rota, parte) {
 
 /* ---- gerar e copiar o arquivo ---- */
 function blocoArquivo() {
-  const n = Object.keys(rascunho()).length;
+  const n = Object.keys(rascunho()).length, mapas = Object.keys(rascunhoMapas()).length;
+  const resumo = [n ? `<b>${n} missão(ões) de rota</b>` : '', mapas ? `<b>${mapas} mapa(s) de Gen</b>` : ''].filter(Boolean).join(' e ');
   return `<section class="card">
       <h3>📋 O arquivo</h3>
-      <p class="small muted">${n ? `<b>${n} rota(s)</b> editada(s) no rascunho deste navegador.` : 'Nenhuma edição no rascunho: o que sai é igual ao que já está no jogo.'}
+      <p class="small muted">${resumo ? `${resumo} no rascunho deste navegador.` : 'Nenhuma edição no rascunho: o que sai é igual ao que já está no jogo.'}
         <b>Publicar</b> manda pra nuvem e vale sem deploy; <b>📋 Copiar o arquivo</b> continua existindo pro
         repositório (<code>js/dados-rotas.js</code>) — é o que faz uma instalação nova nascer com a versão certa.
         O pacote publicado leva também o rascunho do <b>🎵 Editor de músicas</b> (é uma linha por canal no banco).</p>
@@ -342,7 +497,7 @@ function blocoArquivo() {
         teste, não o rascunho desta tela, pra você não liberar algo que mudou depois de testar.</p>
       <div class="subrow">
         <button class="btn ghost" data-act="ed-copiar">📋 Copiar o arquivo</button>
-        ${n ? '<button class="btn ghost" data-act="ed-limpar-tudo">🧹 Apagar o rascunho inteiro</button>' : ''}
+        ${n || mapas ? '<button class="btn ghost" data-act="ed-limpar-tudo">🧹 Apagar o rascunho inteiro</button>' : ''}
       </div>
       <textarea id="ed-saida" rows="8" readonly placeholder="O conteúdo aparece aqui depois de copiar (pra conferir ou copiar à mão)."></textarea>
     </section>`;
@@ -361,7 +516,7 @@ export async function publicar(canal) {
     if (!noTeste?.pacote) return toast('Não há nada no canal de teste. Use 📤 Publicar primeiro e jogue a edição.');
     pacote = noTeste.pacote;
   } else {
-    try { pacote = gerarPacote(todasEditadas(), musicaEditada()); }
+    try { pacote = gerarPacote(todasEditadas(), { musica: musicaEditada(), mapas: rascunhoMapas(), ...extrasDoConteudo() }); }
     catch (e) { console.error('editor de rotas: montar o pacote falhou', e); return toast('Não deu pra montar o pacote: ' + e.message); }
   }
   toast(canal === 'teste' ? 'Publicando no canal de teste…' : 'Liberando pra todos…');
@@ -375,7 +530,7 @@ export async function publicar(canal) {
 
 async function copiarArquivo() {
   let texto;
-  try { texto = gerarArquivo(todasEditadas()); }
+  try { texto = gerarArquivo(todasEditadas(), rascunhoMapas()); }
   catch (e) { console.error('editor de rotas: gerar o arquivo falhou', e); return toast('Não deu pra gerar o arquivo: ' + e.message); }
   const area = $('#ed-saida'); if (area) area.value = texto;
   // `clipboard` não existe em http:// nem em navegador antigo — a textarea acima é o plano B, e ela já está preenchida

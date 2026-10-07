@@ -1690,6 +1690,60 @@ Pedido: *"quero colocar a opção de editar as músicas também para o admin, do
   batalha, não é dado de música. Chave desconhecida no pacote é **recusa**, não "ignora": tema que nunca toca é
   pior que um erro.
 
+### 📦 Fases 2 e 3: a rota, as missões de conta, os itens e as badges (07/10/2026)
+Fecham o pedido de 06/10 ("controle completo de criação e edição do máximo de coisas do app"). O que passou a ser
+dado publicável: **a lista de rotas de cada Gen** (pool com peso, níveis, nome, descrição, bioma, criar e excluir),
+**as missões de conta**, o **preço de cada item** e o **nome/descrição/prêmio de cada badge**.
+
+- **Por que a lista INTEIRA de rotas por Gen, e não um remendo por rota.** Criar, excluir e reordenar são a mesma
+  operação ("a lista é outra"), e a ORDEM é a corrente do mapa (o `antes` de cada missão de Alfa, o `libera`, a
+  rota final). Um remendo por rota precisaria de um `depois:` e de um `excluir: true` — três mecanismos pra fazer
+  o que uma lista já faz. O preço: um pacote montado de uma versão velha do editor REVERTE o mapa daquela Gen. O
+  editor sempre monta a lista a partir das tabelas AO VIVO, que é o que torna o preço aceitável (o mesmo acordo da
+  música).
+- **O que o pacote NÃO pode fazer com um mapa**, e cada trava tem um defeito real atrás: esvaziar uma Gen · tirar
+  o **Santuário** (é ele que garante a Pokédex completa) · deixar a Gen sem rota **`final`** (é vencer os
+  lendários dela que fecha a Gen — sem isso a jornada não TERMINA, e isso não daria erro, daria um jogo sem fim) ·
+  ter **duas** finais (`rotaFinalDaGen` pega a primeira e a outra nunca fecharia nada) · repetir um id de rota
+  **entre Gens** (`S.zona` guarda só o id, e `MISSOES` aponta por id) · pool vazio · peso 0 (nunca aparece) ·
+  pôr um chefe de raide de forma normal fora do Santuário (a lista é `dados.SO_NO_SANTUARIO`, exportada pra não
+  virar segunda cópia da regra).
+- **`tema` entrou na lista de campos de propósito.** Nenhuma rota gerada tem esse campo, mas `cenario.climaDaRota`
+  já o lê ANTES de adivinhar o bioma pelo texto da rota. É o que permite uma rota CRIADA escolher a própria cena
+  (e, com ela, a música) em vez de depender de ter a palavra certa no nome.
+- **A ordem de aplicação é regra**: `mapas` → `alfas` → missões. `alfas` é ajuste POR CIMA da rota, então trocar a
+  lista depois dele jogaria a troca de Alfa no lixo; as missões apontam pra rota por id.
+- **Validar contra as rotas DEPOIS do pacote, não as de fábrica.** Uma missão (ou um Alfa) pode apontar pra uma
+  rota que o próprio pacote está criando. Validar contra a tabela de hoje recusaria o pacote coerente — e o pior:
+  recusaria só na primeira vez, porque no boot seguinte a rota já existiria e o MESMO pacote passaria.
+- **`podeAplicarAgora` ficou GROSSO de propósito pro mapa**: se o pacote traz a Gen da jornada e a lista é
+  diferente da de agora, espera a jornada seguinte. Dava pra ser fino (só se a rota atual mudou, só se o pool
+  encolheu), mas a run pendura cinco coisas na lista — registro de Pokédex por rota, missão de rota, caça shiny
+  com espécie alvo, rota esgotada e `S.zona` — e errar uma trava a jornada de alguém. Gen diferente aplica na hora.
+- **O offline**: `alvosDaGen` já derivava de `GENS`, então `baixarGen` passou a baixar o que o pacote pede sem uma
+  linha de mudança — a armadilha "isso está no `baixarGen`?" não se repetiu aqui. O que faltava era a MARCA:
+  `VERSAO_DOWNLOAD` só muda com deploy, que é exatamente o que o pacote existe pra evitar. Então
+  `offline.marcaDaGen` leva uma **impressão do conteúdo da Gen** (os ids que o download traz): pool editado =
+  marca nova = a tela volta a dizer "vale baixar de novo", sozinha.
+- **A camada de FÁBRICA das rotas é `dados-rotas.MAPAS`**, aplicada por `dados.js` igual a `ALFAS` (e com
+  `semChefeDeRaide`/`ALFAS` por cima dela). Sem isso, mapa editado viveria só na nuvem e uma instalação nova
+  nasceria com o mapa velho — o "📋 Copiar o arquivo" existe exatamente pra isso.
+- **Fase 3, onde a linha foi traçada**: o EFEITO de um item e a MEDIDA de uma badge são código (`ITEMS.potion.heal`
+  é lido por `itens.usarItem`; `mede(ctx)` é uma função que varre o progresso permanente). Então o pacote mexe em
+  preço, texto e prêmio, e item/badge novos continuam sendo commit. **`price: 0` é o botão de desligar um item**:
+  `render.js` só põe na loja o que tem preço, e `precoVenda` passa a dar nada por ele — não precisou de flag nova.
+- **Prêmio com item que não existe passou a ser recusado** (vale pras missões de rota também): `S.bag[id]` guardaria
+  uma chave que nenhuma tela desenha, e o jogador receberia "nada" sem erro nenhum.
+- **Condição de missão com chave desconhecida é recusada.** `regras.progressoCondicao` cai no `[0, 1]` dela, o que
+  deixa a missão **impossível em silêncio** — o pior defeito possível aqui. A lista de chaves válidas é a dela.
+- **Duas semânticas no mesmo pacote, e confundi-las é bug**: lista inteira (mapas por Gen, missões globais, música)
+  onde ausente = fábrica; remendo por chave (alfas, itens, badges) onde só o que vem muda. `missoesRota` é a
+  exceção histórica (ausente = NENHUMA), mantida pra não quebrar pacote já publicado.
+- **Ficou de fora**: **rotas secretas** (fase 4 — é mecânica nova: condição no save, na tela de explorar e no
+  progresso, não "mover dado pra nuvem"); criar ESPÉCIE ou região; e a validação de "inicial de região no pool",
+  porque o editor só oferece candidatas já limpas (`candidatasDaGen`) e a lista viria de `mapas.js`, que roda
+  `tirarIniciais` no import e mexeria no estado de quem só queria validar um pacote.
+
 ---
 
 ## Sprites da cena: o retângulo escuro e o tamanho de verdade (30/09/2026)

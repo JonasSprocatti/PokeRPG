@@ -32,6 +32,7 @@ const PRECACHE = [
   './js/dados-rotas.js',
   './js/conteudo.js', './js/conteudo-nuvem.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
   './js/dados-musica.js', './js/editor-musica.js', './js/tela-editor-musica.js',
+  './js/editor-conteudo.js', './js/tela-editor-conteudo.js',
   './js/oficios.js', './js/pericias.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)

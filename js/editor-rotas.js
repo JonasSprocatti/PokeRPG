@@ -116,24 +116,60 @@ export const missaoDeAlfa = (gen, rota, nome, rotulo, antes, premio, lendarios) 
 /* O que o 📤 Publicar manda pra nuvem: a mesma entrada do `gerarArquivo`, em dado puro em vez de código-fonte.
    `versao` sai 0 — quem numera é `conteudo-nuvem.publicarConteudo`, porque deixar o número na mão de quem publica
    é o caminho curto pra republicar com número MENOR e o pacote novo ser ignorado em silêncio por todo cache. */
-export function gerarPacote(rotas, musica = null, formato = 1) {
+export function gerarPacote(rotas, extras = {}, formato = 1) {
   const alfas = {}, missoesRota = [];
   for (const r of rotas) {
+    /* Rota sem missão só acontece com rota CRIADA no editor cujo formulário nunca foi guardado. Estourar aqui com
+       o id na mensagem é melhor que publicar um mapa com rota sem missão: a tela mostra o motivo no toast. */
+    if (!r.missao || !r.alfa) throw new Error(`a rota "${r.rota}" está sem missão — abra ela e guarde a missão e o Alfa`);
     if (r.alfa?.trocado) alfas[r.rota] = r.alfa.trocado;
     missoesRota.push(missaoDeEspecie(r.gen, r.rota, r.missao.nome, r.missao.alvos, r.missao.premio));
     missoesRota.push(missaoDeAlfa(r.gen, r.rota, r.alfa.nome, r.rotulo, r.antes ?? null, r.alfa.premio, !!r.lendarios));
   }
-  /* A música entra no MESMO pacote porque a linha do banco é uma por canal: publicar só a música apagaria as 180
-     missões de rota, e vice-versa. Por isso existe um publicador só (tela-editor-rotas.publicar), que as duas
-     telas chamam. */
-  return { formato, versao: 0, alfas, missoesRota, ...(musica ? { musica } : {}) };
+  /* Tudo no MESMO pacote porque a linha do banco é uma por canal: publicar só a música apagaria as 180 missões de
+     rota, e vice-versa. Por isso existe um publicador só (tela-editor-rotas.publicar), que as três telas chamam.
+     `extras` = o que as outras telas montam: { musica, mapas, missoesGlobais, itens, badges }. Chave ausente quer
+     dizer "não mexi nisso" e o `conteudo.aplicarConteudo` a resolve pelo de fábrica. */
+  const pacote = { formato, versao: 0, alfas, missoesRota };
+  for (const [k, v] of Object.entries(extras)) if (v != null) pacote[k] = v;
+  return pacote;
+}
+
+/* ---- 🗺 criar rota (fase 2) ----
+   Rota nova nasce CLONE da que está aberta (pool, níveis e Alfa): é o único jeito de ela já nascer válida — pool
+   vazio é recusado pela validação, e inventar um pool do nada seria sortear conteúdo no lugar de quem edita.
+   O id entra na lista logo DEPOIS da rota de origem, porque a ordem é a corrente do mapa. */
+export const idDeRotaNova = (base, jaExistem) => {
+  const limpo = String(base || 'rota').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30) || 'rota';
+  let n = 2, id = `${limpo}-${n}`;
+  while (jaExistem.has(id)) id = `${limpo}-${++n}`;
+  return id;
+};
+export function criarRota(lista, idDaBase, jaExistem) {
+  const i = lista.findIndex(z => z.id === idDaBase);
+  if (i < 0) throw new Error(`rota "${idDaBase}" não está na lista`);
+  const base = JSON.parse(JSON.stringify(lista[i]));
+  const nova = { ...base, id: idDeRotaNova(base.id, jaExistem), name: `${base.name} (nova)` };
+  // Santuário e rota final são únicos por Gen (a validação cobra): o clone nasce como rota comum
+  delete nova.posVitoria; delete nova.final; delete nova.lendarios;
+  return [...lista.slice(0, i + 1), nova, ...lista.slice(i + 1)];
+}
+/* Excluir: o Santuário e a rota final não saem (a Gen precisa dos dois — `conteudo.validarMapas` recusa), e a Gen
+   não fica só com o Santuário. Devolve o motivo em vez de jogar, porque quem chama é um botão. */
+export function excluirRota(lista, id) {
+  const z = lista.find(x => x.id === id);
+  if (!z) return { ok: false, porque: 'essa rota não está na lista' };
+  if (z.posVitoria) return { ok: false, porque: 'o Santuário não sai: é ele que garante a Pokédex completa da Gen' };
+  if (z.final) return { ok: false, porque: 'a rota final não sai: é vencer os lendários dela que fecha a Gen' };
+  if (lista.filter(x => !x.posVitoria).length <= 1) return { ok: false, porque: 'a Gen ficaria só com o Santuário' };
+  return { ok: true, lista: lista.filter(x => x.id !== id) };
 }
 
 /* `rotas` = [{ gen, rota, rotulo, antes, lendarios, missao: { nome, alvos, premio }, alfa: { nome, premio,
    trocado?: { id, nome, nivel } } }], na ordem em que as rotas aparecem nos mapas.
    Devolve o CONTEÚDO de js/dados-rotas.js, pronto pra colar. Gera o mesmo formato que a semente pra o diff do git
    mostrar só o que mudou de verdade — arquivo gerado que muda de forma a cada vez é um diff ilegível. */
-export function gerarArquivo(rotas, hoje = new Date().toISOString().slice(0, 10)) {
+export function gerarArquivo(rotas, mapas = {}, hoje = new Date().toISOString().slice(0, 10)) {
   const j = v => JSON.stringify(v);
   const alfas = rotas.filter(r => r.alfa?.trocado);
   const corpo = [];
@@ -146,11 +182,14 @@ export function gerarArquivo(rotas, hoje = new Date().toISOString().slice(0, 10)
   return `/* GERADO pelo editor de rotas do jogo (js/tela-editor-rotas.js → "📋 Copiar o arquivo") — não editar à mão.
    Gerado em ${hoje}.
 
-   Duas coisas moram aqui, e as duas são AJUSTES por cima de js/dados-mapas.js (que é gerado da PokéAPI e não deve
+   Três coisas moram aqui, e as três são AJUSTES por cima de js/dados-mapas.js (que é gerado da PokéAPI e não deve
    guardar escolha de desenho):
      ALFAS        → troca o Alfa de uma rota ({ id, nome, nivel }). Rota fora da tabela = o Alfa do mapa.
      MISSOES_ROTA → as missões de espécie e de Alfa de cada rota, uma por rota.
-   Quem aplica os dois é js/dados.js (o ÚNICO que importa dados-mapas.js). Sem imports aqui de propósito: é dado,
+     MAPAS        → a lista INTEIRA de rotas de uma Gen (pool, níveis, rota criada ou excluída). Gen fora da
+                    tabela = as rotas que a PokéAPI gerou. É a camada da fase 2 da atualização por nuvem: o que
+                    o 📤 Publicar manda pelo canal, isto leva pro repositório.
+   Quem aplica os três é js/dados.js (o ÚNICO que importa dados-mapas.js). Sem imports aqui de propósito: é dado,
    e precisa ser legível e carregável sem depender de nada. */
 
 /* Uma missão de espécie. \`alvos\` = [[espécie, quantidade]…]: mais de uma espécie SOMA (8 Plusle + 8 Minun = 16).
@@ -175,8 +214,17 @@ const bonito = n => n.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join(
 // Alfa trocado por rota. Vazio = todos os mapas seguem com o Alfa que a PokéAPI gerou.
 export const ALFAS = {${alfas.length ? `\n${alfas.map(r => `  ${j(r.rota)}: ${j(r.alfa.trocado)},`).join('\n')}\n` : ''}};
 
+// Rotas por Gen, a lista inteira. Vazio = nenhuma Gen foi editada e todas seguem com o mapa gerado.
+export const MAPAS = {${blocoMapas(mapas, j)}};
+
 export const MISSOES_ROTA = [
 ${corpo.join('\n')}
 ];
 `;
+}
+// uma linha por rota: longa, mas é a única forma de o diff do git mostrar "mudou o pool da rota X"
+function blocoMapas(mapas, j) {
+  const gens = Object.entries(mapas || {}).filter(([, lista]) => Array.isArray(lista) && lista.length);
+  if (!gens.length) return '';
+  return `\n${gens.map(([gen, lista]) => `  ${gen}: [\n${lista.map(z => `    ${j(z)}`).join(',\n')}\n  ],`).join('\n')}\n`;
 }

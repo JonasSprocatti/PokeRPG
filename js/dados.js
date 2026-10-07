@@ -1,7 +1,7 @@
 /* ============ dados fixos ============ */
 // Só constantes (e construtores de URL). Sem DOM, sem rede: importável direto no Node.
 import { GENS as GENS_DO_MAPA } from './dados-mapas.js';
-import { ALFAS, MISSOES_ROTA } from './dados-rotas.js';
+import { ALFAS, MAPAS, MISSOES_ROTA } from './dados-rotas.js';
 import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO, SPRITE_DO_ITEM } from './dados-item-sprites.js';
 /* Os mapas chegam em DUAS camadas: `dados-mapas.js` é gerado da PokéAPI (pools, níveis, Alfa sorteado) e
    `dados-rotas.js` é gerado pelo editor de rotas do jogo, com as escolhas de DESENHO por cima — hoje só o Alfa
@@ -15,9 +15,15 @@ import { PEDRAS_MEGA, CHAVE_MEGA_GENERICA, CRISTAIS_Z, ANEL_Z_GENERICO, SPRITE_D
    O Santuário (`posVitoria`) mantém TODO MUNDO: é ele que garante a Pokédex completa da Gen.
    Lista à mão porque `evento.js` importa daqui (importar de lá seria um ciclo); `tests/evento.test.js` falha se
    um chefe novo de forma normal ficar de fora dela. */
-const SO_NO_SANTUARIO = ['arceus', 'regigigas'];
+// exportada porque `conteudo.js` precisa RECUSAR um pacote que ponha um destes num pool que não seja o Santuário:
+// o filtro abaixo roda uma vez, sobre as tabelas de fábrica, e não veria o pool que chega da nuvem. Duplicar o
+// filtro lá seria a segunda cópia da regra (a que fica velha) — validar usa a mesma lista.
+export const SO_NO_SANTUARIO = ['arceus', 'regigigas'];
 const semChefeDeRaide = z => z.posVitoria ? z : { ...z, pool: z.pool.filter(p => !SO_NO_SANTUARIO.includes(p.n)) };
-export const GENS = GENS_DO_MAPA.map(g => ({ ...g, rotas: g.rotas.map(z0 => {
+/* `MAPAS[gen]` (fase 2) substitui a lista INTEIRA de rotas daquela Gen antes de tudo: é a camada de edição, e
+   `semChefeDeRaide` e `ALFAS` continuam valendo por cima dela — a regra do chefe de raide vale pra pool editado
+   igual, e o Alfa trocado é um ajuste ainda mais específico. Gen fora de `MAPAS` = o mapa gerado, intocado. */
+export const GENS = GENS_DO_MAPA.map(g => ({ ...g, rotas: (MAPAS[g.gen] || g.rotas).map(z0 => {
   const z = semChefeDeRaide(z0);
   return ALFAS[z.id] ? { ...z, chefe: { ...z.chefe, ...ALFAS[z.id] } } : z;
 }) }));
