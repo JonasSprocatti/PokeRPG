@@ -23,6 +23,7 @@ import {
   bst, curvaDaRota, equilibrioDaRota, vereditoAlfa, candidatosAlfa, quantidadePorPeso, dividirQuantidade,
   bonito, gerarArquivo, gerarPacote, FAIXA_ALFA
 } from './editor-rotas.js';
+import { musicaEditada } from './editor-musica.js';
 
 const CHAVE = 'pokerpg-editor-rotas-v1';
 // o rascunho: { [rotaId]: { missao: { nome, alvos, premio }, alfa: { nome, premio, trocado } } }. Rota ausente = o
@@ -330,7 +331,8 @@ function blocoArquivo() {
       <h3>📋 O arquivo</h3>
       <p class="small muted">${n ? `<b>${n} rota(s)</b> editada(s) no rascunho deste navegador.` : 'Nenhuma edição no rascunho: o que sai é igual ao que já está no jogo.'}
         <b>Publicar</b> manda pra nuvem e vale sem deploy; <b>📋 Copiar o arquivo</b> continua existindo pro
-        repositório (<code>js/dados-rotas.js</code>) — é o que faz uma instalação nova nascer com a versão certa.</p>
+        repositório (<code>js/dados-rotas.js</code>) — é o que faz uma instalação nova nascer com a versão certa.
+        O pacote publicado leva também o rascunho do <b>🎵 Editor de músicas</b> (é uma linha por canal no banco).</p>
       <div class="subrow">
         <button class="btn" data-act="ed-publicar">📤 Publicar (só eu vejo)</button>
         <button class="btn ghost" data-act="ed-liberar">✅ Liberar pra todos</button>
@@ -346,17 +348,20 @@ function blocoArquivo() {
     </section>`;
 }
 /* 📤 Publicar / ✅ Liberar pra todos (docs/plano-config-remota.md).
+   **Publicador único, e é este**: a linha do banco é uma por canal, então o pacote tem de sair COMPLETO (rotas +
+   música). A tela de músicas chama esta função em vez de publicar por conta própria — se cada uma montasse o seu
+   pacote, a última a publicar apagaria o trabalho da outra em silêncio.
    O 'teste' leva o RASCUNHO desta tela. O 'estavel' leva o que está NO TESTE, não o rascunho: entre testar e
    liberar o rascunho pode ter mudado, e liberar algo que você não jogou é exatamente o que os dois canais
    existem pra evitar. Sem nada no teste, ele avisa em vez de publicar o rascunho por conta própria. */
-async function publicar(canal) {
+export async function publicar(canal) {
   let pacote;
   if (canal === 'estavel') {
     const noTeste = await lerCanal('teste');
     if (!noTeste?.pacote) return toast('Não há nada no canal de teste. Use 📤 Publicar primeiro e jogue a edição.');
     pacote = noTeste.pacote;
   } else {
-    try { pacote = gerarPacote(todasEditadas()); }
+    try { pacote = gerarPacote(todasEditadas(), musicaEditada()); }
     catch (e) { console.error('editor de rotas: montar o pacote falhou', e); return toast('Não deu pra montar o pacote: ' + e.message); }
   }
   toast(canal === 'teste' ? 'Publicando no canal de teste…' : 'Liberando pra todos…');

@@ -116,14 +116,17 @@ export const missaoDeAlfa = (gen, rota, nome, rotulo, antes, premio, lendarios) 
 /* O que o 📤 Publicar manda pra nuvem: a mesma entrada do `gerarArquivo`, em dado puro em vez de código-fonte.
    `versao` sai 0 — quem numera é `conteudo-nuvem.publicarConteudo`, porque deixar o número na mão de quem publica
    é o caminho curto pra republicar com número MENOR e o pacote novo ser ignorado em silêncio por todo cache. */
-export function gerarPacote(rotas, formato = 1) {
+export function gerarPacote(rotas, musica = null, formato = 1) {
   const alfas = {}, missoesRota = [];
   for (const r of rotas) {
     if (r.alfa?.trocado) alfas[r.rota] = r.alfa.trocado;
     missoesRota.push(missaoDeEspecie(r.gen, r.rota, r.missao.nome, r.missao.alvos, r.missao.premio));
     missoesRota.push(missaoDeAlfa(r.gen, r.rota, r.alfa.nome, r.rotulo, r.antes ?? null, r.alfa.premio, !!r.lendarios));
   }
-  return { formato, versao: 0, alfas, missoesRota };
+  /* A música entra no MESMO pacote porque a linha do banco é uma por canal: publicar só a música apagaria as 180
+     missões de rota, e vice-versa. Por isso existe um publicador só (tela-editor-rotas.publicar), que as duas
+     telas chamam. */
+  return { formato, versao: 0, alfas, missoesRota, ...(musica ? { musica } : {}) };
 }
 
 /* `rotas` = [{ gen, rota, rotulo, antes, lendarios, missao: { nome, alvos, premio }, alfa: { nome, premio,

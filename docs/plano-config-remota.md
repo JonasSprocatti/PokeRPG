@@ -106,7 +106,7 @@ save do jogador:
 |---|---|---|
 | ~~**1**~~ ✅ **FEITA (06/10/2026)** | `conteudo.js` (puro, validar + aplicar) · `conteudo-nuvem.js` (cache, busca, publicar) · `boot()` · migration `20261006120000_conteudo_publicado.sql` com os canais `teste`/`estavel` · 📤 Publicar e ✅ Liberar pra todos no editor · `editor-rotas.gerarPacote` | Fundação pronta pra ALFAS e MISSOES_ROTA. **Ainda não verificada em jogo**: a migration sobe pela integração do GitHub e os dois botões precisam de uma conta admin logada. |
 | **2** | **Criar e excluir rota** · pool e níveis editáveis · integração com `baixarGen`/`VERSAO_DOWNLOAD` | Depende da fundação. Mexe em Santuário, Pokédex da conta, caça shiny e desbloqueio do Roguelike — todos leem a lista de rotas. |
-| **3** | **Missões globais** · itens, loja e badges no pacote | Mesmo mecanismo da fase 1, repetido em outras tabelas. Risco: config ruim quebrando save antigo — daí a validação. |
+| **3** | **Missões globais** · itens, loja e badges no pacote | Mesmo mecanismo da fase 1, repetido em outras tabelas. Risco: config ruim quebrando save antigo — daí a validação. **A 🎵 MÚSICA já entrou (07/10/2026)**, fora de ordem e de propósito: é a tabela mais fácil (não encosta em save nem em jornada, então `podeAplicarAgora` nem precisou mudar), e serviu de segunda prova do mecanismo. Detalhe em `docs/features.md` → "🎵 O editor de músicas DENTRO do jogo". |
 | **4** | **Rotas secretas** | Mecânica nova (condição no save, na tela de explorar, no progresso), não editor. Última porque é a única que não é "mover dado pra nuvem". |
 
 ## Decisões já fechadas

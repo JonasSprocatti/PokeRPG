@@ -1659,6 +1659,37 @@ o meio segundo do som mais longo, e o som não precisa terminar antes da próxim
 - **Animação por tipo** (chama subindo no Fogo, jato d'água): a piscada colorida cobre o pedido com uma var de
   CSS; sprite de partícula por tipo é arte nova, não código.
 
+### 🎵 O editor de músicas DENTRO do jogo (07/10/2026)
+Pedido: *"quero colocar a opção de editar as músicas também para o admin, do mesmo jeito"* — do mesmo jeito que o
+🗺 Editor de rotas, ou seja: tela no jogo, rascunho no navegador, **publicação pela nuvem** e 📋 copiar pro repo.
+`musica.html` já editava, mas não é admin, não entra na barra de telas e **não publica** — era o que faltava.
+
+- **As tabelas saíram pra `js/dados-musica.js`** (puro, sem imports, mesmo papel de `dados-rotas.js`). Motivo de
+  grafo: `conteudo.js` é o CHÃO (puro, testado no Node) e precisa mutar `TEMAS`/`CONTEXTOS` no lugar — importar o
+  motor de áudio dentro dele seria o grafo ao contrário, e arrastaria `cenario.js` pra dentro do teste do pacote.
+  `som.js` **reexporta** tudo, então `musica.html` e `tests/som.test.js` não mudaram uma linha.
+- **Um publicador só.** `conteudo_publicado` tem **uma linha por canal**: se a tela de música montasse o próprio
+  pacote, publicar a trilha apagaria as 180 missões de rota (e vice-versa) **sem erro nenhum aparecer**. Então
+  `gerarPacote(rotas, musica)` passou a receber as duas metades e a tela de música **chama**
+  `tela-editor-rotas.publicar`. Dependência de uma tela na outra é feia; dois pacotes competindo pela mesma linha
+  é pior.
+- **`musicaEditada()` manda TODAS as faixas, não só as editadas.** `aplicarMusica` volta pro de fábrica o que o
+  pacote não traz (é o que permite desfazer uma edição publicada) — mandar só o rascunho faria o usuário editar o
+  `gelo` hoje e perder o `mar` que publicou na semana passada.
+- **O que vem da nuvem não passa por teste.** `tests/som.test.js` cobra o teto de agudo e o compasso de 16 passos
+  nas tabelas do repositório; tema publicado só tem `conteudo.validarMusica`. Ela lê as MESMAS constantes
+  (`RAIZ`, `MIDI_MAIS_AGUDO`, `maisAgudo`) — número repetido à mão seria o editor aprovando o que a publicação
+  recusa. A tela valida pela mesma função, com a edição sozinha dentro, pra o erro aparecer no 💾 e não no 📤.
+- **`onda` e `melodiaFixa` ausentes são SIGNIFICADO** ("herda do contexto", "sem frase própria"), então o aplicar é
+  `tema || fabrica` e não `{ ...fabrica, ...tema }`: com o spread, a chave de fábrica sobreviveria e não haveria
+  como voltar a herdar. A chave morta é apagada antes de escrever.
+- **A trilha das telas não toca aqui**: `main.js` pede `tocarMusica('telas')` em toda tela de menu, e no editor
+  quem manda na trilha é o ▶ da própria tela.
+- **Ficou de fora**: o 🎲 sortear frase (está em `musica.html`, que continua existindo pra compor de qualquer
+  aparelho) e editar o nome dos biomas ou criar bioma novo — bioma sai de `cenario.CLIMAS`, lido pela cena da
+  batalha, não é dado de música. Chave desconhecida no pacote é **recusa**, não "ignora": tema que nunca toca é
+  pior que um erro.
+
 ---
 
 ## Sprites da cena: o retângulo escuro e o tamanho de verdade (30/09/2026)

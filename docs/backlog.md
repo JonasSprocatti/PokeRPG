@@ -17,6 +17,12 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   resposta do usuário é a arquitetura: a config fica no **cache**, atualiza quando há internet, e sem internet o
   jogador joga com a que tem. **Aplicar no meio de uma jornada só se não quebrar nada** (missão em andamento ou
   registro de Pokédex que dependa do que mudou espera a próxima jornada).
+  **Andamento**: a fase 1 (fundação: validar, aplicar, cache, dois canais, publicar do editor) está no código
+  desde 06/10/2026 e **a 🎵 música entrou em 07/10/2026** — tema de bioma e contexto de tela viajam no mesmo
+  pacote, com tela própria de admin (`js/tela-editor-musica.js`). Faltam a **fase 2** (criar/excluir rota, pool e
+  níveis editáveis, integração com `baixarGen`/`VERSAO_DOWNLOAD`), o resto da **fase 3** (missões globais, itens,
+  loja e badges) e a **fase 4** (rotas secretas). Nada disso foi conferido em jogo ainda — ver
+  "Estado em 06/10/2026" no plano.
   Isso ABSORVE dois itens que estavam separados aqui desde 01/10/2026: criar/excluir rotas pelo editor e as rotas
   secretas. Os dois só faziam sentido com um caminho de publicação — sem ele, rota nova exige commit, e aí não é
   "o usuário cria rota", é "o usuário pede uma rota".

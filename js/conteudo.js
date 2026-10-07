@@ -19,6 +19,10 @@
    config é pior que nenhuma, porque o jogo fica num estado que ninguém desenhou. */
 import { GENS, MISSOES, MISSOES_GLOBAIS } from './dados.js';
 import { MISSOES_ROTA } from './dados-rotas.js';
+import {
+  TEMAS, CONTEXTOS, ESCALAS, ONDAS, RAIZ, PASSOS_DO_COMPASSO, ACORDES_NA_PROGRESSAO, MIDI_MAIS_AGUDO,
+  nomeDaEscala, lerMelodia, maisAgudo
+} from './dados-musica.js';
 
 export const VERSAO_PACOTE = 1;        // formato do pacote. Pacote de formato desconhecido é ignorado, não adivinhado.
 const ID_ROTA = /^[a-z0-9-]{2,40}$/;   // mesmo formato dos ids que já existem em dados-mapas.js
@@ -32,12 +36,23 @@ const idDeEspecie = v => inteiro(v) && v > 0 && v < 100000;
 /* O que está no repositório, no formato do pacote. É o que vale sem cache, com cache inválido, ou na primeira
    vez que o jogo abre. `dados-rotas.js` continua existindo exatamente pra isso — e continua sendo o destino do
    "📋 Copiar o arquivo" do editor, pra quem instala o jogo do zero não começar com as tabelas velhas. */
+/* A música de fábrica, tirada das tabelas ANTES de qualquer aplicação (o módulo carrega uma vez, então esta é a
+   foto do repositório). Serve pra duas coisas: entrar no pacote de fábrica e, no `aplicarConteudo`, VOLTAR o que
+   o pacote não traz — sem isso um pacote novo sem o tema `gelo` deixaria no ar o `gelo` do pacote anterior. */
+const MUSICA_DE_FABRICA = {
+  temas: Object.fromEntries(Object.entries(TEMAS).map(([k, t]) => [k, { ...t, escala: nomeDaEscala(t.escala) }])),
+  contextos: Object.fromEntries(Object.entries(CONTEXTOS).map(([k, c]) => [k, { ...c }]))
+};
+const copiaDaMusica = () => JSON.parse(JSON.stringify(MUSICA_DE_FABRICA));
+
 export const pacoteDeFabrica = () => ({
   formato: VERSAO_PACOTE,
   versao: 0,
   alfas: {},
-  missoesRota: MISSOES_ROTA.map(m => ({ ...m }))
+  missoesRota: MISSOES_ROTA.map(m => ({ ...m })),
+  musica: copiaDaMusica()
 });
+export { MUSICA_DE_FABRICA };
 
 /* ---- validação ---- */
 /* Devolve `{ ok: true, pacote }` ou `{ ok: false, porque }`. O `porque` não é decoração: um pacote recusado em
@@ -90,7 +105,76 @@ export function validarPacote(p) {
       }
     }
   }
+  const m = validarMusica(p.musica);
+  if (!m.ok) return m;
+
   return { ok: true, pacote: p };
+}
+
+/* ---- 🎵 música ---- */
+/* `musica: { temas: { bioma: {raiz, escala, acordes, melodia, onda?} }, contextos: { tela: {bpm, densidade,
+   onda?, melodiaFixa?} } }`. Chave desconhecida é RECUSA, não "ignora": bioma vem de `cenario.CLIMAS` e contexto
+   de `CONTEXTOS` — chave fora dessas listas é erro de digitação, e um tema que nunca toca é pior que um erro.
+
+   O teto de agudo (880 Hz) é cobrado AQUI porque `tests/som.test.js` só varre as tabelas do repositório: tema que
+   chega pela nuvem não passa por teste nenhum, e o passa-baixa da saída corta em 2 kHz justamente porque
+   estridente foi a primeira queixa de quem jogou. Validar é mais barato que um ouvido machucado. */
+export function validarMusica(musica) {
+  if (musica == null) return { ok: true };
+  if (typeof musica !== 'object' || Array.isArray(musica)) return { ok: false, porque: 'musica não é objeto' };
+
+  // uma frase: 16 tokens, cada um grau/silêncio/segurar, e não começa segurando uma nota que não existe
+  const frase = (onde, txt) => {
+    if (typeof txt !== 'string') return `${onde}: melodia não é texto`;
+    const p = lerMelodia(txt);
+    if (p.length !== PASSOS_DO_COMPASSO) return `${onde}: ${p.length} passos (o compasso é de ${PASSOS_DO_COMPASSO})`;
+    if (p[0] === '-') return `${onde}: a frase não pode começar segurando uma nota que não existe`;
+    for (const tok of p) {
+      if (tok === '.' || tok === '-') continue;
+      if (!inteiro(Number(tok)) || Number(tok) < 0 || Number(tok) > 24) return `${onde}: token "${tok}" inválido`;
+    }
+    return null;
+  };
+
+  if (musica.temas != null) {
+    if (typeof musica.temas !== 'object' || Array.isArray(musica.temas)) return { ok: false, porque: 'musica.temas não é objeto' };
+    for (const [bioma, t] of Object.entries(musica.temas)) {
+      if (!TEMAS[bioma]) return { ok: false, porque: `tema de bioma que não existe: "${bioma}"` };
+      if (!t || typeof t !== 'object') return { ok: false, porque: `tema ${bioma} não é objeto` };
+      if (!inteiro(t.raiz) || t.raiz < RAIZ.min || t.raiz > RAIZ.max) return { ok: false, porque: `tema ${bioma}: raiz fora de ${RAIZ.min}–${RAIZ.max}` };
+      const escala = ESCALAS[t.escala];
+      if (!escala) return { ok: false, porque: `tema ${bioma}: escala "${t.escala}" não existe` };
+      if (!Array.isArray(t.acordes) || t.acordes.length !== ACORDES_NA_PROGRESSAO) return { ok: false, porque: `tema ${bioma}: a progressão é de ${ACORDES_NA_PROGRESSAO} compassos` };
+      for (const a of t.acordes) if (!inteiro(a) || a < 0 || a > 11) return { ok: false, porque: `tema ${bioma}: acorde fora de 0–11 semitons` };
+      if (t.onda != null && !ONDAS.includes(t.onda)) return { ok: false, porque: `tema ${bioma}: onda "${t.onda}" não existe` };
+      const erro = frase(`tema ${bioma}`, t.melodia);
+      if (erro) return { ok: false, porque: erro };
+      if (maisAgudo(t.raiz, escala, t.melodia) > MIDI_MAIS_AGUDO) return { ok: false, porque: `tema ${bioma}: passa do teto de agudo (880 Hz)` };
+    }
+  }
+
+  if (musica.contextos != null) {
+    if (typeof musica.contextos !== 'object' || Array.isArray(musica.contextos)) return { ok: false, porque: 'musica.contextos não é objeto' };
+    for (const [qual, c] of Object.entries(musica.contextos)) {
+      if (!CONTEXTOS[qual]) return { ok: false, porque: `contexto que não existe: "${qual}"` };
+      if (!c || typeof c !== 'object') return { ok: false, porque: `contexto ${qual} não é objeto` };
+      if (!inteiro(c.bpm) || c.bpm < 40 || c.bpm > 200) return { ok: false, porque: `contexto ${qual}: bpm fora de 40–200` };
+      if (!(typeof c.densidade === 'number' && c.densidade > 0 && c.densidade <= 1)) return { ok: false, porque: `contexto ${qual}: densidade fora de 0–1` };
+      if (c.onda != null && !ONDAS.includes(c.onda)) return { ok: false, porque: `contexto ${qual}: onda "${c.onda}" não existe` };
+      if (c.melodiaFixa != null && c.melodiaFixa !== '') {
+        const erro = frase(`contexto ${qual}`, c.melodiaFixa);
+        if (erro) return { ok: false, porque: erro };
+        /* A frase fixa toca sobre a escala de QUALQUER tema, então o teto vale no pior caso: a raiz mais alta
+           permitida contra cada escala. É a mesma conta do teste da `melodiaFixa` em tests/som.test.js. */
+        for (const [nome, escala] of Object.entries(ESCALAS)) {
+          if (maisAgudo(RAIZ.max, escala, c.melodiaFixa) > MIDI_MAIS_AGUDO) {
+            return { ok: false, porque: `contexto ${qual}: passa do teto de agudo (880 Hz) em ${nome}` };
+          }
+        }
+      }
+    }
+  }
+  return { ok: true };
 }
 
 /* ---- aplicar ---- */
@@ -115,7 +199,36 @@ export function aplicarConteudo(pacote) {
   MISSOES.length = 0;
   MISSOES.push(...MISSOES_GLOBAIS, ...missoes);
 
-  return { alfasTrocados, missoes: missoes.length, versao: pacote.versao };
+  const musica = aplicarMusica(pacote.musica);
+
+  return { alfasTrocados, missoes: missoes.length, musica, versao: pacote.versao };
+}
+
+/* Muta `TEMAS`/`CONTEXTOS` no lugar (mesmo motivo de `GENS`: o motor de som já guardou a referência). SEMPRE
+   começa do de fábrica — ao contrário dos Alfas, aqui dá pra voltar atrás, porque a tabela inteira cabe no
+   pacote. `escala` chega como NOME e vira o array que o motor toca. */
+function aplicarMusica(musica) {
+  const temas = musica?.temas || {}, contextos = musica?.contextos || {};
+  let trocados = 0;
+  /* O que vem no pacote é o tema INTEIRO, não um remendo: a validação exige raiz, escala, acordes e melodia, e
+     `onda`/`melodiaFixa` ausentes querem dizer "herda do contexto" / "sem frase fixa". Por isso é `t || fabrica`
+     e não `{ ...fabrica, ...t }` — com o spread, um tema publicado sem `onda` ficaria com a onda de fábrica pra
+     sempre, sem jeito de voltar a herdar. A chave morta é APAGADA antes de escrever, por isso. */
+  for (const [bioma, fabrica] of Object.entries(MUSICA_DE_FABRICA.temas)) {
+    const t = temas[bioma];
+    if (t) trocados++;
+    const { escala, ...resto } = t || fabrica;
+    delete TEMAS[bioma].onda;
+    Object.assign(TEMAS[bioma], resto, { escala: ESCALAS[escala] || ESCALAS[nomeDaEscala(fabrica.escala)] });
+  }
+  for (const [qual, fabrica] of Object.entries(MUSICA_DE_FABRICA.contextos)) {
+    const c = contextos[qual];
+    if (c) trocados++;
+    delete CONTEXTOS[qual].melodiaFixa;
+    delete CONTEXTOS[qual].onda;
+    Object.assign(CONTEXTOS[qual], c || fabrica);
+  }
+  return trocados;
 }
 
 /* ---- aplicar no meio de uma jornada é seguro? ---- */

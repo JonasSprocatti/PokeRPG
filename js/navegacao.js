@@ -25,7 +25,8 @@ export const TELAS = [
   { id: 'privacidade', act: 'privacidade', rotulo: '🔒 Privacidade', dica: 'O que o jogo guarda sobre você' },
   // `admin: true` = atalho só pra conta de manutenção (perfis.admin). A própria tela confere de novo (tela-editor-rotas.js):
   // esconder o botão não é controle de acesso, é não poluir a barra de quem joga.
-  { id: 'editor', act: 'editor', rotulo: '🗺 Editor de rotas', dica: 'Missões, Alfas e curva de stats de cada rota', admin: true }
+  { id: 'editor', act: 'editor', rotulo: '🗺 Editor de rotas', dica: 'Missões, Alfas e curva de stats de cada rota', admin: true },
+  { id: 'musica', act: 'editor-musica', rotulo: '🎵 Editor de músicas', dica: 'Tema de cada bioma e andamento de cada tela', admin: true }
 ];
 /* As telas que esta pessoa pode ver. ÚNICO ponto que decide: a barra (aqui) e o menu ☰ do celular (render.js) leem
    daqui, senão o atalho de admin apareceria num e não no outro. */

@@ -99,10 +99,9 @@ sai aqui é o que sai lá.</p>
 </div>
 
 <script type="module">
-import { TEMAS, CONTEXTOS, ESCALAS, tocarPreview, pararMusica, ajustarSaida, lerMelodia } from './js/som.js';
+import { TEMAS, CONTEXTOS, ESCALAS, nomeDaEscala, tocarPreview, pararMusica, ajustarSaida, lerMelodia } from './js/som.js';
 
 const $ = id => document.getElementById(id);
-const nomeDaEscala = arr => Object.keys(ESCALAS).find(k => ESCALAS[k].join() === arr.join()) || 'penta maior';
 
 // estado = uma cópia dos temas do jogo, que o editor modifica sem tocar no original
 const temas = JSON.parse(JSON.stringify(TEMAS));

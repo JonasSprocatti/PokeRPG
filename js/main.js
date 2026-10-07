@@ -21,6 +21,7 @@ import { renderChipConta, telaConta, htmlIcone, mudarIconeEdit, sortearIcone, al
 import { telaRanking } from './ranking.js';
 import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaEditorRotas, acaoEditor } from './tela-editor-rotas.js';
+import { telaEditorMusica, acaoEditorMusica } from './tela-editor-musica.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, convidarAmigoMP, copiarConviteMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
@@ -97,14 +98,15 @@ async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor', 'editor-musica'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   /* Trilha das telas fora do jogo (som.js), num lugar só: toda tela de menu é alcançada por um destes `data-act`,
      então nenhuma delas precisa saber de música por conta própria. `inicio` tem a própria faixa (showCreate pede
      'menu'); as telas de jogo em si (explorar/batalha) são pedidas por quem monta a cena, não aqui.
      A condição é lida À MÃO em vez de chamar `travadoPelaBatalha()`: aquela função TOASTA quando barra, e o
      `case` do switch a chama de novo — o jogador veria o mesmo aviso duas vezes. */
-  if (TELAS_NAV.includes(b.dataset.act) && b.dataset.act !== 'inicio' && G.mode !== 'battle' && !G.busy) tocarMusica('telas');
+  // 🎵 o editor de músicas é a exceção: lá quem manda na trilha é o ▶ da própria tela
+  if (TELAS_NAV.includes(b.dataset.act) && !['inicio', 'editor-musica'].includes(b.dataset.act) && G.mode !== 'battle' && !G.busy) tocarMusica('telas');
   switch (b.dataset.act) {
     case 'search': return previewSearch($('#q')?.value || '');
     case 'random': return sortearEspecie();
@@ -149,6 +151,12 @@ async function aoClicar(e) {
     case 'ed-usar-alfa': case 'ed-sugerir': case 'ed-desfazer': case 'ed-copiar': case 'ed-limpar-tudo':
     case 'ed-publicar': case 'ed-liberar':
       return acaoEditor(b.dataset.act.slice(3), v);
+    // 🎵 editor de músicas (só admin; a tela confere de novo)
+    case 'editor-musica': if (travadoPelaBatalha()) return; return telaEditorMusica();
+    case 'em-bioma': case 'em-contexto': case 'em-parar': case 'em-tocar-tema': case 'em-tocar-fixa':
+    case 'em-salvar-tema': case 'em-salvar-contexto': case 'em-desfazer-tema': case 'em-desfazer-contexto':
+    case 'em-limpar': case 'em-copiar': case 'em-publicar': case 'em-liberar':
+      return acaoEditorMusica(b.dataset.act.slice(3), v);
     case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
       const ok = await ask('Apagar tudo o que está guardado da PokéAPI neste aparelho e baixar este mapa <b>do zero</b>?<br><br>Serve pra quando algo ficou pela metade e baixar por cima não resolve. <b>Seus saves, a carreira e as conquistas não são tocados.</b>',
