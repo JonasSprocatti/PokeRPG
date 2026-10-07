@@ -3353,3 +3353,85 @@ que alguém achar que "fica legal".
 - **Avaliar os dígitos olhando**: este ambiente não tem navegador nem PIL (`CLAUDE.md`). A escolha foi feita
   tirando o risco por construção — prender a pixelada onde número não passa — em vez de apostar que os dígitos
   de alguma pixelada seriam bons o bastante. É mais barato garantir que medir.
+
+## 🐉 O chefe de raide que era o mais fácil, e a sala que lutava em silêncio (07/10/2026)
+
+Relato #81, literal: *"Parece que a mecânica de expor fraqueza não é para esse Boss, foi muito fácil a luta.
+Lutando contra o mega Rayquaza com 2 Mewtwo e um Cloyster, o Cloyster usou Shell smash e depois Icicle Spear, não
+apareceu o aumento de status e nem o dano do próximo golpe dele. Também as animações do Boss parecem estar fracas
+e bugadas, achei muito facil"*.
+
+### O que foi DESCARTADO no diagnóstico
+
+A acusação mais concreta era o Shell Smash. Testei a hipótese antes de ler código: montei um Cloyster, um Mega
+Rayquaza preparado por `prepararChefe`, e rodei dois turnos de `mp-motor.resolverTurnoMP` (o motor da Sala de
+Raide) num script descartável. Shell Smash narrou as cinco linhas certas, `vol.stages` ficou
+`{attack:2, special-attack:2, speed:2, defense:-1, special-defense:-1}`, e o Icicle Spear do turno seguinte saiu
+com o estágio aplicado e o estágio **sobreviveu** ao turno. A suspeita de que `mudarEstagios` falhasse calado tem
+fundamento — ela começa com `if (!(c.stat in m.vol.stages)) continue;`, que é exatamente "não faz nada e não
+diz" — mas `fotoDoMon` dá `vol: freshVol()` e `mp-sanear.saneado` preserva objeto, então nunca chega lá vazio.
+**Não havia bug de Shell Smash.** O que havia era o jogador vendo o golpe fazer menos diferença do que devia,
+porque o chefe caía rápido de qualquer jeito.
+
+### A causa real: `mult` copiado da ficha errada
+
+O Mega Rayquaza é o **único dos 16 chefes sem couraça** (`coura: null`), e isso é de propósito e testado: o
+quebra-cabeça dele é a janela do `pontoFraco`, que gira a cada 2 ações. O erro foi o número: `mult: 1.75` tinha
+sido copiado do Mega Mewtwo e do Kyurem Negro, que **têm** couraça — e lá `danoNoChefe` multiplica os dois
+(`0.5 × 1.75 = 0.875`). Sem couraça o 1,75 ficava solto. Pior: os cinco tipos da janela (Gelo, Pedra, Dragão,
+Elétrico, Fada) são justamente as fraquezas naturais de Dragão/Voador, e Gelo é **×4** — então o multiplicador do
+chefe empilhava em cima de uma efetividade que já era enorme. Daí "foi muito fácil" com um Cloyster.
+
+Medido em `danoNoChefe(chefe, 100, tipoDaJanela, 2)` nos 16, acertando a janela:
+
+| chefe | leva | | chefe | leva |
+|---|---|---|---|---|
+| **rayquaza-mega** | **175** | | arceus | 80 |
+| mewtwo-mega-y | 87 | | calyrex / terapagos | 50 |
+| kyurem-black | 87 | | mediana do elenco | ~45 |
+
+Duas a quatro vezes mais mole que o resto. Os números viraram `mult: 0.9, contra: 0.25` — o **líquido** que os
+irmãos dele já tinham, sem inventar mecânica nova.
+
+**O que foi considerado e não feito:** dar couraça a ele (apaga a identidade do chefe e reescreve 3 testes) e
+criar um campo `reducao` que valesse sempre pra quem não tem couraça (mecânica nova, código novo e um segundo
+jeito de dizer a mesma coisa). Trocar dois números numa tabela que `danoNoChefe` já lê resolve igual.
+
+O guarda é uma **regra**, não o número: `tests/boss.test.js` → *"nenhum chefe leva MAIS que o dano cru fora da
+Ruptura"*. É a invariante de desenho que o Rayquaza violava — só a 💥 RUPTURA aumenta dano; couraça e ponto fraco
+só reduzem. Varre os 16, então chefe novo com o mesmo engano não passa. (O teste zera `boss.ultimoTipo` entre as
+duas medidas: `danoNoChefe` **guarda** o tipo do golpe pro `adapta` do Terapagos, e sem zerar a segunda medida
+vinha reduzida e o assert da Ruptura falhava — num código certo.)
+
+### "As animações do Boss parecem estar fracas e bugadas"
+
+Não estavam fracas: **não existiam**. `efeitos.CTX` tem `tremer`, `atacar`, `atualizar` e `pratos`; o ctx do
+`mp-motor` tinha só os ganchos puros. O motor já chama tudo como opcional (`(ctx.tremer || nada)(t, g.type)`),
+então a sala lutava em silêncio absoluto, com os cartões parados — a única tela do jogo assim. Com um chefe de HP
+alto, isso faz a luta parecer travada.
+
+O motor é **puro e roda só no anfitrião**: quem tem tela é cada cliente, que recebe a lista de eventos. Então a
+tremida tinha de viajar. A primeira tentativa foi um evento próprio (`{tremer: ref, tipo}`) — e **quebrou 5
+testes na hora**, porque `historico`, `arena.js` e os testes todos fazem `e.txt.includes(...)`/`esc(e.txt)` sem
+perguntar. Era a lista de eventos ganhando uma segunda forma, e cada consumidor tendo de aprender a filtrar.
+
+A versão que ficou mantém **uma forma só**: `ctx.tremer` guarda `tremendo = {tremer: ref, tipo}` e o próximo
+`say` pendura isso na linha que ele cria. Funciona porque no `golpe.js` todo `ctx.tremer` é imediatamente seguido
+de um `ctx.say` (é a linha "X perdeu N HP"), e semanticamente fica mais honesto: *esta* linha sacode *aquele*
+cartão. Zero mudança em `arena.js`, no histórico e nos testes existentes.
+
+Do lado da tela, `ui.shake` foi partido em dois: `tremerEl(el, tipo)` faz o trabalho num elemento que o chamador
+já tem, e `shake(m, tipo)` passou a ser a casca que resolve o sprite por `idDoMon`. A sala não tem sprite com id
+— tem cartões `[data-ref]`, os mesmos que `marcarAtuando` já varria —, então `multiplayer.tremerCartao` faz
+`querySelectorAll('[data-ref=…]')` com `CSS.escape` e chama `tocarImpacto(tipo)` ao lado. As duas metades já
+perguntam sozinhas a `semAnimacao()` e ao ajuste de som.
+
+### O que ficou de fora
+
+- **`atacar` (o pulinho de quem usa o golpe) e `pratos` (o anel do Arceus) na sala.** Seguem só no single player.
+  Dariam mais dois eventos pendurados e o ganho é bem menor que o da tremida, que é o que dá peso ao impacto.
+- **Animação na Arena.** Ela usa o mesmo `mp-motor`, então a linha do dano já chega com `tremer` — mas a Arena
+  reconstrói a cena inteira a cada turno a partir de `arena.log`, não narra linha por linha. Ligar lá é mudar o
+  laço de desenho dela, não aproveitar este. O campo está lá quando alguém quiser.
+- **Rever o balanço dos outros 15 chefes.** O teste novo diz que nenhum deles viola a invariante; se algum está
+  fácil ou difícil demais dentro dela, é afinação, e afinação se faz com relato na mão.

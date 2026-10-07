@@ -267,12 +267,26 @@ export async function resolverTurnoMP(estado, acoes) {
      poder destacar o cartão de quem age — sem isso o turno inteiro aparecia de uma vez, e com dois Pokémon de mesmo
      nome no time ("Swampert usou Earthquake!" três vezes) não dava pra saber quem tinha feito o quê. */
   let atuando = null;
-  const say = (txt, cls = '') => ev.push(atuando ? { txt, cls, ref: atuando } : { txt, cls });
+  /* `tremer` pendurado na PRÓXIMA linha, não como evento próprio: o motor sempre chama `ctx.tremer(t, tipo)`
+     imediatamente antes do `ctx.say` do dano ("X perdeu N HP"), e assim a lista de eventos continua com UMA forma
+     só — todo evento tem `txt`. Um evento separado só de animação obrigaria o histórico da sala, a Arena e os
+     testes a filtrarem pelo campo que faltava. */
+  let tremendo = null;
+  const say = (txt, cls = '') => {
+    ev.push({ txt, cls, ...(atuando ? { ref: atuando } : {}), ...(tremendo || {}) });
+    tremendo = null;
+  };
   const porConta = async (ref, fn) => { atuando = ref; try { return await fn(); } finally { atuando = null; } };
   s.campo ||= { clima: null, turnos: 0, terreno: null, terrenoTurnos: 0, lados: {} }; // batalha de uma versão anterior, sem campo
   const ctx = { nome: m => m.nome, golpe: g => fmt(g.name), say, refDe: m => m.ref, monPorRef: r => monMP(s, r), campo: s.campo, ladoDe: m => ladoDe(s, m.ref),
     aliadosDe: m => vivosMP(s.lados[ladoDe(s, m.ref)]).filter(x => x !== m),     // Friend Guard
-    oponentesDe: m => vivosMP(s.lados[outro(ladoDe(s, m.ref))]) };               // Bad Dreams
+    oponentesDe: m => vivosMP(s.lados[outro(ladoDe(s, m.ref))]),                 // Bad Dreams
+    /* `tremer` é o MESMO gancho do single player (`efeitos.CTX.tremer`), só que aqui ele não pode tocar no DOM:
+       este motor é puro e roda SÓ no anfitrião — quem tem a tela é cada cliente, que recebe a lista de eventos.
+       Então a tremida VIAJA na linha da narração (`tremer` = ref de quem apanhou, `tipo` = o do golpe) e
+       `multiplayer.narrar` anima o cartão `[data-ref]` e toca o som do tipo. Sem isso a sala não tinha animação
+       nem som de impacto nenhum, e a luta de chefe parecia parada (relato #81). */
+    tremer: (m, tipo) => { tremendo = { tremer: m.ref, tipo: tipo || null }; } };
   // habilidades de entrada em campo, no 1º turno (Intimidate, Drizzle, Download…): a MESMA regra do single player
   if (s.turno === 1) await aoEntrarEmCampo(vivosMP(todosMP(s)), m => vivosMP(s.lados[outro(ladoDe(s, m.ref))]), ctx);
   if (s.fim) return { estado: s, eventos: ev };

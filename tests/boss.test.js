@@ -34,6 +34,23 @@ test('todo chefe tem golpe carregado, ciclo e fases coerentes', () => {
   }
 });
 
+/* A regra que o Mega Rayquaza quebrava (relato #81): fora da RUPTURA, a mecânica de defesa de um chefe só pode
+   REDUZIR o dano — ela nunca aumenta o que o motor já calculou. Quem tem couraça multiplica `coura.reducao` pelo
+   `pontoFraco.mult` e sai abaixo de 1 sozinho; quem NÃO tem couraça precisa do `mult` já líquido, senão acertar a
+   janela vale mais que o dano cru. O Rayquaza levava ×1,75 assim, e os cinco tipos da janela dele são as próprias
+   fraquezas de Dragão/Voador (Gelo é ×4), então empilhava: 175 contra 87 do segundo mais frágil, mediana 45. */
+test('nenhum chefe leva MAIS que o dano cru fora da Ruptura (só a exposição aumenta)', () => {
+  for (const id of Object.keys(CHEFES)) {
+    const t = chefe(1, id);
+    const tipo = t.boss.fraco || 'ice';
+    const noPonto = danoNoChefe(t, 100, tipo, 2);
+    assert.ok(noPonto <= 100, `${id}: acertar o ponto fraco vale ${noPonto} de 100 — a defesa do chefe está AUMENTANDO o dano`);
+    t.boss.quebradoAcoes = AJUSTES.exposto.acoes;
+    t.boss.ultimoTipo = null;     // `danoNoChefe` GUARDA o tipo: sem zerar, o Terapagos cobraria a adaptação na 2ª medida
+    assert.ok(danoNoChefe(t, 100, tipo, 2) > noPonto, `${id}: a Ruptura tem de valer algo`);
+  }
+});
+
 test('preparar o chefe: HP e atributos maiores, PP sem fim, couraça cheia; mais jogadores = mais HP (mas menos que proporcional)', () => {
   const um = chefe(1), dois = chefe(2), tres = chefe(3);
   assert.equal(um.stats.hp, 100 * AJUSTES.hpMult);

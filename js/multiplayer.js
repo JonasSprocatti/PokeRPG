@@ -18,7 +18,8 @@
    Resultado: co-op aplica na jornada de cada um; PvP é amistoso (só conta vitórias/derrotas em S.pvp). */
 import { G, save, dificuldadeDe, rotasAtuais, centroPokemon, zerarDescontoCentro } from './estado.js';
 import { healFull } from './efeitos.js';
-import { logRaw, toast, ask, semAnimacao } from './ui.js';
+import { logRaw, toast, ask, semAnimacao, tremerEl } from './ui.js';
+import { tocarImpacto } from './som.js';   // o par tremida+som do single player, agora também na sala (relato #81)
 import { API, ZONES, TYPE_PT, ITEMS } from './dados.js';
 import { sortearDaRota, genDe } from './mapas.js';
 import { EVENTOS, situacaoDoEvento, eventoDaSemana, jaComecou, registrarTentativa, agoraDoEvento, dataBR, formatarEspera } from './evento.js';
@@ -536,6 +537,14 @@ function marcarAtuando(ref) {
   // vale pra cena da luta (.mp-unidade) e pros cartões do lobby (.mp-mon)
   for (const el of document.querySelectorAll('[data-ref]')) el.classList.toggle('atacando', !!ref && el.dataset.ref === ref);
 }
+/* Quem apanhou treme e pisca na cor do tipo, e o som do impacto toca — o mesmo par do single player
+   (`efeitos.CTX.tremer`). O motor roda só no anfitrião, então a tremida chega como EVENTO (`{tremer: ref, tipo}`,
+   ver `mp-motor`) e cada cliente anima o SEU cartão. Vale pelos dois lados, como no single player, e as duas
+   metades se calam sozinhas se o jogador desligou a animação ou o som em ⚙ Ajustes. */
+function tremerCartao(ref, tipo) {
+  for (const el of document.querySelectorAll(`[data-ref="${CSS.escape(String(ref))}"]`)) tremerEl(el, tipo);
+  tocarImpacto(tipo);
+}
 async function narrar(eventos) {
   if (!eventos?.length || !G.sala) return;
   if (semAnimacao()) { for (const e of eventos) logRaw({ html: esc(e.txt), cls: e.cls }); return; }   // quem pediu menos animação recebe tudo de uma vez
@@ -543,6 +552,7 @@ async function narrar(eventos) {
   for (const e of eventos) {
     if (!G.sala || G.sala.narrando !== cracha) return;   // outra narração começou (ou a sala fechou): esta para aqui
     if ((e.ref || null) !== (G.sala.atuandoRef || null)) marcarAtuando(e.ref);
+    if (e.tremer) tremerCartao(e.tremer, e.tipo);   // a linha do dano vem com quem apanhou pendurado nela
     logRaw({ html: esc(e.txt), cls: e.cls });
     await sleep(PAUSA_NARRACAO);
   }

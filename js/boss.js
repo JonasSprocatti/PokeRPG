@@ -63,7 +63,15 @@ export const CHEFES = {
   },
   'rayquaza-mega': {
     nome: 'Mega Rayquaza', coura: null, ciclo: 4, cicloFase3: 3,
-    pontoFraco: { tipos: ['ice', 'rock', 'dragon', 'electric', 'fairy'], acoes: 2, mult: 1.75, contra: 0.5 },
+    /* Ele é o ÚNICO chefe sem couraça (é a identidade dele: o quebra-cabeça é a janela do ponto fraco, não um
+       estoque pra furar). Mas `mult` tinha sido copiado dos chefes que TÊM couraça, e lá o 1,75 é multiplicado
+       pela redução dela (0,5 × 1,75 = 0,875 no Mega Mewtwo e no Kyurem Negro). Sem couraça o 1,75 ficava solto:
+       acertar a janela valia ×1,75 do dano cru, e como os cinco tipos da janela são justamente as fraquezas
+       naturais de Dragão/Voador (Gelo é ×4!), o multiplicador EMPILHAVA. Medido, ele levava 175 onde o segundo
+       chefe mais frágil levava 87 e a mediana era 45 — 2 a 4 vezes mais mole que o resto do elenco (relato #81,
+       "foi muito fácil"). Os números agora são o LÍQUIDO que os irmãos já tinham; `tests/boss.test.js` trava a
+       regra geral: fora da RUPTURA, nenhum chefe leva mais que o dano cru. */
+    pontoFraco: { tipos: ['ice', 'rock', 'dragon', 'electric', 'fairy'], acoes: 2, mult: 0.9, contra: 0.25 },
     canhao: canhao('dragon-ascent', 'flying', 'physical', 190, 'DRAGON ASCENT'),
     expostoAposCanhao: 1,                // depois de soltar o Dragon Ascent (que baixa a defesa dele) fica exposto até a próxima ação
     fases: fases('Fase 2 — Vento Delta', [['attack', 1], ['speed', 1]], 'Fase 3 — Fúria do Céu', [['attack', 1], ['special-attack', 1]])

@@ -13,6 +13,18 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.0', data: '2026-10-07', titulo: '🐉 O Mega Rayquaza não era um chefe, era um alvo — e a Sala de Raide ganhou impacto', piada: 'O Mega Rayquaza foi contratado como chefe de raide e passou o contrato inteiro levando o dobro de pancada de todos os colegas, em silêncio, por um número copiado da ficha errada. Perguntado se havia notado, respondeu que sim, mas que não quis fazer escândalo. Corrigimos o número. Ele agora faz escândalo.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>O Mega Rayquaza era, de longe, o chefe de raide mais fácil do jogo</b> — e por um motivo bobo. Ele é o único chefe <b>sem couraça</b>, de propósito: o desafio dele é acertar a janela do ponto fraco, que gira a cada duas ações. Só que o bônus de acertar essa janela tinha sido copiado dos chefes que <b>têm</b> couraça, onde ele é cortado pela redução dela. Sem couraça pra cortar, o bônus ficou solto — e como os cinco tipos da janela são justamente as fraquezas naturais de um Dragão/Voador (Gelo é ×4 nele!), tudo <b>empilhava</b>.',
+        '<b>Na prática:</b> ele levava <b>175</b> de dano onde o segundo chefe mais frágil levava 87 e a média do elenco era 45. De duas a quatro vezes mais mole que os outros quinze. Agora acertar a janela vale o que vale nos irmãos dele, e <b>errar a janela custa bem mais caro</b> — a luta virou o quebra-cabeça que ela sempre quis ser. <i>(Relato #81 — obrigado, e desculpe a vitória fácil!)</i>',
+        '<b>E a regra que faltava:</b> fora da 💥 RUPTURA, a defesa de um chefe agora só pode <b>reduzir</b> dano, nunca aumentar. Um teste confere isso nos dezesseis, então nenhum chefe novo nasce com o mesmo engano.'
+      ] },
+      { nome: 'Novidades', itens: [
+        '<b>💥 A Sala de Raide e a Arena agora tremem.</b> Quem apanha sacode e <b>pisca na cor do tipo do golpe</b>, e o som do impacto toca — labareda pro fogo, lufada pro vento, estalo pro elétrico. Era o que a batalha de um jogador já fazia desde sempre; a sala era a única tela do jogo onde a luta acontecia em <b>silêncio absoluto</b>, com os cartões parados, e isso fazia até o chefe mais pesado parecer de papel. <i>(Mesmo relato #81: "as animações do Boss parecem estar fracas". Não estavam fracas — não existiam.)</i>',
+        'Como sempre, quem desligou <b>animações</b> ou <b>som</b> em ⚙ Ajustes não recebe nenhum dos dois: cada metade se cala sozinha.'
+      ] }
+    ] },
   { versao: '5.9', data: '2026-10-07', titulo: '🪨 Rock Slide, agora de verdade (e a caixa dos lendários cabendo na tela)', piada: 'A correção anterior consertava o alcance dos golpes indo perguntar o alcance deles pela internet, toda vez, e desistindo em silêncio quando a internet não atendia. É o equivalente a ligar para a prefeitura todas as manhãs para confirmar que a sua rua continua no mesmo lugar. A rua continua no mesmo lugar. Anotamos num papel.',
     secoes: [
       { nome: 'Correções', itens: [

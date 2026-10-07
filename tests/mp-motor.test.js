@@ -231,3 +231,21 @@ test('cada evento do turno diz QUEM estava agindo (pra sala destacar o cartão c
   // o texto continua sendo texto puro (quem exibe é que escapa) e o `ref` é só um dado a mais
   for (const x of eventos) assert.ok(typeof x.txt === 'string' && !/[<>]/.test(x.txt), x.txt);
 });
+
+/* A tremida de quem APANHA vai pendurada na linha do dano, não num evento próprio (relato #81: a sala não tinha
+   animação nem som de impacto). É o `ctx.tremer` do single player, e o importante é que a lista de eventos
+   continue com UMA forma só — todo evento com `txt`, senão o histórico da sala e a Arena escrevem linha vazia. */
+test('a linha do dano leva quem apanhou (`tremer`) e o tipo do golpe, e nenhum evento vem sem texto', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const a = fotoDoMon(pokemon({ nick: 'Eu' }), 'A0', 'u1');
+  const e = fotoDoMon(pokemon({ nick: 'Ele' }), 'B0', 'ia');
+  const { eventos } = await resolverTurnoMP(novaBatalhaMP([a], [e]), [{ ref: 'A0', tipo: 'golpe', golpe: 0, alvo: 'B0' }]);
+  const dano = eventos.find(x => /Ele perdeu/.test(x.txt));
+  assert.ok(dano, 'a linha do dano existe');
+  assert.equal(dano.tremer, 'B0', 'quem treme é quem apanhou, não quem agiu');
+  assert.equal(dano.ref, 'A0', 'e o autor da ação continua sendo o atacante');
+  assert.equal(dano.tipo, 'normal', 'o tipo do golpe vai junto (pinta a piscada e escolhe o som)');
+  for (const x of eventos) assert.equal(typeof x.txt, 'string', `evento sem texto: ${JSON.stringify(x)}`);
+  // a marca não vaza pra linha seguinte: só a linha do dano tem `tremer`
+  assert.equal(eventos.filter(x => x.tremer).length, 1);
+});

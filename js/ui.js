@@ -142,10 +142,16 @@ function reanimar(id, classe) {
    variável de CSS posta no sprite antes seria jogada fora junto com o elemento. `tipo` ausente (dano de
    confusão, esforço do próprio golpe) fica no vermelho de sempre. */
 export function shake(m, tipo) {
-  const id = idDoMon(m); if (!id || semAnimacao()) return;
-  const el = reanimar(id, 'shake'); if (!el) return;
+  const el = document.getElementById(idDoMon(m) || ''); if (el) tremerEl(el, tipo);
+}
+/* A mesma tremida, num elemento que o chamador já tem na mão. Existe porque na SALA o Pokémon não é um sprite
+   com id (`idDoMon` lê `G.S`/`G.B`, que a sala não usa): são cartões marcados por `[data-ref]`, e o motor de lá
+   publica a tremida como EVENTO pra cada cliente animar o seu (ver `mp-motor` → `multiplayer.narrar`). */
+export function tremerEl(el, tipo) {
+  if (!el || semAnimacao()) return;
+  el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
   el.style.setProperty('--cor-impacto', TC[tipo] || '#ff4d4d');
-  reanimar(id, 'hit-flash');
+  el.classList.remove('hit-flash'); void el.offsetWidth; el.classList.add('hit-flash');
 }
 // quem usou o golpe "pula" um pouco — narrado bem no momento em que golpe.js anuncia "X usou Y!" (ctx.atacar,
 // opcional: o multiplayer não tem DOM, então o ctx dele simplesmente não define isso)
