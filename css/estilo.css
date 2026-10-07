@@ -2,8 +2,12 @@
   --ink:#161A33; --panel:#1F2447; --panel2:#282E5A; --line:#394180;
   --text:#EEE8D8; --muted:#A3A6C8; --yellow:#F7C548; --grass:#5FB36A; --red:#E4572E;
   --paper:#F4EFE3; --paper-ink:#1C1F3A;
-  --display:'Fredoka', 'Atkinson Hyperlegible', system-ui, sans-serif; /* títulos e números: arredondada, 2/5/8 bem distintos */
+  --display:'Fredoka', 'Atkinson Hyperlegible', system-ui, sans-serif; /* NÚMEROS e botões: arredondada, 2/5/8 bem distintos */
   --body:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* `--titulo` só existe pra fonte que NÃO pode tocar em número — hoje a 👾 pixelada. Os h1/h2/h3 do jogo são
+     nome de Pokémon, de rota e de tela; o nível, o HP, o dano e o ₽ moram em classe própria (.dinheiro, .top-r,
+     .codigo, as barras) e seguem no `--display`. Sem definição, cai no `--display` e nada muda: é por isso que
+     as outras onze fontes não precisaram saber que esta variável existe. */
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -233,7 +237,7 @@ ul.rel-meus li.arquivado{border-left-color:var(--line)}
 .rel-sem-conta{background:var(--panel2);border:2px dashed var(--line);border-radius:10px;padding:10px 12px}
 /* tela de login */
 .login-card{max-width:460px;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:12px}
-.login-card h2{margin:0;font:700 24px var(--display)}
+.login-card h2{margin:0;font:700 24px var(--titulo,var(--display))}
 .login-card p{margin:0}
 .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1f1f1f;border:1px solid #747775;border-radius:999px;padding:12px 18px;font:600 16px var(--body)}
 .btn-google:hover{background:#f2f2f2}
@@ -264,7 +268,7 @@ ul.rel-meus li.arquivado{border-left-color:var(--line)}
 
 /* criação */
 .create{max-width:1100px;margin:0 auto;padding:32px 20px 60px}
-.create h1{font:700 clamp(34px,5.5vw,60px)/1.02 var(--display);margin:0 0 12px;color:var(--yellow);max-width:14ch}
+.create h1{font:700 clamp(34px,5.5vw,60px)/1.02 var(--titulo,var(--display));margin:0 0 12px;color:var(--yellow);max-width:14ch}
 .create .lead{max-width:62ch;color:var(--muted);margin:0}
 .online-marcador{color:var(--muted);font-size:14px;margin:2px 0 8px}
 .dot-viva{display:inline-block;animation:pulso-status 1.8s ease-in-out infinite}
@@ -274,12 +278,12 @@ ul.rel-meus li.arquivado{border-left-color:var(--line)}
 /* Páginas de texto corrido (privacidade, termos, sobre, guia — a tela do jogo e o .html estático gerado por
    ferramentas/gerar-paginas.mjs usam a MESMA marcação). Larguras de leitura: linha longa demais faz o olho
    perder a volta, e estas páginas são as únicas do projeto com parágrafos de verdade. */
-.pagina h2{font:700 22px var(--display);color:var(--yellow);margin:32px 0 10px;max-width:40ch}
+.pagina h2{font:700 22px var(--titulo,var(--display));color:var(--yellow);margin:32px 0 10px;max-width:40ch}
 .pagina h2.passo{color:var(--text)}  /* o numerado já tem a bolinha amarela; dois amarelos brigam */
 .pagina p,.pagina ul,.pagina ol{max-width:72ch}
 .pagina li{margin:4px 0}
 .pagina a{color:var(--yellow)}
-.pagina h3{font:700 17px var(--display);color:var(--text);margin:24px 0 6px}
+.pagina h3{font:700 17px var(--titulo,var(--display));color:var(--text);margin:24px 0 6px}
 /* Índice do guia (guia.html e o pé de cada capítulo): são links de navegação, não itens de texto corrido, então
    viram cartão em vez de lista com marcador — num celular o alvo de toque fica do tamanho do cartão. */
 .pagina ul.indice{list-style:none;padding:0;display:grid;gap:10px}
@@ -334,8 +338,8 @@ a.btn{display:inline-block;text-decoration:none}
    flutuando ao mesmo tempo ficaria ocupado demais; aqui, sozinho, é só vida) */
 @keyframes flutuar{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .dexno{font:500 14px var(--display);color:var(--muted);margin:0}
-.pv h2{font:700 40px/1.1 var(--display);margin:2px 0 10px}
-.pv h3{font:700 16px var(--display);color:var(--yellow);margin:20px 0 8px}
+.pv h2{font:700 40px/1.1 var(--titulo,var(--display));margin:2px 0 10px}
+.pv h3{font:700 16px var(--titulo,var(--display));color:var(--yellow);margin:20px 0 8px}
 .bs{display:grid;grid-template-columns:90px 38px 1fr;align-items:center;gap:8px;font-size:14px}
 .bs span{color:var(--muted)} .bs b{text-align:right;font-family:var(--display)}
 .bs i{display:block;height:8px;border-radius:4px;background:var(--yellow)}
@@ -481,7 +485,7 @@ a.btn{display:inline-block;text-decoration:none}
    `.me img` daqui pegava TAMBÉM o Pokémon em campo — era dele o retângulo escuro atrás do seu sprite na batalha. */
 .ficha-me{display:flex;gap:12px;align-items:center}
 .ficha-me img{width:96px;height:96px;image-rendering:pixelated;object-fit:contain;background:var(--panel2);border-radius:12px;flex:none}
-.ficha-me h2{margin:0;font:700 26px/1.1 var(--display)}
+.ficha-me h2{margin:0;font:700 26px/1.1 var(--titulo,var(--display))}
 .ficha-me .sub{color:var(--muted);font-size:14px;margin:2px 0 6px}
 .bars{margin:14px 0 6px;display:grid;gap:6px}
 .hp{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;font:700 12px var(--display)}
@@ -504,7 +508,7 @@ table.stats td:first-child,table.stats th:first-child{text-align:left}
 table.stats td.v{font:700 15px var(--display)}
 .up{color:#7fd88a}.down{color:#ff8a6b}
 .sec{margin-top:18px}
-.sec h3{font:700 15px var(--display);color:var(--yellow);margin:0 0 6px}
+.sec h3{font:700 15px var(--titulo,var(--display));color:var(--yellow);margin:0 0 6px}
 .sec p{margin:0}
 .mlist details{border-top:1px solid var(--line);padding:6px 0}
 .mlist summary{display:grid;grid-template-columns:1fr auto;gap:2px 8px;cursor:pointer;list-style:none}
@@ -523,7 +527,7 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .bag-acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
 .scene{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:18px;min-height:290px}
-.zone-head h2{font:700 30px/1.1 var(--display);margin:0}
+.zone-head h2{font:700 30px/1.1 var(--titulo,var(--display));margin:0}
 .zone-head p{margin:4px 0 0;color:var(--muted)}
 .zones{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
 .chip{background:var(--panel2);border:2px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px}
@@ -553,7 +557,7 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .taxas-indice a{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;text-decoration:none}
 .taxas-indice a:hover{border-color:var(--yellow)}
 .taxas-sec{max-width:900px;margin-top:26px;scroll-margin-top:12px}
-.taxas-sec h2{margin:0;font:700 20px var(--display)}
+.taxas-sec h2{margin:0;font:700 20px var(--titulo,var(--display))}
 .taxas-sec table.ranking td:first-child{font-weight:600}
 .taxas-sec table.ranking td.pts{white-space:normal;text-align:left;font-size:14px}
 
@@ -590,7 +594,9 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .fonte-card{display:grid;gap:4px;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--text)}
 .fonte-card:hover{border-color:var(--yellow)}
 .fonte-card.on{border-color:var(--yellow);background:var(--panel2)}
-.fonte-nome{font:700 17px var(--f-display)}
+/* o nome da opção é um TÍTULO: mostra `--f-titulo` quando a fonte tem um (a 👾 pixelada), senão o display dela.
+   Sem isto a Pixelada apareceria idêntica à Monoespaçada na lista, que é justamente onde ela não é. */
+.fonte-nome{font:700 17px var(--f-titulo,var(--f-display))}
 .fonte-amostra{font:400 20px/1.3 var(--f-corpo);color:var(--text)}
 .fonte-card small{color:var(--muted);font-family:var(--f-corpo)}
 .ok-offline{color:var(--grass)}
@@ -835,7 +841,7 @@ ul.quase small{color:var(--muted);font-size:12px}
 /* multiplayer — menu: duas portas (criar / entrar) e o que dá pra fazer numa sala */
 .mp-portas{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
 .mp-porta{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:8px;align-content:start}
-.mp-porta h2{margin:0;font:700 20px var(--display);color:var(--yellow)}
+.mp-porta h2{margin:0;font:700 20px var(--titulo,var(--display));color:var(--yellow)}
 .mp-porta p{margin:0}
 .mp-codigo-campo{font:700 26px var(--display);letter-spacing:.3em;text-align:center;text-transform:uppercase;width:5.5em;max-width:100%}
 .mp-modos{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:8px}
@@ -939,12 +945,12 @@ ul.quase small{color:var(--muted);font-size:12px}
 .mp-diag li.err{color:#ffab91}
 .mp-centro{margin:10px 0}
 .mp-chat{margin:16px 0 4px;width:100%}
-.mp-chat h3{margin:0 0 6px;font:700 16px var(--display)}
+.mp-chat h3{margin:0 0 6px;font:700 16px var(--titulo,var(--display))}
 .mp-chat .log{height:130px}
 .mp-chat .log p{display:flex;align-items:center;gap:4px}
 .mp-chat .subrow input{flex:1;min-width:120px}
 .mp-time{display:grid;gap:8px;align-content:start;background:var(--panel2);border-radius:14px;padding:10px}
-.mp-time h3{margin:0;font:700 16px var(--display);color:var(--yellow)}
+.mp-time h3{margin:0;font:700 16px var(--titulo,var(--display));color:var(--yellow)}
 .mp-config{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;width:100%;margin-bottom:12px}
 .check{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;font-size:14px}
 .check small{grid-column:2}
@@ -1118,7 +1124,7 @@ button.dexr:hover{border-color:var(--yellow);transform:translateY(-1px)}
 .dex-ficha{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
 .dex-ficha-topo{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .dex-ficha-topo img{width:96px;height:96px;image-rendering:pixelated}
-.dex-ficha h3{margin:0 0 6px;font:700 22px var(--display)}
+.dex-ficha h3{margin:0 0 6px;font:700 22px var(--titulo,var(--display))}
 .dex-ficha h4{margin:14px 0 6px;font:700 15px var(--display)}
 .dex-onde{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:13px;color:var(--muted)}
 

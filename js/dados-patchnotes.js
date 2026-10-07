@@ -13,6 +13,19 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.8', data: '2026-10-07', titulo: '👾 A fonte pixelada voltou — e o Rock Slide voltou a ser Rock Slide', piada: 'A fonte pixelada havia sido demitida por justa causa depois que um jogador leu "₽2.580" como "₽5.280" e tomou decisões financeiras com base nisso. Ela recorreu, alegando que o problema não era ela, era o departamento de contabilidade estar usando ela. Tinha razão. Foi recontratada para o departamento de placas, onde não há um único número.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>👾 Fonte Pixelada, em ⚙ Ajustes → Fonte.</b> Agora são <b>treze</b>. Ela já tinha estado no jogo e tinha <b>saído</b>, porque num jogo que mostra HP, dano e ₽ o tempo todo um 5 que parece 8 não é estilo, é defeito.',
+        '<b>O que mudou não foi a fonte — foi onde ela entra.</b> O pixel agora fica <b>só nos títulos</b>: nome do Pokémon, nome da rota, nome da tela. O nível, o HP, o dano e o dinheiro saem numa <b>monoespaçada</b> (números alinhados, dígito nenhum parecido com outro), e a narração da batalha numa fonte de <b>alta legibilidade</b>, que é o texto que você mais lê.',
+        'Ou seja: dá pra ter a cara de jogo de Game Boy <b>sem</b> precisar adivinhar quanto de HP sobrou.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Golpe de área não estava pegando em área pra quem já jogava.</b> Rock Slide, Earthquake, Surf — todos continuavam batendo num inimigo só, mesmo depois da atualização que fez eles pegarem o grupo inteiro. <i>(Relatado na mesma hora — obrigado!)</i>',
+        '<b>O motivo:</b> cada golpe guarda <b>quem ele alcança</b>, e esse dado passou a ser gravado no seu aparelho em setembro. Golpe que o jogo tinha guardado <b>antes</b> disso não sabia dizer o próprio alcance — e nada mandava buscar de novo, então ele ficava desatualizado pra sempre. Enquanto todo golpe batia num alvo só, isso não fazia diferença nenhuma. No dia em que a área passou a existir, fez.',
+        '<b>Agora o jogo conserta sozinho.</b> Ao abrir uma jornada, ele completa em segundo plano o que estiver faltando nos golpes seus, dos aliados e de quem está no esconderijo — você não precisa fazer nada, e nem vai perceber. Quem joga <b>offline</b> vai ver o mapa pedir pra ser <b>baixado de novo</b>: é de propósito, porque no avião não há de onde buscar o dado que falta.'
+      ] }
+    ] },
   { versao: '5.7', data: '2026-10-07', titulo: '🔤 Mais três fontes, uma delas com serifa', piada: 'Pedimos ao departamento de tipografia três fontes bonitas. Ele voltou com quarenta, todas lindas, e em onze delas o 5 e o 8 eram a mesma letra usando chapéus diferentes. Ficamos com três. As outras trinta e sete seguem no portfólio dele, que é muito bonito e que ninguém consegue ler.',
     secoes: [
       { nome: 'Novidades', itens: [

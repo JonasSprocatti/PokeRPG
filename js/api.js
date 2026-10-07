@@ -213,7 +213,15 @@ export function slimMove(m) {
 // registro guardado sem ele é atualizado na primeira busca online. Ao acrescentar OUTRO campo, estenda esta checagem.
 export const loadPokemon = q => cached('mon:' + q, async () => slimPokemon(await getJSON(`${API}/pokemon/${q}`)),
   v => Array.isArray(v?.learnset?.extras) && typeof v.weight === 'number');
-export const loadMove = url => cached('move:' + lastSeg(url), async () => slimMove(await getJSON(url)));
+/* `valido` confere o `target` (quem o golpe alcança: `selected-pokemon`, `all-opponents`, `all-other-pokemon`…).
+   O campo entrou no `slimMove` em 21/09/2026 e este `cached` não tinha `valido` NENHUM — então todo golpe guardado
+   antes daquele dia voltava sem `target` **pra sempre**, porque nada o invalidava. Enquanto o jogo tinha um inimigo
+   só isso não custava nada; quando o golpe de área passou a ler `g.target` (07/10/2026), Rock Slide virou golpe de
+   alvo único na cara de quem já jogava — relatado na mesma hora, e exatamente a armadilha que o CLAUDE.md descreve
+   ("campo novo num `load*` entra por `valido`, não por chave nova"). Golpe que já está DENTRO de um save é outra
+   camada: quem completa é `progressao.completarAlvosDoSave`. */
+export const loadMove = url => cached('move:' + lastSeg(url), async () => slimMove(await getJSON(url)),
+  v => typeof v?.target === 'string');
 export const loadAbility = a => cached('ab:' + a.name, async () => {
   const d = await getJSON(a.url); const en = (d.effect_entries || []).find(e => e.language.name === 'en');
   const ft = (d.flavor_text_entries || []).filter(f => f.language.name === 'en').pop();

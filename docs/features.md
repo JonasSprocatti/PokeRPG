@@ -3121,3 +3121,93 @@ saem nela.
 Custo: nada no jogo (só a fonte escolhida carrega) e três requisições a mais ao abrir ⚙ Ajustes, que carrega
 todas pra desenhar cada opção na própria fonte. O `sw.js` já tinha `fonts.googleapis.com` e `fonts.gstatic.com`
 em `EXTERNOS`, então o modo offline pegou as três de graça.
+
+## 👾 A fonte pixelada, e o `target` que o cache nunca atualizava (07/10/2026)
+
+Duas coisas no mesmo pedido, e a segunda é um post-mortem de algo que eu mesmo tinha acabado de quebrar.
+
+### O relato: "Rock Slide deveria pegar em todos, mas não tá pegando"
+
+A área tinha entrado horas antes, com teste passando. O teste passava **e estava certo** — ele usava um `ctx`
+fabricado e um golpe com `target: 'all-opponents'` escrito à mão. Nunca tocou no caminho pelo qual o `target`
+chega de verdade. Reproduzir foi rodar `batalha.turn()` com o `CTX` real: com `target` presente os dois inimigos
+apanhavam; tirando o `target`, o segundo ficava intacto. O código estava certo, o **dado** é que não chegava.
+
+O `target` atravessa três camadas antes do motor, e a do meio não tinha guarda nenhuma:
+
+```js
+export const loadMove = url => cached('move:' + lastSeg(url), async () => slimMove(await getJSON(url)));
+//                                                                      ↑ nenhum `valido`
+```
+
+`target` entrou no `slimMove` em **21/09/2026**. `cached` aceita qualquer registro guardado quando `valido` é
+nulo — então todo golpe cacheado antes daquele dia voltava **sem `target`, para sempre**, porque nada o
+invalidava. É literalmente a armadilha que o `CLAUDE.md` já descrevia ("campo novo num `load*` entra por
+`valido`, não por chave nova"), e ela estava escrita *antes* deste bug acontecer. A regra existia; o campo passou
+sem ela.
+
+**Por que ninguém viu em 16 dias:** enquanto todo golpe batia num alvo só, `g.target` não era lido por nada que
+mudasse o jogo. O dado estava corrompido e era inofensivo. A área não criou o bug — ela foi o primeiro leitor.
+
+### Três camadas, três consertos
+
+| camada | conserto | por quê |
+|---|---|---|
+| cache (`api.loadMove`) | `valido: v => typeof v?.target === 'string'` | o registro velho é rebuscado na primeira vez online |
+| save (`S.player.moves`) | `pokemon.completarAlvosDoSave`, no boot | **o save guarda uma CÓPIA do golpe, não uma referência** — consertar o cache não conserta quem já está dentro de um save |
+| download offline | `VERSAO_DOWNLOAD` 5 → 6 | a lista de buscas não cresceu, o CONTEÚDO de uma delas mudou; sem a marca nova, quem baixou antes joga no avião com área quebrada e sem nunca saber |
+
+A camada do save é a que se esquece. `loadMove` conserta o que o jogo **vai** buscar; o golpe que já está no
+`S.player.moves` foi copiado uma vez, no dia em que foi aprendido, e ninguém relê. Por isso a migração no boot,
+e por isso ela é **não-bloqueante**: é conserto de dado velho, não pode atrasar o jogo abrir nem derrubá-lo se a
+rede falhar (a armadilha "busca não essencial não pode derrubar o fluxo"). Sem rede cada busca falha calada e o
+golpe segue como estava — o comportamento de antes, não uma regressão.
+
+**Ela mora em `pokemon.js`, não em `progressao.js`,** e por um motivo que só apareceu ao escrever o teste:
+`progressao.js` arrasta `ui.js`, que lê `matchMedia` no corpo do módulo e não importa no Node sem DOM de mentira.
+`completarAlvosDoSave` é dado + rede, sem DOM — `pokemon.js` já importa `loadMove` e já é importável no Node.
+Quando o teste é difícil de escrever, normalmente é o lugar que está errado, não o teste.
+
+### A fonte pixelada: o que mudou não foi a fonte
+
+A Pixelify Sans já tinha estado no jogo e **saiu** por confundir 2, 5 e 8 — a regra mais dura da lista de fontes,
+num jogo que mostra HP, dano e ₽ o tempo todo. O pedido de trazê-la de volta não vinha com uma fonte melhor;
+vinha com a mesma fonte.
+
+O que mudou foi **onde ela entra**. `--display` sempre significou "títulos **e** números" — as duas coisas na
+mesma variável, e é isso que tornava impossível ter pixel sem ter pixel no HP. Agora há `--titulo`, lida só por
+h1/h2/h3:
+
+```css
+--titulo  →  nome de Pokémon, de rota, de tela        (14 regras de h1/h2/h3)
+--display →  nível, HP, dano, ₽, botões, código da sala
+```
+
+A separação custou **14 `sed`** trocando `var(--display)` por `var(--titulo,var(--display))`. O fallback é o que
+deixou as outras doze fontes byte-a-byte idênticas: nenhuma define `--titulo`, então todas caem no `--display` de
+sempre e não precisaram saber que a variável existe.
+
+Antes de separar, a verificação que decide tudo: **nenhum h1/h2/h3 do jogo mostra número.** `.pv h2` é o nome na
+prévia (o `Nº 0025` está num `<p class="dexno">` acima), `.ficha-me h2` é o apelido (o `nível 25` está num
+`<p class="sub">`), `.zone-head h2` é o nome da rota. Os números todos moram em classe própria. Se um único
+deles tivesse número dentro, a separação não funcionaria e a resposta teria de ser "não dá".
+
+`aplicarFonte` **remove** a propriedade quando a fonte não tem `titulo`, em vez de só não setá-la: ela fica no
+`style` do `<html>` e sobreviveria à troca, deixando título pixelado numa fonte que não pediu nada disso.
+
+A combinação é deliberadamente de três famílias: Pixelify Sans no título, **IBM Plex Mono** nos números (ar de
+console, dígitos impecáveis) e **Atkinson Hyperlegible** no texto corrido — a narração da batalha é o que mais se
+lê no jogo e não podia virar refém da estética. Duas das três já estavam no projeto.
+
+`tests/ajustes.test.js` tranca a regra pelos dois lados: nenhuma fonte pode ter pixelada em `display` ou `corpo`
+(varre uma lista de nomes conhecidos: Pixelify, Press Start, Silkscreen, VT323, Jersey, Micro 5), a Pixelada tem
+de manter `titulo` pixelado, e o CSS tem de manter o fallback. Sem esse teste, a regra do projeto some no dia em
+que alguém achar que "fica legal".
+
+### O que ficou de fora
+
+- **Press Start 2P**, a fonte de arcade mais reconhecível: largura fixa e enorme, estoura um `h1` de
+  `clamp(34px,5.5vw,60px)` com `max-width:14ch`. Peso único também.
+- **Avaliar os dígitos olhando**: este ambiente não tem navegador nem PIL (`CLAUDE.md`). A escolha foi feita
+  tirando o risco por construção — prender a pixelada onde número não passa — em vez de apostar que os dígitos
+  de alguma pixelada seriam bons o bastante. É mais barato garantir que medir.

@@ -28,6 +28,7 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
+import { completarAlvosDoSave } from './pokemon.js';
 import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
 import { pedirPermissao, desligarNotificacoes } from './notificacoes.js';
 import { telaPerfil } from './perfil-amigo.js';
@@ -496,6 +497,10 @@ const saveValido = s => !!(s?.player?.data && s.meta?.growth);
 function abrirJornada(s, aviso) {
   G.S = s; G.B = null; G.S.id ||= novoId(); // save de antes do id existir ganha um agora
   migrarShiniesAmigos(G.S); // bug corrigido em 27/09/2026: shiny do jogador/evolução sem o registro que libera o início-shiny
+  /* Golpe gravado sem `target` (cache de antes de 21/09/2026) não sabe dizer que é de ÁREA — Rock Slide batia num
+     inimigo só. Em SEGUNDO PLANO de propósito: é conserto de dado velho, não pode atrasar o jogo abrir nem
+     derrubá-lo se a rede falhar (a busca não essencial nunca entra no caminho crítico). Salva só se mudou algo. */
+  completarAlvosDoSave(G.S).then(n => { if (n) save(); }).catch(e => console.warn('alvos dos golpes', e));
   G.mode = 'explore'; G.panel = 'main';
   // batalha em andamento volta do jeito que estava (fechar/recarregar não é fuga): os `vol` vêm salvos junto
   G.B = restaurarBatalha(s.batalha);

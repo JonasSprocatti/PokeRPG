@@ -1,7 +1,7 @@
 /* ============ criar um Pokémon ============ */
 // Instância jogável a partir dos dados da API (slimPokemon): IVs/natureza/habilidade sorteados salvo `opt`,
 // golpes = os 4 mais recentes aprendidos por nível, shiny 1/4096. `mon.shiny` sobrevive à evolução (evolve só troca id/data). Usado pela criação (jogador) e pela batalha (selvagem).
-import { STATS, NATURES } from './dados.js';
+import { API, STATS, NATURES } from './dados.js';
 import { calcStats, freshVol, defaultMoves, ehShiny, sortearGenero } from './regras.js';
 import { oficioDe } from './oficios.js';
 import { loadMove, loadSpecies } from './api.js';
@@ -39,4 +39,26 @@ export async function makeMon(data, level, opt = {}) {
   // da luta o áudio já está decodificado e sai junto da cena em vez de chegar atrasado. No-op com o som desligado.
   precarregarCry(data.id);
   return mon;
+}
+
+/* Completa o `target` (quem o golpe alcança) nos golpes JÁ gravados num save. O campo entrou no `slimMove` em
+   21/09/2026 e `api.loadMove` não tinha `valido`, então o cache devolvia golpe sem `target` — e o save guarda uma
+   CÓPIA do golpe, não uma referência: consertar o cache (feito, lá) não conserta quem já está dentro de um save.
+   Enquanto todo golpe batia num alvo só isso não custava nada; com o golpe de área lendo `g.target`, Rock Slide
+   virou alvo único na cara de quem já jogava (relatado em 07/10/2026, no mesmo dia em que a área entrou).
+   Mora AQUI, e não em `progressao.js`, por um motivo prático: lá o arquivo arrasta `ui.js`/`render.js` e não
+   importa no Node sem um DOM de mentira. Isto é dado + rede, sem DOM — e por isso tem teste.
+   Roda no boot, **sem travar nada**: só os golpes que faltam, e só de quem é seu (você, aliados, esconderijo).
+   Sem rede cada busca falha calada e o golpe segue como estava, que é o comportamento de antes e não uma
+   regressão. Devolve quantos completou (0 = nada a fazer, o caso normal — nenhuma requisição sai). */
+export async function completarAlvosDoSave(S) {
+  const faltando = [S?.player, ...(S?.aliados || []), ...(S?.esconderijo || [])]
+    .filter(Boolean).flatMap(m => (m?.moves || []).filter(g => g?.name && !g.target));
+  if (!faltando.length) return 0;
+  let completados = 0;
+  await Promise.all(faltando.map(async g => {
+    const novo = await loadMove(`${API}/move/${g.name}/`).catch(() => null);
+    if (novo?.target) { g.target = novo.target; completados++; }
+  }));
+  return completados;
 }

@@ -45,7 +45,18 @@ export const FONTES = [
     display: `'Grandstander', ${sistema}`, corpo: `'Rubik', ${sistema}` },
   { id: 'bitter', nome: 'Livro de aventura', desc: 'Bitter: a única com serifa, desenhada pra tela. Dá ar de livro ao texto.',
     familias: ['Bitter:wght@400;600;800'],
-    display: `'Bitter', ${sistema}`, corpo: `'Bitter', ${sistema}` }
+    display: `'Bitter', ${sistema}`, corpo: `'Bitter', ${sistema}` },
+  /* 👾 A ÚNICA com `titulo` próprio, e o campo existe POR CAUSA dela. A Pixelify Sans já tinha sido tentada e
+     saiu do jogo por confundir 2, 5 e 8 — num jogo que mostra HP, dano e ₽ o tempo todo, dígito ambíguo é
+     defeito. O que mudou não foi a fonte: foi `--titulo` (css/estilo.css), que a põe só em h1/h2/h3 — nome de
+     Pokémon, de rota e de tela. Número nenhum passa por ela, então o motivo da rejeição deixou de existir POR
+     CONSTRUÇÃO, não por mudança de opinião sobre os dígitos.
+     IBM Plex Mono nos números (ar de console, dígitos impecáveis) e Atkinson no texto corrido: a narração da
+     batalha é o que mais se lê no jogo e não podia virar refém da estética. */
+  { id: 'pixel', nome: 'Pixelada', desc: 'Pixelify Sans nos títulos, monoespaçada nos números e texto bem legível. Retrô sem atrapalhar o HP.',
+    familias: ['Pixelify+Sans:wght@400;600;700', 'IBM+Plex+Mono:wght@400;600;700', 'Atkinson+Hyperlegible:wght@400;700'],
+    titulo: `'Pixelify Sans', ${sistema}`,
+    display: `'IBM Plex Mono', ui-monospace, monospace`, corpo: `'Atkinson Hyperlegible', ${sistema}` }
 ];
 export const fonteDe = id => FONTES.find(f => f.id === id) || FONTES[0];
 export const fonteEscolhida = () => fonteDe(store.get(FONTE_KEY) || 'padrao');
@@ -62,6 +73,11 @@ export function aplicarFonte(id = null) {
   if (link.href !== url) link.href = url;
   document.documentElement.style.setProperty('--display', f.display);
   document.documentElement.style.setProperty('--body', f.corpo);
+  /* `--titulo` é OPCIONAL e só a 👾 pixelada usa (ver FONTES). Removê-lo quando a fonte não tem é obrigatório:
+     a propriedade fica no `style` do <html> e sobreviveria à troca, deixando o título pixelado numa fonte que
+     não pediu isso. Sem a propriedade, o `var(--titulo, var(--display))` do CSS cai no padrão sozinho. */
+  if (f.titulo) document.documentElement.style.setProperty('--titulo', f.titulo);
+  else document.documentElement.style.removeProperty('--titulo');
   return f;
 }
 

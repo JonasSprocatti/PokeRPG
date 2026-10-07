@@ -24,9 +24,13 @@ import { loadPokemon, loadMove, loadSpecies, loadGrowth, loadEvo, pokemonEmCache
    Subiu na v5 pela mesma razão, um dia depois: a espécie traz `eggGroups` (os grupos-ovo), e é deles que sai QUEM
    pode cruzar com quem (ovos.parCompativel). Sem o campo não há par nenhum, então no avião o esconderijo volta a
    ser um depósito e nenhum ovo aparece — calado, como se a mecânica não existisse.
+   Subiu na v6 pelo MESMO padrão, agora do lado dos golpes: `loadMove` passou a exigir `target` (quem o golpe
+   alcança), que é o que faz Earthquake e Rock Slide pegarem o grupo inteiro. A lista de buscas não cresceu — o
+   CONTEÚDO de uma delas mudou. Sem a marca nova, quem baixou o mapa antes jogaria no avião com todo golpe de área
+   batendo em um só, sem nunca saber por quê: online o `valido` rebusca sozinho, offline não há de onde.
    Quem baixou numa versão antiga volta a aparecer como incompleto — é de propósito: dizer "já baixado"
    pra um mapa que ainda falha no avião é pior do que pedir um download de novo. */
-export const VERSAO_DOWNLOAD = 5;
+export const VERSAO_DOWNLOAD = 6;
 const marcaDaGen = gen => `baixado-v${VERSAO_DOWNLOAD}:gen${gen}`;
 
 /* Quem guarda as IMAGENS é o service worker (sw.js): `guardarSprite` só pede a imagem, e é o sw que a intercepta

@@ -31,7 +31,7 @@ export function telaAjustes() {
     <p class="lead">Escolha a fonte que você lê melhor. Vale para o jogo inteiro, em qualquer jornada, e fica salva neste navegador.</p>
     <h3 class="passo"><span>A</span> Fonte</h3>
     <div class="fontes">${FONTES.map(f => `
-      <button class="fonte-card ${f.id === atual.id ? 'on' : ''}" data-act="fonte" data-v="${f.id}" aria-pressed="${f.id === atual.id}" style="--f-display:${f.display};--f-corpo:${f.corpo}">
+      <button class="fonte-card ${f.id === atual.id ? 'on' : ''}" data-act="fonte" data-v="${f.id}" aria-pressed="${f.id === atual.id}" style="--f-display:${f.display};--f-corpo:${f.corpo}${f.titulo ? `;--f-titulo:${f.titulo}` : ''}">
         <b class="fonte-nome">${esc(f.nome)}${f.id === atual.id ? ' ✓' : ''}</b>
         <span class="fonte-amostra">Pikachu · Nv. 25 · 2 5 8 · ₽1.250</span>
         <small>${esc(f.desc)}</small>
