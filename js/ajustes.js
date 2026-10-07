@@ -32,7 +32,20 @@ export const FONTES = [
     display: `'Quicksand', ${sistema}`, corpo: `'Nunito', ${sistema}` },
   { id: 'comfortaa', nome: 'Geométrica', desc: 'Comfortaa nos títulos, Lexend no texto: círculos perfeitos, ar de app moderno.',
     familias: ['Comfortaa:wght@500;700', 'Lexend:wght@400;600'],
-    display: `'Comfortaa', ${sistema}`, corpo: `'Lexend', ${sistema}` }
+    display: `'Comfortaa', ${sistema}`, corpo: `'Lexend', ${sistema}` },
+  /* Segunda leva do relato #78, por categoria que ainda NÃO existia na lista — não por "mais uma redonda".
+     Nenhuma de peso único: `--display` é usado em 500/600/700/800 pelo CSS, e fonte com um peso só vira negrito
+     SINTÉTICO (o navegador engorda o traço na marra), que numa display gorda fica borrado. Os pesos abaixo foram
+     conferidos um a um no Google Fonts. */
+  { id: 'mplus', nome: 'Fofinha', desc: 'M PLUS Rounded 1c: pontas arredondadas, a cara de menu de jogo japonês.',
+    familias: ['M+PLUS+Rounded+1c:wght@400;700;800'],
+    display: `'M PLUS Rounded 1c', ${sistema}`, corpo: `'M PLUS Rounded 1c', ${sistema}` },
+  { id: 'grandstander', nome: 'Divertida', desc: 'Grandstander nos títulos, Rubik no texto: letra saltitante em cima, firme embaixo.',
+    familias: ['Grandstander:wght@400;600;800', 'Rubik:wght@400;600'],
+    display: `'Grandstander', ${sistema}`, corpo: `'Rubik', ${sistema}` },
+  { id: 'bitter', nome: 'Livro de aventura', desc: 'Bitter: a única com serifa, desenhada pra tela. Dá ar de livro ao texto.',
+    familias: ['Bitter:wght@400;600;800'],
+    display: `'Bitter', ${sistema}`, corpo: `'Bitter', ${sistema}` }
 ];
 export const fonteDe = id => FONTES.find(f => f.id === id) || FONTES[0];
 export const fonteEscolhida = () => fonteDe(store.get(FONTE_KEY) || 'padrao');

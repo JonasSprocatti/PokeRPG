@@ -13,6 +13,16 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.7', data: '2026-10-07', titulo: '🔤 Mais três fontes, uma delas com serifa', piada: 'Pedimos ao departamento de tipografia três fontes bonitas. Ele voltou com quarenta, todas lindas, e em onze delas o 5 e o 8 eram a mesma letra usando chapéus diferentes. Ficamos com três. As outras trinta e sete seguem no portfólio dele, que é muito bonito e que ninguém consegue ler.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>Três fontes novas em ⚙ Ajustes → Fonte</b>, agora <b>doze</b> no total. Cada uma é um estilo que ainda <b>não existia</b> na lista — não é "mais uma redondinha".',
+        '<b>Fofinha:</b> pontas arredondadas e traço cheio, a cara de menu de jogo japonês. É a mais "jogo" de todas.',
+        '<b>Divertida:</b> letra saltitante nos títulos, firme e calma no texto. Diverte onde dá pra divertir e se comporta onde você precisa ler.',
+        '<b>Livro de aventura:</b> a <b>única com serifa</b> do jogo. Num RPG que é feito de texto, ler a narração da batalha com cara de livro muda bastante a sensação — vale experimentar pelo menos uma luta.',
+        'E a regra de sempre: <b>2, 5 e 8 impossíveis de confundir</b> em todas as doze. Num jogo que mostra HP, dano e dinheiro o tempo todo, dígito ambíguo não é estilo, é defeito — e é por isso que nenhuma fonte pixelada entra na lista, por mais que ela combinasse.'
+      ] }
+    ] },
   { versao: '5.6', data: '2026-10-07', titulo: '💥 Terremoto que acerta um Pokémon só acabou', piada: 'Durante anos o Earthquake deste jogo abalava a crosta terrestre inteira e, por uma questão de etiqueta, derrubava apenas o Pokémon para quem havia sido formalmente apresentado. Os outros dois assistiam de pé, a meio metro de distância, achando aquilo muito estranho e não comentando por educação.',
     secoes: [
       { nome: 'Novidades', itens: [

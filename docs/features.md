@@ -3088,3 +3088,36 @@ de graça, dano em quem não era o alvo escolhido.
   É uma mecânica à parte, não é área.
 - **Narração agrupada** ("acertou os 3!"): cada alvo narra o seu bloco, como já fazia. Com `PAUSA_NARRACAO` isso
   lê bem; se virar parede de texto numa manada de 3, aí sim vale juntar.
+
+## 🔤 A segunda leva de fontes (07/10/2026)
+
+O relato #78 ("Pufavo uma fonte mais bonitinha") tinha sido atendido em 06/10 com três opções por GOSTO ao lado
+das seis por legibilidade. Perguntado o que mais caberia "para esse estilo de jogo", o usuário pediu mais opções
+em vez de trocar o padrão — que continua sendo Fredoka + Atkinson Hyperlegible, porque quem nunca abre ⚙ Ajustes
+é a maioria e legibilidade é a aposta certa pra esse caso.
+
+**Critério: categoria ausente, não "mais uma redondinha".** Já havia quatro arredondadas (Fredoka, Nunito,
+Quicksand, Baloo 2) e duas geométricas (Comfortaa, Lexend). As três novas são coisas que a lista não tinha:
+
+| id | o que é | categoria que faltava |
+|---|---|---|
+| `mplus` | M PLUS Rounded 1c | arredondada de **UI de jogo japonês** (traço cheio, não fina como a Quicksand) |
+| `grandstander` | Grandstander (título) + Rubik (texto) | **display saltitante** — a única com personalidade no título e sobriedade no corpo |
+| `bitter` | Bitter | **serifa**. Não havia nenhuma, e num RPG de texto é a que mais muda a sensação de ler |
+
+**Nenhuma de peso único, e isso não é detalhe.** O CSS usa `--display` em 500/600/700/800 (`.top-r` é `700`,
+`.dinheiro b` é `800`). Fonte com um peso só faz o navegador sintetizar o negrito — engrossar o traço na marra —
+e numa display gorda isso borra. Foi o que tirou **Lilita One**, **Titan One** e **Varela Round** da lista de
+candidatas, todas com um peso só. Os pesos das três escolhidas foram conferidos um a um batendo na API do Google
+Fonts (`curl` na URL que `urlDaFonte` monta, conferindo 200 **e** que o CSS devolvido traz `@font-face` de
+verdade) — pedir um peso que não existe devolve 200 com o peso mais próximo, calado, então só o status não basta.
+
+**A regra dos dígitos continua sendo o filtro duro.** 2, 5 e 8 inequívocos, e a amostra da tela
+(`Pikachu · Nv. 25 · 2 5 8 · ₽1.250`) existe pra isso. É por ela que **nenhuma fonte pixelada volta**, mesmo
+sendo a mais "cara de Pokémon" possível: a Pixelify Sans já foi tentada e saiu por confundir dígito. E não dá
+pra contornar pondo pixel só no título, porque `--display` é "títulos **e números**" — o HP, o dano e o dinheiro
+saem nela.
+
+Custo: nada no jogo (só a fonte escolhida carrega) e três requisições a mais ao abrir ⚙ Ajustes, que carrega
+todas pra desenhar cada opção na própria fonte. O `sw.js` já tinha `fonts.googleapis.com` e `fonts.gstatic.com`
+em `EXTERNOS`, então o modo offline pegou as três de graça.
