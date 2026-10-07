@@ -3168,6 +3168,63 @@ golpe segue como estava — o comportamento de antes, não uma regressão.
 `completarAlvosDoSave` é dado + rede, sem DOM — `pokemon.js` já importa `loadMove` e já é importável no Node.
 Quando o teste é difícil de escrever, normalmente é o lugar que está errado, não o teste.
 
+### A quarta camada: o dado parou de depender da rede (mesma tarde)
+
+As três camadas acima foram publicadas e o relato voltou **igual**: *"Rock Slide ainda não está pegando os outros
+Pokémon do oponente"* — com 2 ou 3 inimigos na cena e só um apanhando. O motor foi reproduzido de novo rodando
+`batalha.turn()` de verdade com dois inimigos: com `target`, os dois apanham. O motor está certo. O que não dá
+pra garantir é o `target` ter chegado — **os três consertos dependem todos de REDE**: `valido` só rebusca
+estando online, `completarAlvosDoSave` é um `fetch` por golpe, e o download offline pede o mapa de novo. Qualquer
+um deles falhando calado (rede ruim, PokéAPI lenta, aba aberta desde antes do deploy) devolve o jogador ao
+mesmo lugar, e não há nada na tela que diga qual foi.
+
+O erro de desenho estava uma camada acima de todos eles: **"quem este golpe alcança" não é dado vivo.** O alvo
+do Rock Slide não muda nunca; tratá-lo como algo a buscar na internet é o que criou três camadas de migração
+pra uma informação que cabe numa tabela. Então ela virou tabela:
+
+```js
+export const GOLPE_AREA = { "rock-slide": "all-opponents", "earthquake": "all-other-pokemon", … };  // 84 golpes
+```
+
+Gerada pelo `ferramentas/gerar-golpe-flags.mjs` que já existia (um `csv('move_targets.csv')` a mais, mesmo
+`moves.csv` que ele já baixava pelas flags), guardada no `dados-golpe-flags.js` que já existia, e lida por
+`golpe.alvosDoGolpe` e `regras.notaDoGolpe` com **uma linha cada**:
+
+```js
+const alvo = g.target || GOLPE_AREA[g.name];
+```
+
+Só os 84 golpes de área entram — o resto é "bate num só", que já é o plano B de quem lê. Com isso a área passa a
+funcionar com save velho, cache velho, mapa baixado antes e sem rede nenhuma; as três camadas anteriores
+continuam valendo (elas consertam o `target` pra TODOS os usos, não só o de área), mas deixaram de ser o que
+sustenta a funcionalidade.
+
+**A lição é a do `try` largo e a do `navigator.onLine`, numa terceira forma:** quando o conserto de um dado
+estático depende da rede, ele tem a taxa de sucesso da rede — e falha calado. Dado que não muda vira arquivo
+versionado junto do código, não migração.
+
+### A caixa dos lendários vazando pra fora da tela (celular)
+
+No mesmo relato, uma foto: texto quebrando palavra por palavra numa tira de ~80px, sprites atravessando a borda
+da caixa e o botão **⚔ Enfrentar** no meio deles. Não eram três bugs — era um só, e de CSS.
+
+`.chefe-box` é um grid de três colunas (`sprite · texto · botão`). A caixa dos lendários trocava a primeira por
+`auto` e punha lá a fileira inteira de lendários — **até 10 sprites, nenhum deles encolhível**. Uma trilha `auto`
+nunca fica menor que o `min-content` do conteúdo, e o `min-content` de um flex `nowrap` é a SOMA dos itens: ~300px
+de trilha numa caixa de 400px, sobrando ~80px pro texto e empurrando o botão pra fora. A página inteira ganhava
+rolagem lateral — por isso a foto está com o zoom pra trás e a caixa de cima (a do evento) também parece
+espremida: ela estava, pelo mesmo motivo de largura.
+
+Dois consertos, ambos de uma linha:
+
+- a fileira de sprites ocupa a **linha inteira** (`grid-column:1/-1`) e tem `flex-wrap:wrap` — ela deixa de
+  disputar largura com o texto e pode quebrar em duas fileiras;
+- em tela estreita (≤560px) o **botão desce** pra uma linha só dele, como `.insignia` já fazia desde sempre.
+
+E um terceiro, invisível na foto mas real: `.lend-imgs img{width:44px}` vinha **antes** de `.chefe-box
+img{width:64px}` no arquivo, com a mesma especificidade — então todos os lendários saíam do tamanho do
+principal, e o destaque do último (o lendário-chefe) nunca aparecia. Agora é `.chefe-box .lend-imgs img`.
+
 ### A fonte pixelada: o que mudou não foi a fonte
 
 A Pixelify Sans já tinha estado no jogo e **saiu** por confundir 2, 5 e 8 — a regra mais dura da lista de fontes,

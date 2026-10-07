@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '5.9', data: '2026-10-07', titulo: '🪨 Rock Slide, agora de verdade (e a caixa dos lendários cabendo na tela)', piada: 'A correção anterior consertava o alcance dos golpes indo perguntar o alcance deles pela internet, toda vez, e desistindo em silêncio quando a internet não atendia. É o equivalente a ligar para a prefeitura todas as manhãs para confirmar que a sua rua continua no mesmo lugar. A rua continua no mesmo lugar. Anotamos num papel.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Golpe de área continuava pegando um alvo só — mesmo depois da correção de ontem.</b> Rock Slide, Earthquake, Surf e companhia agora pegam o grupo inteiro de verdade, com qualquer jornada, qualquer aparelho e <b>sem precisar de internet</b>. <i>(Relatado duas vezes pelo mesmo jogador, com toda a razão — obrigado!)</i>',
+        '<b>O que estava errado:</b> a correção de ontem consertava o dado <b>buscando ele na internet</b> ao abrir a jornada. Quando a busca não completava — rede ruim, aba já aberta, jogo offline — o golpe continuava sem saber o próprio alcance, e nada avisava. Agora <b>quem o golpe alcança vem junto com o jogo</b>, numa tabela que não depende de nada: o alcance do Rock Slide não muda, então não havia razão nenhuma pra ele ser perguntado a cada partida.',
+        '<b>A caixa dos lendários não cabia na tela do celular.</b> Os sprites atravessavam a borda, o texto quebrava uma palavra por linha, o botão <b>⚔ Enfrentar</b> ficava por cima de tudo e a página inteira rolava pro lado. A fileira de lendários agora ocupa a linha dela e quebra em duas quando precisa, e o botão desce pra baixo do texto em tela estreita.',
+        '<b>De quebra:</b> o último lendário da fileira (o chefão da Gen) voltou a aparecer <b>maior que os outros</b>, como era pra ser desde o começo.'
+      ] }
+    ] },
   { versao: '5.8', data: '2026-10-07', titulo: '👾 A fonte pixelada voltou — e o Rock Slide voltou a ser Rock Slide', piada: 'A fonte pixelada havia sido demitida por justa causa depois que um jogador leu "₽2.580" como "₽5.280" e tomou decisões financeiras com base nisso. Ela recorreu, alegando que o problema não era ela, era o departamento de contabilidade estar usando ela. Tinha razão. Foi recontratada para o departamento de placas, onde não há um único número.',
     secoes: [
       { nome: 'Novidades', itens: [

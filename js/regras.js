@@ -7,7 +7,7 @@ import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem, multEviolite, multStatDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
-import { GOLPE_FLAGS } from './dados-golpe-flags.js';
+import { GOLPE_FLAGS, GOLPE_AREA } from './dados-golpe-flags.js';
 import { ESPECIE_DO_ITEM_EVO } from './dados-evolucao-restante.js';
 
 export function typeEff(atk, defs) {
@@ -881,8 +881,9 @@ export function notaDoGolpe(g, c) {
        cia. (`all-other-pokemon`) também respingam no PRÓPRIO aliado, o que a IA precisa saber antes de escolher.
        Sem contexto de quantos estão em campo (chamador antigo) vale o de sempre: a conta vira 0. */
     const outrosAlvos = Math.max(0, (c.oponentes || 1) - 1);
-    if (ALVOS_OPONENTES.has(g.target) || ALVOS_TODOS.has(g.target)) nota += outrosAlvos * BONUS_AREA;
-    if (ALVOS_TODOS.has(g.target)) nota -= (c.aliados || 0) * PENA_AREA_ALIADO;
+    const alcance = g.target || GOLPE_AREA[g.name];   // golpe sem `target` (save/cache velho): a tabela fixa responde, como em golpe.alvosDoGolpe
+    if (ALVOS_OPONENTES.has(alcance) || ALVOS_TODOS.has(alcance)) nota += outrosAlvos * BONUS_AREA;
+    if (ALVOS_TODOS.has(alcance)) nota -= (c.aliados || 0) * PENA_AREA_ALIADO;
     return nota;
   }
 

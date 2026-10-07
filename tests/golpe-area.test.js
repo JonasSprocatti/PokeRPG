@@ -91,3 +91,27 @@ test('golpe de alvo único continua pegando um só, com grupo em campo', async (
   assert.ok(a.hp < 500);
   assert.equal(b.hp, 500, 'Tackle não virou golpe de área');
 });
+
+/* ---- golpe SEM `target` (o relato de 07/10/2026, segunda vez) ----
+   `target` é dado da PokéAPI e pode não chegar: golpe gravado num save antes de 21/09/2026, registro velho no
+   cache, mapa baixado pra jogar offline. O conserto de cache + a migração do save dependem os dois de REDE —
+   e na mão de quem joga a área continuou não pegando. Agora o chão é fixo (`dados-golpe-flags.GOLPE_AREA`,
+   gerado do repositório-fonte), porque o alvo de Rock Slide não é dado vivo. */
+test('Rock Slide sem `target` no golpe AINDA pega o grupo (tabela fixa)', async () => {
+  const u = mon('eu'), a = mon('a'), b = mon('b');
+  const g = golpe({ name: 'rock-slide', type: 'rock', power: 75 });
+  delete g.target;                       // exatamente como o golpe sai de um save velho
+  await usarGolpe(u, a, g, true, ctx([], [a, b]));
+  assert.ok(a.hp < 500 && b.hp < 500, 'os dois tinham de apanhar mesmo sem o campo `target`');
+});
+
+test('Earthquake sem `target` respinga no aliado; Tackle sem `target` segue em um só', async () => {
+  const u = mon('eu'), amigo = mon('amigo'), a = mon('a');
+  const eq = golpe({ name: 'earthquake', type: 'ground', power: 100 }); delete eq.target;
+  await usarGolpe(u, a, eq, true, ctx([u, amigo], [a]));
+  assert.ok(a.hp < 500 && amigo.hp < 500, 'all-other-pokemon vem da tabela também');
+  const v = mon('v'), x = mon('x'), y = mon('y');
+  const t = golpe(); delete t.target;    // golpe que NÃO está na tabela: nada muda
+  await usarGolpe(v, x, t, true, ctx([], [x, y]));
+  assert.equal(y.hp, 500, 'golpe fora da tabela continua de alvo único');
+});

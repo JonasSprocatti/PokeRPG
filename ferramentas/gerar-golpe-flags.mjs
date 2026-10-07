@@ -30,10 +30,20 @@ async function csv(nome) {
   });
 }
 
+// Os alvos que fazem um golpe ser de ÁREA (os mesmos de dados.ALVOS_OPONENTES/ALVOS_TODOS). Só estes entram na
+// tabela: o resto é "bate num só", que é o plano B natural de quem lê.
+const ALVOS_AREA = ['all-opponents', 'all-other-pokemon', 'all-pokemon'];
+
 async function main() {
-  const [flags, flagMap, moves] = await Promise.all([csv('move_flags.csv'), csv('move_flag_map.csv'), csv('moves.csv')]);
+  const [flags, flagMap, moves, alvos] = await Promise.all([csv('move_flags.csv'), csv('move_flag_map.csv'), csv('moves.csv'), csv('move_targets.csv')]);
   const flagPorId = Object.fromEntries(flags.map(f => [f.id, f.identifier]));
   const nomePorId = Object.fromEntries(moves.map(m => [m.id, m.identifier]));
+  const alvoPorId = Object.fromEntries(alvos.map(a => [a.id, a.identifier]));
+  const area = {};
+  for (const m of moves) {
+    const alvo = alvoPorId[m.target_id];
+    if (ALVOS_AREA.includes(alvo)) area[m.identifier] = alvo;
+  }
 
   const golpes = {};
   let semNome = 0;
@@ -58,9 +68,16 @@ export const GOLPE_FLAGS = ${JSON.stringify(golpes, null, 2)};
 // As 21 flags que existem (move_flags.csv) — usado só pra validar (tests/habilidades.test.js) que um \`imuneFlag\`
 // na tabela de habilidades não tem erro de digitação.
 export const FLAGS_VALIDAS = ${JSON.stringify(flags.map(f => f.identifier).sort())};
+
+/* Quem o golpe alcança, SÓ pros golpes de área (moves.csv -> target_id -> move_targets.csv). O \`target\` normal
+   vem da PokéAPI dentro de cada golpe (api.slimMove); esta tabela é o CHÃO pra quando ele não veio — golpe
+   gravado num save antigo, registro velho no cache, jogo offline. Virou dado fixo porque não é dado vivo: o
+   alvo de Rock Slide não muda, e depender da rede pra saber disso já transformou Earthquake e Rock Slide em
+   golpe de alvo único duas vezes (06 e 07/10/2026). Quem lê é golpe.alvosDoGolpe. */
+export const GOLPE_AREA = ${JSON.stringify(area, null, 2)};
 `;
   writeFileSync(new URL('../js/dados-golpe-flags.js', import.meta.url), saida);
-  console.log(`ok: ${Object.keys(golpes).length} golpes com flag mapeada -> js/dados-golpe-flags.js`);
+  console.log(`ok: ${Object.keys(golpes).length} golpes com flag mapeada, ${Object.keys(area).length} golpes de área -> js/dados-golpe-flags.js`);
   if (semNome) console.log(`${semNome} linhas de move_flag_map.csv ignoradas (id sem golpe/flag correspondente)`);
 }
 main().catch(e => { console.error(e); process.exit(1); });

@@ -15,6 +15,7 @@
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
 // Sem DOM: importável no Node (tests/golpe.test.js).
 import { STAT_PT, AIL_MSG, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, TYPE_PT } from './dados.js';
+import { GOLPE_AREA } from './dados-golpe-flags.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem, frutaDeAperto } from './segurados.js';
@@ -402,7 +403,12 @@ const indireto = m => !!hab(m).semDanoIndireto;
    `random-opponent` (Outrage, Thrash) fica de fora de propósito: ele sorteia UM, que é o que já acontece. */
 function alvosDoGolpe(u, t, g, ctx) {
   if (SELF_TARGETS.has(g.target) || u === t) return [t];
-  const op = ALVOS_OPONENTES.has(g.target), todos = ALVOS_TODOS.has(g.target);
+  /* O `target` vem da PokéAPI dentro do golpe, e pode simplesmente NÃO estar lá: golpe gravado num save de antes
+     de 21/09/2026, registro velho no cache, mapa baixado pra jogar offline. Quando falta, a tabela fixa
+     (`dados-golpe-flags.GOLPE_AREA`, gerada do repositório-fonte) responde — o alvo de Rock Slide não é dado
+     vivo. Foi a terceira vez que essa dependência de rede virou "a área não pega em área" na mão de quem joga. */
+  const alvo = g.target || GOLPE_AREA[g.name];
+  const op = ALVOS_OPONENTES.has(alvo), todos = ALVOS_TODOS.has(alvo);
   if (!op && !todos) return [t];
   const lista = [t, ...(ctx.oponentesDe?.(u) || [])];
   // `all-other-pokemon`: pega o aliado junto (Earthquake, Surf). Telepathy é justamente quem não leva do colega.

@@ -621,12 +621,16 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .dexr .falta{font:500 11px var(--display);font-style:normal;color:var(--muted)}
 .dexr.mitico{border-color:#b68cff}
 .dexr.mitico.oculto span{color:#b68cff}
-/* rota final: os lendários do mapa */
-.chefe-box.lendarios{grid-template-columns:auto 1fr auto;border-color:var(--yellow)}
+/* rota final: os lendários do mapa.
+   A fileira ocupa a LINHA inteira (até 10 sprites não cabem numa coluna ao lado do texto: a coluna `auto` não
+   encolhe e vazava da caixa, espremendo o texto numa tira de ~80px e rolando a página inteira pro lado).
+   `.chefe-box .lend-imgs img` precisa dos dois níveis: `.chefe-box img{width:64px}` vem DEPOIS no arquivo e, com
+   a mesma especificidade, ganhava — todos os lendários saíam do tamanho do principal. */
+.chefe-box.lendarios{grid-template-columns:1fr auto;border-color:var(--yellow)}
 .chefe-box.lendarios.vencido{border-color:var(--grass)}
-.lend-imgs{display:flex;align-items:flex-end}
-.lend-imgs img{width:44px;height:44px;margin-right:-10px}
-.lend-imgs img.principal{width:64px;height:64px;margin-right:0}
+.lend-imgs{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;row-gap:6px}
+.chefe-box .lend-imgs img{width:44px;height:44px;margin-right:-10px}
+.chefe-box .lend-imgs img.principal{width:64px;height:64px;margin-right:0}
 /* escolha de mapa (Gen): criação e depois de fechar uma Gen */
 .gens{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .gen-card{display:grid;justify-items:center;gap:0;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:6px 6px 10px;color:var(--text)}
@@ -805,6 +809,13 @@ button.mon.alvo:hover::after,button.mon.alvo:focus-visible::after{background:col
 .chefe-box.vencido{border-color:var(--grass)}
 .chefe-box img{width:64px;height:64px;image-rendering:pixelated}
 .chefe-box small{display:block;color:var(--muted);font-size:13px}
+/* celular: sprite + texto + botão em três colunas deixa o texto com ~80px e quebra palavra por palavra.
+   O botão desce pra linha inteira (mesmo tratamento que `.insignia` já faz). */
+@media(max-width:560px){
+  .chefe-box{grid-template-columns:auto 1fr}
+  .chefe-box > button{grid-column:1/-1;justify-self:stretch}
+  .chefe-box.lendarios{grid-template-columns:1fr}
+}
 .missao{border-top:1px solid var(--line);padding:6px 0}
 .missao small{display:block;color:var(--muted);font-size:13px}
 .hp.mis .fill{background:var(--yellow)}
