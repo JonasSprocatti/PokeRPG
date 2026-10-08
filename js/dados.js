@@ -568,6 +568,42 @@ export const INICIAIS = REGIOES_INICIAIS.flatMap(r => r.ids);
    600 de total base). Tyrunt e os paradoxos não entram. */
 export const PSEUDO_LENDARIOS = ['dratini', 'larvitar', 'bagon', 'beldum', 'gible', 'deino', 'goomy', 'jangmo-o', 'dreepy', 'frigibax'];
 
+/* ---- 🔒 Pokémon de missão ----
+   Espécie que NÃO EXISTE no mundo até a conta cumprir a missão dela. Enquanto está trancada, ela sai do pool de
+   toda rota (`mapas.rotaNaJornada`, a porta única da rota na jornada) e da lista de que os treinadores tiram a
+   equipe (`mapas.especiesDaGen`) — então ela também não aparece na taxa da rota, na Pokédex da rota, na caça
+   shiny nem na mão de ninguém. Cumprida, ela volta a aparecer selvagem a partir da PRÓXIMA jornada (a vantagem
+   de conta vale na run seguinte, igual às badges) e dali o desbloqueio normal do Roguelike (derrotar 10, fazer
+   amizade com 5, evoluir) é que a libera como inicial — sem regra nova.
+
+   `campo`/`alvo` são medidos no MESMO `ctx` das badges (`badges.contextoBadges` + `medirPorDado`), que vem do
+   progresso permanente e por isso NUNCA ENCOLHE: missão cumprida não se desfaz. Nada é gravado no progresso —
+   a conta é refeita a cada vez, e o resultado só é fotografado em `S.liberadas` ao começar a jornada.
+
+   **Consequência consciente**: a espécie faz parte da faixa de ids da Gen dela, então a Pokédex completa daquela
+   Gen (badge 'dex-gen', `pokedex-conta.gensCompletas`) espera a missão. É o ponto — ela é o último selo da região.
+   Espécie nova aqui = uma linha, e nada mais; medida nova = um campo no `contextoBadges` (igual às badges). */
+export const ESPECIES_MISSAO = {
+  // as 999 moedas do Gimmighoul viraram o dinheiro da carreira: ₽100 milhões é ~35 jornadas muito bem jogadas
+  // (uma run boa chega a ₽3 milhões). O `maxDinheiro` de cada jornada é o PICO dela, não o total que passou pela mão.
+  gholdengo: { id: 1000, icone: '🪙', gen: 9, nome: 'O tesouro dos 999',
+    campo: 'dinheiroCarreira', alvo: 100000000,
+    desc: 'Junte ₽100.000.000 somando o maior saldo de cada jornada da sua carreira.' },
+  spiritomb: { id: 442, icone: '👻', gen: 4, nome: 'As 108 almas',
+    campo: 'abates.total', alvo: 180000,
+    desc: 'Derrote 180.000 Pokémon somando a carreira inteira. São 108 almas presas na pedra, e nenhuma delas tem pressa.' },
+  arceus: { id: 493, icone: '✨', gen: 4, nome: 'Aquele que criou tudo',
+    campo: 'gensRoguelike', alvo: 9,
+    desc: 'Feche as 9 Gens no Roguelike. O criador só aparece pra quem já viu o mundo inteiro.' },
+  melmetal: { id: 809, icone: '⚙️', gen: 7, nome: 'Ferro de outro mundo',
+    campo: 'abates.tipoAlvo.steel', alvo: 50000,
+    desc: 'Derrote 50.000 Pokémon do tipo Aço na carreira — ele se forma do metal que sobra.' },
+  shedinja: { id: 292, icone: '🥀', gen: 3, nome: 'A casca que ficou',
+    campo: 'ovosChocados', alvo: 100,
+    desc: 'Choque 100 ovos na carreira. Shedinja é o que fica quando a vida sai da casca e a casca continua de pé.' }
+};
+export const TRANCADA_POR_MISSAO = nome => !!ESPECIES_MISSAO[nome];
+
 /* ---- treinadores caçadores e dificuldade (Etapa 3) ---- */
 // chave = nome do sprite em ITEM_SPR; mult = multiplicador da fórmula de captura
 export const BOLAS = {

@@ -6,12 +6,12 @@ import { $, limparTopo, semAnimacao, log } from './ui.js';
 import { badge, buildGame } from './render.js';
 import { makeMon, IVS_MAX } from './pokemon.js';
 import { IMPL } from './habilidades.js';
-import { SPR, espelhar, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS, PSEUDO_LENDARIOS } from './dados.js';
+import { SPR, espelhar, STATS, STAT_PT, NATURES, DIFICULDADES, REGIOES_INICIAIS, INICIAIS, DESBLOQUEIO, ITEMS, PSEUDO_LENDARIOS, ESPECIES_MISSAO } from './dados.js';
 import { GENS, rotasDaGen, dadosDaGen, gensLiberadasRoguelike , lendariosDaGen, especiesLendarias } from './mapas.js';
 import { ovoDeBadge } from './ovos.js';
 import { barraTelas } from './navegacao.js';
 import { guardar } from './saves.js';
-import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta } from './carreira.js';
+import { carregarCarreira, desbloqueadasDaConta, badgesDaCarreira, vantagensDaConta, especiesLiberadasDaConta } from './carreira.js';
 import { pokedexDaConta } from './pokedex-conta.js';
 import { vantagensDe } from './badges.js';
 import { modoComEvento, eventoDaGen, agenda, agoraDoEvento, jaComecou, dataBR, INICIO, BETA_SEM_ESPERA, EVENTOS } from './evento.js';
@@ -423,6 +423,8 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   G.S = { player: mon, bag, aliados: [], ovos: ovosIniciais, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, ivsSelvagens: v.ivsSelvagens, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     climaRotas: !!(DIFICULDADES[dificuldade].climaRotasFixo || G.climaRotas), // 🌦 clima/terreno das rotas: fixo no Roguelike/Hardcore, opção nos outros (regras.climaDasRotasAtivo)
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
+    // 🔒 Pokémon de missão já liberados pela conta: a foto é tirada agora e vale pra jornada inteira (mapas.rotaNaJornada)
+    liberadas: especiesLiberadasDaConta(),
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
     id: novoId() }; // id da jornada: não contar em dobro na carreira e casar o save deste aparelho com o da nuvem
   // Segredo do brilho (regras.bonusShiny): registra NA HORA pra "✨ Começar shiny" (opcaoShiny) já valer nesta
@@ -440,6 +442,8 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   if (v.ivsPerfeitos) log('🧬 Potencial máximo: seus 6 IVs nasceram em 31, o teto. É a badge do milhão de dano fazendo efeito.', 'level');
   if (v.ivsSelvagens) log('🌿 Rotas em potencial máximo: todo selvagem destas rotas nasce com os 6 IVs em 31. Quem você recrutar vem perfeito — e quem te enfrentar também.', 'level');
   if (ovosIniciais.length) log(`🥚 Você carrega ${ovosIniciais.length === 1 ? 'um ovo' : `${ovosIniciais.length} ovos`} de presente das suas badges. Ninguém sabe o que tem dentro — explore pra chocar (veja no painel de Aliados).`, 'level');
+  // 🔒 Pokémon de missão: as missões já cumpridas valem nesta jornada, e quem jogou pra isso merece saber que valeu
+  if (G.S.liberadas?.length) log(`🔓 Missões cumpridas: ${G.S.liberadas.map(e => `${ESPECIES_MISSAO[e].icone} ${fmt(e)}`).join(', ')} ${G.S.liberadas.length === 1 ? 'aparece' : 'aparecem'} nas rotas desta jornada.`, 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');
   log('Explore para encontrar Pokémon selvagens, itens e dinheiro. Cuidado com treinadores: eles querem te capturar. O jogo salva sozinho neste navegador.', 'muted');

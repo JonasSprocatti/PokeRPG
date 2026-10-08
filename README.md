@@ -29,6 +29,19 @@ Cada jornada é uma run. Você começa só com os iniciais e, jogando, **desbloq
 
 A tela inicial e a tela 🏅 Conquistas mostram os desbloqueados e os que estão **quase lá**, e a tela de fim mostra o que aquela run liberou. **Só jornadas Roguelike contam para desbloquear** — mas a espécie desbloqueada pode ser usada em todos os modos.
 
+### 🔒 Pokémon de missão
+São **5 Pokémon de missão** que **não existem no mundo** até a sua conta cumprir a missão deles: não aparecem na rota, não entram na Pokédex da rota, não vêm na caça shiny e nenhum treinador carrega um. Cada missão soma a **carreira inteira** (todas as jornadas, qualquer modo) e nunca anda para trás:
+
+| Pokémon | Missão |
+|---|---|
+| 🪙 **Gholdengo** | juntar **₽100.000.000** somando o maior saldo de cada jornada — as 999 moedas do Gimmighoul, em escala de carreira |
+| 👻 **Spiritomb** | derrotar **180.000** Pokémon |
+| ⚙️ **Melmetal** | derrotar **50.000** Pokémon do tipo **Aço** |
+| 🥀 **Shedinja** | chocar **100 ovos** |
+| ✨ **Arceus** | fechar as **9 Gens no Roguelike** |
+
+Cumprida a missão, a espécie passa a aparecer selvagem a partir da **próxima jornada** — e dali em diante ela funciona como qualquer outra: derrotar, fazer amizade ou evoluir para ela a libera para jogar. Enquanto a missão não sai, a **Pokédex completa daquela Gen** espera por ela: esse é o ponto, o bicho é o último selo da região. O progresso de cada uma fica na tela **🏅 Conquistas**, com o número exato e quanto falta — a missão é pública, só o esforço é grande.
+
 **Rota esgotada:** no Roguelike, quando o seu nível passa do **dobro do teto de uma rota**, ela para de dar encontros — nada de farmar em rota fraca. Você continua entrando e vendo a Pokédex dela.
 
 **Sem segunda chance:** no Roguelike, se você desmaiar, a run acaba (nem Revive salva). Se um **aliado** desmaiar, ele é **perdido para sempre**, e o Centro não traz de volta. Ser capturado também encerra a run. O Centro é pago (com desconto por vitória) e você começa no nível 5.

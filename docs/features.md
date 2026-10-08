@@ -5,6 +5,7 @@ CLAUDE.md guarda a REGRA (o que não pode quebrar); aqui fica o COMO e o PORQUÊ
 simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 
 ## Índice
+- 🔒 Pokémon de missão (08/10/2026)
 - 🏋 Itens de treino (EVs, IV, habilidade) + a loja no celular (04/10/2026)
 - Ovos e criação no esconderijo (02/10/2026)
 - Gênero (02/10/2026)
@@ -21,6 +22,72 @@ simplificado de propósito e o que ficou de fora. Consulte ao mexer na área.
 - Som: cries e música procedural (30/09/2026)
 - Troca de tipo, Endeavor no chefe e a leva de itens de 30/09/2026
 - Anúncios e privacidade
+
+---
+
+## 🔒 Pokémon de missão (08/10/2026)
+
+Pedido do usuário: *"quero que o Gholdengo seja um pokemon de missão, somente após um valor muito alto de gold em
+todas as suas runs, desbloqueia ele"* — mais "pense em outros pokemons que só desbloqueiam com missões". A ideia é
+ter espécie que **não existe no mundo** até a conta pagar um preço de carreira.
+
+### O que é
+`dados.ESPECIES_MISSAO`, uma linha por espécie: `{ id, icone, gen, nome, campo, alvo, desc }`.
+
+| Pokémon | Missão | Campo medido |
+|---|---|---|
+| 🪙 Gholdengo | ₽100.000.000 somando o PICO de cada jornada | `dinheiroCarreira` (novo) |
+| 👻 Spiritomb | 180.000 derrotados | `abates.total` |
+| ⚙️ Melmetal | 50.000 derrotados do tipo Aço | `abates.tipoAlvo.steel` |
+| 🥀 Shedinja | 100 ovos chocados | `ovosChocados` |
+| ✨ Arceus | as 9 Gens fechadas no Roguelike | `gensRoguelike` |
+
+Os alvos de Spiritomb (1.080 → 180.000) e Melmetal (1.000 → 50.000) foram subidos pelo usuário na mesma conversa:
+o primeiro número era "dez por alma presa na pedra", bonito e pequeno demais pra uma missão de carreira.
+
+### Por que a máquina das badges, e não uma nova
+Uma missão de conta é literalmente "um campo do progresso permanente com um alvo" — que é a definição de
+`badges.medirPorDado`. Então `missoesDeEspecie(ctx)` roda a MESMA medida sobre o MESMO `contextoBadges`, e sai de
+graça: a garantia de que **nunca encolhe** (progresso-conta, união por chave de jornada), o `MEDIDAS` como lista do
+que dá pra medir, e um teste que recusa `campo` fora dela (missão impossível em silêncio é o pior defeito possível
+numa conquista de carreira). O único campo novo é `dinheiroCarreira` — a soma de `maxDinheiro` por jornada, a
+mesma fonte que o saldo da Arena já usava (ele tira 10% disto).
+
+**Por que o PICO e não o total que passou pela mão**: o livro-caixa guarda `maxDinheiro` (o maior saldo da jornada),
+não o faturamento. Inventar o total exigiria um contador novo no save e uma migração que não alcança quem já jogou.
+₽100 milhões sobre o pico é ~35 jornadas muito bem jogadas (uma run boa chega a ₽3 milhões, número do usuário).
+
+### Um corte só
+O portão é `mapas.rotaNaJornada`, a porta única da rota na jornada (`estado.zone`/`rotasAtuais`): tirar a espécie do
+`pool` ali filtra de uma vez o sorteio, a taxa mostrada na tela, a Pokédex da rota e a caça shiny — nenhuma tela
+promete um bicho que o sorteio não entrega (foi o bug #74/#75, com outro assunto). Ela devolve o MESMO objeto
+quando não há nada a cortar, porque isso roda a cada render. `mapas.especiesDaGen` (de onde sai a equipe dos
+treinadores) corta sempre: Pokémon de missão não é bicho de estimação de ninguém, nem depois de liberado.
+
+Quem a rota consulta é **`S.liberadas`**, a foto que `criacao.iniciarJornada` tira da conta — não a carreira ao
+vivo. Dois motivos: ler a carreira a cada render custa (localStorage + soma de todas as jornadas), e a vantagem de
+conta valer na jornada SEGUINTE é a convenção que as badges já criaram. Save antigo não tem o campo e por isso joga
+com tudo trancado até a próxima jornada.
+
+Não passa por `G.semVantagens`: jogar sem vantagens tira item e dinheiro de presente, não tira **conteúdo** do
+mundo — quem só joga assim nunca encontraria a espécie.
+
+### O que foi decidido e por quê
+- **O desbloqueio devolve a espécie às ROTAS, não à tela de criação** (opção escolhida pelo usuário). Dali em diante
+  o desbloqueio normal do Roguelike (derrotar 10 / amizade 5 / evoluir) é que a torna jogável — zero regra nova, e
+  a missão continua sendo um marco e não um atalho.
+- **A missão é pública, inclusive o sprite.** Badge tem `oculta`; aqui nada é escondido: uma missão secreta de 180
+  mil derrotados nunca seria tentada. O segredo não é o Pokémon, é o esforço.
+- **A Pokédex completa daquela Gen espera a missão** (`pokedex-conta.gensCompletas` varre a faixa de ids). É
+  consequência consciente, e virou a narrativa: a espécie é o último selo da região. Gen 4 tem duas (Spiritomb e
+  Arceus) por escolha do usuário.
+- **Nada é gravado no progresso permanente.** A conta é refeita do `ctx` a cada vez — missão cumprida não se desfaz
+  porque a FONTE não encolhe, não porque alguém marcou um booleano. Menos estado, menos migração.
+
+### O que ficou de fora
+Prêmio extra pela missão (item, dinheiro): a espécie é o prêmio. Aviso na hora exata em que a missão fecha no meio
+de uma run: o lugar de descobrir é a tela 🏅 Conquistas e a linha de log no começo da jornada seguinte, que é
+quando o desbloqueio passa a valer de verdade.
 
 ---
 

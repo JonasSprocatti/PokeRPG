@@ -12,7 +12,7 @@
    muito antes de conquistar a Mega, ou o contrário. Cada uma conta sozinha, em qualquer ordem; o prêmio grande sai
    de uma TERCEIRA que só olha se as duas estão prontas. */
 import { ALVOS, MARCOS_ABATES } from './conquistas.js';
-import { TYPE_PT, PLACA_DO_TIPO } from './dados.js';
+import { TYPE_PT, PLACA_DO_TIPO, ESPECIES_MISSAO } from './dados.js';
 import { MAX_ALIADOS } from './regras.js';
 import { MAX_ESCONDIDOS } from './esconderijo.js';
 import { EVENTOS } from './evento.js';
@@ -168,8 +168,11 @@ export function contextoBadges({ abates, progresso, dex, conquistas }) {
     megasLiberadas: (conquistas?.mega || []).filter(x => x.liberado).length,
     rayquazaShiny: dex?.rayquazaShiny || 0,
     rayquazaAbates: abates?.especie?.[RAYQUAZA] || 0,
-    danoCausado: abates?.dano || 0   // badge 'ivs-perfeitos'
-
+    danoCausado: abates?.dano || 0,   // badge 'ivs-perfeitos'
+    /* o dinheiro da CARREIRA: a soma do pico (`maxDinheiro`) de cada jornada do livro-caixa. É a mesma fonte do
+       saldo da Arena (progresso-conta.saldoArenaGanho, que tira 10% disto), então é união por chave de jornada —
+       nunca conta a mesma duas vezes e nunca encolhe. Mede o 🪙 Gholdengo (dados.ESPECIES_MISSAO). */
+    dinheiroCarreira: jornadas.reduce((a, j) => a + (j.maxDinheiro || 0), 0)
   };
 }
 
@@ -204,7 +207,8 @@ export const MEDIDAS = {
   terasLiberadas: { rotulo: 'Tipos de Tera liberados', exemplo: 18 },
   megasLiberadas: { rotulo: 'Megas liberadas', exemplo: 5 },
   rayquazaShiny: { rotulo: 'Rayquaza shiny recrutado', exemplo: 1 },
-  rayquazaAbates: { rotulo: 'Rayquaza derrotados', exemplo: ALVOS.mega }
+  rayquazaAbates: { rotulo: 'Rayquaza derrotados', exemplo: ALVOS.mega },
+  dinheiroCarreira: { rotulo: 'Dinheiro somando as jornadas (pico de cada uma)', exemplo: 1000000 }
 };
 // `especie: true` quer dizer que o caminho termina no nome da espécie (`abates.especie.pikachu`)
 export const campoDaMedida = medida => (MEDIDAS[medida?.campo]?.especie ? `${medida.campo}.${medida.especie}` : medida?.campo) || '';
@@ -214,6 +218,18 @@ export const medirPorDado = medida => c => {
   const n = campoDaMedida(medida).split('.').reduce((o, k) => (o == null ? o : o[k]), c);
   return feito(Number(n) || 0, Math.max(1, medida?.alvo || 1));
 };
+
+/* ---- 🔒 Pokémon de missão (dados.ESPECIES_MISSAO) ----
+   Mesma máquina das badges: `medirPorDado` sobre o mesmo `ctx`. Fica aqui, e não num módulo novo, porque é
+   exatamente isso — uma medida de progresso permanente com um alvo. A diferença é o prêmio: em vez de item na
+   próxima jornada, a espécie passa a EXISTIR no mundo. Ordenado pelo mais perto de sair, igual aos desbloqueios. */
+export function missoesDeEspecie(ctx) {
+  return Object.entries(ESPECIES_MISSAO)
+    .map(([especie, m]) => { const r = medirPorDado(m)(ctx); return { ...m, especie, ...r, fracao: Math.min(1, r.n / r.alvo) }; })
+    .sort((a, b) => (b.completo - a.completo) || (b.fracao - a.fracao));
+}
+// os nomes que a conta já liberou. `criacao.iniciarJornada` fotografa isto em `S.liberadas`.
+export const especiesLiberadasPorMissao = ctx => missoesDeEspecie(ctx).filter(m => m.completo).map(m => m.especie);
 
 // estado de cada badge, pronto pra tela
 export function badgesDaConta(ctx) {

@@ -5,7 +5,7 @@ import { GENS, TOTAL_GENS, REVELA_DERROTADOS, genDe, rotasDaGen, escalaNivel, ro
   somarRegistros, pokedexDaRota, sequenciaLendaria, gensLiberadasRoguelike, entrarNaGen, ehInicialDeRegiao, tirarIniciais, especiesDaGen, MIN_POOL, lendariosDaGen,
   formaRegionalDaGen, idBaseDaEspecie, idDaEspecieNoRegistro } from '../js/mapas.js';
 import { MEGAS } from '../js/dados-megas.js';
-import { REGIOES_INICIAIS } from '../js/dados.js';
+import { REGIOES_INICIAIS, ESPECIES_MISSAO } from '../js/dados.js';
 import { zonaLiberada } from '../js/regras.js';
 
 test('9 Gens, 10 rotas + Santuário; só a 10ª é final (com lendários); Alfa acima do teto da rota', () => {
@@ -286,4 +286,29 @@ test('dobrar espécie: taxa mostrada e sorteio usam o mesmo peso', () => {
   assert.equal(sortearDaRota(z, null, () => 0.6).n, 'pidgey', 'sem dobrar, 1,2 de 2 passa do primeiro');
   // espécie de fora do pool na lista não muda nada
   assert.equal(taxaNaRota(z, 1, new Set(['magikarp'])), 50);
+});
+
+/* 🔒 Pokémon de missão: a espécie sai do pool de TODA rota até `S.liberadas` trazer o nome. O corte é em
+   `rotaNaJornada` porque é a porta única da rota na jornada — se ele escapar, a taxa na tela e a Pokédex da rota
+   prometem um bicho que o sorteio nunca entrega. */
+test('espécie de missão só entra no pool da rota com a missão cumprida', () => {
+  const nomes = Object.keys(ESPECIES_MISSAO);
+  const comTrancada = GENS.flatMap(g => g.rotas).filter(z => z.pool.some(p => nomes.includes(p.n)));
+  assert.ok(comTrancada.length >= nomes.length, 'toda espécie de missão precisa morar em alguma rota');
+  for (const z of comTrancada) {
+    const trancadas = z.pool.filter(p => nomes.includes(p.n)).map(p => p.n);
+    const sem = rotaNaJornada(z, {});                              // save sem o campo: tudo trancado
+    assert.equal(sem.pool.some(p => nomes.includes(p.n)), false, z.id);
+    assert.equal(sem.pool.length, z.pool.length - trancadas.length);
+    assert.ok(sem.pool.length > 0, `${z.id}: rota vazia`);
+    const com = rotaNaJornada(z, { liberadas: trancadas });        // missão cumprida: volta igual
+    assert.deepEqual(com.pool.map(p => p.n), z.pool.map(p => p.n));
+    // o corte não pode atropelar a escala de nível, que é o outro trabalho da mesma função
+    assert.equal(rotaNaJornada(z, { nivelInicioGen: 40 }).min, escalaNivel(z.min, 40));
+  }
+  // rota sem nenhuma trancada e sem escala segue sendo o MESMO objeto (isto roda a cada render)
+  const limpa = GENS[0].rotas.find(z => !z.pool.some(p => nomes.includes(p.n)));
+  assert.equal(rotaNaJornada(limpa, {}), limpa);
+  // treinador nunca carrega Pokémon de missão, nem depois de liberado
+  for (const g of GENS) assert.equal(especiesDaGen(g.gen).some(p => nomes.includes(p.n)), false, `gen ${g.gen}`);
 });

@@ -9,7 +9,7 @@
 // Puro (sem DOM): testado em tests/mapas.test.js.
 // `GENS` sai de dados.js, não de dados-mapas.js: é lá que o Alfa trocado no editor de rotas (dados-rotas.js) é
 // aplicado. Ler o mapa cru aqui faria a troca valer numa tela e não na outra.
-import { GENS, REGIOES_INICIAIS } from './dados.js';
+import { GENS, REGIOES_INICIAIS, TRANCADA_POR_MISSAO } from './dados.js';
 import { MEGAS } from './dados-megas.js';
 import { clamp, fmt } from './util.js';
 
@@ -94,12 +94,26 @@ export function escalaNivel(n, base) {
   if (!base || base <= 5) return n;
   return clamp(Math.round(base + (n - 2) * (100 - base) / (NIVEL_TOPO - 2)), 1, 100);
 }
+/* ---- 🔒 Pokémon de missão fora do pool ----
+   Espécie de `dados.ESPECIES_MISSAO` não existe no mundo até a conta cumprir a missão dela. O corte é AQUI porque
+   esta é a porta única da rota na jornada (`estado.zone`/`rotasAtuais`): o sorteio, a taxa mostrada, a Pokédex da
+   rota e a caça shiny todos leem a rota já filtrada, então nenhuma tela promete um bicho que não vai aparecer.
+   `S.liberadas` é a foto tirada na criação da jornada (criacao.iniciarJornada) — save antigo não tem o campo, e
+   aí tudo fica trancado até a próxima jornada. Devolve `null` quando não há nada a tirar, pra rota comum seguir
+   sendo o MESMO objeto de sempre (isto roda a cada render). */
+function poolDaJornada(z, S) {
+  if (!z.pool?.some(p => TRANCADA_POR_MISSAO(p.n))) return null;
+  const liberadas = S?.liberadas || [];
+  const pool = z.pool.filter(p => !TRANCADA_POR_MISSAO(p.n) || liberadas.includes(p.n));
+  return pool.length === z.pool.length ? null : pool;
+}
 // a rota com os níveis que valem nesta jornada (não muta a original). A 1ª rota do mapa continua sempre aberta.
 export function rotaNaJornada(z, S) {
-  const b = S?.nivelInicioGen;
-  if (!z || !b || b <= 5) return z;
+  if (!z) return z;
+  const pool = poolDaJornada(z, S), b = S?.nivelInicioGen;
+  if (!b || b <= 5) return pool ? { ...z, pool } : z;
   const e = n => escalaNivel(n, b);
-  return { ...z, min: e(z.min), max: e(z.max), libera: z.libera <= 1 ? 1 : e(z.libera),
+  return { ...z, ...(pool && { pool }), min: e(z.min), max: e(z.max), libera: z.libera <= 1 ? 1 : e(z.libera),
     chefe: z.chefe && { ...z.chefe, nivel: e(z.chefe.nivel) },
     lendarios: z.lendarios?.map(l => ({ ...l, nivel: e(l.nivel) })) };
 }
@@ -153,8 +167,9 @@ export function idDaEspecieNoRegistro(especie, id) {
    não a lista de espécies. */
 export function especiesDaGen(gen) {
   const vistos = new Map();
-  // fora o Santuário: lá moram iniciais, lendários e míticos, e treinador de rota não sai por aí com um Mewtwo
-  for (const z of rotasDaGen(gen)) if (!z.posVitoria) for (const p of z.pool) if (!p.m && !vistos.has(p.id)) vistos.set(p.id, p);
+  // fora o Santuário: lá moram iniciais, lendários e míticos, e treinador de rota não sai por aí com um Mewtwo.
+  // Pokémon de missão também não: ele não é bicho de estimação de ninguém — nem depois de liberado.
+  for (const z of rotasDaGen(gen)) if (!z.posVitoria) for (const p of z.pool) if (!p.m && !TRANCADA_POR_MISSAO(p.n) && !vistos.has(p.id)) vistos.set(p.id, p);
   return [...vistos.values()];
 }
 /* Nomes de todo lendário e mítico do jogo (badge 'ovos1000', ovos.js): saem das MARCAS `l`/`m` dos pools, as mesmas

@@ -45,7 +45,7 @@ test('contagens declaradas em prosa (qualquer .md) batem com o código', async (
   const { IMPL } = await mod('habilidades');
   const { GOLPE_FLAGS } = await mod('dados-golpe-flags');
   const { AINDA_EVOLUI } = await mod('dados-evolucao-restante');
-  const { ITEMS } = await mod('dados');
+  const { ITEMS, ESPECIES_MISSAO } = await mod('dados');
   const { EVENTOS } = await mod('evento');
   const { CHEFES } = await mod('boss');
 
@@ -75,6 +75,10 @@ test('contagens declaradas em prosa (qualquer .md) batem com o código', async (
   const [chefesTxt] = daFrase(/\*\*Os (\d+) chefes\*\* \(`evento\.EVENTOS`/, 'nº de chefes');
   assert.equal(chefesTxt, EVENTOS.length, 'chefes no texto x evento.EVENTOS');
   assert.equal(chefesTxt, Object.keys(CHEFES).length, 'chefes no texto x boss.CHEFES');
+  // 🔒 Pokémon de missão: a lista é prosa em CLAUDE.md e no README, e cada espécie trava a Pokédex de uma Gen
+  const [missao] = daFrase(/\*\*(\d+) Pokémon de missão\*\*/, 'quantos Pokémon de missão existem');
+  assert.equal(missao, Object.keys(ESPECIES_MISSAO).length, 'Pokémon de missão no texto x dados.ESPECIES_MISSAO');
+
   const [mod14] = daFrase(/semana N = `N % (\d+)`/, 'o divisor do calendário');
   assert.equal(mod14, EVENTOS.length, 'o `% N` do calendário tem de ser o nº de chefes');
 });

@@ -1,9 +1,9 @@
 // Badges da conta (js/badges.js): conquistas de longo prazo que pagam vantagem na próxima jornada.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BADGES, badgesDaConta, contextoBadges, vantagensDe, medirPorDado, campoDaMedida, MEDIDAS, ALVO_TIPO, ALVO_AMIGOS, ALVO_AMIGOS_MAX, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
+import { BADGES, badgesDaConta, contextoBadges, vantagensDe, medirPorDado, campoDaMedida, MEDIDAS, missoesDeEspecie, especiesLiberadasPorMissao, ALVO_TIPO, ALVO_AMIGOS, ALVO_AMIGOS_MAX, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
 import { ALVOS, MARCOS_ABATES, MODO_NAO_CONTA, registrarDano, somarAbates } from '../js/conquistas.js';
-import { ITEMS, TYPE_PT } from '../js/dados.js';
+import { ITEMS, TYPE_PT, ESPECIES_MISSAO } from '../js/dados.js';
 
 const ctxVazio = () => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {}, golpe: {}, elemento: {} }, progresso: null, dex: null, conquistas: null });
 const acha = (lista, id) => lista.find(b => b.id === id);
@@ -222,4 +222,35 @@ test('medirPorDado lê o caminho dentro do ctx, e campo que não existe vale 0',
     const caminho = campoDaMedida({ campo, especie: 'pikachu' });
     assert.notEqual(caminho.split('.').reduce((o, k) => (o == null ? o : o[k]), c), undefined, `${campo} não existe no ctx`);
   }
+});
+
+/* 🔒 Pokémon de missão (dados.ESPECIES_MISSAO + badges.missoesDeEspecie): a mesma máquina das badges medindo o
+   mesmo ctx. O que o teste trava é o que machuca se quebrar: campo que o ctx não conta (missão impossível em
+   silêncio) e a regra "só com o alvo batido a espécie entra na lista de liberadas". */
+test('toda missão de espécie mede um campo que o contextoBadges conta de verdade', () => {
+  for (const [especie, m] of Object.entries(ESPECIES_MISSAO)) {
+    assert.ok(m.id > 0 && m.icone && m.nome && m.desc?.length > 20, `${especie}: faltando texto`);
+    assert.ok(m.alvo > 0, `${especie}: alvo inválido`);
+    // MEDIDAS é a lista do que o ctx conta de verdade (é pra isso que ela existe) — campo fora dela é missão
+    // impossível em silêncio, o pior defeito possível numa conquista de carreira
+    assert.ok(MEDIDAS[m.campo], `${especie}: campo ${m.campo} não está em MEDIDAS`);
+    assert.equal(campoDaMedida(m), m.campo);   // nenhuma missão mede por espécie (não precisaria do sufixo)
+  }
+  // com a conta zerada nada pode nascer liberado
+  assert.deepEqual(especiesLiberadasPorMissao(ctxVazio()), []);
+});
+
+test('a espécie de missão só libera com o alvo batido, e o dinheiro é a soma do pico de cada jornada', () => {
+  const alvo = ESPECIES_MISSAO.gholdengo.alvo;
+  const comDinheiro = total => contextoBadges({
+    abates: { total: 0, tipoAlvo: {}, especie: {}, golpe: {}, elemento: {} },
+    progresso: { porJornada: { a: { maxDinheiro: total / 2 }, b: { maxDinheiro: total / 2 } } }, dex: null, conquistas: null
+  });
+  assert.equal(comDinheiro(alvo).dinheiroCarreira, alvo);
+  assert.deepEqual(especiesLiberadasPorMissao(comDinheiro(alvo - 2)), []);
+  assert.deepEqual(especiesLiberadasPorMissao(comDinheiro(alvo)), ['gholdengo']);
+  // a lista inteira continua aparecendo na tela, trancada e com quanto falta
+  const m = missoesDeEspecie(comDinheiro(alvo / 2)).find(x => x.especie === 'gholdengo');
+  assert.equal(m.completo, false);
+  assert.equal(m.fracao, 0.5);
 });

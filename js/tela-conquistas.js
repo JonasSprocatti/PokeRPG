@@ -6,7 +6,7 @@
 import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
 import { barraTelas } from './navegacao.js';
-import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta, badgesDaCarreira } from './carreira.js';
+import { carregarCarreira, abatesDaConta, carregarProgresso, desbloqueadasDaConta, badgesDaCarreira, missoesDaCarreira } from './carreira.js';
 import { vantagensDe } from './badges.js';
 import { MEGAS, megasDe } from './dados-megas.js';
 import { idDaEspecieNoRegistro } from './mapas.js';
@@ -132,6 +132,8 @@ export function telaConquistas() {
 
     ${secaoBadges()}
 
+    ${secaoMissoes()}
+
     ${secaoEspecies()}
 
     <p class="small muted" style="margin-top:18px">Jornadas que contam: <b>${n(jornadas.filter(j => j.dificuldade !== MODO_NAO_CONTA).length)}</b>
@@ -169,6 +171,25 @@ function secaoBadges() {
       ${esc([...Object.entries(v.itens).map(([k, q]) => `${ITEMS[k]?.name || k} ×${q}`), v.dinheiro ? `₽${v.dinheiro}` : ''].filter(Boolean).join(' · ') || '—')}</p>` : ''}
     <ul class="quase conquistas">${[...ganhas, ...emCurso].map(linha).join('')}</ul>`;
 }
+/* 🔒 Pokémon de missão (dados.ESPECIES_MISSAO): espécie que não existe nas rotas até a conta cumprir a missão dela.
+   Diferente das badges, aqui NADA é escondido: o jogador precisa saber que o bicho existe e o que ele cobra —
+   uma missão secreta de 180 mil derrotados nunca seria tentada. O sprite aparece mesmo trancado (o Pokémon não é
+   o segredo; o segredo é o esforço). */
+function secaoMissoes() {
+  const lista = missoesDaCarreira(G.S?.registro);
+  const linha = m => `<li class="${m.completo ? 'feito' : ''}">
+    <img src="${SPR(m.id)}" alt="" loading="lazy">
+    <b>${m.completo ? '🔓 ' : '🔒 '}${esc(m.icone)} ${esc(fmt(m.especie))}</b>
+    ${m.completo ? '' : barra(m.n, m.alvo)}
+    <small>${esc(m.nome)} — ${esc(m.desc)}${m.completo ? '<br><i>Liberado: aparece nas rotas das suas próximas jornadas.</i>' : ` · ${n(m.n)}/${n(m.alvo)}`}</small></li>`;
+  return `<h3 class="passo">🔒 Pokémon de missão</h3>
+    <p class="muted small">Estes ${lista.length} não existem no mundo até você cumprir a missão deles: não aparecem na rota,
+      não entram na Pokédex da rota, não vêm na equipe de treinador nenhum. Cumprida a missão, a espécie passa a aparecer
+      selvagem a partir da <b>próxima jornada</b> — e, como qualquer outra, derrotar, fazer amizade ou evoluir pra ela
+      depois disso a libera pra jogar. Até lá, a <b>Pokédex completa daquela Gen</b> espera por ela.</p>
+    <ul class="quase conquistas">${lista.map(linha).join('')}</ul>`;
+}
+
 /* Espécies jogáveis: quantas você já desbloqueou e quanto falta pras próximas. Esta lista já existia na tela de
    criação, mas é aqui que se procura "o que falta pra eu conseguir X" — e é a conquista de conta mais antiga do
    jogo. **Desbloquear só conta em jornada Roguelike**; usar a espécie desbloqueada vale em qualquer modo. */

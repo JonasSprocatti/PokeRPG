@@ -8,7 +8,7 @@ import { idDaEspecieNoRegistro } from './mapas.js';
 import { PROGRESSO_KEY, progressoVazio, bancar, mesclarProgresso, totaisDe, runsDeNivelDe, especiesDesbloqueadas, registrarEventoVencido, saldoArenaDisponivel, gastarSaldoArena } from './progresso-conta.js';
 import { desbloqueadas } from './roguelike.js';
 import { entradaDoHall, registrarNoHall, listaDoHall } from './hall.js';
-import { contextoBadges, badgesDaConta, vantagensDe } from './badges.js';
+import { contextoBadges, badgesDaConta, vantagensDe, missoesDeEspecie, especiesLiberadasPorMissao } from './badges.js';
 import { pokedexDaConta } from './pokedex-conta.js';
 import { progressoConquistas, megaLiberada, zLiberado, vinculoLiberado, ALVOS } from './conquistas.js';
 
@@ -205,16 +205,22 @@ export function gimmicksNaLoja(especie, golpes = [], registroAtual = null) {
 /* ---- badges (badges.js) ----
    Montadas do progresso permanente + Pokédex da conta + progresso das gimmicks. Ficam aqui pra tela e a criação
    pedirem por uma porta só, sem cada uma remontar o contexto. */
-export function badgesDaCarreira(registroAtual = null) {
+export function contextoDaCarreira(registroAtual = null) {
   const jornadas = carregarCarreira().jornadas;
   const progresso = atualizarProgresso(jornadas);
-  const ctx = contextoBadges({
+  return contextoBadges({
     abates: totaisDe(progresso, registroAtual?.abates),
     progresso,
     dex: pokedexDaConta(jornadas, registroAtual),
     conquistas: conquistasDoProgresso(jornadas, registroAtual, progresso)
   });
-  return badgesDaConta(ctx);
 }
+export const badgesDaCarreira = (registroAtual = null) => badgesDaConta(contextoDaCarreira(registroAtual));
 // o que a próxima jornada ganha das badges já conquistadas
 export const vantagensDaConta = () => vantagensDe(badgesDaCarreira());
+/* ---- 🔒 Pokémon de missão (dados.ESPECIES_MISSAO) ----
+   Mesmo contexto das badges, outro prêmio: a espécie passa a existir nas rotas. NÃO passa por `G.semVantagens` —
+   jogar sem vantagens tira item e dinheiro de presente, não tira conteúdo do mundo (quem só joga assim nunca
+   encontraria a espécie). A criação fotografa `especiesLiberadasDaConta()` em `S.liberadas`. */
+export const missoesDaCarreira = (registroAtual = null) => missoesDeEspecie(contextoDaCarreira(registroAtual));
+export const especiesLiberadasDaConta = () => especiesLiberadasPorMissao(contextoDaCarreira());

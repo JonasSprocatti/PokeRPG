@@ -13,6 +13,17 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.5', data: '2026-10-08', titulo: '🔒 Cinco Pokémon que não existem (até você provar que merece)', piada: 'O Gimmighoul pediu 999 moedas pra evoluir e, quando entregamos, ele contou uma por uma, na nossa frente, em silêncio. Decidimos então que ninguém mais ganha um Gholdengo de graça. O Arceus, que criou o universo, concordou com a medida e pediu nove regiões de distância.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🔒 Pokémon de missão</b> — cinco espécies agora <b>não existem no mundo</b> até a sua conta cumprir a missão delas. Não aparecem na rota, não entram na Pokédex da rota, não vêm na caça shiny e nenhum treinador carrega um. Cada missão soma a <b>carreira inteira</b> — todas as jornadas, qualquer modo — e nunca anda para trás.',
+        '<b>🪙 Gholdengo</b>: junte <b>₽100.000.000</b> somando o maior saldo de cada jornada. São as 999 moedas do Gimmighoul em escala de carreira — uma jornada muito bem jogada chega a ₽3 milhões, então dá trabalho, e é pra dar.',
+        '<b>👻 Spiritomb</b>: derrote <b>180.000</b> Pokémon. São 108 almas presas numa pedra, e nenhuma delas tem pressa.<br><b>⚙️ Melmetal</b>: derrote <b>50.000</b> do tipo <b>Aço</b>.<br><b>🥀 Shedinja</b>: choque <b>100 ovos</b> — ele é o que fica quando a vida sai da casca e a casca continua de pé.<br><b>✨ Arceus</b>: feche as <b>9 Gens no Roguelike</b>. O criador só aparece pra quem já viu o mundo inteiro.',
+        '<b>Cumprida a missão</b>, a espécie passa a aparecer selvagem a partir da <b>próxima jornada</b> — e dali em diante funciona como qualquer outra: derrotar, fazer amizade ou evoluir pra ela a libera pra jogar.',
+        '<b>Enquanto a missão não sai, a Pokédex completa daquela Gen espera por ela.</b> É o ponto: o bicho é o último selo da região.',
+        'O progresso de cada uma está na tela <b>🏅 Conquistas</b>, com o número exato e quanto falta. <b>A missão é pública</b> — inclusive o sprite. Só o esforço é grande.'
+      ] }
+    ] },
   { versao: '6.4', data: '2026-10-08', titulo: '🔔 O ovo choca sozinho no relógio, e o seu Pokémon aprendeu a te ligar', piada: 'Uma auditoria interna encontrou 4.312 Pokémon parados no meio de uma rota, em pé, esperando ordens há semanas. Um Bidoof em Kanto já tinha montado barraca e começado a cobrar aluguel dos outros. Agora eles podem simplesmente te ligar.',
     secoes: [
       { nome: 'Novidades', itens: [
