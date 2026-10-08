@@ -723,7 +723,7 @@ Hoje, fora do Roguelike, vencer os lendários deixa **seguir com o mesmo Pokémo
 - **Alternativa** (a de hoje): seguir com o mesmo Pokémon em nível alto, oferecida ali no fim e valendo **menos pontos no ranking**.
 
 ### 3. ✅ FEITO — Badges com vantagem permanente
-Implementado em `js/badges.js` (58 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 02/10/2026: Tipos 18, Eventos 16, Caçada 4, Laços 5, Coleção/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2, Maestria 1) e ligado na criação
+Implementado em `js/badges.js` (59 badges numa tabela única, puro, `tests/badges.test.js` — contagem conferida em 08/10/2026: Tipos 18, Eventos 16, Caçada 4, Laços 5, Coleção/Parceiros/Coragem/Rayquaza 3 cada, Gimmicks 2, Maestria 2) e ligado na criação
 (`criacao.renderVantagens`, `vantagensDe`) e na tela 🏅 Conquistas. Cada badge é medida do **progresso
 permanente** (nunca do histórico, que o jogador pode apagar — `contextoBadges` monta o `ctx` a partir de
 `progresso-conta.js`) e paga uma vantagem na PRÓXIMA jornada: itens (empilham) e/ou dinheiro inicial (soma),
@@ -760,9 +760,43 @@ vira dano negativo (`!(d > 0)`). Aplicado em `criacao.iniciarJornada` via `makeM
 **O botão do admin não é um atalho paralelo**: `dev.liberarIvsPerfeitos` só põe o contador de dano no alvo dentro da
 entrada `__teste__` do livro-caixa, igual ao que `liberarMegas` faz com a Pedra Mega. Assim o botão testa o caminho
 de verdade e 🧹 Limpar devolve a conta ao estado real. **Ficou de fora**: aliados recrutados continuam com IVs
-sorteados (a badge é sobre o Pokémon que VOCÊ é), e as outras 6 construções de "IV 31" espalhadas por
-`batalha.js`/`arena.js`/`multiplayer.js` não foram trocadas por `IVS_MAX` — é código que funciona, e a dedução
-valeria um diff maior do que o ganho.
+sorteados (a badge é sobre o Pokémon que VOCÊ é) — revisto em 08/10/2026 pela badge irmã, abaixo — e as outras 6
+construções de "IV 31" espalhadas por `batalha.js`/`arena.js`/`multiplayer.js` não foram trocadas por `IVS_MAX`: é
+código que funciona, e a dedução valeria um diff maior do que o ganho. **As 3 de `batalha.js` foram trocadas em
+08/10/2026**, porque a badge irmã já precisava importar `IVS_MAX` ali — as de `arena.js`/`multiplayer.js` seguem.
+
+**🌿 Rotas em potencial máximo (08/10/2026) — os IVs 31 do outro lado do campo.** Pedido do usuário: "uma missão
+para que todos os pokés das rotas venham com os IVs no máximo". Virou **badge**, e não missão, por uma razão de
+estrutura e não de gosto: prêmio de missão (`dados.MISSOES_GLOBAIS`) é `{ dinheiro?, itens? }` e cai **nesta**
+jornada (`missoes.verificarMissoes` credita na hora), enquanto mudança de REGRA é exatamente o que badge existe
+pra pagar, e sempre na jornada SEGUINTE. Transformar prêmio de missão em regra pediria um canal novo de vantagem
+dentro de `missoes.js`, paralelo ao de `vantagensDe` — dois caminhos pra mesma coisa, e o que a próxima regra
+usasse seria sorteio.
+
+**A medida é 500 aliados recrutados na carreira** (`ALVO_AMIGOS_MAX`, 5× o alvo da badge "Líder da matilha", que
+usa o mesmo contador). Medir AMIZADE é a escolha de design: o selvagem da rota é de onde sai todo aliado (petisco,
+`amizade.oferecer`) e, por eles, todo ovo (`ovos.js` cruza o casal do esconderijo), então quem recrutou 500 ao
+longo da carreira passa a recrutar **perfeitos**. O contador já existia em `contextoBadges.amigos` (soma de
+`porJornada[].amigos`, do progresso permanente, que nunca encolhe) — **nenhum campo novo** e nenhuma entrada em
+`MEDIDAS`, que é pra badge criada pelo editor, não pra badge de fábrica.
+
+**Aplicado num ponto só**: `batalha.novoOponente`, a porta ÚNICA do selvagem — encontro comum, acompanhante de
+grupo (⚔ Saga) e lacaio do Alfa saem todos dali, o mesmo motivo por que o item segurado do selvagem já era posto
+lá. A flag mora em `S.ivsSelvagens`, gravada por `criacao.iniciarJornada` ao lado de `S.lojaGratis` (vantagem de
+regra tem de sobreviver ao F5: a badge é conferida na CRIAÇÃO, não a cada encontro). `G.semVantagens` desliga,
+como em todas — IVs perfeitos dos dois lados somados ao bônus de pontuação do desafio puro seria o melhor dos dois
+mundos, o mesmo raciocínio da badge de cima.
+
+**O custo está na descrição, de propósito.** A badge deixa o selvagem que te ENFRENTA perfeito também, e isso não
+é efeito colateral que dê pra separar: é o mesmo Pokémon antes e depois do petisco. Esconder isso faria o jogador
+descobrir na pancada uma vantagem que ele conquistou — então o texto da badge, o `log` da criação, o README e o
+patch note dizem os dois lados. **Ficou de fora**: equipe de treinador (`novoOponenteTreinador`), porque aquele
+Pokémon é do treinador e não da rota, e metade dela nem sai do pool; Alfa, lendário e chefe de rota, que já eram
+31. É uma linha em `novoOponenteTreinador` se o usuário quiser estender.
+
+**De quebra, um defeito achado no caminho**: `tela-conquistas.secaoBadges` só sabia descrever prêmio de item,
+dinheiro e loja grátis, então "Potencial máximo" — a badge mais longa do jogo — aparecia na lista com **"Dá: —"**.
+Duas linhas no `premio()`, e vale pras duas.
 
 **Pratos do Arceus (28/09/2026) — revisão do item por tipo.** As 18 badges "Especialista em X" (`ALVO_TIPO` =
 1.000 abates daquele tipo, mesmo número do Mega/Vínculo) davam originalmente uma pedra de evolução (quando o

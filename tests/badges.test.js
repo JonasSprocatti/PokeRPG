@@ -1,7 +1,7 @@
 // Badges da conta (js/badges.js): conquistas de longo prazo que pagam vantagem na próxima jornada.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BADGES, badgesDaConta, contextoBadges, vantagensDe, medirPorDado, campoDaMedida, MEDIDAS, ALVO_TIPO, ALVO_AMIGOS, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
+import { BADGES, badgesDaConta, contextoBadges, vantagensDe, medirPorDado, campoDaMedida, MEDIDAS, ALVO_TIPO, ALVO_AMIGOS, ALVO_AMIGOS_MAX, ALVO_OVOS, ALVO_OVOS_LENDA } from '../js/badges.js';
 import { ALVOS, MARCOS_ABATES, MODO_NAO_CONTA, registrarDano, somarAbates } from '../js/conquistas.js';
 import { ITEMS, TYPE_PT } from '../js/dados.js';
 
@@ -15,7 +15,7 @@ test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () =
     assert.ok(b.nome?.length > 3 && b.desc?.length > 10 && b.grupo && b.icone, `${b.id}: faltando texto`);
     const r = b.recompensa || {};
     // vantagem de verdade = item, dinheiro, loja grátis, IVs perfeitos ou um ovo (título sozinho não conta: é só texto)
-    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis || r.ivsPerfeitos || r.ovo, `${b.id}: não dá nada`);
+    assert.ok(Object.keys(r.itens || {}).length || r.dinheiro || r.lojaGratis || r.ivsPerfeitos || r.ivsSelvagens || r.ovo, `${b.id}: não dá nada`);
     for (const k of Object.keys(r.itens || {})) assert.ok(ITEMS[k], `${b.id}: item "${k}" não existe`);
   }
 });
@@ -23,7 +23,7 @@ test('toda badge tem nome, descrição, grupo e uma recompensa de verdade', () =
 test('nada está conquistado numa conta zerada', () => {
   const lista = badgesDaConta(ctxVazio());
   assert.equal(lista.some(b => b.completo), false);
-  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [], ovos: [] });
+  assert.deepEqual(vantagensDe(lista), { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, ivsSelvagens: false, titulos: [], ovos: [] });
 });
 
 /* Os dois ovos de badge (ovos.js) são o mesmo tipo de elo frágil do "Potencial máximo": a recompensa não é item nem
@@ -50,6 +50,18 @@ test('1 milhão de dano libera IVs perfeitos na próxima jornada', () => {
   const lista = badgesDaConta(ctxCom(ALVOS.dano));
   assert.equal(acha(lista, 'ivs-perfeitos').completo, true);
   assert.equal(vantagensDe(lista).ivsPerfeitos, true);
+});
+
+/* A irmã dela, pelo mesmo motivo: a recompensa é uma REGRA (`S.ivsSelvagens`, lido por batalha.novoOponente), então
+   o elo solto não dá erro em lugar nenhum — só deixa de valer calado. */
+test('500 aliados recrutados liberam IVs 31 em todo selvagem de rota', () => {
+  const ctxAmigos = n => contextoBadges({ abates: { total: 0, tipoAlvo: {}, especie: {} }, dex: null, conquistas: null,
+    progresso: { porJornada: { a: { amigos: n } } } });
+  assert.equal(acha(badgesDaConta(ctxAmigos(ALVO_AMIGOS_MAX - 1)), 'ivs-selvagens').completo, false);
+  assert.equal(vantagensDe(badgesDaConta(ctxAmigos(ALVO_AMIGOS_MAX - 1))).ivsSelvagens, false);
+  const cheio = badgesDaConta(ctxAmigos(ALVO_AMIGOS_MAX));
+  assert.equal(acha(cheio, 'ivs-selvagens').completo, true);
+  assert.equal(vantagensDe(cheio).ivsSelvagens, true);
 });
 
 // o contador só soma o dano SEU, ignora o modo Fácil e nunca aceita número negativo (inimigo curado no meio do turno)

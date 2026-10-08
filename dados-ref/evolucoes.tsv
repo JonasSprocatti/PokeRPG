@@ -1,0 +1,677 @@
+de	para	gatilho	condicoes
+bulbasaur	ivysaur	level-up	nivel=16
+ivysaur	venusaur	level-up	nivel=32
+charmander	charmeleon	level-up	nivel=16
+charmeleon	charizard	level-up	nivel=36
+squirtle	wartortle	level-up	nivel=16
+wartortle	blastoise	level-up	nivel=36
+caterpie	metapod	level-up	nivel=7
+metapod	butterfree	level-up	nivel=10
+weedle	kakuna	level-up	nivel=7
+kakuna	beedrill	level-up	nivel=10
+pidgey	pidgeotto	level-up	nivel=18
+pidgeotto	pidgeot	level-up	nivel=36
+rattata	raticate	level-up	nivel=20
+spearow	fearow	level-up	nivel=20
+ekans	arbok	level-up	nivel=22
+pichu	pikachu	level-up	felicidade=220
+pikachu	raichu	use-item	itemUsado=thunder-stone
+sandshrew	sandslash	level-up	nivel=22
+nidoran-f	nidorina	level-up	nivel=16
+nidorina	nidoqueen	use-item	itemUsado=moon-stone
+nidoran-m	nidorino	level-up	nivel=16
+nidorino	nidoking	use-item	itemUsado=moon-stone
+cleffa	clefairy	level-up	felicidade=160
+clefairy	clefable	use-item	itemUsado=moon-stone
+vulpix	ninetales	use-item	itemUsado=fire-stone
+igglybuff	jigglypuff	level-up	felicidade=160
+jigglypuff	wigglytuff	use-item	itemUsado=moon-stone
+zubat	golbat	level-up	nivel=22
+oddish	gloom	level-up	nivel=21
+gloom	vileplume	use-item	itemUsado=leaf-stone
+paras	parasect	level-up	nivel=24
+venonat	venomoth	level-up	nivel=31
+diglett	dugtrio	level-up	nivel=26
+meowth	persian	level-up	nivel=28
+psyduck	golduck	level-up	nivel=33
+mankey	primeape	level-up	nivel=28
+growlithe	arcanine	use-item	itemUsado=fire-stone
+poliwag	poliwhirl	level-up	nivel=25
+poliwhirl	poliwrath	use-item	itemUsado=water-stone
+abra	kadabra	level-up	nivel=16
+kadabra	alakazam	trade	-
+machop	machoke	level-up	nivel=28
+machoke	machamp	trade	-
+bellsprout	weepinbell	level-up	nivel=21
+weepinbell	victreebel	use-item	itemUsado=leaf-stone
+tentacool	tentacruel	level-up	nivel=30
+geodude	graveler	level-up	nivel=25
+graveler	golem	trade	-
+ponyta	rapidash	level-up	nivel=40
+slowpoke	slowbro	level-up	nivel=37
+magnemite	magneton	level-up	nivel=30
+doduo	dodrio	level-up	nivel=31
+seel	dewgong	level-up	nivel=34
+grimer	muk	level-up	nivel=38
+shellder	cloyster	use-item	itemUsado=water-stone
+gastly	haunter	level-up	nivel=25
+haunter	gengar	trade	-
+drowzee	hypno	level-up	nivel=26
+krabby	kingler	level-up	nivel=28
+voltorb	electrode	level-up	nivel=30
+exeggcute	exeggutor	use-item	itemUsado=leaf-stone
+cubone	marowak	level-up	nivel=28
+tyrogue	hitmonlee	level-up	nivel=20 atkVsDef=1
+tyrogue	hitmonchan	level-up	nivel=20 atkVsDef=-1
+koffing	weezing	level-up	nivel=35
+rhyhorn	rhydon	level-up	nivel=42
+happiny	chansey	level-up	hora=day itemSegurado=oval-stone
+horsea	seadra	level-up	nivel=32
+goldeen	seaking	level-up	nivel=33
+staryu	starmie	use-item	itemUsado=water-stone
+mime-jr	mr-mime	level-up	sabeGolpe=mimic
+smoochum	jynx	level-up	nivel=30
+elekid	electabuzz	level-up	nivel=30
+magby	magmar	level-up	nivel=30
+magikarp	gyarados	level-up	nivel=20
+eevee	vaporeon	use-item	itemUsado=water-stone
+eevee	jolteon	use-item	itemUsado=thunder-stone
+eevee	flareon	use-item	itemUsado=fire-stone
+omanyte	omastar	level-up	nivel=40
+kabuto	kabutops	level-up	nivel=40
+munchlax	snorlax	level-up	felicidade=160
+dratini	dragonair	level-up	nivel=30
+dragonair	dragonite	level-up	nivel=55
+chikorita	bayleef	level-up	nivel=16
+bayleef	meganium	level-up	nivel=32
+cyndaquil	quilava	level-up	nivel=14
+quilava	typhlosion	level-up	nivel=36
+totodile	croconaw	level-up	nivel=18
+croconaw	feraligatr	level-up	nivel=30
+sentret	furret	level-up	nivel=15
+hoothoot	noctowl	level-up	nivel=20
+ledyba	ledian	level-up	nivel=18
+spinarak	ariados	level-up	nivel=22
+golbat	crobat	level-up	felicidade=160
+chinchou	lanturn	level-up	nivel=27
+togepi	togetic	level-up	felicidade=160
+natu	xatu	level-up	nivel=25
+mareep	flaaffy	level-up	nivel=15
+flaaffy	ampharos	level-up	nivel=30
+gloom	bellossom	use-item	itemUsado=sun-stone
+azurill	marill	level-up	felicidade=160
+marill	azumarill	level-up	nivel=18
+bonsly	sudowoodo	level-up	sabeGolpe=mimic
+poliwhirl	politoed	trade	itemSegurado=kings-rock
+hoppip	skiploom	level-up	nivel=18
+skiploom	jumpluff	level-up	nivel=27
+sunkern	sunflora	use-item	itemUsado=sun-stone
+wooper	quagsire	level-up	nivel=20
+eevee	espeon	level-up	felicidade=160 hora=day
+eevee	umbreon	level-up	felicidade=160 hora=night
+slowpoke	slowking	trade	itemSegurado=kings-rock
+wynaut	wobbuffet	level-up	nivel=15
+pineco	forretress	level-up	nivel=31
+onix	steelix	trade	itemSegurado=metal-coat
+snubbull	granbull	level-up	nivel=23
+scyther	scizor	trade	itemSegurado=metal-coat
+teddiursa	ursaring	level-up	nivel=30
+slugma	magcargo	level-up	nivel=38
+swinub	piloswine	level-up	nivel=33
+remoraid	octillery	level-up	nivel=25
+mantyke	mantine	level-up	naEquipe=remoraid
+houndour	houndoom	level-up	nivel=24
+seadra	kingdra	trade	itemSegurado=dragon-scale
+phanpy	donphan	level-up	nivel=25
+porygon	porygon2	trade	itemSegurado=up-grade
+tyrogue	hitmontop	level-up	nivel=20
+chansey	blissey	level-up	felicidade=160
+larvitar	pupitar	level-up	nivel=30
+pupitar	tyranitar	level-up	nivel=55
+treecko	grovyle	level-up	nivel=16
+grovyle	sceptile	level-up	nivel=36
+torchic	combusken	level-up	nivel=16
+combusken	blaziken	level-up	nivel=36
+mudkip	marshtomp	level-up	nivel=16
+marshtomp	swampert	level-up	nivel=36
+poochyena	mightyena	level-up	nivel=18
+zigzagoon	linoone	level-up	nivel=20
+wurmple	silcoon	level-up	nivel=7
+silcoon	beautifly	level-up	nivel=10
+wurmple	cascoon	level-up	nivel=7
+cascoon	dustox	level-up	nivel=10
+lotad	lombre	level-up	nivel=14
+lombre	ludicolo	use-item	itemUsado=water-stone
+seedot	nuzleaf	level-up	nivel=14
+nuzleaf	shiftry	use-item	itemUsado=leaf-stone
+taillow	swellow	level-up	nivel=22
+wingull	pelipper	level-up	nivel=25
+ralts	kirlia	level-up	nivel=20
+kirlia	gardevoir	level-up	nivel=30
+surskit	masquerain	level-up	nivel=22
+shroomish	breloom	level-up	nivel=23
+slakoth	vigoroth	level-up	nivel=18
+vigoroth	slaking	level-up	nivel=36
+nincada	ninjask	level-up	nivel=20
+nincada	shedinja	shed	-
+whismur	loudred	level-up	nivel=20
+loudred	exploud	level-up	nivel=40
+makuhita	hariyama	level-up	nivel=24
+skitty	delcatty	use-item	itemUsado=moon-stone
+aron	lairon	level-up	nivel=32
+lairon	aggron	level-up	nivel=42
+meditite	medicham	level-up	nivel=37
+electrike	manectric	level-up	nivel=26
+budew	roselia	level-up	felicidade=160 hora=day
+gulpin	swalot	level-up	nivel=26
+carvanha	sharpedo	level-up	nivel=30
+wailmer	wailord	level-up	nivel=40
+numel	camerupt	level-up	nivel=33
+spoink	grumpig	level-up	nivel=32
+trapinch	vibrava	level-up	nivel=35
+vibrava	flygon	level-up	nivel=45
+cacnea	cacturne	level-up	nivel=32
+swablu	altaria	level-up	nivel=35
+barboach	whiscash	level-up	nivel=30
+corphish	crawdaunt	level-up	nivel=30
+baltoy	claydol	level-up	nivel=36
+lileep	cradily	level-up	nivel=40
+anorith	armaldo	level-up	nivel=40
+feebas	milotic	level-up	beleza=170
+shuppet	banette	level-up	nivel=37
+duskull	dusclops	level-up	nivel=37
+chingling	chimecho	level-up	felicidade=220 hora=night
+snorunt	glalie	level-up	nivel=42
+spheal	sealeo	level-up	nivel=32
+sealeo	walrein	level-up	nivel=44
+clamperl	huntail	trade	itemSegurado=deep-sea-tooth
+clamperl	gorebyss	trade	itemSegurado=deep-sea-scale
+bagon	shelgon	level-up	nivel=30
+shelgon	salamence	level-up	nivel=50
+beldum	metang	level-up	nivel=20
+metang	metagross	level-up	nivel=45
+turtwig	grotle	level-up	nivel=18
+grotle	torterra	level-up	nivel=32
+chimchar	monferno	level-up	nivel=14
+monferno	infernape	level-up	nivel=36
+piplup	prinplup	level-up	nivel=16
+prinplup	empoleon	level-up	nivel=36
+starly	staravia	level-up	nivel=14
+staravia	staraptor	level-up	nivel=34
+bidoof	bibarel	level-up	nivel=15
+kricketot	kricketune	level-up	nivel=10
+shinx	luxio	level-up	nivel=15
+luxio	luxray	level-up	nivel=30
+roselia	roserade	use-item	itemUsado=shiny-stone
+cranidos	rampardos	level-up	nivel=30
+shieldon	bastiodon	level-up	nivel=30
+burmy	wormadam	level-up	nivel=20 genero=f
+burmy	mothim	level-up	nivel=20 genero=m
+combee	vespiquen	level-up	nivel=21 genero=f
+buizel	floatzel	level-up	nivel=26
+cherubi	cherrim	level-up	nivel=25
+shellos	gastrodon	level-up	nivel=30
+aipom	ambipom	level-up	sabeGolpe=double-hit
+drifloon	drifblim	level-up	nivel=28
+buneary	lopunny	level-up	felicidade=160
+misdreavus	mismagius	use-item	itemUsado=dusk-stone
+murkrow	honchkrow	use-item	itemUsado=dusk-stone
+glameow	purugly	level-up	nivel=38
+stunky	skuntank	level-up	nivel=34
+bronzor	bronzong	level-up	nivel=33
+gible	gabite	level-up	nivel=24
+gabite	garchomp	level-up	nivel=48
+riolu	lucario	level-up	felicidade=160 hora=day
+hippopotas	hippowdon	level-up	nivel=34
+skorupi	drapion	level-up	nivel=40
+croagunk	toxicroak	level-up	nivel=37
+finneon	lumineon	level-up	nivel=31
+snover	abomasnow	level-up	nivel=40
+sneasel	weavile	level-up	hora=night itemSegurado=razor-claw
+magneton	magnezone	level-up	local=10
+lickitung	lickilicky	level-up	sabeGolpe=rollout
+rhydon	rhyperior	trade	itemSegurado=protector
+tangela	tangrowth	level-up	sabeGolpe=ancient-power
+electabuzz	electivire	trade	itemSegurado=electirizer
+magmar	magmortar	trade	itemSegurado=magmarizer
+togetic	togekiss	use-item	itemUsado=shiny-stone
+yanma	yanmega	level-up	sabeGolpe=ancient-power
+eevee	leafeon	level-up	local=8
+eevee	glaceon	level-up	local=48
+gligar	gliscor	level-up	hora=night itemSegurado=razor-fang
+piloswine	mamoswine	level-up	sabeGolpe=ancient-power
+porygon2	porygon-z	trade	itemSegurado=dubious-disc
+kirlia	gallade	use-item	itemUsado=dawn-stone genero=m
+nosepass	probopass	level-up	local=10
+dusclops	dusknoir	trade	itemSegurado=reaper-cloth
+snorunt	froslass	use-item	itemUsado=dawn-stone genero=f
+snivy	servine	level-up	nivel=17
+servine	serperior	level-up	nivel=36
+tepig	pignite	level-up	nivel=17
+pignite	emboar	level-up	nivel=36
+oshawott	dewott	level-up	nivel=17
+dewott	samurott	level-up	nivel=36
+patrat	watchog	level-up	nivel=20
+lillipup	herdier	level-up	nivel=16
+herdier	stoutland	level-up	nivel=32
+purrloin	liepard	level-up	nivel=20
+pansage	simisage	use-item	itemUsado=leaf-stone
+pansear	simisear	use-item	itemUsado=fire-stone
+panpour	simipour	use-item	itemUsado=water-stone
+munna	musharna	use-item	itemUsado=moon-stone
+pidove	tranquill	level-up	nivel=21
+tranquill	unfezant	level-up	nivel=32
+blitzle	zebstrika	level-up	nivel=27
+roggenrola	boldore	level-up	nivel=25
+boldore	gigalith	trade	-
+woobat	swoobat	level-up	felicidade=160
+drilbur	excadrill	level-up	nivel=31
+timburr	gurdurr	level-up	nivel=25
+gurdurr	conkeldurr	trade	-
+tympole	palpitoad	level-up	nivel=25
+palpitoad	seismitoad	level-up	nivel=36
+sewaddle	swadloon	level-up	nivel=20
+swadloon	leavanny	level-up	felicidade=220
+venipede	whirlipede	level-up	nivel=22
+whirlipede	scolipede	level-up	nivel=30
+cottonee	whimsicott	use-item	itemUsado=sun-stone
+petilil	lilligant	use-item	itemUsado=sun-stone
+sandile	krokorok	level-up	nivel=29
+krokorok	krookodile	level-up	nivel=40
+darumaka	darmanitan	level-up	nivel=35
+dwebble	crustle	level-up	nivel=34
+scraggy	scrafty	level-up	nivel=39
+yamask	cofagrigus	level-up	nivel=34
+tirtouga	carracosta	level-up	nivel=37
+archen	archeops	level-up	nivel=37
+trubbish	garbodor	level-up	nivel=36
+zorua	zoroark	level-up	nivel=30
+minccino	cinccino	use-item	itemUsado=shiny-stone
+gothita	gothorita	level-up	nivel=32
+gothorita	gothitelle	level-up	nivel=41
+solosis	duosion	level-up	nivel=32
+duosion	reuniclus	level-up	nivel=41
+ducklett	swanna	level-up	nivel=35
+vanillite	vanillish	level-up	nivel=35
+vanillish	vanilluxe	level-up	nivel=47
+deerling	sawsbuck	level-up	nivel=34
+karrablast	escavalier	trade	trocaCom=shelmet
+foongus	amoonguss	level-up	nivel=39
+frillish	jellicent	level-up	nivel=40
+joltik	galvantula	level-up	nivel=36
+ferroseed	ferrothorn	level-up	nivel=40
+klink	klang	level-up	nivel=38
+klang	klinklang	level-up	nivel=49
+tynamo	eelektrik	level-up	nivel=39
+eelektrik	eelektross	use-item	itemUsado=thunder-stone
+elgyem	beheeyem	level-up	nivel=42
+litwick	lampent	level-up	nivel=41
+lampent	chandelure	use-item	itemUsado=dusk-stone
+axew	fraxure	level-up	nivel=38
+fraxure	haxorus	level-up	nivel=48
+cubchoo	beartic	level-up	nivel=37
+shelmet	accelgor	trade	trocaCom=karrablast
+mienfoo	mienshao	level-up	nivel=50
+golett	golurk	level-up	nivel=43
+pawniard	bisharp	level-up	nivel=52
+rufflet	braviary	level-up	nivel=54
+vullaby	mandibuzz	level-up	nivel=54
+deino	zweilous	level-up	nivel=50
+zweilous	hydreigon	level-up	nivel=64
+larvesta	volcarona	level-up	nivel=59
+feebas	milotic	trade	itemSegurado=prism-scale
+magneton	magnezone	level-up	local=379
+nosepass	probopass	level-up	local=379
+eevee	leafeon	level-up	local=375
+eevee	glaceon	level-up	local=380
+spritzee	aromatisse	trade	itemSegurado=sachet
+fletchling	fletchinder	level-up	nivel=17
+phantump	trevenant	trade	-
+fletchinder	talonflame	level-up	nivel=35
+fennekin	braixen	level-up	nivel=16
+inkay	malamar	level-up	nivel=30 deCabecaParaBaixo=1
+braixen	delphox	level-up	nivel=36
+chespin	quilladin	level-up	nivel=16
+clauncher	clawitzer	level-up	nivel=37
+quilladin	chesnaught	level-up	nivel=36
+froakie	frogadier	level-up	nivel=16
+frogadier	greninja	level-up	nivel=36
+honedge	doublade	level-up	nivel=35
+goomy	sliggoo	level-up	nivel=40
+spewpa	vivillon	level-up	nivel=12
+scatterbug	spewpa	level-up	nivel=9
+binacle	barbaracle	level-up	nivel=39
+pumpkaboo	gourgeist	trade	-
+bunnelby	diggersby	level-up	nivel=20
+flabebe	floette	level-up	nivel=19
+floette	florges	use-item	itemUsado=shiny-stone
+doublade	aegislash	use-item	itemUsado=dusk-stone
+pancham	pangoro	level-up	nivel=32 tipoNaEquipe=dark
+swirlix	slurpuff	trade	itemSegurado=whipped-dream
+skrelp	dragalge	level-up	nivel=48
+tyrunt	tyrantrum	level-up	nivel=39 hora=day
+amaura	aurorus	level-up	nivel=39 hora=night
+bergmite	avalugg	level-up	nivel=37
+helioptile	heliolisk	use-item	itemUsado=sun-stone
+litleo	pyroar	level-up	nivel=35
+skiddo	gogoat	level-up	nivel=32
+sliggoo	goodra	level-up	nivel=50 chuva=1
+noibat	noivern	level-up	nivel=48
+espurr	meowstic	level-up	nivel=25 genero=m
+eevee	sylveon	level-up	afeto=2 sabeTipo=fairy
+magneton	magnezone	level-up	local=629
+eevee	leafeon	level-up	local=650
+eevee	glaceon	level-up	local=640
+nosepass	probopass	level-up	local=629
+magneton	magnezone	level-up	local=771
+cubone	marowak	level-up	nivel=28 hora=night
+magneton	magnezone	level-up	local=789
+nosepass	probopass	level-up	local=771
+nosepass	probopass	level-up	local=789
+charjabug	vikavolt	level-up	local=789
+rowlet	dartrix	level-up	nivel=17
+dartrix	decidueye	level-up	nivel=34
+litten	torracat	level-up	nivel=17
+torracat	incineroar	level-up	nivel=34
+popplio	brionne	level-up	nivel=17
+brionne	primarina	level-up	nivel=34
+pikipek	trumbeak	level-up	nivel=14
+trumbeak	toucannon	level-up	nivel=28
+yungoos	gumshoos	level-up	nivel=20 hora=day
+grubbin	charjabug	level-up	nivel=20
+charjabug	vikavolt	level-up	local=771
+crabrawler	crabominable	level-up	local=775
+cutiefly	ribombee	level-up	nivel=25
+rockruff	lycanroc	level-up	nivel=25 hora=day
+rockruff	lycanroc	level-up	nivel=25 hora=night
+mareanie	toxapex	level-up	nivel=38
+mudbray	mudsdale	level-up	nivel=30
+dewpider	araquanid	level-up	nivel=22
+fomantis	lurantis	level-up	nivel=34 hora=day
+morelull	shiinotic	level-up	nivel=24
+salandit	salazzle	level-up	nivel=33 genero=f
+stufful	bewear	level-up	nivel=27
+bounsweet	steenee	level-up	nivel=18
+steenee	tsareena	level-up	sabeGolpe=stomp
+wimpod	golisopod	level-up	nivel=30
+sandygast	palossand	level-up	nivel=42
+type-null	silvally	level-up	felicidade=160
+jangmo-o	hakamo-o	level-up	nivel=35
+hakamo-o	kommo-o	level-up	nivel=45
+cosmog	cosmoem	level-up	nivel=43
+cosmoem	solgaleo	level-up	nivel=53
+cosmoem	lunala	level-up	nivel=53
+poipole	naganadel	level-up	sabeGolpe=dragon-pulse
+magneton	magnezone	use-item	itemUsado=thunder-stone
+eevee	leafeon	use-item	itemUsado=leaf-stone
+eevee	glaceon	use-item	itemUsado=ice-stone
+eevee	sylveon	level-up	felicidade=160 sabeTipo=fairy
+charjabug	vikavolt	use-item	itemUsado=thunder-stone
+grookey	thwackey	level-up	nivel=16
+thwackey	rillaboom	level-up	nivel=35
+scorbunny	raboot	level-up	nivel=16
+raboot	cinderace	level-up	nivel=35
+sobble	drizzile	level-up	nivel=16
+drizzile	inteleon	level-up	nivel=35
+skwovet	greedent	level-up	nivel=24
+rookidee	corvisquire	level-up	nivel=18
+corvisquire	corviknight	level-up	nivel=38
+blipbug	dottler	level-up	nivel=10
+dottler	orbeetle	level-up	nivel=30
+nickit	thievul	level-up	nivel=18
+gossifleur	eldegoss	level-up	nivel=20
+wooloo	dubwool	level-up	nivel=24
+chewtle	drednaw	level-up	nivel=22
+yamper	boltund	level-up	nivel=25
+rolycoly	carkol	level-up	nivel=18
+carkol	coalossal	level-up	nivel=34
+applin	flapple	use-item	itemUsado=tart-apple
+applin	appletun	use-item	itemUsado=sweet-apple
+silicobra	sandaconda	level-up	nivel=36
+arrokuda	barraskewda	level-up	nivel=26
+toxel	toxtricity	level-up	nivel=30
+sizzlipede	centiskorch	level-up	nivel=28
+clobbopus	grapploct	level-up	sabeGolpe=taunt
+sinistea	polteageist	use-item	itemUsado=cracked-pot
+hatenna	hattrem	level-up	nivel=32
+hattrem	hatterene	level-up	nivel=42
+impidimp	morgrem	level-up	nivel=32
+morgrem	grimmsnarl	level-up	nivel=42
+milcery	alcremie	spin	hora=day itemSegurado=strawberry-sweet
+snom	frosmoth	level-up	felicidade=160 hora=night
+cufant	copperajah	level-up	nivel=34
+dreepy	drakloak	level-up	nivel=50
+drakloak	dragapult	level-up	nivel=60
+kubfu	urshifu	tower-of-darkness	-
+kubfu	urshifu	tower-of-waters	-
+sandshrew	sandslash	use-item	itemUsado=ice-stone
+vulpix	ninetales	use-item	itemUsado=ice-stone
+meowth	persian	level-up	felicidade=160
+meowth	perrserker	level-up	nivel=28
+slowpoke	slowbro	use-item	itemUsado=galarica-cuff
+slowpoke	slowking	use-item	itemUsado=galarica-wreath
+farfetchd	sirfetchd	three-critical-hits	-
+mr-mime	mr-rime	level-up	nivel=42
+corsola	cursola	level-up	nivel=38
+linoone	obstagoon	level-up	nivel=35 hora=night
+darumaka	darmanitan	use-item	itemUsado=ice-stone
+yamask	runerigus	take-damage	local=890
+rockruff	lycanroc	level-up	nivel=25 hora=dusk
+rattata	raticate	level-up	nivel=20 hora=night
+stantler	wyrdeer	agile-style-move	-
+scyther	kleavor	use-item	itemUsado=black-augurite
+ursaring	ursaluna	use-item	hora=full-moon itemUsado=peat-block
+basculin	basculegion	recoil-damage	genero=m
+sneasel	sneasler	level-up	hora=day itemSegurado=razor-claw
+qwilfish	overqwil	strong-style-move	-
+sprigatito	floragato	level-up	nivel=16
+floragato	meowscarada	level-up	nivel=36
+fuecoco	crocalor	level-up	nivel=16
+crocalor	skeledirge	level-up	nivel=36
+quaxly	quaxwell	level-up	nivel=16
+quaxwell	quaquaval	level-up	nivel=36
+lechonk	oinkologne	level-up	nivel=18 genero=m
+tarountula	spidops	level-up	nivel=15
+nymble	lokix	level-up	nivel=24
+pawmi	pawmo	level-up	nivel=18
+pawmo	pawmot	level-up	-
+tandemaus	maushold	in-battle-level-up	nivel=25
+fidough	dachsbun	level-up	nivel=26
+smoliv	dolliv	level-up	nivel=25
+dolliv	arboliva	level-up	nivel=35
+nacli	naclstack	level-up	nivel=24
+naclstack	garganacl	level-up	nivel=38
+charcadet	armarouge	use-item	itemUsado=auspicious-armor
+charcadet	ceruledge	use-item	itemUsado=malicious-armor
+tadbulb	bellibolt	use-item	itemUsado=thunder-stone
+wattrel	kilowattrel	level-up	nivel=25
+maschiff	mabosstiff	level-up	nivel=30
+shroodle	grafaiai	level-up	nivel=28
+bramblin	brambleghast	level-up	-
+toedscool	toedscruel	level-up	nivel=30
+capsakid	scovillain	use-item	itemUsado=fire-stone
+rellor	rabsca	level-up	-
+flittle	espathra	level-up	nivel=35
+tinkatink	tinkatuff	level-up	nivel=24
+tinkatuff	tinkaton	level-up	nivel=38
+wiglett	wugtrio	level-up	nivel=26
+finizen	palafin	level-up	nivel=38
+varoom	revavroom	level-up	nivel=40
+glimmet	glimmora	level-up	nivel=35
+greavard	houndstone	level-up	nivel=30 hora=night
+cetoddle	cetitan	use-item	itemUsado=ice-stone
+primeape	annihilape	use-move	-
+wooper	clodsire	level-up	nivel=20
+girafarig	farigiraf	level-up	sabeGolpe=twin-beam
+dunsparce	dudunsparce	level-up	sabeGolpe=hyper-drill
+bisharp	kingambit	three-defeated-bisharp	-
+frigibax	arctibax	level-up	nivel=35
+arctibax	baxcalibur	level-up	nivel=54
+gimmighoul	gholdengo	gimmighoul-coins	-
+crabrawler	crabominable	use-item	itemUsado=ice-stone
+nosepass	probopass	use-item	itemUsado=thunder-stone
+qwilfish	overqwil	level-up	sabeGolpe=barb-barrage
+qwilfish	overqwil	use-move	-
+pikachu	raichu	use-item	itemUsado=thunder-stone
+diglett	dugtrio	level-up	nivel=26
+geodude	graveler	level-up	nivel=25
+graveler	golem	trade	-
+grimer	muk	level-up	nivel=38
+exeggcute	exeggutor	use-item	itemUsado=leaf-stone
+growlithe	arcanine	use-item	itemUsado=fire-stone
+voltorb	electrode	use-item	itemUsado=leaf-stone
+cyndaquil	quilava	level-up	nivel=17
+quilava	typhlosion	level-up	nivel=36
+dewott	samurott	level-up	nivel=36
+petilil	lilligant	use-item	itemUsado=sun-stone
+zorua	zoroark	level-up	nivel=30
+rufflet	braviary	level-up	nivel=54
+goomy	sliggoo	level-up	nivel=40
+sliggoo	goodra	level-up	nivel=50 chuva=1
+bergmite	avalugg	level-up	nivel=37
+dartrix	decidueye	level-up	nivel=36
+ponyta	rapidash	level-up	nivel=40
+koffing	weezing	level-up	nivel=35
+mime-jr	mr-mime	level-up	sabeGolpe=mimic
+zigzagoon	linoone	level-up	nivel=20
+kubfu	urshifu	use-item	itemUsado=scroll-of-darkness
+kubfu	urshifu	use-item	itemUsado=scroll-of-waters
+applin	dipplin	use-item	itemUsado=syrupy-apple
+duraludon	archaludon	use-item	itemUsado=metal-alloy
+dipplin	hydrapple	level-up	sabeGolpe=dragon-cheer
+poltchageist	sinistcha	use-item	itemUsado=unremarkable-teacup
+poltchageist	sinistcha	use-item	itemUsado=masterpiece-teacup
+magneton	magnezone	level-up	local=446
+nosepass	probopass	level-up	local=446
+eevee	leafeon	level-up	local=438
+eevee	glaceon	level-up	local=445
+eevee	leafeon	level-up	local=750
+eevee	glaceon	level-up	local=775
+sinistea	polteageist	use-item	itemUsado=chipped-pot
+feebas	milotic	level-up	beleza=170
+pumpkaboo	gourgeist	trade	-
+pumpkaboo	gourgeist	trade	-
+pumpkaboo	gourgeist	trade	-
+espurr	meowstic	level-up	nivel=25 genero=f
+lechonk	oinkologne	level-up	nivel=18 genero=f
+toxel	toxtricity	level-up	nivel=30
+tandemaus	maushold	in-battle-level-up	nivel=25
+dunsparce	dudunsparce	level-up	sabeGolpe=hyper-drill
+basculin	basculegion	recoil-damage	genero=f
+wurmple	silcoon	level-up	nivel=7
+wurmple	cascoon	level-up	nivel=7
+burmy	wormadam	level-up	nivel=20 genero=f
+burmy	wormadam	level-up	nivel=20 genero=f
+meltan	melmetal	meltan-candies	-
+flabebe	floette	level-up	nivel=19
+flabebe	floette	level-up	nivel=19
+flabebe	floette	level-up	nivel=19
+flabebe	floette	level-up	nivel=19
+floette	florges	use-item	itemUsado=shiny-stone
+floette	florges	use-item	itemUsado=shiny-stone
+floette	florges	use-item	itemUsado=shiny-stone
+floette	florges	use-item	itemUsado=shiny-stone
+shellos	gastrodon	level-up	nivel=30
+deerling	sawsbuck	level-up	nivel=34
+deerling	sawsbuck	level-up	nivel=34
+deerling	sawsbuck	level-up	nivel=34
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+scatterbug	spewpa	level-up	nivel=9
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+spewpa	vivillon	level-up	nivel=12
+milcery	alcremie	spin	hora=day itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=strawberry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=night itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=berry-sweet
+milcery	alcremie	spin	hora=day itemSegurado=love-sweet
+milcery	alcremie	spin	hora=day itemSegurado=love-sweet
+milcery	alcremie	spin	hora=night itemSegurado=love-sweet
+milcery	alcremie	spin	hora=night itemSegurado=love-sweet
+milcery	alcremie	spin	hora=night itemSegurado=love-sweet
+milcery	alcremie	spin	hora=night itemSegurado=love-sweet
+milcery	alcremie	spin	hora=day itemSegurado=love-sweet
+milcery	alcremie	spin	hora=day itemSegurado=love-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=love-sweet
+milcery	alcremie	spin	hora=day itemSegurado=star-sweet
+milcery	alcremie	spin	hora=day itemSegurado=star-sweet
+milcery	alcremie	spin	hora=night itemSegurado=star-sweet
+milcery	alcremie	spin	hora=night itemSegurado=star-sweet
+milcery	alcremie	spin	hora=night itemSegurado=star-sweet
+milcery	alcremie	spin	hora=night itemSegurado=star-sweet
+milcery	alcremie	spin	hora=day itemSegurado=star-sweet
+milcery	alcremie	spin	hora=day itemSegurado=star-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=star-sweet
+milcery	alcremie	spin	hora=day itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=day itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=night itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=night itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=night itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=night itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=day itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=day itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=clover-sweet
+milcery	alcremie	spin	hora=day itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=day itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=night itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=night itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=night itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=night itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=day itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=day itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=flower-sweet
+milcery	alcremie	spin	hora=day itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=day itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=night itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=night itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=night itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=night itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=day itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=day itemSegurado=ribbon-sweet
+milcery	alcremie	spin	hora=dusk itemSegurado=ribbon-sweet

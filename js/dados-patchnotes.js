@@ -13,6 +13,18 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.1', data: '2026-10-08', titulo: '\ud83c\udf3f Rotas em potencial máximo: 500 amizades e a rota inteira nasce no teto', piada: 'Pedimos ao departamento de genética que elevasse ao máximo o potencial de todos os Pokémon selvagens das rotas. Eles cumpriram. Ninguém pensou em avisar que isso incluía os selvagens que querem te bater. O departamento alega que o pedido dizia "todos".',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>\ud83c\udf3f Rotas em potencial máximo</b> — badge nova de conta, e a segunda de toda a lista que muda uma <b>regra</b> do jogo em vez de dar item. <b>Recrute 500 aliados</b> somando a carreira inteira e, daí em diante, <b>todo Pokémon selvagem das rotas nasce com os 6 IVs em 31</b>, o teto.',
+        '<b>O que isso te dá:</b> todo amigo que você fizer com um petisco vem <b>perfeito</b> — e, como os ovos saem do casal que mora no seu esconderijo, os filhotes herdam de pais perfeitos. É a badge \ud83e\uddec <b>Potencial máximo</b> (o 1.000.000 de dano, que põe os <i>seus</i> IVs em 31) vista do outro lado do campo.',
+        '<b>E o que ela te cobra,</b> porque ninguém merece descobrir isso na pancada: <b>quem te enfrentar também nasce no teto</b>. Rota nenhuma vai ficar mais fácil. Alfa, lendário e chefe de rota já vinham com IVs 31 desde sempre, então pra eles nada muda; a equipe de um treinador continua sorteando os dela, porque aquele Pokémon é do treinador, não da rota.',
+        'Como toda badge, ela desliga junto no <b>\ud83c\udf96 jogar sem as vantagens da conta</b> — o bônus de pontuação do desafio puro continua sendo do desafio puro.'
+      ] },
+      { nome: 'Correções', itens: [
+        'Na tela \ud83c\udfc5 <b>Conquistas</b>, a badge <b>Potencial máximo</b> aparecia com <b>"Dá: —"</b>, como se não pagasse nada — justamente a badge mais longa do jogo. A lista só sabia descrever prêmio de item, dinheiro e loja grátis; agora ela diz o que a vantagem de regra faz.'
+      ] }
+    ] },
   { versao: '6.0', data: '2026-10-07', titulo: '🐉 O Mega Rayquaza não era um chefe, era um alvo — e a Sala de Raide ganhou impacto', piada: 'O Mega Rayquaza foi contratado como chefe de raide e passou o contrato inteiro levando o dobro de pancada de todos os colegas, em silêncio, por um número copiado da ficha errada. Perguntado se havia notado, respondeu que sim, mas que não quis fazer escândalo. Corrigimos o número. Ele agora faz escândalo.',
     secoes: [
       { nome: 'Correções', itens: [

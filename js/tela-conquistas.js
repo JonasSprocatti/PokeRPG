@@ -151,6 +151,9 @@ function secaoBadges() {
     const p = [...Object.entries(r.itens || {}).map(([k, n]) => `${esc(ITEMS[k]?.name || k)}${n > 1 ? ` ×${n}` : ''}`)];
     if (r.dinheiro) p.push(`₽${r.dinheiro.toLocaleString('pt-BR')}`);
     if (r.lojaGratis) p.push('loja de graça pra sempre');
+    // vantagem de REGRA: sem estas duas linhas a badge aparecia com "Dá: —", o oposto do que ela dá
+    if (r.ivsPerfeitos) p.push('seus 6 IVs em 31, toda jornada');
+    if (r.ivsSelvagens) p.push('IVs 31 em todo selvagem de rota');
     return p.join(' · ') || '—';
   };
   const linha = b => `<li class="${b.completo ? 'feito' : ''}">

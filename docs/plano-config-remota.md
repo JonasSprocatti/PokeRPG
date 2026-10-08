@@ -28,7 +28,7 @@ E o conteúdo não é um arquivo só:
 | `js/dados-rotas.js` (**gerado pelo editor**) | `ALFAS` (Alfa trocado) e `MISSOES_ROTA` (as 180) |
 | `js/dados.js` | **junta as duas camadas** → `GENS`; e `MISSOES = [...MISSOES_GLOBAIS, ...MISSOES_ROTA]` |
 | `js/dados.js` | `ITEMS` (loja, preço, descrição) |
-| `js/badges.js` | as 58 badges |
+| `js/badges.js` | as 59 badges |
 
 `dados.js` é o **único** que importa `dados-mapas.js`, e já é o ponto onde os ajustes entram. Isso é sorte
 arquitetural: existe **um** lugar pra interceptar.

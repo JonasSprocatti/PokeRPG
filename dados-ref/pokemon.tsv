@@ -1,0 +1,1352 @@
+id	nome	especie	forma	tipos	hp	atk	def	spa	spd	spe	total	habilidades(*=oculta)	altura_dm	peso_hg	baseExp	ev
+1	bulbasaur	bulbasaur	base	grass/poison	45	49	49	65	65	45	318	overgrow chlorophyll*	7	69	64	special-attack+1
+2	ivysaur	ivysaur	base	grass/poison	60	62	63	80	80	60	405	overgrow chlorophyll*	10	130	142	special-attack+1 special-defense+1
+3	venusaur	venusaur	base	grass/poison	80	82	83	100	100	80	525	overgrow chlorophyll*	20	1000	236	special-attack+2 special-defense+1
+4	charmander	charmander	base	fire	39	52	43	60	50	65	309	blaze solar-power*	6	85	62	speed+1
+5	charmeleon	charmeleon	base	fire	58	64	58	80	65	80	405	blaze solar-power*	11	190	142	special-attack+1 speed+1
+6	charizard	charizard	base	fire/flying	78	84	78	109	85	100	534	blaze solar-power*	17	905	240	special-attack+3
+7	squirtle	squirtle	base	water	44	48	65	50	64	43	314	torrent rain-dish*	5	90	63	defense+1
+8	wartortle	wartortle	base	water	59	63	80	65	80	58	405	torrent rain-dish*	10	225	142	defense+1 special-defense+1
+9	blastoise	blastoise	base	water	79	83	100	85	105	78	530	torrent rain-dish*	16	855	239	special-defense+3
+10	caterpie	caterpie	base	bug	45	30	35	20	20	45	195	shield-dust run-away*	3	29	39	hp+1
+11	metapod	metapod	base	bug	50	20	55	25	25	30	205	shed-skin	7	99	72	defense+2
+12	butterfree	butterfree	base	bug/flying	60	45	50	90	80	70	395	compound-eyes tinted-lens*	11	320	178	special-attack+2 special-defense+1
+13	weedle	weedle	base	bug/poison	40	35	30	20	20	50	195	shield-dust run-away*	3	32	39	speed+1
+14	kakuna	kakuna	base	bug/poison	45	25	50	25	25	35	205	shed-skin	6	100	72	defense+2
+15	beedrill	beedrill	base	bug/poison	65	90	40	45	80	75	395	swarm sniper*	10	295	178	attack+2 special-defense+1
+16	pidgey	pidgey	base	normal/flying	40	45	40	35	35	56	251	keen-eye tangled-feet big-pecks*	3	18	50	speed+1
+17	pidgeotto	pidgeotto	base	normal/flying	63	60	55	50	50	71	349	keen-eye tangled-feet big-pecks*	11	300	122	speed+2
+18	pidgeot	pidgeot	base	normal/flying	83	80	75	70	70	101	479	keen-eye tangled-feet big-pecks*	15	395	216	speed+3
+19	rattata	rattata	base	normal	30	56	35	25	35	72	253	run-away guts hustle*	3	35	51	speed+1
+20	raticate	raticate	base	normal	55	81	60	50	70	97	413	run-away guts hustle*	7	185	145	speed+2
+21	spearow	spearow	base	normal/flying	40	60	30	31	31	70	262	keen-eye sniper*	3	20	52	speed+1
+22	fearow	fearow	base	normal/flying	65	90	65	61	61	100	442	keen-eye sniper*	12	380	155	speed+2
+23	ekans	ekans	base	poison	35	60	44	40	54	55	288	intimidate shed-skin unnerve*	20	69	58	attack+1
+24	arbok	arbok	base	poison	60	95	69	65	79	80	448	intimidate shed-skin unnerve*	35	650	157	attack+2
+25	pikachu	pikachu	base	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+26	raichu	raichu	base	electric	60	90	55	90	80	110	485	static lightning-rod*	8	300	218	speed+3
+27	sandshrew	sandshrew	base	ground	50	75	85	20	30	40	300	sand-veil sand-rush*	6	120	60	defense+1
+28	sandslash	sandslash	base	ground	75	100	110	45	55	65	450	sand-veil sand-rush*	10	295	158	defense+2
+29	nidoran-f	nidoran-f	base	poison	55	47	52	40	40	41	275	poison-point rivalry hustle*	4	70	55	hp+1
+30	nidorina	nidorina	base	poison	70	62	67	55	55	56	365	poison-point rivalry hustle*	8	200	128	hp+2
+31	nidoqueen	nidoqueen	base	poison/ground	90	92	87	75	85	76	505	poison-point rivalry sheer-force*	13	600	227	hp+3
+32	nidoran-m	nidoran-m	base	poison	46	57	40	40	40	50	273	poison-point rivalry hustle*	5	90	55	attack+1
+33	nidorino	nidorino	base	poison	61	72	57	55	55	65	365	poison-point rivalry hustle*	9	195	128	attack+2
+34	nidoking	nidoking	base	poison/ground	81	102	77	85	75	85	505	poison-point rivalry sheer-force*	14	620	227	attack+3
+35	clefairy	clefairy	base	fairy	70	45	48	60	65	35	323	cute-charm magic-guard friend-guard*	6	75	113	hp+2
+36	clefable	clefable	base	fairy	95	70	73	95	90	60	483	cute-charm magic-guard unaware*	13	400	217	hp+3
+37	vulpix	vulpix	base	fire	38	41	40	50	65	65	299	flash-fire drought*	6	99	60	speed+1
+38	ninetales	ninetales	base	fire	73	76	75	81	100	100	505	flash-fire drought*	11	199	177	special-defense+1 speed+1
+39	jigglypuff	jigglypuff	base	normal/fairy	115	45	20	45	25	20	270	cute-charm competitive friend-guard*	5	55	95	hp+2
+40	wigglytuff	wigglytuff	base	normal/fairy	140	70	45	85	50	45	435	cute-charm competitive frisk*	10	120	196	hp+3
+41	zubat	zubat	base	poison/flying	40	45	35	30	40	55	245	inner-focus infiltrator*	8	75	49	speed+1
+42	golbat	golbat	base	poison/flying	75	80	70	65	75	90	455	inner-focus infiltrator*	16	550	159	speed+2
+43	oddish	oddish	base	grass/poison	45	50	55	75	65	30	320	chlorophyll run-away*	5	54	64	special-attack+1
+44	gloom	gloom	base	grass/poison	60	65	70	85	75	40	395	chlorophyll stench*	8	86	138	special-attack+2
+45	vileplume	vileplume	base	grass/poison	75	80	85	110	90	50	490	chlorophyll effect-spore*	12	186	221	special-attack+3
+46	paras	paras	base	bug/grass	35	70	55	45	55	25	285	effect-spore dry-skin damp*	3	54	57	attack+1
+47	parasect	parasect	base	bug/grass	60	95	80	60	80	30	405	effect-spore dry-skin damp*	10	295	142	attack+2 defense+1
+48	venonat	venonat	base	bug/poison	60	55	50	40	55	45	305	compound-eyes tinted-lens run-away*	10	300	61	special-defense+1
+49	venomoth	venomoth	base	bug/poison	70	65	60	90	75	90	450	shield-dust tinted-lens wonder-skin*	15	125	158	special-attack+1 speed+1
+50	diglett	diglett	base	ground	10	55	25	35	45	95	265	sand-veil arena-trap sand-force*	2	8	53	speed+1
+51	dugtrio	dugtrio	base	ground	35	100	50	50	70	120	425	sand-veil arena-trap sand-force*	7	333	149	speed+2
+52	meowth	meowth	base	normal	40	45	35	40	40	90	290	pickup technician unnerve*	4	42	58	speed+1
+53	persian	persian	base	normal	65	70	60	65	65	115	440	limber technician unnerve*	10	320	154	speed+2
+54	psyduck	psyduck	base	water	50	52	48	65	50	55	320	damp cloud-nine swift-swim*	8	196	64	special-attack+1
+55	golduck	golduck	base	water	80	82	78	95	80	85	500	damp cloud-nine swift-swim*	17	766	175	special-attack+2
+56	mankey	mankey	base	fighting	40	80	35	35	45	70	305	vital-spirit anger-point defiant*	5	280	61	attack+1
+57	primeape	primeape	base	fighting	65	105	60	60	70	95	455	vital-spirit anger-point defiant*	10	320	159	attack+2
+58	growlithe	growlithe	base	fire	55	70	45	70	50	60	350	intimidate flash-fire justified*	7	190	70	attack+1
+59	arcanine	arcanine	base	fire	90	110	80	100	80	95	555	intimidate flash-fire justified*	19	1550	194	attack+2
+60	poliwag	poliwag	base	water	40	50	40	40	40	90	300	water-absorb damp swift-swim*	6	124	60	speed+1
+61	poliwhirl	poliwhirl	base	water	65	65	65	50	50	90	385	water-absorb damp swift-swim*	10	200	135	speed+2
+62	poliwrath	poliwrath	base	water/fighting	90	95	95	70	90	70	510	water-absorb damp swift-swim*	13	540	230	defense+3
+63	abra	abra	base	psychic	25	20	15	105	55	90	310	synchronize inner-focus magic-guard*	9	195	62	special-attack+1
+64	kadabra	kadabra	base	psychic	40	35	30	120	70	105	400	synchronize inner-focus magic-guard*	13	565	140	special-attack+2
+65	alakazam	alakazam	base	psychic	55	50	45	135	95	120	500	synchronize inner-focus magic-guard*	15	480	225	special-attack+3
+66	machop	machop	base	fighting	70	80	50	35	35	35	305	guts no-guard steadfast*	8	195	61	attack+1
+67	machoke	machoke	base	fighting	80	100	70	50	60	45	405	guts no-guard steadfast*	15	705	142	attack+2
+68	machamp	machamp	base	fighting	90	130	80	65	85	55	505	guts no-guard steadfast*	16	1300	227	attack+3
+69	bellsprout	bellsprout	base	grass/poison	50	75	35	70	30	40	300	chlorophyll gluttony*	7	40	60	attack+1
+70	weepinbell	weepinbell	base	grass/poison	65	90	50	85	45	55	390	chlorophyll gluttony*	10	64	137	attack+2
+71	victreebel	victreebel	base	grass/poison	80	105	65	100	70	70	490	chlorophyll gluttony*	17	155	221	attack+3
+72	tentacool	tentacool	base	water/poison	40	40	35	50	100	70	335	clear-body liquid-ooze rain-dish*	9	455	67	special-defense+1
+73	tentacruel	tentacruel	base	water/poison	80	70	65	80	120	100	515	clear-body liquid-ooze rain-dish*	16	550	180	special-defense+2
+74	geodude	geodude	base	rock/ground	40	80	100	30	30	20	300	rock-head sturdy sand-veil*	4	200	60	defense+1
+75	graveler	graveler	base	rock/ground	55	95	115	45	45	35	390	rock-head sturdy sand-veil*	10	1050	137	defense+2
+76	golem	golem	base	rock/ground	80	120	130	55	65	45	495	rock-head sturdy sand-veil*	14	3000	223	defense+3
+77	ponyta	ponyta	base	fire	50	85	55	65	65	90	410	run-away flash-fire flame-body*	10	300	82	speed+1
+78	rapidash	rapidash	base	fire	65	100	70	80	80	105	500	run-away flash-fire flame-body*	17	950	175	speed+2
+79	slowpoke	slowpoke	base	water/psychic	90	65	65	40	40	15	315	oblivious own-tempo regenerator*	12	360	63	hp+1
+80	slowbro	slowbro	base	water/psychic	95	75	110	100	80	30	490	oblivious own-tempo regenerator*	16	785	172	defense+2
+81	magnemite	magnemite	base	electric/steel	25	35	70	95	55	45	325	magnet-pull sturdy analytic*	3	60	65	special-attack+1
+82	magneton	magneton	base	electric/steel	50	60	95	120	70	70	465	magnet-pull sturdy analytic*	10	600	163	special-attack+2
+83	farfetchd	farfetchd	base	normal/flying	52	90	55	58	62	60	377	keen-eye inner-focus defiant*	8	150	132	attack+1
+84	doduo	doduo	base	normal/flying	35	85	45	35	35	75	310	run-away early-bird tangled-feet*	14	392	62	attack+1
+85	dodrio	dodrio	base	normal/flying	60	110	70	60	60	110	470	run-away early-bird tangled-feet*	18	852	165	attack+2
+86	seel	seel	base	water	65	45	55	45	70	45	325	thick-fat hydration ice-body*	11	900	65	special-defense+1
+87	dewgong	dewgong	base	water/ice	90	70	80	70	95	70	475	thick-fat hydration ice-body*	17	1200	166	special-defense+2
+88	grimer	grimer	base	poison	80	80	50	40	50	25	325	stench sticky-hold poison-touch*	9	300	65	hp+1
+89	muk	muk	base	poison	105	105	75	65	100	50	500	stench sticky-hold poison-touch*	12	300	175	hp+1 attack+1
+90	shellder	shellder	base	water	30	65	100	45	25	40	305	shell-armor skill-link overcoat*	3	40	61	defense+1
+91	cloyster	cloyster	base	water/ice	50	95	180	85	45	70	525	shell-armor skill-link overcoat*	15	1325	184	defense+2
+92	gastly	gastly	base	ghost/poison	30	35	30	100	35	80	310	levitate	13	1	62	special-attack+1
+93	haunter	haunter	base	ghost/poison	45	50	45	115	55	95	405	levitate	16	1	142	special-attack+2
+94	gengar	gengar	base	ghost/poison	60	65	60	130	75	110	500	cursed-body	15	405	225	special-attack+3
+95	onix	onix	base	rock/ground	35	45	160	30	45	70	385	rock-head sturdy weak-armor*	88	2100	77	defense+1
+96	drowzee	drowzee	base	psychic	60	48	45	43	90	42	328	insomnia forewarn inner-focus*	10	324	66	special-defense+1
+97	hypno	hypno	base	psychic	85	73	70	73	115	67	483	insomnia forewarn inner-focus*	16	756	169	special-defense+2
+98	krabby	krabby	base	water	30	105	90	25	25	50	325	hyper-cutter shell-armor sheer-force*	4	65	65	attack+1
+99	kingler	kingler	base	water	55	130	115	50	50	75	475	hyper-cutter shell-armor sheer-force*	13	600	166	attack+2
+100	voltorb	voltorb	base	electric	40	30	50	55	55	100	330	soundproof static aftermath*	5	104	66	speed+1
+101	electrode	electrode	base	electric	60	50	70	80	80	150	490	soundproof static aftermath*	12	666	172	speed+2
+102	exeggcute	exeggcute	base	grass/psychic	60	40	80	60	45	40	325	chlorophyll harvest*	4	25	65	defense+1
+103	exeggutor	exeggutor	base	grass/psychic	95	95	85	125	75	55	530	chlorophyll harvest*	20	1200	186	special-attack+2
+104	cubone	cubone	base	ground	50	50	95	40	50	35	320	rock-head lightning-rod battle-armor*	4	65	64	defense+1
+105	marowak	marowak	base	ground	60	80	110	50	80	45	425	rock-head lightning-rod battle-armor*	10	450	149	defense+2
+106	hitmonlee	hitmonlee	base	fighting	50	120	53	35	110	87	455	limber reckless unburden*	15	498	159	attack+2
+107	hitmonchan	hitmonchan	base	fighting	50	105	79	35	110	76	455	keen-eye iron-fist inner-focus*	14	502	159	special-defense+2
+108	lickitung	lickitung	base	normal	90	55	75	60	75	30	385	own-tempo oblivious cloud-nine*	12	655	77	hp+2
+109	koffing	koffing	base	poison	40	65	95	60	45	35	340	levitate neutralizing-gas stench*	6	10	68	defense+1
+110	weezing	weezing	base	poison	65	90	120	85	70	60	490	levitate neutralizing-gas stench*	12	95	172	defense+2
+111	rhyhorn	rhyhorn	base	ground/rock	80	85	95	30	30	25	345	lightning-rod rock-head reckless*	10	1150	69	defense+1
+112	rhydon	rhydon	base	ground/rock	105	130	120	45	45	40	485	lightning-rod rock-head reckless*	19	1200	170	attack+2
+113	chansey	chansey	base	normal	250	5	5	35	105	50	450	natural-cure serene-grace healer*	11	346	395	hp+2
+114	tangela	tangela	base	grass	65	55	115	100	40	60	435	chlorophyll leaf-guard regenerator*	10	350	87	defense+1
+115	kangaskhan	kangaskhan	base	normal	105	95	80	40	80	90	490	early-bird scrappy inner-focus*	22	800	172	hp+2
+116	horsea	horsea	base	water	30	40	70	70	25	60	295	swift-swim sniper damp*	4	80	59	special-attack+1
+117	seadra	seadra	base	water	55	65	95	95	45	85	440	poison-point sniper damp*	12	250	154	defense+1 special-attack+1
+118	goldeen	goldeen	base	water	45	67	60	35	50	63	320	swift-swim water-veil lightning-rod*	6	150	64	attack+1
+119	seaking	seaking	base	water	80	92	65	65	80	68	450	swift-swim water-veil lightning-rod*	13	390	158	attack+2
+120	staryu	staryu	base	water	30	45	55	70	55	85	340	illuminate natural-cure analytic*	8	345	68	speed+1
+121	starmie	starmie	base	water/psychic	60	75	85	100	85	115	520	illuminate natural-cure analytic*	11	800	182	speed+2
+122	mr-mime	mr-mime	base	psychic/fairy	40	45	65	100	120	90	460	soundproof filter technician*	13	545	161	special-defense+2
+123	scyther	scyther	base	bug/flying	70	110	80	55	80	105	500	swarm technician steadfast*	15	560	100	attack+1
+124	jynx	jynx	base	ice/psychic	65	50	35	115	95	95	455	oblivious forewarn dry-skin*	14	406	159	special-attack+2
+125	electabuzz	electabuzz	base	electric	65	83	57	95	85	105	490	static vital-spirit*	11	300	172	speed+2
+126	magmar	magmar	base	fire	65	95	57	100	85	93	495	flame-body vital-spirit*	13	445	173	special-attack+2
+127	pinsir	pinsir	base	bug	65	125	100	55	70	85	500	hyper-cutter mold-breaker moxie*	15	550	175	attack+2
+128	tauros	tauros	base	normal	75	100	95	40	70	110	490	intimidate anger-point sheer-force*	14	884	172	attack+1 speed+1
+129	magikarp	magikarp	base	water	20	10	55	15	20	80	200	swift-swim rattled*	9	100	40	speed+1
+130	gyarados	gyarados	base	water/flying	95	125	79	60	100	81	540	intimidate moxie*	65	2350	189	attack+2
+131	lapras	lapras	base	water/ice	130	85	80	85	95	60	535	water-absorb shell-armor hydration*	25	2200	187	hp+2
+132	ditto	ditto	base	normal	48	48	48	48	48	48	288	limber imposter*	3	40	101	hp+1
+133	eevee	eevee	base	normal	55	55	50	45	65	55	325	run-away adaptability anticipation*	3	65	65	special-defense+1
+134	vaporeon	vaporeon	base	water	130	65	60	110	95	65	525	water-absorb hydration*	10	290	184	hp+2
+135	jolteon	jolteon	base	electric	65	65	60	110	95	130	525	volt-absorb quick-feet*	8	245	184	speed+2
+136	flareon	flareon	base	fire	65	130	60	95	110	65	525	flash-fire guts*	9	250	184	attack+2
+137	porygon	porygon	base	normal	65	60	70	85	75	40	395	trace download analytic*	8	365	79	special-attack+1
+138	omanyte	omanyte	base	rock/water	35	40	100	90	55	35	355	swift-swim shell-armor weak-armor*	4	75	71	defense+1
+139	omastar	omastar	base	rock/water	70	60	125	115	70	55	495	swift-swim shell-armor weak-armor*	10	350	173	defense+2
+140	kabuto	kabuto	base	rock/water	30	80	90	55	45	55	355	swift-swim battle-armor weak-armor*	5	115	71	defense+1
+141	kabutops	kabutops	base	rock/water	60	115	105	65	70	80	495	swift-swim battle-armor weak-armor*	13	405	173	attack+2
+142	aerodactyl	aerodactyl	base	rock/flying	80	105	65	60	75	130	515	rock-head pressure unnerve*	18	590	180	speed+2
+143	snorlax	snorlax	base	normal	160	110	65	65	110	30	540	immunity thick-fat gluttony*	21	4600	189	hp+2
+144	articuno	articuno	base	ice/flying	90	85	100	95	125	85	580	pressure snow-cloak*	17	554	261	special-defense+3
+145	zapdos	zapdos	base	electric/flying	90	90	85	125	90	100	580	pressure static*	16	526	261	special-attack+3
+146	moltres	moltres	base	fire/flying	90	100	90	125	85	90	580	pressure flame-body*	20	600	261	special-attack+3
+147	dratini	dratini	base	dragon	41	64	45	50	50	50	300	shed-skin marvel-scale*	18	33	60	attack+1
+148	dragonair	dragonair	base	dragon	61	84	65	70	70	70	420	shed-skin marvel-scale*	40	165	147	attack+2
+149	dragonite	dragonite	base	dragon/flying	91	134	95	100	100	80	600	inner-focus multiscale*	22	2100	270	attack+3
+150	mewtwo	mewtwo	base	psychic	106	110	90	154	90	130	680	pressure unnerve*	20	1220	306	special-attack+3
+151	mew	mew	base	psychic	100	100	100	100	100	100	600	synchronize	4	40	270	hp+3
+152	chikorita	chikorita	base	grass	45	49	65	49	65	45	318	overgrow leaf-guard*	9	64	64	special-defense+1
+153	bayleef	bayleef	base	grass	60	62	80	63	80	60	405	overgrow leaf-guard*	12	158	142	defense+1 special-defense+1
+154	meganium	meganium	base	grass	80	82	100	83	100	80	525	overgrow leaf-guard*	18	1005	236	defense+1 special-defense+2
+155	cyndaquil	cyndaquil	base	fire	39	52	43	60	50	65	309	blaze flash-fire*	5	79	62	speed+1
+156	quilava	quilava	base	fire	58	64	58	80	65	80	405	blaze flash-fire*	9	190	142	special-attack+1 speed+1
+157	typhlosion	typhlosion	base	fire	78	84	78	109	85	100	534	blaze flash-fire*	17	795	240	special-attack+3
+158	totodile	totodile	base	water	50	65	64	44	48	43	314	torrent sheer-force*	6	95	63	attack+1
+159	croconaw	croconaw	base	water	65	80	80	59	63	58	405	torrent sheer-force*	11	250	142	attack+1 defense+1
+160	feraligatr	feraligatr	base	water	85	105	100	79	83	78	530	torrent sheer-force*	23	888	239	attack+2 defense+1
+161	sentret	sentret	base	normal	35	46	34	35	45	20	215	run-away keen-eye frisk*	8	60	43	attack+1
+162	furret	furret	base	normal	85	76	64	45	55	90	415	run-away keen-eye frisk*	18	325	145	speed+2
+163	hoothoot	hoothoot	base	normal/flying	60	30	30	36	56	50	262	insomnia keen-eye tinted-lens*	7	212	52	hp+1
+164	noctowl	noctowl	base	normal/flying	100	50	50	86	96	70	452	insomnia keen-eye tinted-lens*	16	408	158	hp+2
+165	ledyba	ledyba	base	bug/flying	40	20	30	40	80	55	265	swarm early-bird rattled*	10	108	53	special-defense+1
+166	ledian	ledian	base	bug/flying	55	35	50	55	110	85	390	swarm early-bird iron-fist*	14	356	137	special-defense+2
+167	spinarak	spinarak	base	bug/poison	40	60	40	40	40	30	250	swarm insomnia sniper*	5	85	50	attack+1
+168	ariados	ariados	base	bug/poison	70	90	70	60	70	40	400	swarm insomnia sniper*	11	335	140	attack+2
+169	crobat	crobat	base	poison/flying	85	90	80	70	80	130	535	inner-focus infiltrator*	18	750	241	speed+3
+170	chinchou	chinchou	base	water/electric	75	38	38	56	56	67	330	volt-absorb illuminate water-absorb*	5	120	66	hp+1
+171	lanturn	lanturn	base	water/electric	125	58	58	76	76	67	460	volt-absorb illuminate water-absorb*	12	225	161	hp+2
+172	pichu	pichu	base	electric	20	40	15	35	35	60	205	static lightning-rod*	3	20	41	speed+1
+173	cleffa	cleffa	base	fairy	50	25	28	45	55	15	218	cute-charm magic-guard friend-guard*	3	30	44	special-defense+1
+174	igglybuff	igglybuff	base	normal/fairy	90	30	15	40	20	15	210	cute-charm competitive friend-guard*	3	10	42	hp+1
+175	togepi	togepi	base	fairy	35	20	65	40	65	20	245	hustle serene-grace super-luck*	3	15	49	special-defense+1
+176	togetic	togetic	base	fairy/flying	55	40	85	80	105	40	405	hustle serene-grace super-luck*	6	32	142	special-defense+2
+177	natu	natu	base	psychic/flying	40	50	45	70	45	70	320	synchronize early-bird magic-bounce*	2	20	64	special-attack+1
+178	xatu	xatu	base	psychic/flying	65	75	70	95	70	95	470	synchronize early-bird magic-bounce*	15	150	165	special-attack+1 speed+1
+179	mareep	mareep	base	electric	55	40	40	65	45	35	280	static plus*	6	78	56	special-attack+1
+180	flaaffy	flaaffy	base	electric	70	55	55	80	60	45	365	static plus*	8	133	128	special-attack+2
+181	ampharos	ampharos	base	electric	90	75	85	115	90	55	510	static plus*	14	615	230	special-attack+3
+182	bellossom	bellossom	base	grass	75	80	95	90	100	50	490	chlorophyll healer*	4	58	221	special-defense+3
+183	marill	marill	base	water/fairy	70	20	50	20	50	40	250	thick-fat huge-power sap-sipper*	4	85	88	hp+2
+184	azumarill	azumarill	base	water/fairy	100	50	80	60	80	50	420	thick-fat huge-power sap-sipper*	8	285	189	hp+3
+185	sudowoodo	sudowoodo	base	rock	70	100	115	30	65	30	410	sturdy rock-head rattled*	12	380	144	defense+2
+186	politoed	politoed	base	water	90	75	75	90	100	70	500	water-absorb damp drizzle*	11	339	225	special-defense+3
+187	hoppip	hoppip	base	grass/flying	35	35	40	35	55	50	250	chlorophyll leaf-guard infiltrator*	4	5	50	special-defense+1
+188	skiploom	skiploom	base	grass/flying	55	45	50	45	65	80	340	chlorophyll leaf-guard infiltrator*	6	10	119	speed+2
+189	jumpluff	jumpluff	base	grass/flying	75	55	70	55	95	110	460	chlorophyll leaf-guard infiltrator*	8	30	207	speed+3
+190	aipom	aipom	base	normal	55	70	55	40	55	85	360	run-away pickup skill-link*	8	115	72	speed+1
+191	sunkern	sunkern	base	grass	30	30	30	30	30	30	180	chlorophyll solar-power early-bird*	3	18	36	special-attack+1
+192	sunflora	sunflora	base	grass	75	75	55	105	85	30	425	chlorophyll solar-power early-bird*	8	85	149	special-attack+2
+193	yanma	yanma	base	bug/flying	65	65	45	75	45	95	390	speed-boost compound-eyes frisk*	12	380	78	speed+1
+194	wooper	wooper	base	water/ground	55	45	45	25	25	15	210	damp water-absorb unaware*	4	85	42	hp+1
+195	quagsire	quagsire	base	water/ground	95	85	85	65	65	35	430	damp water-absorb unaware*	14	750	151	hp+2
+196	espeon	espeon	base	psychic	65	65	60	130	95	110	525	synchronize magic-bounce*	9	265	184	special-attack+2
+197	umbreon	umbreon	base	dark	95	65	110	60	130	65	525	synchronize inner-focus*	10	270	184	special-defense+2
+198	murkrow	murkrow	base	dark/flying	60	85	42	85	42	91	405	insomnia super-luck prankster*	5	21	81	speed+1
+199	slowking	slowking	base	water/psychic	95	75	80	100	110	30	490	oblivious own-tempo regenerator*	20	795	172	special-defense+2
+200	misdreavus	misdreavus	base	ghost	60	60	60	85	85	85	435	levitate	7	10	87	special-defense+1
+201	unown	unown	base	psychic	48	72	48	72	48	48	336	levitate	5	50	118	attack+1 special-attack+1
+202	wobbuffet	wobbuffet	base	psychic	190	33	58	33	58	33	405	shadow-tag telepathy*	13	285	142	hp+2
+203	girafarig	girafarig	base	normal/psychic	70	80	65	90	65	85	455	inner-focus early-bird sap-sipper*	15	415	159	special-attack+2
+204	pineco	pineco	base	bug	50	65	90	35	35	15	290	sturdy overcoat*	6	72	58	defense+1
+205	forretress	forretress	base	bug/steel	75	90	140	60	60	40	465	sturdy overcoat*	12	1258	163	defense+2
+206	dunsparce	dunsparce	base	normal	100	70	70	65	65	45	415	serene-grace run-away rattled*	15	140	145	hp+1
+207	gligar	gligar	base	ground/flying	65	75	105	35	65	85	430	hyper-cutter sand-veil immunity*	11	648	86	defense+1
+208	steelix	steelix	base	steel/ground	75	85	200	55	65	30	510	rock-head sturdy sheer-force*	92	4000	179	defense+2
+209	snubbull	snubbull	base	fairy	60	80	50	40	40	30	300	intimidate run-away rattled*	6	78	60	attack+1
+210	granbull	granbull	base	fairy	90	120	75	60	60	45	450	intimidate quick-feet rattled*	14	487	158	attack+2
+211	qwilfish	qwilfish	base	water/poison	65	95	85	55	55	85	440	poison-point swift-swim intimidate*	5	39	88	attack+1
+212	scizor	scizor	base	bug/steel	70	130	100	55	80	65	500	swarm technician light-metal*	18	1180	175	attack+2
+213	shuckle	shuckle	base	bug/rock	20	10	230	10	230	5	505	sturdy gluttony contrary*	6	205	177	defense+1 special-defense+1
+214	heracross	heracross	base	bug/fighting	80	125	75	40	95	85	500	swarm guts moxie*	15	540	175	attack+2
+215	sneasel	sneasel	base	dark/ice	55	95	55	35	75	115	430	inner-focus keen-eye pickpocket*	9	280	86	speed+1
+216	teddiursa	teddiursa	base	normal	60	80	50	50	50	40	330	pickup quick-feet honey-gather*	6	88	66	attack+1
+217	ursaring	ursaring	base	normal	90	130	75	75	75	55	500	guts quick-feet unnerve*	18	1258	175	attack+2
+218	slugma	slugma	base	fire	40	40	40	70	40	20	250	magma-armor flame-body weak-armor*	7	350	50	special-attack+1
+219	magcargo	magcargo	base	fire/rock	60	50	120	90	80	30	430	magma-armor flame-body weak-armor*	8	550	151	defense+2
+220	swinub	swinub	base	ice/ground	50	50	40	30	30	50	250	oblivious snow-cloak thick-fat*	4	65	50	attack+1
+221	piloswine	piloswine	base	ice/ground	100	100	80	60	60	50	450	oblivious snow-cloak thick-fat*	11	558	158	hp+1 attack+1
+222	corsola	corsola	base	water/rock	65	55	95	65	95	35	410	hustle natural-cure regenerator*	6	50	144	defense+1 special-defense+1
+223	remoraid	remoraid	base	water	35	65	35	65	35	65	300	hustle sniper moody*	6	120	60	special-attack+1
+224	octillery	octillery	base	water	75	105	75	105	75	45	480	suction-cups sniper moody*	9	285	168	attack+1 special-attack+1
+225	delibird	delibird	base	ice/flying	45	55	45	65	45	75	330	vital-spirit hustle insomnia*	9	160	116	speed+1
+226	mantine	mantine	base	water/flying	85	40	70	80	140	70	485	swift-swim water-absorb water-veil*	21	2200	170	special-defense+2
+227	skarmory	skarmory	base	steel/flying	65	80	140	40	70	70	465	keen-eye sturdy weak-armor*	17	505	163	defense+2
+228	houndour	houndour	base	dark/fire	45	60	30	80	50	65	330	early-bird flash-fire unnerve*	6	108	66	special-attack+1
+229	houndoom	houndoom	base	dark/fire	75	90	50	110	80	95	500	early-bird flash-fire unnerve*	14	350	175	special-attack+2
+230	kingdra	kingdra	base	water/dragon	75	95	95	95	95	85	540	swift-swim sniper damp*	18	1520	243	attack+1 special-attack+1 special-defense+1
+231	phanpy	phanpy	base	ground	90	60	60	40	40	40	330	pickup sand-veil*	5	335	66	hp+1
+232	donphan	donphan	base	ground	90	120	120	60	60	50	500	sturdy sand-veil*	11	1200	175	attack+1 defense+1
+233	porygon2	porygon2	base	normal	85	80	90	105	95	60	515	trace download analytic*	6	325	180	special-attack+2
+234	stantler	stantler	base	normal	73	95	62	85	65	85	465	intimidate frisk sap-sipper*	14	712	163	attack+1
+235	smeargle	smeargle	base	normal	55	20	35	20	45	75	250	own-tempo technician moody*	12	580	88	speed+1
+236	tyrogue	tyrogue	base	fighting	35	35	35	35	35	35	210	guts steadfast vital-spirit*	7	210	42	attack+1
+237	hitmontop	hitmontop	base	fighting	50	95	95	35	110	70	455	intimidate technician steadfast*	14	480	159	special-defense+2
+238	smoochum	smoochum	base	ice/psychic	45	30	15	85	65	65	305	oblivious forewarn hydration*	4	60	61	special-attack+1
+239	elekid	elekid	base	electric	45	63	37	65	55	95	360	static vital-spirit*	6	235	72	speed+1
+240	magby	magby	base	fire	45	75	37	70	55	83	365	flame-body vital-spirit*	7	214	73	speed+1
+241	miltank	miltank	base	normal	95	80	105	40	70	100	490	thick-fat scrappy sap-sipper*	12	755	172	defense+2
+242	blissey	blissey	base	normal	255	10	10	75	135	55	540	natural-cure serene-grace healer*	15	468	608	hp+3
+243	raikou	raikou	base	electric	90	85	75	115	100	115	580	pressure inner-focus*	19	1780	261	special-attack+1 speed+2
+244	entei	entei	base	fire	115	115	85	90	75	100	580	pressure inner-focus*	21	1980	261	hp+1 attack+2
+245	suicune	suicune	base	water	100	75	115	90	115	85	580	pressure inner-focus*	20	1870	261	defense+1 special-defense+2
+246	larvitar	larvitar	base	rock/ground	50	64	50	45	50	41	300	guts sand-veil*	6	720	60	attack+1
+247	pupitar	pupitar	base	rock/ground	70	84	70	65	70	51	410	shed-skin	12	1520	144	attack+2
+248	tyranitar	tyranitar	base	rock/dark	100	134	110	95	100	61	600	sand-stream unnerve*	20	2020	270	attack+3
+249	lugia	lugia	base	psychic/flying	106	90	130	90	154	110	680	pressure multiscale*	52	2160	306	special-defense+3
+250	ho-oh	ho-oh	base	fire/flying	106	130	90	110	154	90	680	pressure regenerator*	38	1990	306	special-defense+3
+251	celebi	celebi	base	psychic/grass	100	100	100	100	100	100	600	natural-cure	6	50	270	hp+3
+252	treecko	treecko	base	grass	40	45	35	65	55	70	310	overgrow unburden*	5	50	62	speed+1
+253	grovyle	grovyle	base	grass	50	65	45	85	65	95	405	overgrow unburden*	9	216	142	speed+2
+254	sceptile	sceptile	base	grass	70	85	65	105	85	120	530	overgrow unburden*	17	522	239	speed+3
+255	torchic	torchic	base	fire	45	60	40	70	50	45	310	blaze speed-boost*	4	25	62	special-attack+1
+256	combusken	combusken	base	fire/fighting	60	85	60	85	60	55	405	blaze speed-boost*	9	195	142	attack+1 special-attack+1
+257	blaziken	blaziken	base	fire/fighting	80	120	70	110	70	80	530	blaze speed-boost*	19	520	239	attack+3
+258	mudkip	mudkip	base	water	50	70	50	50	50	40	310	torrent damp*	4	76	62	attack+1
+259	marshtomp	marshtomp	base	water/ground	70	85	70	60	70	50	405	torrent damp*	7	280	142	attack+2
+260	swampert	swampert	base	water/ground	100	110	90	85	90	60	535	torrent damp*	15	819	241	attack+3
+261	poochyena	poochyena	base	dark	35	55	35	30	30	35	220	run-away quick-feet rattled*	5	136	56	attack+1
+262	mightyena	mightyena	base	dark	70	90	70	60	60	70	420	intimidate quick-feet moxie*	10	370	147	attack+2
+263	zigzagoon	zigzagoon	base	normal	38	30	41	30	41	60	240	pickup gluttony quick-feet*	4	175	56	speed+1
+264	linoone	linoone	base	normal	78	70	61	50	61	100	420	pickup gluttony quick-feet*	5	325	147	speed+2
+265	wurmple	wurmple	base	bug	45	45	35	20	30	20	195	shield-dust run-away*	3	36	56	hp+1
+266	silcoon	silcoon	base	bug	50	35	55	25	25	15	205	shed-skin	6	100	72	defense+2
+267	beautifly	beautifly	base	bug/flying	60	70	50	100	50	65	395	swarm rivalry*	10	284	178	special-attack+3
+268	cascoon	cascoon	base	bug	50	35	55	25	25	15	205	shed-skin	7	115	72	defense+2
+269	dustox	dustox	base	bug/poison	60	50	70	50	90	65	385	shield-dust compound-eyes*	12	316	173	special-defense+3
+270	lotad	lotad	base	water/grass	40	30	30	40	50	30	220	swift-swim rain-dish own-tempo*	5	26	44	special-defense+1
+271	lombre	lombre	base	water/grass	60	50	50	60	70	50	340	swift-swim rain-dish own-tempo*	12	325	119	special-defense+2
+272	ludicolo	ludicolo	base	water/grass	80	70	70	90	100	70	480	swift-swim rain-dish own-tempo*	15	550	216	special-defense+3
+273	seedot	seedot	base	grass	40	40	50	30	30	30	220	chlorophyll early-bird pickpocket*	5	40	44	defense+1
+274	nuzleaf	nuzleaf	base	grass/dark	70	70	40	60	40	60	340	chlorophyll early-bird pickpocket*	10	280	119	attack+2
+275	shiftry	shiftry	base	grass/dark	90	100	60	90	60	80	480	chlorophyll wind-rider pickpocket*	13	596	216	attack+3
+276	taillow	taillow	base	normal/flying	40	55	30	30	30	85	270	guts scrappy*	3	23	54	speed+1
+277	swellow	swellow	base	normal/flying	60	85	60	75	50	125	455	guts scrappy*	7	198	159	speed+2
+278	wingull	wingull	base	water/flying	40	30	30	55	30	85	270	keen-eye hydration rain-dish*	6	95	54	speed+1
+279	pelipper	pelipper	base	water/flying	60	50	100	95	70	65	440	keen-eye drizzle rain-dish*	12	280	154	defense+2
+280	ralts	ralts	base	psychic/fairy	28	25	25	45	35	40	198	synchronize trace telepathy*	4	66	40	special-attack+1
+281	kirlia	kirlia	base	psychic/fairy	38	35	35	65	55	50	278	synchronize trace telepathy*	8	202	97	special-attack+2
+282	gardevoir	gardevoir	base	psychic/fairy	68	65	65	125	115	80	518	synchronize trace telepathy*	16	484	233	special-attack+3
+283	surskit	surskit	base	bug/water	40	30	32	50	52	65	269	swift-swim rain-dish*	5	17	54	speed+1
+284	masquerain	masquerain	base	bug/flying	70	60	62	100	82	80	454	intimidate unnerve*	8	36	159	special-attack+1 special-defense+1
+285	shroomish	shroomish	base	grass	60	40	60	40	60	35	295	effect-spore poison-heal quick-feet*	4	45	59	hp+1
+286	breloom	breloom	base	grass/fighting	60	130	80	60	60	70	460	effect-spore poison-heal technician*	12	392	161	attack+2
+287	slakoth	slakoth	base	normal	60	60	60	35	35	30	280	truant	8	240	56	hp+1
+288	vigoroth	vigoroth	base	normal	80	80	80	55	55	90	440	vital-spirit	14	465	154	speed+2
+289	slaking	slaking	base	normal	150	160	100	95	65	100	670	truant	20	1305	252	hp+3
+290	nincada	nincada	base	bug/ground	31	45	90	30	30	40	266	compound-eyes run-away*	5	55	53	defense+1
+291	ninjask	ninjask	base	bug/flying	61	90	45	50	50	160	456	speed-boost infiltrator*	8	120	160	speed+2
+292	shedinja	shedinja	base	bug/ghost	1	90	45	30	30	40	236	wonder-guard	8	12	83	hp+2
+293	whismur	whismur	base	normal	64	51	23	51	23	28	240	soundproof rattled*	6	163	48	hp+1
+294	loudred	loudred	base	normal	84	71	43	71	43	48	360	soundproof scrappy*	10	405	126	hp+2
+295	exploud	exploud	base	normal	104	91	63	91	73	68	490	soundproof scrappy*	15	840	221	hp+3
+296	makuhita	makuhita	base	fighting	72	60	30	20	30	25	237	thick-fat guts sheer-force*	10	864	47	hp+1
+297	hariyama	hariyama	base	fighting	144	120	60	40	60	50	474	thick-fat guts sheer-force*	23	2538	166	hp+2
+298	azurill	azurill	base	normal/fairy	50	20	40	20	40	20	190	thick-fat huge-power sap-sipper*	2	20	38	hp+1
+299	nosepass	nosepass	base	rock	30	45	135	45	90	30	375	sturdy magnet-pull sand-force*	10	970	75	defense+1
+300	skitty	skitty	base	normal	50	45	45	35	35	50	260	cute-charm normalize wonder-skin*	6	110	52	speed+1
+301	delcatty	delcatty	base	normal	70	65	65	55	55	90	400	cute-charm normalize wonder-skin*	11	326	140	hp+1 speed+1
+302	sableye	sableye	base	dark/ghost	50	75	75	65	65	50	380	keen-eye stall prankster*	5	110	133	attack+1 defense+1
+303	mawile	mawile	base	steel/fairy	50	85	85	55	55	50	380	hyper-cutter intimidate sheer-force*	6	115	133	attack+1 defense+1
+304	aron	aron	base	steel/rock	50	70	100	40	40	30	330	sturdy rock-head heavy-metal*	4	600	66	defense+1
+305	lairon	lairon	base	steel/rock	60	90	140	50	50	40	430	sturdy rock-head heavy-metal*	9	1200	151	defense+2
+306	aggron	aggron	base	steel/rock	70	110	180	60	60	50	530	sturdy rock-head heavy-metal*	21	3600	239	defense+3
+307	meditite	meditite	base	fighting/psychic	30	40	55	40	55	60	280	pure-power telepathy*	6	112	56	speed+1
+308	medicham	medicham	base	fighting/psychic	60	60	75	60	75	80	410	pure-power telepathy*	13	315	144	speed+2
+309	electrike	electrike	base	electric	40	45	40	65	40	65	295	static lightning-rod minus*	6	152	59	speed+1
+310	manectric	manectric	base	electric	70	75	60	105	60	105	475	static lightning-rod minus*	15	402	166	speed+2
+311	plusle	plusle	base	electric	60	50	40	85	75	95	405	plus lightning-rod*	4	42	142	speed+1
+312	minun	minun	base	electric	60	40	50	75	85	95	405	minus volt-absorb*	4	42	142	speed+1
+313	volbeat	volbeat	base	bug	65	73	75	47	85	85	430	illuminate swarm prankster*	7	177	151	speed+1
+314	illumise	illumise	base	bug	65	47	75	73	85	85	430	oblivious tinted-lens prankster*	6	177	151	speed+1
+315	roselia	roselia	base	grass/poison	50	60	45	100	80	65	400	natural-cure poison-point leaf-guard*	3	20	140	special-attack+2
+316	gulpin	gulpin	base	poison	70	43	53	43	53	40	302	liquid-ooze sticky-hold gluttony*	4	103	60	hp+1
+317	swalot	swalot	base	poison	100	73	83	73	83	55	467	liquid-ooze sticky-hold gluttony*	17	800	163	hp+2
+318	carvanha	carvanha	base	water/dark	45	90	20	65	20	65	305	rough-skin speed-boost*	8	208	61	attack+1
+319	sharpedo	sharpedo	base	water/dark	70	120	40	95	40	95	460	rough-skin speed-boost*	18	888	161	attack+2
+320	wailmer	wailmer	base	water	130	70	35	70	35	60	400	water-veil oblivious pressure*	20	1300	80	hp+1
+321	wailord	wailord	base	water	170	90	45	90	45	60	500	water-veil oblivious pressure*	145	3980	175	hp+2
+322	numel	numel	base	fire/ground	60	60	40	65	45	35	305	oblivious simple own-tempo*	7	240	61	special-attack+1
+323	camerupt	camerupt	base	fire/ground	70	100	70	105	75	40	460	magma-armor solid-rock anger-point*	19	2200	161	attack+1 special-attack+1
+324	torkoal	torkoal	base	fire	70	85	140	85	70	20	470	white-smoke drought shell-armor*	5	804	165	defense+2
+325	spoink	spoink	base	psychic	60	25	35	70	80	60	330	thick-fat own-tempo gluttony*	7	306	66	special-defense+1
+326	grumpig	grumpig	base	psychic	80	45	65	90	110	80	470	thick-fat own-tempo gluttony*	9	715	165	special-defense+2
+327	spinda	spinda	base	normal	60	60	60	60	60	60	360	own-tempo tangled-feet contrary*	11	50	126	special-attack+1
+328	trapinch	trapinch	base	ground	45	100	45	45	45	10	290	hyper-cutter arena-trap sheer-force*	7	150	58	attack+1
+329	vibrava	vibrava	base	ground/dragon	50	70	50	50	50	70	340	levitate	11	153	119	attack+1 speed+1
+330	flygon	flygon	base	ground/dragon	80	100	80	80	80	100	520	levitate	20	820	234	attack+1 speed+2
+331	cacnea	cacnea	base	grass	50	85	40	85	40	35	335	sand-veil water-absorb*	4	513	67	special-attack+1
+332	cacturne	cacturne	base	grass/dark	70	115	60	115	60	55	475	sand-veil water-absorb*	13	774	166	attack+1 special-attack+1
+333	swablu	swablu	base	normal/flying	45	40	60	40	75	50	310	natural-cure cloud-nine*	4	12	62	special-defense+1
+334	altaria	altaria	base	dragon/flying	75	70	90	70	105	80	490	natural-cure cloud-nine*	11	206	172	special-defense+2
+335	zangoose	zangoose	base	normal	73	115	60	60	60	90	458	immunity toxic-boost*	13	403	160	attack+2
+336	seviper	seviper	base	poison	73	100	60	100	60	65	458	shed-skin infiltrator*	27	525	160	attack+1 special-attack+1
+337	lunatone	lunatone	base	rock/psychic	90	55	65	95	85	70	460	levitate	10	1680	161	special-attack+2
+338	solrock	solrock	base	rock/psychic	90	95	85	55	65	70	460	levitate	12	1540	161	attack+2
+339	barboach	barboach	base	water/ground	50	48	43	46	41	60	288	oblivious anticipation hydration*	4	19	58	hp+1
+340	whiscash	whiscash	base	water/ground	110	78	73	76	71	60	468	oblivious anticipation hydration*	9	236	164	hp+2
+341	corphish	corphish	base	water	43	80	65	50	35	35	308	hyper-cutter shell-armor adaptability*	6	115	62	attack+1
+342	crawdaunt	crawdaunt	base	water/dark	63	120	85	90	55	55	468	hyper-cutter shell-armor adaptability*	11	328	164	attack+2
+343	baltoy	baltoy	base	ground/psychic	40	40	55	40	70	55	300	levitate	5	215	60	special-defense+1
+344	claydol	claydol	base	ground/psychic	60	70	105	70	120	75	500	levitate	15	1080	175	special-defense+2
+345	lileep	lileep	base	rock/grass	66	41	77	61	87	23	355	suction-cups storm-drain*	10	238	71	special-defense+1
+346	cradily	cradily	base	rock/grass	86	81	97	81	107	43	495	suction-cups storm-drain*	15	604	173	special-defense+2
+347	anorith	anorith	base	rock/bug	45	95	50	40	50	75	355	battle-armor swift-swim*	7	125	71	attack+1
+348	armaldo	armaldo	base	rock/bug	75	125	100	70	80	45	495	battle-armor swift-swim*	15	682	173	attack+2
+349	feebas	feebas	base	water	20	15	20	10	55	80	200	swift-swim oblivious adaptability*	6	74	40	speed+1
+350	milotic	milotic	base	water	95	60	79	100	125	81	540	marvel-scale competitive cute-charm*	62	1620	189	special-defense+2
+351	castform	castform	base	normal	70	70	70	70	70	70	420	forecast	3	8	147	hp+1
+352	kecleon	kecleon	base	normal	60	90	70	60	120	40	440	color-change protean*	10	220	154	special-defense+1
+353	shuppet	shuppet	base	ghost	44	75	35	63	33	45	295	insomnia frisk cursed-body*	6	23	59	attack+1
+354	banette	banette	base	ghost	64	115	65	83	63	65	455	insomnia frisk cursed-body*	11	125	159	attack+2
+355	duskull	duskull	base	ghost	20	40	90	30	90	25	295	levitate frisk*	8	150	59	special-defense+1
+356	dusclops	dusclops	base	ghost	40	70	130	60	130	25	455	pressure frisk*	16	306	159	defense+1 special-defense+1
+357	tropius	tropius	base	grass/flying	99	68	83	72	87	51	460	chlorophyll solar-power harvest*	20	1000	161	hp+2
+358	chimecho	chimecho	base	psychic	75	50	80	95	90	65	455	levitate	6	10	159	special-attack+1 special-defense+1
+359	absol	absol	base	dark	65	130	60	75	60	75	465	pressure super-luck justified*	12	470	163	attack+2
+360	wynaut	wynaut	base	psychic	95	23	48	23	48	23	260	shadow-tag telepathy*	6	140	52	hp+1
+361	snorunt	snorunt	base	ice	50	50	50	50	50	50	300	inner-focus ice-body moody*	7	168	60	hp+1
+362	glalie	glalie	base	ice	80	80	80	80	80	80	480	inner-focus ice-body moody*	15	2565	168	hp+2
+363	spheal	spheal	base	ice/water	70	40	50	55	50	25	290	thick-fat ice-body oblivious*	8	395	58	hp+1
+364	sealeo	sealeo	base	ice/water	90	60	70	75	70	45	410	thick-fat ice-body oblivious*	11	876	144	hp+2
+365	walrein	walrein	base	ice/water	110	80	90	95	90	65	530	thick-fat ice-body oblivious*	14	1506	239	hp+3
+366	clamperl	clamperl	base	water	35	64	85	74	55	32	345	shell-armor rattled*	4	525	69	defense+1
+367	huntail	huntail	base	water	55	104	105	94	75	52	485	swift-swim water-veil*	17	270	170	attack+1 defense+1
+368	gorebyss	gorebyss	base	water	55	84	105	114	75	52	485	swift-swim hydration*	18	226	170	special-attack+2
+369	relicanth	relicanth	base	water/rock	100	90	130	45	65	55	485	swift-swim rock-head sturdy*	10	234	170	hp+1 defense+1
+370	luvdisc	luvdisc	base	water	43	30	55	40	65	97	330	swift-swim hydration*	6	87	116	speed+1
+371	bagon	bagon	base	dragon	45	75	60	40	30	50	300	rock-head sheer-force*	6	421	60	attack+1
+372	shelgon	shelgon	base	dragon	65	95	100	60	50	50	420	rock-head overcoat*	11	1105	147	defense+2
+373	salamence	salamence	base	dragon/flying	95	135	80	110	80	100	600	intimidate moxie*	15	1026	270	attack+3
+374	beldum	beldum	base	steel/psychic	40	55	80	35	60	30	300	clear-body light-metal*	6	952	60	defense+1
+375	metang	metang	base	steel/psychic	60	75	100	55	80	50	420	clear-body light-metal*	12	2025	147	defense+2
+376	metagross	metagross	base	steel/psychic	80	135	130	95	90	70	600	clear-body light-metal*	16	5500	270	defense+3
+377	regirock	regirock	base	rock	80	100	200	50	100	50	580	clear-body sturdy*	17	2300	261	defense+3
+378	regice	regice	base	ice	80	50	100	100	200	50	580	clear-body ice-body*	18	1750	261	special-defense+3
+379	registeel	registeel	base	steel	80	75	150	75	150	50	580	clear-body light-metal*	19	2050	261	defense+2 special-defense+1
+380	latias	latias	base	dragon/psychic	80	80	90	110	130	110	600	levitate	14	400	270	special-defense+3
+381	latios	latios	base	dragon/psychic	80	90	80	130	110	110	600	levitate	20	600	270	special-attack+3
+382	kyogre	kyogre	base	water	100	100	90	150	140	90	670	drizzle	45	3520	302	special-attack+3
+383	groudon	groudon	base	ground	100	150	140	100	90	90	670	drought	35	9500	302	attack+3
+384	rayquaza	rayquaza	base	dragon/flying	105	150	90	150	90	95	680	air-lock	70	2065	306	attack+2 special-attack+1
+385	jirachi	jirachi	base	steel/psychic	100	100	100	100	100	100	600	serene-grace	3	11	270	hp+3
+386	deoxys-normal	deoxys	base	psychic	50	150	50	150	50	150	600	pressure	17	608	270	attack+1 special-attack+1 speed+1
+387	turtwig	turtwig	base	grass	55	68	64	45	55	31	318	overgrow shell-armor*	4	102	64	attack+1
+388	grotle	grotle	base	grass	75	89	85	55	65	36	405	overgrow shell-armor*	11	970	142	attack+1 defense+1
+389	torterra	torterra	base	grass/ground	95	109	105	75	85	56	525	overgrow shell-armor*	22	3100	236	attack+2 defense+1
+390	chimchar	chimchar	base	fire	44	58	44	58	44	61	309	blaze iron-fist*	5	62	62	speed+1
+391	monferno	monferno	base	fire/fighting	64	78	52	78	52	81	405	blaze iron-fist*	9	220	142	special-attack+1 speed+1
+392	infernape	infernape	base	fire/fighting	76	104	71	104	71	108	534	blaze iron-fist*	12	550	240	attack+1 special-attack+1 speed+1
+393	piplup	piplup	base	water	53	51	53	61	56	40	314	torrent competitive*	4	52	63	special-attack+1
+394	prinplup	prinplup	base	water	64	66	68	81	76	50	405	torrent competitive*	8	230	142	special-attack+2
+395	empoleon	empoleon	base	water/steel	84	86	88	111	101	60	530	torrent competitive*	17	845	239	special-attack+3
+396	starly	starly	base	normal/flying	40	55	30	30	30	60	245	keen-eye reckless*	3	20	49	speed+1
+397	staravia	staravia	base	normal/flying	55	75	50	40	40	80	340	intimidate reckless*	6	155	119	speed+2
+398	staraptor	staraptor	base	normal/flying	85	120	70	50	60	100	485	intimidate reckless*	12	249	218	attack+3
+399	bidoof	bidoof	base	normal	59	45	40	35	40	31	250	simple unaware moody*	5	200	50	hp+1
+400	bibarel	bibarel	base	normal/water	79	85	60	55	60	71	410	simple unaware moody*	10	315	144	attack+2
+401	kricketot	kricketot	base	bug	37	25	41	25	41	25	194	shed-skin run-away*	3	22	39	defense+1
+402	kricketune	kricketune	base	bug	77	85	51	55	51	65	384	swarm technician*	10	255	134	attack+2
+403	shinx	shinx	base	electric	45	65	34	40	34	45	263	rivalry intimidate guts*	5	95	53	attack+1
+404	luxio	luxio	base	electric	60	85	49	60	49	60	363	rivalry intimidate guts*	9	305	127	attack+2
+405	luxray	luxray	base	electric	80	120	79	95	79	70	523	rivalry intimidate guts*	14	420	235	attack+3
+406	budew	budew	base	grass/poison	40	30	35	50	70	55	280	natural-cure poison-point leaf-guard*	2	12	56	special-attack+1
+407	roserade	roserade	base	grass/poison	60	70	65	125	105	90	515	natural-cure poison-point technician*	9	145	232	special-attack+3
+408	cranidos	cranidos	base	rock	67	125	40	30	30	58	350	mold-breaker sheer-force*	9	315	70	attack+1
+409	rampardos	rampardos	base	rock	97	165	60	65	50	58	495	mold-breaker sheer-force*	16	1025	173	attack+2
+410	shieldon	shieldon	base	rock/steel	30	42	118	42	88	30	350	sturdy soundproof*	5	570	70	defense+1
+411	bastiodon	bastiodon	base	rock/steel	60	52	168	47	138	30	495	sturdy soundproof*	13	1495	173	defense+2
+412	burmy	burmy	base	bug	40	29	45	29	45	36	224	shed-skin overcoat*	2	34	45	special-defense+1
+413	wormadam-plant	wormadam	base	bug/grass	60	59	85	79	105	36	424	anticipation overcoat*	5	65	148	special-defense+2
+414	mothim	mothim	base	bug/flying	70	94	50	94	50	66	424	swarm tinted-lens*	9	233	148	attack+1 special-attack+1
+415	combee	combee	base	bug/flying	30	30	42	30	42	70	244	honey-gather hustle*	3	55	49	speed+1
+416	vespiquen	vespiquen	base	bug/flying	70	80	102	80	102	40	474	pressure unnerve*	12	385	166	defense+1 special-defense+1
+417	pachirisu	pachirisu	base	electric	60	45	70	45	90	95	405	run-away pickup volt-absorb*	4	39	142	speed+1
+418	buizel	buizel	base	water	55	65	35	60	30	85	330	swift-swim water-veil*	7	295	66	speed+1
+419	floatzel	floatzel	base	water	85	105	55	85	50	115	495	swift-swim water-veil*	11	335	173	speed+2
+420	cherubi	cherubi	base	grass	45	35	45	62	53	35	275	chlorophyll	4	33	55	special-attack+1
+421	cherrim	cherrim	base	grass	70	60	70	87	78	85	450	flower-gift	5	93	158	special-attack+2
+422	shellos	shellos	base	water	76	48	48	57	62	34	325	sticky-hold storm-drain sand-force*	3	63	65	hp+1
+423	gastrodon	gastrodon	base	water/ground	111	83	68	92	82	39	475	sticky-hold storm-drain sand-force*	9	299	166	hp+2
+424	ambipom	ambipom	base	normal	75	100	66	60	66	115	482	technician pickup skill-link*	12	203	169	speed+2
+425	drifloon	drifloon	base	ghost/flying	90	50	34	60	44	70	348	aftermath unburden flare-boost*	4	12	70	hp+1
+426	drifblim	drifblim	base	ghost/flying	150	80	44	90	54	80	498	aftermath unburden flare-boost*	12	150	174	hp+2
+427	buneary	buneary	base	normal	55	66	44	44	56	85	350	run-away klutz limber*	4	55	70	speed+1
+428	lopunny	lopunny	base	normal	65	76	84	54	96	105	480	cute-charm klutz limber*	12	333	168	speed+2
+429	mismagius	mismagius	base	ghost	60	60	60	105	105	105	495	levitate	9	44	173	special-attack+1 special-defense+1
+430	honchkrow	honchkrow	base	dark/flying	100	125	52	105	52	71	505	insomnia super-luck moxie*	9	273	177	attack+2
+431	glameow	glameow	base	normal	49	55	42	42	37	85	310	limber own-tempo keen-eye*	5	39	62	speed+1
+432	purugly	purugly	base	normal	71	82	64	64	59	112	452	thick-fat own-tempo defiant*	10	438	158	speed+2
+433	chingling	chingling	base	psychic	45	30	50	65	50	45	285	levitate	2	6	57	special-attack+1
+434	stunky	stunky	base	poison/dark	63	63	47	41	41	74	329	stench aftermath keen-eye*	4	192	66	speed+1
+435	skuntank	skuntank	base	poison/dark	103	93	67	71	61	84	479	stench aftermath keen-eye*	10	380	168	hp+2
+436	bronzor	bronzor	base	steel/psychic	57	24	86	24	86	23	300	levitate heatproof heavy-metal*	5	605	60	defense+1
+437	bronzong	bronzong	base	steel/psychic	67	89	116	79	116	33	500	levitate heatproof heavy-metal*	13	1870	175	defense+1 special-defense+1
+438	bonsly	bonsly	base	rock	50	80	95	10	45	10	290	sturdy rock-head rattled*	5	150	58	defense+1
+439	mime-jr	mime-jr	base	psychic/fairy	20	25	45	70	90	60	310	soundproof filter technician*	6	130	62	special-defense+1
+440	happiny	happiny	base	normal	100	5	5	15	65	30	220	natural-cure serene-grace friend-guard*	6	244	110	hp+1
+441	chatot	chatot	base	normal/flying	76	65	45	92	42	91	411	keen-eye tangled-feet big-pecks*	5	19	144	attack+1
+442	spiritomb	spiritomb	base	ghost/dark	50	92	108	92	108	35	485	pressure infiltrator*	10	1080	170	defense+1 special-defense+1
+443	gible	gible	base	dragon/ground	58	70	45	40	45	42	300	sand-veil rough-skin*	7	205	60	attack+1
+444	gabite	gabite	base	dragon/ground	68	90	65	50	55	82	410	sand-veil rough-skin*	14	560	144	attack+2
+445	garchomp	garchomp	base	dragon/ground	108	130	95	80	85	102	600	sand-veil rough-skin*	19	950	270	attack+3
+446	munchlax	munchlax	base	normal	135	85	40	40	85	5	390	pickup thick-fat gluttony*	6	1050	78	hp+1
+447	riolu	riolu	base	fighting	40	70	40	35	40	60	285	steadfast inner-focus prankster*	7	202	57	attack+1
+448	lucario	lucario	base	fighting/steel	70	110	70	115	70	90	525	steadfast inner-focus justified*	12	540	184	attack+1 special-attack+1
+449	hippopotas	hippopotas	base	ground	68	72	78	38	42	32	330	sand-stream sand-force*	8	495	66	defense+1
+450	hippowdon	hippowdon	base	ground	108	112	118	68	72	47	525	sand-stream sand-force*	20	3000	184	defense+2
+451	skorupi	skorupi	base	poison/bug	40	50	90	30	55	65	330	battle-armor sniper keen-eye*	8	120	66	defense+1
+452	drapion	drapion	base	poison/dark	70	90	110	60	75	95	500	battle-armor sniper keen-eye*	13	615	175	defense+2
+453	croagunk	croagunk	base	poison/fighting	48	61	40	61	40	50	300	anticipation dry-skin poison-touch*	7	230	60	attack+1
+454	toxicroak	toxicroak	base	poison/fighting	83	106	65	86	65	85	490	anticipation dry-skin poison-touch*	13	444	172	attack+2
+455	carnivine	carnivine	base	grass	74	100	72	90	72	46	454	levitate	14	270	159	attack+2
+456	finneon	finneon	base	water	49	49	56	49	61	66	330	swift-swim storm-drain water-veil*	4	70	66	speed+1
+457	lumineon	lumineon	base	water	69	69	76	69	86	91	460	swift-swim storm-drain water-veil*	12	240	161	speed+2
+458	mantyke	mantyke	base	water/flying	45	20	50	60	120	50	345	swift-swim water-absorb water-veil*	10	650	69	special-defense+1
+459	snover	snover	base	grass/ice	60	62	50	62	60	40	334	snow-warning soundproof*	10	505	67	attack+1
+460	abomasnow	abomasnow	base	grass/ice	90	92	75	92	85	60	494	snow-warning soundproof*	22	1355	173	attack+1 special-attack+1
+461	weavile	weavile	base	dark/ice	70	120	65	45	85	125	510	pressure pickpocket*	11	340	179	attack+1 speed+1
+462	magnezone	magnezone	base	electric/steel	70	70	115	130	90	60	535	magnet-pull sturdy analytic*	12	1800	241	special-attack+3
+463	lickilicky	lickilicky	base	normal	110	85	95	80	95	50	515	own-tempo oblivious cloud-nine*	17	1400	180	hp+3
+464	rhyperior	rhyperior	base	ground/rock	115	140	130	55	55	40	535	lightning-rod solid-rock reckless*	24	2828	241	attack+3
+465	tangrowth	tangrowth	base	grass	100	100	125	110	50	50	535	chlorophyll leaf-guard regenerator*	20	1286	187	defense+2
+466	electivire	electivire	base	electric	75	123	67	95	85	95	540	motor-drive vital-spirit*	18	1386	243	attack+3
+467	magmortar	magmortar	base	fire	75	95	67	125	95	83	540	flame-body vital-spirit*	16	680	243	special-attack+3
+468	togekiss	togekiss	base	fairy/flying	85	50	95	120	115	80	545	hustle serene-grace super-luck*	15	380	245	special-attack+2 special-defense+1
+469	yanmega	yanmega	base	bug/flying	86	76	86	116	56	95	515	speed-boost tinted-lens frisk*	19	515	180	attack+2
+470	leafeon	leafeon	base	grass	65	110	130	60	65	95	525	leaf-guard chlorophyll*	10	255	184	defense+2
+471	glaceon	glaceon	base	ice	65	60	110	130	95	65	525	snow-cloak ice-body*	8	259	184	special-attack+2
+472	gliscor	gliscor	base	ground/flying	75	95	125	45	75	95	510	hyper-cutter sand-veil poison-heal*	20	425	179	defense+2
+473	mamoswine	mamoswine	base	ice/ground	110	130	80	70	60	80	530	oblivious snow-cloak thick-fat*	25	2910	239	attack+3
+474	porygon-z	porygon-z	base	normal	85	80	70	135	75	90	535	adaptability download analytic*	9	340	241	special-attack+3
+475	gallade	gallade	base	psychic/fighting	68	125	65	65	115	80	518	steadfast sharpness justified*	16	520	233	attack+3
+476	probopass	probopass	base	rock/steel	60	55	145	75	150	40	525	sturdy magnet-pull sand-force*	14	3400	184	defense+1 special-defense+2
+477	dusknoir	dusknoir	base	ghost	45	100	135	65	135	45	525	pressure frisk*	22	1066	236	defense+1 special-defense+2
+478	froslass	froslass	base	ice/ghost	70	80	70	80	70	110	480	snow-cloak cursed-body*	13	266	168	speed+2
+479	rotom	rotom	base	electric/ghost	50	50	77	95	77	91	440	levitate	3	3	154	special-attack+1 speed+1
+480	uxie	uxie	base	psychic	75	75	130	75	130	95	580	levitate	3	3	261	defense+2 special-defense+1
+481	mesprit	mesprit	base	psychic	80	105	105	105	105	80	580	levitate	3	3	261	attack+1 special-attack+1 special-defense+1
+482	azelf	azelf	base	psychic	75	125	70	125	70	115	580	levitate	3	3	261	attack+2 special-attack+1
+483	dialga	dialga	base	steel/dragon	100	120	120	150	100	90	680	pressure telepathy*	54	6830	306	special-attack+3
+484	palkia	palkia	base	water/dragon	90	120	100	150	120	100	680	pressure telepathy*	42	3360	306	special-attack+3
+485	heatran	heatran	base	fire/steel	91	90	106	130	106	77	600	flash-fire flame-body*	17	4300	270	special-attack+3
+486	regigigas	regigigas	base	normal	110	160	110	80	110	100	670	slow-start	37	4200	302	attack+3
+487	giratina-altered	giratina	base	ghost/dragon	150	100	120	100	120	90	680	pressure telepathy*	45	7500	306	hp+3
+488	cresselia	cresselia	base	psychic	120	70	110	75	120	85	580	levitate	15	856	270	special-defense+3
+489	phione	phione	base	water	80	80	80	80	80	80	480	hydration	4	31	216	hp+1
+490	manaphy	manaphy	base	water	100	100	100	100	100	100	600	hydration	3	14	270	hp+3
+491	darkrai	darkrai	base	dark	70	90	90	135	90	125	600	bad-dreams	15	505	270	special-attack+2 speed+1
+492	shaymin-land	shaymin	base	grass	100	100	100	100	100	100	600	natural-cure	2	21	270	hp+3
+493	arceus	arceus	base	normal	120	120	120	120	120	120	720	multitype	32	3200	324	hp+3
+494	victini	victini	base	psychic/fire	100	100	100	100	100	100	600	victory-star	4	40	270	hp+3
+495	snivy	snivy	base	grass	45	45	55	45	55	63	308	overgrow contrary*	6	81	62	speed+1
+496	servine	servine	base	grass	60	60	75	60	75	83	413	overgrow contrary*	8	160	145	speed+2
+497	serperior	serperior	base	grass	75	75	95	75	95	113	528	overgrow contrary*	33	630	238	speed+3
+498	tepig	tepig	base	fire	65	63	45	45	45	45	308	blaze thick-fat*	5	99	62	hp+1
+499	pignite	pignite	base	fire/fighting	90	93	55	70	55	55	418	blaze thick-fat*	10	555	146	attack+2
+500	emboar	emboar	base	fire/fighting	110	123	65	100	65	65	528	blaze reckless*	16	1500	238	attack+3
+501	oshawott	oshawott	base	water	55	55	45	63	45	45	308	torrent shell-armor*	5	59	62	special-attack+1
+502	dewott	dewott	base	water	75	75	60	83	60	60	413	torrent shell-armor*	8	245	145	special-attack+2
+503	samurott	samurott	base	water	95	100	85	108	70	70	528	torrent shell-armor*	15	946	238	special-attack+3
+504	patrat	patrat	base	normal	45	55	39	35	39	42	255	run-away keen-eye analytic*	5	116	51	attack+1
+505	watchog	watchog	base	normal	60	85	69	60	69	77	420	illuminate keen-eye analytic*	11	270	147	attack+2
+506	lillipup	lillipup	base	normal	45	60	45	25	45	55	275	vital-spirit pickup run-away*	4	41	55	attack+1
+507	herdier	herdier	base	normal	65	80	65	35	65	60	370	intimidate sand-rush scrappy*	9	147	130	attack+2
+508	stoutland	stoutland	base	normal	85	110	90	45	90	80	500	intimidate sand-rush scrappy*	12	610	225	attack+3
+509	purrloin	purrloin	base	dark	41	50	37	50	37	66	281	limber unburden prankster*	4	101	56	speed+1
+510	liepard	liepard	base	dark	64	88	50	88	50	106	446	limber unburden prankster*	11	375	156	speed+2
+511	pansage	pansage	base	grass	50	53	48	53	48	64	316	gluttony overgrow*	6	105	63	speed+1
+512	simisage	simisage	base	grass	75	98	63	98	63	101	498	gluttony overgrow*	11	305	174	speed+2
+513	pansear	pansear	base	fire	50	53	48	53	48	64	316	gluttony blaze*	6	110	63	speed+1
+514	simisear	simisear	base	fire	75	98	63	98	63	101	498	gluttony blaze*	10	280	174	speed+2
+515	panpour	panpour	base	water	50	53	48	53	48	64	316	gluttony torrent*	6	135	63	speed+1
+516	simipour	simipour	base	water	75	98	63	98	63	101	498	gluttony torrent*	10	290	174	speed+2
+517	munna	munna	base	psychic	76	25	45	67	55	24	292	forewarn synchronize telepathy*	6	233	58	hp+1
+518	musharna	musharna	base	psychic	116	55	85	107	95	29	487	forewarn synchronize telepathy*	11	605	170	hp+2
+519	pidove	pidove	base	normal/flying	50	55	50	36	30	43	264	big-pecks super-luck rivalry*	3	21	53	attack+1
+520	tranquill	tranquill	base	normal/flying	62	77	62	50	42	65	358	big-pecks super-luck rivalry*	6	150	125	attack+2
+521	unfezant	unfezant	base	normal/flying	80	115	80	65	55	93	488	big-pecks super-luck rivalry*	12	290	220	attack+3
+522	blitzle	blitzle	base	electric	45	60	32	50	32	76	295	lightning-rod motor-drive sap-sipper*	8	298	59	speed+1
+523	zebstrika	zebstrika	base	electric	75	100	63	80	63	116	497	lightning-rod motor-drive sap-sipper*	16	795	174	speed+2
+524	roggenrola	roggenrola	base	rock	55	75	85	25	25	15	280	sturdy weak-armor sand-force*	4	180	56	defense+1
+525	boldore	boldore	base	rock	70	105	105	50	40	20	390	sturdy weak-armor sand-force*	9	1020	137	attack+1 defense+1
+526	gigalith	gigalith	base	rock	85	135	130	60	80	25	515	sturdy sand-stream sand-force*	17	2600	232	attack+3
+527	woobat	woobat	base	psychic/flying	65	45	43	55	43	72	323	unaware klutz simple*	4	21	65	speed+1
+528	swoobat	swoobat	base	psychic/flying	67	57	55	77	55	114	425	unaware klutz simple*	9	105	149	speed+2
+529	drilbur	drilbur	base	ground	60	85	40	30	45	68	328	sand-rush sand-force mold-breaker*	3	85	66	attack+1
+530	excadrill	excadrill	base	ground/steel	110	135	60	50	65	88	508	sand-rush sand-force mold-breaker*	7	404	178	attack+2
+531	audino	audino	base	normal	103	60	86	60	86	50	445	healer regenerator klutz*	11	310	390	hp+2
+532	timburr	timburr	base	fighting	75	80	55	25	35	35	305	guts sheer-force iron-fist*	6	125	61	attack+1
+533	gurdurr	gurdurr	base	fighting	85	105	85	40	50	40	405	guts sheer-force iron-fist*	12	400	142	attack+2
+534	conkeldurr	conkeldurr	base	fighting	105	140	95	55	65	45	505	guts sheer-force iron-fist*	14	870	227	attack+3
+535	tympole	tympole	base	water	50	50	40	50	40	64	294	swift-swim hydration water-absorb*	5	45	59	speed+1
+536	palpitoad	palpitoad	base	water/ground	75	65	55	65	55	69	384	swift-swim hydration water-absorb*	8	170	134	hp+2
+537	seismitoad	seismitoad	base	water/ground	105	95	75	85	75	74	509	swift-swim poison-touch water-absorb*	15	620	229	hp+3
+538	throh	throh	base	fighting	120	100	85	30	85	45	465	guts inner-focus mold-breaker*	13	555	163	hp+2
+539	sawk	sawk	base	fighting	75	125	75	30	75	85	465	sturdy inner-focus mold-breaker*	14	510	163	attack+2
+540	sewaddle	sewaddle	base	bug/grass	45	53	70	40	60	42	310	swarm chlorophyll overcoat*	3	25	62	defense+1
+541	swadloon	swadloon	base	bug/grass	55	63	90	50	80	42	380	leaf-guard chlorophyll overcoat*	5	73	133	defense+2
+542	leavanny	leavanny	base	bug/grass	75	103	80	70	80	92	500	swarm chlorophyll overcoat*	12	205	225	attack+3
+543	venipede	venipede	base	bug/poison	30	45	59	30	39	57	260	poison-point swarm speed-boost*	4	53	52	defense+1
+544	whirlipede	whirlipede	base	bug/poison	40	55	99	40	79	47	360	poison-point swarm speed-boost*	12	585	126	defense+2
+545	scolipede	scolipede	base	bug/poison	60	100	89	55	69	112	485	poison-point swarm speed-boost*	25	2005	218	speed+3
+546	cottonee	cottonee	base	grass/fairy	40	27	60	37	50	66	280	prankster infiltrator chlorophyll*	3	6	56	speed+1
+547	whimsicott	whimsicott	base	grass/fairy	60	67	85	77	75	116	480	prankster infiltrator chlorophyll*	7	66	168	speed+2
+548	petilil	petilil	base	grass	45	35	50	70	50	30	280	chlorophyll own-tempo leaf-guard*	5	66	56	special-attack+1
+549	lilligant	lilligant	base	grass	70	60	75	110	75	90	480	chlorophyll own-tempo leaf-guard*	11	163	168	special-attack+2
+550	basculin-red-striped	basculin	base	water	70	92	65	80	55	98	460	reckless adaptability mold-breaker*	10	180	161	speed+2
+551	sandile	sandile	base	ground/dark	50	72	35	35	35	65	292	intimidate moxie anger-point*	7	152	58	attack+1
+552	krokorok	krokorok	base	ground/dark	60	82	45	45	45	74	351	intimidate moxie anger-point*	10	334	123	attack+2
+553	krookodile	krookodile	base	ground/dark	95	117	80	65	70	92	519	intimidate moxie anger-point*	15	963	234	attack+3
+554	darumaka	darumaka	base	fire	70	90	45	15	45	50	315	hustle inner-focus*	6	375	63	attack+1
+555	darmanitan-standard	darmanitan	base	fire	105	140	55	30	55	95	480	sheer-force zen-mode*	13	929	168	attack+2
+556	maractus	maractus	base	grass	75	86	67	106	67	60	461	water-absorb chlorophyll storm-drain*	10	280	161	special-attack+2
+557	dwebble	dwebble	base	bug/rock	50	65	85	35	35	55	325	sturdy shell-armor weak-armor*	3	145	65	defense+1
+558	crustle	crustle	base	bug/rock	70	105	125	65	75	45	485	sturdy shell-armor weak-armor*	14	2000	170	defense+2
+559	scraggy	scraggy	base	dark/fighting	50	75	70	35	70	48	348	shed-skin moxie intimidate*	6	118	70	attack+1
+560	scrafty	scrafty	base	dark/fighting	65	90	115	45	115	58	488	shed-skin moxie intimidate*	11	300	171	defense+1 special-defense+1
+561	sigilyph	sigilyph	base	psychic/flying	72	58	80	103	80	97	490	wonder-skin magic-guard tinted-lens*	14	140	172	special-attack+2
+562	yamask	yamask	base	ghost	38	30	85	55	65	30	303	mummy	5	15	61	defense+1
+563	cofagrigus	cofagrigus	base	ghost	58	50	145	95	105	30	483	mummy	17	765	169	defense+2
+564	tirtouga	tirtouga	base	water/rock	54	78	103	53	45	22	355	solid-rock sturdy swift-swim*	7	165	71	defense+1
+565	carracosta	carracosta	base	water/rock	74	108	133	83	65	32	495	solid-rock sturdy swift-swim*	12	810	173	defense+2
+566	archen	archen	base	rock/flying	55	112	45	74	45	70	401	defeatist	5	95	71	attack+1
+567	archeops	archeops	base	rock/flying	75	140	65	112	65	110	567	defeatist	14	320	177	attack+2
+568	trubbish	trubbish	base	poison	50	50	62	40	62	65	329	stench sticky-hold aftermath*	6	310	66	speed+1
+569	garbodor	garbodor	base	poison	80	95	82	60	82	75	474	stench weak-armor aftermath*	19	1073	166	attack+2
+570	zorua	zorua	base	dark	40	65	40	80	40	65	330	illusion	7	125	66	special-attack+1
+571	zoroark	zoroark	base	dark	60	105	60	120	60	105	510	illusion	16	811	179	special-attack+2
+572	minccino	minccino	base	normal	55	50	40	40	40	75	300	cute-charm technician skill-link*	4	58	60	speed+1
+573	cinccino	cinccino	base	normal	75	95	60	65	60	115	470	cute-charm technician skill-link*	5	75	165	speed+2
+574	gothita	gothita	base	psychic	45	30	50	55	65	45	290	frisk competitive shadow-tag*	4	58	58	special-defense+1
+575	gothorita	gothorita	base	psychic	60	45	70	75	85	55	390	frisk competitive shadow-tag*	7	180	137	special-defense+2
+576	gothitelle	gothitelle	base	psychic	70	55	95	95	110	65	490	frisk competitive shadow-tag*	15	440	221	special-defense+3
+577	solosis	solosis	base	psychic	45	30	40	105	50	20	290	overcoat magic-guard regenerator*	3	10	58	special-attack+1
+578	duosion	duosion	base	psychic	65	40	50	125	60	30	370	overcoat magic-guard regenerator*	6	80	130	special-attack+2
+579	reuniclus	reuniclus	base	psychic	110	65	75	125	85	30	490	overcoat magic-guard regenerator*	10	201	221	special-attack+3
+580	ducklett	ducklett	base	water/flying	62	44	50	44	50	55	305	keen-eye big-pecks hydration*	5	55	61	hp+1
+581	swanna	swanna	base	water/flying	75	87	63	87	63	98	473	keen-eye big-pecks hydration*	13	242	166	speed+2
+582	vanillite	vanillite	base	ice	36	50	50	65	60	44	305	ice-body snow-cloak weak-armor*	4	57	61	special-attack+1
+583	vanillish	vanillish	base	ice	51	65	65	80	75	59	395	ice-body snow-cloak weak-armor*	11	410	138	special-attack+2
+584	vanilluxe	vanilluxe	base	ice	71	95	85	110	95	79	535	ice-body snow-warning weak-armor*	13	575	241	special-attack+3
+585	deerling	deerling	base	normal/grass	60	60	50	40	50	75	335	chlorophyll sap-sipper serene-grace*	6	195	67	speed+1
+586	sawsbuck	sawsbuck	base	normal/grass	80	100	70	60	70	95	475	chlorophyll sap-sipper serene-grace*	19	925	166	attack+2
+587	emolga	emolga	base	electric/flying	55	75	60	75	60	103	428	static motor-drive*	4	50	150	speed+2
+588	karrablast	karrablast	base	bug	50	75	45	40	45	60	315	swarm shed-skin no-guard*	5	59	63	attack+1
+589	escavalier	escavalier	base	bug/steel	70	135	105	60	105	20	495	swarm shell-armor overcoat*	10	330	173	attack+2
+590	foongus	foongus	base	grass/poison	69	55	45	55	55	15	294	effect-spore regenerator*	2	10	59	hp+1
+591	amoonguss	amoonguss	base	grass/poison	114	85	70	85	80	30	464	effect-spore regenerator*	6	105	162	hp+2
+592	frillish-male	frillish	base	water/ghost	55	40	50	65	85	40	335	water-absorb cursed-body damp*	12	330	67	special-defense+1
+593	jellicent-male	jellicent	base	water/ghost	100	60	70	85	105	60	480	water-absorb cursed-body damp*	22	1350	168	special-defense+2
+594	alomomola	alomomola	base	water	165	75	80	40	45	65	470	healer hydration regenerator*	12	316	165	hp+2
+595	joltik	joltik	base	bug/electric	50	47	50	57	50	65	319	compound-eyes unnerve swarm*	1	6	64	speed+1
+596	galvantula	galvantula	base	bug/electric	70	77	60	97	60	108	472	compound-eyes unnerve swarm*	8	143	165	speed+2
+597	ferroseed	ferroseed	base	grass/steel	44	50	91	24	86	10	305	iron-barbs	6	188	61	defense+1
+598	ferrothorn	ferrothorn	base	grass/steel	74	94	131	54	116	20	489	iron-barbs anticipation*	10	1100	171	defense+2
+599	klink	klink	base	steel	40	55	70	45	60	30	300	plus minus clear-body*	3	210	60	defense+1
+600	klang	klang	base	steel	60	80	95	70	85	50	440	plus minus clear-body*	6	510	154	defense+2
+601	klinklang	klinklang	base	steel	60	100	115	70	85	90	520	plus minus clear-body*	6	810	234	defense+3
+602	tynamo	tynamo	base	electric	35	55	40	45	40	60	275	levitate	2	3	55	speed+1
+603	eelektrik	eelektrik	base	electric	65	85	70	75	70	40	405	levitate	12	220	142	attack+2
+604	eelektross	eelektross	base	electric	85	115	80	105	80	50	515	levitate	21	805	232	attack+3
+605	elgyem	elgyem	base	psychic	55	55	55	85	55	30	335	telepathy synchronize analytic*	5	90	67	special-attack+1
+606	beheeyem	beheeyem	base	psychic	75	75	75	125	95	40	485	telepathy synchronize analytic*	10	345	170	special-attack+2
+607	litwick	litwick	base	ghost/fire	50	30	55	65	55	20	275	flash-fire flame-body infiltrator*	3	31	55	special-attack+1
+608	lampent	lampent	base	ghost/fire	60	40	60	95	60	55	370	flash-fire flame-body infiltrator*	6	130	130	special-attack+2
+609	chandelure	chandelure	base	ghost/fire	60	55	90	145	90	80	520	flash-fire flame-body infiltrator*	10	343	234	special-attack+3
+610	axew	axew	base	dragon	46	87	60	30	40	57	320	rivalry mold-breaker unnerve*	6	180	64	attack+1
+611	fraxure	fraxure	base	dragon	66	117	70	40	50	67	410	rivalry mold-breaker unnerve*	10	360	144	attack+2
+612	haxorus	haxorus	base	dragon	76	147	90	60	70	97	540	rivalry mold-breaker unnerve*	18	1055	243	attack+3
+613	cubchoo	cubchoo	base	ice	55	70	40	60	40	40	305	snow-cloak slush-rush rattled*	5	85	61	attack+1
+614	beartic	beartic	base	ice	95	130	80	70	80	50	505	snow-cloak slush-rush swift-swim*	26	2600	177	attack+2
+615	cryogonal	cryogonal	base	ice	80	50	50	95	135	105	515	levitate	11	1480	180	special-defense+2
+616	shelmet	shelmet	base	bug	50	40	85	40	65	25	305	hydration shell-armor overcoat*	4	77	61	defense+1
+617	accelgor	accelgor	base	bug	80	70	40	100	60	145	495	hydration sticky-hold unburden*	8	253	173	speed+2
+618	stunfisk	stunfisk	base	ground/electric	109	66	84	81	99	32	471	static limber sand-veil*	7	110	165	hp+2
+619	mienfoo	mienfoo	base	fighting	45	85	50	55	50	65	350	inner-focus regenerator reckless*	9	200	70	attack+1
+620	mienshao	mienshao	base	fighting	65	125	60	95	60	105	510	inner-focus regenerator reckless*	14	355	179	attack+2
+621	druddigon	druddigon	base	dragon	77	120	90	60	90	48	485	rough-skin sheer-force mold-breaker*	16	1390	170	attack+2
+622	golett	golett	base	ground/ghost	59	74	50	35	50	35	303	iron-fist klutz no-guard*	10	920	61	attack+1
+623	golurk	golurk	base	ground/ghost	89	124	80	55	80	55	483	iron-fist klutz no-guard*	28	3300	169	attack+2
+624	pawniard	pawniard	base	dark/steel	45	85	70	40	40	60	340	defiant inner-focus pressure*	5	102	68	attack+1
+625	bisharp	bisharp	base	dark/steel	65	125	100	60	70	70	490	defiant inner-focus pressure*	16	700	172	attack+2
+626	bouffalant	bouffalant	base	normal	95	110	95	40	95	55	490	reckless sap-sipper soundproof*	16	946	172	attack+2
+627	rufflet	rufflet	base	normal/flying	70	83	50	37	50	60	350	keen-eye sheer-force hustle*	5	105	70	attack+1
+628	braviary	braviary	base	normal/flying	100	123	75	57	75	80	510	keen-eye sheer-force defiant*	15	410	179	attack+2
+629	vullaby	vullaby	base	dark/flying	70	55	75	45	65	60	370	big-pecks overcoat weak-armor*	5	90	74	defense+1
+630	mandibuzz	mandibuzz	base	dark/flying	110	65	105	55	95	80	510	big-pecks overcoat weak-armor*	12	395	179	special-attack+2
+631	heatmor	heatmor	base	fire	85	97	66	105	66	65	484	gluttony flash-fire white-smoke*	14	580	169	special-attack+2
+632	durant	durant	base	bug/steel	58	109	112	48	48	109	484	swarm hustle truant*	3	330	169	defense+2
+633	deino	deino	base	dark/dragon	52	65	50	45	50	38	300	hustle	8	173	60	attack+1
+634	zweilous	zweilous	base	dark/dragon	72	85	70	65	70	58	420	hustle	14	500	147	attack+2
+635	hydreigon	hydreigon	base	dark/dragon	92	105	90	125	90	98	600	levitate	18	1600	270	special-attack+3
+636	larvesta	larvesta	base	bug/fire	55	85	55	50	55	60	360	flame-body swarm*	11	288	72	attack+1
+637	volcarona	volcarona	base	bug/fire	85	60	65	135	105	100	550	flame-body swarm*	16	460	248	special-attack+3
+638	cobalion	cobalion	base	steel/fighting	91	90	129	90	72	108	580	justified	21	2500	261	defense+3
+639	terrakion	terrakion	base	rock/fighting	91	129	90	72	90	108	580	justified	19	2600	261	attack+3
+640	virizion	virizion	base	grass/fighting	91	90	72	90	129	108	580	justified	20	2000	261	special-defense+3
+641	tornadus-incarnate	tornadus	base	flying	79	115	70	125	80	111	580	prankster defiant*	15	630	261	attack+3
+642	thundurus-incarnate	thundurus	base	electric/flying	79	115	70	125	80	111	580	prankster defiant*	15	610	261	attack+3
+643	reshiram	reshiram	base	dragon/fire	100	120	100	150	120	90	680	turboblaze	32	3300	306	special-attack+3
+644	zekrom	zekrom	base	dragon/electric	100	150	120	120	100	90	680	teravolt	29	3450	306	attack+3
+645	landorus-incarnate	landorus	base	ground/flying	89	125	90	115	80	101	600	sand-force sheer-force*	15	680	270	special-attack+3
+646	kyurem	kyurem	base	dragon/ice	125	130	90	130	90	95	660	pressure	30	3250	297	hp+1 attack+1 special-attack+1
+647	keldeo-ordinary	keldeo	base	water/fighting	91	72	90	129	90	108	580	justified	14	485	261	special-attack+3
+648	meloetta-aria	meloetta	base	normal/psychic	100	77	77	128	128	90	600	serene-grace	6	65	270	special-attack+1 special-defense+1 speed+1
+649	genesect	genesect	base	bug/steel	71	120	95	120	95	99	600	download	15	825	270	attack+1 special-attack+1 speed+1
+650	chespin	chespin	base	grass	56	61	65	48	45	38	313	overgrow bulletproof*	4	90	63	defense+1
+651	quilladin	quilladin	base	grass	61	78	95	56	58	57	405	overgrow bulletproof*	7	290	142	defense+2
+652	chesnaught	chesnaught	base	grass/fighting	88	107	122	74	75	64	530	overgrow bulletproof*	16	900	239	defense+3
+653	fennekin	fennekin	base	fire	40	45	40	62	60	60	307	blaze magician*	4	94	61	special-attack+1
+654	braixen	braixen	base	fire	59	59	58	90	70	73	409	blaze magician*	10	145	143	special-attack+2
+655	delphox	delphox	base	fire/psychic	75	69	72	114	100	104	534	blaze magician*	15	390	240	special-attack+3
+656	froakie	froakie	base	water	41	56	40	62	44	71	314	torrent protean*	3	70	63	speed+1
+657	frogadier	frogadier	base	water	54	63	52	83	56	97	405	torrent protean*	6	109	142	speed+2
+658	greninja	greninja	base	water/dark	72	95	67	103	71	122	530	torrent protean*	15	400	239	speed+3
+659	bunnelby	bunnelby	base	normal	38	36	38	32	36	57	237	pickup cheek-pouch huge-power*	4	50	47	speed+1
+660	diggersby	diggersby	base	normal/ground	85	56	77	50	77	78	423	pickup cheek-pouch huge-power*	10	424	148	hp+2
+661	fletchling	fletchling	base	normal/flying	45	50	43	40	38	62	278	big-pecks gale-wings*	3	17	56	speed+1
+662	fletchinder	fletchinder	base	fire/flying	62	73	55	56	52	84	382	flame-body gale-wings*	7	160	134	speed+2
+663	talonflame	talonflame	base	fire/flying	78	81	71	74	69	126	499	flame-body gale-wings*	12	245	175	speed+3
+664	scatterbug	scatterbug	base	bug	38	35	40	27	25	35	200	shield-dust compound-eyes friend-guard*	3	25	40	defense+1
+665	spewpa	spewpa	base	bug	45	22	60	27	30	29	213	shed-skin friend-guard*	3	84	75	defense+2
+666	vivillon	vivillon	base	bug/flying	80	52	50	90	50	89	411	shield-dust compound-eyes friend-guard*	12	170	185	hp+1 special-attack+1 speed+1
+667	litleo	litleo	base	fire/normal	62	50	58	73	54	72	369	rivalry unnerve moxie*	6	135	74	special-attack+1
+668	pyroar-male	pyroar	base	fire/normal	86	68	72	109	66	106	507	rivalry unnerve moxie*	15	815	177	special-attack+2
+669	flabebe	flabebe	base	fairy	44	38	39	61	79	42	303	flower-veil symbiosis*	1	1	61	special-defense+1
+670	floette	floette	base	fairy	54	45	47	75	98	52	371	flower-veil symbiosis*	2	9	130	special-defense+2
+671	florges	florges	base	fairy	78	65	68	112	154	75	552	flower-veil symbiosis*	11	100	248	special-defense+3
+672	skiddo	skiddo	base	grass	66	65	48	62	57	52	350	sap-sipper grass-pelt*	9	310	70	hp+1
+673	gogoat	gogoat	base	grass	123	100	62	97	81	68	531	sap-sipper grass-pelt*	17	910	186	hp+2
+674	pancham	pancham	base	fighting	67	82	62	46	48	43	348	iron-fist mold-breaker scrappy*	6	80	70	attack+1
+675	pangoro	pangoro	base	fighting/dark	95	124	78	69	71	58	495	iron-fist mold-breaker scrappy*	21	1360	173	attack+2
+676	furfrou	furfrou	base	normal	75	80	60	65	90	102	472	fur-coat	12	280	165	speed+1
+677	espurr	espurr	base	psychic	62	48	54	63	60	68	355	keen-eye infiltrator own-tempo*	3	35	71	speed+1
+678	meowstic-male	meowstic	base	psychic	74	48	76	83	81	104	466	keen-eye infiltrator prankster*	6	85	163	speed+2
+679	honedge	honedge	base	steel/ghost	45	80	100	35	37	28	325	no-guard	8	20	65	defense+1
+680	doublade	doublade	base	steel/ghost	59	110	150	45	49	35	448	no-guard	8	45	157	defense+2
+681	aegislash-shield	aegislash	base	steel/ghost	60	50	140	50	140	60	500	stance-change	17	530	234	defense+2 special-defense+1
+682	spritzee	spritzee	base	fairy	78	52	60	63	65	23	341	healer aroma-veil*	2	5	68	hp+1
+683	aromatisse	aromatisse	base	fairy	101	72	72	99	89	29	462	healer aroma-veil*	8	155	162	hp+2
+684	swirlix	swirlix	base	fairy	62	48	66	59	57	49	341	sweet-veil unburden*	4	35	68	defense+1
+685	slurpuff	slurpuff	base	fairy	82	80	86	85	75	72	480	sweet-veil unburden*	8	50	168	defense+2
+686	inkay	inkay	base	dark/psychic	53	54	53	37	46	45	288	contrary suction-cups infiltrator*	4	35	58	attack+1
+687	malamar	malamar	base	dark/psychic	86	92	88	68	75	73	482	contrary suction-cups infiltrator*	15	470	169	attack+2
+688	binacle	binacle	base	rock/water	42	52	67	39	56	50	306	tough-claws sniper pickpocket*	5	310	61	attack+1
+689	barbaracle	barbaracle	base	rock/water	72	105	115	54	86	68	500	tough-claws sniper pickpocket*	13	960	175	attack+2
+690	skrelp	skrelp	base	poison/water	50	60	60	60	60	30	320	poison-point poison-touch adaptability*	5	73	64	special-defense+1
+691	dragalge	dragalge	base	poison/dragon	65	75	90	97	123	44	494	poison-point poison-touch adaptability*	18	815	173	special-defense+2
+692	clauncher	clauncher	base	water	50	53	62	58	63	44	330	mega-launcher	5	83	66	special-attack+1
+693	clawitzer	clawitzer	base	water	71	73	88	120	89	59	500	mega-launcher	13	353	100	special-attack+2
+694	helioptile	helioptile	base	electric/normal	44	38	33	61	43	70	289	dry-skin sand-veil solar-power*	5	60	58	speed+1
+695	heliolisk	heliolisk	base	electric/normal	62	55	52	109	94	109	481	dry-skin sand-veil solar-power*	10	210	168	special-attack+1 speed+1
+696	tyrunt	tyrunt	base	rock/dragon	58	89	77	45	45	48	362	strong-jaw sturdy*	8	260	72	attack+1
+697	tyrantrum	tyrantrum	base	rock/dragon	82	121	119	69	59	71	521	strong-jaw rock-head*	25	2700	182	attack+2
+698	amaura	amaura	base	rock/ice	77	59	50	67	63	46	362	refrigerate snow-warning*	13	252	72	hp+1
+699	aurorus	aurorus	base	rock/ice	123	77	72	99	92	58	521	refrigerate snow-warning*	27	2250	104	hp+2
+700	sylveon	sylveon	base	fairy	95	65	65	110	130	60	525	cute-charm pixilate*	10	235	184	special-defense+2
+701	hawlucha	hawlucha	base	fighting/flying	78	92	75	74	63	118	500	limber unburden mold-breaker*	8	215	175	attack+2
+702	dedenne	dedenne	base	electric/fairy	67	58	57	81	67	101	431	cheek-pouch pickup plus*	2	22	151	speed+2
+703	carbink	carbink	base	rock/fairy	50	50	150	50	150	50	500	clear-body sturdy*	3	57	100	defense+1 special-defense+1
+704	goomy	goomy	base	dragon	45	50	35	55	75	40	300	sap-sipper hydration gooey*	3	28	60	special-defense+1
+705	sliggoo	sliggoo	base	dragon	68	75	53	83	113	60	452	sap-sipper hydration gooey*	8	175	158	special-defense+2
+706	goodra	goodra	base	dragon	90	100	70	110	150	80	600	sap-sipper hydration gooey*	20	1505	270	special-defense+3
+707	klefki	klefki	base	steel/fairy	57	80	91	80	87	75	470	prankster magician*	2	30	165	defense+1
+708	phantump	phantump	base	ghost/grass	43	70	48	50	60	38	309	natural-cure frisk harvest*	4	70	62	attack+1
+709	trevenant	trevenant	base	ghost/grass	85	110	76	65	82	56	474	natural-cure frisk harvest*	15	710	166	attack+2
+710	pumpkaboo-average	pumpkaboo	base	ghost/grass	49	66	70	44	55	51	335	pickup frisk insomnia*	4	50	67	defense+1
+711	gourgeist-average	gourgeist	base	ghost/grass	65	90	122	58	75	84	494	pickup frisk insomnia*	9	125	173	defense+2
+712	bergmite	bergmite	base	ice	55	69	85	32	35	28	304	own-tempo ice-body sturdy*	10	995	61	defense+1
+713	avalugg	avalugg	base	ice	95	117	184	44	46	28	514	own-tempo ice-body sturdy*	20	5050	180	defense+2
+714	noibat	noibat	base	flying/dragon	40	30	35	45	40	55	245	frisk infiltrator telepathy*	5	80	49	speed+1
+715	noivern	noivern	base	flying/dragon	85	70	80	97	80	123	535	frisk infiltrator telepathy*	15	850	187	speed+2
+716	xerneas	xerneas	base	fairy	126	131	95	131	98	99	680	fairy-aura	30	2150	306	hp+3
+717	yveltal	yveltal	base	dark/flying	126	131	95	131	98	99	680	dark-aura	58	2030	306	hp+3
+718	zygarde-50	zygarde	base	dragon/ground	108	100	121	81	95	95	600	aura-break	50	3050	270	hp+3
+719	diancie	diancie	base	rock/fairy	50	100	150	100	150	50	600	clear-body	7	88	270	defense+1 special-defense+2
+720	hoopa	hoopa	base	psychic/ghost	80	110	60	150	130	70	600	magician	5	90	270	special-attack+3
+721	volcanion	volcanion	base	fire/water	80	110	120	130	90	70	600	water-absorb	17	1950	270	special-attack+3
+722	rowlet	rowlet	base	grass/flying	68	55	55	50	50	42	320	overgrow long-reach*	3	15	64	hp+1
+723	dartrix	dartrix	base	grass/flying	78	75	75	70	70	52	420	overgrow long-reach*	7	160	147	hp+2
+724	decidueye	decidueye	base	grass/ghost	78	107	75	100	100	70	530	overgrow long-reach*	16	366	239	attack+3
+725	litten	litten	base	fire	45	65	40	60	40	70	320	blaze intimidate*	4	43	64	speed+1
+726	torracat	torracat	base	fire	65	85	50	80	50	90	420	blaze intimidate*	7	250	147	speed+2
+727	incineroar	incineroar	base	fire/dark	95	115	90	80	90	60	530	blaze intimidate*	18	830	239	attack+3
+728	popplio	popplio	base	water	50	54	54	66	56	40	320	torrent liquid-voice*	4	75	64	special-attack+1
+729	brionne	brionne	base	water	60	69	69	91	81	50	420	torrent liquid-voice*	6	175	147	special-attack+2
+730	primarina	primarina	base	water/fairy	80	74	74	126	116	60	530	torrent liquid-voice*	18	440	239	special-attack+3
+731	pikipek	pikipek	base	normal/flying	35	75	30	30	30	65	265	keen-eye skill-link pickup*	3	12	53	attack+1
+732	trumbeak	trumbeak	base	normal/flying	55	85	50	40	50	75	355	keen-eye skill-link pickup*	6	148	124	attack+2
+733	toucannon	toucannon	base	normal/flying	80	120	75	75	75	60	485	keen-eye skill-link sheer-force*	11	260	218	attack+3
+734	yungoos	yungoos	base	normal	48	70	30	30	30	45	253	stakeout strong-jaw adaptability*	4	60	51	attack+1
+735	gumshoos	gumshoos	base	normal	88	110	60	55	60	45	418	stakeout strong-jaw adaptability*	7	142	146	attack+2
+736	grubbin	grubbin	base	bug	47	62	45	55	45	46	300	swarm	4	44	60	attack+1
+737	charjabug	charjabug	base	bug/electric	57	82	95	55	75	36	400	battery	5	105	140	defense+2
+738	vikavolt	vikavolt	base	bug/electric	77	70	90	145	75	43	500	levitate	15	450	225	special-attack+3
+739	crabrawler	crabrawler	base	fighting	47	82	57	42	47	63	338	hyper-cutter iron-fist anger-point*	6	70	68	attack+1
+740	crabominable	crabominable	base	fighting/ice	97	132	77	62	67	43	478	hyper-cutter iron-fist anger-point*	17	1800	167	attack+2
+741	oricorio-baile	oricorio	base	fire/flying	75	70	70	98	70	93	476	dancer	6	34	167	special-attack+2
+742	cutiefly	cutiefly	base	bug/fairy	40	45	40	55	40	84	304	honey-gather shield-dust sweet-veil*	1	2	61	speed+1
+743	ribombee	ribombee	base	bug/fairy	60	55	60	95	70	124	464	honey-gather shield-dust sweet-veil*	2	5	162	speed+2
+744	rockruff	rockruff	base	rock	45	65	40	30	40	60	280	keen-eye vital-spirit steadfast*	5	92	56	attack+1
+745	lycanroc-midday	lycanroc	base	rock	75	115	65	55	65	112	487	keen-eye sand-rush steadfast*	8	250	170	attack+2
+746	wishiwashi-solo	wishiwashi	base	water	45	20	20	25	25	40	175	schooling	2	3	61	hp+1
+747	mareanie	mareanie	base	poison/water	50	53	62	43	52	45	305	merciless limber regenerator*	4	80	61	defense+1
+748	toxapex	toxapex	base	poison/water	50	63	152	53	142	35	495	merciless limber regenerator*	7	145	173	defense+2
+749	mudbray	mudbray	base	ground	70	100	70	45	55	45	385	own-tempo stamina inner-focus*	10	1100	77	attack+1
+750	mudsdale	mudsdale	base	ground	100	125	100	55	85	35	500	own-tempo stamina inner-focus*	25	9200	175	attack+2
+751	dewpider	dewpider	base	water/bug	38	40	52	40	72	27	269	water-bubble water-absorb*	3	40	54	special-defense+1
+752	araquanid	araquanid	base	water/bug	68	70	92	50	132	42	454	water-bubble water-absorb*	18	820	159	special-defense+2
+753	fomantis	fomantis	base	grass	40	55	35	50	35	35	250	leaf-guard contrary*	3	15	50	attack+1
+754	lurantis	lurantis	base	grass	70	105	90	80	90	45	480	leaf-guard contrary*	9	185	168	attack+2
+755	morelull	morelull	base	grass/fairy	40	35	55	65	75	15	285	illuminate effect-spore rain-dish*	2	15	57	special-defense+1
+756	shiinotic	shiinotic	base	grass/fairy	60	45	80	90	100	30	405	illuminate effect-spore rain-dish*	10	115	142	special-defense+2
+757	salandit	salandit	base	poison/fire	48	44	40	71	40	77	320	corrosion oblivious*	6	48	64	speed+1
+758	salazzle	salazzle	base	poison/fire	68	64	60	111	60	117	480	corrosion oblivious*	12	222	168	speed+2
+759	stufful	stufful	base	normal/fighting	70	75	50	45	50	50	340	fluffy klutz cute-charm*	5	68	68	attack+1
+760	bewear	bewear	base	normal/fighting	120	125	80	55	60	60	500	fluffy klutz unnerve*	21	1350	175	attack+2
+761	bounsweet	bounsweet	base	grass	42	30	38	30	38	32	210	leaf-guard oblivious sweet-veil*	3	32	42	hp+1
+762	steenee	steenee	base	grass	52	40	48	40	48	62	290	leaf-guard oblivious sweet-veil*	7	82	102	speed+2
+763	tsareena	tsareena	base	grass	72	120	98	50	98	72	510	leaf-guard queenly-majesty sweet-veil*	12	214	230	attack+3
+764	comfey	comfey	base	fairy	51	52	90	82	110	100	485	flower-veil triage natural-cure*	1	3	170	special-defense+2
+765	oranguru	oranguru	base	normal/psychic	90	60	80	90	110	60	490	inner-focus telepathy symbiosis*	15	760	172	special-defense+2
+766	passimian	passimian	base	fighting	100	120	90	40	60	80	490	receiver defiant*	20	828	172	attack+2
+767	wimpod	wimpod	base	bug/water	25	35	40	20	30	80	230	wimp-out	5	120	46	speed+1
+768	golisopod	golisopod	base	bug/water	75	125	140	60	90	40	530	emergency-exit	20	1080	186	defense+2
+769	sandygast	sandygast	base	ghost/ground	55	55	80	70	45	15	320	water-compaction sand-veil*	5	700	64	defense+1
+770	palossand	palossand	base	ghost/ground	85	75	110	100	75	35	480	water-compaction sand-veil*	13	2500	168	defense+2
+771	pyukumuku	pyukumuku	base	water	55	60	130	30	130	5	410	innards-out unaware*	3	12	144	special-defense+2
+772	type-null	type-null	base	normal	95	95	95	95	95	59	534	battle-armor	19	1205	107	hp+2
+773	silvally	silvally	base	normal	95	95	95	95	95	95	570	rks-system	23	1005	257	hp+3
+774	minior-red-meteor	minior	base	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+775	komala	komala	base	normal	65	115	65	75	95	65	480	comatose	4	199	168	attack+2
+776	turtonator	turtonator	base	fire/dragon	60	78	135	91	85	36	485	shell-armor	20	2120	170	defense+2
+777	togedemaru	togedemaru	base	electric/steel	65	98	63	40	73	96	435	iron-barbs lightning-rod sturdy*	3	33	152	attack+2
+778	mimikyu-disguised	mimikyu	base	ghost/fairy	55	90	80	50	105	96	476	disguise	2	7	167	special-defense+2
+779	bruxish	bruxish	base	water/psychic	68	105	70	70	70	92	475	dazzling strong-jaw wonder-skin*	9	190	166	attack+2
+780	drampa	drampa	base	normal/dragon	78	60	85	135	91	36	485	berserk sap-sipper cloud-nine*	30	1850	170	special-attack+2
+781	dhelmise	dhelmise	base	ghost/grass	70	131	100	86	90	40	517	steelworker	39	2100	181	attack+2
+782	jangmo-o	jangmo-o	base	dragon	45	55	65	45	45	45	300	bulletproof soundproof overcoat*	6	297	60	defense+1
+783	hakamo-o	hakamo-o	base	dragon/fighting	55	75	90	65	70	65	420	bulletproof soundproof overcoat*	12	470	147	defense+2
+784	kommo-o	kommo-o	base	dragon/fighting	75	110	125	100	105	85	600	bulletproof soundproof overcoat*	16	782	270	defense+3
+785	tapu-koko	tapu-koko	base	electric/fairy	70	115	85	95	75	130	570	electric-surge telepathy*	18	205	257	speed+3
+786	tapu-lele	tapu-lele	base	psychic/fairy	70	85	75	130	115	95	570	psychic-surge telepathy*	12	186	257	special-attack+3
+787	tapu-bulu	tapu-bulu	base	grass/fairy	70	130	115	85	95	75	570	grassy-surge telepathy*	19	455	257	attack+3
+788	tapu-fini	tapu-fini	base	water/fairy	70	75	115	95	130	85	570	misty-surge telepathy*	13	212	257	special-defense+3
+789	cosmog	cosmog	base	psychic	43	29	31	29	31	37	200	unaware	2	1	40	hp+1
+790	cosmoem	cosmoem	base	psychic	43	29	131	29	131	37	400	sturdy	1	9999	140	defense+1 special-defense+1
+791	solgaleo	solgaleo	base	psychic/steel	137	137	107	113	89	97	680	full-metal-body	34	2300	306	attack+3
+792	lunala	lunala	base	psychic/ghost	137	113	89	137	107	97	680	shadow-shield	40	1200	306	special-attack+3
+793	nihilego	nihilego	base	rock/poison	109	53	47	127	131	103	570	beast-boost	12	555	257	special-defense+3
+794	buzzwole	buzzwole	base	bug/fighting	107	139	139	53	53	79	570	beast-boost	24	3336	257	attack+1 defense+2
+795	pheromosa	pheromosa	base	bug/fighting	71	137	37	137	37	151	570	beast-boost	18	250	257	speed+3
+796	xurkitree	xurkitree	base	electric	83	89	71	173	71	83	570	beast-boost	38	1000	257	special-attack+3
+797	celesteela	celesteela	base	steel/flying	97	101	103	107	101	61	570	beast-boost	92	9999	257	attack+1 defense+1 special-attack+1
+798	kartana	kartana	base	grass/steel	59	181	131	59	31	109	570	beast-boost	3	1	257	attack+3
+799	guzzlord	guzzlord	base	dark/dragon	223	101	53	97	53	43	570	beast-boost	55	8880	257	hp+3
+800	necrozma	necrozma	base	psychic	97	107	101	127	89	79	600	prism-armor	24	2300	270	attack+1 special-attack+2
+801	magearna	magearna	base	steel/fairy	80	95	115	130	115	65	600	soul-heart	10	805	270	special-attack+3
+802	marshadow	marshadow	base	fighting/ghost	90	125	80	90	90	125	600	technician	7	222	270	attack+2 speed+1
+803	poipole	poipole	base	poison	67	73	67	73	67	73	420	beast-boost	6	18	189	speed+1
+804	naganadel	naganadel	base	poison/dragon	73	73	73	127	73	121	540	beast-boost	36	1500	243	special-attack+3
+805	stakataka	stakataka	base	rock/steel	61	131	211	53	101	13	570	beast-boost	55	8200	257	defense+3
+806	blacephalon	blacephalon	base	fire/ghost	53	127	53	151	79	107	570	beast-boost	18	130	257	special-attack+3
+807	zeraora	zeraora	base	electric	88	112	75	102	80	143	600	volt-absorb	15	445	270	speed+3
+808	meltan	meltan	base	steel	46	65	65	55	35	34	300	magnet-pull	2	80	135	attack+1
+809	melmetal	melmetal	base	steel	135	143	143	80	65	34	600	iron-fist	25	8000	270	attack+3
+810	grookey	grookey	base	grass	50	65	50	40	40	65	310	overgrow grassy-surge*	3	50	62	attack+1
+811	thwackey	thwackey	base	grass	70	85	70	55	60	80	420	overgrow grassy-surge*	7	140	147	attack+2
+812	rillaboom	rillaboom	base	grass	100	125	90	60	70	85	530	overgrow grassy-surge*	21	900	265	attack+3
+813	scorbunny	scorbunny	base	fire	50	71	40	40	40	69	310	blaze libero*	3	45	62	speed+1
+814	raboot	raboot	base	fire	65	86	60	55	60	94	420	blaze libero*	6	90	147	speed+2
+815	cinderace	cinderace	base	fire	80	116	75	65	75	119	530	blaze libero*	14	330	265	speed+3
+816	sobble	sobble	base	water	50	40	40	70	40	70	310	torrent sniper*	3	40	62	special-defense+1 speed+1
+817	drizzile	drizzile	base	water	65	60	55	95	55	90	420	torrent sniper*	7	115	147	special-attack+2
+818	inteleon	inteleon	base	water	70	85	65	125	65	120	530	torrent sniper*	19	452	265	speed+3
+819	skwovet	skwovet	base	normal	70	55	55	35	35	25	275	cheek-pouch gluttony*	3	25	55	hp+1
+820	greedent	greedent	base	normal	120	95	95	55	75	20	460	cheek-pouch gluttony*	6	60	161	hp+2
+821	rookidee	rookidee	base	flying	38	47	35	33	35	57	245	keen-eye unnerve big-pecks*	2	18	49	speed+1
+822	corvisquire	corvisquire	base	flying	68	67	55	43	55	77	365	keen-eye unnerve big-pecks*	8	160	128	speed+2
+823	corviknight	corviknight	base	flying/steel	98	87	105	53	85	67	495	pressure unnerve mirror-armor*	22	750	248	defense+3
+824	blipbug	blipbug	base	bug	25	20	20	25	45	45	180	swarm compound-eyes telepathy*	4	80	36	special-defense+1
+825	dottler	dottler	base	bug/psychic	50	35	80	50	90	30	335	swarm compound-eyes telepathy*	4	195	117	special-defense+2
+826	orbeetle	orbeetle	base	bug/psychic	60	45	110	80	120	90	505	swarm frisk telepathy*	4	408	253	special-defense+3
+827	nickit	nickit	base	dark	40	28	28	47	52	50	245	run-away unburden stakeout*	6	89	49	special-defense+1
+828	thievul	thievul	base	dark	70	58	58	87	92	90	455	run-away unburden stakeout*	12	199	159	special-defense+2
+829	gossifleur	gossifleur	base	grass	40	40	60	40	60	10	250	cotton-down regenerator effect-spore*	4	22	50	special-defense+1
+830	eldegoss	eldegoss	base	grass	60	50	90	80	120	60	460	cotton-down regenerator effect-spore*	5	25	161	special-defense+2
+831	wooloo	wooloo	base	normal	42	40	55	40	45	48	270	fluffy run-away bulletproof*	6	60	122	defense+1
+832	dubwool	dubwool	base	normal	72	80	100	60	90	88	490	fluffy steadfast bulletproof*	13	430	172	defense+2
+833	chewtle	chewtle	base	water	50	64	50	38	38	44	284	strong-jaw shell-armor swift-swim*	3	85	57	attack+1
+834	drednaw	drednaw	base	water/rock	90	115	90	48	68	74	485	strong-jaw shell-armor swift-swim*	10	1155	170	attack+2
+835	yamper	yamper	base	electric	59	45	50	40	50	26	270	ball-fetch rattled*	3	135	54	hp+1
+836	boltund	boltund	base	electric	69	90	60	90	60	121	490	strong-jaw competitive*	10	340	172	speed+2
+837	rolycoly	rolycoly	base	rock	30	40	50	40	50	30	240	steam-engine heatproof flash-fire*	3	120	48	defense+1
+838	carkol	carkol	base	rock/fire	80	60	90	60	70	50	410	steam-engine flame-body flash-fire*	11	780	144	defense+2
+839	coalossal	coalossal	base	rock/fire	110	80	120	80	90	30	510	steam-engine flame-body flash-fire*	28	3105	255	defense+3
+840	applin	applin	base	grass/dragon	40	40	80	40	40	20	260	ripen gluttony bulletproof*	2	5	52	defense+1
+841	flapple	flapple	base	grass/dragon	70	110	80	95	60	70	485	ripen gluttony hustle*	3	10	170	attack+2
+842	appletun	appletun	base	grass/dragon	110	85	80	100	80	30	485	ripen gluttony thick-fat*	4	130	170	hp+2
+843	silicobra	silicobra	base	ground	52	57	75	35	50	46	315	sand-spit shed-skin sand-veil*	22	76	63	defense+1
+844	sandaconda	sandaconda	base	ground	72	107	125	65	70	71	510	sand-spit shed-skin sand-veil*	38	655	179	defense+2
+845	cramorant	cramorant	base	flying/water	70	85	55	85	95	85	475	gulp-missile	8	180	166	special-defense+2
+846	arrokuda	arrokuda	base	water	41	63	40	40	30	66	280	swift-swim propeller-tail*	5	10	56	speed+1
+847	barraskewda	barraskewda	base	water	61	123	60	60	50	136	490	swift-swim propeller-tail*	13	300	172	speed+2
+848	toxel	toxel	base	electric/poison	40	38	35	54	35	40	242	rattled static klutz*	4	110	48	special-attack+1
+849	toxtricity-amped	toxtricity	base	electric/poison	75	98	70	114	70	75	502	punk-rock plus technician*	16	400	176	special-attack+2
+850	sizzlipede	sizzlipede	base	fire/bug	50	65	45	50	50	45	305	flash-fire white-smoke flame-body*	7	10	61	attack+1
+851	centiskorch	centiskorch	base	fire/bug	100	115	65	90	90	65	525	flash-fire white-smoke flame-body*	30	1200	184	attack+2
+852	clobbopus	clobbopus	base	fighting	50	68	60	50	50	32	310	limber technician*	6	40	62	attack+1
+853	grapploct	grapploct	base	fighting	80	118	90	70	80	42	480	limber technician*	16	390	168	attack+2
+854	sinistea	sinistea	base	ghost	40	45	45	74	54	50	308	weak-armor cursed-body*	1	2	62	special-attack+1
+855	polteageist	polteageist	base	ghost	60	65	65	134	114	70	508	weak-armor cursed-body*	2	4	178	special-attack+2
+856	hatenna	hatenna	base	psychic	42	30	45	56	53	39	265	healer anticipation magic-bounce*	4	34	53	special-attack+1
+857	hattrem	hattrem	base	psychic	57	40	65	86	73	49	370	healer anticipation magic-bounce*	6	48	130	special-attack+2
+858	hatterene	hatterene	base	psychic/fairy	57	90	95	136	103	29	510	healer anticipation magic-bounce*	21	51	255	special-attack+3
+859	impidimp	impidimp	base	dark/fairy	45	45	30	55	40	50	265	prankster frisk pickpocket*	4	55	53	special-attack+1
+860	morgrem	morgrem	base	dark/fairy	65	60	45	75	55	70	370	prankster frisk pickpocket*	8	125	130	special-attack+2
+861	grimmsnarl	grimmsnarl	base	dark/fairy	95	120	65	95	75	60	510	prankster frisk pickpocket*	15	610	255	attack+3
+862	obstagoon	obstagoon	base	dark/normal	93	90	101	60	81	95	520	reckless guts defiant*	16	460	260	defense+3
+863	perrserker	perrserker	base	steel	70	110	100	50	60	50	440	battle-armor tough-claws steely-spirit*	8	280	154	attack+2
+864	cursola	cursola	base	ghost	60	95	50	145	130	30	510	weak-armor perish-body*	10	4	179	special-attack+2
+865	sirfetchd	sirfetchd	base	fighting	62	135	95	68	82	65	507	steadfast scrappy*	8	1170	177	attack+2
+866	mr-rime	mr-rime	base	ice/psychic	80	85	75	110	100	70	520	tangled-feet screen-cleaner ice-body*	15	582	182	special-attack+3
+867	runerigus	runerigus	base	ground/ghost	58	95	145	50	105	30	483	wandering-spirit	16	666	169	defense+2
+868	milcery	milcery	base	fairy	45	40	40	50	61	34	270	sweet-veil aroma-veil*	2	3	54	special-defense+1
+869	alcremie	alcremie	base	fairy	65	60	75	110	121	64	495	sweet-veil aroma-veil*	3	5	173	special-defense+2
+870	falinks	falinks	base	fighting	65	100	100	70	60	75	470	battle-armor defiant*	30	620	165	attack+2 special-defense+1
+871	pincurchin	pincurchin	base	electric	48	101	95	91	85	15	435	lightning-rod electric-surge*	3	10	152	attack+2
+872	snom	snom	base	ice/bug	30	25	35	45	30	20	185	shield-dust ice-scales*	3	38	37	special-attack+1
+873	frosmoth	frosmoth	base	ice/bug	70	65	60	125	90	65	475	shield-dust ice-scales*	13	420	166	special-attack+2
+874	stonjourner	stonjourner	base	rock	100	125	135	20	20	70	470	power-spot	25	5200	165	defense+2
+875	eiscue-ice	eiscue	base	ice	75	80	110	65	90	50	470	ice-face	14	890	165	defense+2
+876	indeedee-male	indeedee	base	psychic/normal	60	65	55	105	95	95	475	inner-focus synchronize psychic-surge*	9	280	166	special-attack+2
+877	morpeko-full-belly	morpeko	base	electric/dark	58	95	58	70	58	97	436	hunger-switch	3	30	153	speed+2
+878	cufant	cufant	base	steel	72	80	49	40	49	40	330	sheer-force heavy-metal*	12	1000	66	attack+1
+879	copperajah	copperajah	base	steel	122	130	69	80	69	30	500	sheer-force heavy-metal*	30	6500	175	attack+2
+880	dracozolt	dracozolt	base	electric/dragon	90	100	90	80	70	75	505	volt-absorb hustle sand-rush*	18	1900	177	attack+2
+881	arctozolt	arctozolt	base	electric/ice	90	100	90	90	80	55	505	volt-absorb static slush-rush*	23	1500	177	attack+2
+882	dracovish	dracovish	base	water/dragon	90	90	100	70	80	75	505	water-absorb strong-jaw sand-rush*	23	2150	177	defense+2
+883	arctovish	arctovish	base	water/ice	90	90	100	80	90	55	505	water-absorb ice-body slush-rush*	20	1750	177	defense+2
+884	duraludon	duraludon	base	steel/dragon	70	95	115	120	50	85	535	light-metal heavy-metal stalwart*	18	400	187	special-attack+2
+885	dreepy	dreepy	base	dragon/ghost	28	60	30	40	30	82	270	clear-body infiltrator cursed-body*	5	20	54	speed+1
+886	drakloak	drakloak	base	dragon/ghost	68	80	50	60	50	102	410	clear-body infiltrator cursed-body*	14	110	144	speed+2
+887	dragapult	dragapult	base	dragon/ghost	88	120	75	100	75	142	600	clear-body infiltrator cursed-body*	30	500	300	speed+3
+888	zacian	zacian	base	fairy	92	120	115	80	115	138	660	intrepid-sword	28	1100	335	speed+3
+889	zamazenta	zamazenta	base	fighting	92	120	115	80	115	138	660	dauntless-shield	29	2100	335	speed+3
+890	eternatus	eternatus	base	poison/dragon	140	85	95	145	95	130	690	pressure	200	9500	345	hp+3
+891	kubfu	kubfu	base	fighting	60	90	60	53	50	72	385	inner-focus	6	120	77	attack+1
+892	urshifu-single-strike	urshifu	base	fighting/dark	100	130	100	63	60	97	550	unseen-fist	19	1050	275	attack+3
+893	zarude	zarude	base	dark/grass	105	120	105	70	95	105	600	leaf-guard	18	700	300	attack+3
+894	regieleki	regieleki	base	electric	80	100	50	100	50	200	580	transistor	12	1450	290	speed+3
+895	regidrago	regidrago	base	dragon	200	100	50	100	50	80	580	dragons-maw	21	2000	290	hp+3
+896	glastrier	glastrier	base	ice	100	145	130	65	110	30	580	chilling-neigh	22	8000	290	attack+3
+897	spectrier	spectrier	base	ghost	100	65	60	145	80	130	580	grim-neigh	20	445	290	special-attack+3
+898	calyrex	calyrex	base	psychic/grass	100	80	80	80	80	80	500	unnerve	11	77	250	hp+3
+899	wyrdeer	wyrdeer	base	normal/psychic	103	105	72	105	75	65	525	intimidate frisk sap-sipper*	18	951	263	attack+1 special-attack+1
+900	kleavor	kleavor	base	bug/rock	70	135	95	45	70	85	500	swarm sheer-force sharpness*	18	890	175	attack+3
+901	ursaluna	ursaluna	base	ground/normal	130	140	105	45	80	50	550	guts bulletproof unnerve*	24	2900	275	attack+3
+902	basculegion-male	basculegion	base	water/ghost	120	112	65	80	75	78	530	swift-swim adaptability mold-breaker*	30	1100	265	hp+3
+903	sneasler	sneasler	base	fighting/poison	80	130	60	40	80	120	510	pressure unburden poison-touch*	13	430	102	attack+2
+904	overqwil	overqwil	base	dark/poison	85	115	95	65	65	85	510	poison-point swift-swim intimidate*	25	605	179	attack+2
+905	enamorus-incarnate	enamorus	base	fairy/flying	74	115	70	135	80	106	580	cute-charm contrary*	16	480	116	special-attack+3
+906	sprigatito	sprigatito	base	grass	40	61	54	45	45	65	310	overgrow protean*	4	41	62	speed+1
+907	floragato	floragato	base	grass	61	80	63	60	63	83	410	overgrow protean*	9	122	144	speed+2
+908	meowscarada	meowscarada	base	grass/dark	76	110	70	81	70	123	530	overgrow protean*	15	312	265	speed+3
+909	fuecoco	fuecoco	base	fire	67	45	59	63	40	36	310	blaze unaware*	4	98	62	hp+1
+910	crocalor	crocalor	base	fire	81	55	78	90	58	49	411	blaze unaware*	10	307	144	special-attack+2
+911	skeledirge	skeledirge	base	fire/ghost	104	75	100	110	75	66	530	blaze unaware*	16	3265	265	special-attack+3
+912	quaxly	quaxly	base	water	55	65	45	50	45	50	310	torrent moxie*	5	61	62	attack+1
+913	quaxwell	quaxwell	base	water	70	85	65	65	60	65	410	torrent moxie*	12	215	144	attack+2
+914	quaquaval	quaquaval	base	water/fighting	85	120	80	85	75	85	530	torrent moxie*	18	619	265	attack+3
+915	lechonk	lechonk	base	normal	54	45	40	35	45	35	254	aroma-veil gluttony thick-fat*	5	102	51	hp+1
+916	oinkologne-male	oinkologne	base	normal	110	100	75	59	80	65	489	lingering-aroma gluttony thick-fat*	10	1200	171	hp+2
+917	tarountula	tarountula	base	bug	35	41	45	29	40	20	210	insomnia stakeout*	3	40	42	defense+1
+918	spidops	spidops	base	bug	60	79	92	52	86	35	404	insomnia stakeout*	10	165	141	defense+2
+919	nymble	nymble	base	bug	33	46	40	21	25	45	210	swarm tinted-lens*	2	10	42	attack+1
+920	lokix	lokix	base	bug/dark	71	102	78	52	55	92	450	swarm tinted-lens*	10	175	158	attack+2
+921	pawmi	pawmi	base	electric	45	50	20	40	25	60	240	static natural-cure iron-fist*	3	25	48	speed+1
+922	pawmo	pawmo	base	electric/fighting	60	75	40	50	40	85	350	volt-absorb natural-cure iron-fist*	4	65	123	speed+2
+923	pawmot	pawmot	base	electric/fighting	70	115	70	70	60	105	490	volt-absorb natural-cure iron-fist*	9	410	245	attack+3
+924	tandemaus	tandemaus	base	normal	50	50	45	40	45	75	305	run-away pickup own-tempo*	3	18	61	speed+1
+925	maushold-family-of-four	maushold	base	normal	74	75	70	65	75	111	470	friend-guard cheek-pouch technician*	3	28	165	speed+2
+926	fidough	fidough	base	fairy	37	55	70	30	55	65	312	own-tempo klutz*	3	109	62	speed+1
+927	dachsbun	dachsbun	base	fairy	57	80	115	50	80	95	477	well-baked-body aroma-veil*	5	149	167	speed+2
+928	smoliv	smoliv	base	grass/normal	41	35	45	58	51	30	260	early-bird harvest*	3	65	52	special-attack+1
+929	dolliv	dolliv	base	grass/normal	52	53	60	78	78	33	354	early-bird harvest*	6	119	124	special-attack+2
+930	arboliva	arboliva	base	grass/normal	78	69	90	125	109	39	510	seed-sower harvest*	14	482	255	special-attack+3
+931	squawkabilly-green-plumage	squawkabilly	base	normal/flying	82	96	51	45	51	92	417	intimidate hustle guts*	6	24	146	attack+1
+932	nacli	nacli	base	rock	55	55	75	35	35	25	280	purifying-salt sturdy clear-body*	4	160	56	defense+1
+933	naclstack	naclstack	base	rock	60	60	100	35	65	35	355	purifying-salt sturdy clear-body*	6	1050	124	defense+2
+934	garganacl	garganacl	base	rock	100	100	130	45	90	35	500	purifying-salt sturdy clear-body*	23	2400	250	defense+3
+935	charcadet	charcadet	base	fire	40	50	40	50	40	35	255	flash-fire flame-body*	6	105	51	special-attack+1
+936	armarouge	armarouge	base	fire/psychic	85	60	100	125	80	75	525	flash-fire weak-armor*	15	850	263	special-attack+2
+937	ceruledge	ceruledge	base	fire/ghost	75	125	80	60	100	85	525	flash-fire weak-armor*	16	620	263	attack+2
+938	tadbulb	tadbulb	base	electric	61	31	41	59	35	45	272	own-tempo static damp*	3	4	54	hp+1
+939	bellibolt	bellibolt	base	electric	109	64	91	103	83	45	495	electromorphosis static damp*	12	1130	173	hp+2
+940	wattrel	wattrel	base	electric/flying	40	40	35	55	40	70	280	wind-power volt-absorb competitive*	4	36	56	speed+1
+941	kilowattrel	kilowattrel	base	electric/flying	70	70	60	105	60	125	490	wind-power volt-absorb competitive*	14	386	172	speed+2
+942	maschiff	maschiff	base	dark	60	78	60	40	51	51	340	intimidate run-away stakeout*	5	160	68	attack+1
+943	mabosstiff	mabosstiff	base	dark	80	120	90	60	70	85	505	intimidate guard-dog stakeout*	11	610	177	attack+2
+944	shroodle	shroodle	base	poison/normal	40	65	35	40	35	75	290	unburden pickpocket prankster*	2	7	58	speed+1
+945	grafaiai	grafaiai	base	poison/normal	63	95	65	80	72	110	485	unburden poison-touch prankster*	7	272	170	speed+2
+946	bramblin	bramblin	base	grass/ghost	40	65	30	45	35	60	275	wind-rider infiltrator*	6	6	55	attack+1
+947	brambleghast	brambleghast	base	grass/ghost	55	115	70	80	70	90	480	wind-rider infiltrator*	12	60	168	attack+2
+948	toedscool	toedscool	base	ground/grass	40	40	35	50	100	70	335	mycelium-might	9	330	67	special-defense+1
+949	toedscruel	toedscruel	base	ground/grass	80	70	65	80	120	100	515	mycelium-might	19	580	180	special-defense+2
+950	klawf	klawf	base	rock	70	100	115	35	55	75	450	anger-shell shell-armor regenerator*	13	790	158	defense+2
+951	capsakid	capsakid	base	grass	50	62	40	62	40	50	304	chlorophyll insomnia klutz*	3	30	61	attack+1
+952	scovillain	scovillain	base	grass/fire	65	108	65	108	65	75	486	chlorophyll insomnia moody*	9	150	170	attack+2
+953	rellor	rellor	base	bug	41	50	60	31	58	30	270	compound-eyes shed-skin*	2	10	54	defense+1
+954	rabsca	rabsca	base	bug/psychic	75	50	85	115	100	45	470	synchronize telepathy*	3	35	165	special-attack+2
+955	flittle	flittle	base	psychic	30	35	30	55	30	75	255	anticipation frisk speed-boost*	2	15	51	speed+1
+956	espathra	espathra	base	psychic	95	60	60	101	60	105	481	opportunist frisk speed-boost*	19	900	168	speed+2
+957	tinkatink	tinkatink	base	fairy/steel	50	45	45	35	64	58	297	mold-breaker own-tempo pickpocket*	4	89	59	special-defense+1
+958	tinkatuff	tinkatuff	base	fairy/steel	65	55	55	45	82	78	380	mold-breaker own-tempo pickpocket*	7	591	133	special-defense+2
+959	tinkaton	tinkaton	base	fairy/steel	85	75	77	70	105	94	506	mold-breaker own-tempo pickpocket*	7	1128	253	special-defense+3
+960	wiglett	wiglett	base	water	10	55	25	35	25	95	245	gooey rattled sand-veil*	12	18	49	speed+1
+961	wugtrio	wugtrio	base	water	35	100	50	50	70	120	425	gooey rattled sand-veil*	12	54	149	speed+2
+962	bombirdier	bombirdier	base	flying/dark	70	103	85	60	85	82	485	big-pecks keen-eye rocky-payload*	15	429	243	attack+2
+963	finizen	finizen	base	water	70	45	40	45	40	75	315	water-veil	13	602	63	speed+1
+964	palafin-zero	palafin	base	water	100	70	72	53	62	100	457	zero-to-hero	13	602	160	hp+2
+965	varoom	varoom	base	steel/poison	45	70	63	30	45	47	300	overcoat slow-start*	10	350	60	attack+1
+966	revavroom	revavroom	base	steel/poison	80	119	90	54	67	90	500	overcoat filter*	18	1200	175	attack+2
+967	cyclizar	cyclizar	base	dragon/normal	70	95	65	85	65	121	501	shed-skin regenerator*	16	630	175	speed+2
+968	orthworm	orthworm	base	steel	70	85	145	60	55	65	480	earth-eater sand-veil*	25	3100	240	defense+2
+969	glimmet	glimmet	base	rock/poison	48	35	42	105	60	60	350	toxic-debris corrosion*	7	80	70	special-attack+1
+970	glimmora	glimmora	base	rock/poison	83	55	90	130	81	86	525	toxic-debris corrosion*	15	450	184	special-attack+2
+971	greavard	greavard	base	ghost	50	61	60	30	55	34	290	pickup fluffy*	6	350	58	attack+1
+972	houndstone	houndstone	base	ghost	72	101	100	50	97	68	488	sand-rush fluffy*	20	150	171	attack+2
+973	flamigo	flamigo	base	flying/fighting	82	115	74	75	64	90	500	scrappy tangled-feet costar*	16	370	175	attack+2
+974	cetoddle	cetoddle	base	ice	108	68	45	30	40	43	334	thick-fat snow-cloak sheer-force*	12	450	67	hp+1
+975	cetitan	cetitan	base	ice	170	113	65	45	55	73	521	thick-fat slush-rush sheer-force*	45	7000	182	hp+2
+976	veluza	veluza	base	water/psychic	90	102	73	78	65	70	478	mold-breaker sharpness*	25	900	167	attack+2
+977	dondozo	dondozo	base	water	150	100	115	65	65	35	530	unaware oblivious water-veil*	120	2200	265	hp+3
+978	tatsugiri-curly	tatsugiri	base	dragon/water	68	50	60	120	95	82	475	commander storm-drain*	3	80	166	special-attack+2
+979	annihilape	annihilape	base	fighting/ghost	110	115	80	50	90	90	535	vital-spirit inner-focus defiant*	12	560	268	attack+3
+980	clodsire	clodsire	base	poison/ground	130	75	60	45	100	20	430	poison-point water-absorb unaware*	18	2230	151	hp+2
+981	farigiraf	farigiraf	base	normal/psychic	120	90	70	110	70	60	520	cud-chew armor-tail sap-sipper*	32	1600	260	hp+3
+982	dudunsparce-two-segment	dudunsparce	base	normal	125	100	80	85	75	55	520	serene-grace run-away rattled*	36	392	182	hp+2
+983	kingambit	kingambit	base	dark/steel	100	135	120	60	85	50	550	defiant supreme-overlord pressure*	20	1200	275	attack+3
+984	great-tusk	great-tusk	base	ground/fighting	115	131	131	53	53	87	570	protosynthesis	22	3200	285	attack+3
+985	scream-tail	scream-tail	base	fairy/psychic	115	65	99	65	115	111	570	protosynthesis	12	80	285	hp+3
+986	brute-bonnet	brute-bonnet	base	grass/dark	111	127	99	79	99	55	570	protosynthesis	12	210	285	attack+3
+987	flutter-mane	flutter-mane	base	ghost/fairy	55	55	55	135	135	135	570	protosynthesis	14	40	285	special-attack+1 special-defense+1 speed+1
+988	slither-wing	slither-wing	base	bug/fighting	85	135	79	85	105	81	570	protosynthesis	32	920	285	attack+3
+989	sandy-shocks	sandy-shocks	base	electric/ground	85	81	97	121	85	101	570	protosynthesis	23	600	285	special-attack+3
+990	iron-treads	iron-treads	base	ground/steel	90	112	120	72	70	106	570	quark-drive	9	2400	285	defense+3
+991	iron-bundle	iron-bundle	base	ice/water	56	80	114	124	60	136	570	quark-drive	6	110	285	speed+3
+992	iron-hands	iron-hands	base	fighting/electric	154	140	108	50	68	50	570	quark-drive	18	3807	285	attack+3
+993	iron-jugulis	iron-jugulis	base	dark/flying	94	80	86	122	80	108	570	quark-drive	13	1110	285	special-attack+3
+994	iron-moth	iron-moth	base	fire/poison	80	70	60	140	110	110	570	quark-drive	12	360	285	special-attack+3
+995	iron-thorns	iron-thorns	base	rock/electric	100	134	110	70	84	72	570	quark-drive	16	3030	285	attack+3
+996	frigibax	frigibax	base	dragon/ice	65	75	45	35	45	55	320	thermal-exchange ice-body*	5	170	64	attack+1
+997	arctibax	arctibax	base	dragon/ice	90	95	66	45	65	62	423	thermal-exchange ice-body*	8	300	148	attack+2
+998	baxcalibur	baxcalibur	base	dragon/ice	115	145	92	75	86	87	600	thermal-exchange ice-body*	21	2100	300	attack+3
+999	gimmighoul	gimmighoul	base	ghost	45	30	70	75	70	10	300	rattled	3	50	60	special-attack+1
+1000	gholdengo	gholdengo	base	steel/ghost	87	60	95	133	91	84	550	good-as-gold	12	300	275	special-attack+2
+1001	wo-chien	wo-chien	base	dark/grass	85	85	100	95	135	70	570	tablets-of-ruin	15	742	285	special-defense+3
+1002	chien-pao	chien-pao	base	dark/ice	80	120	80	90	65	135	570	sword-of-ruin	19	1522	285	speed+3
+1003	ting-lu	ting-lu	base	dark/ground	155	110	125	55	80	45	570	vessel-of-ruin	27	6997	285	defense+3
+1004	chi-yu	chi-yu	base	dark/fire	55	80	80	135	120	100	570	beads-of-ruin	4	49	285	special-attack+3
+1005	roaring-moon	roaring-moon	base	dragon/dark	105	139	71	55	101	119	590	protosynthesis	20	3800	295	attack+3
+1006	iron-valiant	iron-valiant	base	fairy/fighting	74	130	90	120	60	116	590	quark-drive	14	350	295	attack+3
+1007	koraidon	koraidon	base	fighting/dragon	100	135	115	85	100	135	670	orichalcum-pulse	25	3030	335	attack+3
+1008	miraidon	miraidon	base	electric/dragon	100	85	100	135	115	135	670	hadron-engine	35	2400	335	special-attack+3
+1009	walking-wake	walking-wake	base	water/dragon	99	83	91	125	83	109	590	protosynthesis	35	2800	295	special-attack+3
+1010	iron-leaves	iron-leaves	base	grass/psychic	90	130	88	70	108	104	590	quark-drive	15	1250	295	attack+3
+1011	dipplin	dipplin	base	grass/dragon	80	80	110	95	80	40	485	supersweet-syrup gluttony sticky-hold*	4	97	170	defense+2
+1012	poltchageist	poltchageist	base	grass/ghost	40	45	45	74	54	50	308	hospitality heatproof*	1	11	62	special-attack+1
+1013	sinistcha	sinistcha	base	grass/ghost	71	60	106	121	80	70	508	hospitality heatproof*	2	22	178	special-attack+2
+1014	okidogi	okidogi	base	poison/fighting	88	128	115	58	86	80	555	toxic-chain guard-dog*	18	922	278	attack+3
+1015	munkidori	munkidori	base	poison/psychic	88	75	66	130	90	106	555	toxic-chain frisk*	10	122	278	special-attack+3
+1016	fezandipiti	fezandipiti	base	poison/fairy	88	91	82	70	125	99	555	toxic-chain technician*	14	301	278	special-defense+3
+1017	ogerpon	ogerpon	base	grass	80	120	84	60	96	110	550	defiant	12	398	275	attack+3
+1018	archaludon	archaludon	base	steel/dragon	90	105	130	125	65	85	600	stamina sturdy stalwart*	20	600	300	defense+3
+1019	hydrapple	hydrapple	base	grass/dragon	106	80	110	120	80	44	540	supersweet-syrup regenerator sticky-hold*	18	930	270	special-attack+3
+1020	gouging-fire	gouging-fire	base	fire/dragon	105	115	121	65	93	91	590	protosynthesis	35	5900	295	defense+3
+1021	raging-bolt	raging-bolt	base	electric/dragon	125	73	91	137	89	75	590	protosynthesis	52	4800	295	special-attack+3
+1022	iron-boulder	iron-boulder	base	rock/psychic	90	120	80	68	108	124	590	quark-drive	15	1625	295	speed+3
+1023	iron-crown	iron-crown	base	steel/psychic	90	72	100	122	108	98	590	quark-drive	16	1560	295	special-attack+3
+1024	terapagos	terapagos	base	normal	90	65	85	65	85	60	450	tera-shift	2	65	90	defense+1
+1025	pecharunt	pecharunt	base	poison/ghost	88	88	160	88	88	88	600	poison-puppeteer	3	3	300	defense+3
+10001	deoxys-attack	deoxys	forma	psychic	50	180	20	180	20	150	600	pressure	17	608	270	attack+2 special-attack+1
+10002	deoxys-defense	deoxys	forma	psychic	50	70	160	70	160	90	600	pressure	17	608	270	defense+2 special-defense+1
+10003	deoxys-speed	deoxys	forma	psychic	50	95	90	95	90	180	600	pressure	17	608	270	speed+3
+10004	wormadam-sandy	wormadam	forma	bug/ground	60	79	105	59	85	36	424	anticipation overcoat*	5	65	148	defense+2
+10005	wormadam-trash	wormadam	forma	bug/steel	60	69	95	69	95	36	424	anticipation overcoat*	5	65	148	defense+1 special-defense+1
+10006	shaymin-sky	shaymin	forma	grass/flying	100	103	75	120	75	127	600	serene-grace	4	52	270	speed+3
+10007	giratina-origin	giratina	forma-batalha	ghost/dragon	150	120	100	120	100	90	680	levitate	69	6500	340	hp+3
+10008	rotom-heat	rotom	forma	electric/fire	50	65	107	105	107	86	520	levitate	3	3	182	special-attack+1 speed+1
+10009	rotom-wash	rotom	forma	electric/water	50	65	107	105	107	86	520	levitate	3	3	182	special-attack+1 speed+1
+10010	rotom-frost	rotom	forma	electric/ice	50	65	107	105	107	86	520	levitate	3	3	182	special-attack+1 speed+1
+10011	rotom-fan	rotom	forma	electric/flying	50	65	107	105	107	86	520	levitate	3	3	182	special-attack+1 speed+1
+10012	rotom-mow	rotom	forma	electric/grass	50	65	107	105	107	86	520	levitate	3	3	182	special-attack+1 speed+1
+10013	castform-sunny	castform	forma	fire	70	70	70	70	70	70	420	forecast	3	8	147	hp+1
+10014	castform-rainy	castform	forma	water	70	70	70	70	70	70	420	forecast	3	8	147	hp+1
+10015	castform-snowy	castform	forma	ice	70	70	70	70	70	70	420	forecast	3	8	147	hp+1
+10016	basculin-blue-striped	basculin	forma	water	70	92	65	80	55	98	460	rock-head adaptability mold-breaker*	10	180	161	speed+2
+10017	darmanitan-zen	darmanitan	forma-batalha	fire/psychic	105	30	105	140	105	55	540	sheer-force zen-mode*	13	929	189	special-attack+2
+10018	meloetta-pirouette	meloetta	forma	normal/fighting	100	128	90	77	77	128	600	serene-grace	6	65	270	attack+1 defense+1 speed+1
+10019	tornadus-therian	tornadus	forma-batalha	flying	79	100	80	110	90	121	580	regenerator	14	630	290	speed+3
+10020	thundurus-therian	thundurus	forma-batalha	electric/flying	79	105	70	145	80	101	580	volt-absorb	30	610	290	special-attack+3
+10021	landorus-therian	landorus	forma-batalha	ground/flying	89	145	90	105	80	91	600	intimidate	13	680	300	attack+3
+10022	kyurem-black	kyurem	forma	dragon/ice	125	170	100	120	90	95	700	teravolt	33	3250	350	attack+3
+10023	kyurem-white	kyurem	forma	dragon/ice	125	120	90	170	100	95	700	turboblaze	36	3250	350	special-attack+3
+10024	keldeo-resolute	keldeo	forma	water/fighting	91	72	90	129	90	108	580	justified	14	485	290	special-attack+3
+10025	meowstic-female	meowstic	forma	psychic	74	48	76	83	81	104	466	keen-eye infiltrator competitive*	6	85	163	speed+2
+10026	aegislash-blade	aegislash	forma	steel/ghost	60	140	50	140	50	60	500	stance-change	17	530	250	attack+2 special-attack+1
+10027	pumpkaboo-small	pumpkaboo	forma	ghost/grass	44	66	70	44	55	56	335	pickup frisk insomnia*	3	35	67	defense+1
+10028	pumpkaboo-large	pumpkaboo	forma	ghost/grass	54	66	70	44	55	46	335	pickup frisk insomnia*	5	75	67	defense+1
+10029	pumpkaboo-super	pumpkaboo	forma	ghost/grass	59	66	70	44	55	41	335	pickup frisk insomnia*	8	150	67	defense+1
+10030	gourgeist-small	gourgeist	forma	ghost/grass	55	85	122	58	75	99	494	pickup frisk insomnia*	7	95	173	defense+2
+10031	gourgeist-large	gourgeist	forma	ghost/grass	75	95	122	58	75	69	494	pickup frisk insomnia*	11	140	173	defense+2
+10032	gourgeist-super	gourgeist	forma	ghost/grass	85	100	122	58	75	54	494	pickup frisk insomnia*	17	390	173	defense+2
+10033	venusaur-mega	venusaur	mega	grass/poison	80	100	123	122	120	80	625	thick-fat	24	1555	281	special-attack+2 special-defense+1
+10034	charizard-mega-x	charizard	mega	fire/dragon	78	130	111	130	85	100	634	tough-claws	17	1105	285	special-attack+3
+10035	charizard-mega-y	charizard	mega	fire/flying	78	104	78	159	115	100	634	drought	17	1005	285	special-attack+3
+10036	blastoise-mega	blastoise	mega	water	79	103	120	135	115	78	630	mega-launcher	16	1011	284	special-defense+3
+10037	alakazam-mega	alakazam	mega	psychic	55	50	65	175	105	150	600	trace	12	480	270	special-attack+3
+10038	gengar-mega	gengar	mega	ghost/poison	60	65	80	170	95	130	600	shadow-tag	14	405	270	special-attack+3
+10039	kangaskhan-mega	kangaskhan	mega	normal	105	125	100	60	100	100	590	parental-bond	22	1000	207	hp+2
+10040	pinsir-mega	pinsir	mega	bug/flying	65	155	120	65	90	105	600	aerilate	17	590	210	attack+2
+10041	gyarados-mega	gyarados	mega	water/dark	95	155	109	70	130	81	640	mold-breaker	65	3050	224	attack+2
+10042	aerodactyl-mega	aerodactyl	mega	rock/flying	80	135	85	70	95	150	615	tough-claws	21	790	215	speed+2
+10043	mewtwo-mega-x	mewtwo	mega	psychic/fighting	106	190	100	154	100	130	780	steadfast	23	1270	351	special-attack+3
+10044	mewtwo-mega-y	mewtwo	mega	psychic	106	150	70	194	120	140	780	insomnia	15	330	351	special-attack+3
+10045	ampharos-mega	ampharos	mega	electric/dragon	90	95	105	165	110	45	610	mold-breaker	14	615	275	special-attack+3
+10046	scizor-mega	scizor	mega	bug/steel	70	150	140	65	100	75	600	technician	20	1250	210	attack+2
+10047	heracross-mega	heracross	mega	bug/fighting	80	185	115	40	105	75	600	skill-link	17	625	210	attack+2
+10048	houndoom-mega	houndoom	mega	dark/fire	75	90	90	140	90	115	600	solar-power	19	495	210	special-attack+2
+10049	tyranitar-mega	tyranitar	mega	rock/dark	100	164	150	95	120	71	700	sand-stream	25	2550	315	attack+3
+10050	blaziken-mega	blaziken	mega	fire/fighting	80	160	80	130	80	100	630	speed-boost	19	520	284	attack+3
+10051	gardevoir-mega	gardevoir	mega	psychic/fairy	68	85	65	165	135	100	618	pixilate	16	484	278	special-attack+3
+10052	mawile-mega	mawile	mega	steel/fairy	50	105	125	55	95	50	480	huge-power	10	235	168	attack+1 defense+1
+10053	aggron-mega	aggron	mega	steel	70	140	230	60	80	50	630	filter	22	3950	284	defense+3
+10054	medicham-mega	medicham	mega	fighting/psychic	60	100	85	80	85	100	510	pure-power	13	315	179	speed+2
+10055	manectric-mega	manectric	mega	electric	70	75	80	135	80	135	575	intimidate	18	440	201	speed+2
+10056	banette-mega	banette	mega	ghost	64	165	75	93	83	75	555	prankster	12	130	194	attack+2
+10057	absol-mega	absol	mega	dark	65	150	60	115	60	115	565	magic-bounce	12	490	198	attack+2
+10058	garchomp-mega	garchomp	mega	dragon/ground	108	170	115	120	95	92	700	sand-force	19	950	315	attack+3
+10059	lucario-mega	lucario	mega	fighting/steel	70	145	88	140	70	112	625	adaptability	13	575	219	attack+1 special-attack+1
+10060	abomasnow-mega	abomasnow	mega	grass/ice	90	132	105	132	105	30	594	snow-warning	27	1850	208	attack+1 special-attack+1
+10061	floette-eternal	floette	forma	fairy	74	65	67	125	128	92	551	flower-veil symbiosis*	2	9	243	special-defense+2
+10062	latias-mega	latias	mega	dragon/psychic	80	100	120	140	150	110	700	levitate	18	520	315	special-defense+3
+10063	latios-mega	latios	mega	dragon/psychic	80	130	100	160	120	110	700	levitate	23	700	315	special-attack+3
+10064	swampert-mega	swampert	mega	water/ground	100	150	110	95	110	70	635	swift-swim	19	1020	286	attack+3
+10065	sceptile-mega	sceptile	mega	grass/dragon	70	110	75	145	85	145	630	lightning-rod	19	552	284	speed+3
+10066	sableye-mega	sableye	mega	dark/ghost	50	85	125	85	115	20	480	magic-bounce	5	1610	168	attack+1 defense+1
+10067	altaria-mega	altaria	mega	dragon/fairy	75	110	110	110	105	80	590	pixilate	15	206	207	special-defense+2
+10068	gallade-mega	gallade	mega	psychic/fighting	68	165	95	65	115	110	618	inner-focus	16	564	278	attack+3
+10069	audino-mega	audino	mega	normal/fairy	103	60	126	80	126	50	545	healer	15	320	425	hp+2
+10070	sharpedo-mega	sharpedo	mega	water/dark	70	140	70	110	65	105	560	strong-jaw	25	1303	196	attack+2
+10071	slowbro-mega	slowbro	mega	water/psychic	95	75	180	130	80	30	590	shell-armor	20	1200	207	defense+2
+10072	steelix-mega	steelix	mega	steel/ground	75	125	230	55	95	30	610	sand-force	105	7400	214	defense+2
+10073	pidgeot-mega	pidgeot	mega	normal/flying	83	80	80	135	80	121	579	no-guard	22	505	261	speed+3
+10074	glalie-mega	glalie	mega	ice	80	120	80	120	80	100	580	refrigerate	21	3502	203	hp+2
+10075	diancie-mega	diancie	mega	rock/fairy	50	160	110	160	110	110	700	magic-bounce	11	278	315	defense+1 special-defense+2
+10076	metagross-mega	metagross	mega	steel/psychic	80	145	150	105	110	110	700	tough-claws	25	9429	315	defense+3
+10077	kyogre-primal	kyogre	forma-batalha	water	100	150	90	180	160	90	770	primordial-sea	98	4300	347	special-attack+3
+10078	groudon-primal	groudon	forma-batalha	ground/fire	100	180	160	150	90	90	770	desolate-land	50	9997	347	attack+3
+10079	rayquaza-mega	rayquaza	mega	dragon/flying	105	180	100	180	100	115	780	delta-stream	108	3920	351	attack+2 special-attack+1
+10080	pikachu-rock-star	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10081	pikachu-belle	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10082	pikachu-pop-star	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10083	pikachu-phd	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10084	pikachu-libre	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10085	pikachu-cosplay	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10086	hoopa-unbound	hoopa	forma	psychic/dark	80	160	60	170	130	80	680	magician	65	4900	306	special-attack+3
+10087	camerupt-mega	camerupt	mega	fire/ground	70	120	100	145	105	20	560	sheer-force	25	3205	196	attack+1 special-attack+1
+10088	lopunny-mega	lopunny	mega	normal/fighting	65	136	94	54	96	135	580	scrappy	13	283	203	speed+2
+10089	salamence-mega	salamence	mega	dragon/flying	95	145	130	120	90	120	700	aerilate	18	1126	315	attack+3
+10090	beedrill-mega	beedrill	mega	bug/poison	65	150	40	15	80	145	495	adaptability	14	405	223	attack+2 special-defense+1
+10091	rattata-alola	rattata	regional	dark/normal	30	56	35	25	35	72	253	gluttony hustle thick-fat*	3	38	51	speed+1
+10092	raticate-alola	raticate	regional	dark/normal	75	71	70	40	80	77	413	gluttony hustle thick-fat*	7	255	145	speed+2
+10093	raticate-totem-alola	raticate	regional	dark/normal	75	71	70	40	80	77	413	gluttony hustle thick-fat*	14	1050	145	speed+2
+10094	pikachu-original-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10095	pikachu-hoenn-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10096	pikachu-sinnoh-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10097	pikachu-unova-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10098	pikachu-kalos-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10099	pikachu-alola-cap	pikachu	regional	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10100	raichu-alola	raichu	regional	electric/psychic	60	85	50	95	85	110	485	surge-surfer	7	210	243	speed+3
+10101	sandshrew-alola	sandshrew	regional	ice/steel	50	75	90	10	35	40	300	snow-cloak slush-rush*	7	400	60	defense+1
+10102	sandslash-alola	sandslash	regional	ice/steel	75	100	120	25	65	65	450	snow-cloak slush-rush*	12	550	158	defense+2
+10103	vulpix-alola	vulpix	regional	ice	38	41	40	50	65	65	299	snow-cloak snow-warning*	6	99	60	speed+1
+10104	ninetales-alola	ninetales	regional	ice/fairy	73	67	75	81	100	109	505	snow-cloak snow-warning*	11	199	177	speed+2
+10105	diglett-alola	diglett	regional	ground/steel	10	55	30	35	45	90	265	sand-veil tangling-hair sand-force*	2	10	53	speed+1
+10106	dugtrio-alola	dugtrio	regional	ground/steel	35	100	60	50	70	110	425	sand-veil tangling-hair sand-force*	7	666	149	attack+2
+10107	meowth-alola	meowth	regional	dark	40	35	35	50	40	90	290	pickup technician rattled*	4	42	58	speed+1
+10108	persian-alola	persian	regional	dark	65	60	60	75	65	115	440	fur-coat technician rattled*	11	330	154	speed+2
+10109	geodude-alola	geodude	regional	rock/electric	40	80	100	30	30	20	300	magnet-pull sturdy galvanize*	4	203	60	defense+1
+10110	graveler-alola	graveler	regional	rock/electric	55	95	115	45	45	35	390	magnet-pull sturdy galvanize*	10	1100	137	defense+2
+10111	golem-alola	golem	regional	rock/electric	80	120	130	55	65	45	495	magnet-pull sturdy galvanize*	17	3160	223	defense+3
+10112	grimer-alola	grimer	regional	poison/dark	80	80	50	40	50	25	325	poison-touch gluttony power-of-alchemy*	7	420	65	hp+1
+10113	muk-alola	muk	regional	poison/dark	105	105	75	65	100	50	500	poison-touch gluttony power-of-alchemy*	10	520	175	hp+1 attack+1
+10114	exeggutor-alola	exeggutor	regional	grass/dragon	95	105	85	125	75	45	530	frisk harvest*	109	4156	186	special-attack+2
+10115	marowak-alola	marowak	regional	fire/ghost	60	80	110	50	80	45	425	cursed-body lightning-rod rock-head*	10	340	149	defense+2
+10116	greninja-battle-bond	greninja	forma	water/dark	72	95	67	103	71	122	530	battle-bond	15	400	239	speed+3
+10117	greninja-ash	greninja	forma	water/dark	72	145	67	153	71	132	640	battle-bond	15	400	288	speed+3
+10118	zygarde-10-power-construct	zygarde	forma	dragon/ground	54	100	71	61	85	115	486	power-construct	12	335	243	hp+3
+10119	zygarde-50-power-construct	zygarde	forma	dragon/ground	108	100	121	81	95	95	600	power-construct	50	3050	300	hp+3
+10120	zygarde-complete	zygarde	forma-batalha	dragon/ground	216	100	121	91	95	85	708	power-construct	45	6100	354	hp+3
+10121	gumshoos-totem	gumshoos	forma	normal	88	110	60	55	60	45	418	stakeout strong-jaw adaptability*	14	600	146	attack+2
+10122	vikavolt-totem	vikavolt	forma	bug/electric	77	70	90	145	75	43	500	levitate	26	1475	225	special-attack+3
+10123	oricorio-pom-pom	oricorio	forma	electric/flying	75	70	70	98	70	93	476	dancer	6	34	167	special-attack+2
+10124	oricorio-pau	oricorio	forma	psychic/flying	75	70	70	98	70	93	476	dancer	6	34	167	special-attack+2
+10125	oricorio-sensu	oricorio	forma	ghost/flying	75	70	70	98	70	93	476	dancer	6	34	167	special-attack+2
+10126	lycanroc-midnight	lycanroc	forma	rock	85	115	75	55	75	82	487	keen-eye vital-spirit no-guard*	11	250	170	attack+2
+10127	wishiwashi-school	wishiwashi	forma	water	45	140	130	140	135	30	620	schooling	82	786	217	hp+1
+10128	lurantis-totem	lurantis	forma	grass	70	105	90	80	90	45	480	leaf-guard contrary*	15	580	168	attack+2
+10129	salazzle-totem	salazzle	forma	poison/fire	68	64	60	111	60	117	480	corrosion oblivious*	21	810	168	speed+2
+10130	minior-orange-meteor	minior	forma	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+10131	minior-yellow-meteor	minior	forma	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+10132	minior-green-meteor	minior	forma	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+10133	minior-blue-meteor	minior	forma	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+10134	minior-indigo-meteor	minior	forma	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+10135	minior-violet-meteor	minior	forma	rock/flying	60	60	100	60	100	60	440	shields-down	3	400	154	defense+1 special-defense+1
+10136	minior-red	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10137	minior-orange	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10138	minior-yellow	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10139	minior-green	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10140	minior-blue	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10141	minior-indigo	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10142	minior-violet	minior	forma	rock/flying	60	100	60	100	60	120	500	shields-down	3	3	175	attack+1 special-attack+1
+10143	mimikyu-busted	mimikyu	forma-batalha	ghost/fairy	55	90	80	50	105	96	476	disguise	2	7	167	special-defense+2
+10144	mimikyu-totem-disguised	mimikyu	forma	ghost/fairy	55	90	80	50	105	96	476	disguise	4	28	167	special-defense+2
+10145	mimikyu-totem-busted	mimikyu	forma-batalha	ghost/fairy	55	90	80	50	105	96	476	disguise	4	28	167	special-defense+2
+10146	kommo-o-totem	kommo-o	forma	dragon/fighting	75	110	125	100	105	85	600	bulletproof soundproof overcoat*	24	2075	270	defense+3
+10147	magearna-original	magearna	forma	steel/fairy	80	95	115	130	115	65	600	soul-heart	10	805	300	special-attack+3
+10148	pikachu-partner-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10149	marowak-totem	marowak	forma	fire/ghost	60	80	110	50	80	45	425	cursed-body lightning-rod rock-head*	17	980	149	defense+2
+10150	ribombee-totem	ribombee	forma	bug/fairy	60	55	60	95	70	124	464	honey-gather shield-dust sweet-veil*	4	20	162	speed+2
+10151	rockruff-own-tempo	rockruff	forma	rock	45	65	40	30	40	60	280	own-tempo	5	92	56	attack+1
+10152	lycanroc-dusk	lycanroc	forma-batalha	rock	75	117	65	55	65	110	487	tough-claws	8	250	170	attack+2
+10153	araquanid-totem	araquanid	forma	water/bug	68	70	92	50	132	42	454	water-bubble water-absorb*	31	2175	159	special-defense+2
+10154	togedemaru-totem	togedemaru	forma	electric/steel	65	98	63	40	73	96	435	iron-barbs lightning-rod sturdy*	6	130	152	attack+2
+10155	necrozma-dusk	necrozma	forma-batalha	psychic/steel	97	157	127	113	109	77	680	prism-armor	38	4600	340	attack+3
+10156	necrozma-dawn	necrozma	forma-batalha	psychic/ghost	97	113	109	157	127	77	680	prism-armor	42	3500	340	special-attack+3
+10157	necrozma-ultra	necrozma	forma-batalha	psychic/dragon	97	167	97	167	97	129	754	neuroforce	75	2300	339	attack+1 special-attack+1 speed+1
+10158	pikachu-starter	pikachu	forma	electric	45	80	50	75	60	120	430	static lightning-rod*	4	60	86	speed+2
+10159	eevee-starter	eevee	forma	normal	65	75	70	65	85	75	435	run-away adaptability anticipation*	3	65	87	special-defense+1
+10160	pikachu-world-cap	pikachu	forma	electric	35	55	40	50	50	90	320	static lightning-rod*	4	60	112	speed+2
+10161	meowth-galar	meowth	regional	steel	50	65	55	40	40	40	290	pickup tough-claws unnerve*	4	75	58	attack+1
+10162	ponyta-galar	ponyta	regional	psychic	50	85	55	65	65	90	410	run-away pastel-veil anticipation*	8	240	82	speed+1
+10163	rapidash-galar	rapidash	regional	psychic/fairy	65	100	70	80	80	105	500	run-away pastel-veil anticipation*	17	800	175	speed+2
+10164	slowpoke-galar	slowpoke	regional	psychic	90	65	65	40	40	15	315	gluttony own-tempo regenerator*	12	360	63	hp+1
+10165	slowbro-galar	slowbro	regional	poison/psychic	95	100	95	100	70	30	490	quick-draw own-tempo regenerator*	16	705	172	attack+2
+10166	farfetchd-galar	farfetchd	regional	fighting	52	95	55	58	62	55	377	steadfast scrappy*	8	420	132	attack+1
+10167	weezing-galar	weezing	regional	poison/fairy	65	90	120	85	70	60	490	levitate neutralizing-gas misty-surge*	30	160	172	defense+2
+10168	mr-mime-galar	mr-mime	regional	ice/psychic	50	65	65	90	90	100	460	vital-spirit screen-cleaner ice-body*	14	568	161	speed+2
+10169	articuno-galar	articuno	regional	psychic/flying	90	85	85	125	100	95	580	competitive	17	509	290	special-attack+3
+10170	zapdos-galar	zapdos	regional	fighting/flying	90	125	90	85	90	100	580	defiant	16	582	290	attack+3
+10171	moltres-galar	moltres	regional	dark/flying	90	85	90	100	125	90	580	berserk	20	660	290	special-defense+3
+10172	slowking-galar	slowking	regional	poison/psychic	95	65	80	110	110	30	490	curious-medicine own-tempo regenerator*	18	795	172	special-defense+2
+10173	corsola-galar	corsola	regional	ghost	60	55	100	65	100	30	410	weak-armor cursed-body*	6	5	144	special-defense+1
+10174	zigzagoon-galar	zigzagoon	regional	dark/normal	38	30	41	30	41	60	240	pickup gluttony quick-feet*	4	175	56	speed+1
+10175	linoone-galar	linoone	regional	dark/normal	78	70	61	50	61	100	420	pickup gluttony quick-feet*	5	325	147	speed+2
+10176	darumaka-galar	darumaka	regional	ice	70	90	45	15	45	50	315	hustle inner-focus*	7	400	63	attack+1
+10177	darmanitan-galar-standard	darmanitan	regional	ice	105	140	55	30	55	95	480	gorilla-tactics zen-mode*	17	1200	168	attack+2
+10178	darmanitan-galar-zen	darmanitan	regional	ice/fire	105	160	55	30	55	135	540	gorilla-tactics zen-mode*	17	1200	189	special-attack+2
+10179	yamask-galar	yamask	regional	ground/ghost	38	55	85	30	65	30	303	wandering-spirit	5	15	61	defense+1
+10180	stunfisk-galar	stunfisk	regional	ground/steel	109	81	99	66	84	32	471	mimicry	7	205	165	hp+2
+10181	zygarde-10	zygarde	forma-batalha	dragon/ground	54	100	71	61	85	115	486	aura-break	12	335	243	hp+3
+10182	cramorant-gulping	cramorant	forma	flying/water	70	85	55	85	95	85	475	gulp-missile	8	180	166	special-defense+2
+10183	cramorant-gorging	cramorant	forma	flying/water	70	85	55	85	95	85	475	gulp-missile	8	180	166	special-defense+2
+10184	toxtricity-low-key	toxtricity	forma	electric/poison	75	98	70	114	70	75	502	punk-rock minus technician*	16	400	176	special-attack+2
+10185	eiscue-noice	eiscue	forma	ice	75	80	70	65	50	130	470	ice-face	14	890	165	defense+2
+10186	indeedee-female	indeedee	forma	psychic/normal	70	55	65	95	105	85	475	own-tempo synchronize psychic-surge*	9	280	166	special-defense+2
+10187	morpeko-hangry	morpeko	forma	electric/dark	58	95	58	70	58	97	436	hunger-switch	3	30	153	speed+2
+10188	zacian-crowned	zacian	forma-batalha	fairy/steel	92	150	115	80	115	148	700	intrepid-sword	28	3550	360	speed+3
+10189	zamazenta-crowned	zamazenta	forma-batalha	fighting/steel	92	120	140	80	140	128	700	dauntless-shield	29	7850	360	speed+3
+10190	eternatus-eternamax	eternatus	forma-batalha	poison/dragon	255	115	250	125	250	130	1125	pressure	1000	0	563	hp+3
+10191	urshifu-rapid-strike	urshifu	forma	fighting/water	100	130	100	63	60	97	550	unseen-fist	19	1050	275	attack+3
+10192	zarude-dada	zarude	forma	dark/grass	105	120	105	70	95	105	600	leaf-guard	18	700	300	attack+3
+10193	calyrex-ice	calyrex	forma	psychic/ice	100	165	150	85	130	50	680	as-one-glastrier	24	8091	340	attack+3
+10194	calyrex-shadow	calyrex	forma	psychic/ghost	100	85	80	165	100	150	680	as-one-spectrier	24	536	340	special-attack+3
+10195	venusaur-gmax	venusaur	gmax	grass/poison	80	82	83	100	100	80	525	overgrow chlorophyll*	240	10000	236	special-attack+2 special-defense+1
+10196	charizard-gmax	charizard	gmax	fire/flying	78	84	78	109	85	100	534	blaze solar-power*	280	10000	240	special-attack+3
+10197	blastoise-gmax	blastoise	gmax	water	79	83	100	85	105	78	530	torrent rain-dish*	250	10000	239	special-defense+3
+10198	butterfree-gmax	butterfree	gmax	bug/flying	60	45	50	90	80	70	395	compound-eyes tinted-lens*	170	10000	178	special-attack+2 special-defense+1
+10199	pikachu-gmax	pikachu	gmax	electric	35	55	40	50	50	90	320	static lightning-rod*	210	10000	112	speed+2
+10200	meowth-gmax	meowth	gmax	normal	40	45	35	40	40	90	290	pickup technician unnerve*	330	10000	58	speed+1
+10201	machamp-gmax	machamp	gmax	fighting	90	130	80	65	85	55	505	guts no-guard steadfast*	250	10000	227	attack+3
+10202	gengar-gmax	gengar	gmax	ghost/poison	60	65	60	130	75	110	500	cursed-body	200	10000	225	special-attack+3
+10203	kingler-gmax	kingler	gmax	water	55	130	115	50	50	75	475	hyper-cutter shell-armor sheer-force*	190	10000	166	attack+2
+10204	lapras-gmax	lapras	gmax	water/ice	130	85	80	85	95	60	535	water-absorb shell-armor hydration*	240	10000	187	hp+2
+10205	eevee-gmax	eevee	gmax	normal	55	55	50	45	65	55	325	run-away adaptability anticipation*	180	10000	65	special-defense+1
+10206	snorlax-gmax	snorlax	gmax	normal	160	110	65	65	110	30	540	immunity thick-fat gluttony*	350	10000	189	hp+2
+10207	garbodor-gmax	garbodor	gmax	poison	80	95	82	60	82	75	474	stench weak-armor aftermath*	210	10000	166	attack+2
+10208	melmetal-gmax	melmetal	gmax	steel	135	143	143	80	65	34	600	iron-fist	250	10000	270	attack+3
+10209	rillaboom-gmax	rillaboom	gmax	grass	100	125	90	60	70	85	530	overgrow grassy-surge*	280	10000	265	attack+3
+10210	cinderace-gmax	cinderace	gmax	fire	80	116	75	65	75	119	530	blaze libero*	270	10000	265	speed+3
+10211	inteleon-gmax	inteleon	gmax	water	70	85	65	125	65	120	530	torrent sniper*	400	10000	265	speed+3
+10212	corviknight-gmax	corviknight	gmax	flying/steel	98	87	105	53	85	67	495	pressure unnerve mirror-armor*	140	10000	248	defense+3
+10213	orbeetle-gmax	orbeetle	gmax	bug/psychic	60	45	110	80	120	90	505	swarm frisk telepathy*	140	10000	253	special-defense+3
+10214	drednaw-gmax	drednaw	gmax	water/rock	90	115	90	48	68	74	485	strong-jaw shell-armor swift-swim*	240	10000	170	attack+2
+10215	coalossal-gmax	coalossal	gmax	rock/fire	110	80	120	80	90	30	510	steam-engine flame-body flash-fire*	420	10000	255	defense+3
+10216	flapple-gmax	flapple	gmax	grass/dragon	70	110	80	95	60	70	485	ripen gluttony hustle*	240	10000	170	attack+2
+10217	appletun-gmax	appletun	gmax	grass/dragon	110	85	80	100	80	30	485	ripen gluttony thick-fat*	240	10000	170	hp+2
+10218	sandaconda-gmax	sandaconda	gmax	ground	72	107	125	65	70	71	510	sand-spit shed-skin sand-veil*	220	10000	179	defense+2
+10219	toxtricity-amped-gmax	toxtricity	gmax	electric/poison	75	98	70	114	70	75	502	punk-rock plus technician*	240	10000	176	special-attack+2
+10220	centiskorch-gmax	centiskorch	gmax	fire/bug	100	115	65	90	90	65	525	flash-fire white-smoke flame-body*	750	10000	184	attack+2
+10221	hatterene-gmax	hatterene	gmax	psychic/fairy	57	90	95	136	103	29	510	healer anticipation magic-bounce*	260	10000	255	special-attack+3
+10222	grimmsnarl-gmax	grimmsnarl	gmax	dark/fairy	95	120	65	95	75	60	510	prankster frisk pickpocket*	320	10000	255	attack+3
+10223	alcremie-gmax	alcremie	gmax	fairy	65	60	75	110	121	64	495	sweet-veil aroma-veil*	300	10000	173	special-defense+2
+10224	copperajah-gmax	copperajah	gmax	steel	122	130	69	80	69	30	500	sheer-force heavy-metal*	230	10000	175	attack+2
+10225	duraludon-gmax	duraludon	gmax	steel/dragon	70	95	115	120	50	85	535	light-metal heavy-metal stalwart*	430	10000	187	special-attack+2
+10226	urshifu-single-strike-gmax	urshifu	gmax	fighting/dark	100	130	100	63	60	97	550	unseen-fist	290	10000	275	attack+3
+10227	urshifu-rapid-strike-gmax	urshifu	gmax	fighting/water	100	130	100	63	60	97	550	unseen-fist	260	10000	275	attack+3
+10228	toxtricity-low-key-gmax	toxtricity	gmax	electric/poison	75	98	70	114	70	75	502	punk-rock minus technician*	240	10000	176	special-attack+2
+10229	growlithe-hisui	growlithe	regional	fire/rock	60	75	45	65	50	55	350	intimidate flash-fire rock-head*	8	227	70	attack+1
+10230	arcanine-hisui	arcanine	regional	fire/rock	95	115	80	95	80	90	555	intimidate flash-fire rock-head*	20	1680	194	attack+2
+10231	voltorb-hisui	voltorb	regional	electric/grass	40	30	50	55	55	100	330	soundproof static aftermath*	5	130	66	speed+1
+10232	electrode-hisui	electrode	regional	electric/grass	60	50	70	80	80	150	490	soundproof static aftermath*	12	710	172	speed+2
+10233	typhlosion-hisui	typhlosion	regional	fire/ghost	73	84	78	119	85	95	534	blaze frisk*	16	698	240	special-attack+3
+10234	qwilfish-hisui	qwilfish	regional	dark/poison	65	95	85	55	55	85	440	poison-point swift-swim intimidate*	5	39	88	attack+1
+10235	sneasel-hisui	sneasel	regional	fighting/poison	55	95	55	35	75	115	430	inner-focus keen-eye pickpocket*	9	270	86	speed+1
+10236	samurott-hisui	samurott	regional	water/dark	90	108	80	100	65	85	528	torrent sharpness*	15	582	238	special-attack+3
+10237	lilligant-hisui	lilligant	regional	grass/fighting	70	105	75	50	75	105	480	chlorophyll hustle leaf-guard*	12	192	168	special-attack+2
+10238	zorua-hisui	zorua	regional	normal/ghost	35	60	40	85	40	70	330	illusion	7	125	66	special-attack+1
+10239	zoroark-hisui	zoroark	regional	normal/ghost	55	100	60	125	60	110	510	illusion	16	730	179	special-attack+2
+10240	braviary-hisui	braviary	regional	psychic/flying	110	83	70	112	70	65	510	keen-eye sheer-force tinted-lens*	17	434	179	attack+2
+10241	sliggoo-hisui	sliggoo	regional	steel/dragon	58	75	83	83	113	40	452	sap-sipper shell-armor gooey*	7	685	158	special-defense+2
+10242	goodra-hisui	goodra	regional	steel/dragon	80	100	100	110	150	60	600	sap-sipper shell-armor gooey*	17	3341	270	special-defense+3
+10243	avalugg-hisui	avalugg	regional	ice/rock	95	127	184	34	36	38	514	strong-jaw ice-body sturdy*	14	2624	180	defense+2
+10244	decidueye-hisui	decidueye	regional	grass/fighting	88	112	80	95	95	60	530	overgrow scrappy*	16	370	239	attack+3
+10245	dialga-origin	dialga	forma-batalha	steel/dragon	100	100	120	150	120	90	680	pressure telepathy*	70	8487	306	special-attack+3
+10246	palkia-origin	palkia	forma-batalha	water/dragon	90	100	100	150	120	120	680	pressure telepathy*	63	6590	306	special-attack+3
+10247	basculin-white-striped	basculin	forma	water	70	92	65	80	55	98	460	rattled adaptability mold-breaker*	10	180	161	speed+2
+10248	basculegion-female	basculegion	forma	water/ghost	120	92	65	100	75	78	530	swift-swim adaptability mold-breaker*	30	1100	265	hp+3
+10249	enamorus-therian	enamorus	forma-batalha	fairy/flying	74	115	110	135	100	46	580	overcoat	16	480	116	special-attack+3
+10250	tauros-paldea-combat-breed	tauros	regional	fighting	75	110	105	30	70	100	490	intimidate anger-point cud-chew*	14	1150	172	attack+2
+10251	tauros-paldea-blaze-breed	tauros	regional	fighting/fire	75	110	105	30	70	100	490	intimidate anger-point cud-chew*	14	850	172	attack+2
+10252	tauros-paldea-aqua-breed	tauros	regional	fighting/water	75	110	105	30	70	100	490	intimidate anger-point cud-chew*	14	1100	172	attack+2
+10253	wooper-paldea	wooper	regional	poison/ground	55	45	45	25	25	15	210	poison-point water-absorb unaware*	4	110	42	hp+1
+10254	oinkologne-female	oinkologne	forma	normal	115	90	70	59	90	65	489	aroma-veil gluttony thick-fat*	10	1200	171	hp+2
+10255	dudunsparce-three-segment	dudunsparce	forma	normal	125	100	80	85	75	55	520	serene-grace run-away rattled*	45	474	182	hp+2
+10256	palafin-hero	palafin	forma	water	100	160	97	106	87	100	650	zero-to-hero	18	974	160	hp+2
+10257	maushold-family-of-three	maushold	forma	normal	74	75	70	65	75	111	470	friend-guard cheek-pouch technician*	3	23	165	speed+2
+10258	tatsugiri-droopy	tatsugiri	forma	dragon/water	68	50	60	120	95	82	475	commander storm-drain*	3	80	166	special-attack+2
+10259	tatsugiri-stretchy	tatsugiri	forma	dragon/water	68	50	60	120	95	82	475	commander storm-drain*	3	80	166	special-attack+2
+10260	squawkabilly-blue-plumage	squawkabilly	forma	normal/flying	82	96	51	45	51	92	417	intimidate hustle guts*	6	24	146	attack+1
+10261	squawkabilly-yellow-plumage	squawkabilly	forma	normal/flying	82	96	51	45	51	92	417	intimidate hustle sheer-force*	6	24	146	attack+1
+10262	squawkabilly-white-plumage	squawkabilly	forma	normal/flying	82	96	51	45	51	92	417	intimidate hustle sheer-force*	6	24	146	attack+1
+10263	gimmighoul-roaming	gimmighoul	forma	ghost	45	30	25	75	45	80	300	run-away	1	10	60	special-attack+1
+10264	koraidon-limited-build	koraidon	forma	fighting/dragon	100	135	115	85	100	135	670	orichalcum-pulse	35	3030	335	attack+3
+10265	koraidon-sprinting-build	koraidon	forma	fighting/dragon	100	135	115	85	100	135	670	orichalcum-pulse	35	3030	335	attack+3
+10266	koraidon-swimming-build	koraidon	forma	fighting/dragon	100	135	115	85	100	135	670	orichalcum-pulse	35	3030	335	attack+3
+10267	koraidon-gliding-build	koraidon	forma	fighting/dragon	100	135	115	85	100	135	670	orichalcum-pulse	35	3030	335	attack+3
+10268	miraidon-low-power-mode	miraidon	forma	electric/dragon	100	85	100	135	115	135	670	hadron-engine	28	2400	335	special-attack+3
+10269	miraidon-drive-mode	miraidon	forma	electric/dragon	100	85	100	135	115	135	670	hadron-engine	28	2400	335	special-attack+3
+10270	miraidon-aquatic-mode	miraidon	forma	electric/dragon	100	85	100	135	115	135	670	hadron-engine	28	2400	335	special-attack+3
+10271	miraidon-glide-mode	miraidon	forma	electric/dragon	100	85	100	135	115	135	670	hadron-engine	28	2400	335	special-attack+3
+10272	ursaluna-bloodmoon	ursaluna	forma	ground/normal	113	70	120	135	65	52	555	minds-eye	24	2900	275	attack+3
+10273	ogerpon-wellspring-mask	ogerpon	forma	grass/water	80	120	84	60	96	110	550	water-absorb	12	398	275	attack+3
+10274	ogerpon-hearthflame-mask	ogerpon	forma	grass/fire	80	120	84	60	96	110	550	mold-breaker	12	398	275	attack+3
+10275	ogerpon-cornerstone-mask	ogerpon	forma	grass/rock	80	120	84	60	96	110	550	sturdy	12	398	275	attack+3
+10276	terapagos-terastal	terapagos	forma	normal	95	95	110	105	110	85	600	tera-shell	3	160	90	defense+2 special-defense+2
+10277	terapagos-stellar	terapagos	forma	normal	160	105	110	130	110	85	700	teraform-zero	17	770	90	hp+3
+10278	clefable-mega	clefable	mega	fairy/flying	95	80	93	135	110	70	583	magic-bounce	17	423	-	-
+10279	victreebel-mega	victreebel	mega	grass/poison	80	125	85	135	95	70	590	innards-out	45	1255	-	-
+10280	starmie-mega	starmie	mega	water/psychic	60	100	105	130	105	120	620	huge-power	23	800	-	-
+10281	dragonite-mega	dragonite	mega	dragon/flying	91	124	115	145	125	100	700	multiscale	22	2900	-	-
+10282	meganium-mega	meganium	mega	grass/fairy	80	92	115	143	115	80	625	mega-sol	24	2010	-	-
+10283	feraligatr-mega	feraligatr	mega	water/dragon	85	160	125	89	93	78	630	dragonize	23	1088	-	-
+10284	skarmory-mega	skarmory	mega	steel/flying	65	140	110	40	100	110	565	stalwart	17	404	-	-
+10285	froslass-mega	froslass	mega	ice/ghost	70	80	70	140	100	120	580	snow-warning	26	296	-	-
+10286	emboar-mega	emboar	mega	fire/fighting	110	148	75	110	110	75	628	mold-breaker	18	1803	-	-
+10287	excadrill-mega	excadrill	mega	ground/steel	110	165	100	65	65	103	608	piercing-drill	9	600	-	-
+10288	scolipede-mega	scolipede	mega	bug/poison	60	140	149	75	99	62	585	shell-armor	32	2305	-	-
+10289	scrafty-mega	scrafty	mega	dark/fighting	65	130	135	55	135	68	588	intimidate	11	310	-	-
+10290	eelektross-mega	eelektross	mega	electric	85	145	80	135	90	80	615	eelevate	30	1800	-	-
+10291	chandelure-mega	chandelure	mega	ghost/fire	60	75	110	175	110	90	620	infiltrator	25	696	-	-
+10292	chesnaught-mega	chesnaught	mega	grass/fighting	88	137	172	74	115	44	630	bulletproof	16	900	-	-
+10293	delphox-mega	delphox	mega	fire/psychic	75	69	72	159	125	134	634	levitate	15	390	-	-
+10294	greninja-mega	greninja	mega	water/dark	72	125	77	133	81	142	630	protean	15	400	-	-
+10295	pyroar-mega	pyroar	mega	fire/normal	86	88	92	129	86	126	607	fire-mane	15	933	-	-
+10296	floette-mega	floette	mega	fairy	74	85	87	155	148	102	651	fairy-aura	2	1008	-	-
+10297	malamar-mega	malamar	mega	dark/psychic	86	102	88	98	120	88	582	contrary	29	698	-	-
+10298	barbaracle-mega	barbaracle	mega	rock/fighting	72	140	130	64	106	88	600	tough-claws	22	1000	-	-
+10299	dragalge-mega	dragalge	mega	poison/dragon	65	85	105	132	163	44	594	regenerator	21	1003	-	-
+10300	hawlucha-mega	hawlucha	mega	fighting/flying	78	137	100	74	93	118	600	no-guard	10	250	-	-
+10301	zygarde-mega	zygarde	mega	dragon/ground	216	70	91	216	85	100	778	-	77	6100	-	-
+10302	drampa-mega	drampa	mega	normal/dragon	78	85	110	160	116	36	585	berserk	30	2405	-	-
+10303	falinks-mega	falinks	mega	fighting	65	135	135	70	65	100	570	defiant	16	990	-	-
+10304	raichu-mega-x	raichu	mega	electric	60	135	95	90	95	110	585	electric-surge	12	380	-	-
+10305	raichu-mega-y	raichu	mega	electric	60	100	55	160	80	130	585	no-guard	10	260	-	-
+10306	chimecho-mega	chimecho	mega	psychic/steel	75	50	110	135	120	65	555	levitate	12	80	-	-
+10307	absol-mega-z	absol	mega	dark/ghost	65	154	60	75	60	151	565	sharpness	12	490	-	-
+10308	staraptor-mega	staraptor	mega	fighting/flying	85	140	100	60	90	110	585	contrary	19	500	-	-
+10309	garchomp-mega-z	garchomp	mega	dragon	108	130	85	141	85	151	700	levitate	19	990	-	-
+10310	lucario-mega-z	lucario	mega	fighting/steel	70	100	70	164	70	151	625	aura-guard	13	494	-	-
+10311	heatran-mega	heatran	mega	fire/steel	91	120	106	175	141	67	700	-	28	5700	-	-
+10312	darkrai-mega	darkrai	mega	dark	70	120	130	165	130	85	700	-	30	2400	-	-
+10313	golurk-mega	golurk	mega	ground/ghost	89	159	105	70	105	55	583	unseen-fist	40	3300	-	-
+10314	meowstic-male-mega	meowstic	mega	psychic	74	48	76	143	101	124	566	trace	8	101	-	-
+10315	crabominable-mega	crabominable	mega	fighting/ice	97	157	122	62	107	33	578	iron-fist	26	2528	-	-
+10316	golisopod-mega	golisopod	mega	bug/steel	75	150	175	70	120	40	630	tough-claws	23	1480	-	-
+10317	magearna-mega	magearna	mega	steel/fairy	80	125	115	170	115	95	700	-	13	2481	-	-
+10318	magearna-original-mega	magearna	mega	steel/fairy	80	125	115	170	115	95	700	-	13	2481	-	-
+10319	zeraora-mega	zeraora	mega	electric	88	157	75	147	80	153	700	-	15	445	-	-
+10320	scovillain-mega	scovillain	mega	grass/fire	65	138	85	138	85	75	586	spicy-spray	12	220	-	-
+10321	glimmora-mega	glimmora	mega	rock/poison	83	90	105	150	96	101	625	adaptability	28	770	-	-
+10322	tatsugiri-curly-mega	tatsugiri	mega	dragon/water	68	65	90	135	125	92	575	-	6	240	-	-
+10323	tatsugiri-droopy-mega	tatsugiri	mega	dragon/water	68	65	90	135	125	92	575	-	6	240	-	-
+10324	tatsugiri-stretchy-mega	tatsugiri	mega	dragon/water	68	65	90	135	125	92	575	-	6	240	-	-
+10325	baxcalibur-mega	baxcalibur	mega	dragon/ice	115	175	117	105	101	87	700	thermal-exchange	21	3150	-	-
+10326	meowstic-female-mega	meowstic	mega	psychic	74	48	76	143	101	124	566	trace	8	101	-	-

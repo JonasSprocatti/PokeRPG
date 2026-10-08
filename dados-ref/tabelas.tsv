@@ -1,0 +1,215 @@
+tabela	chave	valor
+natureza	hardy	+attack -attack
+natureza	bold	+defense -attack
+natureza	modest	+special-attack -attack
+natureza	calm	+special-defense -attack
+natureza	timid	+speed -attack
+natureza	lonely	+attack -defense
+natureza	docile	+defense -defense
+natureza	mild	+special-attack -defense
+natureza	gentle	+special-defense -defense
+natureza	hasty	+speed -defense
+natureza	adamant	+attack -special-attack
+natureza	impish	+defense -special-attack
+natureza	bashful	+special-attack -special-attack
+natureza	careful	+special-defense -special-attack
+natureza	rash	+special-attack -special-defense
+natureza	jolly	+speed -special-attack
+natureza	naughty	+attack -special-defense
+natureza	lax	+defense -special-defense
+natureza	quirky	+special-defense -special-defense
+natureza	naive	+speed -special-defense
+natureza	brave	+attack -speed
+natureza	relaxed	+defense -speed
+natureza	quiet	+special-attack -speed
+natureza	sassy	+special-defense -speed
+natureza	serious	+speed -speed
+curvaXP	slow	\frac{5x^3}{4}
+curvaXP	medium	x^3
+curvaXP	fast	\frac{4x^3}{5}
+curvaXP	medium-slow	\frac{6x^3}{5} - 15x^2 + 100x - 140
+curvaXP	slow-then-very-fast	\begin{cases} \frac{ x^3 \left( 100 - x \right) }{50}, & \text{if } x \leq 50 \\ \frac{ x^3 \left( 150 - x \right) }{100}, & \text{if } 50 < x \leq 68 \\ \frac{ x^3 \left( 1274 + (x \bmod 3)^2 - 9 (x \bmod 3) - 20 \left\lfloor \frac{x}{3} \right\rfloor \right) }{1000}, & \text{if } 68 < x \leq 98 \\ \frac{ x^3 \left( 160 - x \right) }{100}, & \text{if } x > 98 \\ \end{cases}
+curvaXP	fast-then-very-slow	\begin{cases} \frac{ x^3 \left( 24 + \left\lfloor \frac{x+1}{3} \right\rfloor \right) }{50}, & \text{if } x \leq 15 \\ \frac{ x^3 \left( 14 + x \right) }{50}, & \text{if } 15 < x \leq 35 \\ \frac{ x^3 \left( 32 + \left\lfloor \frac{x}{2} \right\rfloor \right ) }{50}, & \text{if } x > 35 \\ \end{cases}
+grupoOvo	monster	-
+grupoOvo	water1	-
+grupoOvo	bug	-
+grupoOvo	flying	-
+grupoOvo	ground	-
+grupoOvo	fairy	-
+grupoOvo	plant	-
+grupoOvo	humanshape	-
+grupoOvo	water3	-
+grupoOvo	mineral	-
+grupoOvo	indeterminate	-
+grupoOvo	water2	-
+grupoOvo	ditto	-
+grupoOvo	dragon	-
+grupoOvo	no-eggs	-
+alvo	specific-move	-
+alvo	selected-pokemon-me-first	-
+alvo	ally	-
+alvo	users-field	-
+alvo	user-or-ally	-
+alvo	opponents-field	-
+alvo	user	-
+alvo	random-opponent	-
+alvo	all-other-pokemon	-
+alvo	selected-pokemon	-
+alvo	all-opponents	-
+alvo	entire-field	-
+alvo	user-and-allies	-
+alvo	all-pokemon	-
+alvo	all-allies	-
+alvo	fainting-pokemon	-
+ailment	unknown	-
+ailment	none	-
+ailment	paralysis	-
+ailment	sleep	-
+ailment	freeze	-
+ailment	burn	-
+ailment	poison	-
+ailment	confusion	-
+ailment	infatuation	-
+ailment	trap	-
+ailment	nightmare	-
+ailment	torment	-
+ailment	disable	-
+ailment	yawn	-
+ailment	heal-block	-
+ailment	no-type-immunity	-
+ailment	leech-seed	-
+ailment	embargo	-
+ailment	perish-song	-
+ailment	ingrain	-
+ailment	silence	-
+ailment	tar-shot	-
+ailment	protect	-
+categoriaGolpe	damage	-
+categoriaGolpe	ailment	-
+categoriaGolpe	net-good-stats	-
+categoriaGolpe	heal	-
+categoriaGolpe	damage-ailment	-
+categoriaGolpe	swagger	-
+categoriaGolpe	damage-lower	-
+categoriaGolpe	damage-raise	-
+categoriaGolpe	damage-heal	-
+categoriaGolpe	ohko	-
+categoriaGolpe	whole-field-effect	-
+categoriaGolpe	field-effect	-
+categoriaGolpe	force-switch	-
+categoriaGolpe	unique	-
+flagGolpe	contact	-
+flagGolpe	charge	-
+flagGolpe	recharge	-
+flagGolpe	protect	-
+flagGolpe	reflectable	-
+flagGolpe	snatch	-
+flagGolpe	mirror	-
+flagGolpe	punch	-
+flagGolpe	sound	-
+flagGolpe	gravity	-
+flagGolpe	defrost	-
+flagGolpe	distance	-
+flagGolpe	heal	-
+flagGolpe	authentic	-
+flagGolpe	powder	-
+flagGolpe	bite	-
+flagGolpe	pulse	-
+flagGolpe	ballistics	-
+flagGolpe	mental	-
+flagGolpe	non-sky-battle	-
+flagGolpe	dance	-
+classeGolpe	status	-
+classeGolpe	physical	-
+classeGolpe	special	-
+gatilhoEvolucao	level-up	-
+gatilhoEvolucao	trade	-
+gatilhoEvolucao	use-item	-
+gatilhoEvolucao	shed	-
+gatilhoEvolucao	spin	-
+gatilhoEvolucao	tower-of-darkness	-
+gatilhoEvolucao	tower-of-waters	-
+gatilhoEvolucao	three-critical-hits	-
+gatilhoEvolucao	take-damage	-
+gatilhoEvolucao	in-battle-level-up	-
+gatilhoEvolucao	agile-style-move	-
+gatilhoEvolucao	strong-style-move	-
+gatilhoEvolucao	recoil-damage	-
+gatilhoEvolucao	use-move	-
+gatilhoEvolucao	three-defeated-bisharp	-
+gatilhoEvolucao	gimmighoul-coins	-
+gatilhoEvolucao	meltan-candies	-
+gatilhoEvolucao	unclassified	-
+categoriaItem	stat-boosts	battle
+categoriaItem	effort-drop	berries
+categoriaItem	medicine	berries
+categoriaItem	other	berries
+categoriaItem	in-a-pinch	berries
+categoriaItem	picky-healing	berries
+categoriaItem	type-protection	berries
+categoriaItem	baking-only	berries
+categoriaItem	collectibles	misc
+categoriaItem	evolution	misc
+categoriaItem	spelunking	misc
+categoriaItem	held-items	misc
+categoriaItem	choice	misc
+categoriaItem	effort-training	misc
+categoriaItem	bad-held-items	misc
+categoriaItem	training	misc
+categoriaItem	plates	misc
+categoriaItem	species-specific	misc
+categoriaItem	type-enhancement	misc
+categoriaItem	event-items	key
+categoriaItem	gameplay	key
+categoriaItem	plot-advancement	key
+categoriaItem	unused	key
+categoriaItem	loot	misc
+categoriaItem	all-mail	mail
+categoriaItem	vitamins	medicine
+categoriaItem	healing	medicine
+categoriaItem	pp-recovery	medicine
+categoriaItem	revival	medicine
+categoriaItem	status-cures	medicine
+categoriaItem	mulch	misc
+categoriaItem	special-balls	pokeballs
+categoriaItem	standard-balls	pokeballs
+categoriaItem	dex-completion	misc
+categoriaItem	scarves	misc
+categoriaItem	all-machines	machines
+categoriaItem	flutes	battle
+categoriaItem	apricorn-balls	pokeballs
+categoriaItem	apricorn-box	key
+categoriaItem	data-cards	key
+categoriaItem	jewels	misc
+categoriaItem	miracle-shooter	battle
+categoriaItem	mega-stones	misc
+categoriaItem	memories	misc
+categoriaItem	z-crystals	key
+categoriaItem	species-candies	misc
+categoriaItem	catching-bonus	berries
+categoriaItem	dynamax-crystals	misc
+categoriaItem	nature-mints	medicine
+categoriaItem	curry-ingredients	misc
+categoriaItem	tera-shard	misc
+categoriaItem	sandwich-ingredients	misc
+categoriaItem	tm-materials	misc
+categoriaItem	picnic	misc
+tipo	normal	rock=0.5 ghost=0 steel=0.5
+tipo	fighting	normal=2 flying=0.5 poison=0.5 rock=2 bug=0.5 ghost=0 steel=2 psychic=0.5 ice=2 dark=2 fairy=0.5
+tipo	flying	fighting=2 rock=0.5 bug=2 steel=0.5 grass=2 electric=0.5
+tipo	poison	poison=0.5 ground=0.5 rock=0.5 ghost=0.5 steel=0 grass=2 fairy=2
+tipo	ground	flying=0 poison=2 rock=2 bug=0.5 steel=2 fire=2 grass=0.5 electric=2
+tipo	rock	fighting=0.5 flying=2 ground=0.5 bug=2 steel=0.5 fire=2 ice=2
+tipo	bug	fighting=0.5 flying=0.5 poison=0.5 ghost=0.5 steel=0.5 fire=0.5 grass=2 psychic=2 dark=2 fairy=0.5
+tipo	ghost	normal=0 ghost=2 psychic=2 dark=0.5
+tipo	steel	rock=2 steel=0.5 fire=0.5 water=0.5 electric=0.5 ice=2 fairy=2
+tipo	fire	rock=0.5 bug=2 steel=2 fire=0.5 water=0.5 grass=2 ice=2 dragon=0.5
+tipo	water	ground=2 rock=2 fire=2 water=0.5 grass=0.5 dragon=0.5
+tipo	grass	flying=0.5 poison=0.5 ground=2 rock=2 bug=0.5 steel=0.5 fire=0.5 water=2 grass=0.5 dragon=0.5
+tipo	electric	flying=2 ground=0 water=2 grass=0.5 electric=0.5 dragon=0.5
+tipo	psychic	fighting=2 poison=2 steel=0.5 psychic=0.5 dark=0
+tipo	ice	flying=2 ground=2 steel=0.5 fire=0.5 water=0.5 grass=2 ice=0.5 dragon=2
+tipo	dragon	steel=0.5 dragon=2 fairy=0
+tipo	dark	fighting=0.5 ghost=2 psychic=2 dark=0.5 fairy=0.5
+tipo	fairy	fighting=2 poison=0.5 steel=0.5 fire=0.5 dragon=2 dark=2
+tipo	stellar	-

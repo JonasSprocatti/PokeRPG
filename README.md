@@ -226,6 +226,9 @@ Duas conquistas de conta saem daí: **Criadouro** (choque **100 ovos** somando a
 ### 🧬 Potencial máximo
 Badge de conta que **muda uma regra**: cause **1.000.000 de dano** com os seus golpes, somando a carreira inteira, e todo Pokémon que você começar a jogar daí em diante nasce com os **6 IVs em 31**. Só conta o dano que você bate — golpe de aliado, veneno, armadilha e recuo não entram, e o modo Fácil não acumula (como em todo progresso de conta). O interruptor "jogar sem as vantagens da conta" na criação desliga ela junto com as outras.
 
+### 🌿 Rotas em potencial máximo
+A irmã dela, do outro lado do campo: **recrute 500 aliados** somando a carreira inteira e, daí em diante, **todo Pokémon selvagem das rotas nasce com os 6 IVs em 31**. Quem você fizer amizade vem perfeito — e os filhotes dos ovos dele também. O preço é honesto e está na descrição da badge: **quem te enfrentar também nasce perfeito**. Alfa, lendário e chefe já tinham IVs 31 desde sempre, então pra eles nada muda; equipe de treinador continua sorteando, porque aquele Pokémon é do treinador e não da rota. Também desliga junto no "jogar sem as vantagens da conta".
+
 ### 🏅 Insígnia Alpha
 Quem criou a conta durante o Alpha ganha, para sempre, uma **Poké Ball dourada com o α** na tela 👤 Conta (e ao lado do nome no topo). A regra é a data de criação da conta, que vem do servidor (`ALPHA_ATE` em `js/alpha.js`); quem entra depois não consegue.
 

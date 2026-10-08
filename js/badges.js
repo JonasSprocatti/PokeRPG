@@ -19,6 +19,7 @@ import { EVENTOS } from './evento.js';
 
 export const ALVO_TIPO = 1000;          // derrotados de um tipo pra ganhar a vantagem daquele tipo
 export const ALVO_AMIGOS = 100;         // aliados recrutados na conta inteira
+export const ALVO_AMIGOS_MAX = 500;     // …e o alvo da badge que põe IV 31 em todo selvagem de rota
 export const ALVO_PERDIDOS = 15;        // parceiros perdidos de vez numa MESMA run (badge "Cemitério de parceiros")
 export const ALVO_OVOS = 100;           // ovos chocados na carreira → ovo de pseudo-lendário em toda jornada (ovos.js)
 export const ALVO_OVOS_LENDA = 1000;    // …e de lendário ou mítico
@@ -119,6 +120,15 @@ export const BADGES = [
   { id: 'ivs-perfeitos', grupo: 'Maestria', icone: '🧬', nome: 'Potencial máximo',
     desc: `Cause ${ALVOS.dano.toLocaleString('pt-BR')} de dano com os seus golpes, somando a carreira inteira. Depois disso, todo Pokémon que você começar a jogar nasce com os 6 IVs em 31.`,
     mede: c => feito(c.danoCausado, ALVOS.dano), recompensa: { ivsPerfeitos: true, titulo: 'Potencial máximo' } },
+  /* A irmã da de cima, do outro lado do campo: os IVs 31 passam a valer pro SELVAGEM da rota. Mede amizade de
+     propósito — é a vantagem de verdade dela. Selvagem é de onde sai todo aliado (petisco) e, por eles, todo ovo:
+     recrutar 500 ao longo da carreira faz com que cada um que você recrute depois já nasça perfeito. O preço está
+     na descrição porque é real e o jogador precisa saber antes: quem te enfrenta também nasce perfeito. Alfa,
+     lendário e chefe já eram 31 — pra eles nada muda. Vale só pro selvagem, não pra equipe de treinador: aquele
+     Pokémon é do treinador, não da rota. */
+  { id: 'ivs-selvagens', grupo: 'Maestria', icone: '🌿', nome: 'Rotas em potencial máximo',
+    desc: `Recrute ${ALVO_AMIGOS_MAX} aliados somando a carreira inteira. Depois disso, todo Pokémon selvagem das rotas nasce com os 6 IVs em 31 — os que você recrutar vêm perfeitos, e os que te enfrentarem também.`,
+    mede: c => feito(c.amigos, ALVO_AMIGOS_MAX), recompensa: { ivsSelvagens: true, titulo: 'Rotas em potencial máximo' } },
   { id: 'rayquaza-lenda', grupo: 'Rayquaza', icone: '🏆', nome: 'Senhor dos céus',
     desc: 'Tenha as duas conquistas do Rayquaza: o shiny e a Mega.',
     mede: c => feito((c.rayquazaShiny >= 1 ? 1 : 0) + (c.rayquazaAbates >= ALVOS.mega ? 1 : 0), 2),
@@ -217,7 +227,7 @@ export function badgesDaConta(ctx) {
    `iniciarJornada` usa isto quando as vantagens estão ligadas. `ovos` são os TIPOS de ovo ('pseudo' | 'lendario');
    quem sorteia a espécie é a criação, que é quem conhece o mapa (ovos.ovoDeBadge). */
 export function vantagensDe(lista) {
-  const out = { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, titulos: [], ovos: [] };
+  const out = { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, ivsSelvagens: false, titulos: [], ovos: [] };
   for (const b of lista) {
     if (!b.completo) continue;
     const r = b.recompensa || {};
@@ -225,6 +235,7 @@ export function vantagensDe(lista) {
     out.dinheiro += r.dinheiro || 0;
     if (r.lojaGratis) out.lojaGratis = true;
     if (r.ivsPerfeitos) out.ivsPerfeitos = true;
+    if (r.ivsSelvagens) out.ivsSelvagens = true;
     if (r.ovo) out.ovos.push(r.ovo);
     if (r.titulo) out.titulos.push(r.titulo);
   }

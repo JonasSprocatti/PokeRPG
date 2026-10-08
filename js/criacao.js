@@ -152,7 +152,7 @@ function renderVantagens() {
   const v = vantagensDe(ganhas);
   const itens = Object.entries(v.itens).map(([k, n]) => `${esc(ITEMS[k]?.name || k)} ×${n}`);
   const ovoTexto = { pseudo: '🥚 um ovo de pseudo-lendário', lendario: '🥚 um ovo de lendário ou mítico' };
-  const linhas = [...itens, v.dinheiro ? `₽${v.dinheiro.toLocaleString('pt-BR')} a mais` : '', v.lojaGratis ? 'loja de graça' : '',
+  const linhas = [...itens, v.dinheiro ? `₽${v.dinheiro.toLocaleString('pt-BR')} a mais` : '', v.lojaGratis ? 'loja de graça' : '', v.ivsPerfeitos ? '🧬 seus IVs em 31' : '', v.ivsSelvagens ? '🌿 IVs 31 em todo selvagem' : '',
     ...(v.ovos || []).map(t => ovoTexto[t] || '🥚 um ovo')].filter(Boolean);
   el.innerHTML = `<label class="check caca-opcao"><input type="checkbox" id="pv-sem-vantagens" data-act="sem-vantagens" ${G.semVantagens ? 'checked' : ''}>
       🎖 Jogar sem as vantagens da conta
@@ -403,10 +403,11 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   let evo;
   if (sp.evoUrl) { try { evo = await loadEvo(sp.evoUrl); } catch (e) { console.warn('evolução vem depois:', e.message); } }
   else evo = null;
-  /* Vantagens das badges (badges.js): itens, dinheiro e — com a badge "Potencial máximo" — os 6 IVs em 31.
+  /* Vantagens das badges (badges.js): itens, dinheiro, os 6 IVs em 31 com a badge "Potencial máximo" e os IVs 31
+     do SELVAGEM de rota com a "Rotas em potencial máximo" (lida em `batalha.novoOponente` por `S.ivsSelvagens`).
      G.semVantagens desliga tudo: quem joga sem elas ganha bônus de pontuação no ranking (regras.pontuacao), e IVs
      perfeitos de graça junto com esse bônus seria o melhor dos dois mundos. */
-  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, ovos: [] } : vantagensDaConta();
+  const v = G.semVantagens ? { itens: {}, dinheiro: 0, lojaGratis: false, ivsPerfeitos: false, ivsSelvagens: false, ovos: [] } : vantagensDaConta();
   const mon = await makeMon(data, level, { nature, ability, nick, shiny, ivs: v.ivsPerfeitos ? IVS_MAX : undefined });
   mon.exp = growth[mon.level];
   // começa na rota mais alta do mapa que já combina com o seu nível (nível 5 = a 1ª rota)
@@ -419,7 +420,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
      dentro do ovo sem aparecer em tela nenhuma até chocar. Nada de rede neste caminho: os ciclos de choco de cada
      tipo são fixos (CICLOS_PSEUDO/CICLOS_LENDARIO), então começar a jornada nunca espera por isso. */
   const ovosIniciais = (v.ovos || []).map(t => ovoDeBadge(t, t === 'lendario' ? especiesLendarias() : PSEUDO_LENDARIOS)).filter(Boolean);
-  G.S = { player: mon, bag, aliados: [], ovos: ovosIniciais, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
+  G.S = { player: mon, bag, aliados: [], ovos: ovosIniciais, money: 500 + v.dinheiro, lojaGratis: v.lojaGratis, ivsSelvagens: v.ivsSelvagens, semVantagens: !!G.semVantagens, gen, zone: startZone.id, meta: { growth, evo }, wins: 0, log: [], dificuldade,
     climaRotas: !!(DIFICULDADES[dificuldade].climaRotasFixo || G.climaRotas), // 🌦 clima/terreno das rotas: fixo no Roguelike/Hardcore, opção nos outros (regras.climaDasRotasAtivo)
     cacaShiny: !!G.cacaShiny, caca: {}, // 🎯 modo Caça Shiny: escolhido agora e vale pra jornada inteira (mapas.js)
     especieInicial: data.speciesName, criadoEm: new Date().toISOString(), tempoMs: 0, ultimoTick: Date.now(),
@@ -437,6 +438,7 @@ async function iniciarJornada({ data, level, nature, ability, nick = '', dificul
   if (G.S.climaRotas) log('🌦 Clima e terreno das rotas ligados: várias rotas começam a luta com o tempo da paisagem.', 'muted');
   if (mon.shiny) log('✨ Suas cores brilham diferente. Você é um Pokémon shiny — 1 em 4096!', 'level');
   if (v.ivsPerfeitos) log('🧬 Potencial máximo: seus 6 IVs nasceram em 31, o teto. É a badge do milhão de dano fazendo efeito.', 'level');
+  if (v.ivsSelvagens) log('🌿 Rotas em potencial máximo: todo selvagem destas rotas nasce com os 6 IVs em 31. Quem você recrutar vem perfeito — e quem te enfrentar também.', 'level');
   if (ovosIniciais.length) log(`🥚 Você carrega ${ovosIniciais.length === 1 ? 'um ovo' : `${ovosIniciais.length} ovos`} de presente das suas badges. Ninguém sabe o que tem dentro — explore pra chocar (veja no painel de Aliados).`, 'level');
   const dif = DIFICULDADES[dificuldade];
   if (!dif.escolhaLivre) log(`${dif.nome}: natureza ${esc(natureLabel(mon.nature))}, habilidade ${esc(fmt(mon.ability))}.`, 'muted');

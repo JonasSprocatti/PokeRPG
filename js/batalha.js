@@ -14,7 +14,7 @@ import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } f
 import { ganharFelicidade } from './evolucao.js';
 import { useItem, addItem } from './itens.js';
 import { oferecer } from './amizade.js';
-import { makeMon } from './pokemon.js';
+import { makeMon, IVS_MAX } from './pokemon.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
@@ -178,10 +178,11 @@ function sortearOponente(z) {
 }
 /* Porta ÚNICA do Pokémon selvagem: encontro comum, acompanhante de grupo (⚔ Saga) e lacaio do Alfa saem todos
    daqui. É por isso que o item segurado é posto AQUI e não em `startBattle` — assim nenhum caminho de selvagem
-   nasce sem passar pelo sorteio, e Alfa/lendário/chefe (que usam `makeMon` direto) seguem sem item de propósito. */
+   nasce sem passar pelo sorteio, e Alfa/lendário/chefe (que usam `makeMon` direto) seguem sem item de propósito.
+   Os IVs 31 da badge "Rotas em potencial máximo" (`S.ivsSelvagens`) entram aqui pelo mesmo motivo. */
 async function novoOponente(z) {
   const { id, level } = sortearOponente(z);
-  const M = await makeMon(await loadPokemon(id), level);
+  const M = await makeMon(await loadPokemon(id), level, G.S.ivsSelvagens ? { ivs: IVS_MAX } : {});
   const item = itemDeSelvagem();
   if (item) M.item = item;      // `seg(m)` já lê isso dos dois lados: o efeito vale sem mais nenhuma linha
   return M;
@@ -401,9 +402,9 @@ export async function startBattle(z) {
 }
 // Alfa da zona: IVs perfeitos + statsDeChefe (HP ×2, resto ×1,3). Não aceita petisco; dá pra fugir.
 export async function startBossBattle(z) {
-  const c = z.chefe, max = Object.fromEntries(STATS.map(s => [s, 31]));
+  const c = z.chefe;
   if (offline() && !pokemonEmCache(c.id)) throw erroOffline(`📴 Sem internet: o Alfa de ${z.name} ainda não está salvo neste aparelho. Desafie ele online uma vez, ou baixe o mapa em ⚙ Ajustes → Jogar offline.`);
-  const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: max });
+  const E = await makeMon(await loadPokemon(c.id), c.nivel, { ivs: IVS_MAX });
   E.stats = statsDeChefe(E.stats); E.hp = E.stats.hp; E.chefe = z.id; E.statsChefe = true;
   /* ⚔ Saga: o Alfa não guarda a rota sozinho — vêm dois lacaios da própria rota com ele (sem stats de chefe).
      É o que transforma a luta de Alfa num encontro de RPG: a comitiva tem de decidir se limpa os lacaios ou
@@ -423,10 +424,10 @@ export async function startBossBattle(z) {
 // de um treinador — só que sem bolas. IVs perfeitos; o último (o principal) ainda vem turbinado como Alfa.
 // Vencer = fechar a Gen (vencerGen). Dá pra fugir e voltar depois; não aceita petisco.
 export async function startLendarios(z) {
-  const seq = sequenciaLendaria(z), max = Object.fromEntries(STATS.map(s => [s, 31]));
+  const seq = sequenciaLendaria(z);
   if (offline() && seq.some(l => !pokemonEmCache(l.id))) throw erroOffline(`📴 Sem internet: os lendários de ${z.name} ainda não estão salvos neste aparelho. Baixe o mapa em ⚙ Ajustes → Jogar offline.`);
   const equipe = await Promise.all(seq.map(async (l, i) => {
-    const M = await makeMon(await loadPokemon(l.id), l.nivel, { ivs: max });
+    const M = await makeMon(await loadPokemon(l.id), l.nivel, { ivs: IVS_MAX });
     if (i === seq.length - 1) { M.stats = statsDeChefe(M.stats); M.hp = M.stats.hp; M.statsChefe = true; }
     M.lendario = true; return M;
   }));
@@ -445,8 +446,7 @@ export async function startLendarios(z) {
 export async function startEvento(ev) {
   const S = G.S, P = S.player;
   if (offline() && !pokemonEmCache(ev.formaId)) throw erroOffline(`📴 Sem internet: ${ev.nome} ainda não está salvo neste aparelho. Abra o evento online uma vez.`);
-  const max = Object.fromEntries(STATS.map(s => [s, 31]));
-  const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(P.level), { ivs: max, shiny: false, ability: habilidadeDoChefe(ev.chefe) || undefined });
+  const E = await makeMon(await loadPokemon(ev.formaId), nivelDoChefe(P.level), { ivs: IVS_MAX, shiny: false, ability: habilidadeDoChefe(ev.chefe) || undefined });
   // golpes escolhidos a dedo (a lista de nível do Eternamax é curta e fraca demais pra um chefe)
   const golpes = (await Promise.all((ev.golpes || []).map(n => loadMove(`${API}/move/${n}/`).catch(() => null)))).filter(Boolean).map(m => ({ ...m, ppLeft: m.pp }));
   if (golpes.length) E.moves = golpes;
