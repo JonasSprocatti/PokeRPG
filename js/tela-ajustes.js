@@ -15,7 +15,7 @@ import { adsConfigurado, consentimento } from './ads.js';
 import { presencaLigada } from './presenca.js';
 import { nuvemConfigurada } from './nuvem.js';
 import { somLigado } from './som.js';
-import { permissao, notificacoesLigadas } from './notificacoes.js';
+import { permissao, notificacoesLigadas, pushDisponivel } from './notificacoes.js';
 
 export function telaAjustes() {
   G.mode = 'ajustes'; limparTopo();
@@ -185,14 +185,18 @@ function htmlAds() {
       <button class="btn ${c === 'recusado' ? '' : 'ghost'} sm" data-act="ads-consentimento" data-v="recusado">Recusar</button>
     </div>`;
 }
-/* Notificações do navegador (js/notificacoes.js): hoje quem usa é o 🤖 auto-explorar ("achei o Pokémon"), e
-   qualquer aviso futuro que valha interromper entra pela mesma porta. A permissão SÓ pode ser pedida dentro de
-   um clique — por isso é um botão, e não algo que o jogo tente sozinho ao abrir a tela. Recusou? O navegador
-   não pergunta de novo; só as configurações do site resolvem, e o texto diz isso em vez de deixar um botão que
-   não faz nada. */
+/* Notificações do navegador (js/notificacoes.js): o aviso dentro da aba (🤖 auto-explorar, "achei o Pokémon") e,
+   com conta, os LEMBRETES por push — o jogo fechado avisando que o seu Pokémon está esperando, que falta pouco
+   pra uma badge ou que o chefe da semana trocou (js/lembretes.js escolhe o texto).
+   A permissão SÓ pode ser pedida dentro de um clique — por isso é um botão, e não algo que o jogo tente sozinho
+   ao abrir a tela. Recusou? O navegador não pergunta de novo; só as configurações do site resolvem, e o texto diz
+   isso em vez de deixar um botão que não faz nada.
+   A linha do push só aparece pra quem PODE recebê-lo (`pushDisponivel`: chave VAPID configurada e conta ligada) —
+   prometer na tela o que não vai chegar é pior que não falar. */
 function htmlNotificacoes() {
   const p = permissao();
-  const explica = '<p class="small muted">O jogo avisa na tela de qualquer jeito; a notificação é pra quando você está em outra aba — o aviso de que o Pokémon que você estava caçando apareceu, por exemplo. Nada é enviado por servidor nenhum: o aviso nasce no seu aparelho, com o jogo aberto.</p>';
+  const explica = `<p class="small muted">O jogo avisa na tela de qualquer jeito; a notificação é pra quando você não está olhando — o Pokémon que você estava caçando apareceu, por exemplo.</p>
+    ${pushDisponivel() ? '<p class="small muted">🔔 Com a sua conta ligada, o jogo também manda <b>lembretes</b> com ele fechado: o seu Pokémon esperando numa rota, um ovo quase chocando, uma badge a pouco do alvo, o chefe novo da semana. No máximo um por dia, e desmarcar aqui cancela na hora.</p>' : ''}`;
   if (p === 'sem-suporte') return `<h3 class="passo"><span>N</span> Notificações</h3>${explica}
     <p class="small muted">Este navegador não tem notificação. No iPhone, ela só funciona depois de adicionar o jogo à tela de início.</p>`;
   if (p === 'denied') return `<h3 class="passo"><span>N</span> Notificações</h3>${explica}

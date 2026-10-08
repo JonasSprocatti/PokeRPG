@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   MAX_OVOS, CHANCE_OVO, CICLOS_PADRAO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, IVS_HERDADOS, GRUPO_SEM_OVO,
   IVS_COM_NO, GRUPO_DITTO, ITEM_NATUREZA, ITEM_IVS, CHANCE_GOLPE_OVO,
-  ovos, acharPar, parCompativel, podeCruzar, ivsHerdados, golpeHerdado, criarOvo, ovoDeBadge, andarOvos, tirarOvo, passosParaChocar,
+  MS_POR_PASSO, ovos, acharPar, parCompativel, podeCruzar, ivsHerdados, golpeHerdado, criarOvo, ovoDeBadge, andarOvos, andarNoTempo, tirarOvo, passosParaChocar,
   situacaoDoNinho, quantosIvsHerdados, naturezaHerdada, golpeOvo, ehDitto
 } from '../js/ovos.js';
 import { STATS } from '../js/dados.js';
@@ -139,6 +139,35 @@ test('andar conta exploração, trava no alvo e só devolve o que está pronto',
   assert.equal(tirarOvo(S, ovo), true);
   assert.equal(ovos(S).length, 0);
   assert.equal(tirarOvo(S, ovo), false, 'tirar duas vezes não tira outro ovo do ninho');
+});
+
+/* O relógio (pedido de 08/10/2026): 1 minuto = 1 passo, com o jogo aberto ou fechado. O que tem de ser à prova de
+   erro é o MARCO (`ovo.em`): perder os segundos quebrados a cada crédito faria um ovo creditado de 30 em 30 s nunca
+   andar, e creditar retroativo num ovo recém-posto o faria nascer na hora. */
+test('o ovo anda com o relógio, guarda o resto dos segundos e não desanda', () => {
+  const t0 = Date.UTC(2026, 9, 8, 12, 0, 0);
+  const S = { ovos: [criarOvo({ especie: 'dratini', ciclos: CICLOS_PSEUDO, agora: t0 })] };
+  const ovo = ovos(S)[0];
+  assert.deepEqual(andarNoTempo(S, t0 + 59_000), [], 'menos de um minuto não anda');
+  assert.equal(ovo.passos, 0);
+  andarNoTempo(S, t0 + 90 * MS_POR_PASSO + 30_000);
+  assert.equal(ovo.passos, 90, '90 minutos = 90 passos');
+  andarNoTempo(S, t0 + 90 * MS_POR_PASSO + 60_000);
+  assert.equal(ovo.passos, 91, 'os 30 s que sobraram ficaram guardados no marco — meio minuto + meio minuto = 1 passo');
+  andarNoTempo(S, t0);   // relógio do aparelho pra trás (fuso, correção de hora)
+  assert.equal(ovo.passos, 91, 'ovo não desanda');
+  assert.equal(andarNoTempo(S, t0 + 999 * MS_POR_PASSO).length, 1, 'passou do alvo: pronto');
+  assert.equal(ovo.passos, ovo.alvo, 'e travado no alvo, como no caminho das explorações');
+});
+
+test('ovo de save antigo (sem marco) começa a contar de agora, sem crédito retroativo', () => {
+  const t0 = Date.UTC(2026, 9, 8, 12, 0, 0);
+  const S = { ovos: [{ especie: 'dratini', alvo: 200, passos: 10 }] };   // posto antes de `em` existir
+  andarNoTempo(S, t0);
+  assert.equal(ovos(S)[0].passos, 10, 'não ganha nada pelo tempo que ninguém mediu');
+  assert.equal(ovos(S)[0].em, t0);
+  andarNoTempo(S, t0 + 5 * MS_POR_PASSO);
+  assert.equal(ovos(S)[0].passos, 15);
 });
 
 test('ovo de badge sorteia da lista e usa os ciclos do tipo', () => {

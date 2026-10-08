@@ -28,7 +28,7 @@ const PRECACHE = [
   './js/criacao.js', './js/dados.js', './js/dados-mapas.js', './js/dados-megas.js', './js/dados-item-sprites.js', './js/dados-golpe-flags.js', './js/dados-evolucao-restante.js', './js/dev.js', './js/mega.js', './js/tera.js', './js/zmove.js', './js/dynamax.js', './js/esconderijo.js', './js/ovos.js', './js/rastreio.js', './js/cenario.js', './js/dados-patchnotes.js', './js/efeitos.js', './js/especiais.js', './js/estado.js', './js/evolucao.js', './js/fim.js', './js/golpe.js', './js/habilidades.js', './js/itens.js',
   './js/layout.js', './js/loja-conta.js', './js/main.js', './js/mapas.js', './js/missoes.js', './js/mp-motor.js', './js/mp-sanear.js', './js/mp-regras.js', './js/mp-rede.js', './js/mp-cartao.js', './js/mp-resultado.js', './js/mp-telas.js', './js/multiplayer.js', './js/mundo.js', './js/navegacao.js', './js/novidades.js', './js/offline.js', './js/nuvem.js', './js/paineis.js', './js/segurados.js', './js/tela-ajustes.js', './js/tela-patchnotes.js', './js/tela-conquistas.js', './js/conquistas.js', './js/tela-pokedex.js', './js/pokedex-conta.js', './js/progresso-conta.js', './js/badges.js',
   './js/pokemon.js', './js/presenca.js', './js/progressao.js', './js/ranking.js', './js/regras.js', './js/relatos.js', './js/imagens-relato.js', './js/render.js', './js/roguelike.js', './js/saves.js', './js/tela-saves.js', './js/ui.js', './js/util.js', './js/som.js',
-  './js/tutorial.js', './js/tela-tutorial.js', './js/tela-taxas.js', './js/auto.js', './js/notificacoes.js', './js/acordado.js',
+  './js/tutorial.js', './js/tela-tutorial.js', './js/tela-taxas.js', './js/auto.js', './js/notificacoes.js', './js/lembretes.js', './js/acordado.js',
   './js/dados-rotas.js',
   './js/conteudo.js', './js/conteudo-nuvem.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
   './js/dados-musica.js', './js/editor-musica.js', './js/tela-editor-musica.js',
@@ -73,6 +73,32 @@ async function redePrimeiro(req) {
    cabeçalhos das duas formas de pedir não batem, a Cache API responde "não tenho" com o arquivo guardado ali do
    lado, e offline isso vira ícone de imagem quebrada. O conteúdo é o mesmo PNG nos dois casos, então comparar
    cabeçalho aqui não protege de nada: ignorar o Vary só faz a entrada guardada servir os dois. */
+/* ---- push (lembretes com o jogo FECHADO) ----
+   Quem manda é supabase/functions/lembretes, com o título e o corpo já escritos (js/lembretes.js decide o texto;
+   o servidor não conhece regra de jogo nenhuma). O `catch` do JSON não é zelo: um payload estranho que estoure
+   aqui faz o Chrome mostrar a notificação genérica "Este site foi atualizado em segundo plano", que é pior que
+   não avisar. `tag` junta: dois lembretes do mesmo motivo viram um, nunca uma pilha. */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data?.json() || {}; } catch { d = { titulo: 'PokéRPG', corpo: e.data?.text() || '' }; }
+  e.waitUntil(self.registration.showNotification(d.titulo || 'PokéRPG', {
+    body: d.corpo || '', tag: d.tag || 'pokerpg-lembrete', icon: './img/icone-192.png', badge: './img/favicon-32.png',
+    data: { url: d.url || './' }
+  }));
+});
+/* Clicar tem de CAIR no jogo, e numa aba só: se já existe uma aberta, foca ela — abrir a segunda deixaria dois
+   saves do mesmo jogador vivos lado a lado. `includeUncontrolled` porque a aba pode ter sido aberta antes deste sw. */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || './';
+  e.waitUntil((async () => {
+    const abas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const minha = abas.find(c => new URL(c.url).origin === self.location.origin);
+    if (minha) { await minha.focus(); return; }
+    await self.clients.openWindow(url);
+  })());
+});
+
 async function cachePrimeiro(req) {
   const cache = await caches.open(CACHE_EXTERNO);
   const hit = await cache.match(req, { ignoreVary: true });

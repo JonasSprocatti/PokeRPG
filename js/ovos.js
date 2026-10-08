@@ -1,6 +1,7 @@
 /* ============ ovos (criação no esconderijo) ============
    Quem espera no esconderijo (esconderijo.js) não lutava, não ganhava XP e não fazia nada: era um depósito. Agora um
-   casal guardado lá pode deixar um OVO, e o ovo choca andando — as suas explorações é que contam os passos.
+   casal guardado lá pode deixar um OVO, e o ovo choca andando — as suas explorações contam os passos, e o RELÓGIO
+   também: um minuto fora do jogo vale um passo (`andarNoTempo`), então ele avança enquanto você não está jogando.
 
    O que o ovo é de propósito: um SEGREDO. O jogador vê "🥚 Ovo misterioso · 37/200 explorações" e nada mais; a
    espécie, o golpe herdado e o brilho só aparecem quando ele abre. É o que faz valer a pena chocar o próximo.
@@ -49,6 +50,29 @@ const segura = (m, id) => m?.item === id;
    existir): cai no piso de 100, nunca trava o ovo. */
 export const CICLOS_PADRAO = 20, PASSOS_MIN = 100, PASSOS_MAX = 400;
 export const passosParaChocar = ciclos => Math.max(PASSOS_MIN, Math.min(PASSOS_MAX, Math.round((ciclos || CICLOS_PADRAO) * 5)));
+
+/* ---- e o ovo também anda com o RELÓGIO (pedido do usuário, 08/10/2026) ----
+   **Um minuto de relógio = um passo**, contados desde o último crédito (`ovo.em`), esteja o jogo aberto ou não. O
+   ovo passa a chocar sozinho: 100 passos = 1h40, o teto de 400 = 6h40. As explorações continuam valendo e SOMAM —
+   quem está jogando choca antes.
+
+   Por que um marco POR OVO e não um `S.ovosEm` global: ovo posto agora não pode receber crédito pelas três horas
+   em que o jogador esteve fora antes de ele existir.
+   O marco anda em múltiplos de `MS_POR_PASSO` (`em += n * MS_POR_PASSO`, nunca `em = agora`), senão os segundos
+   quebrados são jogados fora a cada crédito e um ovo creditado de 30 em 30 s nunca andaria.
+   Relógio pra TRÁS (fuso, correção de hora) dá `n` negativo e é ignorado — ovo não desanda. */
+export const MS_POR_PASSO = 60 * 1000;
+export function andarNoTempo(S, agora = Date.now()) {
+  const lista = ovos(S);
+  for (const o of lista) {
+    if (!o.em) { o.em = agora; continue; }   // ovo de save antigo: começa a contar daqui, sem crédito retroativo
+    const n = Math.floor((agora - o.em) / MS_POR_PASSO);
+    if (n <= 0) continue;
+    o.em += n * MS_POR_PASSO;
+    o.passos = Math.min(o.alvo, (o.passos || 0) + n);
+  }
+  return lista.filter(o => o.passos >= o.alvo);
+}
 
 // ciclos dos ovos que as badges dão (badges.js): sem rede na criação da jornada, então o número é fixo aqui
 export const CICLOS_PSEUDO = 40, CICLOS_LENDARIO = 120;
@@ -190,8 +214,8 @@ export function golpeOvo(eggMoves = [], golpesDosPais = [], sorte = Math.random)
    aparece em tela nenhuma até chocar. `de` são os nomes dos pais, só pra narrar o nascimento.
    `nature` = a natureza da Pedra Eterna (null = sorteio normal) · `pais` = os nomes dos golpes que os dois sabiam,
    pro `golpeOvo` conferir na hora de chocar (os pais podem ter sido despedidos até lá). */
-export function criarOvo({ especie, ciclos, ivs = null, nature = null, golpe = null, pais = null, de = null, badge = null }) {
-  return { especie, alvo: passosParaChocar(ciclos), passos: 0, ivs, nature, golpe, pais, de, badge };
+export function criarOvo({ especie, ciclos, ivs = null, nature = null, golpe = null, pais = null, de = null, badge = null, agora = Date.now() }) {
+  return { especie, alvo: passosParaChocar(ciclos), passos: 0, em: agora, ivs, nature, golpe, pais, de, badge };
 }
 
 // ovo que uma badge dá no começo da jornada (badges.js `recompensa.ovo`). A lista de espécies vem de fora: este

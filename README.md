@@ -215,7 +215,7 @@ Não precisa fazer uma run até a Gen do chefe: o **Pokémon principal de cada j
 Três conquistas de conta sobre os aliados (fora do modo Fácil): **Casa cheia** (feche uma Gen com a equipe e o esconderijo lotados), **Lobo solitário** (feche uma Gen sem recrutar ninguém) e **Cemitério de parceiros** (perca 15 parceiros em batalha numa mesma run). Cada uma dá vantagem na próxima jornada, como as outras badges.
 
 ### 🥚 Ovos e criação
-Quem espera no **esconderijo** não fica só esperando: dois parceiros guardados lá que sejam **de gêneros opostos** e tenham um **grupo-ovo em comum** (os mesmos dos jogos) podem aparecer com um **ovo** — e ninguém conta de onde veio. Lendário, mítico e companhia (o grupo "sem ovos") não botam. **O Ditto cruza com qualquer um**, sem olhar gênero nem grupo, e é o **único par de quem não tem gênero** (Magnemite, Voltorb, Beldum, Klink…) — exatamente como nos jogos. Dois Dittos não dão nada, e a espécie do filhote vem sempre do outro lado. O ovo choca **andando**: cada exploração é um passo, e espécie mais demorada pede mais (de **100 a 400 explorações**, seguindo os ciclos de choco dos jogos). Cabem **3 ovos** chocando ao mesmo tempo, e o painel de Aliados mostra só a barra: **o que tem dentro é segredo até ele abrir.**
+Quem espera no **esconderijo** não fica só esperando: dois parceiros guardados lá que sejam **de gêneros opostos** e tenham um **grupo-ovo em comum** (os mesmos dos jogos) podem aparecer com um **ovo** — e ninguém conta de onde veio. Lendário, mítico e companhia (o grupo "sem ovos") não botam. **O Ditto cruza com qualquer um**, sem olhar gênero nem grupo, e é o **único par de quem não tem gênero** (Magnemite, Voltorb, Beldum, Klink…) — exatamente como nos jogos. Dois Dittos não dão nada, e a espécie do filhote vem sempre do outro lado. O ovo choca de **dois jeitos ao mesmo tempo**: **cada exploração é um passo** e **cada minuto de relógio também é um passo** — esse segundo vale com o **jogo fechado**, então o ovo avança enquanto você não está jogando e abre na hora em que você voltar. Espécie mais demorada pede mais (de **100 a 400 passos**, seguindo os ciclos de choco dos jogos), o que dá de **1h40 a 6h40** sem jogar, ou bem menos se você explorar. Cabem **3 ovos** chocando ao mesmo tempo, e o painel de Aliados mostra só a barra, com quanto falta nos dois jeitos de contar: **o que tem dentro é segredo até ele abrir.**
 
 **O painel de Aliados diz em que pé está o ninho**, mesmo antes de existir ovo: se os guardados formam casal (com os nomes dos dois), se são todos do mesmo sexo, se falta grupo-ovo em comum, ou se é só guardar mais um. Sem isso a mecânica era invisível — dava pra jogar uma jornada inteira sem descobrir que o ninho é o **esconderijo**, não a equipe.
 
@@ -251,8 +251,20 @@ Uma tela com **tudo o que o jogo sorteia**, em números: o que cada clique em "E
 ### 🟢 Jogando agora
 A tela inicial mostra quantas pessoas estão jogando no momento — sem dizer quem, só quantas. Dá pra desligar em ⚙ Ajustes (detalhes na Política de Privacidade).
 
-### 🔔 Notificações
-O jogo pode avisar **fora da aba**: o aviso aparece na tela de qualquer jeito, e a notificação é o extra pra quando você está em outro lugar. Liga em **⚙ Ajustes → Notificações** (o navegador só deixa pedir permissão num clique seu, então é um botão). São notificações **locais**: nascem no seu aparelho com o jogo aberto — não existe servidor de push, e nada sobre você sai daqui. Recusou? Dá pra liberar no cadeado ao lado do endereço; o jogo não insiste.
+### 🔔 Notificações e lembretes
+O jogo pode avisar **fora da aba**: o aviso aparece na tela de qualquer jeito, e a notificação é o extra pra quando você está em outro lugar. Liga em **⚙ Ajustes → Notificações** (o navegador só deixa pedir permissão num clique seu, então é um botão). Recusou? Dá pra liberar no cadeado ao lado do endereço; o jogo não insiste.
+
+Com a **conta ligada**, ele também manda **lembretes com o jogo fechado** — um convite pra terminar o que ficou pela metade:
+
+- **🎒 O seu Pokémon está te esperando** — passou **3 dias** sem abrir e há uma jornada aberta: o lembrete diz quem está parado, em que nível e em que rota.
+- **🥚 O ovo prestes a chocar** — e esse tem **hora marcada**, porque o ovo anda com o relógio: o lembrete chega quando ele fica pronto. (A espécie continua secreta, inclusive na notificação.)
+- **🏅 A badge a pouco do alvo** — qualquer badge da conta com **90%** andado: "você está em 950 de 1.000".
+- **🏆 O chefe novo da semana** — na virada da semana do evento, dizendo quem assumiu.
+- **📜 Novidades** — quando sai uma versão nova do jogo.
+
+É **no máximo um lembrete por dia**, e sempre o motivo mais interessante (ovo na frente de badge, badge na frente do parceiro parado). Quem joga todo dia nunca recebe nada: o prazo conta da última vez que você abriu o jogo. Desmarcar em ⚙ Ajustes **cancela na hora** — o aparelho é desinscrito, não é só uma caixinha desmarcada. No iPhone, lembrete só funciona depois de **adicionar o jogo à tela de início** (é limitação do Safari).
+
+O texto é escrito **no seu aparelho**, na última vez que você jogou, e o servidor só entrega — ele não sabe nada do seu jogo além do que já está escrito na notificação.
 
 ### Telas e ajustes
 - **Navegação:** toda tela fora do jogo (Carreira, Ranking, Conta, Jornadas salvas, Multiplayer, Bugs, Ajustes) começa com a mesma barra: **← Voltar** e atalhos para todas as outras. **Esc** também volta.

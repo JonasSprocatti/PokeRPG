@@ -3539,3 +3539,120 @@ perguntam sozinhas a `semAnimacao()` e ao ajuste de som.
   laço de desenho dela, não aproveitar este. O campo está lá quando alguém quiser.
 - **Rever o balanço dos outros 15 chefes.** O teste novo diz que nenhum deles viola a invariante; se algum está
   fácil ou difícil demais dentro dela, é afinação, e afinação se faz com relato na mão.
+
+## 🔔 Lembretes por push: chamar de volta quem parou (08/10/2026)
+
+**O pedido** (do usuário, 08/10/2026): "mandar mensagem para lembrete os jogadores que os pokémons estão esperando
+eles para terminar uma aventura, também se estiver faltando pouco para fazer uma missão da conta, chamar o jogador
+para finalizar a missão" — e, na mensagem seguinte, "entre outras mensagens que podem ser legais do usuário receber,
+tipo novos patch notes e etc". O objetivo declarado é retenção: trazer de volta quem abandonou no meio.
+
+**A pergunta que decidiu a arquitetura:** lembrete que só aparece ao ABRIR o jogo não traz ninguém de volta — ele só
+é visto por quem já voltou. Então o pedido só se cumpre com **Web Push** (notificação com o jogo fechado), e isso
+implica servidor, chave VAPID e cron. O usuário escolheu essa via sabendo dos três passos manuais.
+
+### A decisão central: o servidor não conhece regra de jogo
+
+O caminho óbvio seria a Edge Function varrer `saves` e `progresso` e decidir sozinha quem está perto de uma badge.
+Isso significaria reimplementar `badges.js`, `ovos.js` e o calendário de `evento.js` em Deno — **duas verdades sobre
+as mesmas regras**, e a cópia que roda no servidor é justamente a que `tests/` (Node, sobre `js/`) nunca vê. É o
+mesmo problema que `tests/schema.test.js` existe pra policiar nos pesos de pontuação.
+
+Então inverteu-se: **o cliente escreve o lembrete pronto e o servidor só entrega.**
+
+- `js/lembretes.js` (puro, sem imports, testado) decide **o que dizer e quando**.
+- `notificacoes.agendarLembretes` roda a cada sessão (no `then` do `iniciarNuvem`, sem `await`), junta o que as
+  regras de verdade respondem (`G.S`, `badgesDaCarreira()`, `evento.fimDaSemana`) e grava em `lembretes`.
+- `supabase/functions/lembretes` pega o que está na hora e manda o título e o corpo que já vieram escritos.
+
+O preço, consciente: o lembrete é escrito com o que se sabia na **última sessão**. Como o jogador não está jogando,
+nada mudou mesmo — e cada sessão nova reescreve a linha (com `enviado_em: null`, que é o reset).
+
+### Um lembrete por pessoa, não um por motivo
+
+Três notificações no mesmo dia desinstalam o jogo. Por isso os motivos **competem** em `motivoDeVolta` e o mais
+atraente leva: **ovo quase chocando > badge a 90% > o parceiro parado na rota**. O chefe da semana é o único que
+anda em paralelo, porque não depende de haver jornada aberta. E a função de envio manda **no máximo um push por
+jogador por giro** — um `Map` por `user_id` sobre a lista ordenada por `quando`.
+
+Prazos: `DIAS_PARADO` = 3 com jornada aberta, `DIAS_SEM_RUN` = 7 sem ela (aí é convite, não cobrança) e
+`FALTA_POUCO` = 0,9 do alvo da badge. Como o `quando` conta **de agora**, quem joga todo dia nunca chega a receber
+nada: a linha é reescrita antes de vencer.
+
+**O ovo é o único motivo com hora de verdade** (e foi o que motivou a mecânica de relógio, abaixo): ele anda sozinho,
+então `motivoDeVolta` devolve `emMs` = `falta × MS_POR_PASSO` e o lembrete é agendado pro minuto em que o ovo fica
+pronto, não pro prazo de parado. O texto fala de *quanto falta*, nunca de hora marcada, porque o cron gira de hora em
+hora — e diz "ele abre na hora em que você voltar ao jogo", que é a verdade: o choco acontece no cliente.
+
+## 🥚 O ovo também choca no relógio (08/10/2026)
+
+**O pedido** (do usuário, na mesma conversa dos lembretes): "para cada minuto offline, o ovo avança em um ponto,
+quando estiver prestes a chocar, manda uma mensagem". É a outra metade do mesmo laço de retenção: o lembrete precisa
+ter o que anunciar, e um ovo que só anda quando o jogador está jogando nunca dá motivo pra ele voltar.
+
+**Um minuto de relógio (`MS_POR_PASSO`) é um passo, e os dois caminhos SOMAM.** `andarOvos` (exploração) continua igual; `andarNoTempo`
+credita os minutos desde o marco. Com o piso e o teto de passos que já existiam (`PASSOS_MIN` e `PASSOS_MAX`), o ovo passa a chocar em 1h40 a 6h40 de
+relógio — e antes disso pra quem está explorando.
+
+As três decisões que o desenho precisou tomar, todas com teste:
+
+- **Marco POR OVO (`ovo.em`), não um `S.ovosEm` global.** Ovo posto agora não pode receber crédito pelas três horas
+  em que o jogador esteve fora antes de ele existir.
+- **`em += n * MS_POR_PASSO`, nunca `em = agora`.** Jogar fora os segundos quebrados a cada crédito faria um ovo
+  creditado de 30 em 30 s não andar NUNCA — e `cuidarDosOvos` roda a cada exploração, que é bem mais frequente que
+  um minuto.
+- **Relógio pra trás é ignorado** (`n <= 0`). Fuso, correção de hora e o relógio adiantado de propósito existem;
+  ovo que desanda, não.
+
+**Onde o crédito entra:** `cuidarDosOvos` ganhou `{ explorando }`. Em `main.abrirJornada` ela é chamada com
+`explorando: false` — o ovo que ficou pronto com o jogo fechado **nasce ao abrir**, com a narração de sempre, e
+abrir o jogo **não** vale uma chance de `CHANCE_OVO` (cinco aberturas seguidas seriam cinco sorteios de ovo novo sem
+explorar nada). Na exploração ela roda com os dois caminhos, porque o marco precisa andar também com o jogo aberto:
+senão o tempo da sessão inteira sairia de uma vez na próxima abertura.
+
+**A tela diz os dois.** `render.blocoOvos` mostra "faltam 90 passos (1 h e 30 min sem jogar)" e explica que o passo
+vem de exploração **e** de minuto — barra subindo sozinha sem explicação parece defeito. A formatação do tempo é a
+mesma função do push (`lembretes.emQuantoTempo`), porque dois formatadores diriam números diferentes pro mesmo ovo.
+Na 📈 Taxas entrou a linha "Passo pelo relógio", com os limites calculados das constantes, como todas as outras.
+
+### O que ficou de fora
+
+- **Creditar com o jogo ABERTO e parado** (um `setInterval` adiantando a barra na tela). O crédito acontece ao abrir
+  a jornada e a cada exploração; com o jogo aberto, explorar é justamente o que o jogador está fazendo. Um timer só
+  pra animar a barra é trabalho em troca de nada.
+- **Teto de crédito por volta.** Quem volta depois de uma semana choca todos os ovos de uma vez, e está certo: o
+  tempo passou de verdade, e `passos` já é travado em `alvo`.
+
+### O que o desenho protege
+
+- **O ovo continua secreto.** `ovoQuaseChocando` devolve só `falta`; `ovo.especie` não é lido. Notificação é tela
+  que o jogador não pediu — vazar ali é pior que vazar no jogo. Tem teste.
+- **Desligar desinscreve de verdade.** `desligarNotificacoes` chama `cancelarPush()`: só gravar a preferência no
+  `localStorage` deixaria o servidor mandando push pra quem desmarcou (o envio é por aparelho inscrito, não pela
+  chave local). A ordem é apagar a linha **antes** do `unsubscribe` — ao contrário, uma rede ruim deixaria o
+  endereço morto no banco pra sempre.
+- **Endereço morto é apagado**, mas só em 404/410. Um 403 é chave VAPID trocada, e o aparelho se reinscreve sozinho
+  na próxima vez que o jogo abrir — apagar ali seria desinscrever todo mundo por um erro de configuração.
+- **A chave da linha é lista FECHADA no banco** (`check (chave in ('volta','chefe','aviso'))`). A semântica é "um
+  lembrete por motivo", não "uma fila": sem a trava, uma conta gravaria dez mil linhas com chave inventada.
+- **`publicar_aviso` é a única `security definer`** daqui, porque é a única que escreve na linha de outras pessoas.
+  Dupla trava: `perfis.admin` (protegido contra autopromoção desde 20260925090000) e só pra quem já tem push
+  inscrito — criar linha pra quem não recebe nada é encher a tabela de lembrete que nunca sai.
+- **Só o cron chama a função.** `verify_jwt` sozinho aceita o JWT de qualquer jogador logado; o `Authorization` é
+  comparado com a service role key.
+- **O `push` do service worker nunca estoura.** Payload estranho cai num `catch` que usa o texto cru — sem isso o
+  Chrome mostra o genérico "Este site foi atualizado em segundo plano", que é pior que não avisar. E o clique
+  **foca a aba que já existe** em vez de abrir a segunda (dois saves do mesmo jogador vivos lado a lado).
+
+### O que ficou de fora
+
+- **Lembrete de missão de ROTA e de missão global.** O pedido dizia "missão da conta", e as badges são exatamente
+  isso (`badges.js` mede a carreira); as missões globais (`MISSOES`) zeram a cada run e medem o save, então "falta
+  pouco" nelas chama pra terminar uma coisa que o jogador já vai ver ao abrir o jogo.
+- **Escolher no ⚙ Ajustes QUAIS lembretes receber.** Quatro caixinhas pra uma notificação por dia no máximo é mais
+  UI que benefício. Se alguém reclamar do chefe da semana, aí vira caixinha.
+- **Um "aviso" automático a cada deploy de patch notes.** O aviso global é um botão no 🧰 Editor de conteúdo (📢,
+  pré-preenchido com o título da versão mais nova de `PATCH_NOTES`), não um gatilho. Deploy não é notícia: boa
+  parte das versões é conserto, e avisar todas acaba com a credibilidade da notificação.
+- **iPhone com o jogo no navegador.** O Safari só entrega push pra site adicionado à tela de início. Está dito no
+  README, nos patch notes e na própria tela de ⚙ Ajustes.

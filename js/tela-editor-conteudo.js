@@ -12,7 +12,8 @@ import { barraTelas } from './navegacao.js';
 import { esc } from './util.js';
 import { ITEMS, ITEM_SPR, ITEM_ERRO } from './dados.js';
 import { BADGES, MEDIDAS } from './badges.js';
-import { ehAdmin } from './nuvem.js';
+import { ehAdmin, publicarAviso } from './nuvem.js';
+import { PATCH_NOTES } from './dados-patchnotes.js';
 import { conteudo } from './conteudo-nuvem.js';
 import { validarPacote, pacoteDeFabrica } from './conteudo.js';
 import { publicar, blocoPremio, lerPremio } from './tela-editor-rotas.js';
@@ -53,7 +54,28 @@ export function telaEditorConteudo() {
     ${blocoMissoes(missoes)}
     ${blocoItens()}
     ${blocoBadges()}
+    ${blocoAviso()}
     ${blocoPublicar()}`;
+}
+
+/* ---- 📢 aviso global (push de novidades) ----
+   Não é conteúdo editável: não entra no pacote, não tem rascunho e não dá pra desfazer — é uma notificação que SAI,
+   pra todo mundo que ligou lembrete (js/notificacoes.js). Fica aqui porque é a tela de manutenção que já existe, e
+   porque o texto que ele manda é quase sempre o título da versão nova de 📜 Novidades: o campo nasce preenchido com
+   ele, pra não haver duas redações da mesma coisa. Quem bloqueia de verdade é a função no banco (só admin). */
+function blocoAviso() {
+  const v = PATCH_NOTES[0];
+  return `<section class="card">
+    <h3>📢 Avisar as novidades</h3>
+    <p class="small muted">Manda uma <b>notificação</b> pra quem ligou os lembretes em ⚙ Ajustes e tem conta — chega
+      com o jogo fechado. Vai pra <b>todos de uma vez</b> e não tem como voltar atrás, então vale reler.
+      Sai no próximo giro do relógio (até uma hora depois).</p>
+    <label class="campo">Título <input id="ec-aviso-titulo" type="text" maxlength="120"
+      value="${esc(`📜 Novidades: versão ${v?.versao || ''}`)}"></label>
+    <label class="campo">Texto <input id="ec-aviso-corpo" type="text" maxlength="300"
+      value="${esc(v?.titulo || '')}"></label>
+    <div class="subrow"><button class="btn" data-act="ec-aviso">📢 Mandar pra todos</button></div>
+  </section>`;
 }
 
 /* ---- 📋 missões globais ---- */
@@ -227,6 +249,17 @@ export async function acaoEditorConteudo(qual, v) {
   if (qual === 'publicar') return publicar('teste');
   if (qual === 'liberar') return publicar('estavel');
   if (qual === 'copiar') return copiarBloco();
+  if (qual === 'aviso') {
+    const titulo = ($('#ec-aviso-titulo')?.value || '').trim(), corpo = ($('#ec-aviso-corpo')?.value || '').trim();
+    if (!titulo) return toast('O aviso precisa de um título.');
+    // confirmação porque isto sai do jogo e chega no celular de outras pessoas: não há botão de desfazer
+    const sim = await ask(`Mandar esta notificação pra <b>todos</b> que ligaram os lembretes?<br><br><b>${esc(titulo)}</b><br>${esc(corpo)}`,
+      [{ label: '📢 Mandar', value: true }, { label: 'Cancelar', value: false, ghost: true }]);
+    if (!sim) return;
+    try { toast(`📢 Aviso na fila de ${await publicarAviso(titulo, corpo)} jogador(es).`); }
+    catch (e) { console.error(e); toast('Não consegui publicar o aviso: ' + (e.message || e)); }
+    return;
+  }
   if (qual === 'limpar') { limparRascunhoConteudo(); toast('Rascunho de conteúdo apagado.'); return telaEditorConteudo(); }
 
   if (qual === 'salvar-missao' || qual === 'criar-missao') {

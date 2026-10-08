@@ -32,7 +32,7 @@ import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
 import { completarAlvosDoSave } from './pokemon.js';
 import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
-import { pedirPermissao, desligarNotificacoes } from './notificacoes.js';
+import { pedirPermissao, desligarNotificacoes, agendarLembretes } from './notificacoes.js';
 import { telaPerfil } from './perfil-amigo.js';
 import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim,
   arenaComprarComum, arenaComprarSegurado, arenaEquipar, arenaUsarItem, arenaReviver } from './arena.js';
@@ -41,7 +41,7 @@ import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem,
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
 import { freshVol, zonaLiberada, precoItem, precoVenda, moverGolpe } from './regras.js';
-import { despedir } from './amizade.js';
+import { despedir, cuidarDosOvos } from './amizade.js';
 import { iniciarCache } from './api.js';
 import { carregarConteudoLocal, buscarConteudo } from './conteudo-nuvem.js';
 import { store, esc, fmt, novoId } from './util.js';
@@ -165,7 +165,7 @@ async function aoClicar(e) {
     case 'ec-missao': case 'ec-filtrar': case 'ec-limpar-filtro': case 'ec-criar-missao':
     case 'ec-salvar-missao': case 'ec-excluir-missao': case 'ec-desfazer-missoes': case 'ec-salvar-itens':
     case 'ec-desfazer-item': case 'ec-salvar-badge': case 'ec-desfazer-badge': case 'ec-criar-badge':
-    case 'ec-publicar': case 'ec-liberar': case 'ec-copiar': case 'ec-limpar':
+    case 'ec-publicar': case 'ec-liberar': case 'ec-copiar': case 'ec-limpar': case 'ec-aviso':
       return acaoEditorConteudo(b.dataset.act.slice(3), v);
     case 'dev-limpar': return acaoDev('limpar');
     case 'limpar-baixar': {   // apaga o que está guardado da PokéAPI e baixa o mapa atual do zero
@@ -535,6 +535,10 @@ function abrirJornada(s, aviso) {
   (G.S.log || []).slice(-20).forEach(logRaw);
   if (aviso) log(aviso, 'muted');
   if (G.B) log(`⚔ Você voltou pra batalha contra ${esc(fmt(G.B.enemy.name))} (turno ${G.B.turn}). Não dá pra escapar fechando o jogo.`, 'enc');
+  /* 🥚 O ovo andou com o RELÓGIO enquanto o jogo estava fechado (1 passo por minuto): quem volta depois de três
+     horas encontra o ovo chocado, e é aqui que ele nasce. `explorando: false` — abrir o jogo não é explorar, e
+     não pode valer uma chance de ovo novo. Sem `await` e com a falha engolida: ovo é bônus e não atrasa a tela. */
+  cuidarDosOvos({ explorando: false }).then(save).catch(e => console.error('ovos', e));
 }
 // "Voltar" das telas de carreira/conta: pro jogo, se houver jornada; senão pra criação
 function voltar() {
@@ -643,5 +647,9 @@ aoMudarNuvem(renderChipConta);
 // primeiro — senão um jogador logado apareceria como "sem conta" por uma fração de segundo
 iniciarNuvem().then(() => {
   iniciarPresencaGlobal(); registrarVisitanteAnonimo();
+  /* Lembretes por push: reescreve a fila com a hora de AGORA (quem abre o jogo todo dia nunca chega a receber
+     nada — o prazo só vence pra quem parou). Sem `await` e com a falha engolida: é rede não essencial, e o
+     CLAUDE.md nomeia o `await` numa busca dessas no caminho de abertura como armadilha. */
+  agendarLembretes().catch(e => console.warn('lembretes', e));
   if (salaDoLink) entrarSala(salaDoLink);   // veio por link de convite: cai direto no lobby da sala
 }).catch(e => console.error(e)); // sem config: não faz nada

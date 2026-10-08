@@ -479,6 +479,45 @@ export async function enviarSaveAgora(forcar = false) {
   const error = await subirSave(c, u, S);
   if (error) { pendente = true; console.error(error); nuvem.status = 'erro'; nuvem.erro = 'Não consegui salvar a jornada na nuvem (tento de novo sozinho): ' + error.message; avisar(); }
 }
+/* ---- lembretes por push (js/notificacoes.js, js/lembretes.js) ----
+   Duas tabelas, e as duas são do dono (RLS em supabase/migrations/20261008120000_lembretes_push.sql):
+   `push_inscricoes` é por APARELHO (endpoint único) e `lembretes` é por motivo (chave única por jogador).
+   Nada aqui é essencial: falha de rede só significa "este aparelho não vai receber lembrete desta vez". */
+export async function salvarInscricaoPush(sub, { apagar = false } = {}) {
+  const c = await sb(), u = usuario(); if (!c || !u || !sub?.endpoint) return false;
+  if (apagar) { const { error } = await c.from('push_inscricoes').delete().eq('endpoint', sub.endpoint); if (error) throw error; return true; }
+  const { error } = await c.from('push_inscricoes').upsert({
+    user_id: u.id, endpoint: sub.endpoint, p256dh: sub.keys?.p256dh, auth: sub.keys?.auth
+  }, { onConflict: 'endpoint' });
+  if (error) throw error;
+  return true;
+}
+/* `enviado_em: null` no upsert é o reset: o jogador voltou, então o lembrete que já saiu volta à fila com a hora
+   nova. Motivo que deixou de valer (o ovo chocou, a badge saiu) é APAGADO — senão o push chegaria mentindo. */
+export async function salvarLembretes(linhas = []) {
+  const c = await sb(), u = usuario(); if (!c || !u) return false;
+  const chaves = linhas.map(l => l.chave);
+  if (linhas.length) {
+    const { error } = await c.from('lembretes').upsert(linhas.map(l => ({ ...l, user_id: u.id, enviado_em: null })), { onConflict: 'user_id,chave' });
+    if (error) throw error;
+  }
+  let q = c.from('lembretes').delete().eq('user_id', u.id);
+  if (chaves.length) q = q.not('chave', 'in', `(${chaves.join(',')})`);
+  const { error } = await q;
+  if (error) throw error;
+  return true;
+}
+
+/* Aviso GLOBAL (📜 novidades): o único lembrete que não nasce no aparelho de quem recebe. Vira uma linha `aviso`
+   pra cada jogador com push ligado; quem barra pela segunda vez é a função no banco (só `perfis.admin`), porque
+   regra que só existe na tela não é regra. Devolve quantas pessoas vão receber. */
+export async function publicarAviso(titulo, corpo) {
+  const c = await sb(); if (!c) throw new Error('A nuvem não está configurada.');
+  const { data, error } = await c.rpc('publicar_aviso', { p_titulo: titulo, p_corpo: corpo });
+  if (error) throw error;
+  return data || 0;
+}
+
 // Apaga UMA jornada em andamento da nuvem (terminou ou foi excluída). true = apagou (ou não havia o que apagar).
 // Offline: não precisa fila — a próxima sincronizar() vê que ela terminou (carreira) ou foi excluída (saves.js) e apaga.
 export async function apagarSaveNuvem(id) {

@@ -5,6 +5,14 @@
 export const SUPABASE_URL = 'https://pttbipcrqbbwhhtbsyoy.supabase.co';
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0dGJpcGNycWJid2hodGJzeW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNTQzMDUsImV4cCI6MjEwNTYzMDMwNX0.gNaQdQvoQYjB5bopsgWFtdn5VXfcDDn5JHYd9SbLseU';
 
+/* ============ lembretes por push (Web Push / VAPID) ============ */
+/* A chave PÚBLICA do par VAPID (a privada é segredo da Edge Function e nunca entra no repositório). Gere as duas
+   com `node ferramentas/gerar-vapid.mjs` e siga o passo a passo de supabase/LIGAR-LEMBRETES.sql.
+   Vazia = push desligado: o jogo continua avisando dentro da aba (js/notificacoes.js → notificar), só não manda
+   lembrete com o jogo fechado. Trocar a chave invalida quem já estava inscrito — o envio responde 403/410, a
+   função apaga a linha e o aparelho se reinscreve sozinho na próxima vez que o jogo abrir. */
+export const VAPID_PUBLICA = '';
+
 /* ============ configuração de anúncios (Google AdSense) ============ */
 /* Publisher ID da conta (adsense.google.com → Conta → Informações da conta). Com ele preenchido, o script do
    Google é carregado no <head> de index.html e de toda página estática, SEMPRE — mas com o consentimento em

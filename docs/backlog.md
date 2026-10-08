@@ -78,6 +78,15 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 
 ## Precisa de ação do usuário
 
+- 🔔 **Lembretes por push — 3 passos à mão, nenhum feito ainda (08/10/2026).** O código está pronto e inerte:
+  `js/config.js:VAPID_PUBLICA` está **vazia**, e vazia significa "sem push" (o jogo segue avisando dentro da aba,
+  e `pushDisponivel()` esconde a promessa da tela de ⚙ Ajustes). Pra ligar, na ordem de `supabase/LIGAR-LEMBRETES.sql`:
+  1. `node ferramentas/gerar-vapid.mjs` → cola a pública em `js/config.js` (pode commitar) e põe o JSON das duas
+     como segredo **`VAPID_JWK`** no painel (Edge Functions → Secrets). A privada **nunca** vai pro repositório.
+  2. `supabase functions deploy lembretes` (a função já lê `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` sozinha).
+  3. O SQL do cron, no SQL Editor, trocando o endereço do projeto e a service role key (hora em hora).
+  A migration `20261008120000_lembretes_push.sql` sobe sozinha pela integração do GitHub — ela não depende de nada
+  disso. Enquanto os 3 passos não estiverem feitos, ninguém recebe lembrete e nada quebra.
 - ⚠️ **`evento.BETA_SEM_ESPERA = true`** remove a espera de 8 h entre tentativas (beta testers). **Temporário** — reverter é trocar essa linha.
 - **AdSense — em andamento, sequência combinada (29/09/2026).** Conta criada, domínio `pokerpg.com.br` cadastrado, publisher ID **`ca-pub-9827780756194019`**, estado "Precisa de revisão". Etapas 1–3 **feitas**:
   1. ~~Verificar a propriedade pelo `ads.txt`~~ ✔ (o usuário confirmou no painel).

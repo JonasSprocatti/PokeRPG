@@ -22,7 +22,8 @@ import { terasDisponiveis } from './tera.js';
 import { zDisponiveis, avisoDoZ, primeiroTipoZ } from './zmove.js';
 import { podeGigantamax } from './dynamax.js';
 import { escondidos, MAX_ESCONDIDOS } from './esconderijo.js';
-import { ovos, MAX_OVOS, situacaoDoNinho } from './ovos.js';
+import { ovos, MAX_OVOS, MS_POR_PASSO, situacaoDoNinho } from './ovos.js';
+import { emQuantoTempo } from './lembretes.js';
 import { situacaoDoEvento, formatarEspera, dataBR } from './evento.js';
 import { resumoDoChefe, nivelDoChefe } from './boss.js';
 import { linhaItensDoChefe } from './itens-raide.js';
@@ -470,8 +471,16 @@ function renderAliados() {
     : '<p class="small muted">Ninguém ainda. Em batalha contra um selvagem, abra a Mochila e ofereça um petisco que o tipo dele goste.</p>'}
     ${blocoOvos(G.S)}${blocoEsconderijo(AL, guardados)}`;
 }
-/* 🥚 Ovos (ovos.js): a barra mostra explorações andadas e nada mais. A espécie, o golpe herdado e o brilho são
-   SEGREDO até chocar — é o que faz o jogador querer andar mais um pouco. Nada de `ovo.especie` aqui. */
+/* 🥚 Ovos (ovos.js): a barra mostra passos andados e nada mais. A espécie, o golpe herdado e o brilho são
+   SEGREDO até chocar — é o que faz o jogador querer andar mais um pouco. Nada de `ovo.especie` aqui.
+   O passo vem de DOIS lugares (exploração e relógio, 1 por minuto), e a frase diz os dois: a barra parada na tela
+   subindo sozinha sem explicação pareceria defeito. */
+// "90 passos (1 h e 30 min sem jogar)" — os dois caminhos na mesma frase. A conta do tempo é a de `lembretes.js`,
+// a mesma que escreve a notificação: dois formatadores diriam números diferentes pro mesmo ovo.
+const faltaDoOvo = o => {
+  const falta = Math.max(0, (o.alvo || 0) - (o.passos || 0));
+  return `${falta} passo${falta === 1 ? '' : 's'} (${emQuantoTempo(falta * MS_POR_PASSO)} sem jogar)`;
+};
 function blocoOvos(S) {
   const lista = ovos(S);
   if (!lista.length) return '';
@@ -481,7 +490,7 @@ function blocoOvos(S) {
       const pronto = o.passos >= o.alvo;
       return `<div class="missao"><b>🥚 Ovo misterioso</b><small>${pronto
         ? (cheio ? 'Está trincando! Mas não há lugar: despeça alguém ou abra vaga no esconderijo.' : 'Está trincando — vai abrir a qualquer momento.')
-        : 'Ninguém sabe o que tem dentro. Explore para chocar.'}</small>
+        : `Ninguém sabe o que tem dentro. Cada exploração anda um passo — e o tempo também: <b>1 passo por minuto</b>, mesmo com o jogo fechado. Faltam ${faltaDoOvo(o)}.`}</small>
         <div class="hp mis"><span></span><div class="bar"><div class="fill" style="width:${Math.min(100, o.passos / o.alvo * 100)}%"></div></div><span>${o.passos}/${o.alvo}</span></div></div>`;
     }).join('')}`;
 }

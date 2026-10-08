@@ -12,7 +12,7 @@ import { loadSpecies, loadGrowth, loadEvo, loadMove, resolvePokemon } from './ap
 import { FELICIDADE_ALIADO } from './evolucao.js';
 import { makeMon } from './pokemon.js';
 import { formaRegionalDaGen, genDe } from './mapas.js';
-import { ovos, criarOvo, podeCruzar, acharPar, andarOvos, tirarOvo, ivsHerdados, naturezaHerdada, golpeHerdado, golpeOvo, NIVEL_CHOCAR, MAX_OVOS } from './ovos.js';
+import { ovos, criarOvo, podeCruzar, acharPar, andarOvos, andarNoTempo, tirarOvo, ivsHerdados, naturezaHerdada, golpeHerdado, golpeOvo, NIVEL_CHOCAR, MAX_OVOS } from './ovos.js';
 import { esc, fmt } from './util.js';
 
 // 'cancelado' = nada gasto (turno não conta) · 'ok' = petisco gasto, turno segue · 'fim' = batalha acabou em paz
@@ -76,12 +76,21 @@ async function recrutar(E) {
    Uma exploração: os ovos andam um passo, os prontos chocam e um casal do esconderijo pode deixar um ovo novo.
    Chamado por `mundo.explore` — e de lá dentro de um try próprio, porque ovo é bônus: nada aqui pode derrubar a
    exploração. As buscas de rede são todas em espécie que JÁ está no cache (os pais vivem no save), então na
-   prática nenhuma delas vai à rede. */
-export async function cuidarDosOvos() {
+   prática nenhuma delas vai à rede.
+
+   **`explorando: false`** é a entrada de ABERTURA DE JORNADA (`main.abrirJornada`): o ovo também anda com o
+   relógio (`andarNoTempo`, 1 passo por minuto), então quem volta depois de três horas encontra o ovo chocado ou
+   quase. Aí o passo da exploração não conta — e, principalmente, **não se sorteia ovo novo**: abrir o jogo cinco
+   vezes seguidas daria cinco chances de `CHANCE_OVO` sem explorar nada.
+   O crédito do relógio vale nas DUAS entradas: a exploração também atualiza o marco, senão o tempo com o jogo
+   aberto sairia todo de uma vez na próxima abertura. */
+export async function cuidarDosOvos({ explorando = true } = {}) {
   const S = G.S;
   if (!S || !ovos(S).length && !escondidos(S).length) return;
-  for (const ovo of andarOvos(S)) await chocar(S, ovo);
-  await talvezPorOvo(S);
+  // Set: um ovo pronto pelos dois caminhos no mesmo instante não pode chocar duas vezes
+  const prontos = new Set([...andarNoTempo(S), ...(explorando ? andarOvos(S) : [])]);
+  for (const ovo of prontos) await chocar(S, ovo);
+  if (explorando) await talvezPorOvo(S);
 }
 
 async function chocar(S, ovo) {

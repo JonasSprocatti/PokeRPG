@@ -25,7 +25,8 @@ import {
   chanceOhko, MULT_HP_DYNAMAX, TURNOS_DYNAMAX, MAX_TROCAS_TREINADOR, PRECO_DISCO, AUMENTO_DISCO, valorCaptura
 } from './regras.js';
 import { CHANCES_EXPLORAR, CHANCE_ESCAMA, CHANCE_ITEM_EVO, CHANCE_FRUTA, CHANCE_SEGURADO, DINHEIRO_ACHADO } from './mundo.js';
-import { CHANCE_OVO, MAX_OVOS, NIVEL_CHOCAR, IVS_HERDADOS, IVS_COM_NO, CHANCE_GOLPE_OVO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, passosParaChocar } from './ovos.js';
+import { CHANCE_OVO, MAX_OVOS, NIVEL_CHOCAR, IVS_HERDADOS, IVS_COM_NO, CHANCE_GOLPE_OVO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, MS_POR_PASSO, passosParaChocar } from './ovos.js';
+import { emQuantoTempo } from './lembretes.js';
 import { MULT_ITEM_EVO, REVELA_DERROTADOS, MIN_POOL } from './mapas.js';
 import { FELICIDADE_INICIAL, FELICIDADE_ALIADO, FELICIDADE_EVOLUCAO, FELICIDADE_MAX } from './evolucao.js';
 import { CHANCE_Z_ALFA, CHANCE_Z_TURNO } from './zmove.js';
@@ -72,7 +73,7 @@ const SECOES = () => [
     ['Você acha um item', pc(CHANCES_EXPLORAR.item), 'Qual item sai está na tabela abaixo.'],
     ['Você acha dinheiro', pc(CHANCES_EXPLORAR.dinheiro), `Entre ₽${DINHEIRO_ACHADO[0]} e ₽${DINHEIRO_ACHADO[1]}.`],
     ['Só paisagem', pc(CHANCES_EXPLORAR.nada), 'Uma frase sobre o lugar e nada acontece.'],
-    ['Um passo em cada ovo', '100%', `Toda exploração anda um passo em todos os seus ovos — inclusive a que terminou em nada.`]
+    ['Um passo em cada ovo', '100%', `Toda exploração anda um passo em todos os seus ovos — inclusive a que terminou em nada. O relógio anda em paralelo (abaixo).`]
   ]],
   ['🎁 Qual item você acha', 'Dentro daquele achado, os degraus são sorteados em ordem: cada um disputa o que o anterior deixou passar.', [
     ['Escama do Coração', pc(CHANCE_ESCAMA), 'Relembrar um golpe antigo. Na loja ela custa ₽5.000 — achar uma é sorte, não o caminho normal.'],
@@ -127,11 +128,12 @@ const SECOES = () => [
     ...grandesSelvagem.map(e => [`↳ ${ITEMS[e.id]?.name || e.id}`, pc(e.p / totalSelvagem), ITEMS[e.id]?.desc || '']),
     [`↳ As ${restoSelvagem.length} frutas de aperto (uma por tipo)`, pc(restoSelvagem.reduce((a, e) => a + e.p, 0) / totalSelvagem), 'Juntas. Cada uma corta UM golpe super efetivo pela metade.']
   ]],
-  ['🥚 Ovos', `Um casal guardado no esconderijo pode deixar um ovo, e ele choca com as suas explorações. O que vai nascer é segredo até a hora.`, [
+  ['🥚 Ovos', `Um casal guardado no esconderijo pode deixar um ovo, e ele choca de DOIS jeitos ao mesmo tempo: explorando e com o relógio. O que vai nascer é segredo até a hora.`, [
     ['Pôr um ovo', `${pc(CHANCE_OVO)} por exploração`, `Precisa de um par compatível no esconderijo e de vaga no ninho (máx. ${MAX_OVOS} ovos ao mesmo tempo).`],
     ['Par compatível', 'gênero oposto + um grupo-ovo em comum', 'Como nos jogos. O grupo “sem ovos” (lendário, mítico, bebê) não cruza com ninguém.'],
     ['↳ Ditto', 'cruza com qualquer um', 'Sem olhar gênero nem grupo, como nos jogos — e é o ÚNICO par de quem não tem gênero (Magnemite, Voltorb, Beldum…). Dois Dittos não dão ovo, e a espécie do filhote vem sempre do outro.'],
-    ['Passos pra chocar', `${PASSOS_MIN} a ${PASSOS_MAX} explorações`, `Pela espécie: a maioria ${passosParaChocar(20)} · pseudo-lendário ${passosParaChocar(CICLOS_PSEUDO)} · lendário ${passosParaChocar(CICLOS_LENDARIO)}.`],
+    ['Passos pra chocar', `${PASSOS_MIN} a ${PASSOS_MAX} passos`, `Pela espécie: a maioria ${passosParaChocar(20)} · pseudo-lendário ${passosParaChocar(CICLOS_PSEUDO)} · lendário ${passosParaChocar(CICLOS_LENDARIO)}.`],
+    ['↳ Passo pelo relógio', `1 por minuto`, `Vale com o jogo FECHADO e soma com as explorações: ${emQuantoTempo(PASSOS_MIN * MS_POR_PASSO)} sem jogar no ovo mais rápido, ${emQuantoTempo(PASSOS_MAX * MS_POR_PASSO)} no mais demorado. Ele abre na hora em que você voltar ao jogo.`],
     ['O filhote', `forma base da mãe, Nv. ${NIVEL_CHOCAR}`, `Herda ${IVS_HERDADOS} IVs (o melhor dos dois pais em cada um) e um golpe sorteado entre os 4 do parceiro. O resto é sorteado como em qualquer Pokémon. Mãe de forma regional põe filhote da forma regional deste mapa.`],
     ['↳ Com os itens de criação', `${IVS_COM_NO} IVs · natureza certa`, `${ITEMS.everstone.name} na mão de um dos pais: o filhote nasce com a natureza dele (os dois segurando, sorteia entre as duas). ${ITEMS['destiny-knot'].name}: ${IVS_COM_NO} IVs herdados em vez de ${IVS_HERDADOS} (não escolhe QUAIS).`],
     ['↳ Golpe-ovo', `${pc(CHANCE_GOLPE_OVO)} quando nenhum pai sabe`, 'Golpe que a espécie só aprende nascendo. Se um dos pais já sabe um deles, o filhote nasce com ele de GRAÇA (regra dos jogos); senão é esta chance de sortear um da lista da espécie.'],

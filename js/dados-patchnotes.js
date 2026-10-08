@@ -13,6 +13,17 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.4', data: '2026-10-08', titulo: '🔔 O ovo choca sozinho no relógio, e o seu Pokémon aprendeu a te ligar', piada: 'Uma auditoria interna encontrou 4.312 Pokémon parados no meio de uma rota, em pé, esperando ordens há semanas. Um Bidoof em Kanto já tinha montado barraca e começado a cobrar aluguel dos outros. Agora eles podem simplesmente te ligar.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🥚 O ovo agora choca no relógio também</b> — <b>um minuto fora do jogo = um passo</b>, somando com as explorações. O ovo mais rápido abre em <b>1h40</b> sem você fazer nada, o mais demorado em <b>6h40</b>, e explorar continua adiantando. Fechou o jogo com um ovo no ninho? Ele avançou do mesmo jeito, e trinca no instante em que você voltar. A barra no painel de Aliados mostra quanto falta nas duas contas.',
+        '<b>🔔 Lembretes</b> — com a conta ligada e as notificações ligadas em <b>⚙ Ajustes</b>, o jogo passa a te chamar de volta com ele <b>fechado</b>. Quatro motivos: o <b>🥚 ovo prestes a chocar</b> (este tem hora marcada, justamente porque o ovo anda sozinho), o <b>🎒 parceiro parado</b> numa rota há 3 dias (com nome, nível e onde ficou), a <b>🏅 badge com 90% andado</b> ("você está em 950 de 1.000") e o <b>🏆 chefe novo da semana</b>, na virada. E, quando sair versão nova, o aviso das <b>📜 Novidades</b>.',
+        '<b>No máximo um por dia</b>, e sempre o motivo mais interessante — ovo passa na frente de badge, badge passa na frente do parceiro parado. Quem joga todo dia <b>nunca recebe nada</b>: o prazo conta da última vez que você abriu o jogo, então ele só vence pra quem parou de verdade.',
+        '<b>O ovo continua secreto</b> na notificação: ela diz quanto tempo falta, nunca o que tem dentro.',
+        '<b>Desmarcar cancela na hora</b> — o aparelho é desinscrito de verdade, não é uma caixinha que finge. E o texto do lembrete é escrito <b>no seu aparelho</b>, na última vez que você jogou: o servidor só entrega o envelope, ele não sabe nada do seu jogo.',
+        'No <b>iPhone</b>, lembrete só chega depois de <b>adicionar o jogo à tela de início</b> — é limitação do Safari, não escolha nossa. No Android e no computador funciona com o navegador normal.'
+      ] }
+    ] },
   { versao: '6.3', data: '2026-10-08', titulo: '🥚 Criação de verdade: Pedra Eterna, Nó do Destino, golpes-ovo e um Ditto que finalmente serve pra algo', piada: 'O Ditto passou nove gerações sendo o profissional mais requisitado da criação de Pokémon e aqui ele estava sentado no esconderijo, sem gênero e sem convite, olhando os casais passarem. Pedimos desculpas formais. Ele se transformou num pedido de desculpas de volta.',
     secoes: [
       { nome: 'Novidades', itens: [
