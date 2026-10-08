@@ -3575,14 +3575,24 @@ atraente leva: **ovo quase chocando > badge a 90% > o parceiro parado na rota**.
 anda em paralelo, porque não depende de haver jornada aberta. E a função de envio manda **no máximo um push por
 jogador por giro** — um `Map` por `user_id` sobre a lista ordenada por `quando`.
 
-Prazos: `DIAS_PARADO` = 3 com jornada aberta, `DIAS_SEM_RUN` = 7 sem ela (aí é convite, não cobrança) e
+Prazos: `HORAS_PARADO` = 10 com jornada aberta, `DIAS_SEM_RUN` = 7 sem ela (aí é convite, não cobrança) e
 `FALTA_POUCO` = 0,9 do alvo da badge. Como o `quando` conta **de agora**, quem joga todo dia nunca chega a receber
-nada: a linha é reescrita antes de vencer.
+nada: a linha é reescrita antes de vencer. O prazo de parado começou em 3 dias e virou 10 horas a pedido do usuário
+(08/10/2026): 3 dias é quando a pessoa já esqueceu o jogo, e o lembrete existe pra pegar a jornada ainda quente.
+
+**Hora de gente, não hora do prazo** (`emHoraBoa`, mesma data): 10 horas contadas de qualquer momento caem na
+madrugada com frequência, e notificação às 4 da manhã é desinstalação. As `JANELAS` são **7–9 h** e **15–22 h**, e o
+`quando` só é empurrado pra frente — nunca antecipado, porque lembrete adiantado mente ("falta pouco pro ovo" antes
+de faltar pouco). O fuso é o de **quem joga** de graça: o `quando` é escrito no navegador dele, com `getHours()`
+local, e o que vai pro banco é o INSTANTE (ISO) — a Edge Function continua burra, comparando UTC sem saber de
+janela nenhuma.
 
 **O ovo é o único motivo com hora de verdade** (e foi o que motivou a mecânica de relógio, abaixo): ele anda sozinho,
 então `motivoDeVolta` devolve `emMs` = `falta × MS_POR_PASSO` e o lembrete é agendado pro minuto em que o ovo fica
-pronto, não pro prazo de parado. O texto fala de *quanto falta*, nunca de hora marcada, porque o cron gira de hora em
-hora — e diz "ele abre na hora em que você voltar ao jogo", que é a verdade: o choco acontece no cliente.
+pronto, não pro prazo de parado. O corpo dele **não tem contagem**: com a janela empurrando a entrega (e o cron
+girando de hora em hora), um "faltam 25 min" escrito na última sessão chegaria horas depois mentindo — então diz
+"ele já deve estar pronto, e abre na hora em que você voltar ao jogo", que é a verdade (o choco acontece no cliente).
+O número de verdade mora na tela do ovo, onde é recalculado a cada render.
 
 ## 🥚 O ovo também choca no relógio (08/10/2026)
 

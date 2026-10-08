@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert';
-import { lembretesDe, motivoDeVolta, ovoQuaseChocando, badgeQuaseFeita, DIAS_PARADO, DIAS_SEM_RUN } from '../js/lembretes.js';
+import { lembretesDe, motivoDeVolta, ovoQuaseChocando, badgeQuaseFeita, emHoraBoa, HORAS_PARADO, DIAS_SEM_RUN, JANELAS } from '../js/lembretes.js';
 import { MS_POR_PASSO } from '../js/ovos.js';
 
 const DIA = 24 * 60 * 60 * 1000;
+// hora LOCAL (é o fuso de quem joga que manda): monta um instante no dia 8/10/2026 na hora pedida
+const em = (h, min = 0) => new Date(2026, 9, 8, h, min).getTime();
+const hora = ts => new Date(ts).getHours();
 const save = (extra = {}) => ({ nome: 'Chamequinho', nivel: 23, rota: 'Rota 4', ovos: [], ...extra });
 
 test('o ovo que falta menos manda, e o já pronto não conta (espera vaga)', () => {
@@ -14,10 +17,20 @@ test('o ovo que falta menos manda, e o já pronto não conta (espera vaga)', () 
 });
 
 test('o lembrete do ovo é agendado pro minuto em que ele fica pronto, não pro prazo de parado', () => {
-  const agora = Date.UTC(2026, 9, 8);
+  const agora = em(16);           // dentro da janela da tarde: a hora do ovo passa intacta
   const l = lembretesDe({ save: save({ ovos: [{ alvo: 100, passos: 40 }] }), agora })[0];
   assert.equal(Date.parse(l.quando) - agora, 60 * MS_POR_PASSO);
-  assert.match(l.corpo, /1 h/);   // 60 min viram "1 h", não "60 min"
+  assert.ok(!/min|\d h/.test(l.corpo));   // sem contagem: a janela pode empurrar a entrega
+});
+
+test('hora boa: nada de madrugada — só das 7 às 9 e das 15 às 22', () => {
+  assert.deepEqual(JANELAS, [[7, 9], [15, 22]]);
+  assert.equal(emHoraBoa(em(8)), em(8));          // dentro da manhã: na hora
+  assert.equal(emHoraBoa(em(21, 59)), em(21, 59));// último minuto da tarde ainda vale
+  assert.equal(emHoraBoa(em(3)), em(7));          // madrugada espera a manhã
+  assert.equal(emHoraBoa(em(12)), em(15));        // almoço espera a tarde
+  assert.equal(hora(emHoraBoa(em(23))), 7);       // depois das 22 vira a manhã seguinte
+  assert.ok(emHoraBoa(em(23)) > em(23));
 });
 
 test('badge quase feita ignora completa e longe, e pega a mais perto', () => {
@@ -44,15 +57,15 @@ test('sem jornada e sem badge perto, ninguém recebe push', () => {
 });
 
 test('prazo: com jornada cobra antes, sem jornada convida depois', () => {
-  const agora = Date.UTC(2026, 9, 8);
+  const agora = em(8);            // 8 h + 10 h = 18 h, e 8 h + 7 dias = 8 h: os dois caem em janela
   const comRun = lembretesDe({ save: save(), agora })[0];
-  assert.equal(Date.parse(comRun.quando) - agora, DIAS_PARADO * DIA);
+  assert.equal(Date.parse(comRun.quando) - agora, HORAS_PARADO * 60 * 60 * 1000);
   const semRun = lembretesDe({ badges: [{ nome: 'A', n: 99, alvo: 100 }], agora })[0];
   assert.equal(Date.parse(semRun.quando) - agora, DIAS_SEM_RUN * DIA);
 });
 
 test('chefe anda em paralelo ao volta, e só se ainda não passou', () => {
-  const agora = Date.UTC(2026, 9, 8);
+  const agora = em(8);
   const ls = lembretesDe({ save: save(), proximoChefe: { quando: agora + DIA, nome: 'Mega Rayquaza' }, agora });
   assert.deepEqual(ls.map(l => l.chave), ['volta', 'chefe']);
   assert.match(ls[1].corpo, /Mega Rayquaza/);

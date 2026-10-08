@@ -17,10 +17,30 @@
    o relógio, e repetir esse número aqui seria o jogo e a notificação discordando sobre a mesma conta. */
 import { MS_POR_PASSO } from './ovos.js';
 
-export const DIAS_PARADO = 3;        // com jornada aberta: dias sem abrir o jogo pra chamar de volta
+export const HORAS_PARADO = 10;      // com jornada aberta: horas sem abrir o jogo pra chamar de volta
 export const DIAS_SEM_RUN = 7;       // sem jornada aberta é convite, não cobrança — espera mais
 export const FALTA_POUCO = 0.9;      // badge com 90% do alvo andado = "falta pouco"
-const DIA_MS = 24 * 60 * 60 * 1000;
+const HORA_MS = 60 * 60 * 1000;
+const DIA_MS = 24 * HORA_MS;
+
+/* Hora de gente: o push só sai das 7 às 9 e das 15 às 22, no fuso de QUEM JOGA (o `quando` é escrito no navegador
+   dele, então o instante gravado já é o da janela local). Fora disso espera a próxima janela abrir — nunca
+   antecipa, porque um lembrete adiantado é uma mentira ("falta pouco pro ovo" antes de faltar pouco). */
+export const JANELAS = [[7, 9], [15, 22]];
+export function emHoraBoa(ts) {
+  const d = new Date(ts);
+  for (let dia = 0; dia < 2; dia++) {                      // hoje e, se já passou de todas, amanhã
+    for (const [ini, fim] of JANELAS) {
+      if (d.getHours() >= fim) continue;                   // essa janela já fechou
+      if (d.getHours() >= ini) return d.getTime();          // já está dentro: entrega na hora
+      d.setHours(ini, 0, 0, 0);
+      return d.getTime();
+    }
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+  }
+  return d.getTime();                                      // inalcançável: a janela da manhã sempre pega
+}
 
 const nBR = n => Math.round(n).toLocaleString('pt-BR');
 /* "25 min" / "1 h e 30 min". A hora de chegada do push é ESTIMATIVA (o cron gira de hora em hora), então o texto
@@ -53,13 +73,15 @@ export function badgeQuaseFeita(badges = []) {
 
 /* O corpo do lembrete de volta, do motivo mais forte pro mais fraco. `null` = não há o que dizer (ninguém
    recebe push "oi, volta"). `save` é o resumo que `notificacoes.js` monta: { nome, nivel, rota, ovos }.
-   `emMs` = quando este motivo vale, contado de agora; sem ele vale o prazo de parado (3 ou 7 dias). O ovo é o
+   `emMs` = quando este motivo vale, contado de agora; sem ele vale o prazo de parado (10 h ou 7 dias). O ovo é o
    único com hora própria, porque é o único que ANDA SOZINHO. */
 export function motivoDeVolta({ save = null, badges = [] } = {}) {
   const ovo = save && ovoQuaseChocando(save.ovos);
+  // sem contagem no corpo: a entrega é empurrada pra janela de hora boa, então um "faltam 25 min" escrito agora
+  // chegaria horas depois mentindo. O número de verdade está na tela do ovo (render.blocoOvos).
   if (ovo) return {
     titulo: '🥚 O seu ovo está prestes a chocar', emMs: ovo.ms,
-    corpo: `Falta${ovo.falta === 1 ? '' : 'm'} ${emQuantoTempo(ovo.ms)} pra ele abrir — e ele abre na hora em que você voltar ao jogo.`
+    corpo: 'Ele já deve estar pronto — e abre na hora em que você voltar ao jogo.'
   };
   const b = badgeQuaseFeita(badges);
   if (b) return { titulo: `🏅 Falta pouco pra badge ${b.icone || ''} ${b.nome}`.trim(), corpo: `Você está em ${nBR(b.n)} de ${nBR(b.alvo)} — mais ${nBR(b.alvo - b.n)} e ela é sua.` };
@@ -69,13 +91,14 @@ export function motivoDeVolta({ save = null, badges = [] } = {}) {
 
 /* As linhas a gravar. `chave` é única por jogador (chave igual = sobrescreve, nunca empilha), `quando` é ISO.
    - `volta`: conta a partir de AGORA, isto é, da última vez que o jogo abriu.
-   - `chefe`: a hora que o calendário do evento já define (evento.fimDaSemana) — sem jornada nenhuma envolvida. */
+   - `chefe`: a hora que o calendário do evento já define (evento.fimDaSemana) — sem jornada nenhuma envolvida.
+   Os dois passam por `emHoraBoa`: prazo cumprido de madrugada espera a manhã. */
 export function lembretesDe({ save = null, badges = [], proximoChefe = null, agora = Date.now() } = {}) {
   const fora = [];
   const { emMs, ...m } = motivoDeVolta({ save, badges }) || {};
-  if (m.titulo) fora.push({ chave: 'volta', quando: new Date(agora + (emMs ?? (save ? DIAS_PARADO : DIAS_SEM_RUN) * DIA_MS)).toISOString(), ...m });
+  if (m.titulo) fora.push({ chave: 'volta', quando: new Date(emHoraBoa(agora + (emMs ?? (save ? HORAS_PARADO * HORA_MS : DIAS_SEM_RUN * DIA_MS)))).toISOString(), ...m });
   if (proximoChefe?.quando > agora) fora.push({
-    chave: 'chefe', quando: new Date(proximoChefe.quando).toISOString(),
+    chave: 'chefe', quando: new Date(emHoraBoa(proximoChefe.quando)).toISOString(),
     titulo: '🏆 Chefe novo da semana',
     corpo: `${proximoChefe.nome} assumiu o evento desta semana. Dá pra encarar com o time do Hall da Fama.`
   });
