@@ -20,7 +20,8 @@ import { esc, fmt, store } from './util.js';
 
 export const SAVE_KEY = 'pokerpg-save-v1';
 //   dif   = dificuldade escolhida na tela inicial (antes de existir PV/S); vira S.dificuldade ao começar
-//   abertos = índices de aliados com a "ficha completa" aberta na ficha (sobrevive ao re-render; não vai pro save)
+//   abertos = chaves de quem tem a "ficha completa" aberta: `"0"` = aliado, `"g0"` = esconderijo (TEXTO, pra não
+//             colidir — os dois índices começam em 0 e são bichos diferentes). Não vai pro save.
 //   gen   = mapa (Gen) escolhido na tela inicial; vira S.gen ao começar
 //   cacaShiny = 🎯 modo Caça Shiny marcado na tela inicial; vira S.cacaShiny (só dá pra ligar ao começar)
 //   alvoDe = índice do golpe escolhido esperando ALVO (⚔ Saga, grupo inimigo); null = nada pendente. Só UI.

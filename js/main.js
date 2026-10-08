@@ -485,10 +485,11 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pv-nature') G.PV.nature = e.target.value;
   if (e.target.id === 'pv-level') { G.PV.level = +e.target.value; renderPreview(); }
 });
-// <details> da ficha do aliado: lembra se está aberto (o evento 'toggle' não sobe, por isso a captura)
+/* <details> da ficha do aliado: lembra se está aberto (o evento 'toggle' não sobe, por isso a captura).
+   A chave é o dataset CRU (texto): índice do aliado é `"0"`, do esconderijo é `"g0"` — dois bichos diferentes. */
 document.addEventListener('toggle', e => {
   const i = e.target.dataset?.aliado; if (i === undefined) return;
-  if (e.target.open) G.abertos.add(+i); else G.abertos.delete(+i);
+  if (e.target.open) G.abertos.add(i); else G.abertos.delete(i);
 }, true);
 document.addEventListener('keydown', e => {
   // Esc volta da tela em que você está (o mesmo botão de voltar da barra de navegação), menos no meio do jogo

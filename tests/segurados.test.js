@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SEGURADOS, seg, temSegurado, IDS_SEGURADOS, multDanoDoItem, frutaAgora, fimDeTurnoDoItem, statusDoItem } from '../js/segurados.js';
-import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_EVO, IDS_EVO_EM_BATALHA, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, FRUTAS_ACHADAS, SEGURADOS_ACHADOS, FRUTA_DO_TIPO, TYPE_PT } from '../js/dados.js';
+import { ITEMS, ITENS_SEGURADOS, ITENS_RAIDE_SEGURADOS, ITENS_VANTAGEM_TIPO, ITENS_EVO, IDS_EVO_EM_BATALHA, PLACA_DO_TIPO, CATEGORIAS_ITEM, categoriaDoItem, porCategoria, FIND_ITEMS, FRUTAS_ACHADAS, SEGURADOS_ACHADOS, FRUTA_DO_TIPO, TYPE_PT, ITENS_CRIACAO } from '../js/dados.js';
 import { calcDamage, effStat } from '../js/regras.js';
 
 const mon = (o = {}) => ({ level: 50, ability: 'none', data: { types: ['normal'] }, status: null, vol: { stages: {} },
@@ -141,8 +141,17 @@ test('a loja mostra os itens pra segurar (é por onde o jogador conhece a mecân
   assert.ok(seg, 'a divisão 🎒 Para segurar não aparece na loja');
   // toda a tabela de segurados está à venda, mais a Pedra Mega e o Cristal Z (que também são `segurado` e entram na divisão)
   assert.ok(seg.itens.length >= Object.keys(ITENS_SEGURADOS).length, 'faltou item da tabela na loja');
-  assert.equal(seg.itens.length, aVenda.filter(([, it]) => it.segurado).length);
+  /* Os dois itens de CRIAÇÃO (dados.ITENS_CRIACAO: Pedra Eterna e Nó do Destino) também são `segurado`, mas têm
+     divisão própria (🥚 Criação, antes desta em CATEGORIAS_ITEM) porque não fazem nada em batalha. Eles continuam
+     à venda — só não moram nesta prateleira. */
+  assert.equal(seg.itens.length, aVenda.filter(([, it]) => it.segurado && !it.criacao).length);
   for (const [k] of seg.itens) assert.ok(ITEMS[k].segurado && ITEMS[k].price > 0, k);
+  const cri = divisoes.find(c => c.id === 'criacao');
+  assert.deepEqual(cri?.itens.map(([k]) => k).sort(), Object.keys(ITENS_CRIACAO).sort(), 'a divisão 🥚 Criação na loja');
+  for (const [k, it] of Object.entries(ITENS_CRIACAO)) {
+    assert.ok(it.segurado && it.criacao && it.price > 0 && it.name && it.desc, k);
+    assert.ok(!SEGURADOS[k], `${k}: item de criação não tem (nem deve ter) efeito em batalha`);
+  }
   // uma fruta pra segurar também é achada explorando: a mecânica aparece sem precisar de dinheiro
   assert.ok(FIND_ITEMS.some(k => ITEMS[k]?.segurado), 'nenhum item pra segurar aparece explorando');
 });

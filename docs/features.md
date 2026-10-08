@@ -43,6 +43,48 @@ fazia absolutamente nada. Criar dá uma razão pra ter 30 parceiros guardados em
   `pokemon`).
 - **`mundo.explore`** chama com `try` próprio: ovo é bônus, não pode custar a exploração de ninguém.
 - **`render.blocoOvos`** desenha a barra no painel de Aliados. **Nunca interpola `ovo.especie`** — é o segredo.
+- **`render.fichaGuardado`** (08/10/2026) é a ficha de quem está guardado, pedido do usuário: "quero ver as
+  informações dos pokés que estão no esconderijo, pra escolher qual pegar de lá com mais precisão" — e, como o
+  filhote herda 3 IVs do melhor dos dois pais, isso é também a tela de escolher o CASAL. Reusa as mesmas peças do
+  cartão de aliado (`tabelaStats`, `natureLabel`, `blocoEvolucao`, `blocoHabilidade`, `listaGolpes`), só em
+  **leitura**: `listaGolpes(A)` **sem `quem`** já cai no modo sem ▲▼, e `blocoItem` ficou FORA de propósito — o
+  `data-quem` dos botões de item aponta pra `S.aliados[i]`, e o índice do esconderijo é de outro bicho (mexer
+  daqui trocaria o item do aliado errado). O item segurado aparece como texto. **A chave de `G.abertos` virou
+  TEXTO** (`"0"` = aliado, `"g0"` = esconderijo): os dois índices começam em 0, e o `+i` de antes misturava os dois
+  `<details>`.
+
+### A leva de criação (08/10/2026) — os "buracos conscientes" que o usuário pediu pra fechar
+A seção acima listava o que ficou de fora da primeira versão. O usuário leu a lista e escolheu cinco: Pedra Eterna,
+Nó do Destino, Ditto, "o problema dos sem gênero" e golpes-ovo, mais a forma regional do filhote. O que entrou:
+
+| Item | Onde | Regra |
+|---|---|---|
+| **Pedra Eterna** | `ovos.naturezaHerdada` + `ITENS_CRIACAO` | Quem segura passa a natureza. Os dois segurando = sorteio entre as duas (regra da Gen 5+). `null` = sorteio normal, e `makeMon` nem recebe a opção |
+| **Nó do Destino** | `ovos.quantosIvsHerdados` | `IVS_HERDADOS` (3) → `IVS_COM_NO` (5). Um dos dois basta, os dois **não acumulam**. Sobe QUANTOS, nunca QUAIS: os Power Items continuam fora |
+| **Ditto** | `ovos.parCompativel`/`acharPar` | Reconhecido pelo **grupo-ovo** `ditto`, nunca pelo nome da espécie. Cruza com qualquer um que ponha ovo; Ditto × Ditto não; `no-eggs` nem com ele |
+| **Sem gênero** | a mesma função | Era "nunca cruza"; virou "só com Ditto", que é a regra dos jogos. Nenhuma linha nova: cai do caso do Ditto |
+| **Golpe-ovo** | `ovos.golpeOvo` | Lista do `learnset.extras` do FILHOTE (`metodo: 'egg'`), que já está em cache — zero busca nova pra saber quais são |
+| **Forma regional** | `amizade.talvezPorOvo` | Mãe que é forma (`data.name !== speciesName`) → `mapas.formaRegionalDaGen(base, gen)`. O `especie` do ovo passa a poder ser um id de FORMA |
+
+Decisões que valem registrar:
+- **Os dois itens não são `ITENS_SEGURADOS`.** Ali todo item tem de ter linha em `segurados.SEGURADOS` (o teste cobra —
+  foi o que pegou a Pedra do Rei), e estes não fazem nada em batalha. Tabela própria `ITENS_CRIACAO` + divisão
+  própria na loja/mochila (🥚 Criação, antes de 🎒 Para segurar em `CATEGORIAS_ITEM`, porque eles TÊM a marca
+  `segurado`). É a exceção consciente ao "`seg(m)` é a porta única do item": lá se lê EFEITO, aqui se lê
+  IDENTIDADE (`segura(m, id)`, um ajudante só, dentro de `ovos.js`).
+- **O golpe-ovo é resolvido no CHOCO, não ao pôr o ovo.** Ao chocar já se carregou o `data` do filhote, e a lista de
+  golpes-ovo vem dentro dele: a única busca nova é o `loadMove` do golpe escolhido, com `catch` — falhou, o
+  filhote nasce sem ele. Resolver na postura custaria `loadPokemon(base)` numa exploração em cada 20, pra guardar
+  um dado que já estaria em mãos na outra ponta. O que o ovo guarda é `pais`: só os NOMES dos golpes dos dois, pro
+  confronto com a lista (os pais podem ter sido despedidos nas 400 explorações até o choco).
+- **`CHANCE_GOLPE_OVO` existe porque a regra fiel seria invisível.** Nos jogos, quem põe um golpe-ovo num pai é
+  outra criação (ou a Erva Espelho); aqui os pais são selvagens recrutados, e o moveset de um selvagem são os 4
+  golpes mais recentes POR NÍVEL — que por definição nunca incluem golpe-ovo. A regra dos jogos vem primeiro e
+  sempre; `CHANCE_GOLPE_OVO = 0` desliga o caminho de casa num lugar só.
+- **Com Ditto, `acharPar` devolve `ditto: true`.** Dois usos: a espécie vem do outro (ele nunca é `mae`) e o golpe
+  herdado também (`amizade` troca o doador). Sem isso todo filhote de Ditto nasceria sabendo Transform.
+- Continuam de fora, agora por escrito: **Power Items** (escolher qual IV), **Masuda** (não há idioma de cartucho),
+  **Incenso/Chaveiro Oval/Poké Pensão** e lista de golpe-ovo por "qual pai pode ensinar o quê".
 
 ### Decisões (perguntadas ao usuário em 02/10/2026)
 | Pergunta | Resposta | Consequência no código |

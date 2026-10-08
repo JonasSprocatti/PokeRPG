@@ -7,8 +7,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAX_OVOS, CHANCE_OVO, CICLOS_PADRAO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, IVS_HERDADOS, GRUPO_SEM_OVO,
+  IVS_COM_NO, GRUPO_DITTO, ITEM_NATUREZA, ITEM_IVS, CHANCE_GOLPE_OVO,
   ovos, acharPar, parCompativel, podeCruzar, ivsHerdados, golpeHerdado, criarOvo, ovoDeBadge, andarOvos, tirarOvo, passosParaChocar,
-  situacaoDoNinho
+  situacaoDoNinho, quantosIvsHerdados, naturezaHerdada, golpeOvo, ehDitto
 } from '../js/ovos.js';
 import { STATS } from '../js/dados.js';
 
@@ -66,6 +67,57 @@ test('IVs: 3 herdados pegam o melhor dos pais, os outros 3 são sorteados', () =
   assert.deepEqual(Object.keys(ivs).sort(), [...STATS].sort(), 'os 6 IVs existem');
   assert.equal(Object.values(ivs).filter(v => v === 31).length, IVS_HERDADOS, 'exatamente 3 vieram do melhor dos pais');
   assert.ok(Object.values(ivs).every(v => v >= 0 && v <= 31), 'nenhum IV fora da faixa');
+});
+
+/* Ditto (08/10/2026): a regra dos jogos, e com ela a resposta pra "quem não tem gênero nunca cruzava" — agora
+   cruza, mas SÓ com ele. Testado porque são três coisas que falham caladas: par que não se forma, Ditto virando
+   "mãe" (o filhote sairia Ditto) e golpe herdado vindo do Ditto (o bebê nasceria sabendo só Transform). */
+test('Ditto cruza com qualquer um, inclusive sem gênero — e nunca é a mãe', () => {
+  const g = grupos({ ditto: [GRUPO_DITTO], ditto2: [GRUPO_DITTO], magnemite: ['mineral'], magikarp: ['water2', 'dragon'], mewtwo: [GRUPO_SEM_OVO] });
+  const ditto = mon('ditto', null), magnemite = mon('magnemite', null);
+  assert.equal(ehDitto(ditto, g), true);
+  assert.equal(ehDitto(magnemite, g), false);
+  assert.equal(parCompativel(ditto, magnemite, g), true, 'Ditto × Magnemite (nenhum dos dois tem gênero): cruza');
+  assert.equal(parCompativel(ditto, mon('magikarp', 'f'), g), true, 'Ditto cruza sem olhar gênero nem grupo em comum');
+  assert.equal(parCompativel(ditto, mon('ditto2', null), g), false, 'Ditto × Ditto não dá ovo');
+  assert.equal(parCompativel(ditto, mon('mewtwo', 'm'), g), false, `nem o Ditto cruza com ${GRUPO_SEM_OVO}`);
+  assert.equal(parCompativel(magnemite, mon('magikarp', 'f'), g), false, 'sem gênero e sem Ditto continua não cruzando');
+  const par = acharPar([ditto, magnemite], g, () => 0);
+  assert.equal(par.mae.name, 'magnemite', 'a espécie vem do OUTRO: o Ditto não é a mãe');
+  assert.equal(par.ditto, true, 'o aviso pra quem escolhe de quem vem o golpe');
+  // a tela promete o mesmo par que o motor forma, e na mesma ordem (espécie primeiro)
+  const sit = situacaoDoNinho([ditto, magnemite], g, 0);
+  assert.equal(sit.status, 'pronto');
+  assert.deepEqual(sit.casal.map(m => m.name), ['magnemite', 'ditto']);
+});
+
+test('Pedra Eterna passa a natureza; Nó do Destino sobe os IVs herdados de 3 pra 5', () => {
+  const comItem = (nome, item, nature) => ({ ...mon(nome, 'f', Object.fromEntries(STATS.map(s => [s, 31]))), item, nature });
+  const mae = comItem('m', null, 'adamant'), pai = { ...mon('p', 'm'), nature: 'timid' };
+  assert.equal(naturezaHerdada(mae, pai), null, 'ninguém segurando: natureza sorteada (null)');
+  assert.equal(naturezaHerdada(comItem('m', ITEM_NATUREZA, 'adamant'), pai), 'adamant');
+  assert.equal(naturezaHerdada(mae, { ...pai, item: ITEM_NATUREZA }), 'timid', 'vale pro pai também');
+  const dois = [comItem('m', ITEM_NATUREZA, 'adamant'), { ...pai, item: ITEM_NATUREZA }];
+  assert.equal(naturezaHerdada(dois[0], dois[1], () => 0), 'adamant', 'os dois segurando: sorteia entre as duas');
+  assert.equal(naturezaHerdada(dois[0], dois[1], () => 0.99), 'timid');
+
+  assert.equal(quantosIvsHerdados(mae, pai), IVS_HERDADOS);
+  assert.equal(quantosIvsHerdados({ ...mae, item: ITEM_IVS }, pai), IVS_COM_NO, 'um dos dois basta');
+  assert.equal(quantosIvsHerdados({ ...mae, item: ITEM_IVS }, { ...pai, item: ITEM_IVS }), IVS_COM_NO, 'os dois não acumulam');
+  const ivs = ivsHerdados({ ...mae, item: ITEM_IVS }, mon('p', 'm'), () => 0);
+  assert.equal(Object.values(ivs).filter(v => v === 31).length, IVS_COM_NO, `com o Nó são ${IVS_COM_NO} do melhor dos pais`);
+});
+
+/* Golpe-ovo: a regra dos jogos (um dos pais já sabe) vem SEMPRE antes do caminho de casa (sorteio), senão o
+   jogador que montou o casal de propósito perderia pro sorteio. Chance fixada nos dois lados do limiar. */
+test('golpe-ovo: o que um dos pais sabe vem primeiro; senão, sorteio pela chance', () => {
+  const lista = [{ name: 'dragon-dance', url: 'u1', metodo: 'egg' }, { name: 'aqua-jet', url: 'u2', metodo: 'egg' }];
+  assert.equal(golpeOvo(lista, ['tackle', 'aqua-jet'], () => 0).name, 'aqua-jet', 'o pai sabia: é esse, sem sorteio');
+  assert.equal(golpeOvo(lista, [], () => CHANCE_GOLPE_OVO - 0.01).name, 'dragon-dance', 'nenhum pai sabia: sorteia da lista');
+  assert.equal(golpeOvo(lista, [], () => CHANCE_GOLPE_OVO + 0.01), null, 'acima da chance: nasce sem golpe-ovo');
+  assert.equal(golpeOvo([], ['tackle'], () => 0), null, 'espécie sem golpe-ovo nenhum');
+  assert.equal(golpeOvo(undefined, undefined, () => 0), null, 'sem a lista (dado velho no cache) não quebra');
+  assert.equal(golpeOvo([{ name: 'x' }], [], () => 0), null, 'entrada sem url é inútil: não dá pra buscar o golpe');
 });
 
 test('golpe herdado é um dos do pai, e pai sem golpe não quebra', () => {

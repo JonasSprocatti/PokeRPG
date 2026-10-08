@@ -8,10 +8,11 @@ import { render } from './render.js';
 import { ITEMS, TYPE_PT } from './dados.js';
 import { ganhoAmizade, podeFazerAmizade, freshVol, tetoDaEquipe, AMIZADE_MAX } from './regras.js';
 import { escondidos, esconderijoCheio, equipeCheia, acolher } from './esconderijo.js';
-import { loadSpecies, loadGrowth, loadEvo, resolvePokemon } from './api.js';
+import { loadSpecies, loadGrowth, loadEvo, loadMove, resolvePokemon } from './api.js';
 import { FELICIDADE_ALIADO } from './evolucao.js';
 import { makeMon } from './pokemon.js';
-import { ovos, criarOvo, podeCruzar, acharPar, andarOvos, tirarOvo, ivsHerdados, golpeHerdado, NIVEL_CHOCAR, MAX_OVOS } from './ovos.js';
+import { formaRegionalDaGen, genDe } from './mapas.js';
+import { ovos, criarOvo, podeCruzar, acharPar, andarOvos, tirarOvo, ivsHerdados, naturezaHerdada, golpeHerdado, golpeOvo, NIVEL_CHOCAR, MAX_OVOS } from './ovos.js';
 import { esc, fmt } from './util.js';
 
 // 'cancelado' = nada gasto (turno não conta) · 'ok' = petisco gasto, turno segue · 'fim' = batalha acabou em paz
@@ -87,11 +88,17 @@ async function chocar(S, ovo) {
   // sem lugar pra nascer: o ovo espera PRONTO (andarOvos trava os passos no alvo). Despedir alguém o faz nascer.
   if (equipeCheia(S) && esconderijoCheio(S)) return;
   const data = await resolvePokemon(ovo.especie);
-  const bebe = await makeMon(data, NIVEL_CHOCAR, { ivs: ovo.ivs || undefined });
-  /* O golpe do pai entra no lugar do 4º (o mais recente aprendido por nível), e só se o filhote já não souber.
-     O objeto do golpe foi guardado inteiro no ovo de propósito: não precisa de rede na hora de chocar. */
-  const herdado = ovo.golpe && !bebe.moves.some(m => m.name === ovo.golpe.name) ? { ...ovo.golpe, ppLeft: ovo.golpe.pp } : null;
-  if (herdado) { if (bebe.moves.length >= 4) bebe.moves[3] = herdado; else bebe.moves.push(herdado); }
+  // `ovo.nature` só existe com a Pedra Eterna na mão de um dos pais; sem ela, `makeMon` sorteia como sempre
+  const bebe = await makeMon(data, NIVEL_CHOCAR, { ivs: ovo.ivs || undefined, nature: ovo.nature || undefined });
+  /* 🥚 **Golpe-ovo**: a lista sai do `learnset.extras` do PRÓPRIO filhote (`metodo: 'egg'`), que já veio nos dados
+     que acabamos de carregar — nada de busca nova pra saber QUAIS são. Só o golpe escolhido precisa de rede
+     (`loadMove`), e se ela falhar o filhote simplesmente nasce sem ele: ovo é bônus, não pode derrubar o choco. */
+  const refOvo = golpeOvo((data.learnset?.extras || []).filter(e => e.metodo === 'egg'), ovo.pais || []);
+  const mvOvo = refOvo ? await loadMove(refOvo.url).catch(() => null) : null;
+  /* O que vem dos pais entra no FIM da lista: são 4 lugares, e golpe-ovo tem prioridade sobre o golpe de nível mais
+     antigo (como nos jogos). O golpe do parceiro foi guardado inteiro no ovo de propósito — ele não precisa de rede. */
+  const herdados = [mvOvo, ovo.golpe].filter(mv => mv && !bebe.moves.some(m => m.name === mv.name)).map(mv => ({ ...mv, ppLeft: mv.pp }));
+  if (herdados.length) bebe.moves = [...bebe.moves, ...herdados].slice(-4);
   const sp = await loadSpecies(data.speciesUrl);
   bebe.growth = await loadGrowth(sp.growthUrl);
   bebe.exp = bebe.growth[bebe.level];
@@ -104,7 +111,9 @@ async function chocar(S, ovo) {
   if (bebe.shiny) registrar(S, 'shiniesAmigos', data.speciesName, data.id);
   G.abertos.clear(); render(); save();
   await say(`🥚 O ovo trinca e se abre: nasceu <b>${esc(fmt(bebe.name))}</b>, Nv. ${bebe.level}${ovo.de ? `, filho de ${esc(ovo.de[0])} e ${esc(ovo.de[1])}` : ''}!${bebe.shiny ? ' ✨ E é shiny!' : ''}`, 'level');
-  if (herdado) await say(`Veio sabendo <b>${esc(fmt(herdado.name))}</b> — herdou do pai.`, 'muted');
+  if (mvOvo && herdados.some(m => m.name === mvOvo.name)) await say(`🥚 Veio sabendo <b>${esc(fmt(mvOvo.name))}</b> — um <b>golpe-ovo</b>: ninguém da espécie aprende isso subindo de nível.`, 'good');
+  if (ovo.golpe && herdados.some(m => m.name === ovo.golpe.name)) await say(`Veio sabendo <b>${esc(fmt(ovo.golpe.name))}</b> — herdou dos pais.`, 'muted');
+  if (ovo.nature) await say(`A natureza é <b>${esc(fmt(ovo.nature))}</b>, a mesma de quem segurava a Pedra Eterna.`, 'muted');
   if (onde === 'esconderijo') await say('📦 Sua equipe está cheia, então ele vai esperar no esconderijo.', 'muted');
 }
 
@@ -123,15 +132,22 @@ async function talvezPorOvo(S) {
   }));
   const par = acharPar(guardados, grupos);
   if (!par) return;
-  const { mae, pai } = par;
-  /* O filhote é a FORMA BASE da mãe: a raiz da árvore de evolução. Forma regional não é tratada — a raiz pode ser a
-     forma original (um Sandslash de Alola põe um Sandshrew de Kanto).
-     // ponytail: sem mapa de forma regional pra raiz. `mapas.formaRegionalDaGen` resolveria, se alguém reclamar. */
+  const { mae, pai, ditto } = par;
+  // com Ditto o golpe tem de vir do OUTRO lado: ele só sabe Transform (ver `ovos.acharPar`)
+  const doador = ditto ? mae : pai;
   const sp = await loadSpecies(mae.data.speciesUrl);
   const arvore = sp.evoUrl ? await loadEvo(sp.evoUrl) : null;
+  const base = arvore?.name || mae.data.speciesName;
+  /* O filhote é a FORMA BASE da mãe (a raiz da árvore de evolução) — e, se a MÃE é uma forma regional, na forma
+     regional DESTE mapa: a Sandslash de Alola põe Sandshrew de Alola, como nos jogos. A fonte é o próprio mapa
+     (`mapas.formaRegionalDaGen`), então região nova entra sozinha; mapa sem forma pra essa espécie cai na espécie
+     normal. "A mãe é uma forma" = `data.name` diferente do `speciesName` (raichu-alola × raichu). */
+  const reg = mae.data.name !== mae.data.speciesName ? formaRegionalDaGen(base, genDe(S)) : null;
   ovos(S).push(criarOvo({
-    especie: arvore?.name || mae.data.speciesName, ciclos: sp.hatchCounter,
-    ivs: ivsHerdados(mae, pai), golpe: golpeHerdado(pai),
+    especie: reg?.forma || base, ciclos: sp.hatchCounter,
+    ivs: ivsHerdados(mae, pai), nature: naturezaHerdada(mae, pai), golpe: golpeHerdado(doador),
+    // os nomes do que os DOIS sabem: é o que `ovos.golpeOvo` confere na hora de chocar
+    pais: [...(mae.moves || []), ...(pai.moves || [])].filter(Boolean).map(m => m.name),
     de: [mae.nick || fmt(mae.name), pai.nick || fmt(pai.name)]
   }));
   G.abertos.clear(); render(); save();

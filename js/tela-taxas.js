@@ -25,7 +25,7 @@ import {
   chanceOhko, MULT_HP_DYNAMAX, TURNOS_DYNAMAX, MAX_TROCAS_TREINADOR, PRECO_DISCO, AUMENTO_DISCO, valorCaptura
 } from './regras.js';
 import { CHANCES_EXPLORAR, CHANCE_ESCAMA, CHANCE_ITEM_EVO, CHANCE_FRUTA, CHANCE_SEGURADO, DINHEIRO_ACHADO } from './mundo.js';
-import { CHANCE_OVO, MAX_OVOS, NIVEL_CHOCAR, IVS_HERDADOS, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, passosParaChocar } from './ovos.js';
+import { CHANCE_OVO, MAX_OVOS, NIVEL_CHOCAR, IVS_HERDADOS, IVS_COM_NO, CHANCE_GOLPE_OVO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, passosParaChocar } from './ovos.js';
 import { MULT_ITEM_EVO, REVELA_DERROTADOS, MIN_POOL } from './mapas.js';
 import { FELICIDADE_INICIAL, FELICIDADE_ALIADO, FELICIDADE_EVOLUCAO, FELICIDADE_MAX } from './evolucao.js';
 import { CHANCE_Z_ALFA, CHANCE_Z_TURNO } from './zmove.js';
@@ -129,9 +129,12 @@ const SECOES = () => [
   ]],
   ['🥚 Ovos', `Um casal guardado no esconderijo pode deixar um ovo, e ele choca com as suas explorações. O que vai nascer é segredo até a hora.`, [
     ['Pôr um ovo', `${pc(CHANCE_OVO)} por exploração`, `Precisa de um par compatível no esconderijo e de vaga no ninho (máx. ${MAX_OVOS} ovos ao mesmo tempo).`],
-    ['Par compatível', 'gênero oposto + um grupo-ovo em comum', 'Como nos jogos. Quem não tem gênero (lendário, Ditto, Magnemite) e quem é do grupo “sem ovos” não cruza.'],
+    ['Par compatível', 'gênero oposto + um grupo-ovo em comum', 'Como nos jogos. O grupo “sem ovos” (lendário, mítico, bebê) não cruza com ninguém.'],
+    ['↳ Ditto', 'cruza com qualquer um', 'Sem olhar gênero nem grupo, como nos jogos — e é o ÚNICO par de quem não tem gênero (Magnemite, Voltorb, Beldum…). Dois Dittos não dão ovo, e a espécie do filhote vem sempre do outro.'],
     ['Passos pra chocar', `${PASSOS_MIN} a ${PASSOS_MAX} explorações`, `Pela espécie: a maioria ${passosParaChocar(20)} · pseudo-lendário ${passosParaChocar(CICLOS_PSEUDO)} · lendário ${passosParaChocar(CICLOS_LENDARIO)}.`],
-    ['O filhote', `forma base da mãe, Nv. ${NIVEL_CHOCAR}`, `Herda ${IVS_HERDADOS} IVs (o melhor dos dois pais em cada um) e um golpe sorteado entre os 4 do pai. O resto é sorteado como em qualquer Pokémon.`],
+    ['O filhote', `forma base da mãe, Nv. ${NIVEL_CHOCAR}`, `Herda ${IVS_HERDADOS} IVs (o melhor dos dois pais em cada um) e um golpe sorteado entre os 4 do parceiro. O resto é sorteado como em qualquer Pokémon. Mãe de forma regional põe filhote da forma regional deste mapa.`],
+    ['↳ Com os itens de criação', `${IVS_COM_NO} IVs · natureza certa`, `${ITEMS.everstone.name} na mão de um dos pais: o filhote nasce com a natureza dele (os dois segurando, sorteia entre as duas). ${ITEMS['destiny-knot'].name}: ${IVS_COM_NO} IVs herdados em vez de ${IVS_HERDADOS} (não escolhe QUAIS).`],
+    ['↳ Golpe-ovo', `${pc(CHANCE_GOLPE_OVO)} quando nenhum pai sabe`, 'Golpe que a espécie só aprende nascendo. Se um dos pais já sabe um deles, o filhote nasce com ele de GRAÇA (regra dos jogos); senão é esta chance de sortear um da lista da espécie.'],
     ['Vagas no esconderijo', MAX_ESCONDIDOS, 'Ovo pronto sem vaga nenhuma (equipe e esconderijo cheios) espera parado, sem estragar.']
   ]],
   ['💥 Dano e crítico', 'A fórmula é a dos jogos. Estes são os sorteios que entram nela.', [

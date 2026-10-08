@@ -13,6 +13,25 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.3', data: '2026-10-08', titulo: '🥚 Criação de verdade: Pedra Eterna, Nó do Destino, golpes-ovo e um Ditto que finalmente serve pra algo', piada: 'O Ditto passou nove gerações sendo o profissional mais requisitado da criação de Pokémon e aqui ele estava sentado no esconderijo, sem gênero e sem convite, olhando os casais passarem. Pedimos desculpas formais. Ele se transformou num pedido de desculpas de volta.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🫠 O Ditto cruza com qualquer um</b> — sem olhar sexo nem grupo-ovo, como nos jogos. E, mais importante: ele é o <b>único par de quem não tem sexo</b>. Magnemite, Voltorb, Beldum, Klink, Golett e companhia saíram de "não cruza com ninguém, nunca" pra "cruza, mas só com um Ditto" — que é exatamente a regra dos jogos. Dois Dittos continuam não dando nada, e a espécie do filhote vem sempre do outro lado (o Ditto nunca é a mãe, e o golpe herdado também não vem dele: ele só sabe Transform).',
+        '<b>🪨 Pedra Eterna</b> (loja, divisão nova <b>🥚 Criação</b>) — na mão de um dos pais no esconderijo, o filhote nasce com a <b>natureza dele</b> em vez de uma das 25 sorteadas. Os dois segurando: sorteia entre as duas. Quer um filhote Adamant? Agora dá pra querer.',
+        '<b>🪢 Nó do Destino</b> — na mão de um dos pais, o filhote herda <b>5 dos 6 IVs</b> do melhor dos dois, em vez de 3. Ele sobe <i>quantos</i>, nunca escolhe <i>quais</i>. Com um casal bom no esconderijo, cada ovo sai melhor que o anterior — é a criadoria dos jogos, sem a planilha.',
+        '<b>🥚 Golpes-ovo</b> — cada espécie tem golpes que só se aprendem nascendo, e o filhote pode vir com um. Se um dos pais já sabe um golpe-ovo da espécie do bebê, ele <b>nasce sabendo</b>. E porque os pais daqui são selvagens recrutados (e selvagem só sabe golpe de nível), há também uma chance de sortear um da lista da espécie — senão a mecânica nunca apareceria. O log diz na hora, com o selo 🥚.',
+        '<b>🗺 Forma regional no ovo</b> — mãe de forma regional põe filhote da forma regional daquele mapa. A Sandslash de Alola punha um Sandshrew de Kanto; agora põe um de Alola.',
+        'Tudo isso, com as chances exatas, está na tela 📈 <b>Taxas</b>.'
+      ] }
+    ] },
+  { versao: '6.2', data: '2026-10-08', titulo: '📦 O esconderijo deixou de ser um armário escuro: cada guardado tem ficha', piada: 'Até agora o esconderijo funcionava como uma caixa de meias: você sabia que tinha seis lá dentro, sabia o nome de todas, e descobria qual era a boa calçando. Instalamos luz.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>📦 Ficha de quem está no esconderijo</b> — no painel de <b>Aliados</b>, cada parceiro guardado agora abre em <b>"Ver ficha completa"</b>: a tabela de atributos com <b>valor, base, IV e EV</b>, a <b>natureza</b> (com o ▲▼ de qual stat ela sobe e desce), o vínculo, a habilidade e os <b>quatro golpes</b> com tipo, poder, precisão, PP e descrição. É a mesma ficha de um aliado em campo.',
+        'Pra que serve: <b>escolher quem trazer de volta sabendo o que está trazendo</b> — e escolher quem fica no ninho, já que o filhote herda <b>3 IVs do melhor dos dois pais</b>. Antes, isso era chute: a caixa mostrava sprite, nome, sexo e nível, e nada mais.',
+        'A ficha é <b>só leitura</b>. Reordenar golpe e trocar item segurado continuam valendo pra quem está na equipe: traga o bicho de volta e mexa à vontade.'
+      ] }
+    ] },
   { versao: '6.1', data: '2026-10-08', titulo: '\ud83c\udf3f Rotas em potencial máximo: 500 amizades e a rota inteira nasce no teto', piada: 'Pedimos ao departamento de genética que elevasse ao máximo o potencial de todos os Pokémon selvagens das rotas. Eles cumpriram. Ninguém pensou em avisar que isso incluía os selvagens que querem te bater. O departamento alega que o pedido dizia "todos".',
     secoes: [
       { nome: 'Novidades', itens: [

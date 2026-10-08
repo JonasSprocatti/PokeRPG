@@ -292,6 +292,17 @@ export const ITENS_FRUTA_TIPO = Object.fromEntries(Object.entries(FRUTA_DO_TIPO)
   [id, ter(nome, `Corta pela metade um golpe de ${TYPE_PT[tipo]} super efetivo contra você. Gasta-se no uso.`, 1200)]));
 Object.assign(ITEMS, ITENS_SEGURADOS, ITENS_FRUTA_TIPO);
 
+/* 🥚 Itens de CRIAÇÃO (ovos.js). Tabela própria, e não `ITENS_SEGURADOS`, por um motivo de arquitetura: ali todo
+   item tem de ter uma linha em `segurados.SEGURADOS` (o teste cobra, e é o que pegou a Pedra do Rei), e estes dois
+   não fazem NADA em batalha — o efeito deles acontece no esconderijo, lido por `ovos.js` pela identidade do item.
+   Equipáveis (`segurado: true`), porque é assim que se usam: na mão de quem está guardado. Só na loja: não entram
+   em `SEGURADOS_ACHADOS` (aquela lista é derivada de `ITENS_SEGURADOS`), então não aparecem no chão. */
+export const ITENS_CRIACAO = {
+  everstone: { name: 'Pedra Eterna', desc: 'Na mão de um dos pais no esconderijo, o filhote nasce com a NATUREZA dele em vez de uma sorteada. Não faz nada em batalha.', segurado: true, criacao: true, price: 2000 },
+  'destiny-knot': { name: 'Nó do Destino', desc: 'Na mão de um dos pais no esconderijo, o filhote herda 5 dos 6 IVs do melhor dos dois pais, em vez de 3. Não faz nada em batalha.', segurado: true, criacao: true, price: 3000 }
+};
+Object.assign(ITEMS, ITENS_CRIACAO);
+
 /* Itens que um Pokémon SELVAGEM pode estar segurando (relato #77 + #70, pedido duas vezes: "um rattata segurando
    uma oran berry, itens baratos"). Sorteado por `regras.itemDeSelvagem` e posto em `batalha.novoOponente` — que é
    a porta única do selvagem, então vale no encontro comum, no grupo da ⚔ Saga e nos lacaios do Alfa. O ALFA, os
@@ -450,6 +461,9 @@ export const CATEGORIAS_ITEM = [
      marcas, e a casa dele na loja/mochila é 💎 Evolução. Isso não o esconde pra equipar: o seletor de "Segurar"
      (render.js) filtra por `segurado`, não por categoria. */
   { id: 'evolucao', nome: '💎 Evolução', de: it => it.evo || it.troca || it.segurar },
+  // 🥚 antes de `segurado`: os dois itens de criação TÊM a marca `segurado` (são equipáveis), mas a casa deles na
+  // loja e na mochila é a da criação — é lá que quem está mexendo com ovo vai procurar.
+  { id: 'criacao', nome: '🥚 Criação', de: it => it.criacao },
   { id: 'segurado', nome: '🎒 Para segurar', de: it => it.segurado },
   { id: 'exploracao', nome: '🧭 Exploração', de: it => it.repelente },
   { id: 'golpes', nome: '📀 Golpes', de: it => it.ensina },

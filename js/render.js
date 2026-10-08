@@ -396,7 +396,7 @@ function cartaoAliado(A, i) {
     <div class="aliado-top">${imgMon(A, '', spriteFrente(A))}<div><b>${brilho(A)}${esc(rotulo(A))}${sexo(A)}${seloOficio(A)}</b> <span class="muted small">Nv. ${A.level}${ordem === 'fora' ? ' · descansando' : ''}</span><div class="types">${badgesDeTipo(A)}</div>${hpbar(A, 'card-a' + i)}${barraXp(A, A.growth, 'card-a' + i)}${chipsFor(A)}</div></div>
     <label class="ordem">Ordem <select data-ordem="${i}" ${G.busy ? 'disabled' : ''}>${Object.entries(ORDENS).map(([k, o]) => `<option value="${k}" ${k === ordem ? 'selected' : ''}>${o.nome}</option>`).join('')}</select></label>
     <p class="small muted">${esc(ORDENS[ordem].desc)}</p>
-    <details data-aliado="${i}" ${G.abertos.has(i) ? 'open' : ''}><summary>Ver ficha completa</summary>
+    <details data-aliado="${i}" ${G.abertos.has(String(i)) ? 'open' : ''}><summary>Ver ficha completa</summary>
       ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>${blocoItem(A, i)}${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A, i)}
     </details>
     ${G.mode === 'explore' ? `<button class="btn ghost sm" data-act="despedir" data-v="${i}" ${G.busy ? 'disabled' : ''}>Despedir</button>` : ''}
@@ -507,13 +507,25 @@ function linhaDoNinho(S, guardados) {
     vazio: 'Guarde <b>dois</b> aqui e eles podem deixar um ovo enquanto você explora.',
     sozinho: 'Só um aqui. Guarde <b>mais um</b>, de <b>sexo oposto</b> e de grupo parecido, e eles podem deixar um ovo.',
     pronto: casal ? `<b>${nome(casal[0])}</b> e <b>${nome(casal[1])}</b> se dão bem: <b>pode aparecer um ovo</b> enquanto você explora.` : '',
-    'mesmo-sexo': 'Os que estão aqui são todos do <b>mesmo sexo</b> — não vai sair ovo. Guarde alguém de sexo oposto.',
-    'sem-sexo': 'Alguém aqui <b>não tem sexo</b> (lendário, mítico ou espécie sem gênero) e não cruza.',
+    'mesmo-sexo': 'Os que estão aqui são todos do <b>mesmo sexo</b> — não vai sair ovo. Guarde alguém de sexo oposto (ou um <b>Ditto</b>, que cruza com qualquer um).',
+    'sem-sexo': 'Alguém aqui <b>não tem sexo</b> (Magnemite, Voltorb, Beldum…) e, como nos jogos, só cruza com um <b>Ditto</b>. Lendário e mítico não cruzam nem assim.',
     'grupos-diferentes': 'Nenhum casal aqui: eles precisam de um <b>grupo-ovo em comum</b> (bichos parecidos entre si).',
     desconhecido: 'Ainda não sei se esses dois combinam — explore um pouco (ou entre com internet uma vez) e eu confiro.'
   }[status] || '';
   if (!txt) return '';
   return `<p class="small ${status === 'pronto' ? 'ninho-ok' : 'muted'}">🥚 <b>Ninho:</b> ${txt}</p>`;
+}
+/* A ficha de quem está guardado: a MESMA do aliado (stats/IVs/EVs, natureza, vínculo, habilidade, golpes), só que
+   em leitura — sem `quem`, então nada de reordenar golpe nem mexer em item daqui (o `quem` dos botões aponta pra
+   `S.aliados[i]`, que é OUTRO bicho: o índice do esconderijo não é o da equipe). Traga pra equipe pra mexer.
+   Existe porque escolher quem trazer de volta sem ver IV, natureza e golpes era chute (pedido do usuário).
+   A chave de `G.abertos` é `g${i}` pra não colidir com o índice do aliado — por isso o Set guarda TEXTO. */
+function fichaGuardado(A, i) {
+  return `<details data-aliado="g${i}" ${G.abertos.has(`g${i}`) ? 'open' : ''}><summary>Ver ficha completa</summary>
+    ${tabelaStats(A)}<p class="small muted" style="margin-top:6px">Natureza ${esc(natureLabel(A.nature))}.</p>
+    ${A.item && ITEMS[A.item] ? `<p class="small muted">Segurando <b>${ITEMS[A.item].name}</b> (traga pra equipe pra trocar).</p>` : ''}
+    ${blocoEvolucao(A, A.evo)}${blocoHabilidade(A)}${listaGolpes(A)}
+  </details>`;
 }
 function blocoEsconderijo(AL, guardados) {
   const fora = G.mode === 'explore' && !G.busy;
@@ -523,10 +535,11 @@ function blocoEsconderijo(AL, guardados) {
   return `<h4 class="bag-sec">📦 Esconderijo <span class="muted small">(${guardados.length}/${MAX_ESCONDIDOS})</span></h4>
     ${guardados.length ? `<div class="aliados esconderijo">${guardados.map((A, i) => `<div class="ali-card guardado">
       <img src="${espelhar(A.data.sprite)}" alt="" loading="lazy">
-      <div><b>${brilho(A)}${esc(A.nick || fmt(A.name))}${sexo(A)}</b><small class="muted">Nv. ${A.level}</small>
+      <div><b>${brilho(A)}${esc(A.nick || fmt(A.name))}${sexo(A)}${seloOficio(A)}</b><small class="muted">Nv. ${A.level}</small>
       <div class="types">${badgesDeTipo(A)}</div></div>
       <button class="btn sm ${AL.length >= teto ? 'ghost' : ''}" data-act="esconderijo-trazer" data-v="${i}" ${fora && AL.length < teto ? '' : 'disabled'}
         title="${AL.length >= teto ? 'Equipe cheia: guarde alguém antes' : fora ? '' : 'Só fora de batalha'}">↩ Trazer</button>
+      ${fichaGuardado(A, i)}
     </div>`).join('')}</div>`
     : '<p class="small muted">Vazio. Aliados que não couberem na equipe podem esperar aqui, em vez de se despedir.</p>'}
     ${linhaDoNinho(G.S, guardados)}
