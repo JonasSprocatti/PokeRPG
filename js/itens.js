@@ -9,7 +9,7 @@ import { gainExp, gainExpAliado, evoluirComItem, aprender } from './progressao.j
 import { ITEMS, ST_SHORT, STATS, STAT_PT } from './dados.js';
 import { pokedexDaRota, somarRegistros, repelenteAtivo } from './mapas.js';
 import { carregarCarreira } from './carreira.js';
-import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, alternarRapido, MAX_RAPIDOS, LADO_VAZIO, recalc, ivsParaMaximizar, habilidadesParaTrocar } from './regras.js';
+import { heal, itemTemEfeito, golpesParaEnsinar, freshVol, precoVenda, precoItem, alternarRapido, MAX_RAPIDOS, LADO_VAZIO, recalc, ivsParaMaximizar, habilidadesParaTrocar } from './regras.js';
 import { IMPL } from './habilidades.js';
 import { guardar, trazer } from './esconderijo.js';
 import { usarItemDeRaide } from './boss.js';
@@ -85,6 +85,12 @@ export async function mexerEsconderijo(qual, i) {
 
 // Repelentes (mapas.js): o total espanta todo selvagem; o seletivo deixa passar só a espécie que você escolher,
 // entre as que vivem na rota atual. Nenhum dos dois mexe em treinador, item, dinheiro ou ambientação.
+function aplicarRepelente(id, especie) {
+  const S = G.S, it = ITEMS[id];
+  S.repelente = { tipo: it.repelente, passos: it.passos, especie };
+  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+}
+
 async function usarRepelente(id) {
   const S = G.S, it = ITEMS[id], z = zone();
   let especie = null;
@@ -104,11 +110,26 @@ async function usarRepelente(id) {
     if (i < 0) return false;
     especie = lista[i].n;
   }
-  S.repelente = { tipo: it.repelente, passos: it.passos, especie };
-  S.bag[id]--; if (S.bag[id] <= 0) delete S.bag[id];
+  aplicarRepelente(id, especie);
   render();
   await say(especie ? `Você usa ${it.name}. Por ${it.passos} explorações, só <b>${esc(fmt(especie))}</b> aparece por aqui.`
     : `Você usa ${it.name}. Por ${it.passos} explorações, nenhum selvagem chega perto.`, 'good');
+  return true;
+}
+
+/* 🤖 Auto-explorar (auto.js, admin): a espécie já foi escolhida na tela do laço, do pool INTEIRO da rota — sem
+   perguntar de novo e sem exigir "já encontrada" (mesmo bypass que o resto do auto-explorar já faz). Compra o
+   Repelente Seletivo se a mochila não tiver; devolve false sem dinheiro pra comprar, e o laço para contando por quê. */
+export function garantirRepelenteAuto(especie) {
+  const S = G.S, ativo = repelenteAtivo(S);
+  if (ativo?.tipo === 'seletivo' && ativo.especie === especie) return true;
+  if (!S.bag.repel) {
+    const preco = precoItem('repel', S);
+    if (S.money < preco) return false;
+    S.money -= preco; S.gasto = (S.gasto || 0) + preco; addItem('repel', 1);
+  }
+  aplicarRepelente('repel', especie);
+  render();
   return true;
 }
 /* Cancelar o efeito que está valendo (pedido de quem joga, relato #69): o seletivo prende a rota numa espécie só,

@@ -5,11 +5,15 @@
    de rotas e do 🧪 painel de testes (`nuvem.ehAdmin`): é uma ferramenta de diagnóstico, não conteúdo de jogo —
    e ela derruba centenas de Pokémon, o que mexeria no progresso permanente de quem joga de verdade.
 
-   Três objetivos, escolhidos na hora de ligar (pedido do usuário):
+   Quatro objetivos, escolhidos na hora de ligar (pedido do usuário):
    - **uma espécie** — para na hora que ela aparecer, sem atacar;
    - **um nível do seu Pokémon** — segue moendo até chegar lá (é o modo "só quero subir de nível");
-   - **nenhum** — fica caçando pra sempre (até o teto) e só para em shiny. É o modo "caça shiny" de verdade.
-   Shiny para o laço nos TRÊS: é a única coisa irreversível que pode passar na sua frente.
+   - **nenhum** — fica caçando pra sempre (até o teto) e só para em shiny. É o modo "caça shiny" de verdade;
+   - **shiny de uma espécie fixa** (`especieRepel`) — a mesma caça, mas comprando e mantendo o Repelente Seletivo
+     na espécie escolhida: todo encontro selvagem é garantido dela, então o shiny que aparece já É o certo (sem
+     isso, caçar um raro no meio do pool inteiro da rota é moer o sorteio errado). Para sem dinheiro pro repelente
+     (`garantirRepelenteAuto`, itens.js) — mesma régua do `semPP`, outro recurso que acaba.
+   Shiny para o laço nos QUATRO: é a única coisa irreversível que pode passar na sua frente.
 
    Decisões que não são óbvias:
    - **O laço só chama o que a UI já chama** (`explore`, `turn`, `curarNoCentro`). Nada de caminho paralelo: se
@@ -32,7 +36,7 @@ import { render } from './render.js';
 import { log, ask, semAnimacao } from './ui.js';
 import { explore, curarNoCentro } from './mundo.js';
 import { turn, melhorGolpe } from './batalha.js';
-import { useItem } from './itens.js';
+import { useItem, garantirRepelenteAuto } from './itens.js';
 import { motivoDeParar, precisaReporPP, objetivoAuto, precisaCurar, itemEmVezDoCentro } from './regras.js';
 import { ehAdmin } from './nuvem.js';
 import { notificar, pedirPermissao } from './notificacoes.js';
@@ -84,9 +88,16 @@ export async function escolherAlvoAuto() {
   const escolha = await ask(`<b>🤖 Explorar automaticamente</b><p class="small muted">O que o laço está procurando em ${esc(z.name)}? Ele explora e luta sozinho até lá — e para na hora, sem atacar. Shiny para a caçada sempre.</p>`,
     [...(G.S.player.level < 100 ? [{ label: '📈 Subir até um nível…', value: '#nivel' }] : []),
       { label: '✨ Só caçar shiny', value: '#shiny', ghost: true },
+      { label: '✨🎯 Caçar shiny de uma espécie…', value: '#shiny-especie', ghost: true },
       ...opcoes, { label: 'Cancelar', value: null }]);
   if (!escolha) return;
   if (escolha === '#shiny') return iniciarAuto(null);
+  if (escolha === '#shiny-especie') {
+    const especie = await ask(`<b>✨🎯 Caçar shiny de uma espécie</b><p class="small muted">Ele compra e mantém o Repelente Seletivo nela: todo selvagem de ${esc(z.name)} vira essa espécie, e só para quando sair um shiny.</p>`,
+      [...opcoes, { label: 'Cancelar', value: null }]);
+    if (especie) await iniciarAuto(null, 0, especie);
+    return;
+  }
   if (escolha !== '#nivel') return iniciarAuto(escolha);
   const atual = G.S.player.level;
   const nivel = await ask(`<b>📈 Até que nível?</b><p class="small muted">${esc(rotulo(G.S.player))} está no <b>Nv. ${atual}</b>. O laço explora e luta até chegar no nível escolhido — e para também se aparecer um shiny.</p>`,
@@ -94,13 +105,13 @@ export async function escolherAlvoAuto() {
   if (nivel) await iniciarAuto(null, nivel);
 }
 
-export async function iniciarAuto(alvo, nivelAlvo = 0) {
+export async function iniciarAuto(alvo, nivelAlvo = 0, especieRepel = null) {
   if (!ehAdmin() || G.auto?.ativo || G.busy || G.mode !== 'explore') return;
   // ainda dentro do clique: é a única hora em que o navegador aceita perguntar da notificação e ligar o áudio
   await pedirPermissao();
   await manterAcordado();
   const z = zone();
-  G.auto = { ativo: true, alvo, nivelAlvo, rota: z.id, rotaNome: z.name, exploracoes: 0, batalhas: 0, abates: {}, motivo: null, inicio: Date.now() };
+  G.auto = { ativo: true, alvo, nivelAlvo, especieRepel, rota: z.id, rotaNome: z.name, exploracoes: 0, batalhas: 0, abates: {}, motivo: null, inicio: Date.now() };
   log(`🤖 Auto-explorar ligado em ${esc(z.name)}: procurando <b>${esc(objetivoAuto(G.auto))}</b>.`, 'muted');
   render();
   try { await laco(); }
@@ -143,6 +154,8 @@ async function laco() {
          decide parar é `motivoDeParar`, num lugar só. */
       a.semPP = semGolpes();
       if (a.semPP) continue;
+      // caçada de espécie fixa: mantém o Repelente Seletivo nela (compra se faltar); sem dinheiro, o laço para
+      if (a.especieRepel && !garantirRepelenteAuto(a.especieRepel)) { a.motivo = 'semDinheiro'; break; }
       a.exploracoes++;
       await explore();
     }
@@ -166,6 +179,7 @@ const TEXTO = {
   nivel: a => [`📈 Nível ${a.nivelAlvo}!`, `Chegou lá em ${a.rotaNome}, depois de ${a.exploracoes} explorações e ${a.batalhas} batalhas.`],
   desmaiou: a => ['🤖 Auto-explorar parou', `A caçada por ${objetivoAuto(a)} acabou: seu Pokémon caiu depois de ${a.exploracoes} explorações.`],
   semPP: a => ['🤖 Auto-explorar parou', `Os golpes acabaram e não deu pra pagar o Centro Pokémon depois de ${a.exploracoes} explorações.`],
+  semDinheiro: a => ['🤖 Auto-explorar parou', `Sem dinheiro pro Repelente Seletivo depois de ${a.exploracoes} explorações.`],
   teto: a => ['🤖 Auto-explorar parou', `${TETO_EXPLORACOES} explorações sem achar ${objetivoAuto(a)}. É só ligar de novo.`],
   saiu: a => ['🤖 Auto-explorar parou', `A jornada saiu da rota depois de ${a.exploracoes} explorações.`],
   erro: a => ['🤖 Auto-explorar parou', `Deu erro depois de ${a.exploracoes} explorações — o registro da partida tem o motivo.`],

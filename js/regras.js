@@ -1710,4 +1710,4 @@ export function motivoDeParar({ achou = false, erro = false, modo, hp = 0, nivel
    Pokémon principal, ou nada — e "nada" significa rodar até sair um shiny, que para o laço em qualquer caso.
    Mora aqui porque o painel (`render.blocoAuto`) e a narração (`auto.js`) precisam da MESMA frase, e render não
    pode importar auto (ciclo). */
-export const objetivoAuto = a => a?.alvo ? fmt(a.alvo) : a?.nivelAlvo ? `o nível ${a.nivelAlvo}` : 'um shiny';
+export const objetivoAuto = a => a?.alvo ? fmt(a.alvo) : a?.especieRepel ? `um shiny de ${fmt(a.especieRepel)}` : a?.nivelAlvo ? `o nível ${a.nivelAlvo}` : 'um shiny';
