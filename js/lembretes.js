@@ -23,25 +23,6 @@ export const FALTA_POUCO = 0.9;      // badge com 90% do alvo andado = "falta po
 const HORA_MS = 60 * 60 * 1000;
 const DIA_MS = 24 * HORA_MS;
 
-/* Hora de gente: o push só sai das 7 às 9 e das 15 às 22, no fuso de QUEM JOGA (o `quando` é escrito no navegador
-   dele, então o instante gravado já é o da janela local). Fora disso espera a próxima janela abrir — nunca
-   antecipa, porque um lembrete adiantado é uma mentira ("falta pouco pro ovo" antes de faltar pouco). */
-export const JANELAS = [[7, 9], [15, 22]];
-export function emHoraBoa(ts) {
-  const d = new Date(ts);
-  for (let dia = 0; dia < 2; dia++) {                      // hoje e, se já passou de todas, amanhã
-    for (const [ini, fim] of JANELAS) {
-      if (d.getHours() >= fim) continue;                   // essa janela já fechou
-      if (d.getHours() >= ini) return d.getTime();          // já está dentro: entrega na hora
-      d.setHours(ini, 0, 0, 0);
-      return d.getTime();
-    }
-    d.setDate(d.getDate() + 1);
-    d.setHours(0, 0, 0, 0);
-  }
-  return d.getTime();                                      // inalcançável: a janela da manhã sempre pega
-}
-
 const nBR = n => Math.round(n).toLocaleString('pt-BR');
 /* "25 min" / "1 h e 30 min". A hora de chegada do push é ESTIMATIVA (o cron gira de hora em hora), então o texto
    fala de quanto falta, nunca de hora marcada. Exportada porque a tela do ovo (`render.blocoOvos`) mostra a mesma
@@ -77,8 +58,8 @@ export function badgeQuaseFeita(badges = []) {
    único com hora própria, porque é o único que ANDA SOZINHO. */
 export function motivoDeVolta({ save = null, badges = [] } = {}) {
   const ovo = save && ovoQuaseChocando(save.ovos);
-  // sem contagem no corpo: a entrega é empurrada pra janela de hora boa, então um "faltam 25 min" escrito agora
-  // chegaria horas depois mentindo. O número de verdade está na tela do ovo (render.blocoOvos).
+  // sem contagem no corpo: a entrega real depende do cron (gira de hora em hora), então um "faltam 25 min" escrito
+  // agora chegaria atrasado mentindo. O número de verdade está na tela do ovo (render.blocoOvos).
   if (ovo) return {
     titulo: '🥚 O seu ovo está prestes a chocar', emMs: ovo.ms,
     corpo: 'Ele já deve estar pronto — e abre na hora em que você voltar ao jogo.'
@@ -92,13 +73,14 @@ export function motivoDeVolta({ save = null, badges = [] } = {}) {
 /* As linhas a gravar. `chave` é única por jogador (chave igual = sobrescreve, nunca empilha), `quando` é ISO.
    - `volta`: conta a partir de AGORA, isto é, da última vez que o jogo abriu.
    - `chefe`: a hora que o calendário do evento já define (evento.fimDaSemana) — sem jornada nenhuma envolvida.
-   Os dois passam por `emHoraBoa`: prazo cumprido de madrugada espera a manhã. */
+   Sem janela de "hora boa": o ovo anda de madrugada igual, e quem dorme com ovo no ninho quer saber na hora
+   (pedido do usuário, 09/10/2026, depois de três ovos chocarem de noite sem nenhum aviso). */
 export function lembretesDe({ save = null, badges = [], proximoChefe = null, agora = Date.now() } = {}) {
   const fora = [];
   const { emMs, ...m } = motivoDeVolta({ save, badges }) || {};
-  if (m.titulo) fora.push({ chave: 'volta', quando: new Date(emHoraBoa(agora + (emMs ?? (save ? HORAS_PARADO * HORA_MS : DIAS_SEM_RUN * DIA_MS)))).toISOString(), ...m });
+  if (m.titulo) fora.push({ chave: 'volta', quando: new Date(agora + (emMs ?? (save ? HORAS_PARADO * HORA_MS : DIAS_SEM_RUN * DIA_MS))).toISOString(), ...m });
   if (proximoChefe?.quando > agora) fora.push({
-    chave: 'chefe', quando: new Date(emHoraBoa(proximoChefe.quando)).toISOString(),
+    chave: 'chefe', quando: new Date(proximoChefe.quando).toISOString(),
     titulo: '🏆 Chefe novo da semana',
     corpo: `${proximoChefe.nome} assumiu o evento desta semana. Dá pra encarar com o time do Hall da Fama.`
   });

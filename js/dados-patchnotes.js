@@ -13,6 +13,13 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.6', data: '2026-10-09', titulo: '🥚 O choco ganha uma revelação, e o lembrete perde a hora boa', piada: 'Um jogador dormiu com três ovos no ninho e os três chocaram durante a noite. O jogo, educadamente, esperou o sol nascer pra avisar — às 9h, quando ele já tinha aberto o jogo sozinho e visto tudo. Pedimos desculpas ao sol, que não tinha nada a ver com isso, e removemos a educação.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🥚 O choco agora tem revelação</b> — quando um ovo abre de verdade, aparece um quadro com o <b>sprite do filhote</b>, não só uma linha no log. Chocou mais de um de uma vez (depois de uma noite fora, por exemplo)? Vem um quadro por ovo, em sequência.',
+        '<b>🔔 O lembrete do ovo chega a qualquer hora</b> — inclusive de madrugada, se foi de madrugada que ele ficou pronto. Antes o aviso esperava a manhã (7–9h) ou a tarde (15–22h) e, com frequência, chegava depois de você já ter aberto o jogo sozinho. Vale pra todos os lembretes: badge quase feita, parceiro parado e chefe da semana também.'
+      ] }
+    ] },
   { versao: '6.5', data: '2026-10-08', titulo: '🔒 Cinco Pokémon que não existem (até você provar que merece)', piada: 'O Gimmighoul pediu 999 moedas pra evoluir e, quando entregamos, ele contou uma por uma, na nossa frente, em silêncio. Decidimos então que ninguém mais ganha um Gholdengo de graça. O Arceus, que criou o universo, concordou com a medida e pediu nove regiões de distância.',
     secoes: [
       { nome: 'Novidades', itens: [

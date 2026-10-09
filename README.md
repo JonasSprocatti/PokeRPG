@@ -270,12 +270,12 @@ O jogo pode avisar **fora da aba**: o aviso aparece na tela de qualquer jeito, e
 Com a **conta ligada**, ele também manda **lembretes com o jogo fechado** — um convite pra terminar o que ficou pela metade:
 
 - **🎒 O seu Pokémon está te esperando** — passou **10 horas** sem abrir e há uma jornada aberta: o lembrete diz quem está parado, em que nível e em que rota.
-- **🥚 O ovo prestes a chocar** — e esse tem **hora marcada**, porque o ovo anda com o relógio: o lembrete chega quando ele fica pronto. (A espécie continua secreta, inclusive na notificação.)
+- **🥚 O ovo prestes a chocar** — e esse tem **hora marcada**, porque o ovo anda com o relógio: o lembrete chega quando ele fica pronto, a qualquer hora. (A espécie continua secreta, inclusive na notificação.) Ao abrir o jogo e o ovo chocar de verdade, o filhote é revelado num quadro com o sprite dele — não só uma linha no log.
 - **🏅 A badge a pouco do alvo** — qualquer badge da conta com **90%** andado: "você está em 950 de 1.000".
 - **🏆 O chefe novo da semana** — na virada da semana do evento, dizendo quem assumiu.
 - **📜 Novidades** — quando sai uma versão nova do jogo.
 
-É **no máximo um lembrete por dia**, sempre o motivo mais interessante (ovo na frente de badge, badge na frente do parceiro parado) e **em hora de gente**: só das **7 às 9** e das **15 às 22**, no seu horário — nada de madrugada. Prazo vencido fora dessas faixas espera a próxima abrir. Quem joga todo dia nunca recebe nada: o prazo conta da última vez que você abriu o jogo. Desmarcar em ⚙ Ajustes **cancela na hora** — o aparelho é desinscrito, não é só uma caixinha desmarcada. No iPhone, lembrete só funciona depois de **adicionar o jogo à tela de início** (é limitação do Safari).
+É **no máximo um lembrete por dia**, sempre o motivo mais interessante (ovo na frente de badge, badge na frente do parceiro parado), e chega **a qualquer hora** — inclusive de madrugada, se foi de madrugada que o ovo ficou pronto. Quem joga todo dia nunca recebe nada: o prazo conta da última vez que você abriu o jogo. Desmarcar em ⚙ Ajustes **cancela na hora** — o aparelho é desinscrito, não é só uma caixinha desmarcada. No iPhone, lembrete só funciona depois de **adicionar o jogo à tela de início** (é limitação do Safari).
 
 O texto é escrito **no seu aparelho**, na última vez que você jogou, e o servidor só entrega — ele não sabe nada do seu jogo além do que já está escrito na notificação.
 

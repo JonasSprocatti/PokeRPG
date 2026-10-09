@@ -4,7 +4,7 @@
 // (S.aliados, até MAX_ALIADOS). Pokémon de treinador não aceita — ele já tem dono.
 import { G, nm, rotulo, registrar, save } from './estado.js';
 import { say, ask } from './ui.js';
-import { render } from './render.js';
+import { render, imgMon, spriteFrente } from './render.js';
 import { ITEMS, TYPE_PT } from './dados.js';
 import { ganhoAmizade, podeFazerAmizade, freshVol, tetoDaEquipe, AMIZADE_MAX } from './regras.js';
 import { escondidos, esconderijoCheio, equipeCheia, acolher } from './esconderijo.js';
@@ -124,6 +124,8 @@ async function chocar(S, ovo) {
   if (ovo.golpe && herdados.some(m => m.name === ovo.golpe.name)) await say(`Veio sabendo <b>${esc(fmt(ovo.golpe.name))}</b> — herdou dos pais.`, 'muted');
   if (ovo.nature) await say(`A natureza é <b>${esc(fmt(ovo.nature))}</b>, a mesma de quem segurava a Pedra Eterna.`, 'muted');
   if (onde === 'esconderijo') await say('📦 Sua equipe está cheia, então ele vai esperar no esconderijo.', 'muted');
+  // revelação visual do choco (pedido do usuário, 09/10/2026): o log já conta os detalhes, o modal mostra a cara
+  await ask(`<div class="ovo-nasceu">${imgMon(bebe, 'spr', spriteFrente(bebe))}<b>${esc(fmt(bebe.name))}</b>${bebe.shiny ? ' ✨' : ''} chocou!</div>`, [{ label: 'Que ótimo!', value: true }]);
 }
 
 async function talvezPorOvo(S) {

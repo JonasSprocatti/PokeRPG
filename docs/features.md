@@ -3647,12 +3647,14 @@ Prazos: `HORAS_PARADO` = 10 com jornada aberta, `DIAS_SEM_RUN` = 7 sem ela (aí 
 nada: a linha é reescrita antes de vencer. O prazo de parado começou em 3 dias e virou 10 horas a pedido do usuário
 (08/10/2026): 3 dias é quando a pessoa já esqueceu o jogo, e o lembrete existe pra pegar a jornada ainda quente.
 
-**Hora de gente, não hora do prazo** (`emHoraBoa`, mesma data): 10 horas contadas de qualquer momento caem na
-madrugada com frequência, e notificação às 4 da manhã é desinstalação. As `JANELAS` são **7–9 h** e **15–22 h**, e o
-`quando` só é empurrado pra frente — nunca antecipado, porque lembrete adiantado mente ("falta pouco pro ovo" antes
-de faltar pouco). O fuso é o de **quem joga** de graça: o `quando` é escrito no navegador dele, com `getHours()`
-local, e o que vai pro banco é o INSTANTE (ISO) — a Edge Function continua burra, comparando UTC sem saber de
-janela nenhuma.
+**Hora de gente, não hora do prazo (`emHoraBoa`, 08/10/2026 — removida em 09/10/2026):** a primeira versão só deixava
+o push saír das 7–9 h e das 15–22 h, empurrando pra frente quem caía fora da janela. A ideia era não incomodar de
+madrugada — mas o usuário relatou o efeito colateral: dormiu com três ovos no ninho, os três chocaram de noite, e
+não recebeu NENHUM aviso, porque o `quando` do lembrete tinha sido empurrado pra manhã seguinte (e por essa hora o
+jogador já tinha aberto o jogo sozinho, sem o push ajudar em nada). A janela protegia de um incômodo que o próprio
+usuário disse não querer ser protegido — pedido explícito foi "pode mandar a qualquer momento". `emHoraBoa` e
+`JANELAS` foram removidas de `lembretes.js`; o único limite que resta é o **cron, que gira de hora em hora**
+(`supabase/LIGAR-LEMBRETES.sql`), e é por isso que o corpo do lembrete do ovo continua sem contagem de minutos.
 
 **O ovo é o único motivo com hora de verdade** (e foi o que motivou a mecânica de relógio, abaixo): ele anda sozinho,
 então `motivoDeVolta` devolve `emMs` = `falta × MS_POR_PASSO` e o lembrete é agendado pro minuto em que o ovo fica
@@ -3733,3 +3735,34 @@ Na 📈 Taxas entrou a linha "Passo pelo relógio", com os limites calculados da
   parte das versões é conserto, e avisar todas acaba com a credibilidade da notificação.
 - **iPhone com o jogo no navegador.** O Safari só entrega push pra site adicionado à tela de início. Está dito no
   README, nos patch notes e na própria tela de ⚙ Ajustes.
+
+## 🥚 O choco ganha modal, e o push perde a hora boa (09/10/2026)
+
+**O pedido** (do usuário): foi dormir com três ovos no ninho, os três chocaram de madrugada e não recebeu nenhum
+aviso — a janela de "hora boa" (ver seção acima) empurrou o `quando` pra manhã, e por essa hora o jogo já tinha
+sido reaberto sozinho. Pedido explícito: "pode mandar a qualquer momento", e o choco em si devia ser "algo mais
+interativo" que uma linha de log — uma tela mostrando o Pokémon que nasceu.
+
+**Duas mudanças independentes, mesma conversa:**
+
+1. **`emHoraBoa`/`JANELAS` saíram de `lembretes.js`.** O `quando` de todo lembrete (ovo, badge, parceiro parado,
+   chefe) volta a ser só `agora + prazo`, sem empurrar pra 7–9 h/15–22 h. O único limite que resta é o cron, que
+   gira de hora em hora (`supabase/LIGAR-LEMBRETES.sql`) — por isso o corpo do lembrete do ovo continua sem
+   contagem de minutos ("faltam 25 min" escrito na última sessão ainda chegaria atrasado).
+2. **`amizade.chocar` abre um modal** (`ui.ask`, classe `.ovo-nasceu`) com o sprite do filhote (`imgMon`/
+   `spriteFrente`, os mesmos de `render.js`) e o nome, depois das linhas de log de sempre (natureza, golpe-ovo,
+   herança). Chocar vários ovos de uma vez (comum depois de uma noite fora) mostra um modal por ovo, em sequência
+   — é o mesmo padrão de `ask` encadeado que `progressao.checkEvolution` já usa pra evolução.
+
+**Por que não avisar ANTES de abrir o jogo qual Pokémon nasceu:** o choco só acontece no CLIENTE — o relógio só
+credita os minutos retroativamente quando `main.abrirJornada` chama `cuidarDosOvos({ explorando: false })`. O
+servidor nunca sabe a espécie (e nem deveria: o ovo é segredo, ver acima), então o push continua dizendo só "está
+pronto", e é abrir o jogo que revela — a parte "interativa" do pedido mora no modal, não na notificação.
+
+### O que ficou de fora
+
+- **Botão/ajuste pra escolher janela de horário.** O usuário pediu "sem hora boa" de propósito, não "outra janela".
+  Se um dia virar reclamação (push de madrugada incomoda), a janela volta como ajuste opt-in, não como padrão.
+- **Deep link do push pra uma tela específica.** Só existe UMA tela (o jogo inteiro), e `abrirJornada` já roda
+  `cuidarDosOvos` sozinho a cada abertura — não há "tela do ovo" separada pra apontar. O clique do push já abre
+  (ou foca) a aba existente (`sw.js:notificationclick`), que é o que importa.
