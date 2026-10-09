@@ -31,7 +31,7 @@
      foi pedido explícito. Em segundo plano o navegador limita cada `setTimeout` a ~1 por segundo, então a
      narração (`ui.say`) para de esperar com a aba escondida: ninguém está lendo, e 420 ms de pausa por linha
      viravam 1 segundo cada. */
-import { G, save, zone, rotulo, ladoJogador } from './estado.js';
+import { G, save, zone, rotulo, ladoJogador, inimigosEmCampo } from './estado.js';
 import { render } from './render.js';
 import { log, ask, semAnimacao } from './ui.js';
 import { explore, curarNoCentro } from './mundo.js';
@@ -139,9 +139,14 @@ async function laco() {
       const E = G.B.enemy;
       /* Shiny para a caçada mesmo não sendo quem você procurava (pedido do usuário): 1 em 4096 é raro demais
          pra um laço automático atropelar — e aqui vale QUALQUER inimigo brilhante, inclusive o de treinador e o
-         Alfa, porque a chance é a mesma e perder um desses é igualmente irreversível. */
-      if (E?.shiny) { a.motivo = 'shiny'; a.shiny = especieDe(E); break; }
-      if (a.alvo && selvagem(G.B) && especieDe(E) === a.alvo) { a.motivo = 'achou'; break; }
+         Alfa, porque a chance é a mesma e perder um desses é igualmente irreversível.
+         Varre `inimigosEmCampo()`, NUNCA só o `B.enemy`: com grupo (🐺 selvagem, treinador com 2–3 em campo) o
+         `enemy` é só o que está em FOCO, e o shiny do outro slot só entraria em foco depois de o focado cair —
+         tempo de sobra pra um golpe de área derrubá-lo com o laço seguindo em frente. */
+      const brilhante = inimigosEmCampo().find(m => m.shiny);
+      if (brilhante) { a.motivo = 'shiny'; a.shiny = especieDe(brilhante); break; }
+      const achado = a.alvo && selvagem(G.B) && inimigosEmCampo().find(m => especieDe(m) === a.alvo);
+      if (achado) { a.motivo = 'achou'; break; }
       if (!naLuta && selvagem(G.B)) { naLuta = E; a.batalhas++; }
       await atacar(P, E);
     } else {

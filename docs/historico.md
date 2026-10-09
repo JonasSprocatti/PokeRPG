@@ -7,6 +7,28 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (09/10/2026) — o 🤖 auto-explorar só via shiny no inimigo em FOCO
+
+Pergunta do usuário, não relato: *"o explorar automático identifica quando tem um shiny em momentos que tem mais
+de 1 pokemon oponente?"* — e a resposta era não. O laço (`auto.js`, dentro de `laco()`) lia `const E = G.B.enemy`
+e decidia tudo sobre esse `E`: a parada por shiny e a parada pela espécie procurada.
+
+`B.enemy` não é "o inimigo", é um **getter** que devolve `B.inimigos[B.foco]` (`estado.js`). Com grupo — 🐺 grupo
+selvagem (hoje em todos os modos), treinador com 2 ou 3 em campo, ⚔ Saga — o shiny do slot que não está em foco
+não existia pro laço. Ele só entraria em foco quando o focado caísse (`batalha.js`, o `B.foco` reposicionado
+depois da queda), e até lá um golpe de área podia derrubá-lo: a caçada seguia em frente, sem log e sem contagem,
+exatamente a falha silenciosa que a caça shiny não pode ter — 1 em 4096 perdido sem ninguém saber.
+
+O conserto é varrer `inimigosEmCampo()` nas duas paradas em vez de olhar `E`. A função já existia e já exclui
+quem tem `vol.retirado` (bola do treinador, revezamento), que é o comportamento certo aqui: quem saiu de campo
+não corre risco de morrer no turno.
+
+**Lição**: `B.enemy` é FOCO, não lado. Código que pergunta "existe alguém assim do lado de lá?" lê
+`inimigosEmCampo()`; `B.enemy` serve só pra "contra quem eu bato agora". O mesmo vale pra qualquer varredura
+futura no laço automático (status, item, forma).
+
+---
+
 ## ✅ CORRIGIDO (03/10/2026) — as taxas da Pokédex da rota somavam 101,8% (relatos #74 e #75)
 
 Relato: *"ao fazer a soma da % de aparição dos pokemon da rota da um total de 101,8%, acredito que essa % deveria
