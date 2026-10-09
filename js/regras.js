@@ -302,6 +302,13 @@ export const MULT_AREA = 0.75;
    respingar no próprio aliado machuca mais do que o alvo extra compensa — senão o inimigo usa Earthquake com o
    bando dele em campo. */
 export const BONUS_AREA = 25, PENA_AREA_ALIADO = 35;
+/* Golpe de APOIO: golpe de status de alvo ESCOLHIDO cujo efeito é bom pra quem recebe (cura HP ou só sobe
+   atributo) — Heal Pulse, Floral Healing, Purify, Decorate. Nos jogos quem usa aponta num companheiro; aqui o
+   alvo escolhido é sempre o inimigo em foco, então Heal Pulse curava QUEM USOU e Decorate subia +2 Atk/At.Esp.
+   do INIMIGO. Quem redireciona pro próprio lado é golpe.alvosDoGolpe; a IA lê isto em notaDoGolpe.
+   Golpe com `target` de si/do lado (Recover, Swords Dance) nunca chega aqui: aquele caminho vem antes. */
+export const golpeDeApoio = g => g?.cls === 'status' && !(g.meta?.ailment && g.meta.ailment !== 'none')
+  && ((g.meta?.heal > 0) || (!!g.stats?.length && g.stats.every(s => s.change > 0)));
 // dano cortado pelas telas do lado de quem DEFENDE (Aurora Veil vale pros dois tipos de golpe)
 // `atravessa` = Infiltrator: pra quem tem, a tela do outro lado é como se não existisse (e a Salvaguarda também,
 // em golpe.aplicarStatus — é a mesma habilidade, lida nos dois pontos)
@@ -905,10 +912,20 @@ export function notaDoGolpe(g, c) {
     if (f > 0.65) return IMPOSSIVEL;                                                         // com o HP alto, curar é desperdício
     return Math.min(fracCura, 1 - f) * 110;
   };
+  /* 🤝 Golpe de companheiro (dados.ALVOS_ALIADOS): sem ninguém do lado em campo ele FALHA, então a IA não pode
+     gastar o turno nele. Vale pro grupo selvagem e pro treinador com mais de um em campo — `c.aliados` é quem
+     conta. Os de lado inteiro (Heal Bell, Howl) continuam valendo sozinho: quem usa também recebe. */
+  if ((g.target === 'ally' || esp.soAliados || esp.ajudaAliado || esp.chamariz) && !(c.aliados || 0)) return IMPOSSIVEL;
+  if (esp.ajudaAliado) return 14;                                                              // Helping Hand: só vale com companheiro pra ajudar
+  if (esp.chamariz) return 16;                                                                 // Follow Me / Rage Powder: puxa o golpe pra si e poupa o companheiro
+  if (esp.semEfeitoReal) return IMPOSSIVEL;                                                    // Hold Hands não faz nada
+  if (esp.curaStatus) return u.status ? 45 : esp.cura && frac(u) < 0.6 ? 30 : IMPOSSIVEL;
+  if (esp.statAleatorio) return frac(u) > 0.5 ? 12 : 3;                                        // Acupressure: atributo sorteado
   if (esp.generoOposto && !generoOposto(alvo, u)) return IMPOSSIVEL;                           // Captivate
   if (esp.toxico) return alvo.status || imuneAoStatusMon(alvo, 'poison') || ladoAlvo?.salvaguarda > 0 ? IMPOSSIVEL : 45 * acerto;
   if (esp.descanso) return frac(u) <= 0.4 && !imuneAoStatusMon(u, 'sleep') ? 60 : IMPOSSIVEL;
-  if (g.meta?.heal > 0 && SELF_TARGETS.has(g.target)) return curaDe(g.meta.heal / 100);
+  // golpe de apoio (Heal Pulse, Floral Healing) cura o PRÓPRIO lado: a nota é a de curar, nunca a de atacar
+  if (g.meta?.heal > 0 && (SELF_TARGETS.has(g.target) || golpeDeApoio(g))) return curaDe(g.meta.heal / 100);
   const ail = g.meta?.ailment;
   if (ail && ail !== 'none' && !SELF_TARGETS.has(g.target) && !esp.trava) return ailmentDe(ail);
   if (!completo) return IGNORADO;                                                            // treinador para por aqui
@@ -947,7 +964,8 @@ export function notaDoGolpe(g, c) {
     return frac(u) > 0.3 ? v : v * 0.4;                                                      // não monta tela pra quem está caindo
   }
   if (g.stats?.length) {
-    const eu = SELF_TARGETS.has(g.target), estagios = (eu ? u : alvo).vol?.stages || {};
+    // apoio (Decorate) e golpe de companheiro: o buff fica no PRÓPRIO lado, então vale como se fosse em quem usa
+    const eu = SELF_TARGETS.has(g.target) || golpeDeApoio(g), estagios = (eu ? u : alvo).vol?.stages || {};
     let v = 0;
     for (const { stat, change } of g.stats) {
       const atual = estagios[stat] || 0, peso = VALOR_ESTAGIO[stat] ?? 6;

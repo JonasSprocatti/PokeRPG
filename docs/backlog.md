@@ -57,6 +57,10 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   Provado ao contrário: tirando o `case 'recuar'`, o teste falha nomeando o órfão.
 - **Lendários no co-op**.
 - **Roar & cia. e o 🔄 Recuar em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player; o Recuar nem aparece de botão lá). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
+- **Golpes que mexem na ORDEM do turno**: After You, Quash e Instruct. Ficaram de fora da leva de golpes de
+  companheiro (09/10/2026) porque não são problema de ALVO — pedem reordenar a fila de `acoes` no meio da rodada,
+  nos dois motores. Hoje dizem que o efeito será ajustado. Junto deles: **Ally Switch** (não há posições em campo)
+  e **Spotlight** (chamariz ao contrário: exigiria a escolha do SEU golpe ler o chamariz do lado de lá).
 - **Habilidades**: 249 de 314. As 65 restantes estão documentadas como intencionalmente fora, por quatro motivos, no fim da tabela em `js/habilidades.js` (troca de Pokémon, forma dinâmica, estado de turno que o motor não guarda, regra compartilhada arriscada).
 
 - **Heavy-Duty Boots** (pedido em 30/09/2026, **não construído de propósito**): o item ignora armadilha de entrada,

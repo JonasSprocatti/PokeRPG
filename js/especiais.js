@@ -44,6 +44,15 @@
 //                    Pickpocket/Magician em golpe.js; Sticky Hold do alvo barra
 //   derrubaItem      o item segurado do alvo se PERDE (Knock Off): não vai pra ninguém, e vale mesmo com quem
 //                    usa já segurando algo; Sticky Hold barra
+//   ajudaAliado: n   o próximo golpe do companheiro neste turno sai ×n (Helping Hand)
+//   chamariz         o outro lado passa a mirar em quem usou até o fim da rodada (Follow Me, Rage Powder)
+//   curaStatus       limpa o status de quem recebe (Heal Bell, Aromatherapy, Purify…); com `cura: fração` cura HP
+//                    também, e com `sobeEstagios: [[stat, n]…]` sobe atributo (Take Heart)
+//   soAliados        o golpe NÃO pega quem usou, só os companheiros (Coaching, Dragon Cheer); sem companheiro, falha
+//   soPlusMinus      só afeta quem tem Plus ou Minus (Gear Up, Magnetic Flux)
+//   statAleatorio: n sobe n estágios de um atributo sorteado (Acupressure)
+//   focoDragao: n    `foco` vale n se quem recebe for do tipo Dragão (Dragon Cheer)
+//   semEfeitoReal    nos jogos este golpe não faz nada mesmo (Hold Hands) — não é efeito faltando
 export const GOLPES_ESPECIAIS = {
   /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
      FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
@@ -126,6 +135,21 @@ export const GOLPES_ESPECIAIS = {
   reflect: { lado: 'reflect' }, 'light-screen': { lado: 'luz' }, 'aurora-veil': { lado: 'veu', soNoGelo: true },
   safeguard: { lado: 'salvaguarda' }, mist: { lado: 'neblina' }, tailwind: { lado: 'vento' },
   // armadilhas: ficam no lado de QUEM RECEBE e pegam o próximo Pokémon que entrar em campo
-  'stealth-rock': { armadilha: 'pedras' }, spikes: { armadilha: 'espinhos' }, 'toxic-spikes': { armadilha: 'toxinas' }
+  'stealth-rock': { armadilha: 'pedras' }, spikes: { armadilha: 'espinhos' }, 'toxic-spikes': { armadilha: 'toxinas' },
+  /* 🤝 golpes de COMPANHEIRO. Quem monta a lista de quem recebe é golpe.alvosDoGolpe (pelo `target` da PokéAPI,
+     dados.ALVOS_ALIADOS); aqui ficam só os efeitos que o `meta` não descreve. Os que vêm com atributos no `meta`
+     (Howl, Coaching, Aromatic Mist, Gear Up, Magnetic Flux, Decorate) já funcionam pelo caminho comum. */
+  'helping-hand': { ajudaAliado: 1.5 },
+  'follow-me': { chamariz: true }, 'rage-powder': { chamariz: true },
+  'heal-bell': { curaStatus: true }, aromatherapy: { curaStatus: true },
+  'jungle-healing': { curaStatus: true },                      // o 1/4 de HP vem do `meta.heal` da PokéAPI
+  'lunar-blessing': { curaStatus: true, cura: 1 / 4 },         // este não traz `heal` no meta: a fração fica aqui
+  purify: { curaStatus: true, cura: 1 / 2 },                   // nos jogos quem cura o HP é QUEM USA; aqui é quem recebeu a cura do status
+  'take-heart': { curaStatus: true, sobeEstagios: [['special-attack', 1], ['special-defense', 1]] },
+  acupressure: { statAleatorio: 2 },
+  'dragon-cheer': { foco: 1, focoDragao: 2, soAliados: true },
+  coaching: { soAliados: true },                               // "falha se não houver companheiro" — os atributos vêm do meta
+  'gear-up': { soPlusMinus: true }, 'magnetic-flux': { soPlusMinus: true },
+  'hold-hands': { semEfeitoReal: true }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

@@ -29,7 +29,13 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'revezamento',                            // 🔄 quem usa sai de campo e volta no fim da rodada (U-turn, Teleport…)
     'puneContato', 'voltaPostura',            // barreira que castiga quem encosta; King's Shield devolve o Aegislash pro Escudo
     'roubaItem', 'derrubaItem',             // Thief/Covet roubam o item do alvo; Knock Off derruba (o item se perde)
-    'atkDe', 'atkDoAlvo', 'defDe']);          // golpe que ataca/defende por outro atributo (Body Press, Foul Play, Psyshock) — regras.calcDamage
+    'atkDe', 'atkDoAlvo', 'defDe',            // golpe que ataca/defende por outro atributo (Body Press, Foul Play, Psyshock) — regras.calcDamage
+    // 🤝 golpes de companheiro (dados.ALVOS_ALIADOS): quem recebe é o `dest` de golpe.executar
+    'ajudaAliado', 'chamariz',                // Helping Hand reforça o golpe do companheiro; Follow Me/Rage Powder puxam o golpe pra si
+    'curaStatus', 'cura', 'sobeEstagios',     // Heal Bell, Aromatherapy, Purify, Lunar Blessing, Take Heart
+    'soAliados', 'soPlusMinus',               // Coaching/Dragon Cheer não pegam quem usou; Gear Up/Magnetic Flux só Plus e Minus
+    'statAleatorio', 'focoDragao',            // Acupressure; Dragon Cheer vale o dobro no Dragão
+    'semEfeitoReal']);                        // Hold Hands não faz nada nos jogos — não é efeito faltando
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade',
     'pesoDoAlvo', 'pesoRelativo', 'estagios', 'estagiosDoAlvo', 'hpDoAlvo']);
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {

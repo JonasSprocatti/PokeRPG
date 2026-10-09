@@ -14,7 +14,7 @@
 //                    nada acontece, e nenhum outro modo muda de comportamento.
 // Golpes especiais (Protect, Rest, Explosion, carga/recarga…) vêm da tabela de especiais.js.
 // Sem DOM: importável no Node (tests/golpe.test.js).
-import { STAT_PT, AIL_MSG, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, TYPE_PT } from './dados.js';
+import { STAT_PT, AIL_MSG, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, ALVOS_ALIADOS, TYPE_PT } from './dados.js';
 import { GOLPE_AREA } from './dados-golpe-flags.js';
 import { hab } from './habilidades.js';
 import { especial } from './especiais.js';
@@ -25,7 +25,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, MULT_AREA, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
   fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia,
-  multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO } from './regras.js';
+  multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO, golpeDeApoio } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
 import { rand, clamp, fmt } from './util.js';
 import { loadPokemon } from './api.js';
@@ -109,7 +109,7 @@ export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || nul
 function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.vol.furia; }
 // Fim da rodada (depois de todos agirem): proteções de um turno só acabam
 // `muralha` (⚔ Saga, perícia do Guardião) tem exatamente a vida de `protegido`/`aguenta`: vale a rodada e acaba
-export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; delete m.vol.muralha; }
+export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; delete m.vol.muralha; delete m.vol.ajuda; delete m.vol.chamariz; }
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
 /* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
@@ -401,8 +401,20 @@ const indireto = m => !!hab(m).semDanoIndireto;
    A lista sai dos ganchos que os DOIS ctx já têm (`oponentesDe`/`aliadosDe`) — nenhuma API nova, e o multiplayer
    ganha de graça. `t` vai sempre na frente: é o alvo escolhido, e é dele que sai a narração principal.
    `random-opponent` (Outrage, Thrash) fica de fora de propósito: ele sorteia UM, que é o que já acontece. */
-function alvosDoGolpe(u, t, g, ctx) {
+export function alvosDoGolpe(u, t, g, ctx) {
+  const amigos = () => (ctx.aliadosDe?.(u) || []).filter(a => a && a.hp > 0 && !a.vol?.retirado);
+  /* 🤝 Golpe de COMPANHEIRO (dados.ALVOS_ALIADOS): o efeito cai em quem RECEBE, não em quem usou. Vale pros dois
+     lados — `ctx.aliadosDe` já responde pelo grupo selvagem e pelo treinador com vários em campo. Sem companheiro,
+     o golpe que EXIGE um devolve lista vazia e `usarGolpe` narra a falha. */
+  if (ALVOS_ALIADOS.has(g.target)) {
+    const esp = especial(g);
+    const lado = esp.soAliados ? amigos() : [u, ...amigos()];     // Coaching e Dragon Cheer não pegam quem usou
+    return g.target === 'ally' ? amigos().slice(0, 1) : lado;     // `ally` é UM companheiro (Helping Hand, Aromatic Mist)
+  }
   if (SELF_TARGETS.has(g.target) || u === t) return [t];
+  /* Golpe de apoio de alvo escolhido (regras.golpeDeApoio): vai pro companheiro mais ferido, ou pra quem usou se
+     estiver sozinho — nunca pro inimigo, que é o alvo que a tela escolheu. */
+  if (golpeDeApoio(g)) return [amigos().sort((a, b) => a.hp / a.stats.hp - b.hp / b.stats.hp)[0] || u];
   /* O `target` vem da PokéAPI dentro do golpe, e pode simplesmente NÃO estar lá: golpe gravado num save de antes
      de 21/09/2026, registro velho no cache, mapa baixado pra jogar offline. Quando falta, a tabela fixa
      (`dados-golpe-flags.GOLPE_AREA`, gerada do repositório-fonte) responde — o alvo de Rock Slide não é dado
@@ -517,8 +529,34 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
 }
 
 // Golpes de status com regra própria (especiais.js). true = tratou (o genérico não roda).
-async function statusEspecial(u, t, g, esp, ctx, primeiro) {
-  const U = ctx.nome(u), T = ctx.nome(t);
+async function statusEspecial(u, t, g, esp, ctx, primeiro, dest = u) {
+  const U = ctx.nome(u), T = ctx.nome(t), D = ctx.nome(dest);
+  /* 🤝 Golpes de companheiro. Quem RECEBE é `dest` (golpe.executar): em Heal Bell & cia. o motor roda uma vez por
+     Pokémon do lado, então cada linha aqui trata UM só. Sem companheiro em campo, os que exigem um nem chegam
+     aqui — `alvosDoGolpe` devolve lista vazia e `usarGolpe` narra a falha. */
+  // Helping Hand: o próximo golpe do companheiro neste turno sai mais forte (`vol.ajuda`, lido no dano)
+  if (esp.ajudaAliado) { dest.vol.ajuda = esp.ajudaAliado; await ctx.say(`${U} está ajudando ${D}!`, 'good'); return true; }
+  // Follow Me / Rage Powder: o outro lado passa a mirar em quem usou até o fim da rodada (batalha.turn lê `vol.chamariz`)
+  if (esp.chamariz) { u.vol.chamariz = true; await ctx.say(`${U} chamou a atenção do inimigo!`, 'good'); return true; }
+  // Gear Up / Magnetic Flux: só mexem com quem tem Plus ou Minus (os atributos vêm do `meta`, então a trava é aqui)
+  if (esp.soPlusMinus && hab(dest).aliadoBoost !== 'plusminus') { await ctx.say(`${D} não é afetado. (só vale pra Plus e Minus)`, 'muted'); return true; }
+  // Heal Bell, Aromatherapy, Jungle Healing, Lunar Blessing, Purify, Take Heart: limpa o status de quem recebe
+  if (esp.curaStatus) {
+    if (esp.cura && dest.hp < dest.stats.hp) { heal(dest, Math.floor(dest.stats.hp * esp.cura)); up(ctx); await ctx.say(`${D} recuperou HP.`, 'good'); }
+    if (dest.status || dest.sleep || dest.vol.conf > 0) {
+      dest.status = null; dest.sleep = 0; dest.vol.conf = 0; delete dest.vol.toxico; up(ctx);
+      await ctx.say(`${D} ficou curado!`, 'good');
+    } else if (!esp.cura) await ctx.say(`${D} não tinha nada pra curar.`, 'muted');
+    if (esp.sobeEstagios) await mudarEstagios(dest, esp.sobeEstagios.map(([stat, change]) => ({ stat, change })), ctx, u);
+    return true;
+  }
+  // Acupressure: +2 num atributo sorteado de quem recebe
+  if (esp.statAleatorio) {
+    const stat = ['attack', 'defense', 'special-attack', 'special-defense', 'speed'][rand(0, 4)];
+    await mudarEstagios(dest, [{ stat, change: esp.statAleatorio }], ctx, u); return true;
+  }
+  // Hold Hands: nos jogos ele não faz NADA mesmo — dizer "será ajustado" seria prometer efeito que não existe
+  if (esp.semEfeitoReal) { await ctx.say(`${U} e ${D} deram as mãos. Que fofo — e nada mais aconteceu.`, 'muted'); return true; }
   // Captivate: só funciona em quem é do gênero OPOSTO. Os estágios dele são comuns (`g.stats`), então sem esta
   // trava o golpe baixava a At.Esp. de qualquer um — inclusive de quem não tem gênero.
   if (esp.generoOposto && !generoOposto(t, u)) { await ctx.say(`Não afeta ${T}...`); return true; }
@@ -582,8 +620,10 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro) {
     return true;
   }
   if (esp.foco) {
-    if (u.vol.foco) { await ctx.say('Mas falhou!'); return true; }
-    u.vol.foco = esp.foco; await ctx.say(`${U} está concentrado! (chance de crítico maior)`, 'good'); return true;
+    if (dest.vol.foco) { await ctx.say('Mas falhou!'); return true; }
+    // Dragon Cheer vale o dobro no companheiro do tipo Dragão (`focoDragao`); Focus Energy é sempre em quem usou
+    dest.vol.foco = esp.focoDragao && tiposDefensivos(dest).includes('dragon') ? esp.focoDragao : esp.foco;
+    await ctx.say(`${D} está concentrado! (chance de crítico maior)`, 'good'); return true;
   }
   if (esp.descanso) {
     if (u.hp >= u.stats.hp) { await ctx.say(`O HP de ${U} já está cheio!`); return true; }
@@ -644,18 +684,19 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro) {
   return false;
 }
 
-async function golpeDeStatus(u, t, g, selfT, ctx, primeiro) {
-  if (await statusEspecial(u, t, g, especial(g), ctx, primeiro)) return;
+// `dest` = quem recebe o efeito (ver golpe.executar): o próprio, o alvo, ou o COMPANHEIRO que alvosDoGolpe escolheu
+async function golpeDeStatus(u, t, g, selfT, ctx, primeiro, dest = selfT ? u : t) {
+  if (await statusEspecial(u, t, g, especial(g), ctx, primeiro, dest)) return;
   const meta = g.meta || {}; let fez = false;
   if (meta.heal > 0) {
     fez = true;
-    if (u.hp >= u.stats.hp) await ctx.say(`O HP de ${ctx.nome(u)} já está cheio!`);
-    else { heal(u, Math.floor(u.stats.hp * meta.heal / 100)); up(ctx); await ctx.say(`${ctx.nome(u)} recuperou HP.`, 'good'); }
+    if (dest.hp >= dest.stats.hp) await ctx.say(`O HP de ${ctx.nome(dest)} já está cheio!`);
+    else { heal(dest, Math.floor(dest.stats.hp * meta.heal / 100)); up(ctx); await ctx.say(`${ctx.nome(dest)} recuperou HP.`, 'good'); }
   }
-  if (g.stats.length) { fez = true; const alvo = selfT || mudaOUsuario(meta) ? u : t; await mudarEstagios(alvo, g.stats, ctx, u); }
+  if (g.stats.length) { fez = true; await mudarEstagios(mudaOUsuario(meta) ? u : dest, g.stats, ctx, u); }
   if (meta.ailment && meta.ailment !== 'none') {
     fez = true;
-    if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(selfT ? u : t, meta.ailment, ctx, true, u);
+    if (Math.random() * 100 < (meta.ailChance || 100)) await aplicarStatus(dest, meta.ailment, ctx, true, u);
   }
   // Teleport não faz nada ALÉM de sair de campo (quem trata é o `revezamento`, logo depois): não é efeito faltando
   if (!fez && !especial(g).revezamento) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted');
@@ -689,6 +730,14 @@ async function revezar(u, ctx) {
 /* `opcoes.extra` = o mesmo golpe do chefe caindo em OUTRO alvo (o golpe carregado atinge o time inteiro no co-op — mp-motor): não
    conta como uma ação nova do chefe, não cobra recarga nem chama as regras dele de novo. */
 export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
+  /* Follow Me / Rage Powder (`vol.chamariz`): quem chamou a atenção leva o golpe no lugar do companheiro. Trocado
+     aqui, no começo, pra TODAS as travas abaixo (Campo Psíquico, Dazzling, Pressure) já valerem contra o alvo de
+     verdade — e vale pros dois lados, inclusive na sala, porque é o motor que decide. Golpe de área continua
+     pegando todo mundo: isto só troca o alvo principal. */
+  if (t !== u) {
+    const chamariz = (ctx.oponentesDe?.(u) || []).find(o => o !== t && o.vol?.chamariz && o.hp > 0 && !o.vol?.retirado);
+    if (chamariz) t = chamariz;
+  }
   await ajustarForma(u, ctx); if (t !== u) await ajustarForma(t, ctx);   // Castform: a forma do tempo de agora, antes de qualquer conta
   const U = ctx.nome(u), hu = hab(u);
   if (!opcoes.extra && u.vol.recarga) { delete u.vol.recarga; await ctx.say(`${U} precisa recarregar!`); return; }  // Hyper Beam & cia.
@@ -800,6 +849,8 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
      o que é do usuário e acontece uma vez só por golpe (recuo, Orbe da Vida, cura e a própria queda de atributo).
      Dreno e Moxie ficam de fora da trava de propósito: nos jogos eles contam por alvo atingido. */
   const alvos = alvosDoGolpe(u, t, g, ctx);
+  // golpe que EXIGE companheiro (Helping Hand, Coaching, Dragon Cheer) sem ninguém do lado: falha e diz por quê
+  if (!alvos.length) { await ctx.say('Mas falhou! (não há companheiro em campo)'); return; }
   let res;
   for (const [i, alvo] of alvos.entries()) {
     if (u.hp <= 0 && i) break;                      // morreu no respingo (Elmo Rochoso, Orbe): não bate mais
@@ -829,6 +880,10 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   g = golpeDoBattleBond(g, u);            // Water Shuriken vira fixo (poder 20, 3 acertos) se já é Ash-Greninja
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
+  /* Quem RECEBE o efeito deste golpe de status. Quase sempre é o próprio (`user`, Swords Dance) ou o alvo
+     (Thunder Wave) — a exceção são os golpes de companheiro e de apoio (ALVOS_ALIADOS / regras.golpeDeApoio),
+     em que `t` já é o companheiro que `alvosDoGolpe` escolheu e o efeito tem de cair NELE. */
+  const dest = selfT && !ALVOS_ALIADOS.has(g.target) ? u : t;
   /* Protean / Libero: ao atacar, o tipo DE QUEM USA vira o tipo do golpe (o STAB vem de graça). Uma vez só por
      entrada em campo, como na Gen 9 — e `vol` já zera a cada entrada, então a trava é só o próprio campo.
      O tipo mora em `vol.tipos` (regras.tiposDe), nunca em `m.data`: aquele objeto é compartilhado pela espécie. */
@@ -867,7 +922,7 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   // Good As Gold: imune a QUALQUER golpe de status alheio (o próprio ainda pode usar golpe de status normalmente)
   if (g.cls === 'status' && !selfT && u !== t && ht.imuneGolpeStatus) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
   if (g.cls === 'status') {
-    await golpeDeStatus(u, t, g, selfT, ctx, primeiro); up(ctx);
+    await golpeDeStatus(u, t, g, selfT, ctx, primeiro, dest); up(ctx);
     if (esp.revezamento && u.hp > 0) await revezar(u, ctx);     // Teleport, Parting Shot
     return;
   }
@@ -916,7 +971,8 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   const friendGuard = (ctx.aliadosDe?.(t) || []).reduce((m, a) => hab(a).friendGuard ? m * 0.75 : m, 1);
   // Battery (especial ×1,3), Power Spot (qualquer ×1,3), Steely Spirit (Aço ×1,5), Plus/Minus (especial ×1,5):
   // aliado de QUEM ATACA reforça o golpe — mesmo esquema do Friend Guard, só que multiplicando em vez de cortar.
-  const boostAliado = (ctx.aliadosDe?.(u) || []).reduce((m, a) => {
+  // `vol.ajuda` = Helping Hand: um companheiro ajudou neste turno (×1,5). Apagado no fim da rodada (fimDaRodada).
+  const boostAliado = (u.vol.ajuda || 1) * (ctx.aliadosDe?.(u) || []).reduce((m, a) => {
     const ha = hab(a);
     if (ha.aliadoBoost === 'especial' && g.cls === 'special') m *= 1.3;
     if (ha.aliadoBoost === 'qualquer') m *= 1.3;

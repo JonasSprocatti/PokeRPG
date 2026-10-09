@@ -144,6 +144,12 @@ export const SELF_TARGETS = new Set(['user', 'users-field', 'user-or-ally', 'use
    `random-opponent` (Outrage, Thrash) também não: ele sorteia UM, que é o que o jogo já faz. */
 export const ALVOS_OPONENTES = new Set(['all-opponents']);              // só o outro lado (Rock Slide, Muddy Water)
 export const ALVOS_TODOS = new Set(['all-other-pokemon', 'all-pokemon']); // o outro lado E o seu aliado (Earthquake, Surf)
+/* Golpe que mira um COMPANHEIRO (Helping Hand, Coaching, Heal Bell, Dragon Cheer, Aromatic Mist…). Continuam
+   dentro de `SELF_TARGETS` (não erram, não são barrados por Protect, não dependem de tipo), mas o efeito cai em
+   quem RECEBE, não em quem usou — a lista sai de golpe.alvosDoGolpe e o destino de cada efeito é o `dest` de
+   golpe.executar. `user-or-ally` fica de fora de propósito: lá o próprio é alvo válido (Acupressure em si
+   mesmo), que é o que o jogo já fazia. */
+export const ALVOS_ALIADOS = new Set(['ally', 'user-and-allies', 'all-allies']);
 export const STRUGGLE = { name: 'struggle', type: 'normal', cls: 'physical', power: 50, acc: null, priority: 0, target: 'selected-pokemon', meta: { drain: -25 }, stats: [], desc: '' };
 
 export const AIL_MSG = { paralysis: 'ficou paralisado', sleep: 'adormeceu', freeze: 'foi congelado', burn: 'foi queimado', poison: 'foi envenenado' };

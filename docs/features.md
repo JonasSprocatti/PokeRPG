@@ -3345,6 +3345,59 @@ de graça, dano em quem não era o alvo escolhido.
 - **Narração agrupada** ("acertou os 3!"): cada alvo narra o seu bloco, como já fazia. Com `PAUSA_NARRACAO` isso
   lê bem; se virar parede de texto numa manada de 3, aí sim vale juntar.
 
+## 🤝 Golpe de companheiro e de apoio (09/10/2026)
+
+A continuação direta do golpe de área: o `target` da PokéAPI também diz quando o golpe mira o **próprio lado**, e
+isso estava sendo jogado fora. Os quatro alvos de companheiro (`ally`, `user-and-allies`, `all-allies` e
+`user-or-ally`) moravam todos dentro de `SELF_TARGETS`, então o efeito caía em **quem usou** — Helping Hand e
+Coaching não faziam nada ("este efeito será ajustado em atualizações futuras"), Heal Bell curava só o próprio
+status e Howl subia só o próprio Ataque.
+
+**Dois golpes faziam o CONTRÁRIO do que prometiam**, e esses não eram efeito faltando, eram defeito: `heal-pulse`
+e `floral-healing` têm `target: selected-pokemon` e `meta.heal`, e o motor curava `u` — quem usou, nunca o
+parceiro ferido. `decorate` (mesmo alvo, `attack+2`/`special-attack+2`) caía no `else` de `mudaOUsuario` e subia
+**os atributos do inimigo**. Nos jogos quem usa escolhe o alvo; aqui o alvo é sempre o inimigo em foco.
+
+**Três conceitos, nenhum sistema novo:**
+
+| conceito | onde mora | o que decide |
+|---|---|---|
+| `dados.ALVOS_ALIADOS` | tabela, ao lado de `ALVOS_OPONENTES`/`ALVOS_TODOS` | quais `target` miram o próprio lado |
+| `regras.golpeDeApoio` | função pura, testada | golpe de status de alvo escolhido cujo efeito é BOM pra quem recebe |
+| `dest` em `golpe.executar` | uma linha | quem RECEBE o efeito: o próprio, o alvo, ou o companheiro |
+
+`alvosDoGolpe` continua sendo a única porta da lista de alvos, e por isso o grupo selvagem e o treinador com
+mais de um em campo ganharam tudo de graça: `ctx.aliadosDe` já responde pelos dois lados. `user-or-ally`
+(Acupressure) ficou **fora** de `ALVOS_ALIADOS` de propósito — lá o próprio é alvo válido, e é o que o jogo já
+fazia.
+
+**O que virou código novo em `especiais.js`** (o resto funciona pelo caminho comum, porque os atributos já vêm no
+`meta`): `ajudaAliado` (Helping Hand), `chamariz` (Follow Me, Rage Powder), `curaStatus` + `cura` +
+`sobeEstagios` (Heal Bell, Aromatherapy, Jungle Healing, Lunar Blessing, Purify, Take Heart), `soAliados`
+(Coaching, Dragon Cheer — não pegam quem usou, e sem companheiro falham), `soPlusMinus` (Gear Up, Magnetic Flux),
+`statAleatorio` (Acupressure), `focoDragao` (Dragon Cheer vale 2 no Dragão) e `semEfeitoReal` (Hold Hands).
+
+**`semEfeitoReal` existe por honestidade de texto.** A regra do projeto é que efeito ainda não construído diz
+"será ajustado em atualizações futuras" — mas Hold Hands **não faz nada nos jogos**, e prometer efeito futuro ali
+seria mentir. Uma chave, uma mensagem, zero dívida.
+
+**O chamariz (Follow Me) mora no motor, não em `batalha.turn`.** A primeira versão trocava o alvo na linha onde o
+inimigo sorteia quem bater — e aquilo valeria só pro single player e só pro lado inimigo. Movido pro topo de
+`usarGolpe`, o redirecionamento vale pros dois lados, vale na sala, e todas as travas abaixo dele (Campo
+Psíquico, Dazzling, Pressure) já leem o alvo de verdade.
+
+### O que ficou de fora
+
+- **Ordem do turno**: After You, Quash e Instruct mexem na fila de ações, não no alvo. Continuam dizendo que o
+  efeito será ajustado — é outro sistema (reordenar `acoes` no meio da rodada).
+- **Ally Switch**: trocar de posição com o companheiro não significa nada sem posições em campo.
+- **Spotlight**: é o chamariz ao contrário (marca um ALVO pra ser mirado pelos oponentes DELE). Precisaria do
+  chamariz lido também na escolha do seu golpe, o que hoje é a tela, não o motor.
+- **Escolher QUAL companheiro recebe**: a cena mostra o foco inimigo, não um seletor do próprio lado. Helping Hand
+  e Aromatic Mist pegam o primeiro em pé; os de cura, **o mais ferido** — que é a escolha que o jogador faria.
+- **`purify` curando o HP de quem usa** (nos jogos é o usuário que recupera, se curou o status do alvo): aqui a
+  cura vai pra quem recebeu a limpeza. Desvio consciente, marcado no comentário da tabela.
+
 ## 🔤 A segunda leva de fontes (07/10/2026)
 
 O relato #78 ("Pufavo uma fonte mais bonitinha") tinha sido atendido em 06/10 com três opções por GOSTO ao lado

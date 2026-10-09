@@ -13,6 +13,16 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.7', data: '2026-10-09', titulo: '🤝 Golpe de companheiro agora acha o companheiro', piada: 'Durante meses um Blissey leal usou Heal Pulse em todas as lutas e curou, sem exceção, a si mesma — enquanto o parceiro caía ao lado dela. Em paralelo, um Alcremie usava Decorate no inimigo, que agradecia e batia dois estágios mais forte. Os dois foram chamados para uma conversa sobre pontaria.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🤝 Golpe que mira o seu lado agora mira o seu lado.</b> Com mais de um Pokémon em campo, <b>Helping Hand, Coaching, Howl, Heal Bell, Aromatherapy, Life Dew, Jungle Healing, Aromatic Mist, Dragon Cheer, Decorate, Heal Pulse, Floral Healing, Acupressure, Follow Me</b> e <b>Rage Powder</b> encontram quem deviam ter encontrado desde sempre: o alvo deles é <b>companheiro</b>, não o inimigo em foco.',
+        '<b>Dois estavam fazendo o contrário do que prometiam:</b> o <b>Heal Pulse</b> curava <b>quem usou</b> em vez do parceiro ferido, e o <b>Decorate</b> subia <b>+2 de Ataque e At. Esp. do INIMIGO</b>. Pedimos desculpas a quem levou aquele golpe na cara logo depois.',
+        '<b>Helping Hand</b>: o próximo golpe do companheiro neste turno sai <b>50% mais forte</b>.<br><b>Heal Bell</b> e <b>Aromatherapy</b>: limpam o status do <b>lado inteiro</b>.<br><b>Howl</b>: Ataque de todos.<br><b>Life Dew</b> e <b>Jungle Healing</b>: curam o lado todo (e o Jungle limpa o status).<br><b>Heal Pulse</b> e <b>Floral Healing</b>: vão pro <b>companheiro mais ferido</b> — sozinho, curam você mesmo.<br><b>Follow Me</b> e <b>Rage Powder</b>: o inimigo passa a <b>mirar em você</b> até o fim da rodada, que é o jeito de salvar um aliado pendurado no último HP.',
+        '<b>Coaching</b> e <b>Dragon Cheer</b> não pegam quem usou: sem nenhum companheiro em campo, o golpe <b>avisa e falha</b> em vez de fingir que fez algo. <b>Hold Hands</b> também avisa — nos jogos ele não faz nada mesmo, e agora o jogo é honesto sobre isso.',
+        '<b>Vale pros dois lados.</b> A matilha selvagem e o treinador com mais de um em campo usam tudo isso contra você — e a cabeça deles aprendeu que esse tipo de golpe <b>é desperdício quando estão sozinhos</b>.'
+      ] }
+    ] },
   { versao: '6.6', data: '2026-10-09', titulo: '🥚 O choco ganha uma revelação, e o lembrete perde a hora boa', piada: 'Um jogador dormiu com três ovos no ninho e os três chocaram durante a noite. O jogo, educadamente, esperou o sol nascer pra avisar — às 9h, quando ele já tinha aberto o jogo sozinho e visto tudo. Pedimos desculpas ao sol, que não tinha nada a ver com isso, e removemos a educação.',
     secoes: [
       { nome: 'Novidades', itens: [
