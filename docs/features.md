@@ -2066,6 +2066,28 @@ da run.
 
 ## Anúncios (AdSense) e privacidade
 
+### A raiz do site deixou de ser o jogo (11/10/2026)
+O AdSense reprovou o site por **"Conteúdo de baixo valor"**. Medida a causa: a raiz do domínio — a URL cadastrada
+na conta — entregava **5 palavras** de HTML, porque era o jogo (`<div id="app">` montada em JS). As onze páginas
+estáticas feitas em 29/09 existiam, mas nenhuma era alcançável a partir do HTML da home (o rodapé que as linka é
+injetado por `main.js`, não escrito no arquivo).
+
+O jogo passou a morar em **`jogar.html`** e `index.html` virou **a apresentação**: ~890 palavras escritas pra quem
+nunca viu o jogo, com links pros capítulos do guia. Ela é gerada pelo mesmo `ferramentas/gerar-paginas.mjs` das
+outras — a fôrma ganhou três parâmetros (`arquivo`, `canonical`, `semSufixo`) em vez de um segundo gerador.
+
+Três decisões que valem lembrar ao mexer nisso:
+- **O convite de sala não mudou de formato.** `multiplayer.js` monta `URL_SITE/?sala=XXXX` e isso cai na raiz,
+  que agora é a apresentação. Em vez de mudar o link (e quebrar todo convite já mandado em conversa), a home
+  desvia: um `location.replace` na primeira linha do `<head>`, antes do CSS e do AdSense.
+- **`HOME` não entra em `PAGINAS`** — ela não é item de rodapé e o arquivo dela não segue `<slug>.html`. Quem
+  varre "as páginas" usa `[HOME, ...PAGINAS]`, inclusive o teste.
+- **O que o service worker serve mudou de dono**: o fallback de navegação offline e o clique na notificação de
+  lembrete apontavam pra `./`, que era o jogo e virou texto. Os dois agora vão pra `./jogar.html`.
+
+`tests/paginas.test.js` guarda um **piso de 400 palavras** na home e a existência do desvio. Post-mortem completo,
+com a tabela do que foi medido em cada página, no topo de `docs/adsense.md`.
+
 ### Anúncios (Google AdSense) e Política de Privacidade (27/09/2026)
 Pedido do usuário: monetizar o site com ads. **Decidido não perseguir a Play Store** (avaliei a complexidade —
 TWA/Bubblewrap é barato tecnicamente, mas conta pessoal exige teste fechado com 12 testadores por 14 dias

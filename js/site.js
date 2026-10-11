@@ -82,10 +82,12 @@ export const ATUALIZADO_EM = '29 de setembro de 2026';
    `atual` = slug da página em que se está, que sai sem link. Vazio ('') significa "estou no jogo": aí o link
    "Jogar" não faz sentido e some. Capítulo do guia (`noRodape`) não entra na lista, mas estando DENTRO de um
    deles o link "Guia" continua aparecendo — é o caminho de volta. Texto de fora não entra aqui, então não
-   precisa de esc(). */
+   precisa de esc().
+   O "Jogar" aponta pra jogar.html, e não mais pra "./": desde 11/10/2026 a raiz do domínio é a página de
+   apresentação (index.html) e o jogo tem endereço próprio. */
 export function rodapeHTML(atual = '') {
   const links = [
-    ...(atual ? [`<a href="./">Jogar</a>`] : []),
+    ...(atual ? [`<a href="jogar.html">Jogar</a>`] : []),
     ...PAGINAS.filter(p => !p.noRodape && p.slug !== atual).map(p => `<a href="${p.slug}.html">${p.rotulo}</a>`),
     `<a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">GitHub</a>`
   ].join('\n      ');

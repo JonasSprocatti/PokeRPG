@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jogar PokéRPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- O JOGO mora aqui desde 11/10/2026; a raiz do domínio virou a página de apresentação (index.html, gerado por
+     ferramentas/gerar-paginas.mjs). O canonical é este endereço, não "/": são duas páginas com conteúdo
+     diferente, e apontar as duas pro mesmo lugar é dizer ao buscador que uma delas não existe. -->
+<link rel="canonical" href="https://www.pokerpg.com.br/jogar.html">
+<!-- Google AdSense. Os dois scripts andam juntos e NESTA ordem: o consent.js define o consentimento como negado
+     (Consent Mode v2) antes de o script do Google rodar, senão o estado chega tarde e não vale. Literais aqui de
+     propósito: o snippet precisa estar no HTML servido pra revisão do Google encontrá-lo. O publisher ID tem de
+     ser o mesmo de js/config.js e do ads.txt — tests/paginas.test.js compara os três. Detalhe em js/consent.js. -->
+<script src="js/consent.js"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9827780756194019" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+<link rel="apple-touch-icon" href="img/icone-192.png">
+<meta name="theme-color" content="#161A33">
+<meta name="description" content="Você não tem treinador: VOCÊ é o Pokémon. RPG no navegador com 9 regiões, Roguelike, Mega, Tera, Z-Move, Gigantamax e multiplayer. Grátis, funciona offline.">
+<!-- Pré-visualização do link (WhatsApp, Discord, Telegram…): os endereços precisam ser ABSOLUTOS. A imagem tem 1200×630 e menos de 300 KB.
+     Sem `og:url` DE PROPÓSITO: o WhatsApp troca o link pelo og:url e reaproveita o cache dele — com a tag, `?v=2` no fim do link não
+     furava o cache de uma tentativa antiga que falhou. Sem ela, cada endereço é lido do zero. -->
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PokéRPG">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="PokéRPG — você não tem treinador. VOCÊ é o Pokémon.">
+<meta property="og:description" content="Comece como um inicial, sem Pokébola, e sobreviva. 9 regiões, Roguelike, Mega/Tera/Z-Move/Gigantamax e multiplayer. Grátis, no navegador.">
+<meta property="og:image" content="https://www.pokerpg.com.br/img/og-imagem.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="PokéRPG: você não tem treinador, você é o Pokémon">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PokéRPG — você não tem treinador. VOCÊ é o Pokémon.">
+<meta name="twitter:description" content="RPG de Pokémon no navegador: Roguelike, 9 regiões, Mega/Tera/Z-Move/Gigantamax e multiplayer.">
+<meta name="twitter:image" content="https://www.pokerpg.com.br/img/og-imagem.png">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><button type="button" class="brand-logo" data-act="inicio" aria-label="PokéRPG — ir para a tela inicial" title="Tela inicial"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></button><small>Você é o Pokémon</small></div>
+  <div class="top-r">
+    <span id="top-dinheiro" class="dinheiro"></span>
+    <!-- celular: os botões vão pra dentro do menu ☰ (no computador .menu-links é display:contents — some da conta) -->
+    <button type="button" id="menu-burger" class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-links">☰</button>
+    <nav id="menu-links" class="menu-links" aria-label="Menu"><div class="top-r" id="topr"></div><div id="conta-chip"></div></nav>
+  </div>
+</header>
+<div id="app"></div>
+
+<script>
+  // Módulos ES não carregam por file:// (duplo-clique no arquivo): sem este aviso a tela ficaria vazia sem explicação.
+  if (location.protocol === 'file:') document.getElementById('app').innerHTML =
+    '<main class="create"><div class="notice">Este jogo precisa ser aberto por um servidor, não direto do arquivo. ' +
+    'Na pasta do projeto, rode <code>python -m http.server 3000</code> e abra <b>http://localhost:3000</b>.</div></main>';
+</script>
+<script type="module" src="js/main.js"></script>
+<script>
+  // modo offline: service worker guarda o jogo, a PokéAPI e os sprites depois do primeiro acesso online (sw.js)
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
+    /* Versão nova assumiu o controle? Recarrega a aba UMA vez. O sw.js já ativa sozinho (skipWaiting +
+       clients.claim), mas isso troca só o service worker: a aba aberta continua com os arquivos .js que carregou
+       quando abriu, porque módulo ES é carregado uma vez por sessão. Sem isto, quem deixa o jogo aberto fica
+       testando a versão velha sem saber — aconteceu de verdade, com correção publicada e o erro antigo na tela. */
+    let recarregando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recarregando) return; recarregando = true; location.reload();
+    });
+  }
+</script>
+</body>
+</html>

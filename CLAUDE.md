@@ -16,11 +16,16 @@ O endereço antigo da Vercel (`poke-rpg-omega.vercel.app`) **continua no ar serv
 
 ## Como rodar
 
-Precisa de servidor HTTP (ES modules não carregam por `file://` — o `index.html` avisa nesse caso):
+Precisa de servidor HTTP (ES modules não carregam por `file://` — o `jogar.html` avisa nesse caso):
 
 ```
-python3 -m http.server 3000   # na raiz → http://localhost:3000
+python3 -m http.server 3000   # na raiz → http://localhost:3000/jogar.html
 ```
+
+**O jogo é `jogar.html`, não a raiz** (mudou em 11/10/2026): `index.html` virou a página de apresentação,
+GERADA por `ferramentas/gerar-paginas.mjs` como as outras. O AdSense reprovou o site por "conteúdo de baixo
+valor" e a raiz entregava 5 palavras de HTML. O link de convite do multiplayer continua sendo
+`URL_SITE/?sala=XXXX` — a home desvia pro jogo ao ver o parâmetro, pra não quebrar convite já enviado.
 
 Duas máquinas de dev:
 - **Windows**: usar PowerShell, não Bash (o Bash embutido falha no fork). **Não há Node** — não tentar rodar `node`; os testes rodam no CI.
@@ -43,7 +48,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 
 | Arquivo | Papel |
 |---|---|
-| `index.html` · `css/estilo.css` · `img/` | Esqueleto (`#topr`, `#app`, aviso de `file://`) · todo o CSS · logo e ícones. |
+| `jogar.html` · `css/estilo.css` · `img/` | **O jogo**: esqueleto (`#topr`, `#app`, aviso de `file://`) · todo o CSS · logo e ícones. (`index.html` é a apresentação, gerada.) |
 | `sw.js` | Modo offline. **Todo arquivo novo em `js/` entra no `PRECACHE`** (`tests/sw.test.js` cobra). |
 | `README.md` | Página do projeto. **Atualizar a cada funcionalidade nova.** |
 | `js/main.js` | Entrada: listeners delegados (`data-act`/`data-v`) e `boot()`. |
@@ -105,7 +110,7 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/consent.js` | **Consent Mode v2**, script CLÁSSICO e síncrono no `<head>`: põe tudo em `denied` **antes** do script do Google. Ordem invertida = anúncio personalizado sem consentimento. |
 | `js/ads.js` · `js/tela-privacidade.js` | Banner, sinal pro Google e os slots. O script do Google vem no `<head>` **sempre**; `blocoAds` só desenha com `AD_SLOT_*` preenchido. |
 | `js/site.js` · `js/texto-privacidade.js` | Site fora do jogo: `URL_SITE`, `PAGINAS`, `CAPITULOS_GUIA`, rodapé · texto da política. Sem DOM. |
-| páginas estáticas · `sitemap.xml` | **GERADOS** por `ferramentas/gerar-paginas.mjs` — não editar à mão. Capítulo novo do guia = `CAPITULOS_GUIA` + corpo + linha no `PRECACHE`. |
+| páginas estáticas · `sitemap.xml` | **GERADOS** por `ferramentas/gerar-paginas.mjs` — não editar à mão. Inclui a **home** (`index.html`, texto em `conteudo-site.INICIO`), que NÃO está em `PAGINAS` (não é item de rodapé e o arquivo não segue `<slug>.html`) — quem varrer "as páginas" usa `[HOME, ...PAGINAS]`. Capítulo novo do guia = `CAPITULOS_GUIA` + corpo + linha no `PRECACHE`. |
 | `js/dados-megas.js` · `dados-golpe-flags.js` · `dados-evolucao-restante.js` · `dados-item-sprites.js` | **GERADOS** por `ferramentas/` — não editar à mão. `dados-item-sprites.SPRITE_DO_ITEM` resolve as 51 chaves que não acham arquivo na PokéAPI; valor com barra é PNG nosso em `img/itens/` (**arquivo novo lá = linha no `PRECACHE`**, `tests/sw.test.js` cobra). |
 
 ## Armadilhas (o que já quebrou — detalhe em `docs/historico.md`)

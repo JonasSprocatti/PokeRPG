@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.8', data: '2026-10-11', titulo: '🏠 O site ganhou uma porta de entrada', piada: 'Durante dois anos o endereço do jogo abria direto numa tela de escolher inicial, sem nunca explicar o que era aquilo. Quem chegava pelo link de um amigo tinha dez segundos pra deduzir sozinho que não ia comandar ninguém — ia SER alguém. Agora tem uma página dizendo isso, com todas as letras, antes de você ter que escolher entre três filhotes.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🏠 O endereço do site agora abre uma página de apresentação</b>, com o que o jogo é, como é a primeira partida, o que tem dentro e as seis dificuldades — para quem nunca jogou entender antes de começar, e para quem conhece ter o que mandar junto com o link.',
+        '<b>O jogo mudou de endereço: ele agora fica em <code>/jogar.html</code></b> (o botão <b>▶ Jogar</b> está no topo e no fim da apresentação). Se você salvou o site nos favoritos ou na tela inicial do celular, o atalho continua funcionando — ele leva à apresentação, e dali é um clique.',
+        '<b>Convite de sala não mudou nada.</b> Todo link de multiplayer já enviado continua caindo direto no lobby, inclusive os antigos.',
+        '<b>Sua jornada está intacta.</b> O save é do navegador e não tem nada a ver com o endereço: ele está lá, do jeito que você deixou.'
+      ] }
+    ] },
   { versao: '6.7', data: '2026-10-09', titulo: '🤝 Golpe de companheiro agora acha o companheiro', piada: 'Durante meses um Blissey leal usou Heal Pulse em todas as lutas e curou, sem exceção, a si mesma — enquanto o parceiro caía ao lado dela. Em paralelo, um Alcremie usava Decorate no inimigo, que agradecia e batia dois estágios mais forte. Os dois foram chamados para uma conversa sobre pontaria.',
     secoes: [
       { nome: 'Novidades', itens: [

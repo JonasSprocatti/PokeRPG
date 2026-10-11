@@ -19,11 +19,11 @@ import { pathToFileURL } from 'node:url';
 import { PAGINAS, URL_SITE, rodapeHTML } from '../js/site.js';
 import { TEXTO_PRIVACIDADE } from '../js/texto-privacidade.js';
 import { ADSENSE_CLIENT_ID, AD_SLOT_GUIA } from '../js/config.js';
-import { SOBRE, TERMOS, CONTATO } from './conteudo-site.mjs';
+import { INICIO, SOBRE, TERMOS, CONTATO } from './conteudo-site.mjs';
 import { GUIA, CORPO_GUIA } from './conteudo-guia.mjs';
 
 const RAIZ = new URL('../', import.meta.url);
-const CORPO = { sobre: SOBRE, guia: GUIA, ...CORPO_GUIA, privacidade: TEXTO_PRIVACIDADE, termos: TERMOS, contato: CONTATO };
+const CORPO = { inicio: INICIO, sobre: SOBRE, guia: GUIA, ...CORPO_GUIA, privacidade: TEXTO_PRIVACIDADE, termos: TERMOS, contato: CONTATO };
 
 /* Páginas que NÃO recebem anúncio: as legais. Anúncio ao lado do texto que explica o que se faz com os dados de
    quem lê é de mau gosto, e a página de privacidade é justamente a que a revisão do Google abre com atenção. */
@@ -48,30 +48,44 @@ const blocoAdsEstatico = slug => (adsLigado && AD_SLOT_GUIA && !SEM_ANUNCIO.has(
   data-ad-slot="${AD_SLOT_GUIA}" data-ad-format="auto" data-full-width-responsive="true"></ins></div>
 <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>` : '';
 
-function pagina({ slug, titulo, descricao }) {
+/* A página inicial é a mesma fôrma das outras, com três diferenças (daí os parâmetros): o arquivo é
+   index.html, o canonical é a raiz nua e ela leva o desvio do convite de sala. O título dela já é o nome do
+   site, então não leva o sufixo " — PokéRPG" que as outras levam. */
+const HOME = { slug: 'inicio', arquivo: 'index.html', canonical: `${URL_SITE}/`, semSufixo: true,
+  titulo: 'PokéRPG — você é o Pokémon',
+  descricao: 'RPG grátis no navegador em que você não tem treinador: você é o Pokémon. Nove regiões, batalha com as fórmulas dos jogos, aliados, ovos, Mega/Tera/Z-Move/Gigantamax e multiplayer.' };
+
+/* Link de convite do multiplayer é `URL_SITE/?sala=XXXX` (js/multiplayer.js) e sempre foi a raiz — que agora é
+   esta página, e não o jogo. Em vez de mudar o formato do link (e quebrar todo convite já mandado em conversa),
+   a home desvia pro jogo quando vê o parâmetro. Primeira coisa do <head>, antes de CSS e do AdSense: é
+   `replace`, então nada mais desta página precisa carregar. Quem chega sem `?sala=` lê a página normalmente. */
+const DESVIO_SALA = `
+<script>if (new URLSearchParams(location.search).has('sala')) location.replace('jogar.html' + location.search);</script>`;
+
+function pagina({ slug, titulo, descricao, arquivo = `${slug}.html`, canonical = `${URL_SITE}/${arquivo}`, semSufixo = false }) {
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${titulo} — PokéRPG</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">${slug === HOME.slug ? DESVIO_SALA : ''}
+<title>${titulo}${semSufixo ? '' : ' — PokéRPG'}</title>
 <meta name="description" content="${descricao}">
-<link rel="canonical" href="${URL_SITE}/${slug}.html">${cabecaAds()}
+<link rel="canonical" href="${canonical}">${cabecaAds()}
 <link rel="stylesheet" href="css/estilo.css">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
 <meta name="theme-color" content="#161A33">
-<meta property="og:type" content="article">
+<meta property="og:type" content="${slug === HOME.slug ? 'website' : 'article'}">
 <meta property="og:site_name" content="PokéRPG">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:title" content="${titulo} — PokéRPG">
+<meta property="og:title" content="${titulo}${semSufixo ? '' : ' — PokéRPG'}">
 <meta property="og:description" content="${descricao}">
 <meta property="og:image" content="${URL_SITE}/img/og-imagem.png">
 </head>
 <body>
 <header class="top">
-  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para o jogo"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>Você é o Pokémon</small></div>
-  <div class="top-r"><a class="btn" href="./">▶ Jogar</a></div>
+  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para a página inicial"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>Você é o Pokémon</small></div>
+  <div class="top-r"><a class="btn" href="jogar.html">▶ Jogar</a></div>
 </header>
 <div id="app">
 <main class="create pagina">
@@ -88,7 +102,7 @@ ${rodapeHTML(slug)}
 /* Sem <lastmod> de propósito: ele é opcional, e preenchê-lo com a data de hoje faria o arquivo mudar a cada
    execução — o teste que confere se o gerado está em dia acusaria diferença todo dia, por nada. */
 function sitemap() {
-  const urls = [{ loc: `${URL_SITE}/`, prio: '1.0' },
+  const urls = [{ loc: `${URL_SITE}/`, prio: '1.0' }, { loc: `${URL_SITE}/jogar.html`, prio: '0.9' },
     ...PAGINAS.filter(p => !p.noSitemap).map(p => ({ loc: `${URL_SITE}/${p.slug}.html`, prio: '0.7' }))];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -99,16 +113,17 @@ ${urls.map(u => `  <url><loc>${u.loc}</loc><priority>${u.prio}</priority></url>`
 
 export function gerar() {
   const escritos = [];
-  for (const p of PAGINAS) {
+  for (const p of [HOME, ...PAGINAS]) {
     if (!CORPO[p.slug]) throw new Error(`sem conteúdo pra "${p.slug}" — acrescente em ferramentas/conteudo-site.mjs (ou -guia.mjs) e no mapa CORPO`);
-    writeFileSync(new URL(`${p.slug}.html`, RAIZ), pagina(p));
-    escritos.push(`${p.slug}.html`);
+    const arquivo = p.arquivo || `${p.slug}.html`;
+    writeFileSync(new URL(arquivo, RAIZ), pagina(p));
+    escritos.push(arquivo);
   }
   writeFileSync(new URL('sitemap.xml', RAIZ), sitemap());
   escritos.push('sitemap.xml');
   return escritos;
 }
-export { pagina };
+export { pagina, HOME };
 
 // `node ferramentas/gerar-paginas.mjs` gera; importado por tests/paginas.test.js, não escreve nada sozinho.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)

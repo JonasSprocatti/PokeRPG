@@ -3,74 +3,122 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PokéRPG</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<script>if (new URLSearchParams(location.search).has('sala')) location.replace('jogar.html' + location.search);</script>
+<title>PokéRPG — você é o Pokémon</title>
+<meta name="description" content="RPG grátis no navegador em que você não tem treinador: você é o Pokémon. Nove regiões, batalha com as fórmulas dos jogos, aliados, ovos, Mega/Tera/Z-Move/Gigantamax e multiplayer.">
 <link rel="canonical" href="https://www.pokerpg.com.br/">
-<!-- Google AdSense. Os dois scripts andam juntos e NESTA ordem: o consent.js define o consentimento como negado
-     (Consent Mode v2) antes de o script do Google rodar, senão o estado chega tarde e não vale. Literais aqui de
-     propósito: o snippet precisa estar no HTML servido pra revisão do Google encontrá-lo. O publisher ID tem de
-     ser o mesmo de js/config.js e do ads.txt — tests/paginas.test.js compara os três. Detalhe em js/consent.js. -->
+<!-- Google AdSense: js/consent.js (Consent Mode v2) PRECISA vir antes. Gerado de js/config.js — não editar aqui. -->
 <script src="js/consent.js"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9827780756194019" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="css/estilo.css">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
-<link rel="apple-touch-icon" href="img/icone-192.png">
 <meta name="theme-color" content="#161A33">
-<meta name="description" content="Você não tem treinador: VOCÊ é o Pokémon. RPG no navegador com 9 regiões, Roguelike, Mega, Tera, Z-Move, Gigantamax e multiplayer. Grátis, funciona offline.">
-<!-- Pré-visualização do link (WhatsApp, Discord, Telegram…): os endereços precisam ser ABSOLUTOS. A imagem tem 1200×630 e menos de 300 KB.
-     Sem `og:url` DE PROPÓSITO: o WhatsApp troca o link pelo og:url e reaproveita o cache dele — com a tag, `?v=2` no fim do link não
-     furava o cache de uma tentativa antiga que falhou. Sem ela, cada endereço é lido do zero. -->
-
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PokéRPG">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:title" content="PokéRPG — você não tem treinador. VOCÊ é o Pokémon.">
-<meta property="og:description" content="Comece como um inicial, sem Pokébola, e sobreviva. 9 regiões, Roguelike, Mega/Tera/Z-Move/Gigantamax e multiplayer. Grátis, no navegador.">
+<meta property="og:title" content="PokéRPG — você é o Pokémon">
+<meta property="og:description" content="RPG grátis no navegador em que você não tem treinador: você é o Pokémon. Nove regiões, batalha com as fórmulas dos jogos, aliados, ovos, Mega/Tera/Z-Move/Gigantamax e multiplayer.">
 <meta property="og:image" content="https://www.pokerpg.com.br/img/og-imagem.png">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="PokéRPG: você não tem treinador, você é o Pokémon">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="PokéRPG — você não tem treinador. VOCÊ é o Pokémon.">
-<meta name="twitter:description" content="RPG de Pokémon no navegador: Roguelike, 9 regiões, Mega/Tera/Z-Move/Gigantamax e multiplayer.">
-<meta name="twitter:image" content="https://www.pokerpg.com.br/img/og-imagem.png">
 </head>
 <body>
 <header class="top">
-  <div class="brand"><button type="button" class="brand-logo" data-act="inicio" aria-label="PokéRPG — ir para a tela inicial" title="Tela inicial"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></button><small>Você é o Pokémon</small></div>
-  <div class="top-r">
-    <span id="top-dinheiro" class="dinheiro"></span>
-    <!-- celular: os botões vão pra dentro do menu ☰ (no computador .menu-links é display:contents — some da conta) -->
-    <button type="button" id="menu-burger" class="burger" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-links">☰</button>
-    <nav id="menu-links" class="menu-links" aria-label="Menu"><div class="top-r" id="topr"></div><div id="conta-chip"></div></nav>
-  </div>
+  <div class="brand"><a class="brand-logo" href="./" aria-label="PokéRPG — ir para a página inicial"><img src="img/logo.png" alt="" class="logo" width="373" height="309"></a><small>Você é o Pokémon</small></div>
+  <div class="top-r"><a class="btn" href="jogar.html">▶ Jogar</a></div>
 </header>
-<div id="app"></div>
+<div id="app">
+<main class="create pagina">
+  <h1>PokéRPG — você é o Pokémon.</h1>
 
-<script>
-  // Módulos ES não carregam por file:// (duplo-clique no arquivo): sem este aviso a tela ficaria vazia sem explicação.
-  if (location.protocol === 'file:') document.getElementById('app').innerHTML =
-    '<main class="create"><div class="notice">Este jogo precisa ser aberto por um servidor, não direto do arquivo. ' +
-    'Na pasta do projeto, rode <code>python -m http.server 3000</code> e abra <b>http://localhost:3000</b>.</div></main>';
-</script>
-<script type="module" src="js/main.js"></script>
-<script>
-  // modo offline: service worker guarda o jogo, a PokéAPI e os sprites depois do primeiro acesso online (sw.js)
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker', e));
-    /* Versão nova assumiu o controle? Recarrega a aba UMA vez. O sw.js já ativa sozinho (skipWaiting +
-       clients.claim), mas isso troca só o service worker: a aba aberta continua com os arquivos .js que carregou
-       quando abriu, porque módulo ES é carregado uma vez por sessão. Sem isto, quem deixa o jogo aberto fica
-       testando a versão velha sem saber — aconteceu de verdade, com correção publicada e o erro antigo na tela. */
-    let recarregando = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (recarregando) return; recarregando = true; location.reload();
-    });
-  }
-</script>
+  <p class="lead">Você não tem treinador, não tem Pokébola e não captura ninguém.
+    <b>Você é o Pokémon</b> — e a única coisa que o jogo te dá é um corpo de nível 5 no meio da grama alta.</p>
+
+  <p>O PokéRPG é um RPG de texto que roda no navegador, de graça e sem instalar nada. Você escolhe uma espécie
+    inicial, nasce selvagem e tem que sobreviver: subir de nível, aprender golpes, evoluir, fazer companheiros e
+    atravessar nove regiões sem ser capturado por um treinador humano. Toda batalha usa as fórmulas dos jogos
+    originais, e os dados das 1025 espécies vêm direto da PokéAPI.</p>
+
+  <p><a class="btn" href="jogar.html">▶ Começar a jogar</a></p>
+
+  <h2>Como é a primeira partida</h2>
+  <p>Você escolhe a dificuldade, a região e um dos iniciais daquela geração. O jogo te põe na primeira rota, no
+    nível 5, com os dois ou três golpes que a sua espécie sabe nessa idade — e nada mais.</p>
+  <p>A partir daí cada passo é uma decisão pequena. <b>Explorar</b> sorteia um encontro: pode ser um Pokémon
+    selvagem do nível da rota, pode ser um grupo de três, pode ser um treinador que quer te pôr numa bola, pode
+    ser um item no chão. Lutar dá experiência e dinheiro; fugir não dá nada, mas também não te mata. Quando o HP
+    baixa, você não abre o menu e cura outro: você anda até um Centro Pokémon e paga — ou aprende a usar a
+    mochila com cuidado, porque remédio custa.</p>
+  <p>Os outros Pokémon da rota não são só inimigos. Com um petisco na hora certa, aquele que você acabou de
+    poupar pode virar <b>aliado</b> e lutar ao seu lado nas próximas batalhas. Dois cabem no time; os outros
+    esperam no esconderijo. E se dois deles forem compatíveis, aparece um ovo — que choca andando, inclusive com
+    o jogo fechado.</p>
+  <p>Subindo de nível você evolui, e evoluir aqui é o que é na franquia: a sua espécie muda, os atributos
+    saltam, golpes novos entram. Chegando ao fim das dez rotas de uma região, os lendários dela te esperam. Vencer
+    fecha a região e abre a seguinte — ou encerra a jornada e manda tudo o que você fez pra sua carreira.</p>
+
+  <h2>O que tem dentro</h2>
+  <ul>
+    <li><b>Nove regiões</b>, dez rotas cada, mais um Santuário no fim de cada uma onde qualquer espécie daquela
+      geração pode aparecer. Cada rota tem o próprio conjunto de Pokémon, com as taxas de aparição à mostra.</li>
+    <li><b>Batalha completa</b>: ordem de turno por velocidade, tabela de tipos, críticos, estágios de atributo,
+      status, clima, terreno, telas, armadilhas e habilidades que realmente disparam.
+      (<a href="guia-batalha.html">o capítulo da batalha</a>)</li>
+    <li><b>As quatro transformações</b> — Mega Evolução, Terastalização, Movimento Z e Gigantamax — conquistadas
+      ao longo da carreira e usáveis uma vez por batalha.
+      (<a href="guia-transformacoes.html">como conquistar cada uma</a>)</li>
+    <li><b>Quase 200 missões</b>, 59 medalhas e uma pontuação por jornada que alimenta o ranking e o Hall da
+      Fama. (<a href="guia-progresso.html">progresso e carreira</a>)</li>
+    <li><b>Multiplayer por código de sala</b>: co-op na jornada de quem hospeda, PvP entre times e raides contra
+      o chefe da semana. Funciona sem login.
+      (<a href="guia-multiplayer.html">como entrar numa sala</a>)</li>
+    <li><b>Um chefe novo por semana</b>, igual pra todo mundo, com itens próprios pra enfrentá-lo.</li>
+  </ul>
+
+  <h2>Seis jeitos de jogar</h2>
+  <p>A dificuldade não muda só os números: muda o que acontece quando você perde.</p>
+  <ul>
+    <li><b>Roguelike</b> — o modo principal, e o padrão. Desmaiou, a jornada acabou; aliado que cai é perdido
+      pra sempre. O que você conquistou fica pra próxima run.</li>
+    <li><b>Fácil</b> — treinador nunca te captura e o Centro Pokémon é de graça. Nível inicial, natureza e
+      habilidade à sua escolha.</li>
+    <li><b>Médio</b> — igual ao Fácil, mas o Centro cobra (e cada vitória desde a última visita barateia a
+      conta).</li>
+    <li><b>Difícil</b> — ser capturado não acaba com você: dias depois você foge, sem a mochila, com metade do
+      dinheiro e longe de onde estava.</li>
+    <li><b>Hardcore</b> — ser capturado é o fim. O save é apagado.</li>
+    <li><b>Full Randomizer</b> — espécie, natureza e habilidade sorteadas. Você descobre quem é depois de
+      nascer.</li>
+  </ul>
+  <p>Se é a sua primeira vez, o <a href="guia-comecar.html">capítulo de como começar</a> explica a escolha toda
+    em uma página.</p>
+
+  <h2>Sem conta, sem instalar, sem pagar</h2>
+  <p>O jogo abre no navegador e salva no próprio aparelho — não é preciso criar conta pra jogar do começo ao
+    fim. Depois da primeira visita ele funciona <b>offline</b>, e dá pra baixar uma região inteira de antemão pra
+    jogar no avião ou no ônibus.</p>
+  <p>Criar uma conta é opcional e serve pra três coisas: levar o save de um aparelho pro outro, aparecer no
+    ranking e no Hall da Fama, e ter amigos. Não existe compra dentro do jogo, não existe assinatura e não existe
+    item pago — <a href="privacidade.html">o que é guardado sobre você está escrito na política de
+    privacidade</a>, em português claro.</p>
+
+  <p><a class="btn" href="jogar.html">▶ Jogar agora</a> &nbsp;
+    <a href="guia.html">ou ler o guia primeiro</a></p>
+
+  <p class="small muted">Pokémon é marca registrada da Nintendo, Creatures Inc. e GAME FREAK inc. Este é um projeto de fã, sem fins lucrativos diretos e sem nenhuma afiliação, patrocínio ou aprovação dessas empresas.</p>
+</main>
+</div>
+<footer class="rodape-site">
+    <nav aria-label="Páginas do site">
+      <a href="jogar.html">Jogar</a>
+      <a href="sobre.html">Sobre</a>
+      <a href="guia.html">Guia</a>
+      <a href="privacidade.html">Privacidade</a>
+      <a href="termos.html">Termos</a>
+      <a href="contato.html">Contato</a>
+      <a href="https://github.com/JonasSprocatti/PokeRPG" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <p class="small muted">© 2026 Jonas Sprocatti · <a href="mailto:pokerpg.contato@gmail.com">pokerpg.contato@gmail.com</a></p>
+    <p class="small muted">Pokémon é marca registrada da Nintendo, Creatures Inc. e GAME FREAK inc. Este é um projeto de fã, sem fins lucrativos diretos e sem nenhuma afiliação, patrocínio ou aprovação dessas empresas.</p>
+  </footer>
 </body>
 </html>

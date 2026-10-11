@@ -9,7 +9,9 @@ const CACHE_JOGO = 'pokerpg-jogo-v1';
 // site — chegou a reportar 20 GB pra menos de 1 MB de imagem. Trocar o nome faz o activate apagar o cache antigo.
 const CACHE_EXTERNO = 'pokerpg-externo-v2';
 const PRECACHE = [
-  './', './index.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
+  // './' é a apresentação; o JOGO é './jogar.html' (mudou em 11/10/2026). Os dois no precache: quem salvou o
+  // atalho na raiz continua achando a página, e quem abre o jogo offline acha o jogo.
+  './', './index.html', './jogar.html', './css/estilo.css', './img/logo.png', './img/favicon-32.png', './img/icone-192.png',
   /* Sprites de item que a PokéAPI não desenhou (img/itens/, baixados por ferramentas/gerar-item-sprites.mjs e
      apontados por SPRITE_DO_ITEM). São arquivos NOSSOS, não do CDN de sprites: sem eles aqui, a mochila offline
      volta a mostrar a caixinha de reserva. Arquivo novo na pasta = linha nova aqui (tests/sw.test.js cobra). */
@@ -65,7 +67,9 @@ async function redePrimeiro(req) {
     if (resp.ok) cache.put(req, resp.clone());
     return resp;
   } catch {
-    return (await cache.match(req, { ignoreSearch: true })) || (req.mode === 'navigate' ? cache.match('./index.html') : Response.error());
+    /* Navegação offline pra um endereço que não está no cache cai no JOGO, não na apresentação: quem está sem
+       rede quer jogar, e a home é só texto. (Era './index.html' quando a raiz AINDA era o jogo.) */
+    return (await cache.match(req, { ignoreSearch: true })) || (req.mode === 'navigate' ? cache.match('./jogar.html') : Response.error());
   }
 }
 /* `ignoreVary`: o mesmo sprite é pedido de dois jeitos — o download pra jogar offline (offline.js) usa `fetch()`,
@@ -83,14 +87,14 @@ self.addEventListener('push', e => {
   try { d = e.data?.json() || {}; } catch { d = { titulo: 'PokéRPG', corpo: e.data?.text() || '' }; }
   e.waitUntil(self.registration.showNotification(d.titulo || 'PokéRPG', {
     body: d.corpo || '', tag: d.tag || 'pokerpg-lembrete', icon: './img/icone-192.png', badge: './img/favicon-32.png',
-    data: { url: d.url || './' }
+    data: { url: d.url || './jogar.html' }
   }));
 });
 /* Clicar tem de CAIR no jogo, e numa aba só: se já existe uma aberta, foca ela — abrir a segunda deixaria dois
    saves do mesmo jogador vivos lado a lado. `includeUncontrolled` porque a aba pode ter sido aberta antes deste sw. */
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = e.notification.data?.url || './';
+  const url = e.notification.data?.url || './jogar.html';   // o lembrete abre o JOGO, não a apresentação
   e.waitUntil((async () => {
     const abas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const minha = abas.find(c => new URL(c.url).origin === self.location.origin);

@@ -448,7 +448,7 @@ ES modules não carregam por `file://`, então é preciso um servidor:
 python -m http.server 3000
 ```
 
-Depois abra http://localhost:3000.
+Depois abra **http://localhost:3000/jogar.html** — o jogo mora em `jogar.html`; a raiz (`index.html`) é a página de apresentação do site, gerada por `ferramentas/gerar-paginas.mjs`.
 
 **Login e nuvem (opcional):** siga [`supabase/COMO-CONFIGURAR.md`](supabase/COMO-CONFIGURAR.md). Sem isso, o jogo funciona inteiro, só que local.
 
@@ -475,7 +475,8 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 
 | Pasta/arquivo | O que tem |
 |---|---|
-| `index.html`, `css/estilo.css` | Página e estilo |
+| `jogar.html`, `css/estilo.css` | O jogo (a página que carrega os módulos) e o estilo |
+| `index.html` e as outras páginas do site | **Geradas** por `ferramentas/gerar-paginas.mjs`: apresentação, guia em 6 capítulos, sobre, privacidade, termos, contato (não editar à mão) |
 | `js/regras.js` | Fórmulas puras (dano, stats, captura, missões, pontuação…), todas testadas |
 | `js/dados.js` | Tabelas: tipos, naturezas, itens, missões, dificuldades, iniciais, ordens |
 | `js/mapas.js`, `js/dados-mapas.js` | Mapas por Gen: rotas, taxas de aparição, Alfas, lendários, Pokédex da rota. `dados-mapas.js` é **gerado** da PokéAPI por `ferramentas/gerar-mapas.ps1` (não editar à mão) |
@@ -570,7 +571,9 @@ Código-fonte disponível para leitura, mas **não é open source**: todos os di
 
 ## Páginas do site
 
-Fora do jogo existem onze páginas estáticas com endereço próprio: `sobre.html`, `guia.html`, `privacidade.html`, `termos.html`, `contato.html` e os **seis capítulos do guia** (`guia-comecar`, `guia-batalha`, `guia-mundo`, `guia-transformacoes`, `guia-progresso`, `guia-multiplayer`). O rodapé de toda tela linka as cinco primeiras (o rodapé some durante a batalha); os capítulos ficam fora dele de propósito — onze links iguais em toda página escondem os links legais, que são o motivo do rodapé existir —, e se alcançam pelo índice em `guia.html` e pela navegação no pé de cada capítulo. Elas existem por dois motivos: o jogo inteiro é montado em JavaScript dentro de uma `<div>` vazia, numa URL só, então **sem elas não há nada que um buscador consiga ler** nem endereço pra dar pra política de privacidade; e o cadastro do AdSense pede esse endereço.
+**A raiz do domínio é uma página, não o jogo** (desde 11/10/2026). `index.html` apresenta o PokéRPG em texto — o que é, como é a primeira partida, o que tem dentro, as seis dificuldades — e leva pro jogo, que mora em **`jogar.html`**. O link de convite do multiplayer continua sendo `/?sala=XXXX`: a home desvia pro jogo assim que vê o parâmetro, então nenhum convite já enviado quebrou.
+
+Fora do jogo existem doze páginas estáticas com endereço próprio: a apresentação (`index.html`), `sobre.html`, `guia.html`, `privacidade.html`, `termos.html`, `contato.html` e os **seis capítulos do guia** (`guia-comecar`, `guia-batalha`, `guia-mundo`, `guia-transformacoes`, `guia-progresso`, `guia-multiplayer`). O rodapé de toda tela linka as cinco do meio (o rodapé some durante a batalha); os capítulos ficam fora dele de propósito — onze links iguais em toda página escondem os links legais, que são o motivo do rodapé existir —, e se alcançam pelo índice em `guia.html` e pela navegação no pé de cada capítulo. Elas existem por dois motivos: o jogo inteiro é montado em JavaScript dentro de uma `<div>` vazia, numa URL só, então **sem elas não há nada que um buscador consiga ler** nem endereço pra dar pra política de privacidade; e o cadastro do AdSense pede esse endereço.
 
 O **guia** é a documentação do jogo pra quem joga: dificuldades e primeiros passos, a batalha inteira (ordem do turno, dano, status, clima, terreno, telas e armadilhas, aliados, IA), o mundo (rotas, Pokédex da rota, Alfas, lendários, Santuário, formas regionais, caçadores), as quatro transformações, o progresso que sobrevive à jornada (XP, evoluções, missões, carreira, medalhas, Hall da Fama, chefe da semana) e o multiplayer.
 
@@ -578,7 +581,7 @@ São **geradas** por `ferramentas/gerar-paginas.mjs` a partir de `js/site.js` (c
 
 ## Anúncios (Google AdSense)
 
-Estado atual (29/09/2026): a conta existe, o domínio está verificado e o **código do AdSense já é carregado** no `<head>` de `index.html` e das páginas estáticas — mas **nenhum anúncio é exibido**, porque não há unidade de anúncio criada (`AD_SLOT_INICIO` e `AD_SLOT_GUIA`, em `js/config.js`, estão vazios). É de propósito: a revisão do Google precisa encontrar o código no site, e é o que falta pedir. Contexto completo em **[`docs/adsense.md`](docs/adsense.md)**.
+Estado atual (11/10/2026): **reprovado por "conteúdo de baixo valor"** no primeiro pedido de revisão. O motivo mais provável está medido em [`docs/adsense.md`](docs/adsense.md): a raiz do domínio *era o jogo* — `<div id="app">` vazia, **5 palavras** de HTML — então a página mais importante do site era a única sem conteúdo nenhum. O jogo passou a morar em **`jogar.html`** e a raiz virou uma página de apresentação de verdade (~890 palavras, com os links pro guia). O **código do AdSense continua carregado** no `<head>` de todas as páginas, sem exibir anúncio (`AD_SLOT_INICIO`/`AD_SLOT_GUIA` vazios em `js/config.js`) — é o estado certo pra revisão. A segunda revisão **espera o site ganhar tráfego**: "presença consistente na web" também é critério, e reenviar na semana seguinte sem nada ter mudado de fato costuma levar a nova negativa.
 
 Como o consentimento funciona: `js/consent.js` roda **antes** do script do Google, síncrono, e declara o consentimento como **negado** (Consent Mode v2) — sem cookie de anúncio e sem personalização. Um banner pergunta na primeira visita; ao aceitar, `js/ads.js` manda o sinal ao Google. A escolha fica salva e muda a qualquer hora em `⚙ Ajustes`, e recusar não limita nada no jogo. ⚠️ Esse banner é caseiro e **não** é uma CMP certificada pelo Google — sem uma, tráfego do EEE/Reino Unido/Suíça não recebe anúncio personalizado; a CMP entra depois da aprovação (ver `docs/adsense.md`).
 

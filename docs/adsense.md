@@ -3,6 +3,52 @@
 Levantamento de 29/09/2026 — o que precisa mudar **antes** de pedir a revisão do Google.
 Item do backlog em `CLAUDE.md`.
 
+---
+
+## ⛔ REPROVADO em 11/10/2026 — "Conteúdo de baixo valor"
+
+Primeira revisão pedida em 30/09/2026. Resposta do painel, na íntegra do que importa: *"Para se qualificar
+para a veiculação de anúncios, os sites precisam oferecer um valor único substancial, estabelecer uma presença
+consistente na web e mostrar um nível de interesse do usuário que apoie uma parceria de publicidade
+comercial."* Três critérios, e o Google não diz qual falhou.
+
+**O que foi medido no dia da resposta** (palavras de texto visível no HTML, scripts e `<head>` fora):
+
+| Página | Palavras |
+|---|---|
+| **`/` — a URL cadastrada no AdSense** | **5** |
+| `sobre.html` | 500 |
+| os 6 capítulos do guia | ~5.700 somadas |
+| `guia.html`, `contato.html`, `musica.html` | ~720 somadas |
+
+O diagnóstico salta da primeira linha: **a raiz do domínio era o jogo**, e o jogo é `<div id="app"></div>`
+montada em JavaScript. Quem abrisse `pokerpg.com.br` sem executar JS via uma página em branco; quem executasse
+caía no tutorial (primeira visita, sem save) — tela de jogo, quase sem texto corrido. As ~6.900 palavras do
+guia existiam, mas em páginas-ilha: o rodapé que as linka é injetado por JS (`main.js`), então **o HTML da home
+não tinha um único link pra elas**. Era literalmente o cenário descrito no A2 deste documento, que nunca chegou
+a ser corrigido: as páginas estáticas foram criadas *ao lado* da raiz, não *na* raiz.
+
+**O que foi feito (11/10/2026)**, decisão do usuário:
+
+- O jogo saiu da raiz e passou a morar em **`jogar.html`**.
+- **`index.html` virou a página de apresentação** — ~890 palavras escritas pra quem nunca viu o jogo (o que é,
+  como é a primeira partida, o que tem dentro, as seis dificuldades), com links pros capítulos do guia e dois
+  botões pro jogo. Gerada como as outras (`ferramentas/gerar-paginas.mjs`, texto em `conteudo-site.INICIO`).
+- O convite de sala (`URL_SITE/?sala=XXXX`) continua caindo na raiz: a home **desvia pro jogo** ao ver o
+  parâmetro, antes de carregar qualquer outra coisa. Nenhum link já enviado quebrou.
+- `sitemap.xml` ganhou `jogar.html`; o `canonical` do jogo deixou de apontar pra raiz (são duas páginas com
+  conteúdo diferente); o service worker guarda as duas e o lembrete por push abre o **jogo**, não a
+  apresentação.
+- `tests/paginas.test.js` passou a cobrir a home (`[HOME, ...PAGINAS]`) e tem um piso de **400 palavras** nela
+  — o buraco que causou isto tudo não pode voltar em silêncio.
+
+**O que NÃO foi feito, e por quê**: pedir a revisão de novo na mesma semana. "Presença consistente na web" e
+"nível de interesse do usuário" são critérios de **tráfego e tempo** — o domínio tinha 12 dias de vida quando
+foi reprovado, e nenhuma mudança de código os satisfaz. Reenviar sem nada ter mudado de fato do lado do
+público costuma render uma segunda negativa, que pesa. **A próxima revisão espera o site ter visitas.**
+
+---
+
 **Decisão do usuário (29/09/2026)**: seguir com os disclaimers e pedir a revisão, usando o
 **Pokémon Showdown como caso de uso** — ele roda AdSense há anos com exatamente o mesmo tipo de
 conteúdo derivado. O que o Showdown mostra, ao ser examinado:
@@ -133,6 +179,11 @@ c. Monetizar por caminho que não passa por rede de anúncio (doação/apoio), q
 Enquanto isso não for decidido, os itens abaixo são trabalho que pode não ser usado.
 
 ### A2. Site de uma página só, sem conteúdo legível
+
+> ⚠️ **Este item foi resolvido só pela metade em 29/09/2026 e é o que reprovou o site em 11/10** — as páginas
+> estáticas foram criadas, mas a raiz continuou sendo a `<div>` vazia. Fechado de verdade em 11/10/2026
+> (ver o bloco no topo). O texto abaixo é o original do levantamento; o terceiro marcador previa exatamente
+> o que aconteceu.
 
 `index.html` entrega `<div id="app">` vazio e tudo é montado em JS. Não existe roteamento
 por URL nenhum (`grep` por `location.hash`/`pushState`: zero ocorrências). Consequências:
