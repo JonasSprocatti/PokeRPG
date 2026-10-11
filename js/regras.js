@@ -1531,8 +1531,9 @@ export function estatisticasDaJornada(S) {
        contador subia jogando e zerava ao encerrar, porque a carreira nunca recebia o campo — e de novo com
        `shiniesAmigos` (bug corrigido em 27/09/2026): só o TOTAL sobrevivia aqui embaixo (`shiniesAmigos: soma(...)`),
        o mapa por espécie sumia ao fechar a jornada e `criacao.opcaoShiny` nunca via qual espécie exatamente
-       tinha ficado shiny. */
-    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {}, abates: r.abates || {}, shiniesAmigos: r.shiniesAmigos || {} }))
+       tinha ficado shiny. `shinies` (o shiny ENCONTRADO, mesmo sem recrutar) entrou pelo mesmo motivo, em
+       11/10/2026: é o que a ✨ Pokédex shiny acende, e sem ele só o total sobreviveria à jornada. */
+    registro: JSON.parse(JSON.stringify({ vistos: r.vistos || {}, derrotados: r.derrotados || {}, amigos: r.amigos || {}, evolucoes: r.evolucoes || {}, formas: r.formas || {}, ids: r.ids || {}, abates: r.abates || {}, shinies: r.shinies || {}, shiniesAmigos: r.shiniesAmigos || {} }))
   };
 }
 // Pontuação = soma ponderada × multiplicador da dificuldade (Hardcore vale o dobro do Fácil)

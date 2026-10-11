@@ -13,7 +13,18 @@ export const TOTAL_DEX = 1025;
 // estado de uma espécie na sua conta: quanto mais você conviveu com ela, mais você sabe
 export const ESTADOS = { nunca: 'nunca', visto: 'visto', derrotado: 'derrotado', amigo: 'amigo' };
 
-/* Junta os registros e devolve um mapa `id → { especie, id, vistos, derrotados, amigos, estado }`.
+/* As listas por espécie que o registro guarda (estado.registrar). `shinies` = shiny que APARECEU na sua frente,
+   recrutado ou não; `shiniesAmigos` = o que virou seu. São contadores separados de propósito: o segundo é
+   subconjunto do primeiro só pra quem jogou depois de 11/10/2026 — antes disso `shinies` morria no fim da
+   jornada (não estava na lista branca de `regras.estatisticasDaJornada`), então carreira antiga tem shiny
+   recrutado sem o encontro correspondente. Quem contar shiny olha os DOIS. */
+const LISTAS = ['vistos', 'derrotados', 'amigos', 'shinies', 'shiniesAmigos'];
+const vazia = especie => ({ especie, id: null, vistos: 0, derrotados: 0, amigos: 0, shinies: 0, shiniesAmigos: 0 });
+/* "Já vi esta espécie brilhando?" — a pergunta da ✨ Pokédex shiny, num lugar só. Os dois campos entram porque
+   carreira anterior a 11/10/2026 só guardou o recrutado: olhar só `shinies` apagaria shiny antigo da dex. */
+export const temShiny = e => !!(e && (e.shinies || e.shiniesAmigos));
+
+/* Junta os registros e devolve um mapa `id → { especie, id, vistos, derrotados, amigos, shinies, estado }`.
    A chave é o ID, não o nome, porque é por id que a tela mostra sprite e ordena (ordem da Pokédex nacional).
    Espécie registrada numa jornada antiga sem `ids` (saves bem antigos) fica de fora do mapa por id — mas continua
    contada no total por nome, senão o número de "conhecidos" cairia sem motivo. */
@@ -22,14 +33,14 @@ export function pokedexDaConta(jornadas, registroAtual) {
   const registros = [...(jornadas || []).map(j => j?.registro), registroAtual];
   for (const r of registros) {
     if (!r) continue;
-    for (const lista of ['vistos', 'derrotados', 'amigos', 'shiniesAmigos']) {
+    for (const lista of LISTAS) {
       for (const [especie, n] of Object.entries(r[lista] || {})) {
-        const e = porNome[especie] ||= { especie, id: null, vistos: 0, derrotados: 0, amigos: 0, shiniesAmigos: 0 };
+        const e = porNome[especie] ||= vazia(especie);
         e[lista] += n;
       }
     }
     for (const [especie, id] of Object.entries(r.ids || {})) {
-      const e = porNome[especie] ||= { especie, id: null, vistos: 0, derrotados: 0, amigos: 0, shiniesAmigos: 0 };
+      const e = porNome[especie] ||= vazia(especie);
       if (!e.id) e.id = idDaEspecieNoRegistro(especie, id);   // id de Mega vazado (relato #62) vira o da espécie
     }
   }
@@ -50,7 +61,9 @@ export function pokedexDaConta(jornadas, registroAtual) {
   const soma = campo => Object.values(porNome).reduce((a, e) => a + (e[campo] || 0), 0);
   return {
     porId, porNome, conhecidas: Object.keys(porNome).length, gensCompletas,
-    shiniesAmigos: soma('shiniesAmigos'),
+    shiniesAmigos: soma('shiniesAmigos'), shiniesVistos: soma('shinies'),
+    // espécies em que você já viu AO MENOS um shiny: é o número que a ✨ Pokédex shiny mostra como "de 1025"
+    especiesShiny: Object.values(porNome).filter(temShiny).length,
     lendariosAmigos: Object.values(porNome).filter(e => e.amigos && LENDARIOS.has(e.especie)).length,
     rayquazaShiny: porNome.rayquaza?.shiniesAmigos || 0
   };

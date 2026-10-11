@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '6.9', data: '2026-10-11', titulo: '✨ Uma Pokédex só para os brilhantes', piada: 'Perguntamos a um jogador quantos shinies ele já tinha visto na vida. Ele disse "uns seis, acho", olhou pro teto, mudou pra "quatro", e depois passou vinte minutos tentando lembrar se aquele Zubat de dois anos atrás era shiny ou se o monitor estava com a cor estranha. Agora tem uma tela que responde isso por ele.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>✨ A Pokédex ganhou um modo shiny.</b> O botão no topo da tela 📖 Pokédex troca a grade inteira por sprites <b>brilhantes</b> — e só acende quem você já viu assim. As 1025 espécies continuam lá, com as que faltam como "?", porque a graça é exatamente essa.',
+        '<b>Três números próprios:</b> quantas <b>espécies</b> você já viu brilhando (de 1025), quantos <b>shinies no total</b> você encontrou e quantos deles <b>viraram seus</b>. Abrindo a ficha de alguém, a conta dele aparece junto com as outras.',
+        '<b>Conta o encontro, não só o recrutamento.</b> Aquele shiny que fugiu, que você derrotou ou que simplesmente apareceu e a batalha terminou de outro jeito está na dex do mesmo jeito — ele apareceu pra você, e isso é o que a tela registra.',
+        '<b>Shiny antigo:</b> os que você encontrou antes desta atualização só aparecem se você os <b>recrutou</b>. Até agora o jogo só levava pra carreira o shiny que virava seu; o encontro em si ficava na jornada e sumia junto com ela. A partir de hoje todo shiny que cruzar o seu caminho fica registrado pra sempre — um aviso na própria tela lembra disso.'
+      ] }
+    ] },
   { versao: '6.8', data: '2026-10-11', titulo: '🏠 O site ganhou uma porta de entrada', piada: 'Durante dois anos o endereço do jogo abria direto numa tela de escolher inicial, sem nunca explicar o que era aquilo. Quem chegava pelo link de um amigo tinha dez segundos pra deduzir sozinho que não ia comandar ninguém — ia SER alguém. Agora tem uma página dizendo isso, com todas as letras, antes de você ter que escolher entre três filhotes.',
     secoes: [
       { nome: 'Novidades', itens: [

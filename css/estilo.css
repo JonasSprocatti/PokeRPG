@@ -1132,6 +1132,9 @@ button.dexr:hover{border-color:var(--yellow);transform:translateY(-1px)}
 .dexc.nunca span{font:700 22px var(--display)}
 .dexc.derrotado{border-color:var(--yellow)}
 .dexc.amigo{border-color:#5FB36A}
+/* ✨ Pokédex shiny: quem já apareceu brilhando. Borda dourada e um brilho de fundo — a grade inteira é de
+   sprites shiny, então a cor é o que diz "esta é a outra dex" de relance. */
+.dexc.brilhou{border-color:var(--yellow);box-shadow:inset 0 0 14px rgba(255,203,61,.18)}
 .dexc:not(.nunca):hover{background:var(--panel);border-color:var(--yellow)}
 .dex-ficha{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
 .dex-ficha-topo{display:flex;gap:14px;align-items:center;flex-wrap:wrap}

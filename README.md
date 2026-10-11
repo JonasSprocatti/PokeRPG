@@ -413,6 +413,8 @@ node ferramentas/relatos-admin.mjs --arquivar 59 --nota "Fora do escopo por enqu
 As 1025 espécies do jogo: as que você já encontrou aparecem com sprite e nome, as outras ficam como "?". Toque em quem você conhece para abrir a ficha completa — tipos, todos os atributos base, habilidades com descrição, e quantas vezes você já viu, derrotou e recrutou aquela espécie.
 
 A ficha também responde **onde achar**: em quais rotas de quais mapas ele aparece, com a chance de encontro, e se ele é Alfa de alguma rota ou participa de uma luta final. Conta a carreira inteira e a jornada em andamento.
+
+**✨ Pokédex shiny:** o botão no topo troca a grade por outra, com o mesmo formato e os sprites brilhantes — acesas só as espécies que você já viu **shiny**. É a dex de colecionador: 1025 espécies, um shiny a cada 4.096 encontros, e três números próprios no topo (espécies, shinies encontrados no total e quantos viraram seus). Vale o shiny **encontrado**, recrutado ou não. Um aviso na tela explica o único buraco: shiny de antes de 11/10/2026 só está lá se você o recrutou, porque até então o encontro brilhante não sobrevivia ao fim da jornada.
 ### 🏅 Conquistas da conta
 Tudo o que você acumula **ao longo da carreira inteira**, jornada após jornada — e a que está em andamento conta junto. A cada vitória o jogo registra os tipos do Pokémon derrotado, a espécie que você estava usando, o golpe que finalizou e o elemento dele.
 

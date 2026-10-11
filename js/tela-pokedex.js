@@ -8,41 +8,64 @@ import { G } from './estado.js';
 import { $, limparTopo } from './ui.js';
 import { barraTelas } from './navegacao.js';
 import { carregarCarreira } from './carreira.js';
-import { pokedexDaConta, ondeAparece, TOTAL_DEX, ESTADOS } from './pokedex-conta.js';
+import { pokedexDaConta, ondeAparece, temShiny, TOTAL_DEX, ESTADOS } from './pokedex-conta.js';
 import { progressoRoguelike, textoProgresso } from './roguelike.js';
-import { SPR, STATS, STAT_PT, TYPE_PT, TC, DARK_TEXT } from './dados.js';
+import { SPR, SPR_SHINY, STATS, STAT_PT, TYPE_PT, TC, DARK_TEXT } from './dados.js';
 import { loadPokemon, loadAbility } from './api.js';
+import { CHANCE_SHINY } from './regras.js';   // o "1 em 4096" da tela sai da constante do sorteio, nunca digitado
 import { textoTaxa } from './mapas.js';
 import { esc, fmt, offline } from './util.js';
 
 let dex = null;   // { porId, porNome, conhecidas } da última abertura — o clique numa célula consulta daqui
+/* ✨ Pokédex shiny: a MESMA tela com outro critério de "conhecido" (pedido do usuário, 11/10/2026). Uma segunda
+   tela seria a mesma grade, a mesma ficha e a mesma navegação duplicadas pra trocar uma condição e o endereço
+   do sprite — é um modo, não uma tela. Mora no módulo (e não em G) porque é preferência de visualização: não
+   entra no save, e abrir a Pokédex de novo na mesma sessão mantém onde você estava. */
+let soShiny = false;
 
 const n = v => (v || 0).toLocaleString('pt-BR');
 const tipoSelo = t => `<span class="ty" style="--c:${TC[t] || '#888'};--tc:${DARK_TEXT.has(t) ? '#1c1f3a' : '#fff'}">${TYPE_PT[t] || fmt(t)}</span>`;
 
+// o botão que troca entre a Pokédex normal e a ✨ shiny (main.js: data-act="dex-modo")
+export function alternarDexShiny() { soShiny = !soShiny; telaPokedex(); }
+
 export function telaPokedex() {
   G.mode = 'fim'; limparTopo();
   dex = pokedexDaConta(carregarCarreira().jornadas, G.S?.registro);
+  // o que acende a célula: na dex normal é ter encontrado; na shiny, ter encontrado BRILHANDO
+  const achou = e => (soShiny ? temShiny(e) : !!e);
+  const sprite = soShiny ? SPR_SHINY : SPR;
   const celulas = [];
   for (let id = 1; id <= TOTAL_DEX; id++) {
     const e = dex.porId.get(id);
-    celulas.push(e
-      ? `<button class="dexc ${e.estado}" data-act="dex-ver" data-v="${id}" title="${esc(fmt(e.especie))}">
-          <img src="${SPR(id)}" alt="" loading="lazy"><b>${esc(fmt(e.especie))}</b><small>#${id}</small></button>`
-      : `<div class="dexc nunca" title="Ainda não encontrado"><span>?</span><small>#${id}</small></div>`);
+    celulas.push(achou(e)
+      ? `<button class="dexc ${soShiny ? 'brilhou' : e.estado}" data-act="dex-ver" data-v="${id}" title="${esc(fmt(e.especie))}">
+          <img src="${sprite(id)}" alt="" loading="lazy"><b>${esc(fmt(e.especie))}</b><small>#${id}</small></button>`
+      : `<div class="dexc nunca" title="${soShiny ? 'Nunca visto shiny' : 'Ainda não encontrado'}"><span>?</span><small>#${id}</small></div>`);
   }
   const amigos = [...dex.porId.values()].filter(e => e.estado === ESTADOS.amigo).length;
   const derrotados = [...dex.porId.values()].filter(e => e.estado === ESTADOS.derrotado).length;
   $('#app').innerHTML = `<main class="create">
     ${barraTelas('pokedex')}
-    <h1>Pokédex.</h1>
-    <p class="lead">Tudo o que a sua conta já encontrou, somando a carreira inteira e a jornada em andamento.
-      Toque em quem você conhece pra ver a ficha completa — atributos, tipos, habilidades e onde ele aparece no mundo.</p>
+    <h1>${soShiny ? '✨ Pokédex shiny.' : 'Pokédex.'}</h1>
+    <p class="lead">${soShiny
+      ? `As espécies que você já viu <b>brilhando</b>, somando a carreira inteira e a jornada em andamento.
+         Um shiny aparece a cada ${n(1 / CHANCE_SHINY)} encontros, então esta grade enche devagar — e é esse o ponto.`
+      : `Tudo o que a sua conta já encontrou, somando a carreira inteira e a jornada em andamento.
+         Toque em quem você conhece pra ver a ficha completa — atributos, tipos, habilidades e onde ele aparece no mundo.`}</p>
+    <p><button class="${soShiny ? 'btn' : 'btn ghost'}" data-act="dex-modo">${soShiny ? '📖 Ver a Pokédex normal' : '✨ Ver só os shinies'}</button></p>
     <div class="stats-fim">
+      ${soShiny ? `
+      <div class="stat-fim"><span>Espécies shiny</span><b>${n(dex.especiesShiny)}</b><small>de ${n(TOTAL_DEX)}</small></div>
+      <div class="stat-fim"><span>Encontrados</span><b>${n(dex.shiniesVistos)}</b><small>shinies no total</small></div>
+      <div class="stat-fim"><span>Recrutados</span><b>${n(dex.shiniesAmigos)}</b><small>viraram seus</small></div>` : `
       <div class="stat-fim"><span>Conhecidos</span><b>${n(dex.conhecidas)}</b><small>de ${n(TOTAL_DEX)}</small></div>
       <div class="stat-fim"><span>Derrotados</span><b>${n(derrotados)}</b><small>espécies</small></div>
-      <div class="stat-fim"><span>Amigos</span><b>${n(amigos)}</b><small>espécies recrutadas</small></div>
+      <div class="stat-fim"><span>Amigos</span><b>${n(amigos)}</b><small>espécies recrutadas</small></div>`}
     </div>
+    ${soShiny && dex.especiesShiny ? '' : soShiny
+      ? '<p class="small muted">Nenhum shiny ainda. Eles aparecem sozinhos, em qualquer encontro — e o 🎯 Caça Shiny existe pra forçar a sorte numa espécie só.</p>' : ''}
+    ${soShiny ? '<p class="small muted">Shiny encontrado antes de 11/10/2026 só está aqui se você o <b>recrutou</b>: até então a jornada não levava os encontros brilhantes pra carreira, só os que viraram seus.</p>' : ''}
     <div id="dex-ficha"></div>
     <div class="dex-grade">${celulas.join('')}</div>
   </main>`;
@@ -60,6 +83,7 @@ export function abrirNaPokedex(id) {
 export async function verNaPokedex(id) {
   const alvo = $('#dex-ficha'); if (!alvo) return;
   const e = dex?.porId.get(+id); if (!e) return;
+  const spr = soShiny ? SPR_SHINY : SPR;
   alvo.innerHTML = `<section class="dex-ficha"><p class="muted">Abrindo a ficha de ${esc(fmt(e.especie))}…</p></section>`;
   alvo.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   let d = null;
@@ -73,11 +97,12 @@ export async function verNaPokedex(id) {
   const hab = d.abilities.map(a => `<li><b>${esc(fmt(a.name))}</b>${a.hidden ? ' <small class="muted">(oculta)</small>' : ''} <span data-hab="${esc(a.name)}" class="muted small">…</span></li>`).join('');
   alvo.innerHTML = `<section class="dex-ficha">
     <div class="dex-ficha-topo">
-      <img src="${SPR(+id)}" alt="">
+      <img src="${spr(+id)}" alt="">
       <div>
-        <h3>#${id} ${esc(fmt(e.especie))}</h3>
+        <h3>${soShiny ? '✨ ' : ''}#${id} ${esc(fmt(e.especie))}</h3>
         <div class="chips">${d.types.map(tipoSelo).join('')}</div>
         <p class="small muted">Você já viu <b>${n(e.vistos)}</b>, derrotou <b>${n(e.derrotados)}</b> e recrutou <b>${n(e.amigos)}</b>.</p>
+        ${temShiny(e) ? `<p class="small muted">✨ Shiny: encontrou <b>${n(e.shinies)}</b> e recrutou <b>${n(e.shiniesAmigos)}</b>.</p>` : ''}
         ${htmlRoguelike(e.especie)}
       </div>
     </div>

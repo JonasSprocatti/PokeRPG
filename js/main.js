@@ -23,7 +23,7 @@ import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaEditorRotas, acaoEditor } from './tela-editor-rotas.js';
 import { telaEditorMusica, acaoEditorMusica } from './tela-editor-musica.js';
 import { telaEditorConteudo, acaoEditorConteudo } from './tela-editor-conteudo.js';
-import { telaPokedex, verNaPokedex, abrirNaPokedex } from './tela-pokedex.js';
+import { telaPokedex, verNaPokedex, abrirNaPokedex, alternarDexShiny } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, convidarAmigoMP, copiarConviteMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
   raideSelecionarHall, raideEquiparHall, raideComprarComum, raideComprarSegurado, alternarProntoMP, enviarChatMP,
@@ -229,6 +229,7 @@ async function aoClicar(e) {
     case 'esconderijo-trazer': return mexerEsconderijo('trazer', +v);
     case 'dex-rota': if (travadoPelaBatalha()) return; return abrirNaPokedex(v);   // da Pokedex da rota pra ficha
     case 'dex-ver': return verNaPokedex(v);
+    case 'dex-modo': return alternarDexShiny();   // 📖 Pokédex ⇄ ✨ Pokédex shiny
     case 'ranking': if (travadoPelaBatalha()) return; return telaRanking();
     // bugs e sugestões
     case 'relatos': if (travadoPelaBatalha()) return; return telaRelatos();
