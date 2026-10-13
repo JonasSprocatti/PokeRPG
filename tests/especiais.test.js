@@ -2,9 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, golpeTravado, passarGravidade } from '../js/golpe.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, golpeTravado, passarGravidade, desfazerCopia, desfazerForma, desfazerTrace } from '../js/golpe.js';
+import { hab } from '../js/habilidades.js';
 import { freshVol, poderEspecial, chanceOhko, danoResidual, calcDamage, TRAVAS, GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX,
-  noChao, eficacia, motivoBloqueio, passarTravas } from '../js/regras.js';
+  noChao, eficacia, motivoBloqueio, passarTravas, podeCopiar } from '../js/regras.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
 const status = (name, o = {}) => golpe({ name, cls: 'status', power: null, acc: null, target: 'user', ...o });
@@ -45,7 +46,13 @@ test('tabela: só comportamentos que o motor conhece', () => {
     // 📊 contas sobre os estágios e atributos que o motor já guarda (Haze, Psych Up, Belly Drum, Pain Split, os swaps)
     'limpaEstagios', 'copiaEstagios', 'tambor', 'inverteEstagios', 'divideHp',
     'trocaProprios', 'trocaEstagios', 'trocaStat', 'mediaStat',
-    'danoFixo']);                             // dano que não passa pela fórmula (regras.danoFixoDe)
+    'danoFixo',                               // dano que não passa pela fórmula (regras.danoFixoDe)
+    // 🎭 usar o golpe de OUTRO (golpe.usarCopia): Mimic, Metronome, Mirror Move, Copycat, Sleep Talk, Assist,
+    // Nature Power, Me First, Instruct, Transform — e o Snore, que só precisava furar a trava de sono
+    'copia', 'guardaNoSlot', 'exigeFlag', 'mult', 'repete', 'soNoSono', 'transforma',
+    'substituto',                             // 🪆 Substitute e Shed Tail (o boneco vive em `vol.substituto`)
+    // 🧠 trocar habilidade: todas via `m.abilityAntes` (desfazerTrace), menos Gastro Acid (`vol.semHabilidade`)
+    'copiaHabilidade', 'trocaHabilidade', 'poeHabilidade', 'anulaHabilidade']);
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade',
     'pesoDoAlvo', 'pesoRelativo', 'estagios', 'estagiosDoAlvo', 'hpDoAlvo',
     'felicidade', 'felicidadeInversa', 'magnitude']);                                     // Return, Frustration, Magnitude
@@ -480,4 +487,232 @@ test('Splash não promete efeito futuro — nos jogos ele não faz nada mesmo', 
   const c = ctx();
   await usarGolpe(mon(), mon(), status('splash'), true, c);
   assert.ok(!c.msgs.some(m => m.includes('será ajustado')), c.msgs.join(' | '));
+});
+
+/* ---- leva de 13/10/2026 (2ª parte): copiar golpe alheio, substituto e trocar habilidade ---- */
+
+test('Substituto leva o golpe no lugar e bloqueia status; `authentic` e Infiltrator atravessam', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = mon({ nome: 'U' }), a = mon({ nome: 'A' });
+  await usarGolpe(u, a, status('substitute'), true, ctx());
+  assert.equal(u.vol.substituto, 40, '1/4 de 160');
+  assert.equal(u.hp, 120, 'o custo saiu do HP');
+
+  // golpe de dano bate no BONECO, não nele
+  const c = ctx();
+  await usarGolpe(a, u, golpe({ power: 30 }), false, c);
+  assert.equal(u.hp, 120, 'o HP não encostou');
+  assert.ok(u.vol.substituto < 40, 'o boneco apanhou');
+  assert.ok(c.msgs.some(m => m.includes('substituto')), c.msgs.join(' | '));
+
+  // golpe de status não passa
+  const cs = ctx();
+  await usarGolpe(a, u, status('thunder-wave', { target: 'selected-pokemon', meta: { ailment: 'paralysis' } }), false, cs);
+  assert.equal(u.status, null, cs.msgs.join(' | '));
+  assert.ok(cs.msgs.some(m => m.includes('bloqueia')));
+
+  // o boneco estoura, e o dano que sobra se PERDE
+  const forte = ctx();
+  await usarGolpe(a, u, golpe({ power: 250 }), false, forte);
+  assert.equal(u.vol.substituto, undefined, 'se desfez');
+  assert.equal(u.hp, 120, 'o excesso não vazou pro HP');
+
+  // Infiltrator fura o boneco
+  await usarGolpe(u, a, status('substitute'), true, ctx());
+  const fura = ctx();
+  await usarGolpe(mon({ ability: 'infiltrator' }), u, golpe({ power: 30 }), false, fura);
+  assert.ok(u.hp < 120, 'Infiltrator bateu nele mesmo');
+});
+
+test('Mirror Move devolve o golpe do alvo; sem flag `mirror` e sem golpe, falha dizendo por quê', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = mon({ nome: 'U' }), a = mon({ nome: 'A', moves: [golpe({ name: 'ember', type: 'fire', power: 40 })] });
+  // nada pra espelhar ainda
+  const vazio = ctx();
+  await usarGolpe(u, a, status('mirror-move', { target: 'selected-pokemon' }), true, vazio);
+  assert.ok(vazio.msgs.some(m => m.includes('ainda não usou')), vazio.msgs.join(' | '));
+
+  // o alvo usa Ember; agora o espelho devolve Ember NELE
+  await usarGolpe(a, u, a.moves[0], true, ctx());
+  const hpAntes = a.hp;
+  const c = ctx();
+  await usarGolpe(u, a, status('mirror-move', { target: 'selected-pokemon' }), true, c);
+  assert.ok(c.msgs.some(m => m.includes('ember')), c.msgs.join(' | '));
+  assert.ok(a.hp < hpAntes, 'o Ember voltou pro dono');
+});
+
+test('Copycat copia o último golpe da LUTA, de quem for', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const campo = { lados: {} };
+  const u = mon({ nome: 'U' }), a = mon({ nome: 'A' });
+  const aliado = mon({ nome: 'L', moves: [golpe({ name: 'bubble', type: 'water', power: 40 })] });
+  const c = () => ctx({ campo, aliadosDe: m => m === u ? [aliado] : [], oponentesDe: m => m === u ? [a] : [u, aliado] });
+  await usarGolpe(aliado, a, aliado.moves[0], true, c());
+  assert.equal(campo.ultimo, 'bubble');
+  const hpAntes = a.hp;
+  const cc = c();
+  await usarGolpe(u, a, status('copycat'), true, cc);
+  assert.ok(cc.msgs.some(m => m.includes('bubble')), cc.msgs.join(' | '));
+  assert.ok(a.hp < hpAntes);
+});
+
+test('Sleep Talk e Snore furam a trava de sono; acordado, falham dizendo isso', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const outro = golpe({ name: 'ember', type: 'fire', power: 40 });
+  const u = mon({ status: 'sleep', sleep: 3, moves: [status('sleep-talk'), outro] });
+  const a = mon();
+  const c = ctx();
+  await usarGolpe(u, a, u.moves[0], true, c);
+  assert.ok(a.hp < 160, 'o golpe sorteado saiu mesmo dormindo: ' + c.msgs.join(' | '));
+  assert.equal(u.status, 'sleep', 'continua dormindo');
+  assert.ok(u.sleep < 3, 'mas o turno de sono contou');
+
+  // acordado, falha — e diz por quê (não é "nada aconteceu")
+  const acordado = mon({ moves: [status('sleep-talk'), outro] });
+  const ca = ctx();
+  await usarGolpe(acordado, mon(), acordado.moves[0], true, ca);
+  assert.ok(ca.msgs.some(m => m.includes('só funciona dormindo')), ca.msgs.join(' | '));
+  assert.ok(!ca.msgs.some(m => m.includes('será ajustado')));
+
+  // Snore é golpe de DANO e passa pela mesma porta
+  const ronca = mon({ status: 'sleep', sleep: 3, moves: [golpe({ name: 'snore', power: 50 })] });
+  const alvo = mon();
+  await usarGolpe(ronca, alvo, ronca.moves[0], true, ctx());
+  assert.ok(alvo.hp < 160, 'o ronco machucou');
+});
+
+test('Metronome sorteia entre os golpes de quem está em campo; Nature Power lê o terreno', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = mon({ nome: 'U', moves: [status('metronome')] });
+  const a = mon({ nome: 'A', moves: [golpe({ name: 'vine-whip', type: 'grass', power: 45 })] });
+  const c = ctx({ campo: { lados: {} }, aliadosDe: () => [], oponentesDe: m => m === u ? [a] : [u] });
+  await usarGolpe(u, a, u.moves[0], true, c);
+  // o único golpe copiável em campo é o do inimigo (Metronome está em SEM_COPIA)
+  assert.ok(c.msgs.some(m => m.includes('vine-whip')), c.msgs.join(' | '));
+
+  // Nature Power: sem terreno é Tri Attack; no campo de grama, Energy Ball
+  const semTerreno = ctx({ campo: { lados: {} } });
+  await usarGolpe(mon(), mon(), status('nature-power', { target: 'selected-pokemon' }), true, semTerreno);
+  assert.ok(semTerreno.msgs.some(m => m.includes('tri-attack')), semTerreno.msgs.join(' | '));
+  const grama = ctx({ campo: { lados: {}, terreno: 'grama', terrenoTurnos: 5 } });
+  await usarGolpe(mon(), mon(), status('nature-power', { target: 'selected-pokemon' }), true, grama);
+  assert.ok(grama.msgs.some(m => m.includes('energy-ball')), grama.msgs.join(' | '));
+});
+
+test('Mimic guarda o golpe até o fim da luta; Sketch guarda pra sempre', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const alvo = mon({ moves: [golpe({ name: 'ember', type: 'fire', power: 40 })] });
+  await usarGolpe(alvo, mon(), alvo.moves[0], true, ctx());
+
+  const u = mon({ moves: [status('mimic', { target: 'selected-pokemon' })] });
+  await usarGolpe(u, alvo, u.moves[0], true, ctx());
+  assert.equal(u.moves[0].name, 'ember');
+  assert.equal(u.moves[0].ppLeft, 5, 'Mimic vem com 5 PP');
+  assert.ok(u.movesAntes, 'guardou o original pro fim da batalha');
+  desfazerCopia(u);
+  assert.equal(u.moves[0].name, 'mimic', 'o endBattle devolve o Mimic');
+
+  const s = mon({ moves: [status('sketch', { target: 'selected-pokemon' })] });
+  await usarGolpe(s, alvo, s.moves[0], true, ctx());
+  assert.equal(s.moves[0].name, 'ember');
+  assert.equal(s.movesAntes, undefined, 'Sketch é permanente: nada pra desfazer');
+  desfazerCopia(s);
+  assert.equal(s.moves[0].name, 'ember');
+});
+
+test('Transform copia tipos, atributos, golpes e habilidade — menos o HP; o endBattle desfaz', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = mon({ nome: 'U', hp: 100, data: { types: ['normal'], sprite: 'd.png', back: 'db.png', art: 'da.png' } });
+  const a = mon({ nome: 'A', ability: 'levitate', data: { types: ['water', 'flying'], sprite: 'a.png', back: 'ab.png', art: 'aa.png' },
+    moves: [golpe({ name: 'surf', type: 'water', power: 90 })] });
+  a.stats.attack = 200;
+  await usarGolpe(u, a, status('transform', { target: 'selected-pokemon' }), true, ctx());
+  assert.deepEqual(u.data.types, ['water', 'flying']);
+  assert.equal(u.data.sprite, 'a.png');
+  assert.equal(u.stats.attack, 200);
+  assert.equal(u.stats.hp, 160, 'o HP máximo continua o SEU');
+  assert.equal(u.hp, 100, 'e o HP atual também');
+  assert.equal(u.ability, 'levitate');
+  assert.equal(u.moves[0].name, 'surf');
+  assert.equal(u.moves[0].ppLeft, 5);
+  // duas vezes falha
+  const c = ctx();
+  await usarGolpe(u, a, status('transform', { target: 'selected-pokemon' }), true, c);
+  assert.ok(c.msgs.some(m => m.includes('falhou')));
+  // o fim da batalha devolve tudo (desfazerForma + desfazerTrace + desfazerCopia, a mesma linha do endBattle)
+  desfazerForma(u); desfazerTrace(u); desfazerCopia(u);
+  assert.deepEqual(u.data.types, ['normal']);
+  assert.equal(u.stats.attack, 100);
+  assert.equal(u.ability, 'none');
+  assert.equal(u.moves[0].name, 'tackle');
+});
+
+test('Role Play copia, Skill Swap troca, Entrainment dá a sua e Worry Seed impõe Insomnia', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = mon({ nome: 'U', ability: 'static' }), a = mon({ nome: 'A', ability: 'levitate' });
+  await usarGolpe(u, a, status('role-play', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(u.ability, 'levitate');
+  assert.equal(u.abilityAntes, 'static', 'o endBattle devolve por desfazerTrace');
+  desfazerTrace(u);
+  assert.equal(u.ability, 'static');
+
+  await usarGolpe(u, a, status('skill-swap', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(u.ability, 'levitate');
+  assert.equal(a.ability, 'static');
+
+  const e = mon({ ability: 'guts' }), alvo = mon({ ability: 'levitate' });
+  await usarGolpe(e, alvo, status('entrainment', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(alvo.ability, 'guts', 'Entrainment dá a de quem usa');
+  assert.equal(e.ability, 'guts');
+
+  const w = mon(), v = mon({ ability: 'levitate' });
+  await usarGolpe(w, v, status('worry-seed', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(v.ability, 'insomnia');
+});
+
+test('Gastro Acid anula a habilidade sem mexer no save; Stance Change nunca é tocada', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const a = mon({ nome: 'A', ability: 'levitate' });
+  await usarGolpe(mon(), a, status('gastro-acid', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(a.vol.semHabilidade, true);
+  assert.equal(a.ability, 'levitate', 'o nome fica: a ficha continua certa');
+  assert.deepEqual(hab(a), {}, 'mas o efeito foi embora');
+  // o golpe Terrestre, que Levitate barrava, agora acerta
+  const c = ctx();
+  await usarGolpe(mon(), a, golpe({ name: 'earthquake', type: 'ground', power: 100 }), true, c);
+  assert.ok(a.hp < 160, c.msgs.join(' | '));
+
+  // habilidade que é MECÂNICA do motor não se troca nem se anula
+  const aegis = mon({ ability: 'stance-change' });
+  const t2 = ctx();
+  await usarGolpe(mon(), aegis, status('gastro-acid', { target: 'selected-pokemon' }), true, t2);
+  assert.equal(aegis.vol.semHabilidade, undefined);
+  assert.ok(t2.msgs.some(m => m.includes('falhou')));
+  const t3 = ctx();
+  await usarGolpe(mon({ ability: 'static' }), aegis, status('role-play', { target: 'selected-pokemon' }), true, t3);
+  assert.ok(t3.msgs.some(m => m.includes('falhou')), t3.msgs.join(' | '));
+});
+
+test('Instruct faz o ALVO repetir o último golpe dele, contra quem usou', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const u = mon({ nome: 'U' }), a = mon({ nome: 'A', moves: [golpe({ name: 'ember', type: 'fire', power: 40 })] });
+  // sem nada pra repetir
+  const vazio = ctx();
+  await usarGolpe(u, a, status('instruct', { target: 'selected-pokemon' }), true, vazio);
+  assert.ok(vazio.msgs.some(m => m.includes('falhou')), vazio.msgs.join(' | '));
+
+  await usarGolpe(a, u, a.moves[0], true, ctx());
+  const hpAntes = u.hp;
+  const c = ctx();
+  await usarGolpe(u, a, status('instruct', { target: 'selected-pokemon' }), true, c);
+  assert.ok(u.hp < hpAntes, 'o inimigo bateu de novo em quem mandou: ' + c.msgs.join(' | '));
+});
+
+test('cópia não copia cópia: SEM_COPIA fecha a recursão', () => {
+  for (const n of ['metronome', 'mirror-move', 'copycat', 'sleep-talk', 'assist', 'mimic', 'sketch', 'transform', 'instruct', 'me-first', 'nature-power', 'struggle'])
+    assert.equal(podeCopiar(n), false, `${n} deveria estar em SEM_COPIA`);
+  // golpe de dois turnos também fica fora (a cópia executa na hora, não carrega)
+  for (const n of ['fly', 'dig', 'solar-beam']) assert.equal(podeCopiar(n), false, n);
+  assert.equal(podeCopiar('ember'), true);
+  assert.equal(podeCopiar(undefined), false);
 });

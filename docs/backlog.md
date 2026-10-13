@@ -62,7 +62,7 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   reordenar a fila de `acoes` no meio da rodada, nos dois motores. Hoje dizem que o efeito será ajustado. Junto
   deles: **Ally Switch** (não há posições em campo) e **Spotlight** (chamariz ao contrário: exigiria a escolha do
   SEU golpe ler o chamariz do lado de lá).
-- **Os ~82 golpes que ainda não têm efeito** (eram 121 antes de 13/10/2026). A lista NÃO está escrita aqui de
+- **Os ~62 golpes que ainda não têm efeito** (eram 121 no começo de 13/10/2026; a leva de chão/aperto/fim-de-turno fechou 39 e a de cópia/substituto/habilidade fechou 21). A lista NÃO está escrita aqui de
   propósito: ela se refaz cruzando `dados-ref/golpes.tsv` com `especiais.GOLPES_ESPECIAIS` + os `ailment` que
   `golpe.aplicarStatus` trata — texto copiado envelhece calado, e já houve seis afirmações erradas por isso. Os
   MOTIVOS de cada família (copiar golpe alheio, Substitute, trocar habilidade/item, contra-ataque, tirar

@@ -480,7 +480,11 @@ export const HABILIDADES = {
      Habilidade fora daqui joga normal, só sem o efeito: a ficha promete "✓ ativa em batalha" apenas pra quem
      está nesta tabela. */
 };
-export const hab = m => HABILIDADES[m?.ability] || {};
+/* `vol.semHabilidade` = **Gastro Acid**: a habilidade do alvo fica anulada até ele sair de campo. Mora no `vol`
+   (e não num `m.ability = null`) de propósito: o `vol` morre sozinho na troca e no fim da batalha, então nada
+   precisa ser desfeito no save — e a ficha continua mostrando QUAL habilidade ele tem, que é a informação certa.
+   Toda leitura de habilidade do jogo passa por aqui, então a anulação vale em tudo de uma vez. */
+export const hab = m => m?.vol?.semHabilidade ? {} : HABILIDADES[m?.ability] || {};
 /* A habilidade muda com a evolução (Gible → Garchomp mantém Sand Veil; Rattata → Raticate troca Run Away por Guts).
    Regra: fica no MESMO slot — oculta continua oculta, normal continua na mesma posição; se a forma nova tem menos
    slots, cai no primeiro equivalente. Antes usávamos o índice cru na lista inteira, que embaralhava oculta com normal

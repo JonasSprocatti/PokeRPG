@@ -17,14 +17,14 @@
 import { STAT_PT, AIL_MSG, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, ALVOS_ALIADOS, TYPE_PT } from './dados.js';
 import { GOLPE_AREA } from './dados-golpe-flags.js';
 import { hab } from './habilidades.js';
-import { especial } from './especiais.js';
+import { especial, GOLPE_DO_TERRENO } from './especiais.js';
 import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem, frutaDeAperto } from './segurados.js';
 import { ITEMS, ITEM_VINCULO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, MULT_AREA, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
-  GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX, APERTO_FRACAO, danoFixoDe,
+  GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX, APERTO_FRACAO, danoFixoDe, podeCopiar,
   fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia,
   multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO, golpeDeApoio } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
@@ -44,7 +44,13 @@ const climaDoCtx = ctx => climaDe(ctx.campo);
 const terrenoDoCtx = ctx => terrenoDe(ctx.campo);
 // habilidades que uma troca (Trace/Mummy/Wandering Spirit) NUNCA sobrescreve nem copia: mexem com mecânica própria
 // do motor (a troca de forma do Aegislash), não só descrição — copiar/trocar isso pra outro Pokémon quebraria a conta
-const ABILIDADE_TRAVADA = a => a === 'stance-change';
+/* Habilidade que NUNCA é trocada, copiada nem anulada: ela é mecânica do motor (a troca de forma do Aegislash,
+   a do Castform), não só uma descrição — passá-la pra outro Pokémon, ou tirá-la, quebraria a conta de forma no
+   meio da luta. Vale pro Trace/Mummy e pros golpes de troca de habilidade (Role Play, Skill Swap, Gastro Acid…). */
+const TRAVADAS = new Set(['stance-change', 'forecast']);
+const ABILIDADE_TRAVADA = a => TRAVADAS.has(a);
+// troca a habilidade guardando a antiga: é o caminho do Trace, e `desfazerTrace` (endBattle) o desfaz
+const trocarHabilidade = (m, nova) => { m.abilityAntes ??= m.ability; m.ability = nova; };
 // lado do campo de um Pokémon (telas, salvaguarda, armadilhas). ctx.ladoDe(m) diz em qual lado ele está.
 export function ladoDoCampo(ctx, m) {
   const chave = ctx.ladoDe?.(m); if (!chave || !ctx.campo) return null;
@@ -135,6 +141,62 @@ export async function passarGravidade(campo, ctx, mons) {
     if (m.vol.noSolo === 'gravidade') delete m.vol.noSolo;   // o Smack Down (`noSolo: true`) continua valendo
   }
   await ctx.say('🪐 A gravidade voltou ao normal.', 'muted');
+}
+
+/* ---- 🎭 usar o golpe de OUTRO ----
+   Mimic, Metronome, Mirror Move, Copycat, Sleep Talk, Assist, Nature Power, Me First, Instruct e Transform têm
+   um problema só em comum: **executar um golpe que não é o escolhido**. O que o motor precisava e não tinha era
+   de onde vem o OBJETO do golpe (com tipo, poder, `meta` e PP) — porque `vol.ultimo` guarda só o NOME.
+
+   A resposta é que o objeto **nunca precisa de busca nova**: quem usou um golpe sabe esse golpe, e o moveset dele
+   está em campo. `golpeDeNome` procura o nome nos movesets de quem for candidato, e com isso Mirror Move, Copycat,
+   Instruct, Mimic e Sketch saem todos de graça. Metronome e Assist sorteiam no mesmo lugar. Nature Power é a única
+   exceção, e por isso virou TABELA (`especiais.GOLPE_DO_TERRENO`) em vez de busca: 5 golpes cujos números não
+   mudam, contra uma chamada de rede no meio do turno.
+
+   `SEM_COPIA` (regras.js) é a trava de recursão: nenhum golpe de cópia pode ser copiado. */
+const golpeDeNome = (nome, donos) => {
+  if (!podeCopiar(nome)) return null;
+  for (const d of donos || []) { const g = d?.moves?.find(m => m?.name === nome); if (g) return g; }
+  return null;
+};
+const copiaveis = m => (m?.moves || []).filter(g => podeCopiar(g?.name));
+const todosEmCampo = (u, ctx) => [u, ...(ctx.aliadosDe?.(u) || []), ...(ctx.oponentesDe?.(u) || [])].filter(m => m?.hp > 0);
+
+/* Roda um golpe COPIADO. De propósito NÃO é uma chamada recursiva de `usarGolpe`: o golpe de cópia já passou por
+   tudo o que decide "consigo agir?" (sono, paralisia, recuo, confusão, travas) e já gastou o próprio PP — repetir
+   aquele bloco faria o Sleep Talk falhar na trava de sono que ele existe pra furar.
+   O que esta função faz é o MIOLO de `usarGolpe`: anunciar, marcar o `ultimo` e chamar `executar` por alvo, que é
+   a porta única de todo efeito. O que ela deixa de fora, consciente: **golpe de dois turnos não carrega** (sai na
+   hora — e por isso eles estão em `SEM_COPIA`), não gasta PP do golpe copiado e não trava Choice.
+   // ponytail: `autoDesmaio` e `recarga` são as duas linhas que valiam copiar; o resto do rabo de `usarGolpe`
+   // (fúria, carga, Damp) só valeria pro caso que SEM_COPIA já barra. */
+export async function usarCopia(u, t, g, primeiro, ctx, mult = 1) {
+  const copia = mult === 1 ? g : { ...g, power: g.power ? Math.round(g.power * mult) : g.power };
+  await ctx.say(`${ctx.nome(u)} usou ${ctx.golpe(copia)}!`);
+  u.vol.ultimo = copia.name;                                  // Encore/Disable/Torment olham o golpe que SAIU
+  if (ctx.campo && podeCopiar(copia.name)) ctx.campo.ultimo = copia.name;
+  const esp = especial(copia), alvos = alvosDoGolpe(u, t, copia, ctx);
+  if (!alvos.length) { await ctx.say('Mas falhou! (não há companheiro em campo)'); return; }
+  for (const [i, alvo] of alvos.entries()) {
+    if (u.hp <= 0 && i) break;
+    await executar(u, alvo, copia, primeiro, ctx, esp, { varios: alvos.length > 1, respingo: i > 0 });
+  }
+  if (esp.autoDesmaio && u.hp > 0) { u.hp = 0; up(ctx); await ctx.say(`${ctx.nome(u)} desmaiou com o esforço!`, 'hit'); }
+  if (esp.recarga && u.hp > 0) u.vol.recarga = true;
+}
+
+/* 🪆 Fim da batalha: desfaz o que Mimic e Transform escreveram no PRÓPRIO Pokémon (moveset e atributos). Mora ao
+   lado de `desfazerForma`/`desfazerTrace` e é chamado na mesma linha do `endBattle`, pelo mesmo motivo: sem isso
+   a cópia ia junto no save. Sketch é o único de propósito PERMANENTE (é a razão de existir do Smeargle), e por
+   isso ele nem passa por aqui — grava direto e pronto. */
+export function desfazerCopia(m) {
+  if (!m) return false;
+  const tinha = !!(m.movesAntes || m.statsAntes);
+  if (m.movesAntes) { m.moves = m.movesAntes; delete m.movesAntes; }
+  if (m.statsAntes) { m.stats = m.statsAntes; delete m.statsAntes; }
+  delete m.transformado;
+  return tinha;
 }
 
 // Golpe em que o Pokémon está travado (carregando, em fúria) — a escolha do jogador/IA é ignorada neste turno
@@ -842,6 +904,113 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro, dest = u) {
     }
     up(ctx); await ctx.say(`${U} e ${D} dividiram ${esp.mediaStat.map(k => STAT_PT[k]).join(' e ')}!`, 'status'); return true;
   }
+
+  /* 🪆 Substituto: paga a fração do HP MÁXIMO e põe um boneco com esse tanto de vida. Falha se não houver HP de
+     sobra (nos jogos é preciso SOBRAR algo: pagar o HP inteiro não vale) ou se já houver um de pé. */
+  if (esp.substituto) {
+    const custo = Math.max(1, Math.floor(u.stats.hp * esp.substituto));
+    if (u.vol.substituto > 0) { await ctx.say(`${U} já tem um substituto!`); return true; }
+    if (u.hp <= custo) { await ctx.say('Mas falhou! (não há HP de sobra)'); return true; }
+    u.hp -= custo; u.vol.substituto = custo; up(ctx);
+    await ctx.say(`${U} gastou ${custo} de HP e pôs um <b>substituto</b> no seu lugar!`, 'good');
+    return true;   // Shed Tail também tem `revezamento`, que `usarGolpe` resolve depois deste retorno
+  }
+
+  /* 🧠 Trocar habilidade. Todas passam por `trocarHabilidade`, que guarda a antiga em `abilityAntes` (o caminho do
+     Trace, desfeito no `endBattle`) e recusa as que são MECÂNICA do motor (`ABILIDADE_TRAVADA`). */
+  if (esp.copiaHabilidade || esp.trocaHabilidade || esp.poeHabilidade) {
+    const nova = esp.poeHabilidade || (esp.copiaHabilidade === 'proAlvo' ? u.ability : t.ability);
+    // em QUEM a habilidade nova entra: Simple Beam/Worry Seed e Entrainment mexem no ALVO; Doodle no seu lado
+    // inteiro; Role Play só em quem usou
+    const quem = esp.poeHabilidade || esp.copiaHabilidade === 'proAlvo' ? [t]
+      : esp.copiaHabilidade === 'doAlvoProLado' ? [u, ...(ctx.aliadosDe?.(u) || [])] : [u];
+    if (!nova || ABILIDADE_TRAVADA(nova)) { await ctx.say('Mas falhou!'); return true; }
+    if (esp.trocaHabilidade) {
+      if (ABILIDADE_TRAVADA(u.ability) || u.ability === t.ability) { await ctx.say('Mas falhou!'); return true; }
+      const minha = u.ability;
+      trocarHabilidade(u, t.ability); trocarHabilidade(t, minha);
+      await ctx.say(`${U} e ${T} trocaram de habilidade! Agora ${U} tem ${fmt(u.ability)} e ${T} tem ${fmt(t.ability)}.`, 'status');
+      return true;
+    }
+    const mudaram = quem.filter(m => m?.hp > 0 && m.ability !== nova && !ABILIDADE_TRAVADA(m.ability));
+    if (!mudaram.length) { await ctx.say('Mas falhou!'); return true; }
+    for (const m of mudaram) trocarHabilidade(m, nova);
+    await ctx.say(`${mudaram.map(m => ctx.nome(m)).join(', ')} ${mudaram.length > 1 ? 'passaram' : 'passou'} a ter <b>${fmt(nova)}</b>!`, 'status');
+    return true;
+  }
+  // Gastro Acid: a habilidade do alvo é anulada até ele sair de campo (habilidades.hab lê `vol.semHabilidade`)
+  if (esp.anulaHabilidade) {
+    if (t.vol.semHabilidade) { await ctx.say(`A habilidade de ${T} já está anulada!`); return true; }
+    if (ABILIDADE_TRAVADA(t.ability)) { await ctx.say('Mas falhou!'); return true; }
+    t.vol.semHabilidade = true; up(ctx);
+    await ctx.say(`${fmt(t.ability)} de ${T} foi anulada!`, 'status'); return true;
+  }
+
+  /* 🎭 Transform: quem usa vira uma CÓPIA do alvo — tipos, atributos (menos o HP), habilidade, sprite e os 4
+     golpes com 5 PP cada. Nada disso mexe em `m.data` direto (aquele objeto vem do cache e é compartilhado por
+     toda a espécie): os tipos e o sprite vão por `formaBase`, a mesma caixa que o Castform usa e que o
+     `desfazerForma` do `endBattle` já sabe desmontar; os atributos e o moveset vão por `statsAntes`/`movesAntes`
+     (`desfazerCopia`). O HP fica o SEU, como nos jogos. */
+  if (esp.transforma) {
+    if (u.vol.transformado || t.vol.transformado) { await ctx.say('Mas falhou!'); return true; }
+    u.vol.transformado = true;
+    u.formaBase ||= { types: [...u.data.types], sprite: u.data.sprite, back: u.data.back, art: u.data.art };
+    u.data = { ...u.data, types: [...t.data.types], sprite: t.data.sprite, back: t.data.back, art: t.data.art };
+    u.statsAntes ||= { ...u.stats };
+    u.stats = { ...t.stats, hp: u.stats.hp };
+    u.movesAntes ||= u.moves;
+    u.moves = (t.moves || []).map(m => ({ ...m, pp: 5, ppLeft: 5 }));
+    u.vol.stages = { ...t.vol.stages };
+    if (t.ability && !ABILIDADE_TRAVADA(t.ability)) trocarHabilidade(u, t.ability);
+    up(ctx);
+    await ctx.say(`${U} se transformou em <b>${fmt(t.name)}</b>!`, 'status');
+    return true;
+  }
+
+  /* 🎭 Instruct: o ALVO repete, agora, o último golpe dele. Não é "copiar": quem age de novo é ele, contra quem
+     usou o Instruct. Falha se ele ainda não agiu, se o golpe não é copiável ou se está sem PP. */
+  if (esp.repete) {
+    const g2 = golpeDeNome(t.vol.ultimo, [t]);
+    if (!g2) { await ctx.say(`Mas falhou! (${T} não tem um golpe pra repetir)`); return true; }
+    if (g2.ppLeft !== undefined && g2.ppLeft <= 0) { await ctx.say(`Mas falhou! (${T} está sem PP nesse golpe)`); return true; }
+    await ctx.say(`${U} manda ${T} atacar de novo!`, 'status');
+    await usarCopia(t, u, g2, false, ctx);
+    return true;
+  }
+
+  /* 🎭 Os golpes de CÓPIA. `de` diz de onde o golpe vem; o resto é igual pra todos, inclusive a falha — quando
+     não há nada pra copiar, o golpe diz POR QUÊ em vez de cair no "nada aconteceu". */
+  if (esp.copia) {
+    const g2 = {
+      ultimoDoAlvo: () => golpeDeNome(t.vol.ultimo, [t]),
+      ultimoDaLuta: () => golpeDeNome(ctx.campo?.ultimo, todosEmCampo(u, ctx)),
+      meusOutros: () => { const l = copiaveis(u).filter(x => x.name !== g.name && (x.ppLeft ?? 1) > 0); return l[rand(0, l.length - 1)] || null; },
+      dosAliados: () => { const l = (ctx.aliadosDe?.(u) || []).flatMap(copiaveis); return l[rand(0, l.length - 1)] || null; },
+      doCampo: () => { const l = todosEmCampo(u, ctx).flatMap(copiaveis); return l[rand(0, l.length - 1)] || null; },
+      escolhidoDoAlvo: () => { const e = t.vol.golpeEscolhido; return primeiro && e && e.cls !== 'status' && podeCopiar(e.name) ? e : null; },
+      doTerreno: () => GOLPE_DO_TERRENO[terrenoDoCtx(ctx) ?? 'null']
+    }[esp.copia]?.();
+    if (!g2) {
+      const porque = { ultimoDoAlvo: `${T} ainda não usou nada que dê pra copiar`, ultimoDaLuta: 'ninguém usou nada que dê pra copiar ainda',
+        meusOutros: 'não há outro golpe com PP', dosAliados: 'não há companheiro em campo', doCampo: 'não há golpe pra sortear',
+        escolhidoDoAlvo: `${T} não vai atacar depois de você neste turno` }[esp.copia];
+      await ctx.say(`Mas falhou!${porque ? ` (${porque})` : ''}`); return true;
+    }
+    if (esp.exigeFlag && !temFlag(g2, esp.exigeFlag)) { await ctx.say(`Mas falhou! (${fmt(g2.name)} não dá pra espelhar)`); return true; }
+    /* Mimic e Sketch não USAM o golpe: eles o guardam no próprio slot. Mimic vale a luta (`movesAntes`, desfeito
+       no `endBattle`); Sketch é PERMANENTE — é a razão de existir do Smeargle, e por isso grava no save mesmo. */
+    if (esp.guardaNoSlot) {
+      const i = u.moves.indexOf(g);
+      if (i < 0) { await ctx.say('Mas falhou!'); return true; }
+      if (esp.guardaNoSlot !== 'permanente') u.movesAntes ||= [...u.moves];
+      u.moves = u.moves.map((m, j) => j === i ? { ...g2, pp: esp.guardaNoSlot === 'permanente' ? g2.pp : 5, ppLeft: esp.guardaNoSlot === 'permanente' ? g2.pp : 5 } : m);
+      up(ctx);
+      await ctx.say(`${U} aprendeu <b>${fmt(g2.name)}</b>${esp.guardaNoSlot === 'permanente' ? ' para sempre!' : ' até o fim da batalha!'}`, 'good');
+      return true;
+    }
+    await usarCopia(u, t, g2, primeiro, ctx, esp.mult || 1);
+    return true;
+  }
   return false;
 }
 
@@ -912,11 +1081,16 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   if (hu.preguica && u.vol.folga) { u.vol.folga = false; interromper(u); await ctx.say(`${U} está com preguiça...`); return; } // Truant: folga no turno seguinte a um golpe
   const travado = golpeTravado(u);                                                    // carga / fúria: repete sozinho
   if (travado) g = travado;
+  /* Dormindo o turno é perdido — MENOS com Sleep Talk e Snore (`soNoSono`), que existem exatamente pra isso e por
+     isso FURAM esta trava. O turno de sono continua contando (a conta já rodou acima); o que não acontece é o
+     `return`. Fora do sono os dois falham, como nos jogos — e dizem isso, em vez de "nada aconteceu". */
+  const soDormindo = especial(g).soNoSono;
   if (u.status === 'sleep') {
     u.sleep -= hu.sonoRapido ? 2 : 1;                                                  // Early Bird
-    if (u.sleep > 0) { interromper(u); await ctx.say(`${U} está dormindo profundamente.`); return; }
-    u.status = null; u.sleep = 0; up(ctx); await ctx.say(`${U} acordou!`);
+    if (u.sleep > 0 && !soDormindo) { interromper(u); await ctx.say(`${U} está dormindo profundamente.`); return; }
+    if (u.sleep <= 0) { u.status = null; u.sleep = 0; up(ctx); await ctx.say(`${U} acordou!`); }
   }
+  if (soDormindo && u.status !== 'sleep') { await ctx.say(`${U} usou ${ctx.golpe(g)}! Mas falhou — só funciona dormindo.`); return; }
   // Congelado: 20% de descongelar por turno — MAS golpe com a flag `defrost` (Flame Wheel, Sacred Fire, Flare
   // Blitz, Scald, Pyro Ball…) derrete o gelo de quem usa e sai normalmente, como nos jogos.
   if (u.status === 'freeze') {
@@ -989,6 +1163,11 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
   // emergência, sem PP sobrando pra "escolher" nada) até desmaiar/ser revivido (`m.vol` reseta nos dois casos).
   if (seg(u).choice && !u.vol.escolha && g.name !== 'struggle') u.vol.escolha = g.name;
   if (g.name !== 'struggle') u.vol.ultimo = g.name;                                   // Encore, Disable e Torment olham isto
+  // Copycat copia o último golpe usado por QUALQUER UM: o campo é o estado compartilhado pelos dois lados, e aqui
+  // guarda só o NOME (o objeto sai do moveset de quem o sabe — `golpe.golpeDeNome`), que é dado simples pro save
+  // Golpe de CÓPIA não entra nessa memória: além de ser a regra dos jogos (Copycat não copia Copycat), ele
+  // sobrescreveria o valor que o próprio Copycat vai ler daqui a três linhas, dentro do mesmo turno.
+  if (ctx.campo && podeCopiar(g.name)) ctx.campo.ultimo = g.name;
   if (hu.preguica) u.vol.folga = true;                                                // Truant: o próximo turno é de folga
   // Fake Out e First Impression só valem no primeiro golpe da batalha (vol.golpesDados conta os anteriores)
   const primeiroGolpe = !u.vol.golpesDados;
@@ -1070,6 +1249,31 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   // Sing…), por isso checado antes até do golpe de status. Golpe fora da tabela (dados-golpe-flags.js) não tem a
   // flag marcada, então não é bloqueado — mais seguro que fingir saber.
   if (!selfT && ht.imuneFlag && temFlag(g, ht.imuneFlag)) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
+  /* 🪆 SUBSTITUTO. Fica aqui, num ponto só, e **retorna** — é o que faz disto uma mudança pequena em vez de um
+     remendo em cada efeito. Como `executar` é a porta única de tudo, voltar daqui já garante de uma vez o que o
+     boneco protege nos jogos: status, efeito secundário, queda de atributo, Leech Seed, roubo de item, recuo,
+     saída forçada e habilidade de contato (Static, Elmo Rochoso) — nada disso é alcançado.
+     Quem ATRAVESSA é quem tem a flag `authentic` da PokéAPI (a flag "ignora substituto": Snore, Heal Bell e os
+     golpes de troca de habilidade já vêm marcados) e quem tem Infiltrator (`atravessaTelas`, a mesma habilidade
+     que fura tela e salvaguarda). O dano que sobra ao estourar o boneco se PERDE, como nos jogos.
+     // ponytail: recuo e dreno não contam o dano feito ao boneco — é o único efeito de QUEM ATACA que este
+     // return engole junto. Nos jogos eles contam; aqui custaria repetir o bloco de dano inteiro. */
+  if (!selfT && u !== t && t.vol.substituto > 0 && !temFlag(g, 'authentic') && !hu.atravessaTelas) {
+    if (g.cls === 'status') { await ctx.say(`O substituto de ${T} bloqueia o golpe!`); return; }
+    if (eficacia(hu, g.type, t) === 0) { await ctx.say(`Não afeta ${T}...`); return; }
+    if (g.acc != null && Math.random() > chanceAcerto(g, u, t, climaDoCtx(ctx))) { await ctx.say('Mas errou!'); return; }
+    const vezes = meta.minHits ? (hu.maxAcertos ? meta.maxHits || meta.minHits : rand(meta.minHits, meta.maxHits || meta.minHits)) : 1;
+    let noBoneco = 0;
+    for (let i = 0; i < vezes && t.vol.substituto > 0; i++) {
+      const r = calcDamage(u, t, g, climaDoCtx(ctx), terrenoDoCtx(ctx), ladoDoCampo(ctx, t));
+      const d = Math.min(t.vol.substituto, r.dmg);
+      t.vol.substituto -= d; noBoneco += d;
+    }
+    up(ctx); (ctx.tremer || nada)(t, g.type);
+    await ctx.say(`O substituto de ${T} levou o golpe. (−${noBoneco})`, 'hit');
+    if (t.vol.substituto <= 0) { delete t.vol.substituto; await ctx.say(`O substituto de ${T} se desfez!`, 'status'); }
+    return 'acertou';
+  }
   if (esp.soDormindo && t.status !== 'sleep') { await ctx.say(`Não afeta ${T}... (só funciona em quem está dormindo)`); return; }
   if (esp.ohko) {
     if (t.boss) { await ctx.say(`Não afeta ${T}... (chefe de evento)`); return; }

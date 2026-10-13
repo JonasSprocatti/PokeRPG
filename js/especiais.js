@@ -60,6 +60,12 @@
 //   limpaEstagios/copiaEstagios/tambor/inverteEstagios/divideHp/trocaProprios/trocaEstagios/trocaStat/mediaStat
 //                    contas sobre os estágios e atributos que o motor já guarda (Haze, Psych Up, Belly Drum…)
 //   danoFixo         dano que NÃO passa pela fórmula (regras.danoFixoDe): número, nivel, nivelVariado, metadeDoAlvo, hpProprio
+//   copia: de-onde   roda um golpe que não é o escolhido (Metronome, Mirror Move, Sleep Talk…) — golpe.usarCopia
+//   guardaNoSlot     o golpe copiado FICA no seu moveset (Mimic: até o fim da luta; Sketch: 'permanente')
+//   exigeFlag/mult/repete/soNoSono   a flag que o golpe copiado precisa ter · poder ×n · o ALVO repete (Instruct) · só dormindo
+//   transforma       quem usa vira uma cópia do alvo (Transform)
+//   substituto: frac paga essa fração do HP máx. e põe um boneco que leva o golpe no lugar (Substitute, Shed Tail)
+//   copiaHabilidade/trocaHabilidade/poeHabilidade/anulaHabilidade   Role Play, Skill Swap, Simple Beam, Gastro Acid
 export const GOLPES_ESPECIAIS = {
   /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
      FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
@@ -207,6 +213,65 @@ export const GOLPES_ESPECIAIS = {
      (Happy Hour dobra o dinheiro do prêmio nos jogos; aqui o prêmio sai da rota, então ele entra nesta lista.) */
   splash: { semEfeitoReal: true }, celebrate: { semEfeitoReal: true }, 'happy-hour': { semEfeitoReal: true },
   // Refresh limpa o PRÓPRIO status: é o `curaStatus` que o Heal Bell já usa, só que o `target` é `user`
-  refresh: { curaStatus: true }
+  refresh: { curaStatus: true },
+
+  /* ---- 🎭 usar o golpe de OUTRO (golpe.usarCopia) ----
+     `copia: de-onde` roda um golpe que NÃO é o escolhido. O objeto do golpe sai sempre do moveset de ALGUÉM em
+     campo (`golpe.golpeDeNome`) — nunca de uma busca nova na rede, que é o que faria Metronome e Nature Power
+     dependerem de internet no meio do turno. Quem já usou um golpe deixa o NOME em `vol.ultimo` (o mesmo campo
+     que Encore e Disable leem), e o objeto está no moveset dele: é só procurar.
+       ultimoDoAlvo    o último golpe do alvo (Mirror Move: exige a flag `mirror`; Mimic/Sketch copiam pro seu)
+       ultimoDaLuta    o último golpe usado por QUALQUER UM (Copycat) — `campo.ultimo`
+       meusOutros      um dos SEUS outros golpes, sorteado (Sleep Talk)
+       dosAliados      um golpe de um companheiro, sorteado (Assist)
+       doCampo         qualquer golpe que alguém em campo saiba, sorteado (Metronome)
+       escolhidoDoAlvo o golpe que o alvo IA usar neste turno, ×1,5 de poder (Me First)
+     `repete` = o ALVO usa o último golpe dele de novo, agora (Instruct).
+     `soNoSono` = o golpe só funciona dormindo, e por isso FURA a trava de sono (Sleep Talk, Snore). */
+  mimic: { copia: 'ultimoDoAlvo', guardaNoSlot: true },
+  sketch: { copia: 'ultimoDoAlvo', guardaNoSlot: 'permanente' },
+  'mirror-move': { copia: 'ultimoDoAlvo', exigeFlag: 'mirror' },
+  copycat: { copia: 'ultimoDaLuta' },
+  'sleep-talk': { copia: 'meusOutros', soNoSono: true },
+  snore: { soNoSono: true },                      // golpe de DANO que só sai dormindo (o poder 50 já vem da API)
+  assist: { copia: 'dosAliados' },
+  metronome: { copia: 'doCampo' },
+  'me-first': { copia: 'escolhidoDoAlvo', mult: 1.5 },
+  instruct: { repete: true },
+  'nature-power': { copia: 'doTerreno' },
+  transform: { transforma: true },
+
+  /* ---- 🪆 Substituto ----
+     `substituto: fração` = paga essa fração do HP MÁXIMO e põe um boneco com esse tanto de HP (`vol.substituto`).
+     Enquanto ele estiver de pé, golpe de fora bate NELE e golpe de status não passa — a não ser que o golpe tenha
+     a flag `authentic` (é a flag "ignora substituto" da própria PokéAPI) ou quem usa tenha Infiltrator. */
+  substitute: { substituto: 1 / 4 },
+  'shed-tail': { substituto: 1 / 2, revezamento: true },
+
+  /* ---- 🧠 trocar HABILIDADE ----
+     Todas escrevem em `m.ability` e guardam a antiga em `m.abilityAntes` — o MESMO caminho do Trace e do Mummy,
+     então `golpe.desfazerTrace` (já chamado no `endBattle`) desfaz de graça. Gastro Acid é o único que não troca
+     nada: ele liga `vol.semHabilidade`, que `habilidades.hab` lê — assim a habilidade volta ao sair de campo e
+     nada precisa ser desfeito no save. */
+  'role-play': { copiaHabilidade: 'doAlvo' },     // quem usa fica com a do alvo
+  entrainment: { copiaHabilidade: 'proAlvo' },    // o alvo fica com a de quem usa
+  doodle: { copiaHabilidade: 'doAlvoProLado' },   // quem usa E os companheiros ficam com a do alvo
+  'skill-swap': { trocaHabilidade: true },
+  'simple-beam': { poeHabilidade: 'simple' },
+  'worry-seed': { poeHabilidade: 'insomnia' },
+  'gastro-acid': { anulaHabilidade: true }
+};
+
+/* 🌿 Nature Power vira um golpe diferente conforme o chão (`regras.terrenoDe`). Os cinco são TABELA e não busca
+   na PokéAPI de propósito: são dados que **não mudam** (tipo, poder e precisão desses golpes são os mesmos desde
+   que existem), e a alternativa seria uma busca de rede no meio do turno — justo o que a armadilha "busca não
+   essencial não pode derrubar o fluxo" manda evitar. É a mesma decisão de `dados-golpe-flags.GOLPE_AREA`.
+   O `null` é "sem terreno nenhum", que nos jogos é Tri Attack. */
+export const GOLPE_DO_TERRENO = {
+  null: { name: 'tri-attack', type: 'normal', cls: 'special', power: 80, acc: 100, pp: 10, priority: 0, target: 'selected-pokemon', stats: [], meta: { ailment: 'unknown', ailChance: 20 } },
+  eletrico: { name: 'thunderbolt', type: 'electric', cls: 'special', power: 90, acc: 100, pp: 15, priority: 0, target: 'selected-pokemon', stats: [], meta: { ailment: 'paralysis', ailChance: 10 } },
+  grama: { name: 'energy-ball', type: 'grass', cls: 'special', power: 90, acc: 100, pp: 10, priority: 0, target: 'selected-pokemon', stats: [{ stat: 'special-defense', change: -1 }], meta: { statChance: 10 } },
+  fada: { name: 'moonblast', type: 'fairy', cls: 'special', power: 95, acc: 100, pp: 15, priority: 0, target: 'selected-pokemon', stats: [{ stat: 'special-attack', change: -1 }], meta: { statChance: 30 } },
+  psiquico: { name: 'psychic', type: 'psychic', cls: 'special', power: 90, acc: 100, pp: 10, priority: 0, target: 'selected-pokemon', stats: [{ stat: 'special-defense', change: -1 }], meta: { statChance: 10 } }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

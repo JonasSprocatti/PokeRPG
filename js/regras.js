@@ -809,6 +809,16 @@ export function melhorGolpe(moves, tiposAtacante, tiposAlvo) {
 export const TRAVAS = ['provocar', 'encore', 'disable', 'tormento'];
 export const TURNOS_TRAVA = { provocar: 3, encore: 3, disable: 4 };
 const SEM_ENCORE = new Set(['encore', 'mimic', 'transform', 'sketch', 'mirror-move', 'me-first', 'struggle']);
+/* 🎭 Golpe que NÃO pode ser copiado nem sorteado por outro golpe de cópia. Dois motivos juntos: os jogos
+   excluem a maioria deles de Metronome/Mimic/Copycat, e aqui eles são também a trava contra RECURSÃO — um
+   Metronome que sorteia Metronome, ou um Mirror Move copiando o Mirror Move do outro, não tem fim.
+   `struggle` entra porque não é golpe de verdade; os de dois turnos entram porque a cópia não carrega
+   (`golpe.usarCopia` executa na hora — é a simplificação consciente do sistema de cópia). */
+export const SEM_COPIA = new Set(['struggle', 'metronome', 'mimic', 'sketch', 'mirror-move', 'copycat',
+  'sleep-talk', 'assist', 'me-first', 'instruct', 'nature-power', 'transform',
+  'fly', 'dig', 'dive', 'bounce', 'phantom-force', 'shadow-force', 'sky-drop', 'solar-beam', 'solar-blade',
+  'skull-bash', 'razor-wind', 'sky-attack', 'meteor-beam', 'freeze-shock', 'ice-burn', 'electro-shot']);
+export const podeCopiar = nome => !!nome && !SEM_COPIA.has(nome);
 
 // Por que `g` NÃO pode ser usado por `m` agora — { causa, texto } — ou null se pode. Struggle nunca é bloqueado.
 export function motivoBloqueio(m, g) {
@@ -919,6 +929,7 @@ export function notaDoGolpe(g, c) {
     if (ef === 0 || ht.imuneTipo === g.type || ht.absorve === g.type) return IMPOSSIVEL;      // imune, ou ainda cura o alvo
     if (ht.imuneFlag && temFlag(g, ht.imuneFlag)) return IMPOSSIVEL;                          // Soundproof, Bulletproof
     if (esp.soDormindo && alvo.status !== 'sleep') return IMPOSSIVEL;
+    if (esp.soNoSono && u.status !== 'sleep') return IMPOSSIVEL;      // Snore: só sai dormindo
     if (esp.soPrimeiroTurno && u.vol?.golpesDados) return IMPOSSIVEL;
     if (esp.ohko) return u.level < alvo.level ? IMPOSSIVEL : Math.min(90, 30 + u.level - alvo.level) * 0.9;
     /* 💥 Dano FIXO: `calcDamage` não sabe calcular estes (o poder é 0 ou mentira), então a nota sai do dano de
@@ -1026,6 +1037,28 @@ export function notaDoGolpe(g, c) {
   if (esp.copiaEstagios) return estagiosPositivos(alvo) >= 2 ? 32 : IMPOSSIVEL;
   if (esp.inverteEstagios) return estagiosPositivos(alvo) >= 2 ? 34 : IMPOSSIVEL;
   if (esp.trocaEstagios || esp.trocaProprios || esp.trocaStat || esp.mediaStat) return 8;    // situacional demais pra IA julgar: usa pouco
+  /* 🪆🎭🧠 A leva de cópia, substituto e habilidade. O cuidado aqui é o de sempre: a nota diz **quando o golpe
+     não tem o que fazer** (`IMPOSSIVEL`), senão a IA gasta o turno pondo um segundo substituto ou copiando o
+     nada. Nenhum deles vale mais que um bom golpe de dano — são jogadas de preparo. */
+  if (esp.substituto) return u.vol?.substituto > 0 || u.hp <= u.stats.hp * esp.substituto ? IMPOSSIVEL : frac(u) > 0.8 ? 38 : 6;
+  if (esp.transforma) return u.vol?.transformado || alvo.vol?.transformado ? IMPOSSIVEL : 26;
+  if (esp.repete) return alvo.vol?.ultimo ? 10 : IMPOSSIVEL;                                 // Instruct faz o INIMIGO repetir: pra IA, pouco
+  if (esp.anulaHabilidade) return alvo.vol?.semHabilidade ? IMPOSSIVEL : Object.keys(ht).length ? 22 : 3;
+  if (esp.trocaHabilidade || esp.copiaHabilidade || esp.poeHabilidade) {
+    // só vale se houver habilidade de verdade em jogo: trocar "nada" por "nada" é turno jogado fora
+    const minha = Object.keys(hu).length, dele = Object.keys(ht).length;
+    if (esp.poeHabilidade) return dele ? 20 : 2;
+    if (esp.copiaHabilidade === 'proAlvo') return minha && !dele ? 14 : 2;                    // Entrainment: dar a sua pra ele
+    return dele > minha ? 24 : 3;                                                            // Role Play / Skill Swap / Doodle
+  }
+  if (esp.copia) {
+    if (esp.soNoSono) return u.status === 'sleep' ? 40 : IMPOSSIVEL;                          // Sleep Talk só dormindo
+    if (esp.copia === 'ultimoDoAlvo') return podeCopiar(alvo.vol?.ultimo) ? (esp.guardaNoSlot ? 16 : 30) : IMPOSSIVEL;
+    if (esp.copia === 'ultimoDaLuta') return podeCopiar(campo?.ultimo) ? 28 : IMPOSSIVEL;
+    if (esp.copia === 'escolhidoDoAlvo') return alvo.vol?.golpeEscolhido?.cls === 'status' ? IMPOSSIVEL : 34;
+    if (esp.copia === 'dosAliados') return (c.aliados || 0) ? 20 : IMPOSSIVEL;
+    return 22;                                                                               // Metronome, Nature Power: sempre têm algo
+  }
   if (esp.autoDesmaio) return -60;
   if (esp.clima) {
     if (clima === esp.clima) return IMPOSSIVEL;

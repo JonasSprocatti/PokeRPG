@@ -3964,3 +3964,138 @@ O conserto são duas frases, nenhuma mecânica nova:
 
 **Por que não "deixar o bebê cruzar"**: seria inventar regra, não portar. A fidelidade aqui é o que faz o jogador
 que conhece os jogos reconhecer o sistema — e quem não conhece agora **aprende pela tela**, que é o lugar certo.
+
+## 🎭 Cópia, Substituto e troca de habilidade — as três famílias caras (13/10/2026)
+
+As três que a leva anterior deixou de fora por serem "sistema, não tabela". O pedido veio no mesmo dia, e o
+levantamento continuou sendo o juiz: **82 → 62 golpes sem efeito**, 21 fechados (20 da lista + o Snore, que
+nunca esteve nela — ele TINHA efeito e era engolido por uma trava, o que é pior).
+
+### 🎭 Copiar golpe alheio: o problema era de onde vem o OBJETO
+
+Mimic, Metronome, Mirror Move, Copycat, Sleep Talk, Assist, Nature Power, Me First, Instruct e Transform têm um
+problema só em comum: **executar um golpe que não é o escolhido**. O que faltava não era a execução — era o
+objeto do golpe, com tipo, poder, `meta` e PP. `vol.ultimo` guarda só o NOME.
+
+**A virada**: o objeto nunca precisa de busca nova. *Quem usou um golpe sabe esse golpe, e o moveset dele está em
+campo.* `golpeDeNome(nome, donos)` procura o nome nos movesets de quem for candidato, e com isso Mirror Move,
+Copycat, Instruct, Mimic e Sketch saem de graça; Metronome e Assist sorteiam no mesmo lugar.
+
+| golpe | de onde vem | candidatos |
+|---|---|---|
+| Mirror Move, Mimic, Sketch | `t.vol.ultimo` | o alvo |
+| Copycat | `campo.ultimo` | todos em campo |
+| Instruct | `t.vol.ultimo` | o alvo (e é **ele** quem age) |
+| Sleep Talk | sorteio | os seus outros golpes |
+| Assist | sorteio | os companheiros |
+| Metronome | sorteio | todos em campo |
+| Me First | `t.vol.golpeEscolhido` | — (×1,5 de poder) |
+| Nature Power | `GOLPE_DO_TERRENO` | — (tabela) |
+
+**`usarCopia` NÃO é uma chamada recursiva de `usarGolpe`**, e isso é a decisão central. O golpe de cópia já
+passou por tudo o que decide "consigo agir?" (sono, paralisia, recuo, confusão, travas) e já gastou o próprio PP
+— repetir aquele bloco faria o **Sleep Talk falhar na trava de sono que ele existe pra furar**. `usarCopia` é o
+MIOLO de `usarGolpe`: anuncia, marca o `ultimo` e chama `executar` por alvo, que é a porta única de todo efeito.
+São 12 linhas. O que ela deixa de fora, consciente: golpe de dois turnos **não carrega** (sai na hora) — e é por
+isso que Fly, Dig, Solar Beam & cia. estão em `SEM_COPIA` junto dos golpes de cópia.
+
+**`regras.SEM_COPIA` é a trava de recursão e a regra dos jogos ao mesmo tempo.** Metronome sorteando Metronome,
+ou dois Mirror Moves se espelhando, não têm fim; e os jogos já excluem a maioria desses de Metronome/Mimic. Uma
+lista serve às duas coisas.
+
+**Dois defeitos achados pelos próprios testes:**
+
+- **Copycat copiava a si mesmo.** `usarGolpe` grava `campo.ultimo = g.name` ANTES de `statusEspecial` rodar — e
+  o Copycat lia esse campo três linhas depois, dentro do mesmo turno. O conserto não foi mudar a ordem: foi
+  **golpe de cópia não entrar na memória da luta** (`if (podeCopiar(g.name))`), que é a regra dos jogos de todo
+  jeito e fecha o furo num lugar só.
+- **Worry Seed e Simple Beam miravam em quem usou.** O `quem` lia `esp.copiaHabilidade`, que nesses dois é
+  `undefined` — caía no `[u]` do fim. `poeHabilidade` entrou na mesma condição de `proAlvo`.
+
+**Nature Power virou TABELA, não busca.** Os 5 golpes (Tri Attack · Thunderbolt · Energy Ball · Moonblast ·
+Psychic) têm tipo, poder e precisão que **não mudam desde que existem**, e a alternativa era uma chamada de rede
+no meio do turno — justo o que a armadilha "busca não essencial não pode derrubar o fluxo" manda evitar. É a
+mesma decisão de `dados-golpe-flags.GOLPE_AREA`.
+
+**Metronome tem um teto consciente**: ele sorteia entre os golpes que **alguém em campo sabe**, não entre os ~900
+do jogo. Rolar um id aleatório pediria rede a cada uso (cache miss garantido), poderia cair num Z-Move ou num Max
+Move, e quebraria offline. Com 8 a 24 golpes em campo a imprevisibilidade continua de pé, o dado é sempre
+correto, e nunca falha. Está marcado com `ponytail:` no código.
+
+**Snore era um bug silencioso, não um efeito faltando.** Ele tem poder 50 e `meta` completo — nunca apareceu no
+levantamento. Mas a trava de sono do topo de `usarGolpe` devolvia "está dormindo profundamente" antes de ele
+sair, então o golpe era inutilizável e **nada na tela dizia isso**. Uma condição (`soNoSono`) consertou ele e
+habilitou o Sleep Talk de uma vez.
+
+### 🪆 Substituto: um ponto só, e um `return`
+
+O medo era que o boneco fosse uma camada que **todo** efeito tivesse de consultar — status, dreno, recuo,
+contato, roubo de item, saída forçada. Não é, porque `executar` é a porta única: uma condição no topo dele, com
+`return`, já garante tudo de uma vez.
+
+```
+golpe de status  → "o substituto bloqueia o golpe"
+golpe de dano    → bate no boneco; o excesso ao estourar se PERDE
+```
+
+Quem atravessa é quem tem a flag **`authentic`** da PokéAPI (a flag "ignora substituto" — Snore, Heal Bell e os
+golpes de troca de habilidade já vêm marcados, sem lista nossa) e quem tem **Infiltrator** (`atravessaTelas`, a
+mesma habilidade que fura tela e salvaguarda). O boneco mora em `vol.substituto`, então morre sozinho ao sair de
+campo e no fim da batalha — zero migração, zero desfazer.
+
+**Shed Tail saiu junto, de graça**: `{ substituto: 1/2, revezamento: true }`. O `revezamento` já existia e
+`usarGolpe` o resolve depois do retorno de `statusEspecial`.
+
+**O teto consciente**: recuo e dreno não contam o dano feito ao boneco (nos jogos contam). É o único efeito de
+QUEM ATACA que o `return` engole junto, e replicá-lo custaria repetir o bloco de dano inteiro. Marcado com
+`ponytail:`.
+
+### 🧠 Trocar habilidade: quase tudo já existia
+
+Role Play, Skill Swap, Entrainment, Doodle, Simple Beam e Worry Seed escrevem em `m.ability` guardando a antiga
+em `m.abilityAntes` — **o mesmo caminho do Trace e do Mummy**, que `golpe.desfazerTrace` (já chamado no
+`endBattle`) desfaz. A família custou um ajudante de três linhas.
+
+**Gastro Acid é o único que não troca nada.** Ele liga `vol.semHabilidade`, e `habilidades.hab` lê:
+
+```js
+export const hab = m => m?.vol?.semHabilidade ? {} : HABILIDADES[m?.ability] || {};
+```
+
+Uma linha, no ponto por onde **toda** leitura de habilidade do jogo passa — então a anulação vale em tudo de uma
+vez. Melhor que `m.ability = null` por três razões: morre sozinho ao sair de campo (que é a regra dos jogos),
+não encosta no save, e **a ficha continua mostrando qual habilidade o Pokémon tem**, que é a informação certa
+pra quem olha.
+
+**`ABILIDADE_TRAVADA` virou `TRAVADAS` (um Set) e ganhou `forecast`.** Stance Change já estava barrada do
+Trace/Mummy porque é mecânica do motor (a troca de forma do Aegislash); a do Castform entrou pelo mesmo motivo —
+e porque o Transform, que copia a habilidade do alvo, usa a MESMA caixa `formaBase` que o Castform. Copiar
+Forecast faria `ajustarForma` reescrever os tipos de um Pokémon transformado no meio da luta.
+
+### 🎭 Transform: três caixas que já estavam prontas
+
+Transform copia tipos, atributos (menos o HP), habilidade, sprite e os 4 golpes com 5 PP. Nada disso mexe em
+`m.data` direto — aquele objeto vem do cache e é **compartilhado por toda a espécie**:
+
+| o que copia | onde guarda o original | quem desfaz |
+|---|---|---|
+| tipos e sprite | `m.formaBase` (a caixa do Castform) | `desfazerForma`, já no `endBattle` |
+| atributos | `m.statsAntes` | `desfazerCopia` (novo) |
+| moveset | `m.movesAntes` (o mesmo do Mimic) | `desfazerCopia` (novo) |
+| habilidade | `m.abilityAntes` (a caixa do Trace) | `desfazerTrace`, já no `endBattle` |
+
+`desfazerCopia` é a única peça nova, e entra na MESMA linha do `endBattle` que já desfazia Mega, Tera, Dynamax,
+Forma, Ash-Greninja e Trace. **Sketch é o único de propósito permanente** — é a razão de existir do Smeargle —, e
+por isso nem passa por lá: grava no save e pronto.
+
+### O que ficou de fora destas três famílias
+
+- **Magic Coat e Snatch** (refletir/roubar o golpe de status alheio): não são "usar outro golpe", são
+  **interceptar o golpe do outro antes de ele resolver**. Precisariam de um gancho na fila de ações, que é o
+  mesmo que falta pro After You e pro Instruct de verdade (o nosso faz o alvo repetir, mas fora da ordem).
+- **Transform copiando Mega/Tera/Dynamax** do alvo: a cópia leva os atributos JÁ transformados (o que é certo),
+  mas não a gimmick em si. Virar um Charizard Mega Y por Transform exigiria rodar `mega.js` num Ditto.
+- **Imprison** (proíbe os golpes que VOCÊ também sabe): é da família de `motivoBloqueio` e caberia bem, mas a
+  trava precisa ler o moveset do OUTRO lado — e `motivoBloqueio(m, g)` é puro e recebe só um Pokémon.
+- **Substituto com Baton Pass / Shed Tail passando o boneco pra quem cobre**: o `revezamento` tira quem usou e
+  põe um aliado, e o boneco fica com quem saiu. Transferi-lo exigiria `forcarSaida` devolvendo QUEM entrou.

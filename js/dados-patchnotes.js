@@ -13,6 +13,22 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '7.1', data: '2026-10-13', titulo: '🎭 Metronome, Transform e Substituto chegaram', piada: 'O Ditto passou o jogo inteiro usando Transform, que até ontem fazia exatamente nada — ou seja, ele se transformava em si mesmo, com sucesso, todas as vezes. Tecnicamente nunca falhou. Agora ele vira o inimigo de verdade, copia os golpes dele e descobre que ser um Gyarados é bem melhor que ser uma gosma.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🪆 Substituto.</b> <b>Substitute</b> gasta 1/4 do seu HP máximo e põe um boneco no seu lugar: enquanto ele estiver de pé, <b>o golpe do inimigo bate nele</b>, e golpe de status <b>não passa</b> — nem paralisia, nem queda de atributo, nem Leech Seed, nem roubo de item, nem ser arrastado pra fora. O dano que sobra quando ele estoura <b>se perde</b>. Quem fura: golpe sonoro e companhia (os que ignoram substituto nos jogos) e quem tem <b>Infiltrator</b>. <b>Shed Tail</b> veio junto: custa metade do HP e você sai de campo com um aliado cobrindo.',
+        '<b>🎭 Usar o golpe do outro.</b> <b>Metronome</b> sorteia um golpe na hora, <b>Mirror Move</b> devolve o último golpe do inimigo, <b>Copycat</b> repete o último golpe usado na luta por qualquer um, <b>Assist</b> pega um golpe de um companheiro, <b>Me First</b> rouba o golpe que o inimigo <b>ia usar</b> neste turno e bate com ele <b>50% mais forte</b>, e <b>Instruct</b> obriga o inimigo a <b>repetir</b> o golpe dele na hora.',
+        '<b>😴 Sleep Talk e Snore funcionam dormindo</b> — que é o único momento em que eles deveriam funcionar e justamente o momento em que o jogo dizia "está dormindo profundamente" e engolia o seu turno. Sleep Talk sorteia um dos seus outros golpes; Snore bate normal. Acordado, os dois falham e <b>dizem que só funcionam dormindo</b>.',
+        '<b>📝 Mimic e Sketch.</b> <b>Mimic</b> copia o último golpe do inimigo pro seu slot <b>até o fim da batalha</b> (com 5 PP). <b>Sketch</b> copia <b>para sempre</b> — é por isso que o Smeargle existe, e agora ele funciona: o golpe fica com você depois da luta, no save.',
+        '<b>🌿 Nature Power</b> vira um golpe diferente conforme o chão: Tri Attack sem terreno, <b>Thunderbolt</b> no campo elétrico, <b>Energy Ball</b> na grama, <b>Moonblast</b> na névoa e <b>Psychic</b> no campo psíquico.',
+        '<b>🎭 Transform.</b> Você vira uma <b>cópia do inimigo</b>: os tipos dele, os atributos dele, a habilidade dele, a cara dele e os 4 golpes dele com 5 PP cada. O <b>HP continua o seu</b>, como nos jogos. Tudo volta ao normal no fim da batalha.',
+        '<b>🧠 Trocar habilidade.</b> <b>Role Play</b> copia a do inimigo, <b>Entrainment</b> impõe a sua a ele, <b>Skill Swap</b> troca as duas, <b>Doodle</b> dá a do inimigo pra você <b>e pros companheiros</b>, <b>Simple Beam</b> e <b>Worry Seed</b> trocam a dele por Simple e Insomnia, e <b>Gastro Acid</b> <b>anula</b> a habilidade dele até ele sair de campo — aquele Gengar com Levitate passa a levar golpe de Terra.'
+      ] },
+      { nome: 'Correções', itens: [
+        'A <b>habilidade anulada</b> pelo Gastro Acid continua aparecendo na ficha, com o nome e tudo: o que ela deixa de ter é <b>efeito</b>. Esconder o nome seria tirar informação de quem está olhando.',
+        'Habilidade que é <b>mecânica do jogo</b> (a troca de forma do Aegislash e a do Castform) não pode ser copiada, trocada nem anulada — esses golpes falham nela de propósito, em vez de embaralhar a forma no meio da luta.'
+      ] }
+    ] },
   { versao: '7.0', data: '2026-10-13', titulo: '🪐 Mais 39 golpes saíram do "será ajustado"', piada: 'Um jogador reclamou que o Gravity não fazia nada. Ele estava certo: o golpe anunciava que a gravidade ficava intensa e em seguida absolutamente nada acontecia, o que é uma descrição razoável de como a física funciona quando ninguém está olhando. Agora o Pokémon que flutua cai no chão, leva golpe de Terra e descobre que o Earthquake sempre esteve esperando por ele.',
     secoes: [
       { nome: 'Novidades', itens: [
