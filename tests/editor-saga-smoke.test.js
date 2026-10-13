@@ -118,8 +118,9 @@ test('mapa: criar, redimensionar, desfazer, objeto com variantes, e as outras ta
   tela.acao('variante-subir'); tela.acao('variante', '1'); tela.acao('variante-excluir');
   assert.ok(!Array.isArray(R().MAPAS.pedralume.objs.W));
   tela.acao('ligar'); tela.acao('ligar-cancelar'); tela.acao('obj-soltar');
+  const capitulos = R().CAPITULOS.length;
   for (const a of ['missao-nova', 'item-novo', 'dom-novo', 'cap-novo']) tela.acao(a);
-  assert.ok(R().MISSOES.missao && R().ITENS.item && R().DONS.dom && R().CAPITULOS.length === 4);
+  assert.ok(R().MISSOES.missao && R().ITENS.item && R().DONS.dom && R().CAPITULOS.length === capitulos + 1);
   tela.acao('etapa-nova', undefined, { c: JSON.stringify(['MISSOES', 'missao', 'etapas']) });
   tela.acao('aba', 'coisas'); tela.acao('aba', 'missoes');
 });

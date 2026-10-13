@@ -16,10 +16,10 @@ import { rotulo } from './estado.js';
 import { SPR } from './dados.js';
 import { esc } from './util.js';
 import { urlDeImagem } from './mp-sanear.js';
-import { TILES, TEMAS, NPCS, FACCOES, ITENS_SAGA, DONS } from './dados-saga.js';
+import { TILES, TEMAS, NPCS, FACCOES, ITENS_SAGA, DONS, MAPAS_SAGA, CAPITULOS } from './dados-saga.js';
 import { ATLAS, ARTE, BLOBS, PROPS, GENTE } from './dados-saga-arte.js';
 import { desenhoDaCasa, propDaCasa } from './saga-arte.js';
-import { estadoSaga, mapaDe, capituloDe, objetoEm, tileEm, bauAberto, diario, temFaro, marcaDoNpc, camera } from './saga-mundo.js';
+import { estadoSaga, mapaDe, capituloDe, objetoEm, tileEm, bauAberto, diario, temFaro, marcaDoNpc, camera, cartaDoCapitulo, corDaCasa, capitulosVistos } from './saga-mundo.js';
 
 export const TAB_ARTE = { TILES, TEMAS, ARTE, BLOBS };
 export const MS_PASSO = 170;                 // quanto dura o deslize de uma casa (o CSS lê o mesmo número em --passo)
@@ -49,6 +49,10 @@ export function htmlCorpo(sprite, nome, cls = '') {
     return `<i class="sombra"></i><span class="vira"><img class="bicho ${cls}" src="${SPR(sprite)}" alt="${esc(nome)}" title="${esc(nome)}" draggable="false"></span>`;
   return '<b class="marca perigo">?</b>';
 }
+/* A figura de quem não tem espécie fixa: '@alfa' = o Alfa da rota daquele mapa; '@antigo' = o lendário principal
+   da Gen (o último da lista da rota final) — sejam eles quem forem nesta Gen. O resto é o que está escrito. */
+export const antigoDasRotas = rotas => rotas?.find(z => z.lendarios?.length)?.lendarios.at(-1)?.id;
+export const figuraDe = (sprite, mapa, rotas) => sprite === '@alfa' ? rotas?.[mapa?.rota]?.chefe?.id : sprite === '@antigo' ? antigoDasRotas(rotas) : sprite;
 const ator = (x, y, dentro, cls = '', extra = '') => `<div class="ator ${cls}" style="--x:${x};--y:${y};z-index:${y * 2}" ${extra}>${dentro}</div>`;
 
 function htmlObjeto(S, mapa, o, x, y, rotas) {
@@ -56,13 +60,13 @@ function htmlObjeto(S, mapa, o, x, y, rotas) {
   if (o.npc) {
     const n = NPCS[o.npc], m = n && marcaDoNpc(S, o.npc);
     if (!n) return '';
-    // '@alfa' = o Alfa da rota deste mapa, seja ele quem for nesta Gen
-    const figura = n.sprite === '@alfa' ? rotas?.[mapa.rota]?.chefe?.id : n.sprite;
-    return ator(x, y, `${dentro}${htmlCorpo(figura, n.nome, n.sprite === '@alfa' ? 'alfa' : '')}${m ? `<b class="marca ${m === '?' ? 'entrega' : ''}">${m}</b>` : ''}`, 'npc', `data-npc="${esc(o.npc)}"`);
+    const grande = n.sprite === '@alfa' || n.sprite === '@antigo';
+    return ator(x, y, `${dentro}${htmlCorpo(figuraDe(n.sprite, mapa, rotas), n.nome, grande ? 'alfa' : '')}${m ? `<b class="marca ${m === '?' ? 'entrega' : ''}">${m}</b>` : ''}`, 'npc', `data-npc="${esc(o.npc)}"`);
   }
   if (o.inimigo) {
     const z = rotas?.[mapa.rota], tipo = o.inimigo.tipo;
     const corpo = tipo === 'alfa' ? htmlCorpo(z?.chefe?.id, z?.chefe ? `Alfa: ${z.chefe.nome}` : 'Alfa', 'alfa')
+      : tipo === 'antigos' ? htmlCorpo(antigoDasRotas(rotas), 'Os Antigos', 'alfa')
       : tipo === 'treinador' ? htmlCorpo(o.inimigo.sprite || 'cacador', 'Caçador')
       : htmlCorpo(z?.pool?.[0]?.id, 'Bando', 'vulto');
     return ator(x, y, `${dentro}${corpo}<b class="marca perigo">⚔</b>`, 'inimigo');
@@ -98,7 +102,7 @@ function htmlHud(S, sprite, dis, gaveta, nome) {
   return `<div class="saga-hud">
       <div class="hud-topo">
         <div class="hud-equipe">${[S.player, ...(S.aliados || [])].filter(Boolean).map(placa).join('')}</div>
-        <span class="hud-local">📍 ${textoSeguro(mapa.nome)}${cap ? `<small>Capítulo ${Number(cap.n) || 0} · ${textoSeguro(cap.regiao)}</small>` : ''}</span>
+        <button class="hud-local" data-act="saga-mapa" title="Abrir o mapa da região" aria-label="Você está em ${textoSeguro(mapa.nome)}. Abrir o mapa da região." ${dis}>🗺 ${textoSeguro(mapa.nome)}${cap ? `<small>Capítulo ${Number(cap.n) || 0} · ${textoSeguro(cap.regiao)}</small>` : ''}</button>
       </div>
       <button class="hud-missao" data-act="saga-diario" ${dis}>${ativa ? `📜 <b>${textoSeguro(ativa.nome)}</b><span>${textoSeguro(ativa.texto)}</span>` : '📖 <span>Nenhuma missão em andamento. Converse com quem mora aqui.</span>'}</button>
       <div class="hud-base">
@@ -319,6 +323,58 @@ export function htmlDiario(S) {
     ${dons.some(k => DONS[k]) ? sec('Dons', dons.filter(k => DONS[k]).map(k => linha(DONS[k].emoji, DONS[k].nome, DONS[k].desc)).join('')) : ''}
     ${sec('Reputação', `<p class="small">${Object.entries(FACCOES).map(([k, f]) => `${esc(f.emoji)} ${textoSeguro(f.nome)}: <b>${s.rep[k] > 0 ? '+' : ''}${Number(s.rep[k]) || 0}</b>`).join(' · ')}</p>`)}
     <p class="small muted saga-creditos">Arte do mapa: Liberated Pixel Cup — Lanea Zimmerman, Stephen Challener e outros (CC-BY-SA 3.0). Créditos completos em img/saga/CREDITOS.txt.</p>
+  </div>`;
+}
+/* ---- 🗺 a carta da região (também vai na caixa `ui.ask`) ----
+   O capítulo desenhado de cima: cada mapa é uma MINIATURA (uma casa = um quadradinho, na cor do tile) no lugar
+   que `saga-mundo.cartaDoCapitulo` tirou das portas. Onde você ainda não pisou aparece só como um vulto com "?" —
+   dá pra ver que existe (e mais ou menos onde), não o que é nem por onde se entra: caminho entre dois lugares só
+   é traçado quando os DOIS já foram visitados, e porta só é marcada quando leva a um lugar conhecido. É o que faz
+   a Clareira do Sineiro ser um vulto ao norte do bosque desde o primeiro dia, sem entregar a árvore falsa.
+   É um SVG de texto (um <path> por cor, as casas emendadas em tiras): não precisa de canvas nem de esperar o
+   HTML entrar na página, e fica nítido em qualquer tamanho de tela. */
+function miniatura(mapa, ox, oy) {
+  const porCor = new Map();
+  for (let y = 0; y < mapa.grade.length; y++) {
+    let ini = 0, cor = null;
+    for (let x = 0; x <= mapa.grade[y].length; x++) {
+      const c = x < mapa.grade[y].length ? corDaCasa(mapa, x, y) : null;
+      if (c === cor) continue;
+      if (cor !== null) porCor.set(cor, (porCor.get(cor) || '') + `M${ox + ini} ${oy + y}h${x - ini}v1h${ini - x}z`);
+      cor = c; ini = x;
+    }
+  }
+  return [...porCor].map(([cor, d]) => `<path fill="${cor}" d="${d}"/>`).join('');
+}
+export function htmlCarta(S, idCap) {
+  const s = estadoSaga(S), cap = CAPITULOS.find(c => c.id === idCap) || capituloDe(mapaDe(S)) || CAPITULOS[0];
+  const carta = cartaDoCapitulo(cap.id), visto = id => !!s.vistos[id], vistos = capitulosVistos(S);
+  const M = 2, u = Math.max(carta.w + M * 2, (carta.h + M * 2) * 1.25) / 46;      // `u` = o tamanho de um selo, pra ele ter o mesmo tamanho na tela em qualquer região
+  // o número fica no CANTO do lugar visitado (no meio ele taparia a miniatura); o "?" do vulto, no meio
+  const selo = (l, i) => { const v = visto(l.id), x = v ? l.x + u : l.x + l.w / 2, y = v ? l.y + u : l.y + l.h / 2;
+    return `<g class="carta-selo"><circle cx="${x}" cy="${y}" r="${u * 1.2}"/><text x="${x}" y="${y}" font-size="${u * 1.6}">${v ? i + 1 : '?'}</text></g>`; };
+  const lugares = carta.lugares.map((l, i) => visto(l.id)
+    ? `<g class="carta-lugar${l.id === s.mapa ? ' aqui' : ''}">${miniatura(MAPAS_SAGA[l.id], l.x, l.y)}<rect class="carta-borda" x="${l.x}" y="${l.y}" width="${l.w}" height="${l.h}"/></g>`
+    : `<rect class="carta-fechado" x="${l.x}" y="${l.y}" width="${l.w}" height="${l.h}" rx="${u * .8}"/>`).join('');
+  const vias = carta.ligacoes.filter(v => visto(v.de) && visto(v.para)).map(v => `<line class="carta-via" x1="${v.x1}" y1="${v.y1}" x2="${v.x2}" y2="${v.y2}"/>`).join('');
+  // portas conhecidas: as que ligam dois lugares visitados, e as saídas pra OUTRA região (de um lugar visitado)
+  const portas = [...carta.ligacoes.filter(v => visto(v.de) && visto(v.para)).flatMap(v => [[v.x1, v.y1], [v.x2, v.y2]]),
+    ...carta.saidas.filter(p => visto(p.de)).map(p => [p.x + .5, p.y + .5])]
+    .map(([x, y]) => `<rect class="carta-porta" x="${x - u * .45}" y="${y - u * .45}" width="${u * .9}" height="${u * .9}" transform="rotate(45 ${x} ${y})"/>`).join('');
+  const aqui = carta.lugares.find(l => l.id === s.mapa);
+  const eu = aqui ? `<circle class="carta-eu" cx="${aqui.x + s.x + .5}" cy="${aqui.y + s.y + .5}" r="${u * .6}"/>` : '';
+  const saidas = [...new Set(carta.saidas.filter(p => visto(p.de)).map(p => MAPAS_SAGA[p.para]?.cap))].map(id => CAPITULOS.find(c => c.id === id)).filter(Boolean);
+  const legenda = carta.lugares.map((l, i) => visto(l.id)
+    ? `<li class="${l.id === s.mapa ? 'aqui' : ''}"><b>${i + 1}</b> ${textoSeguro(MAPAS_SAGA[l.id].nome)}${l.id === s.mapa ? ' <span>📍 você está aqui</span>' : ''}</li>`
+    : '<li class="fechado"><b>?</b> ??? <span>você ainda não passou por aqui</span></li>').join('');
+  const falta = carta.lugares.filter(l => !visto(l.id)).length;
+  return `<div class="saga-carta">
+    <h3>🗺 ${textoSeguro(cap.regiao || cap.nome)}</h3>
+    <p class="small muted">Capítulo ${Number(cap.n) || 0} · ${textoSeguro(cap.nome)}${falta ? ` · <b>${falta}</b> ${falta > 1 ? 'lugares' : 'lugar'} por descobrir` : ' · região toda explorada'}</p>
+    <svg class="carta" viewBox="${-M} ${-M} ${carta.w + M * 2} ${carta.h + M * 2}" role="img" aria-label="Mapa de ${textoSeguro(cap.regiao || cap.nome)}">${lugares}${vias}${portas}${carta.lugares.map(selo).join('')}${eu}</svg>
+    <ol class="carta-legenda">${legenda}</ol>
+    ${saidas.length ? `<p class="small muted">◆ Passagens: ${saidas.map(c => vistos.includes(c) ? textoSeguro(c.regiao || c.nome) : '???').join(' · ')}</p>` : ''}
+    <div class="carta-regioes">${CAPITULOS.map(c => `<span class="${c.id === cap.id ? 'on' : ''}${vistos.includes(c) ? '' : ' fechado'}">${vistos.includes(c) ? `${Number(c.n) || 0}. ${textoSeguro(c.regiao || c.nome)}` : `${Number(c.n) || 0}. 🔒 ???`}</span>`).join('')}</div>
   </div>`;
 }
 // `fala` já vem pronta de quem chama (com o nome do jogador trocado e tudo escapado).

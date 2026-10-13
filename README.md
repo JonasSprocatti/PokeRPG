@@ -64,9 +64,10 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 ### ⚔ Saga (em construção, só na conta admin)
 
 Um modo separado, de **RPG japonês** medieval fantástico: você anda com uma **comitiva de quatro**, cada Pokémon
-tem um **ofício** na luta e os inimigos vêm em grupo. O combate está jogável de ponta a ponta e o mundo tem os
-**capítulos 1 a 3** de uma história de **dez** (o roteiro inteiro está em `docs/saga-historia.md`); o modo
-continua escondido de quem joga até a história ter mais capítulos.
+tem um **ofício** na luta e os inimigos vêm em grupo. O combate está jogável de ponta a ponta e a história está
+**inteira: dez capítulos**, do Vale do Orvalho à Nascente, com **quatro finais** (36 mapas, 100 personagens, 30
+missões — o roteiro está em `docs/saga-historia.md`). O modo segue só pra admin e testadores enquanto é jogado
+e ajustado.
 
 - **🗺 Um mundo pra andar, com cara de jogo.** Na Saga não há lista de rotas: há um **mapa em pixel art** que
   ocupa a tela inteira. Você anda casa a casa (setas, WASD, o direcional da tela, ou tocando no lugar pra onde
@@ -98,6 +99,14 @@ continua escondido de quem joga até a história ter mais capítulos.
   (dá pra acalmar um Alfa ferido em vez de derrubá-lo, se você levar o remédio certo).
 - **✨ Dons.** Habilidades que só a Saga dá, ganhas por escolha e não por nível: cada desfecho ensina um dom
   diferente, e eles valem em batalha (ou no mapa) pelo resto da jornada.
+- **🗺 Carta da região.** Toque no nome do lugar, no canto da tela, e abre o mapa da região: cada lugar que você
+  já visitou aparece desenhado, com você marcado no ponto exato. Onde ainda não pisou é só um **vulto com "?"** —
+  dá pra ver que existe, não o que é nem por onde se entra (alguns só abrem com uma missão que nenhuma placa
+  anuncia). As regiões por descobrir aparecem trancadas na lista, e as setas folheiam as que você já conhece.
+- **🌊 Dez capítulos e quatro finais.** Charco, minas, um bosque que vai embora andando, uma ponte partida, um
+  deserto de sal, a serra gelada — cada região com o seu chão, o seu Alfa e a sua decisão. No fim, os **Antigos**
+  (os lendários da região) não são derrotados: são feitos **escutar**, e o que você diz a eles depende de tudo o
+  que carregou até ali. Um dos finais só existe pra quem chegou com as três ordens ainda sentadas no mesmo fogo.
 
 - **Seis ofícios**, lidos dos atributos e do que a espécie aprende (nada de tabela escrita à mão): 🛡 **Guardião**
   segura a linha · 💚 **Curandeiro** cura e limpa · 🔮 **Arcano** lança o fogo de longe · ⚔ **Guerreiro** abate ·

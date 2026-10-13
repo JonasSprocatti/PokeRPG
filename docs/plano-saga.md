@@ -185,10 +185,11 @@ Bálsamo também dá +1 Def; Arcano+Encantador → a Marca vira +40%). Reaprovei
 
 ## 6. O mundo: trilhas, NPCs Pokémon e consequência
 
-> **Estado em 13/10/2026 (fim do dia): CAPÍTULOS 1 a 3 jogáveis, em pixel art (Liberated Pixel Cup), com tela
-> de jogo própria e o 🌍 Editor de mundo.** O roteiro dos 10 capítulos está em `docs/saga-historia.md`, e o
-> registro de como foi feito em `docs/features.md` → "⚔ Saga vira jogo de mapa". O que falta: capítulos 4 a 10
-> (pra montar no editor), Juramentos (fase 2) e os finais.
+> **Estado em 13/10/2026 (fim do dia): OS DEZ CAPÍTULOS jogáveis, com os quatro finais, em pixel art (Liberated
+> Pixel Cup), com tela de jogo própria, 🗺 carta da região e o 🌍 Editor de mundo.** O roteiro está em
+> `docs/saga-historia.md`, e o registro de como foi feito em `docs/features.md` → "⚔ Saga vira jogo de mapa" e
+> "⚔ Saga: os capítulos 4 a 10, o fim da história e a 🗺 carta da região". O que falta: Juramentos (fase 2) e
+> jogar a história inteira pra ajustar ritmo e dificuldade.
 >
 > **CAPÍTULO 1 CONSTRUÍDO em 13/10/2026 — e saiu DIFERENTE do desenho abaixo num ponto**: o usuário pediu *"um
 > mapa onde eu realmente possa andar"*, então em vez de grafo de nós é uma **grade de casas** com câmera

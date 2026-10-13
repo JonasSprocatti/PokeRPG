@@ -14,7 +14,8 @@
    provavelmente não era a intenção (porta sem volta, nó que ninguém alcança, item que nunca é dado). */
 import { ITEMS } from './dados.js';
 
-export const TIPOS_DE_INIMIGO = ['bando', 'treinador', 'alfa'];
+export const TIPOS_DE_INIMIGO = ['bando', 'treinador', 'alfa', 'antigos'];   // antigos = os lendários da Gen (a luta final)
+export const FIGURAS_ESPECIAIS = ['@alfa', '@antigo'];                        // figura que depende da Gen, não do texto
 export const TIPOS_DE_OBJETO = ['npc', 'porta', 'placa', 'enfeite', 'bau', 'inimigo', 'gatilho', 'chegada'];
 export const LIMITES = { lado: 80, texto: 1400, nome: 80, id: 32, objetosPorMapa: 120 };
 // O que um dom pode fazer, e até onde: é o que impede um pacote publicado de dar ×50 de dano a alguém.
@@ -64,6 +65,7 @@ export function validarMundo(mundo, arte = null) {
     if (faz.dinheiro !== undefined && (!Number.isInteger(faz.dinheiro) || Math.abs(faz.dinheiro) > 100000)) erro(onde, 'dinheiro fora do razoável (até ₽100.000, número inteiro)');
     for (const [k, n] of Object.entries(faz.rep || {})) if (!FACCOES[k] || !Number.isInteger(n) || Math.abs(n) > 10) erro(onde, `reputação de "${k}" mal formada (inteiro de −10 a 10)`);
     for (const par of lista(faz.bag)) if (!Array.isArray(par) || !ITEMS[par[0]] || !Number.isInteger(par[1]) || par[1] < 1 || par[1] > 99) erro(onde, `item de mochila ${JSON.stringify(par)} não existe ou tem quantidade errada`);
+    if (faz.fim !== undefined) texto(onde, faz.fim, 'nome do final', LIMITES.nome);
   }
 
   /* ---- tabelas pequenas ---- */
@@ -130,7 +132,7 @@ export function validarMundo(mundo, arte = null) {
         if (v.placa !== undefined) texto(aqui, v.placa);
         if (v.texto !== undefined) texto(aqui, v.texto);
         if (v.inimigo !== undefined) {
-          if (!TIPOS_DE_INIMIGO.includes(v.inimigo?.tipo)) erro(aqui, 'inimigo sem tipo (bando, treinador ou alfa)');
+          if (!TIPOS_DE_INIMIGO.includes(v.inimigo?.tipo)) erro(aqui, 'inimigo sem tipo (bando, treinador, alfa ou antigos)');
           id(aqui, v.inimigo?.id);
           if (v.inimigo?.fala !== undefined) texto(aqui, v.inimigo.fala);
           if (arte && v.inimigo?.sprite !== undefined && !arte.GENTE.nomes.includes(v.inimigo.sprite)) erro(aqui, `figura de gente "${v.inimigo.sprite}" não existe`);
@@ -153,7 +155,7 @@ export function validarMundo(mundo, arte = null) {
     const onde = `personagem ${idNpc}`;
     id(onde, idNpc); texto(onde, n?.nome, 'nome', LIMITES.nome);
     const s = n?.sprite;
-    if (!(Number.isInteger(s) && s > 0 && s < 20000) && s !== '@alfa' && !(typeof s === 'string' && (!arte || arte.GENTE.nomes.includes(s)))) erro(onde, 'figura inválida (número da espécie, um humano do atlas ou "@alfa")');
+    if (!(Number.isInteger(s) && s > 0 && s < 20000) && !FIGURAS_ESPECIAIS.includes(s) && !(typeof s === 'string' && !s.startsWith('@') && (!arte || arte.GENTE.nomes.includes(s)))) erro(onde, 'figura inválida (número da espécie, um humano do atlas, "@alfa" ou "@antigo")');
     if (!Array.isArray(n?.falas) || !n.falas.length) { erro(onde, 'não tem por onde a conversa começar'); continue; }
     const nos = n.nos || {};
     if (n.falas.at(-1).se !== undefined) erro(onde, 'o último começo de conversa precisa valer sempre (sem condição)');
@@ -219,6 +221,9 @@ export function validarMundo(mundo, arte = null) {
   for (const k of Object.keys(MISSOES)) if (!dados.some(f => f.missao?.[0] === k && f.missao[1] === 'fim')) aviso(`missão ${k}`, 'nenhuma conversa a conclui');
   for (const k of Object.keys(ITENS)) if (!dados.some(f => f.item === k)) aviso(`item ${k}`, 'nunca é dado a ninguém');
   for (const k of Object.keys(DONS)) if (!dados.some(f => f.dom === k)) aviso(`dom ${k}`, 'nunca é ensinado');
+  // quem vence os Antigos fecha a Gen mas a jornada NÃO termina sozinha: é uma conversa que a encerra (efeito `fim`)
+  const temAntigos = Object.values(MAPAS).some(m => Object.values(m?.objs || {}).some(o => variantes(o).some(v => v?.inimigo?.tipo === 'antigos')));
+  if (temAntigos && !dados.some(f => f.fim)) aviso('fim da história', 'há luta contra os Antigos, mas nenhuma conversa encerra a jornada (efeito "fim")');
   return p;
 }
 export const errosDoMundo = (mundo, arte) => validarMundo(mundo, arte).filter(x => x.nivel === 'erro');

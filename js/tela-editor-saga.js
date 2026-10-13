@@ -21,7 +21,7 @@ import { ehAdmin, listarBeta, definirBeta } from './nuvem.js';
 import { SPR, ITEMS, TYPE_PT } from './dados.js';
 import { TILES, TEMAS } from './dados-saga.js';
 import { ARTE, PROPS, GENTE, ATLAS } from './dados-saga-arte.js';
-import { validarMundo, TIPOS_DE_INIMIGO, TIPOS_DE_OBJETO, EFEITOS_DE_DOM } from './saga-validar.js';
+import { validarMundo, TIPOS_DE_INIMIGO, TIPOS_DE_OBJETO, EFEITOS_DE_DOM, FIGURAS_ESPECIAIS } from './saga-validar.js';
 import { sagaAoVivo, mundoCompleto, aplicarSaga } from './conteudo.js';
 import { conteudo } from './conteudo-nuvem.js';
 import { propDaCasa } from './saga-arte.js';
@@ -71,11 +71,13 @@ const REGRAS_SE = [['flag', 'tem a(s) marca(s)', 'marcas'], ['sem', 'NÃO tem a(
   ['tipo', 'o Pokémon do jogador é do tipo', 'tipos'], ['falas', 'já conversou (vezes) com', 'npcn'], ['dom', 'tem o dom', 'dom']];
 const REGRAS_FAZ = [['flag', 'liga a(s) marca(s)', 'marcas'], ['tira', 'desliga a(s) marca(s)', 'marcas'], ['item', 'dá o item-chave', 'item'], ['perde', 'tira o item-chave', 'item'],
   ['dinheiro', 'dinheiro (+ dá, − tira)', 'num'], ['bag', 'itens na mochila', 'bag'], ['rep', 'reputação (+ sobe, − cai)', 'rep'], ['missao', 'põe a missão em', 'etapaFaz'],
-  ['dom', 'ensina o dom', 'dom'], ['cura', 'descansa a comitiva (cobra como a pousada)', 'sim'], ['loja', 'abre a loja', 'sim'], ['viajar', 'segue viagem (fim do mapa escrito)', 'sim']];
+  ['dom', 'ensina o dom', 'dom'], ['cura', 'descansa a comitiva (cobra como a pousada)', 'sim'], ['loja', 'abre a loja', 'sim'], ['viajar', 'segue viagem (fim do mapa escrito)', 'sim'],
+  ['fim', 'ENCERRA a jornada — nome do final', 'frase']];
 const primeiro = t => Object.keys(t)[0];
 const PADRAO = {
   marcas: () => 'marca-nova', item: () => primeiro(R.ITENS), dom: () => primeiro(R.DONS), etapa: () => [primeiro(R.MISSOES), 0], etapaFaz: () => [primeiro(R.MISSOES), 0],
-  facn: () => [primeiro(R.FACCOES), 1], npcn: () => [primeiro(R.NPCS), 1], tipos: () => ['normal'], num: () => 100, bag: () => [['potion', 1]], rep: () => ({ [primeiro(R.FACCOES)]: 1 }), sim: () => true
+  facn: () => [primeiro(R.FACCOES), 1], npcn: () => [primeiro(R.NPCS), 1], tipos: () => ['normal'], num: () => 100, bag: () => [['potion', 1]], rep: () => ({ [primeiro(R.FACCOES)]: 1 }), sim: () => true,
+  frase: () => 'O Final'
 };
 function controleDaRegra(caminho, tp, v) {
   const sel = (c, opcoes, atual, tipo = 'texto') => `<select data-ed="${C(c)}" data-tp="${tipo}">${opcoes.map(([val, nome]) => `<option value="${esc(val)}" ${String(atual) === String(val) ? 'selected' : ''}>${esc(nome)}</option>`).join('')}</select>`;
@@ -86,6 +88,7 @@ function controleDaRegra(caminho, tp, v) {
   if (tp === 'dom') return sel(caminho, opcoesDe(R.DONS), v);
   if (tp === 'num') return num(caminho, v);
   if (tp === 'sim') return '<span class="muted small">sim</span>';
+  if (tp === 'frase') return `<input type="text" data-ed="${C(caminho)}" data-tp="texto" value="${esc(v ?? '')}" maxlength="80">`;
   if (tp === 'facn') return sel([...caminho, 0], opcoesDe(R.FACCOES), v?.[0]) + num([...caminho, 1], v?.[1]);
   if (tp === 'npcn') return sel([...caminho, 0], opcoesDe(R.NPCS), v?.[0]) + num([...caminho, 1], v?.[1]);
   if (tp === 'rep') return Object.entries(R.FACCOES).map(([k, f]) => `<label class="em-mini">${esc(f.emoji)}${num([...caminho, k], v?.[k])}</label>`).join('');
@@ -166,7 +169,7 @@ function inspetorObjeto(m) {
     enfeite: () => campo('Texto ao esbarrar (opcional)', [...base, 'texto'], { tp: 'longo', linhas: 2 }),
     bau: () => `${campo('Id (a marca de "já abriu")', [...base, 'bau'])}${campo('O que aparece ao abrir', [...base, 'texto'], { tp: 'longo' })}${efeitos([...base, 'faz'], 'O que ele dá / faz')}`,
     inimigo: () => `${campo('Id (a marca de "já venceu")', [...base, 'inimigo', 'id'])}
-      ${campo('Tipo de luta', [...base, 'inimigo', 'tipo'], { opcoes: [['bando', 'Bando selvagem da rota'], ['treinador', 'Humano com equipe (treinador)'], ['alfa', 'O Alfa da rota (chefe)']] })}
+      ${campo('Tipo de luta', [...base, 'inimigo', 'tipo'], { opcoes: [['bando', 'Bando selvagem da rota'], ['treinador', 'Humano com equipe (treinador)'], ['alfa', 'O Alfa da rota (chefe)'], ['antigos', 'Os Antigos (os lendários da Gen — a luta final)']] })}
       ${campo('Figura (só humano)', [...base, 'inimigo', 'sprite'], { opcoes: GENTE.nomes.map(n => [n, n]), vazio: 'padrão' })}
       ${campo('O que aparece antes da luta', [...base, 'inimigo', 'fala'], { tp: 'longo', linhas: 2 })}`,
     gatilho: () => `${campo('Id', [...base, 'gatilho'])}${campo('O que aparece ao pisar', [...base, 'texto'], { tp: 'longo' })}${efeitos([...base, 'faz'], 'O que acontece')}`,
@@ -202,7 +205,7 @@ function pintarEditor() {
       const figura = o.arte || (o.bau ? 'bau' : o.placa && !o.prop ? 'placa' : null);
       if (figura) figuraNoCanvas(ctx, figura, x, y);
       const quem = o.npc ? R.NPCS[o.npc]?.sprite : o.inimigo ? (o.inimigo.tipo === 'treinador' ? o.inimigo.sprite || 'cacador' : null) : undefined;
-      if (quem !== undefined && quem !== null && quem !== '@alfa') corpoNoCanvas(ctx, quem, x, y);
+      if (quem !== undefined && quem !== null && !FIGURAS_ESPECIAIS.includes(quem)) corpoNoCanvas(ctx, quem, x, y);
     }]);
   }
   depois.sort((a, b) => a[0] - b[0]).forEach(([, f]) => f());
@@ -286,10 +289,11 @@ function abaGente() {
   const ids = Object.keys(R.NPCS);
   if (!R.NPCS[npcSel]) npcSel = ids[0];
   const n = R.NPCS[npcSel], base = ['NPCS', npcSel], nos = Object.keys(n.nos || {}).map(k => [k, k]);
-  const modo = n.sprite === '@alfa' ? 'alfa' : typeof n.sprite === 'string' ? 'gente' : 'pokemon';
+  const modo = n.sprite === '@alfa' ? 'alfa' : n.sprite === '@antigo' ? 'antigo' : typeof n.sprite === 'string' ? 'gente' : 'pokemon';
   const figura = modo === 'gente' ? campo('Qual humano', [...base, 'sprite'], { opcoes: GENTE.nomes.map(x => [x, x]) })
     : modo === 'pokemon' ? campo('Nº da espécie (Pokédex)', [...base, 'sprite'], { tp: 'num', min: 1, dica: 'É só a figura: o personagem não luta.' })
-      : '<p class="small muted">Usa o sprite do Alfa da rota do mapa onde estiver — seja ele quem for nesta Gen.</p>';
+      : modo === 'antigo' ? '<p class="small muted">Usa o sprite do lendário principal da Gen em que a jornada estiver.</p>'
+        : '<p class="small muted">Usa o sprite do Alfa da rota do mapa onde estiver — seja ele quem for nesta Gen.</p>';
   const entrada = (f, i) => `<div class="em-cartao">
       <div class="em-linha"><b>${i + 1}º começo</b> ${campo('começa na fala', [...base, 'falas', i, 'no'], { opcoes: nos })}
         <button class="btn ghost sm" data-em="lista-subir" data-c="${C([...base, 'falas'])}" data-v="${i}" ${i ? '' : 'disabled'}>↑</button>
@@ -317,9 +321,9 @@ function abaGente() {
       <button class="btn ghost sm" data-em="npc-excluir">Excluir este</button>
       <button class="btn sm em-destaque" data-em="simular">▶ Simular a conversa</button>
     </div>
-    <div class="em-ficha"><div class="saga-fala"><div class="retrato">${htmlCorpo(modo === 'alfa' ? 0 : n.sprite, n.nome)}</div></div>
+    <div class="em-ficha"><div class="saga-fala"><div class="retrato">${htmlCorpo(FIGURAS_ESPECIAIS.includes(n.sprite) ? 0 : n.sprite, n.nome)}</div></div>
       <div class="em-grade">${campo('Nome', [...base, 'nome'])}
-        <label class="em-campo"><span>Figura</span><select data-em-figura="1">${[['pokemon', 'Pokémon'], ['gente', 'Humano'], ['alfa', 'O Alfa da rota']].map(([v, r]) => `<option value="${v}" ${v === modo ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        <label class="em-campo"><span>Figura</span><select data-em-figura="1">${[['pokemon', 'Pokémon'], ['gente', 'Humano'], ['alfa', 'O Alfa da rota'], ['antigo', 'O Antigo (lendário da Gen)']].map(([v, r]) => `<option value="${v}" ${v === modo ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
         ${figura}</div></div>
     <h3>Por onde a conversa começa <button class="btn ghost sm" data-em="entrada-nova">+ começo com condição</button></h3>
     <p class="small muted">De cima pra baixo: vale o <b>primeiro</b> começo cuja condição fecha. É assim que o mesmo personagem diz coisas diferentes conforme o que já aconteceu.</p>
@@ -413,7 +417,7 @@ async function mudarBeta(codigo, valor) {
 
 /* ================= ▶ Testar ================= */
 const motorTeste = criarMotor({
-  S: () => teste.S, nome: () => 'Você', alfa: () => 0, custoDescanso: () => 'grátis no teste',
+  S: () => teste.S, nome: () => 'Você', alfa: () => 0, antigo: () => 0, custoDescanso: () => 'grátis no teste',
   travado: () => !teste || teste.ocupado || !!document.querySelector('.modal'),
   conversando: () => !!teste,
   ocupar(v) { if (teste) teste.ocupado = v; },
@@ -429,6 +433,7 @@ const motorTeste = criarMotor({
   descansar() { teste.log.push('🛏 (teste) a comitiva descansaria aqui, pagando como na pousada.'); },
   loja() { toast('🛒 (teste) aqui abriria a loja.'); },
   viajar: () => '🧭 (teste) aqui o jogador segue viagem pra além do mapa escrito.',
+  encerrar(final) { toast(`🏁 (teste) aqui a jornada termina. Final: <b>${esc(final)}</b>`, 7000); },
   async lutar(tipo, flag) {
     const venceu = await ask(`⚔ <b>Luta (${esc(tipo)})</b><br><br>No teste a luta não acontece de verdade. Como ela terminou?`, [{ label: '🏆 Venci', value: true }, { label: '💀 Perdi ou fugi', value: false, ghost: true }]);
     if (flag) estadoSaga(teste.S).luta = { flag };
@@ -638,7 +643,7 @@ export function mudar(el) {
     if (el.value === 'opcoes') no.opcoes = [{ t: 'Uma resposta.' }];
     guardar(); return desenhar();
   }
-  if (d.emFigura) { R.NPCS[npcSel].sprite = el.value === 'alfa' ? '@alfa' : el.value === 'gente' ? GENTE.nomes[0] : 132; guardar(); return desenhar(); }
+  if (d.emFigura) { R.NPCS[npcSel].sprite = el.value === 'alfa' ? '@alfa' : el.value === 'antigo' ? '@antigo' : el.value === 'gente' ? GENTE.nomes[0] : 132; guardar(); return desenhar(); }
   if (!d.ed) return;
   const caminho = JSON.parse(d.ed), cru = el.type === 'checkbox' ? el.checked : String(el.value ?? '');
   const lista = () => cru.split(',').map(s => s.trim()).filter(Boolean);

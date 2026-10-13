@@ -31,7 +31,7 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
-import { segurar, soltar, tocarNoMapa, abrirDiario, gaveta, voltarAoVale } from './tela-saga.js';
+import { segurar, soltar, tocarNoMapa, abrirDiario, abrirCarta, gaveta, voltarAoVale } from './tela-saga.js';
 import { mundoAtivo } from './saga-mundo.js';
 import { completarAlvosDoSave } from './pokemon.js';
 import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
@@ -303,6 +303,7 @@ async function aoClicar(e) {
     // ⚔ Saga: o mapa andável (tela-saga.js)
     case 'saga-toque': return tocarNoMapa(e);
     case 'saga-diario': return abrirDiario();
+    case 'saga-mapa': return abrirCarta();
     case 'saga-gaveta': return gaveta(v);
     case 'saga-voltar': return voltarAoVale();
     case 'zone': {

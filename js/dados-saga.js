@@ -1,4 +1,4 @@
-/* ============ ⚔ Saga — o MUNDO (capítulos 1 a 3) ============
+/* ============ ⚔ Saga — o MUNDO (os 10 capítulos) ============
    Dado puro, SEM imports: mapas pra andar, NPCs com diálogo, missões, itens-chave e dons. Quem lê e decide é
    `saga-mundo.js` (regras puras, testadas); quem desenha é `saga-cena.js`; quem executa é `tela-saga.js`.
    São DOIS arquivos, por causa do 🌍 Editor de mundo:
@@ -38,7 +38,8 @@
 
 /* TILES: a REGRA de cada caractere (`bloqueia`, `mato` = encontro, `falsa` = parece que bloqueia e não bloqueia)
    e o DESENHO (`fundo`, `arte`, `prop` — explicados em saga-arte.js). `c` é a cor de reserva, pra quando o atlas
-   não carregou, e a que o editor usa na miniatura. Letra minúscula e sinal são de tile; MAIÚSCULA e número ficam
+   não carregou, e a que o editor e a 🗺 carta da região usam na miniatura (`finge` = o tile que um tile `falsa`
+   imita: na carta ele sai com a cor desse, senão a passagem secreta apareceria no mapa). Letra minúscula e sinal são de tile; MAIÚSCULA e número ficam
    pros objetos de cada mapa (o `T` da árvore é a exceção histórica). */
 export const TILES = {
   '.': { nome: 'Grama', c: '#4d8f3f', fundo: ['grama0', 'grama1', 'grama2'] },
@@ -48,7 +49,7 @@ export const TILES = {
   '-': { nome: 'Terra batida escura', c: '#8a6a45', arte: [{ blob: 'terraEscura' }] },
   'f': { nome: 'Flores', c: '#5d9a4a', arte: [['flores', 'floresRosa', 'floresAzuis']] },
   'T': { nome: 'Árvore', c: '#27552a', prop: ['carvalho', 'carvalho2'], bloqueia: true },
-  't': { nome: 'Árvore falsa (passagem secreta)', c: '#2c5f30', prop: ['carvalho', 'carvalho2'], falsa: true },
+  't': { nome: 'Árvore falsa (passagem secreta)', c: '#2c5f30', prop: ['carvalho', 'carvalho2'], falsa: true, finge: 'T' },
   'p': { nome: 'Pinheiro', c: '#1f4a2c', prop: ['pinheiro', 'pinheiro2'], bloqueia: true },
   '~': { nome: 'Água', c: '#2f6fb5', arte: [{ blob: 'aguaGrama' }], bloqueia: true },
   '^': { nome: 'Rocha', c: '#8f8a80', arte: ['rocha'], bloqueia: true },
@@ -62,19 +63,37 @@ export const TILES = {
   'i': { nome: 'Estalagmite', c: '#5a5048', fundo: 'breu', arte: [{ blob: 'pedra', grupo: 'piso' }, ['estalagmite', 'estalagmite2']], bloqueia: true },
   'v': { nome: 'Abismo', c: '#120d14', fundo: 'breu', arte: [{ blob: 'pedra', grupo: 'piso' }, { blob: 'buraco' }], bloqueia: true },
   'l': { nome: 'Lava', c: '#d2531e', fundo: 'breu', arte: [{ blob: 'pedra', grupo: 'piso' }, { blob: 'lava' }], bloqueia: true },
-  'a': { nome: 'Água de caverna', c: '#2a5f9a', fundo: 'breu', arte: [{ blob: 'pedra', grupo: 'piso' }, { blob: 'agua' }], bloqueia: true }
+  'a': { nome: 'Água de caverna', c: '#2a5f9a', fundo: 'breu', arte: [{ blob: 'pedra', grupo: 'piso' }, { blob: 'agua' }], bloqueia: true },
+  // a ponte entra na família da água (a água "continua" por baixo dela) e as tábuas, opacas, cobrem a própria casa
+  'b': { nome: 'Ponte (tábuas)', c: '#a0703f', arte: [{ blob: 'aguaGrama' }, 'tabuas'] },
+  'u': { nome: 'Cova (árvore que partiu)', c: '#6b4a2f', arte: ['cova'] },
+  // a cachoeira é um TILE com enfeite (e não um objeto) porque fica no fundo do lago, onde ninguém chega a pé
+  'w': { nome: 'Cachoeira (no fundo de um lago de caverna)', c: '#5aa0dc', fundo: 'breu', arte: [{ blob: 'pedra', grupo: 'piso' }, { blob: 'agua' }], prop: 'cachoeira', bloqueia: true },
+  '%': { nome: 'Parede falsa (passagem secreta)', c: '#241b28', fundo: 'breu', falsa: true, finge: '#' }
 };
 
 /* Tema do mapa: troca o DESENHO de alguns tiles sem mexer na regra — a mesma árvore vira pinheiro, carvalho de
    outono ou árvore sombria. É como um mapa escolhe "qual das opções" de cada coisa. Tema novo = uma linha aqui
    (e, se a figura ainda não existe, uma no gerador do atlas). */
 const arvores = lista => ({ T: { prop: lista }, t: { prop: lista } });
+// o chão do mapa inteiro noutra matéria (neve, sal, lodo): os três preenchimentos e a cor da miniatura
+const chao = (nome, c) => ({ '.': { fundo: [`${nome}0`, `${nome}1`, `${nome}2`], c } });
+// gruta de gelo: todo tile de caverna troca a laje de pedra pela de gelo (a regra de cada um continua a mesma)
+const GELO = { blob: 'pisoGelo', grupo: 'piso' };
 export const TEMAS = {
   outono: { nome: 'Outono', tiles: arvores(['carvalhoOutono', 'carvalho2Outono']) },
   misto: { nome: 'Bosque misto', tiles: arvores(['carvalho', 'pinheiro', 'carvalho2', 'pinheiro2']) },
   pinheiral: { nome: 'Pinheiral', tiles: { ...arvores(['pinheiro', 'pinheiro2']), '^': { arte: ['pedregulho'] } } },
   sombrio: { nome: 'Bosque sombrio', tiles: arvores(['carvalhoSombrio', 'pinheiro2', 'carvalhoSombrio']) },
-  inverno: { nome: 'Inverno', tiles: { ...arvores(['pinheiroNevado', 'pinheiro']), f: { arte: ['pedrinhas'] } } }
+  inverno: { nome: 'Inverno', tiles: { ...arvores(['pinheiroNevado', 'pinheiro']), ...chao('neve', '#dfe8f0'), f: { arte: ['pedrinhas'] },
+    '~': { arte: [{ blob: 'gelo' }], c: '#a9cbe6' }, b: { arte: [{ blob: 'gelo' }, 'tabuas'] } } },
+  charco: { nome: 'Charco', tiles: { ...arvores(['carvalhoSombrio', 'carvalhoSombrio', 'pinheiro2']), ...chao('lodo', '#5f6b3c'),
+    '~': { arte: [{ blob: 'brejo' }], c: '#232d1c' }, b: { arte: [{ blob: 'brejo' }, 'tabuas'] } } },
+  sal: { nome: 'Deserto de sal', tiles: { ...arvores(['carvalhoSal']), ...chao('sal', '#d9d0b8'), '"': { arte: ['matoSeco'], c: '#b7a77c' }, f: { arte: ['pedrinhas'] },
+    c: { prop: 'casaSal' }, '~': { arte: [{ blob: 'agua' }] }, b: { arte: [{ blob: 'agua' }, 'tabuas'] } } },
+  geleira: { nome: 'Gruta de gelo', tiles: { _: { arte: [GELO], c: '#bcd6ea' }, ':': { arte: [GELO, { blob: 'terraEscura' }], c: '#8fa9bd' },
+    r: { arte: [GELO, { blob: 'terra' }] }, i: { arte: [GELO, ['estalagmite', 'estalagmite2']] }, v: { arte: [GELO, { blob: 'buraco' }] },
+    l: { arte: [GELO, { blob: 'lava' }] }, a: { arte: [GELO, { blob: 'agua' }] }, w: { arte: [GELO, { blob: 'agua' }] } } }
 };
 
 export * from './dados-saga-mundo.js';

@@ -44,17 +44,21 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   `admin: true`, nenhuma leva da Saga vira patch note**; quando o modo abrir pra todos, sai UMA entrada contando
   o modo inteiro.
   **Falta, e é o que mantém o modo `admin: true`**: a **fase 2** (Juramentos, ordens por ofício, tela de comitiva)
-  e os **capítulos 4 a 10** da história. **✅ Em 13/10/2026 saíram os capítulos 1 a 3 jogáveis** (13 mapas em
-  pixel art do Liberated Pixel Cup, tela de jogo própria com animação, humanos na história), **o roteiro dos 10
-  capítulos** (`docs/saga-historia.md`) e o **🌍 Editor de mundo** (mapas, personagens, conversas, missões,
-  dons; ▶ Testar; publica no pacote único) — registro em `docs/features.md` → "⚔ Saga vira jogo de mapa".
-  **Falta do mundo**: os capítulos 4 a 10 (o roteiro está pronto; é montar no editor), os finais, reputação
-  mexendo em preço e recruta, Pokédex da rota na tela do mapa, NPC que anda, e a tela de BATALHA no mesmo
-  padrão visual. **Falta do editor**: renomear id levando as referências, importar tileset pelo navegador.
+  e JOGAR a história inteira pra ajustar ritmo e dificuldade. **✅ Em 13/10/2026 saiu a história INTEIRA**: os dez
+  capítulos e os quatro finais (36 mapas em pixel art do Liberated Pixel Cup, 100 personagens, 30 missões), a
+  🗺 carta da região, a tela de jogo própria e o **🌍 Editor de mundo** (mapas, personagens, conversas, missões,
+  dons; ▶ Testar; publica no pacote único) — registro em `docs/features.md` → "⚔ Saga vira jogo de mapa" e
+  "⚔ Saga: os capítulos 4 a 10, o fim da história e a 🗺 carta da região".
+  **Falta do mundo**: uma jornada jogada do capítulo 1 ao 10 por uma pessoa (o que existe é teste que joga cada
+  capítulo e o fim conferido no navegador — ritmo, nível dos Alfas e economia ninguém sentiu ainda), reputação
+  mexendo em preço e recruta, companheiro que vai embora no capítulo 9 (está no roteiro), Pokédex da rota na
+  tela do mapa, NPC que anda. **Falta do editor**: renomear id levando as referências, importar tileset pelo
+  navegador, e mostrar a 🗺 carta no ▶ Testar (lá o letreiro não abre nada).
   **Olhado em navegador de verdade em 13/10/2026** (`ferramentas/olhar.mjs`): mapa, andar, gaveta, conversa,
-  zoom de computador e o editor — três defeitos achados e corrigidos (ver `docs/features.md`). Em 14/10/2026 a LUTA foi refeita olhando
-  (uma tela só, em pé/deitado/computador) e a alavanca foi testada segurando. **Falta olhar**: a loja, a
-  transição mapa→luta, e um aparelho de verdade (toque com dedo, emoji, desempenho).
+  zoom de computador e o editor — três defeitos achados e corrigidos (ver `docs/features.md`). No mesmo dia a LUTA foi refeita olhando
+  (uma tela só, em pé/deitado/computador), a alavanca foi testada segurando, e o FIM foi jogado de ponta a
+  ponta (luta dos Antigos começada pelo mapa → conversa → final → tela de vitória). **Falta olhar**: a loja, e
+  um aparelho de verdade (toque com dedo, emoji, desempenho).
   **⚠ PRECISA DE AÇÃO DO USUÁRIO**: conferir que a migration `20261013180000_beta_testers.sql` chegou ao
   Supabase — sem ela a seção 🧪 Testadores mostra o erro do banco e ninguém vira testador.
   **Fora de propósito por ora**: ameaça e Brecha no `mp-motor` (não existe Saga em sala); grupo em luta de

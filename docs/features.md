@@ -3380,7 +3380,103 @@ navegador antes da sessão. Na prática: 20 s por roteiro, memória folgada.
   inteiro, e o admin perderia o próprio acesso até ela chegar.
 - **Continua fora dos patch notes**: o teste é "um jogador comum consegue usar?", e testador é escolhido.
 
-## ⚔ Saga: a luta numa tela só, alavanca, deitado/em pé e sprite 2D (14/10/2026)
+## ⚔ Saga: os capítulos 4 a 10, o fim da história e a 🗺 carta da região (13/10/2026)
+
+Dois pedidos do usuário, no mesmo dia: *"pode seguir com as próximas partes da história também, cap 4 a 10"* e
+*"no pin que mostra o nome do local, que seja possível clicar e abrir um mapa mostrando onde você está; onde
+você ainda não passou fica bloqueado — dá uma sensação de mistério, tipo ver uma região em que não entrou, mas
+tem como, através de uma missão específica"*.
+
+**O mundo de fábrica agora cobre a Gen inteira**: 10 capítulos, **36 mapas**, **100 personagens**, **30 missões**
+(9 secretas), 29 dons, 14 itens-chave e **quatro finais**. O roteiro (`docs/saga-historia.md`) foi seguido; o
+que mudou ao virar jogo está anotado lá, capítulo por capítulo.
+
+### A história (o que cada capítulo virou)
+- **4 · O Charco dos Esquecidos** — a Corte do Abismo conta o lado dela. O livro-caixa da Forja (lascas de Coração
+  vendidas aos humanos) tem **três destinos, com três personagens diferentes na mesa ao mesmo tempo**: a Regente
+  (ler em praça), a Dona Chaveira (levar à Brasa) e a Dama Véu (queimar). Secreta: a palafita do sineiro, atrás
+  de uma árvore falsa — *ele ouviu os Antigos onze anos antes de todo mundo*.
+- **5 · Ferro-Fundo** — cidade dentro da montanha, metade em greve. O piquete só deixa descer quem ouviu **os dois
+  lados** (o mesmo desenho do guarda de Pedralume, só que a condição são duas marcas). Secreta: o humano que
+  forja as peças finas e nunca perguntou pra onde iam — com a ponta de lança do capítulo 2 ele a reconhece.
+- **6 · O Bosque que Anda** — as árvores foram embora e deixaram **covas** (tile novo). Secreta: o Vô Carvalho
+  não anda; a licença dele é a PRIMEIRA entrada da conversa da Mãe Meganium, pra valer antes ou depois da
+  decisão do bosque (senão a missão ficava sem saída pra quem decidisse primeiro).
+- **7 · A Ponte Partida** — o vão do meio é uma placa que bloqueia enquanto NENHUMA de duas marcas existe
+  (`sem: [a, b]`): fecha vencendo o Alfa do rio **ou** deixando a árvore do capítulo 6 se deitar. O Tomé chega
+  como você o deixou no capítulo 2 (três começos de conversa). Secreta: o Nico, atrás de uma parede falsa.
+- **8 · O Deserto de Sal** — a parede dos Primeiros Laços só se lê depois do Alfa. Secreta: o **nó de pano**,
+  num nicho cercado de breu cuja única entrada é a parede falsa (`%`, tile novo; o teste confere a geometria).
+- **9 · O Degelo** — "a reputação vira gente": cada ordem com reputação ≥ 0 manda quem conversa; abaixo de zero,
+  manda **cobrar** (uma luta no lugar da tenda). Vencer os cobradores não traz o personagem de volta — a segunda
+  variante do objeto também tem condição. O **conselho pleno** não precisou de condição nova: o Tio do Poço tem
+  três começos de conversa com `repAbaixo`, um por ordem, e só o padrão (nenhuma abaixo de zero) liga a marca.
+  O Carteiro entrega cartas dos capítulos anteriores, que mudam com o que você fez lá.
+- **10 · A Nascente** — os Antigos são os lendários da Gen. Vencê-los não encerra nada: eles **escutam**, e a
+  conversa que vem depois é que termina a jornada, num de quatro finais. 🌊 A Cheia sempre existe; ⚒ O Cano e
+  🌑 A Sombra dependem de quem liderou a subida; 🪢 **O Laço** pede quatro coisas juntas (a Lia do seu lado, o
+  sino devolvido, o conselho pleno e o nó de pano) — e a Dama Véu, no Limiar, mostra quais das quatro você trouxe.
+
+### O que entrou no motor
+- **Tipo de luta `antigos`** (`saga-validar.TIPOS_DE_INIMIGO`): chama `batalha.startLendarios` com a rota FINAL
+  da jornada, achada pelo que ela tem (`lendarios`), não pelo número — rota é coisa editável. Gen sem lendário
+  cai no Alfa, pra história não travar. Figura `'@antigo'` = o último lendário da lista, como `'@alfa'`.
+- **Efeito `fim: 'nome do final'`**: `aplicar` guarda em `S.saga.final` e devolve um pedido; quem encerra é o
+  `ctx.encerrar` (`encerrarJornada('venceu', { final })`), e a tela de fim mostra "Final da Saga: …". Considerado
+  e descartado: uma tabela `FINAIS` — seria mais uma tabela no pacote, no editor e no validador, pra guardar um
+  nome que já cabe no próprio efeito. O texto do final é diálogo comum.
+- **`batalha.vencerGen` não pergunta nada quando a luta veio do mapa** (`S.saga.luta`, lido ANTES do `endBattle`,
+  que apaga a anotação): fecha a Gen, grava `S.genVencida` e devolve o jogador ao mapa. Fechar o jogo ali não
+  perde a vitória. A luta dos lendários pela lista de rotas (os outros modos) segue igual.
+- **Jornada que termina no meio da conversa**: o `finally` do andar não toca mais em mundo nem em save quando
+  `G.S` sumiu. No navegador nada estourava (a tela do mapa já não existe); foi o teste de fumaça que mostrou que
+  a ordem dependia disso.
+- `viajar` (seguir pra lista de rotas) continua existindo, pra mundo menor publicado pelo editor; o de fábrica
+  não usa mais — o Vau ganhou um portão de verdade pro capítulo 4. E não manda mais ninguém pro Santuário.
+
+### A arte nova (sem desenhar nada)
+`gerar-atlas-saga.mjs` aprendeu duas coisas: **terreno recolorido pela luz** (`cor`) e **terreno só de
+preenchimento** (`soEnche`). Com isso a grama do LPC virou **neve, sal e lodo**; a água, **gelo**; a laje de
+caverna, **piso de gelo**. Entraram do pacote: água salobra (o brejo), tábuas de ponte, cachoeira e cova.
+Árvore e casa "de sal" são as mesmas figuras recoloridas. Três humanos novos saíram das MESMAS camadas noutra
+cor (ferreiro, guerreiro, sábia). Temas novos: `charco`, `sal`, `geleira`; `inverno` ganhou chão de neve.
+Tiles novos: `b` ponte (entra na família da água pra ela "continuar" por baixo), `u` cova, `%` parede falsa,
+`w` cachoeira — esta é TILE com enfeite e não objeto, porque fica no fundo do lago, onde ninguém chega a pé, e
+o validador recusa objeto fora de alcance.
+
+### A 🗺 carta da região
+- **A posição dos mapas sai das PORTAS** (`saga-mundo.cartaDoCapitulo`): o vizinho vai pro lado da borda mais
+  próxima da porta, alinhado pela casa dela; ocupado, tenta a borda seguinte; só então empurra. Considerado e
+  descartado: coordenada escrita em cada mapa — mapa novo do editor nasceria sem lugar, e o plano B dela seria
+  exatamente este algoritmo. Então ele é o plano A.
+- **O mistério é regra, não enfeite**: lugar não visitado é um vulto com "?" e nome "???"; caminho só é traçado
+  entre dois lugares visitados; porta só é marcada quando leva a lugar conhecido; e tile `falsa` sai na cor do
+  que ele imita (`finge`). Sem isso a carta desenharia a árvore falsa do bosque.
+- **Por onde você passou** (`S.saga.vistos`) é marcado em `estadoSaga`, a porta por onde toda leitura do estado
+  passa — nenhum jeito de chegar a um mapa precisa lembrar de marcar. Save antigo começa só com o lugar atual.
+- **É um SVG de texto** (um `<path>` por cor, casas emendadas em tiras), não canvas: cabe na caixa `ui.ask` sem
+  esperar o HTML entrar na página, e é testável no Node. A cor que chega ao atributo é conferida (o ajuste
+  `pele` de um mapa pode vir do pacote publicado).
+
+### Como foi conferido
+- **`tests/saga-historia.test.js` JOGA os capítulos 4 a 10**: conversa na mesma ordem do motor, abre baú, vence
+  luta e confere o que mudou. É o que o validador não vê (ordem). Achou de verdade: os capítulos 2 e 3 não
+  tinham loja, e o 3 não tinha onde descansar — o Lasca e o porteiro Kiko passaram a oferecer.
+- Um caso soma a reputação de um roteiro de escolhas LENDO os números dos próprios diálogos, pra provar que o
+  final verdadeiro é possível (nenhuma ordem abaixo de zero no capítulo 9).
+- **No navegador** (`ferramentas/olhar.mjs`): o fim de ponta a ponta — esbarrar nos Antigos, a luta dos quatro
+  lendários começada pelo mapa, a conversa, o final e a tela de vitória com o nome dele —, a carta no celular e
+  no computador, e um passeio pelos sete biomas novos sem erro no console.
+
+### Ficou de fora, de propósito
+- **Companheiro que vai embora no capítulo 9** (está no roteiro): tirar aliado da comitiva por diálogo é perda de
+  verdade, e pediria um efeito novo com confirmação. A consequência ficou nas tendas e nas cartas.
+- **Reputação mexendo em preço** e **NPC que anda**: seguem no backlog.
+- **Consertar reputação no capítulo 9**: quem chega lá com uma ordem abaixo de zero não reúne o conselho nesta
+  jornada. É o "consequência é porta fechada" do roteiro; o diário mostra a reputação o tempo todo.
+- A frase da tela de vitória ("o mapa da Gen seguinte está liberado") é a genérica de quem fecha uma Gen.
+
+## ⚔ Saga: a luta numa tela só, alavanca, deitado/em pé e sprite 2D (13/10/2026)
 
 Quatro pedidos do usuário depois de ver a tela nova: *sprites exclusivamente 2D neste modo*, *os controles do
 celular estão estranhos — um joystick seria melhor*, *responsivo na vertical e na horizontal*, e *em combate

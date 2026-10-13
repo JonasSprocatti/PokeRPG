@@ -151,13 +151,67 @@ test('capítulo 2: o Alfa do Passo conversa em vez de lutar quando você leva o 
   assert.equal(G.B, null, 'nenhuma batalha começou');
 });
 
-test('fim do capítulo 3: seguir viagem leva pra lista de rotas — e dá pra voltar ao mapa', async () => {
+test('fim do capítulo 3: o portão do sul do Vau leva ao capítulo 4 (e antes disso é uma placa)', async () => {
   const s = comecar();
-  s.flags.cap3 = true; aoLado(s, 'vau', 'K');
-  await tela.andar('n');
-  assert.equal(mundo.mundoAtivo(G.S), false);
+  aoLado(s, 'vau', 'J', 'n');
+  await tela.andar('s');
+  assert.equal(s.mapa, 'vau', 'sem resolver a arena, o portão não abre');
+  s.flags.cap3 = true;
+  await tela.andar('s');
+  assert.equal(s.mapa, 'brejal'); assert.equal(mundo.capituloDe(mundo.mapaDe(G.S)).n, 4);
+  assert.ok(mundo.visitou(G.S, 'brejal') && mundo.visitou(G.S, 'vau'), 'o lugar novo entra na carta');
   htmls.length = 0; render();
-  assert.ok(htmls.join('').includes('data-act="saga-voltar"'), 'fora do mapa tem de haver o botão de volta');
-  tela.voltarAoVale();
-  assert.equal(mundo.mundoAtivo(G.S), true);
+  assert.ok(htmls.join('').includes('Capítulo 4'), 'o letreiro do lugar mostra o capítulo novo');
+});
+
+test('efeito "seguir viagem" (mundo que não cobre a Gen inteira): cai na lista de rotas, e dá pra voltar', async () => {
+  // o mundo de fábrica tem os dez capítulos e não usa `viajar`; o efeito continua existindo pra mundo menor
+  // publicado pelo editor — então o teste empresta a fala de um personagem por um instante
+  const { NPCS } = await import('../js/dados-saga.js');
+  const no = NPCS.kiko.nos.saida, antes = no.opcoes;
+  no.opcoes = [{ t: 'Seguir viagem.', faz: { viajar: true } }];
+  try {
+    const s = comecar();
+    s.flags.cap3 = true; aoLado(s, 'vau', 'K');
+    await tela.andar('n');
+    assert.equal(mundo.mundoAtivo(G.S), false);
+    htmls.length = 0; render();
+    assert.ok(htmls.join('').includes('data-act="saga-voltar"'), 'fora do mapa tem de haver o botão de volta');
+    tela.voltarAoVale();
+    assert.equal(mundo.mundoAtivo(G.S), true);
+  } finally { no.opcoes = antes; }
+});
+
+test('🗺 a carta da região: abre pelo letreiro, desenha os lugares e folheia as regiões já visitadas', async () => {
+  const s = comecar();
+  render();
+  assert.ok(htmls.join('').includes('data-act="saga-mapa"'), 'o letreiro do lugar é o botão da carta');
+  htmls.length = 0;
+  await tela.abrirCarta();
+  let carta = htmls.join('');
+  assert.ok(carta.includes('class="carta"') && carta.includes('Vale do Orvalho'), 'a carta não desenhou');
+  assert.ok(carta.includes('class="carta-fechado"') && carta.includes('você ainda não passou por aqui'), 'lugar não visitado aparece trancado');
+  assert.ok(carta.includes('class="carta-eu"') && carta.includes('você está aqui'), 'falta o marcador de onde você está');
+  assert.ok(!carta.includes('Clareira do Sineiro') && !carta.includes('Ruínas da Fonte'), 'nome de lugar não visitado não aparece');
+  assert.ok(carta.includes('🔒'), 'as regiões por descobrir aparecem trancadas na lista');
+  // dois capítulos visitados: a primeira opção da caixa vira "◀ região anterior", e o teste clica nela e depois fecha
+  s.vistos.bosque = 1; s.mapa = 'passo'; [s.x, s.y] = mundo.acharChar('passo', '1'); s.y -= 1;
+  htmls.length = 0;
+  await tela.abrirCarta();
+  carta = htmls.join('');
+  assert.ok(carta.includes('Serra do Fumo') && carta.includes('Bosque do Orvalho'), 'folhear leva à região anterior, com o que foi visto lá');
+  assert.equal(G.busy, false);
+});
+
+test('o FIM: os Antigos vencidos escutam, o final escolhido encerra a jornada e aparece na tela de fim', async () => {
+  const s = comecar();
+  s.flags['venceu:antigos'] = true; G.S.genVencida = 1;      // o que `batalha.vencerGen` deixa quando a luta veio do mapa
+  aoLado(s, 'nascente', 'X');
+  htmls.length = 0;
+  await tela.andar('n');           // a conversa corre sozinha: sem nada na bagagem, a única resposta é a Cheia
+  assert.equal(G.S, null, 'a jornada tem de terminar');
+  assert.equal(G.mode, 'fim');
+  const tudo = htmls.join('');
+  assert.ok(tudo.includes('Final da Saga') && tudo.includes('A Cheia'), 'a tela de fim não disse qual foi o final');
+  assert.equal(G.busy, false);
 });

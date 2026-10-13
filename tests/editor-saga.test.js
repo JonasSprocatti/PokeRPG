@@ -157,7 +157,7 @@ test('pacote de conteúdo: o mundo entra, é recusado inteiro se tiver um erro, 
   R.NPCS.pichu.nome = 'mexi depois'; assert.equal(NPCS.pichu.nome, 'Pichu da nuvem', 'aplicar copia: mexer no rascunho não mexe no jogo');
   assert.equal(aplicarSaga(null), 0);
   assert.deepEqual(sagaAoVivo(), SAGA_DE_FABRICA, 'sem `saga` no pacote, volta tudo ao de fábrica');
-  assert.ok(MAPAS_SAGA.clareira && INICIO.mapa === 'pedralume' && CAPITULOS.length === 3);
+  assert.ok(MAPAS_SAGA.clareira && INICIO.mapa === 'pedralume' && CAPITULOS.length === SAGA_DE_FABRICA.CAPITULOS.length);
 });
 
 test('publicar por outra tela não apaga o mundo no ar: sem rascunho vai o que está valendo', () => {

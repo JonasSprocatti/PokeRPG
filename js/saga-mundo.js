@@ -1,10 +1,10 @@
 /* ============ ⚔ Saga — as REGRAS do mundo (puro, testado) ============
    Andar no mapa, o que bloqueia, condição e efeito de diálogo, missões. Sem DOM, sem rede, sem sorteio escondido
    (quem sorteia recebe `sorte`). Os dados moram em `dados-saga.js`; a tela é `saga-cena.js` + `tela-saga.js`.
-   Tudo fica em `S.saga` (vai junto no save): { mapa, x, y, flags, itens, rep, missoes, falas, baus, luta, fora }. */
-import { MAPAS_SAGA, NPCS, MISSOES_SAGA, ITENS_SAGA, DONS, TILES, INICIO, FACCOES, CAPITULOS } from './dados-saga.js';
+   Tudo fica em `S.saga` (vai junto no save): { mapa, x, y, flags, itens, rep, missoes, falas, vistos, luta, fora, final }. */
+import { MAPAS_SAGA, NPCS, MISSOES_SAGA, ITENS_SAGA, DONS, TILES, TEMAS, INICIO, FACCOES, CAPITULOS } from './dados-saga.js';
 import { DIFICULDADES } from './dados.js';
-import { tileDaCasa } from './saga-arte.js';
+import { tileDaCasa, defDoTile } from './saga-arte.js';
 
 export const DIRS = { n: [0, -1], s: [0, 1], o: [-1, 0], l: [1, 0] };
 export const CHANCE_MATO = 0.14;     // encontro por passo no mato alto
@@ -24,9 +24,13 @@ export function estadoSaga(S) {
   if (!S.saga) S.saga = {};
   const s = S.saga;
   if (!MAPAS_SAGA[s.mapa]) { const [x, y] = acharChar(INICIO.mapa, INICIO.em); s.mapa = INICIO.mapa; s.x = x; s.y = y; }
-  for (const k of ['flags', 'itens', 'rep', 'missoes', 'falas']) if (!s[k]) s[k] = {};
+  for (const k of ['flags', 'itens', 'rep', 'missoes', 'falas', 'vistos']) if (!s[k]) s[k] = {};
+  /* 🗺 Por onde você já passou. Marcado AQUI, na porta por onde toda leitura do estado passa, e não em cada jeito
+     de chegar num mapa (começo do jogo, porta, viagem, save antigo): assim nenhum caminho novo esquece de marcar. */
+  s.vistos[s.mapa] = 1;
   return s;
 }
+export const visitou = (S, idMapa) => !!estadoSaga(S).vistos[idMapa];
 export const mapaDe = S => MAPAS_SAGA[estadoSaga(S).mapa];
 export const capituloDe = mapa => CAPITULOS.find(c => c.id === mapa?.cap) || null;
 export const temDom = (m, id) => !!m?.dons?.includes(id);
@@ -101,6 +105,8 @@ export function aplicar(S, faz) {
   }
   for (const [k, n] of faz.bag || []) pedidos.push({ bag: [k, n] });
   for (const k of ['cura', 'loja', 'viajar']) if (faz[k]) pedidos.push({ [k]: true });
+  // o FIM da história: o nome do final fica no save (e vai pro resumo da jornada); encerrar é com quem tem tela
+  if (faz.fim) { s.final = String(faz.fim); pedidos.push({ fim: s.final }); }
   return { avisos, pedidos };
 }
 
@@ -173,6 +179,74 @@ export function camera(pos, casa, tela, total) {
   if (total <= tela) return -(tela - total) / 2;
   return Math.max(0, Math.min(pos * casa + casa / 2 - tela / 2, total - tela));
 }
+
+/* ---- 🗺 a carta da região ----
+   Onde cada mapa de um capítulo fica em relação aos outros, tirado das PORTAS — ninguém desenha a carta à mão, e
+   mapa novo feito no editor já aparece nela. O mapa do outro lado de uma porta vai pro lado da BORDA mais próxima
+   dela (porta na beira oeste → vizinho a oeste; boca de gruta perto do topo → gruta ao norte), alinhado pela casa
+   da porta; se ali já tem alguém, tenta a borda seguinte, e só então empurra pra longe.
+   Tudo em CASAS: { w, h, lugares: [{ id, x, y, w, h }], ligacoes: [{ de, para, x1, y1, x2, y2 }],
+   saidas: [{ de, para, x, y }] } — `saidas` são as portas que levam pra um mapa de OUTRO capítulo. */
+const FOLGA = 3;
+const EMPURRA = { n: [0, -1], s: [0, 1], o: [-1, 0], l: [1, 0] };
+export function cartaDoCapitulo(idCap) {
+  const ids = Object.keys(MAPAS_SAGA).filter(id => MAPAS_SAGA[id].cap === idCap), pos = {};
+  const tam = id => [MAPAS_SAGA[id].grade[0].length, MAPAS_SAGA[id].grade.length];
+  const portas = id => {
+    const m = MAPAS_SAGA[id], r = [];
+    m.grade.forEach((linha, y) => { for (let x = 0; x < linha.length; x++) for (const o of [].concat(m.objs?.[linha[x]] || [])) {
+      const [para, ch] = o?.porta || [], chega = para && MAPAS_SAGA[para] && acharChar(para, ch);
+      if (chega && !r.some(p => p.x === x && p.y === y && p.para === para)) r.push({ x, y, para, ex: chega[0], ey: chega[1] });
+    } });
+    return r;
+  };
+  const livre = c => !Object.values(pos).some(p => c.x < p.x + p.w + FOLGA && p.x < c.x + c.w + FOLGA && c.y < p.y + p.h + FOLGA && p.y < c.y + c.h + FOLGA);
+  // as bordas do mapa `a`, da mais perto da porta pra mais longe
+  const bordas = (a, p) => { const [w, h] = tam(a); return [['n', p.y], ['o', p.x], ['l', w - 1 - p.x], ['s', h - 1 - p.y]].sort((x, y) => x[1] - y[1]).map(x => x[0]); };
+  const encostar = (a, p, lado) => {
+    const A = pos[a], [w, h] = tam(p.para);
+    return lado === 'n' ? { x: A.x + p.x - p.ex, y: A.y - h - FOLGA, w, h } : lado === 's' ? { x: A.x + p.x - p.ex, y: A.y + A.h + FOLGA, w, h }
+      : lado === 'o' ? { x: A.x - w - FOLGA, y: A.y + p.y - p.ey, w, h } : { x: A.x + A.w + FOLGA, y: A.y + p.y - p.ey, w, h };
+  };
+  for (const raiz of ids) {
+    if (pos[raiz]) continue;
+    // pedaço que só se liga ao resto por outro capítulo: vai pra direita de tudo o que já está posto
+    const [w, h] = tam(raiz), postos = Object.values(pos);
+    pos[raiz] = { x: postos.length ? Math.max(...postos.map(p => p.x + p.w)) + FOLGA * 2 : 0, y: 0, w, h };
+    for (const fila = [raiz]; fila.length;) {
+      const a = fila.shift();
+      for (const p of portas(a)) {
+        if (pos[p.para] || MAPAS_SAGA[p.para].cap !== idCap) continue;
+        const lados = bordas(a, p), c = lados.map(l => encostar(a, p, l)).find(livre) || encostar(a, p, lados[0]);
+        while (!livre(c)) { c.x += EMPURRA[lados[0]][0] * FOLGA; c.y += EMPURRA[lados[0]][1] * FOLGA; }
+        pos[p.para] = c; fila.push(p.para);
+      }
+    }
+  }
+  const lugares = ids.map(id => ({ id, ...pos[id] }));
+  const x0 = Math.min(0, ...lugares.map(l => l.x)), y0 = Math.min(0, ...lugares.map(l => l.y));
+  for (const l of lugares) { l.x -= x0; l.y -= y0; pos[l.id] = l; }
+  const ligacoes = [], saidas = [], feitas = new Set();
+  for (const a of ids) for (const p of portas(a)) {
+    if (MAPAS_SAGA[p.para].cap !== idCap) { saidas.push({ de: a, para: p.para, x: pos[a].x + p.x, y: pos[a].y + p.y }); continue; }
+    const k = [a, p.para].sort().join('>');
+    if (feitas.has(k)) continue;     // a porta de volta é a mesma ligação
+    feitas.add(k);
+    ligacoes.push({ de: a, para: p.para, x1: pos[a].x + p.x + .5, y1: pos[a].y + p.y + .5, x2: pos[p.para].x + p.ex + .5, y2: pos[p.para].y + p.ey + .5 });
+  }
+  return { w: Math.max(1, ...lugares.map(l => l.x + l.w)), h: Math.max(1, ...lugares.map(l => l.y + l.h)), lugares, ligacoes, saidas };
+}
+/* A cor de uma casa na miniatura: a de reserva do tile (com o tema do mapa). Tile `falsa` sai com a cor do que ele
+   IMITA — senão a passagem secreta apareceria desenhada na carta. Só aceita cor hexadecimal: o ajuste `pele` de um
+   mapa pode vir do pacote publicado, e esta cor vai parar dentro de um atributo. */
+export function corDaCasa(mapa, x, y) {
+  const ch = tileEm(mapa, x, y);
+  if (ch === null) return null;
+  const c = defDoTile(mapa, TILES[ch].finge || ch, { TILES, TEMAS }).c;
+  return /^#[0-9a-f]{3,8}$/i.test(c) ? c : '#555555';
+}
+// Os capítulos em que você já pisou (pelo menos um mapa visto), na ordem da história.
+export const capitulosVistos = S => { const v = estadoSaga(S).vistos; return CAPITULOS.filter(c => Object.keys(MAPAS_SAGA).some(id => v[id] && MAPAS_SAGA[id].cap === c.id)); };
 
 /* ---- diálogo ---- */
 // Por onde a conversa começa, e conta mais uma conversa com aquele NPC (é o que `se.falas` lê).

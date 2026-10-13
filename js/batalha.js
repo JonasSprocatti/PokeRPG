@@ -3,7 +3,7 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
-import { fimDaLuta } from './saga-mundo.js';
+import { fimDaLuta, mundoAtivo } from './saga-mundo.js';
 import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo, zone,
   ligarInimigos, inimigosEmCampo, grupoInimigoCaiu } from './estado.js';
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
@@ -1086,11 +1086,16 @@ const retomarEvolucoes = () => verificarEvolucoesPendentes().catch(e => console.
 // vitória e o mapa seguinte libera pras próximas runs; nos outros, você escolhe o próximo mapa (telaEscolherGen).
 async function vencerGen() {
   const S = G.S, B = G.B, g = genDe(S), regiao = dadosDaGen(g).regiao, premio = premioChefe(B.enemy.level) * 3;
+  const doMapa = mundoAtivo(S) && !!S.saga?.luta;   // ⚔ Saga: lido ANTES do endBattle, que apaga a anotação
   (S.chefes ||= {})[B.chefe] = true;
   if (!(S.gensVencidas ||= []).includes(g)) S.gensVencidas.push(g);
   S.money += premio;
   await say(`🏆 Você venceu os lendários de ${regiao}! A Gen ${g} está fechada. Prêmio: ₽${premio}.`, 'level');
   endBattle(true);
+  /* ⚔ Saga: a luta que o MAPA começou não encerra a jornada aqui. Vencer os Antigos faz com que eles ESCUTEM — e o
+     que você diz a eles (o final) é uma conversa no mapa, que termina a jornada pelo efeito `fim` (tela-saga
+     `encerrar`). A Gen fica fechada e gravada desde já: fechar o jogo agora não perde a vitória. */
+  if (doMapa) { S.genVencida = g; save(); render(); return; }
   if (DIFICULDADES[dificuldadeDe(S)].fimNaGen) {
     // A vitória fica GRAVADA no save agora (não no fim da run): quem escolhe seguir no Santuário e morre lá termina
     // em derrota, mas a Gen vencida continua contando pro desbloqueio do mapa seguinte (mapas.gensLiberadasRoguelike).

@@ -12,7 +12,8 @@ import { MASCARAS_BLOB, INDICE_BLOB, reduzir, desenhoDaCasa, propDaCasa, N, L, S
 import { validarMundo, errosDoMundo, EFEITOS_DE_DOM } from '../js/saga-validar.js';
 import {
   DIRS, CHANCE_MATO, acharChar, estadoSaga, etapaDe, diario, vale, aplicar, objetoEm, bloqueia, passo, sorteiaEncontro,
-  caminho, camera, comecarConversa, opcoesDe, fimDaLuta, mundoAtivo, marcaDoNpc, capituloDe, multDosDons, temFaro
+  caminho, camera, comecarConversa, opcoesDe, fimDaLuta, mundoAtivo, marcaDoNpc, capituloDe, multDosDons, temFaro,
+  visitou, cartaDoCapitulo, corDaCasa, capitulosVistos
 } from '../js/saga-mundo.js';
 import { multSaga, MULT_RUINA } from '../js/regras.js';
 
@@ -56,6 +57,17 @@ test('o validador pega o que diz pegar', () => {
   quebra(m => { m.NPCS.pichu.sprite = 'robo'; }, 'figura inválida');
   quebra(m => { m.INICIO.em = '%'; }, 'ponto de partida');
   quebra(m => { m.NPCS.pichu.nos.oi.fala = 'x'.repeat(5000); }, 'limite');
+  quebra(m => { m.MAPAS.bosque.objs.X.inimigo.tipo = 'dragao'; }, 'inimigo sem tipo');
+  quebra(m => { m.NPCS.pichu.sprite = '@lendario'; }, 'figura inválida');
+  quebra(m => { m.NPCS.pichu.nos.oi.faz = { fim: 'x'.repeat(200) }; }, 'nome do final');
+});
+
+test('o fim da história: os Antigos e a figura "@antigo" valem, e luta final sem conversa que encerre vira aviso', () => {
+  const m = copia();
+  assert.equal(m.MAPAS.nascente.objs.X[0].inimigo.tipo, 'antigos'); assert.equal(m.NPCS.antigos.sprite, '@antigo');
+  for (const no of Object.values(m.NPCS.antigos.nos)) if (no.faz) delete no.faz.fim;
+  const avisos = validarMundo(m, ARTES).filter(x => x.nivel === 'aviso').map(x => x.msg);
+  assert.ok(avisos.some(a => a.includes('nenhuma conversa encerra a jornada')), `esperava o aviso do fim, veio: ${avisos.join(' | ') || 'nenhum'}`);
 });
 
 test('todo dom de fábrica respeita os limites, e o texto dele não mente o sinal', () => {
@@ -299,6 +311,59 @@ test('dons são dado: o efeito sai do número escrito em DONS, no mapa e na bata
   assert.equal(multSaga({}, { dons: ['casca'], vol: {} }), DONS.casca.defesa);
   assert.equal(multSaga({ dons: ['dom-que-nao-existe'] }, {}), 1);
   assert.equal(multSaga({}, {}), 1);
+});
+
+/* ---------- 4. a carta da região ---------- */
+test('por onde você passou: o começo conta, a porta marca o lugar novo, e save antigo não quebra', () => {
+  const S = novo(), s = estadoSaga(S);
+  assert.deepEqual(Object.keys(s.vistos), ['pedralume']);
+  assert.equal(visitou(S, 'pedralume'), true); assert.equal(visitou(S, 'bosque'), false);
+  const [px, py] = acharChar('pedralume', '1'); s.x = px + 1; s.y = py; passo(S, 'o');
+  assert.equal(visitou(S, 'bosque'), true);
+  assert.deepEqual(capitulosVistos(S).map(c => c.id), ['cap1']);
+  // save de antes da carta: sem `vistos`, nasce com o lugar em que você está
+  const velho = novo({ saga: { mapa: 'passo', x: 12, y: 19, flags: {} } });
+  assert.deepEqual(Object.keys(estadoSaga(velho).vistos), ['passo']); assert.deepEqual(capitulosVistos(velho).map(c => c.n), [2]);
+});
+
+test('carta: todo mapa do capítulo tem lugar, nenhum encosta no outro, e a posição sai da porta', () => {
+  for (const c of CAPITULOS) {
+    const k = cartaDoCapitulo(c.id), ids = Object.keys(MAPAS_SAGA).filter(id => MAPAS_SAGA[id].cap === c.id);
+    assert.deepEqual(k.lugares.map(l => l.id).sort(), [...ids].sort(), `${c.id}: falta mapa na carta`);
+    for (const l of k.lugares) {
+      assert.deepEqual([l.w, l.h], [MAPAS_SAGA[l.id].grade[0].length, MAPAS_SAGA[l.id].grade.length]);
+      assert.ok(l.x >= 0 && l.y >= 0 && l.x + l.w <= k.w && l.y + l.h <= k.h, `${c.id}/${l.id}: fora da carta`);
+      for (const o of k.lugares) if (o !== l) assert.ok(l.x + l.w < o.x || o.x + o.w < l.x || l.y + l.h < o.y || o.y + o.h < l.y, `${c.id}: ${l.id} e ${o.id} se encostam`);
+    }
+    for (const v of k.ligacoes) assert.ok(ids.includes(v.de) && ids.includes(v.para) && v.de !== v.para);
+    assert.ok(k.ligacoes.length >= ids.length - 1, `${c.id}: há mapa do capítulo sem porta pros outros`);
+    // toda região tem passagem pra anterior e pra seguinte (menos as pontas da história)
+    const fora = new Set(k.saidas.map(s => MAPAS_SAGA[s.para].cap));
+    if (c.n > 1) assert.ok(fora.has(CAPITULOS[c.n - 2].id), `${c.id}: sem passagem pro capítulo anterior`);
+    if (c.n < CAPITULOS.length) assert.ok(fora.has(CAPITULOS[c.n].id), `${c.id}: sem passagem pro capítulo seguinte`);
+  }
+  // o Vale do Orvalho: o bosque fica a oeste da aldeia, a estrada a leste, a clareira ao norte do bosque
+  const L = Object.fromEntries(cartaDoCapitulo('cap1').lugares.map(l => [l.id, l]));
+  assert.ok(L.bosque.x + L.bosque.w < L.pedralume.x && L.pedralume.x + L.pedralume.w < L.estrada.x);
+  assert.ok(L.clareira.y + L.clareira.h < L.bosque.y && L.ruinas.y + L.ruinas.h < L.estrada.y);
+  // a ligação une as duas casas da porta: a saída oeste de Pedralume e a chegada no bosque ficam na mesma linha
+  const via = cartaDoCapitulo('cap1').ligacoes.find(v => [v.de, v.para].sort().join() === 'bosque,pedralume');
+  assert.equal(via.y1, via.y2);
+  assert.deepEqual(cartaDoCapitulo('capitulo-que-nao-existe').lugares, []);
+});
+
+test('carta: a passagem secreta não se entrega pela cor, o tema pinta a neve, e cor que vem de fora é conferida', () => {
+  const B = MAPAS_SAGA.bosque, [tx, ty] = acharChar('bosque', 't');
+  assert.equal(corDaCasa(B, tx, ty), corDaCasa(B, 0, 0), 'a árvore falsa sai da cor de uma árvore de verdade');
+  const F = MAPAS_SAGA.fonteMorta, fy = F.grade.findIndex(l => l.includes('%')), fx = F.grade[fy].indexOf('%');
+  assert.equal(corDaCasa(F, fx, fy), corDaCasa(F, 0, 0), 'a parede falsa sai da cor do breu');
+  const chaoDe = id => { const m = MAPAS_SAGA[id]; for (let y = 0; y < m.grade.length; y++) { const x = m.grade[y].indexOf('.'); if (x >= 0) return corDaCasa(m, x, y); } };
+  assert.notEqual(chaoDe('degelo'), chaoDe('pedralume'), 'o tema muda a cor do chão na miniatura');
+  assert.notEqual(chaoDe('salina'), chaoDe('degelo'));
+  assert.equal(corDaCasa(B, 99, 99), null);
+  // `pele` vem com o mapa (e o mapa pode vir do pacote publicado): só cor hexadecimal chega ao desenho
+  const sujo = { ...MAPAS_SAGA.clareira, pele: { '.': { c: '#fff" onload="alert(1)' } } };
+  assert.equal(corDaCasa(sujo, 1, 1), '#555555');
 });
 
 test('direções: as quatro, e só elas', () => assert.deepEqual(Object.keys(DIRS).sort(), ['l', 'n', 'o', 's']));

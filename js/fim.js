@@ -63,6 +63,8 @@ const frase = r => r.motivo === 'venceu' ? `${esc(r.nome)} venceu os lendários 
   : r.motivo === 'desmaiou' ? (DIFICULDADES[r.dificuldade]?.permadeath ? `${esc(r.nome)} desmaiou. No Roguelike não existe segunda chance: a run acabou.`
     : `${esc(r.nome)} desmaiou sem nenhum Revive na mochila. A jornada termina aqui.`)
   : `Você encerrou a jornada de ${esc(r.nome)}. O resultado foi para a sua carreira.`;
+// ⚔ Saga: a história termina num FINAL com nome (o efeito `fim` do mundo) — vem de conteúdo, então escapado
+const final = r => r.final ? `<br>⚔ Final da Saga: <b>${esc(String(r.final).slice(0, 80))}</b>.` : '';
 const n = v => (v || 0).toLocaleString('pt-BR');
 // linhas da tela: [rótulo, campo, formatação]
 const LINHAS = [['Pontuação', 'pontuacao'], ['Nível', 'nivel'], ['Tempo de jogo', 'tempoMs', formatarTempo], ['Vitórias', 'vitorias'],
@@ -80,7 +82,7 @@ function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
   const f = (l, v) => l[2] ? l[2](v || 0) : n(v);
   $('#app').innerHTML = `<main class="create fim">
     <h1>${TITULO[r.motivo]}.</h1>
-    <p class="lead">${frase(r)}</p>
+    <p class="lead">${frase(r)}${final(r)}</p>
     <section class="pv">
       <div class="pv-art"><img src="${r.sprite}" alt="${esc(fmt(r.especieFinal))}"></div>
       <div>

@@ -13,7 +13,8 @@
 import { G, save, zone, rotasAtuais, rotulo, emCampo, centroPokemon } from './estado.js';
 import { render, modoJRPG } from './render.js';
 import { log, ask, toast, semAnimacao } from './ui.js';
-import { startBattle, startBossBattle, startTrainerBattle } from './batalha.js';
+import { startBattle, startBossBattle, startTrainerBattle, startLendarios } from './batalha.js';
+import { encerrarJornada } from './fim.js';
 import { curarNoCentro } from './mundo.js';
 import { addItem } from './itens.js';
 import { verificarMissoes } from './missoes.js';
@@ -24,15 +25,16 @@ import { apiErr } from './api.js';
 import { ITEMS } from './dados.js';
 import { esc, sleep } from './util.js';
 import { NPCS, MAPAS_SAGA, CAPITULOS } from './dados-saga.js';
-import { DIRS, mundoAtivo, modoComMundo, estadoSaga, mapaDe, passo, caminho, sorteiaEncontro, aplicar, comecarConversa, opcoesDe, bauAberto } from './saga-mundo.js';
-import { MS_PASSO, posicionarMundo, casaDoToque, efeitoDeTela, virarNpc, textoSeguro, htmlDiario, htmlFala, definirDirecional } from './saga-cena.js';
+import { DIRS, mundoAtivo, modoComMundo, estadoSaga, mapaDe, capituloDe, capitulosVistos, passo, caminho, sorteiaEncontro, aplicar, comecarConversa, opcoesDe, bauAberto } from './saga-mundo.js';
+import { MS_PASSO, posicionarMundo, casaDoToque, efeitoDeTela, virarNpc, textoSeguro, htmlDiario, htmlFala, htmlCarta, definirDirecional, antigoDasRotas } from './saga-cena.js';
 
 export const PASSOS_POR_EXPLORACAO = 6;   // a cada tantas casas conta um "passo" de ovo, de evolução por passos e de repelente
 const OPOSTO = { n: 's', s: 'n', l: 'o', o: 'l' };
 const FALA_DO_INIMIGO = {
   bando: 'Um bando ronda este trecho e não parece disposto a sair.',
   treinador: 'Alguém mede você de cima a baixo, com uma bola na mão. Está aqui a trabalho.',
-  alfa: 'O <b>Alfa</b> abre um olho. Ele não está só.'
+  alfa: 'O <b>Alfa</b> abre um olho. Ele não está só.',
+  antigos: 'O ar pesa. Os <b>Antigos</b> se viram pra você, um de cada vez.'
 };
 
 /* ---- o motor ---- */
@@ -53,6 +55,8 @@ export function criarMotor(ctx) {
     }
     for (const a of avisos) ctx.log(a, 'good');
     if (avisos.length) ctx.aviso(avisos.join('<br>'));
+    // o fim da história vem por último: depois dele não há mais jornada onde escrever aviso
+    for (const p of pedidos) if (p.fim) await ctx.encerrar(p.fim);
   }
   // conversa: um nó por vez, na caixa de escolha de sempre
   async function conversar(id, dir) {
@@ -64,7 +68,8 @@ export function criarMotor(ctx) {
       const no = npc.nos[idNo], fala = texto(no.fala), ops = opcoesDe(S(), no);
       const escolhas = ops.length ? ops.map((o, i) => ({ label: texto(o.t), value: i }))
         : [{ label: no.vai ? 'Continuar ▸' : 'Encerrar', value: -1, ghost: !no.vai }];
-      const i = await ctx.ask(htmlFala(npc.sprite === '@alfa' ? { ...npc, sprite: ctx.alfa() } : npc, fala), escolhas);
+      const figura = npc.sprite === '@alfa' ? ctx.alfa() : npc.sprite === '@antigo' ? ctx.antigo() : npc.sprite;
+      const i = await ctx.ask(htmlFala({ ...npc, sprite: figura }, fala), escolhas);
       ctx.log(`<b>${textoSeguro(npc.nome)}:</b> ${fala}`, 'muted');
       await executar(no.faz);
       if (i >= 0) await executar(ops[i].faz);
@@ -118,11 +123,15 @@ export function criarMotor(ctx) {
       }
     } catch (e) { aconteceu = true; ctx.erro(e); }
     finally {
-      ctx.mover({});
-      if (aconteceu) await ctx.depois();
+      /* O efeito `fim` encerra a jornada NO MEIO da conversa: daqui pra baixo não há mais mundo pra arrumar nem
+         save pra gravar — só soltar o "ocupado". (No navegador a tela do mapa já sumiu e nada disto estouraria;
+         foi o teste de fumaça, onde todo elemento "existe", que mostrou que a ordem dependia disso.) */
+      const viva = !!S();
+      if (viva) ctx.mover({});
+      if (viva && aconteceu) await ctx.depois();
       ctx.ocupar(false);
-      if (aconteceu) ctx.redesenhar();
-      if (aconteceu || andou) ctx.salvar();     // empurrar uma parede não é motivo pra gravar o save
+      if (viva && aconteceu) ctx.redesenhar();
+      if (viva && (aconteceu || andou)) ctx.salvar();     // empurrar uma parede não é motivo pra gravar o save
     }
   }
   /* Segurar uma direção (alavanca do celular, tecla): anda sem parar até soltar, bater em algo ou acontecer
@@ -140,13 +149,28 @@ export function criarMotor(ctx) {
     segurar,
     conversar: id => conversar(id, 's'),          // o ▶ Simular conversa do editor entra direto na fala
     irPara: (x, y) => passos(caminho(S(), x, y)),
-    abrirDiario: () => ctx.travado() ? null : ctx.ask(htmlDiario(S()), [{ label: 'Fechar', value: 0, ghost: true }])
+    abrirDiario: () => ctx.travado() ? null : ctx.ask(htmlDiario(S()), [{ label: 'Fechar', value: 0, ghost: true }]),
+    /* 🗺 A carta da região em que você está; as setas folheiam as OUTRAS regiões por onde você já passou (as que
+       ainda não, aparecem só como cadeado na lista). Mesma caixa do diário: abre, olha, fecha. */
+    async abrirCarta() {
+      if (ctx.travado()) return;
+      for (let cap = capituloDe(mapaDe(S())) || CAPITULOS[0]; cap;) {
+        const vistos = capitulosVistos(S()), i = vistos.indexOf(cap), antes = vistos[i - 1], depois = i >= 0 ? vistos[i + 1] : null;
+        cap = await ctx.ask(htmlCarta(S(), cap.id), [
+          ...(antes ? [{ label: `◀ ${textoSeguro(antes.regiao || antes.nome)}`, value: antes, ghost: true }] : []),
+          { label: 'Fechar', value: null },
+          ...(depois ? [{ label: `${textoSeguro(depois.regiao || depois.nome)} ▶`, value: depois, ghost: true }] : [])]);
+      }
+    }
   };
 }
 
 /* ---- o jogo de verdade ---- */
 const rotaDoMapa = () => rotasAtuais()[mapaDe(G.S).rota] || zone();
-const COMECAR = { bando: startBattle, treinador: startTrainerBattle, alfa: startBossBattle };
+/* Os Antigos são os lendários da Gen: a luta é a da rota FINAL do mapa da jornada (achada pelo que ela tem, não
+   pelo número — rota é coisa editável). Gen sem lendário nenhum cai no Alfa da rota, pra história não travar. */
+const rotaFinal = () => rotasAtuais().find(z => z.lendarios?.length);
+const COMECAR = { bando: startBattle, treinador: startTrainerBattle, alfa: startBossBattle, antigos: z => rotaFinal() ? startLendarios(rotaFinal()) : startBossBattle(z) };
 // A rota do mapa em que você está vira a rota da jornada: é ela que dá cenário de batalha, música, clima e Pokédex.
 function sincronizarRota() {
   const z = rotaDoMapa();
@@ -156,6 +180,7 @@ const JOGO = criarMotor({
   S: () => G.S,
   nome: () => rotulo(G.S.player),
   alfa: () => rotaDoMapa()?.chefe?.id,
+  antigo: () => antigoDasRotas(rotasAtuais()),
   custoDescanso() { const { precisa, custo } = centroPokemon(); return !precisa ? 'todos já estão bem' : custo ? `₽${custo}` : 'grátis'; },
   travado: () => G.busy || G.mode !== 'explore' || G.panel !== 'main' || !!G.gaveta || !mundoAtivo(G.S) || !!document.querySelector('.modal'),
   conversando: () => mundoAtivo(G.S) && G.panel === 'main' && !G.B,
@@ -176,12 +201,19 @@ const JOGO = criarMotor({
     try { await curarNoCentro(); } finally { G.busy = true; }
   },
   loja() { G.gaveta = null; G.panel = 'shop'; },
-  /* Seguir viagem pra além do último capítulo escrito: o resto da Gen ainda não tem mapa, então a jornada
-     continua pela lista de rotas de sempre (com um botão de volta). */
+  /* O fim da história. A Gen já foi fechada na luta contra os Antigos (`batalha.vencerGen` deixou `S.genVencida`
+     e NÃO perguntou nada, porque a luta veio do mapa); aqui a jornada termina de verdade, em vitória, e o nome do
+     final vai junto no resumo. Final sem luta vencida (um mundo editado que encerra antes) termina como jornada
+     encerrada: sem Gen fechada não há vitória pra declarar. */
+  encerrar(final) { encerrarJornada(G.S.genVencida ? 'venceu' : 'encerrou', { final }); },
+  /* Seguir viagem pra além do último capítulo escrito (efeito `viajar`): num mundo que NÃO cobre a Gen inteira,
+     o resto da jornada continua pela lista de rotas de sempre, com um botão de volta. O mundo de fábrica tem os
+     dez capítulos e não usa isto; fica pra quem publicar um mundo menor pelo editor. O Santuário não é destino:
+     ele só existe depois de fechar a Gen. */
   viajar() {
     estadoSaga(G.S).fora = true;
     const z = rotasAtuais()[Math.max(...CAPITULOS.map(c => c.rota)) + 1];
-    if (z) G.S.zone = z.id;
+    if (z && !z.posVitoria) G.S.zone = z.id;
     return '🧭 Você segue viagem. Daqui pra frente o caminho ainda não tem mapa: é rota e bicho.';
   },
   async lutar(tipo, flag) {
@@ -221,6 +253,7 @@ export function soltar(dir) { if (!dir || dir === segurada) segurar(null); }
 definirDirecional(segurar);       // a alavanca da tela de jogo fala com este motor
 export const irPara = (x, y) => JOGO.irPara(x, y);
 export const abrirDiario = () => JOGO.abrirDiario();
+export const abrirCarta = () => JOGO.abrirCarta();
 // Toque/clique no mapa: anda até a casa (e, se ali há algo que bloqueia, o último passo é o esbarrão).
 export function tocarNoMapa(e) { const c = casaDoToque(e); return c ? JOGO.irPara(c[0], c[1]) : null; }
 // As gavetas da tela de jogo (ficha, comitiva, mochila, missões, registro): abrir, trocar ou fechar.

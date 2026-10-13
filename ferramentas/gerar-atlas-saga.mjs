@@ -51,7 +51,7 @@ async function prepararBase() {
 }
 const cache = new Map();
 const base = n => { const p = path.join(DIR_BASE, n); if (!cache.has(p)) cache.set(p, lerPng(fs.readFileSync(p))); return cache.get(p); };
-const tile = (arq, c, l) => recortar(base(`tiles/${arq}.png`), c * T, l * T, T, T);
+const tile = (arq, c, l) => recortar(typeof arq === 'string' ? base(`tiles/${arq}.png`) : arq, c * T, l * T, T, T);
 async function ulpc(rel) {
   const p = path.join(ORIGEM, 'ulpc', rel);
   await baixar(URL_ULPC + rel, p);
@@ -97,18 +97,24 @@ function blob(arq) {
     return out;
   });
 }
-// nome no jogo → folha do LPC. `enche` = guardar também os três preenchimentos (chão liso daquele terreno).
+/* nome no jogo → folha do LPC. `enche` = guardar também os três preenchimentos (chão liso daquele terreno);
+   `soEnche` = SÓ eles, sem as 47 bordas (chão de mapa inteiro não tem borda); `cor` = a mesma folha recolorida
+   pela luz de cada pixel — é como a grama vira neve, sal ou lodo sem desenhar nada. Terreno novo entra NO FIM:
+   a ordem é a posição no atlas. */
 const TERRENOS = {
   grama: { arq: 'grass', enche: true, tufos: true }, gramaClara: { arq: 'grassalt' },
   terra: { arq: 'dirt', enche: true }, terraEscura: { arq: 'dirt2', enche: true },
   pedra: { arq: 'cement', enche: true }, buraco: { arq: 'hole', enche: true },
   aguaGrama: { arq: 'watergrass' }, agua: { arq: 'water', enche: true },
-  lava: { arq: 'lava', enche: true }, lavaRocha: { arq: 'lavarock' }
+  lava: { arq: 'lava', enche: true }, lavaRocha: { arq: 'lavarock' },
+  brejo: { arq: 'brackish' }, gelo: { arq: 'water', cor: [176, 210, 238] }, pisoGelo: { arq: 'cement', cor: [214, 232, 246] },
+  neve: { arq: 'grass', cor: [236, 243, 250], soEnche: true }, sal: { arq: 'grass', cor: [232, 224, 200], soEnche: true },
+  lodo: { arq: 'grass', cor: [120, 130, 80], soEnche: true }
 };
 
 /* ---- figuras soltas de 32×32 (vão por cima do chão) ---- */
 const SOLTOS = {
-  rocha: ['rock', 0, 0], pedrinhas: ['rock', 1, 0],
+  rocha: ['rock', 0, 0], pedrinhas: ['rock', 1, 0], tabuas: ['bridges', 4, 4], cova: ['holemid', 0, 1],
   bau: ['chests', 0, 0], bau2: ['chests', 1, 0], bau3: ['chests', 0, 1], bau4: ['chests', 1, 1],
   bauAberto: ['chests', 0, 2], bauAberto2: ['chests', 1, 2],
   placaPousada: ['signs', 0, 0], placaForja: ['signs', 1, 0], placaLoja: ['signs', 2, 0],
@@ -137,12 +143,16 @@ function desenhados() {
   d.floresRosa = flor([250, 240, 160, 255], [240, 130, 170, 255]);
   d.floresAzuis = flor([250, 250, 200, 255], [120, 160, 240, 255]);
   // mato alto: tufos de três lâminas, mais escuros que a grama, espalhados na casa inteira
-  const mato = nova(T, T), escuro = [30, 98, 44, 255], claro = [86, 160, 70, 255];
-  for (const [x, y] of [[3, 9], [13, 6], [23, 10], [8, 19], [18, 17], [27, 21], [4, 28], [14, 29], [24, 30]]) {
-    caixa(mato, x, y - 5, 1, 6, escuro); caixa(mato, x + 2, y - 7, 1, 8, escuro); caixa(mato, x + 4, y - 4, 1, 5, escuro);
-    ponto(mato, x + 1, y - 3, claro); ponto(mato, x + 3, y - 5, claro); ponto(mato, x + 2, y - 8, claro);
-  }
-  d.matoAlto = mato;
+  const tufos = (escuro, claro) => {
+    const mato = nova(T, T);
+    for (const [x, y] of [[3, 9], [13, 6], [23, 10], [8, 19], [18, 17], [27, 21], [4, 28], [14, 29], [24, 30]]) {
+      caixa(mato, x, y - 5, 1, 6, escuro); caixa(mato, x + 2, y - 7, 1, 8, escuro); caixa(mato, x + 4, y - 4, 1, 5, escuro);
+      ponto(mato, x + 1, y - 3, claro); ponto(mato, x + 3, y - 5, claro); ponto(mato, x + 2, y - 8, claro);
+    }
+    return mato;
+  };
+  d.matoAlto = tufos([30, 98, 44, 255], [86, 160, 70, 255]);
+  d.matoSeco = tufos([128, 104, 62, 255], [196, 170, 112, 255]);     // o mato do deserto de sal: palha
   const placa = nova(T, T), madeira = [150, 104, 60, 255], sombra = [96, 62, 36, 255], risco = [70, 44, 26, 255];
   caixa(placa, 14, 16, 4, 14, sombra); caixa(placa, 15, 16, 2, 14, madeira);
   caixa(placa, 4, 4, 24, 14, sombra); caixa(placa, 5, 5, 22, 12, madeira);
@@ -170,10 +180,13 @@ const ENFEITES = {
      parede. A casa-âncora é a da PORTA. */
   casa: { tam: [96, 192], ancora: [-32, -160], pecas: [['house', 0, 0, 96, 96, 0, 96], ['house', 96, 0, 32, 48, 32, 144], ['house', 0, 96, 96, 128, 0, 0]] },
   casaPedra: { tam: [96, 160], ancora: [-32, -128], pecas: [['house', 96, 96, 96, 128, 0, 32], ['house', 160, 0, 32, 48, 32, 112], ['house', 224, 0, 32, 32, 2, 40]] },
-  entradaCaverna: { tam: [64, 64], ancora: [-16, -32], pecas: [['mountains', 32, 160, 64, 64, 0, 0]] }
+  entradaCaverna: { tam: [64, 64], ancora: [-16, -32], pecas: [['mountains', 32, 160, 64, 64, 0, 0]] },
+  cachoeira: { tam: [96, 160], ancora: [-32, -128], pecas: [['waterfall', 0, 0, 96, 160, 0, 0]] }
 };
-// Mesma figura, outra cor: é o jeito barato de ter "várias opções pra mesma coisa".
-const TINTAS = { carvalhoOutono: ['carvalho', [255, 190, 110]], carvalho2Outono: ['carvalho2', [255, 170, 100]], pinheiroNevado: ['pinheiro', [215, 235, 255]], carvalhoSombrio: ['carvalho', [150, 175, 215]], casaVelha: ['casa', [205, 190, 170]] };
+// Mesma figura, outra cor: é o jeito barato de ter "várias opções pra mesma coisa". Lista = multiplica (escurece
+// puxando pra cor); { cor } = recolore pela luz (é o único jeito de CLAREAR: a árvore e a casa viram sal).
+const TINTAS = { carvalhoOutono: ['carvalho', [255, 190, 110]], carvalho2Outono: ['carvalho2', [255, 170, 100]], pinheiroNevado: ['pinheiro', [215, 235, 255]], carvalhoSombrio: ['carvalho', [150, 175, 215]], casaVelha: ['casa', [205, 190, 170]],
+  carvalhoSal: ['carvalho', { cor: [228, 222, 206] }], casaSal: ['casa', { cor: [236, 230, 214] }] };
 
 /* ---- gente: camadas do gerador universal do LPC, todas de 576×256 (9 quadros × 4 direções) ----
    [arquivo, tinta?] — `cor:` recolore pela luz (cabelo), lista simples multiplica (roupa branca vira a cor). */
@@ -185,7 +198,11 @@ const GENTE = {
   menina: [[C + 'teen/walk.png'], [H + 'female_small/walk.png'], ['legs/pants/thin/walk.png', [120, 90, 140]], ['torso/clothes/longsleeve/longsleeve/teen/walk.png', [250, 210, 90]], ['hair/bangs/adult/walk.png', { cor: [40, 34, 44] }]],
   velho: [[C + 'male/walk.png'], [H + 'male_elderly/walk.png'], ['feet/boots/basic/male/walk.png', [90, 80, 80]], ['legs/pants/male/walk.png', [110, 110, 130]], ['torso/clothes/longsleeve/longsleeve/male/walk.png', [130, 150, 190]], ['hair/plain/adult/walk.png', { cor: [225, 225, 230] }]],
   lenhador: [[C + 'male/walk.png'], [H + 'male/walk.png'], ['feet/boots/basic/male/walk.png', [80, 60, 50]], ['legs/pants/male/walk.png', [70, 80, 110]], ['torso/clothes/longsleeve/longsleeve/male/walk.png', [190, 70, 60]], ['hair/plain/adult/walk.png', { cor: [50, 40, 36] }]],
-  soldado: [{ base: 'sprites/people/soldier.png' }], soldadoRubro: [{ base: 'sprites/people/soldier_altcolor.png' }], dama: [{ base: 'sprites/people/princess.png' }]
+  soldado: [{ base: 'sprites/people/soldier.png' }], soldadoRubro: [{ base: 'sprites/people/soldier_altcolor.png' }], dama: [{ base: 'sprites/people/princess.png' }],
+  // gente nova entra NO FIM (a linha na folha é a posição aqui). Estas três são as MESMAS camadas, noutra cor.
+  ferreiro: [[C + 'male/walk.png'], [H + 'male/walk.png'], ['feet/boots/basic/male/walk.png', [60, 50, 46]], ['legs/pants/male/walk.png', [86, 80, 78]], ['torso/clothes/longsleeve/longsleeve/male/walk.png', [150, 96, 60]], ['hair/plain/adult/walk.png', { cor: [40, 34, 32] }]],
+  guerreiro: [[C + 'male/walk.png'], [H + 'male/walk.png'], ['feet/boots/basic/male/walk.png', [70, 44, 40]], ['legs/pants/male/walk.png', [84, 60, 54]], ['torso/clothes/longsleeve/longsleeve/male/walk.png', [140, 50, 44]], ['hat/cloth/hood/adult/walk.png', [60, 40, 40]]],
+  sabia: [[C + 'female/walk.png'], [H + 'female/walk.png'], ['feet/boots/basic/thin/walk.png', [150, 130, 100]], ['legs/pants/thin/walk.png', [200, 186, 150]], ['torso/clothes/tunic/female/walk/forest.png', [255, 214, 150]], ['hair/bangs/adult/walk.png', { cor: [226, 224, 220] }]]
 };
 
 const CREDITOS = `ARTE DO MUNDO DA SAGA (img/saga/atlas.png e img/saga/gente.png)
@@ -193,11 +210,13 @@ const CREDITOS = `ARTE DO MUNDO DA SAGA (img/saga/atlas.png e img/saga/gente.png
 Estes dois arquivos são obra derivada de arte do Liberated Pixel Cup (LPC) e são distribuídos sob
 Creative Commons Attribution-ShareAlike 3.0 (CC-BY-SA 3.0): https://creativecommons.org/licenses/by-sa/3.0/
 (os originais também estão sob GPL 3.0; os de Lanea Zimmerman e Stephen Challener, também sob OGA-BY 3.0).
-Montados por ferramentas/gerar-atlas-saga.mjs. Flores, mato alto, placa de madeira e lápide são desenho nosso.
+Montados por ferramentas/gerar-atlas-saga.mjs. Flores, mato alto e seco, placa de madeira e lápide são desenho
+nosso; neve, sal, lodo e gelo são os terrenos do LPC recoloridos.
 
 Tiles e objetos — "LPC Base Assets"
   https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
-  Lanea Zimmerman (Sharm): terrenos, árvores, casas, baús, barris, placas, pedras, montanhas, a dama.
+  Lanea Zimmerman (Sharm): terrenos, árvores, casas, baús, barris, placas, pedras, montanhas, pontes, a cachoeira,
+  a dama.
   Stephen Challener (Redshrike): moldes de corpo dos personagens.
   Charles Sanchez (CharlesGabriel), Manuel Riecke (MrBeast), Daniel Armstrong (HughSpectrum): soldados e demais
   sprites da base. Lista completa em CREDITS.TXT do pacote.
@@ -215,9 +234,10 @@ async function main() {
   const grade = [], ARTE = {}, BLOBS = {};      // grade: lista de tiles 32×32, na ordem do atlas
   const por = (nome, img) => { ARTE[nome] = grade.length; grade.push(img); };
   for (const [nome, t] of Object.entries(TERRENOS)) {
-    BLOBS[nome] = grade.length; grade.push(...blob(t.arq));
-    if (t.enche) for (let i = 0; i < 3; i++) por(`${nome}${i}`, tile(t.arq, i, 5));
-    if (t.tufos) { por(`${nome}Tufo0`, tile(t.arq, 0, 0)); por(`${nome}Tufo1`, tile(t.arq, 0, 1)); }
+    const folha = t.cor ? colorir(base(`tiles/${t.arq}.png`), t.cor) : t.arq;
+    if (!t.soEnche) { BLOBS[nome] = grade.length; grade.push(...blob(folha)); }
+    if (t.enche || t.soEnche) for (let i = 0; i < 3; i++) por(`${nome}${i}`, tile(folha, i, 5));
+    if (t.tufos) { por(`${nome}Tufo0`, tile(folha, 0, 0)); por(`${nome}Tufo1`, tile(folha, 0, 1)); }
   }
   for (const [nome, [arq, c, l]] of Object.entries(SOLTOS)) por(nome, tile(arq, c, l));
   for (const [nome, img] of Object.entries(desenhados())) por(nome, img);
@@ -228,7 +248,7 @@ async function main() {
     for (const [arq, x, y, w, h, ox, oy] of e.pecas) colar(tela, base(`tiles/${arq}.png`), x, y, w, h, ox, oy);
     telas[nome] = { img: tela, ancora: e.ancora };
   }
-  for (const [nome, [de, cor]] of Object.entries(TINTAS)) telas[nome] = { img: tingir(telas[de].img, cor), ancora: telas[de].ancora };
+  for (const [nome, [de, cor]] of Object.entries(TINTAS)) telas[nome] = { img: cor.cor ? colorir(telas[de].img, cor.cor) : tingir(telas[de].img, cor), ancora: telas[de].ancora };
   // empacota os enfeites em fileiras, abaixo da grade
   let x = 0, y = linhasGrade * T, alturaDaFileira = 0;
   const W = COLS * T;

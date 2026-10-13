@@ -1412,6 +1412,35 @@ body:has(.game.cheia) .menu-links .btn{width:100%;text-align:center;padding:10px
 .hud-mon.mal .hud-hp i{background:#e5484d}
 .hud-local{padding:5px 12px;background:#0b0a12cc;border:1px solid #ffffff22;border-radius:12px;color:#fff;font:700 13px var(--display);text-align:right}
 .hud-local small{display:block;font-weight:500;font-size:11px;opacity:.75}
+/* 🗺 a carta da região (saga-cena.htmlCarta): o letreiro do lugar é o botão que a abre. Miniaturas em SVG — os
+   traços usam `non-scaling-stroke` porque cada região tem um tamanho em casas e o desenho estica pra caber. */
+.box:has(.saga-carta){max-width:780px}
+/* as setas de folhear região ficam lado a lado; o Fechar, numa linha só dele, embaixo */
+.box:has(.saga-carta) .choices{grid-template-columns:1fr 1fr}
+.box:has(.saga-carta) .choices .btn:not(.ghost){grid-column:1/-1;order:1}
+.box:has(.saga-carta) .choices .ghost{padding:8px 10px;font-size:14px}
+.saga-carta{text-align:left}
+.saga-carta h3{margin:0;font:700 20px var(--titulo,var(--display))}
+.saga-carta > p{margin:2px 0 8px}
+.carta{display:block;width:100%;height:auto;max-height:50vh;max-height:50dvh;background:#0e0c18;border:2px solid var(--line);border-radius:12px;shape-rendering:crispEdges}
+.carta-borda{fill:none;stroke:#ffffff55;stroke-width:1.5px;vector-effect:non-scaling-stroke}
+.carta-lugar.aqui .carta-borda{stroke:var(--yellow);stroke-width:2.5px}
+.carta-fechado{fill:#1b1830;stroke:#6a64a0;stroke-width:1.5px;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;shape-rendering:auto}
+.carta-via{stroke:#f6e7a1;stroke-width:2px;stroke-dasharray:2 5;stroke-linecap:round;vector-effect:non-scaling-stroke;shape-rendering:auto}
+.carta-porta{fill:var(--yellow);stroke:#0e0c18;stroke-width:1px;vector-effect:non-scaling-stroke;shape-rendering:auto}
+.carta-selo circle{fill:#0e0c18dd;stroke:#ffffff88;stroke-width:1.5px;vector-effect:non-scaling-stroke;shape-rendering:auto}
+.carta-selo text{fill:#fff;font-family:var(--display);font-weight:700;text-anchor:middle;dominant-baseline:central}
+.carta-eu{fill:#ff5d6c;stroke:#fff;stroke-width:2px;vector-effect:non-scaling-stroke;shape-rendering:auto;transform-box:fill-box;transform-origin:center;animation:carta-eu 1.2s ease-in-out infinite}
+@keyframes carta-eu{50%{transform:scale(1.7);opacity:.55}}
+.carta-legenda{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 14px;margin:10px 0 6px;padding:0;list-style:none;font-size:14px}
+.carta-legenda b{display:inline-grid;place-items:center;width:22px;height:22px;margin-right:4px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font:700 12px var(--display)}
+.carta-legenda span{font-size:12px;opacity:.7}
+.carta-legenda .aqui{color:var(--yellow)}
+.carta-legenda .fechado{opacity:.75}
+.carta-regioes{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.carta-regioes span{padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font:600 11px var(--display)}
+.carta-regioes .on{border-color:var(--yellow);color:var(--yellow)}
+.carta-regioes .fechado{opacity:.55}
 .hud-missao{margin:0 auto auto;max-width:min(560px,100%);padding:6px 14px;background:#0b0a12cc;border:1px solid #f6c74455;border-radius:12px;font:500 13px/1.35 var(--body);text-align:left}
 .hud-missao b{margin-right:6px;color:var(--yellow);font-family:var(--display)}
 .hud-missao span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
