@@ -31,7 +31,7 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
-import { andar, tocarNoMapa, abrirDiario, gaveta, voltarAoVale } from './tela-saga.js';
+import { segurar, soltar, tocarNoMapa, abrirDiario, gaveta, voltarAoVale } from './tela-saga.js';
 import { mundoAtivo } from './saga-mundo.js';
 import { completarAlvosDoSave } from './pokemon.js';
 import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
@@ -301,7 +301,6 @@ async function aoClicar(e) {
     case 'start': return startGame(b);
     case 'explore': return explore();
     // ⚔ Saga: o mapa andável (tela-saga.js)
-    case 'saga-andar': return andar(v);
     case 'saga-toque': return tocarNoMapa(e);
     case 'saga-diario': return abrirDiario();
     case 'saga-gaveta': return gaveta(v);
@@ -503,6 +502,9 @@ document.addEventListener('toggle', e => {
   if (e.target.open) G.abertos.add(i); else G.abertos.delete(i);
 }, true);
 const TECLA_ANDAR = { ArrowUp: 'n', ArrowDown: 's', ArrowLeft: 'o', ArrowRight: 'l', w: 'n', s: 's', a: 'o', d: 'l' };
+// ⚔ Saga: soltar a seta para a caminhada (e perder o foco da janela também — a tecla "solta" sem avisar)
+document.addEventListener('keyup', e => { const dir = TECLA_ANDAR[e.key.length === 1 ? e.key.toLowerCase() : e.key]; if (dir) soltar(dir); });
+window.addEventListener('blur', () => soltar());
 document.addEventListener('keydown', e => {
   // Esc volta da tela em que você está (o mesmo botão de voltar da barra de navegação), menos no meio do jogo
   if (e.key === 'Escape' && !['explore', 'battle', 'create'].includes(G.mode) && !document.querySelector('.modal')) {
@@ -518,10 +520,10 @@ document.addEventListener('keydown', e => {
     if (b) { e.preventDefault(); b.click(); return; }
   }
   if (e.key === 'Escape' && G.gaveta) { gaveta(null); return; }   // ⚔ Saga: Esc fecha a gaveta aberta
-  // ⚔ Saga: setas e WASD andam no mapa (a própria `andar` recusa fora do mundo, em batalha ou com caixa aberta)
+  // ⚔ Saga: setas e WASD andam no mapa (o próprio motor recusa fora do mundo, em batalha ou com caixa aberta)
   const dir = TECLA_ANDAR[e.key.length === 1 ? e.key.toLowerCase() : e.key];
   if (dir && G.mode === 'explore' && G.S && mundoAtivo(G.S) && !e.target.matches?.('input,textarea,select') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    e.preventDefault(); andar(dir).catch(avisarErro); return;
+    e.preventDefault(); segurar(dir); return;       // segurar a tecla = andar sem parar (sem depender da repetição do teclado)
   }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'q') previewSearch(e.target.value);

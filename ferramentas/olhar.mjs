@@ -8,6 +8,8 @@
      · o navegador sobe com `choom -n 1000` — se a memória acabar, o kernel mata ELE primeiro, não a sessão de
        quem chamou;
      · uma aba só, sem GPU, heap do JS limitado; e `fechar()` sempre, senão ele fica comendo RAM.
+     · roteiro que falha ANTES do `try` deixa o navegador vivo: abra dentro do `try`, ou feche no `catch`.
+       (E não encane a saída em `head`: o EPIPE mata o Node antes do `fechar()`.)
 
    Como biblioteca (um roteiro em .mjs):
      import { abrir } from './olhar.mjs';
@@ -55,11 +57,16 @@ export async function abrir({ largura = 390, altura = 844, celular = largura < 7
   const { targetId } = await cdp('Target.createTarget', { url: 'about:blank' });
   sessao = (await cdp('Target.attachToTarget', { targetId, flatten: true })).sessionId;
   await cdp('Page.enable'); await cdp('Runtime.enable');
+  /* Sem service worker: o do jogo, ao assumir o controle, RECARREGA a página — no meio do roteiro, isso derruba
+     o que estava rodando ("Inspected target navigated or closed"). E instalar o precache (~100 arquivos) a cada
+     foto custava vários segundos no Pi. Registrar vira uma promessa que nunca resolve: nada acontece. */
+  await cdp('Page.addScriptToEvaluateOnNewDocument', { source: 'if (navigator.serviceWorker) navigator.serviceWorker.register = () => new Promise(() => {});' });
   await cdp('Emulation.setDeviceMetricsOverride', { width: largura, height: altura, deviceScaleFactor: 1, mobile: celular });
   if (celular) await cdp('Emulation.setTouchEmulationEnabled', { enabled: true });
 
   const n = {
     erros,       // exceções e console.error da página, na ordem: o que um jogador veria no console
+    cdp,         // o protocolo cru, pro que não tem atalho aqui (arrastar com o botão apertado, por exemplo)
     // espera a página carregar (ou `ms`, o que vier primeiro) e mais um respiro pros módulos rodarem
     async ir(url, ms = 45000) {
       eventos.length = 0;

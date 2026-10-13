@@ -75,6 +75,18 @@ test('golpe num selvagem: o turno roda inteiro sem estourar', async () => {
   await rodar({ type: 'move', idx: 0 });
 });
 
+test('⚔ Saga: a tela de luta (cena, registro e comandos numa tela só) desenha, a gaveta sobrevive e o turno roda', async () => {
+  const { render } = await import('../js/render.js');
+  G.S = { ...saveFalso(), dificuldade: 'saga' }; G.mode = 'battle'; G.busy = false; G.panel = 'comandos'; G.abertos = new Set();
+  G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 }), mon({ name: 'rattata', id: 19 })]);
+  G.gaveta = 'ficha'; render();
+  assert.equal(G.gaveta, 'ficha', 'na luta da Saga a gaveta (ficha, comitiva) continua aberta');
+  await batalha.turn({ type: 'move', idx: 0 });
+  // nos outros modos a tela é a de sempre: nenhuma gaveta sobra pendurada de uma jornada pra outra
+  G.S = saveFalso(); G.mode = 'battle'; G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 })]); G.gaveta = 'ficha'; render();
+  assert.equal(G.gaveta, null);
+});
+
 test('golpe contra TREINADOR: o caminho da troca tática roda', async () => {
   const equipe = [mon({ name: 'pidgey', id: 16 }), mon({ name: 'ekans', id: 23, data: { ...mon().data, types: ['poison'] } })];
   const B = await rodar({ type: 'move', idx: 0 }, {

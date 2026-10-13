@@ -3380,6 +3380,43 @@ navegador antes da sessão. Na prática: 20 s por roteiro, memória folgada.
   inteiro, e o admin perderia o próprio acesso até ela chegar.
 - **Continua fora dos patch notes**: o teste é "um jogador comum consegue usar?", e testador é escolhido.
 
+## ⚔ Saga: a luta numa tela só, alavanca, deitado/em pé e sprite 2D (14/10/2026)
+
+Quatro pedidos do usuário depois de ver a tela nova: *sprites exclusivamente 2D neste modo*, *os controles do
+celular estão estranhos — um joystick seria melhor*, *responsivo na vertical e na horizontal*, e *em combate
+tem que ficar descendo e subindo a tela; quero tudo ali, sem rolar*. Foi a primeira leva FEITA OLHANDO
+(`ferramentas/olhar.mjs`): cada ajuste abaixo saiu de uma foto, não de um palpite.
+
+- **Medido antes**: no celular (390×844) a página da luta tinha **3.267 px** de altura. Depois: 844 — igual à tela,
+  nos comandos e na lista de golpes; 390 com o celular deitado; 800 no computador.
+- **A luta é uma grade em `.game`** (classe `luta`): cena, registro e comandos moram em caixas diferentes, e
+  `display:contents` nas caixas do meio os transforma em itens da mesma grade. Considerado e descartado:
+  `position:fixed` em cada pedaço (como no mapa) — três caixas fixas precisariam saber a altura uma da outra.
+- **A cena é um contêiner de tamanho**, e sprites e placas se medem por ela (`cqw`/`cqh`): a mesma regra serve a
+  390×460 e a 500×330. O preço apareceu na primeira foto — a cena virou uma tira de 26 px, porque `.game` alinha
+  os itens no começo e um contêiner de tamanho não tem altura própria. `align-items:stretch`.
+- **A placa virou uma linha e meia** (nome+nível, tipos na mesma linha, HP embaixo, Guarda numa linha fina):
+  com a placa inteira, cinco Pokémon em campo empurravam os sprites pra fora da cena. Do SEU lado o tipo saiu
+  (está na gaveta da ficha) — o que decide o turno é o tipo do inimigo.
+- **A cena deixou de ser grade de 3 linhas** e virou coluna flexível: a fila da rodada caía na linha do lado
+  inimigo e ficava atrás de uma placa.
+- **Painel de comandos como bloco**: ele é uma coluna flexível que reparte a altura entre os filhos, e numa
+  coluna alta (computador) os botões da comitiva viravam ovais de 110 px.
+- **Cena grande dobra o sprite** (`@container`): 96 → 192 px, inteiro. Só dá porque na Saga o sprite é sempre 2D;
+  nos outros modos o `scale-down` existe por causa do estilo 3D.
+- **🕹 Alavanca** no lugar das quatro setas: segurar e arrastar manda uma direção, e o motor anda enquanto ela
+  durar. Quatro direções (o mapa é de casas). `passos()` passou a aceitar qualquer iterável, então o andar
+  contínuo é UMA caminhada — antes, cada passo de tecla repetida gravava o save. Tecla segurada usa o mesmo
+  caminho (sem depender da repetição do teclado, que tem atraso). Conferido segurando de verdade no navegador:
+  andou 12 casas e parou ao soltar.
+- **`sprites2d`**: flag do modo, lida num ponto só (`render.estiloDoSprite`). Conferido com o ajuste em "3D": o mapa
+  e a luta seguem pedindo o sprite clássico.
+- **Deitado**: barra do topo mais baixa, botões do mapa em duas fileiras, missão numa linha; na luta, os comandos
+  perdem o subtítulo e o registro encolhe pra duas linhas.
+- **Ficou de fora**: a luta dos OUTROS modos (o pedido foi sobre este; lá o layout é o que os jogadores
+  validaram) · alavanca flutuante (nasce onde o dedo toca — brigaria com o toque-pra-andar do mapa) · NPC que
+  anda · a loja ainda é uma página por cima do mapa.
+
 ## 📈 Taxas e probabilidades: uma tela com tudo o que o jogo sorteia (06/10/2026)
 
 Pedido do usuário: *"Crie uma tela no site que demonstra as taxas, possibilidades, o que pode acontecer em tudo

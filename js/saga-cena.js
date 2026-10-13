@@ -95,7 +95,6 @@ function htmlHud(S, sprite, dis, gaveta, nome) {
     const max = Number(m.stats?.hp) || 1, pct = Math.max(0, Math.min(100, Math.round(100 * (Number(m.hp) || 0) / max)));
     return `<div class="hud-mon ${pct <= 25 ? 'mal' : ''}"><img src="${urlDeImagem(sprite(m))}" alt="" draggable="false"><span><b>${esc(nome(m))}</b> <small>Nv. ${Number(m.level) || 0}</small><i class="hud-hp"><i style="width:${pct}%"></i></i></span></div>`;
   };
-  const seta = (d, s, nome) => `<button class="dpad-${d}" data-act="saga-andar" data-v="${d}" aria-label="Andar pra ${nome}" ${dis}>${s}</button>`;
   return `<div class="saga-hud">
       <div class="hud-topo">
         <div class="hud-equipe">${[S.player, ...(S.aliados || [])].filter(Boolean).map(placa).join('')}</div>
@@ -103,7 +102,7 @@ function htmlHud(S, sprite, dis, gaveta, nome) {
       </div>
       <button class="hud-missao" data-act="saga-diario" ${dis}>${ativa ? `📜 <b>${textoSeguro(ativa.nome)}</b><span>${textoSeguro(ativa.texto)}</span>` : '📖 <span>Nenhuma missão em andamento. Converse com quem mora aqui.</span>'}</button>
       <div class="hud-base">
-        <div class="dpad">${seta('n', '▲', 'cima')}${seta('o', '◀', 'esquerda')}${seta('l', '▶', 'direita')}${seta('s', '▼', 'baixo')}</div>
+        <div class="joy" id="saga-joy" role="img" aria-label="Alavanca: segure e arraste pra andar. Também dá pra tocar no mapa ou usar as setas do teclado."><i class="joy-pino"></i></div>
         <div class="hud-botoes">
           <button data-act="saga-diario" title="Diário" aria-label="Diário${ativas.length ? `: ${ativas.length} em andamento` : ''}" ${dis}>📖${ativas.length ? `<span class="bolinha">${ativas.length}</span>` : ''}</button>
           ${GAVETAS.map(([id, e, nome]) => `<button class="${gaveta === id ? 'on' : ''}" data-act="saga-gaveta" data-v="${id}" title="${nome}" aria-label="${nome}" ${dis}>${e}</button>`).join('')}
@@ -194,8 +193,6 @@ function medir(tela) {
   zoom = numero(tela.clientWidth) >= LARGURA_ZOOM_2 ? 2 : 1;
   tela.style?.setProperty?.('--u', zoom);
   tela.style?.setProperty?.('--passo', `${MS_PASSO}ms`);
-  // o mapa começa logo abaixo da barra do topo, que muda de altura conforme quebra de linha
-  document.documentElement?.style?.setProperty?.('--saga-topo', `${numero(document.querySelector('.top')?.offsetHeight) || 56}px`);
 }
 /* Põe você e a câmera no lugar. `seco` = sem deslizar (primeira pintura, troca de mapa); `andando` liga o
    pulinho. O sprite vira conforme o lado (os da PokéAPI olham pra esquerda: indo pra direita, espelha). */
@@ -217,6 +214,51 @@ export function posicionarMundo(S, { seco = false, andando = false } = {}) {
    manda recalcular é um observador de tamanho (da tela do mundo E da barra do topo), não o momento do desenho.
    Foi o primeiro defeito que o navegador de verdade mostrou: medida na hora do desenho, a área do mapa tinha
    altura 0 e a câmera ia parar no pé do mapa, com a tela quase toda preta. */
+/* 🕹 A alavanca (joystick) do celular. Segurar e arrastar manda uma DIREÇÃO (ou null, ao soltar) pra quem
+   estiver ouvindo; quem anda é o motor (`tela-saga`), que continua passo a passo enquanto a direção durar.
+   Quatro direções, não oito: o mapa é de casas, e andar na diagonal não existe.
+   `definirDirecional` é o ouvinte do JOGO (registrado uma vez por `tela-saga`); o ▶ Testar do editor passa o
+   dele em `ligarMundo`. O repique a cada 180 ms existe porque dedo parado não gera evento — sem ele, encostar
+   numa parede e continuar segurando pararia de vez. */
+let direcionalDoJogo = null, direcional = null;
+export const definirDirecional = fn => { direcionalDoJogo = fn; };
+function ligarAlavanca() {
+  const joy = el('saga-joy'), pino = joy?.querySelector?.('.joy-pino');
+  if (!joy?.addEventListener || !pino?.style) return;
+  let dedo = null, dir = null, relogio = null;
+  const mandar = d => { dir = d; direcional?.(d); };
+  const soltar = () => { dedo = null; pino.style.transform = ''; clearInterval(relogio); joy.classList.remove('ativo'); mandar(null); };
+  const mover = e => {
+    const r = joy.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const dist = Math.hypot(dx, dy), max = r.width * 0.3, k = dist > max ? max / dist : 1;
+    pino.style.transform = `translate(${dx * k}px,${dy * k}px)`;
+    mandar(dist < r.width * 0.13 ? null : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'l' : 'o') : (dy > 0 ? 's' : 'n'));
+  };
+  joy.addEventListener('pointerdown', e => {
+    e.preventDefault(); dedo = e.pointerId; joy.setPointerCapture?.(e.pointerId); joy.classList.add('ativo'); mover(e);
+    clearInterval(relogio);
+    // a tela pode ser redesenhada com o dedo ainda embaixo (uma conversa abriu): o elemento velho some sem avisar
+    relogio = setInterval(() => { if (!joy.isConnected) { clearInterval(relogio); direcional?.(null); } else if (dir) direcional?.(dir); }, 180);
+  });
+  joy.addEventListener('pointermove', e => { if (e.pointerId === dedo) mover(e); });
+  for (const fim of ['pointerup', 'pointercancel', 'lostpointercapture']) joy.addEventListener(fim, e => { if (e.pointerId === dedo) soltar(); });
+}
+/* A barra do topo muda de altura (os atalhos entram depois, a fonte carrega, o celular gira), e a tela cheia —
+   mapa OU luta — começa logo abaixo dela. Um observador só, ligado uma vez, mantém `--saga-topo` em dia. */
+let olhoDoTopo = null;
+export function ligarTelaCheia() {
+  const topo = document.querySelector('.top');
+  const medirTopo = () => document.documentElement?.style?.setProperty?.('--saga-topo', `${numero(topo?.offsetHeight) || 56}px`);
+  medirTopo();
+  if (olhoDoTopo || typeof ResizeObserver === 'undefined' || !topo) return;
+  olhoDoTopo = new ResizeObserver(medirTopo);
+  olhoDoTopo.observe(topo);
+}
+// Na luta da Saga, ficha e comitiva abrem em gaveta (o registro e os comandos já estão na tela).
+export const atalhosDaLuta = gaveta => `<div class="luta-atalhos">
+    ${[['ficha', '🐾', 'Seu Pokémon'], ['aliados', '👥', 'Comitiva']].map(([id, e, nome]) => `<button class="btn ghost sm ${gaveta === id ? 'on' : ''}" data-act="saga-gaveta" data-v="${id}" title="${nome}">${e} ${nome}</button>`).join('')}
+  </div><button class="saga-scrim" data-act="saga-gaveta" data-v="" aria-label="Fechar o painel"></button>`;
+
 let observador = null, jornadaNaTela = null;
 function reajustar() {
   const tela = el('saga-tela');
@@ -224,10 +266,12 @@ function reajustar() {
   medir(tela);
   posicionarMundo(jornadaNaTela, { seco: true });
 }
-export function ligarMundo(S) {
+export function ligarMundo(S, { direcional: ouvinte } = {}) {
   const tela = el('saga-tela');
   if (!tela) return;
   jornadaNaTela = S;
+  direcional = ouvinte || direcionalDoJogo;
+  ligarAlavanca();
   aoCarregar = () => { if (el('saga-chao')) pintarChao(el('saga-chao'), mapaDe(S)); };
   pintarChao(el('saga-chao'), mapaDe(S));
   reajustar();

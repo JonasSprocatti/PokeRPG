@@ -52,8 +52,9 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   mexendo em preço e recruta, Pokédex da rota na tela do mapa, NPC que anda, e a tela de BATALHA no mesmo
   padrão visual. **Falta do editor**: renomear id levando as referências, importar tileset pelo navegador.
   **Olhado em navegador de verdade em 13/10/2026** (`ferramentas/olhar.mjs`): mapa, andar, gaveta, conversa,
-  zoom de computador e o editor — três defeitos achados e corrigidos (ver `docs/features.md`). **Falta olhar**:
-  batalha começando do mapa, loja, e um aparelho de verdade (toque, emoji, desempenho).
+  zoom de computador e o editor — três defeitos achados e corrigidos (ver `docs/features.md`). Em 14/10/2026 a LUTA foi refeita olhando
+  (uma tela só, em pé/deitado/computador) e a alavanca foi testada segurando. **Falta olhar**: a loja, a
+  transição mapa→luta, e um aparelho de verdade (toque com dedo, emoji, desempenho).
   **⚠ PRECISA DE AÇÃO DO USUÁRIO**: conferir que a migration `20261013180000_beta_testers.sql` chegou ao
   Supabase — sem ela a seção 🧪 Testadores mostra o erro do banco e ninguém vira testador.
   **Fora de propósito por ora**: ameaça e Brecha no `mp-motor` (não existe Saga em sala); grupo em luta de

@@ -61,7 +61,8 @@ test('a tela de jogo desenha o mundo, as coisas e o HUD, sem estourar', () => {
   const tudo = htmls.join('\n');
   assert.ok(tudo.includes('id="saga-tela"') && tudo.includes('id="saga-chao"'), 'a cena não desenhou o mundo');
   assert.ok(tudo.includes('data-act="saga-toque"'), 'o mapa não aceita toque');
-  for (const act of ['saga-andar', 'saga-diario', 'saga-gaveta']) assert.ok(tudo.includes(`data-act="${act}"`), `falta ${act} no HUD`);
+  for (const act of ['saga-diario', 'saga-gaveta']) assert.ok(tudo.includes(`data-act="${act}"`), `falta ${act} no HUD`);
+  assert.ok(tudo.includes('id="saga-joy"'), 'falta a alavanca de andar');
   assert.ok(tudo.includes('class="prop"') && tudo.includes('class="ator npc"'), 'faltam os enfeites e os NPCs');
   assert.ok(tudo.includes('class="marca "') || tudo.includes('class="marca"'), 'o Ancião tem missão pra dar: falta o balão');
   assert.ok(tudo.includes('Nick &lt;b&gt;') && !tudo.includes('Nick <b>'), 'o apelido entra escapado no HUD');
@@ -108,6 +109,27 @@ test('gavetas: abrem, trocam, fecham — e com uma aberta você não anda', asyn
 });
 
 test('toque no mapa sem coordenada não estoura', async () => { comecar(); await tela.tocarNoMapa({}); });
+
+test('🕹 segurar uma direção anda sem parar até bater; soltar para; e direção que não existe não anda', async () => {
+  const s = comecar(), y0 = s.y, tique = () => new Promise(r => setTimeout(r, 20));
+  tela.segurar('s');                       // do começo, pra baixo, há duas casas livres antes da cerca de árvores
+  await tique();
+  assert.equal(s.y, y0 + 2, 'andou até a cerca numa caminhada só');
+  assert.equal(G.busy, false, 'e a caminhada terminou (bater numa parede solta a direção)');
+  tela.segurar('x'); await tique(); assert.equal(s.y, y0 + 2);
+  tela.segurar('n'); tela.soltar('s');     // soltar OUTRA tecla não para a caminhada de agora…
+  await tique();
+  assert.ok(s.y < y0 + 2, 'continuou subindo');
+  tela.soltar('n'); tela.soltar();         // …soltar a certa (ou tudo, ao perder o foco) para
+});
+
+test('sprites: na Saga o estilo é sempre o 2D, e a escolha mora num ponto só', async () => {
+  const { DIFICULDADES } = await import('../js/dados.js');
+  assert.equal(DIFICULDADES.saga.sprites2d, true);
+  for (const [k, d] of Object.entries(DIFICULDADES)) if (k !== 'saga') assert.ok(!d.sprites2d, `${k} segue o estilo de ⚙ Ajustes`);
+  const fonte = (await import('node:fs')).readFileSync(new URL('../js/render.js', import.meta.url), 'utf8');
+  assert.equal(fonte.split('estiloSpriteAtual()').length - 1, 1, 'só `estiloDoSprite` pergunta o estilo de ⚙ Ajustes; frente e costas perguntam a ele');
+});
 
 test('o portão do norte: fechado antes do capítulo 1, e depois leva ao capítulo 2', async () => {
   const s = comecar();

@@ -72,6 +72,12 @@ continua escondido de quem joga até a história ter mais capítulos.
   ocupa a tela inteira. Você anda casa a casa (setas, WASD, o direcional da tela, ou tocando no lugar pra onde
   quer ir), a câmera desliza junto, o seu Pokémon dá um pulinho a cada passo e respira parado, e você passa
   **atrás** das copas e das casas. A ficha, a mochila e o registro viram **gavetas** abertas pelos botões da tela.
+  No celular, uma **🕹 alavanca** no canto: segure e arraste pra andar sem parar (no teclado, é só segurar a seta).
+  Funciona **em pé e deitado**. Neste modo o Pokémon é sempre o **sprite 2D**, seja qual for o estilo escolhido em
+  ⚙ Ajustes — pra combinar com o mapa.
+- **⚔ A luta numa tela só.** Cena, registro e comandos aparecem juntos, **sem rolar a página**: em pé, um embaixo
+  do outro; deitado ou no computador, a cena à esquerda e o registro com os comandos à direita. Os quatro golpes
+  cabem em 2×2, e a ficha e a comitiva abrem em gaveta por cima da luta.
   A arte é do **Liberated Pixel Cup** (tiles de 32×32, na mesma escala dos sprites dos Pokémon) — créditos abaixo.
 - **📖 Três capítulos, treze mapas.** **1 · A Fonte Calada** (a aldeia de Pedralume, o Bosque do Orvalho, a
   Estrada Velha, as Ruínas da Fonte) · **2 · O Passo dos Laços** (a serra tomada por um acampamento de caçadores,

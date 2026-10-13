@@ -1179,37 +1179,160 @@ ul.quase.conquistas .bar{margin:4px 0}
    inteiro, que é o que mantém o pixel art nítido). Uma casa do mapa tem 32 px de arte; o sprite de um Pokémon,
    96 — os dois na MESMA escala, de propósito. Os endereços das imagens ficam aqui (e não em variável vinda do
    JS) porque `url()` relativo só é previsível quando escrito na própria folha de estilo. */
-.game.mundo{display:block;padding:0;max-width:none}
-.game.mundo .zona,.game.mundo .stage{display:contents}
-.game.mundo .zona.vazia::before{content:none}
-.game.mundo .divisor,.game.mundo .painel,.game.mundo #actions{display:none}
-.game.mundo #scene{position:fixed;left:0;right:0;bottom:0;top:var(--saga-topo,56px);z-index:5;padding:0;border:0;border-radius:0;min-height:0;overflow:hidden;background:#0d0b12}
-/* gaveta: o painel escolhido desliza da direita, por cima do mapa */
-.game.mundo[data-gaveta="ficha"] .painel[data-painel="ficha"],
-.game.mundo[data-gaveta="aliados"] .painel[data-painel="aliados"],
-.game.mundo[data-gaveta="mochila"] .painel[data-painel="mochila"],
-.game.mundo[data-gaveta="missoes"] .painel[data-painel="missoes"],
+/* `cheia` = a Saga está na tela própria dela, seja no mapa (`mundo`) ou na luta (`luta`). O que as duas têm em
+   comum mora aqui: nada rola a página, os painéis de sempre somem e voltam como GAVETAS (`data-gaveta`). */
+.game.cheia{padding:0;max-width:none}
+.game.cheia .zona,.game.cheia .stage{display:contents}
+.game.cheia .zona.vazia::before{content:none}
+.game.cheia .divisor,.game.cheia .painel{display:none}
+.game.cheia .painel .painel-botoes,.game.cheia .painel .alca{display:none}
+.game.cheia .painel .painel-cab{cursor:default}
+.game.cheia .painel .painel-corpo{display:block!important;height:auto!important;resize:none;overflow:visible}
+/* gaveta: o painel escolhido desliza da direita, por cima de tudo */
+.game.cheia[data-gaveta="ficha"] .painel[data-painel="ficha"],
+.game.cheia[data-gaveta="aliados"] .painel[data-painel="aliados"],
+.game.cheia[data-gaveta="mochila"] .painel[data-painel="mochila"],
+.game.cheia[data-gaveta="missoes"] .painel[data-painel="missoes"],
 .game.mundo[data-gaveta="log"] .painel[data-painel="log"]{display:block;position:fixed;top:var(--saga-topo,56px);right:0;bottom:0;width:min(440px,88vw);z-index:8;overflow:auto;border-radius:14px 0 0 0;box-shadow:-12px 0 30px #0009;animation:saga-gaveta .18s ease-out}
-.game.mundo .painel .painel-botoes,.game.mundo .painel .alca{display:none}
-.game.mundo .painel .painel-cab{cursor:default}
-.game.mundo .painel .painel-corpo{display:block!important;height:auto!important;resize:none;overflow:visible}
-.game.mundo .painel[data-painel="log"] .painel-corpo{display:flex!important;min-height:60vh}
+.game.mundo[data-gaveta="log"] .painel[data-painel="log"] .painel-corpo{display:flex!important;min-height:60vh}
 @keyframes saga-gaveta{from{transform:translateX(24px);opacity:0}}
+.saga-scrim{display:none;border:0;background:#0008;cursor:pointer}
+.game.cheia[data-gaveta] .saga-scrim{display:block;position:fixed;inset:var(--saga-topo,56px) 0 0 0;z-index:7}
+
+/* ---- o MAPA ---- */
+.game.mundo{display:block}
+.game.mundo #actions{display:none}
+.game.mundo #scene{position:fixed;left:0;right:0;bottom:0;top:var(--saga-topo,56px);z-index:5;padding:0;border:0;border-radius:0;min-height:0;overflow:hidden;background:#0d0b12}
 /* a loja (aberta pelo mercador) cobre a tela, como uma página */
 .game.mundo.loja #actions{display:block;position:fixed;inset:var(--saga-topo,56px) 0 0 0;z-index:8;overflow:auto;background:var(--ink);padding:16px}
+
+/* ---- a LUTA: cena, registro e comandos na MESMA tela, sem rolar a página ----
+   Em pé (celular na vertical): cena em cima, uma faixa de registro, comandos embaixo.
+   Deitado ou em tela larga: cena à esquerda; à direita, o registro em cima dos comandos.
+   `.game` vira a grade e os três pedaços (que moram em caixas diferentes) viram itens dela por `display:contents`
+   nas caixas do meio. A cena é um contêiner de tamanho: os sprites e as placas se medem por ELA (cqw/cqh), então
+   cabem tanto em 390×460 quanto em 500×330 sem uma regra por aparelho. Se a lista de golpes for comprida, quem
+   rola é só o painel de comandos — nunca a página. */
+.game.luta{position:fixed;inset:var(--saga-topo,56px) 0 0 0;z-index:5;display:grid;gap:0;background:var(--ink);
+  align-items:stretch;      /* `.game` alinha no começo; aqui a cena PRECISA esticar — ela não tem altura própria (é contêiner de tamanho) */
+  grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto}
+/* A cena vira uma COLUNA flexível (era uma grade de 3 linhas fixas): barra da rodada e fila ocupam o que precisam,
+   e os dois lados dividem o resto. Com 3 linhas fixas, a fila caía na linha do lado inimigo e ficava atrás da placa. */
+.game.luta #scene{grid-area:1/1;min-height:0;margin:0;border-radius:0;border-width:0 0 2px;padding:8px 10px;gap:4px;container-type:size;overflow:hidden;
+  display:flex;flex-direction:column}
+.game.luta .painel[data-painel="log"]{display:block;grid-area:2/1;min-width:0;border-radius:0;border-width:0 0 2px}
+.game.luta .painel[data-painel="log"] .painel-cab{display:none}
+.game.luta .painel[data-painel="log"] .painel-corpo{display:flex!important;height:78px!important;min-height:0;padding:4px 6px;overflow:hidden}
+.game.luta .painel[data-painel="log"] .textbox{padding:2px;border-width:2px;box-shadow:none}
+.game.luta .painel[data-painel="log"] .log{padding:4px 10px;font-size:13px;line-height:1.35}
+.game.luta .log p.turno{margin:4px 0 2px}
+/* `display:block` + nada de esticar: o painel de comandos geral é uma coluna flexível que reparte a altura entre os
+   filhos — numa coluna alta (computador), os botões da comitiva viravam ovais de 110 px. Aqui cada bloco tem a
+   altura do que contém, e o que sobra fica vazio embaixo. */
+.game.luta #actions{grid-area:3/1;display:block;min-width:0;max-height:47vh;max-height:47dvh;overflow:auto;padding:8px 10px;overscroll-behavior:contain}
+.game.luta #actions > *{flex:none}
+.game.luta .cmd-dica{display:none}                         /* a dica longa custava três linhas; o que ela diz está nos próprios botões */
+.game.luta .comitiva-cmd{margin-bottom:6px}
+.game.luta .saga-janela{margin-bottom:6px;padding:6px;gap:4px}
+.game.luta .cmd-jrpg{min-height:46px;padding:6px 10px}
+.game.luta .cmd-jrpg b{font-size:16px}
+.game.luta .moves{gap:6px;grid-template-columns:1fr 1fr}      /* 2×2 mesmo no celular: os quatro golpes cabem sem rolar */
+.game.luta .mv{padding:6px 10px}
+.game.luta .mv b{font-size:15px}
+.luta-atalhos{display:flex;gap:6px;justify-content:flex-end;align-items:center;margin-bottom:6px}
+.luta-atalhos .btn.on{border-color:var(--yellow)}
+/* dentro da cena, tudo se mede pelo tamanho DELA */
+.game.luta .turno-bar{padding:3px 6px 3px 12px;font-size:13px;gap:6px}
+.game.luta .fila-turno{padding:2px 8px}
+.game.luta .fila-item{font-size:12px}
+.game.luta .side{gap:8px;min-height:0;flex:1 1 0;flex-wrap:nowrap}
+.game.luta .side.me{flex-wrap:nowrap}                       /* no celular a regra geral joga as placas pra baixo dos sprites: aqui ficam ao lado */
+.game.luta .pedir-alvo{margin:0;font-size:13px}
+.game.luta .plates{width:min(48cqw,270px);gap:4px}
+.game.luta .plate{padding:5px 9px;width:min(48cqw,270px)}
+.game.luta .plates .plate{width:auto}
+/* A placa na luta é uma LINHA e meia, não quatro: nome e nível à esquerda, tipos à direita na mesma linha, a
+   barra de HP embaixo, e Guarda/estado numa linha fina. Medido em tela: com a placa inteira, cinco Pokémon em
+   campo (2 inimigos + você e 2 companheiros) não cabiam na cena e empurravam os sprites pra fora. */
+.game.luta .plate{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 6px;align-items:center;padding:4px 8px;border-radius:8px;box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.game.luta .plate > *{grid-column:1/-1;min-width:0}
+.game.luta .plate .pl-top{grid-column:1;font-size:12px;line-height:1.25;white-space:nowrap}
+.game.luta .plate .pl-top span:first-child{overflow:hidden;text-overflow:ellipsis}
+.game.luta .plate .pl-top span:last-child{flex:none}
+.game.luta .plate .pl-tipos{grid-column:2;grid-row:1;display:flex;gap:2px;margin:0}
+.game.luta .plate .pl-tipos .ty{padding:0 5px;font-size:9px;line-height:1.55}
+/* O tipo que decide o turno é o do INIMIGO (é ele que diz se o golpe acerta forte). O do seu lado você conhece, e
+   está na gaveta da ficha: aqui ele sai, pra o nome e o nível caberem sem "Pi…". As placas inimigas ganham a
+   largura que os sprites pequenos do grupo deixam sobrar. */
+.game.luta .side.me .pl-tipos{display:none}
+.game.luta .side.me .plate .pl-top{grid-column:1/-1}
+.game.luta .foe-plates,.game.luta .foe-plates .plate{width:min(58cqw,300px)}
+.game.luta .plate .hp{gap:4px;font-size:11px;line-height:1.2}
+.game.luta .plate .bar{height:6px}
+.game.luta .plate .guarda{margin-top:0;font-size:11px}
+.game.luta .plate .guarda b{font-size:11px}
+.game.luta .plate .guarda small{display:none}
+.game.luta .plate .chips{margin-top:0}
+.game.luta .mon{width:clamp(84px,32cqw,170px);height:clamp(64px,27cqh,130px)}
+.game.luta .spr{width:clamp(76px,28cqw,128px);height:clamp(60px,26cqh,128px)}
+.game.luta .spr.back{width:clamp(84px,32cqw,150px);height:clamp(64px,29cqh,150px)}
+.game.luta .mon.mini{width:clamp(46px,15cqw,84px);height:clamp(44px,18cqh,84px);margin-left:-8px}
+.game.luta .mon.mini .spr{width:clamp(42px,14cqw,76px);height:clamp(40px,17cqh,76px)}
+.game.luta .pad{height:clamp(12px,6cqh,30px)}
+@media (min-width:900px),(orientation:landscape) and (max-height:560px){
+  .game.luta{grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .game.luta #scene{grid-area:1/1/3/2;border-width:0 2px 0 0}
+  .game.luta .painel[data-painel="log"]{grid-area:1/2;border-width:0 0 2px}
+  .game.luta .painel[data-painel="log"] .painel-corpo{height:clamp(72px,24vh,230px)!important}
+  .game.luta #actions{grid-area:2/2;max-height:none}
+}
+@media (min-width:900px){.game.luta .painel[data-painel="log"] .log{font-size:15px}}
+/* Cena GRANDE (computador): o sprite 2D de 96 px dobra de tamanho — inteiro, sem borrar. Na Saga o sprite é
+   sempre o 2D (`sprites2d`), então dá pra ampliar; nos outros modos o `scale-down` existe por causa do 3D. */
+@container (min-width:620px) and (min-height:480px){
+  .game.luta .mon{width:230px;height:200px}
+  .game.luta .spr,.game.luta .spr.back{width:192px;height:192px;object-fit:contain}
+  .game.luta .mon.mini{width:112px;height:104px;margin-left:-6px}
+  .game.luta .mon.mini .spr{width:96px;height:96px;object-fit:contain}
+  .game.luta .plates,.game.luta .plate,.game.luta .foe-plates,.game.luta .foe-plates .plate{width:min(44cqw,340px)}
+  .game.luta .plate .pl-top{font-size:14px}
+  .game.luta .plate .hp{font-size:12px}
+  .game.luta .plate .pl-tipos .ty{font-size:10px}
+}
+/* Celular DEITADO: a coluna da direita tem ~320 px de altura pra registro + comandos. Some o subtítulo de cada
+   comando, o registro encolhe pra duas linhas, e os atalhos dividem a linha com a comitiva. */
+@media (orientation:landscape) and (max-height:560px){
+  .game.luta .painel[data-painel="log"] .painel-corpo{height:58px!important}
+  .game.luta #actions{padding:6px 8px}
+  .game.luta .cmd-jrpg{min-height:34px;padding:4px 10px}
+  .game.luta .cmd-jrpg small{display:none}
+  .game.luta .luta-atalhos{float:right;margin:0 0 4px 6px}
+  .game.luta .luta-atalhos .btn{padding:4px 8px;font-size:12px}
+  .game.luta .comitiva-cmd{margin-bottom:4px}
+  .game.luta .cmd{padding:3px 9px;font-size:12px}
+  .game.luta .saga-janela{clear:both;margin-bottom:4px;padding:4px;gap:2px}
+  .game.luta .mv{padding:4px 8px}
+  .game.luta .mv small:not(.pp){display:none}
+}
 
 /* Na tela de jogo a barra do topo fica compacta em QUALQUER largura: os atalhos vão pro ☰, como no celular.
    Medido em tela: no computador as duas fileiras de botões comiam 190 px — um quarto da altura do mapa.
    `:has()` porque a barra mora fora de `.game`; num navegador sem ele, a barra só continua alta. */
-body:has(.game.mundo) .top{padding:8px 14px}
-body:has(.game.mundo) .brand small{display:none}
-body:has(.game.mundo) .brand .logo{height:38px}
-body:has(.game.mundo) .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
-body:has(.game.mundo) .menu-links{display:none;position:absolute;top:calc(100% + 6px);right:10px;left:auto;width:min(360px,calc(100vw - 20px));z-index:9;flex-direction:column;gap:10px;
+body:has(.game.cheia) .top{padding:8px 14px}
+body:has(.game.cheia) .brand small{display:none}
+body:has(.game.cheia) .brand .logo{height:38px}
+body:has(.game.cheia) .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
+body:has(.game.cheia) .menu-links{display:none;position:absolute;top:calc(100% + 6px);right:10px;left:auto;width:min(360px,calc(100vw - 20px));z-index:9;flex-direction:column;gap:10px;
   max-height:70vh;max-height:70dvh;overflow:auto;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
-body:has(.game.mundo) .menu-links.open{display:flex}
-body:has(.game.mundo) .menu-links .top-r,body:has(.game.mundo) #conta-chip{flex-direction:column;align-items:stretch;gap:8px}
-body:has(.game.mundo) .menu-links .btn{width:100%;text-align:center;padding:10px 14px}
+body:has(.game.cheia) .menu-links.open{display:flex}
+body:has(.game.cheia) .menu-links .top-r,body:has(.game.cheia) #conta-chip{flex-direction:column;align-items:stretch;gap:8px}
+body:has(.game.cheia) .menu-links .btn{width:100%;text-align:center;padding:10px 14px}
+@media (orientation:landscape) and (max-height:560px){
+  body:has(.game.cheia) .top{padding:3px 12px}
+  body:has(.game.cheia) .brand .logo{height:28px}
+  body:has(.game.cheia) .burger{width:38px;height:38px}
+  body:has(.game.cheia) .dinheiro{min-height:0;padding:3px 10px;font-size:15px}
+}
 
 .saga-tela{position:absolute;inset:0;overflow:hidden;--u:1;--t:calc(var(--u) * 32px);--passo:170ms;user-select:none;-webkit-user-select:none;touch-action:manipulation;background:#0d0b12}
 .saga-tela.chegou{animation:saga-acender .3s ease-out}
@@ -1293,18 +1416,29 @@ body:has(.game.mundo) .menu-links .btn{width:100%;text-align:center;padding:10px
 .hud-missao b{margin-right:6px;color:var(--yellow);font-family:var(--display)}
 .hud-missao span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hud-base{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
-.dpad{display:grid;grid-template:repeat(3,52px)/repeat(3,52px);gap:2px;opacity:.85}
-.dpad button{padding:0;border:2px solid #ffffff33;border-radius:12px;background:#0b0a12b3;font-size:20px;touch-action:manipulation}
-.dpad button:active{background:#f6c744;color:#1b1b2f}
-.dpad-n{grid-area:1/2}.dpad-o{grid-area:2/1}.dpad-l{grid-area:2/3}.dpad-s{grid-area:3/2}
+/* 🕹 a alavanca: segurar e arrastar anda (saga-cena.ligarAlavanca). `touch-action:none` é o que impede o dedo de
+   rolar/dar zoom na página no lugar de mexer o pino. */
+.joy{pointer-events:auto;position:relative;display:grid;place-items:center;width:128px;height:128px;border-radius:50%;background:#0b0a1299;border:2px solid #ffffff45;touch-action:none;cursor:grab}
+.joy::before{content:'';position:absolute;inset:24%;border-radius:50%;border:2px dashed #ffffff26}
+.joy-pino{width:54px;height:54px;border-radius:50%;background:#ffffffd9;box-shadow:0 3px 0 #0008;transition:transform .09s}
+.joy.ativo .joy-pino{transition:none;background:var(--yellow)}
+@media (pointer:fine) and (min-width:900px){.joy{opacity:.4;transform:scale(.8);transform-origin:bottom left;transition:opacity .15s}.joy:hover,.joy.ativo{opacity:.9}}
 .hud-botoes{display:grid;gap:6px}
 .hud-botoes button{position:relative;width:46px;height:46px;padding:0;border:2px solid #ffffff33;border-radius:50%;background:#0b0a12cc;font-size:20px;line-height:1}
 .hud-botoes button.on{border-color:var(--yellow);background:#2a2440}
 .hud-botoes .bolinha{position:absolute;right:-5px;top:-5px;margin:0}
-@media (pointer:fine) and (min-width:900px){.dpad{opacity:.4;transition:opacity .15s}.dpad:hover{opacity:.9}}
-.saga-scrim{display:none;position:absolute;inset:0;z-index:6;border:0;background:#0008;cursor:pointer}
-.game.mundo[data-gaveta] .saga-scrim{display:block}
 
+@media (orientation:landscape) and (max-height:560px){
+  .saga-hud{padding:6px;gap:4px}
+  .hud-botoes{grid-template-columns:repeat(3,auto)}
+  .hud-botoes button{width:40px;height:40px;font-size:18px}
+  .hud-missao{padding:4px 12px}
+  .hud-missao span{-webkit-line-clamp:1}
+  .hud-equipe{grid-auto-flow:column}
+  .hud-mon{min-width:0}
+  .joy{width:108px;height:108px}
+  .joy-pino{width:46px;height:46px}
+}
 /* diário e caixa de fala (dentro do modal de sempre) */
 .saga-fala{display:flex;gap:14px;align-items:flex-start;text-align:left}
 .saga-fala .retrato{position:relative;flex:none;width:96px;height:96px;--u:1;--t:32px;overflow:hidden;background:var(--panel2);border:2px solid var(--line);border-radius:12px}

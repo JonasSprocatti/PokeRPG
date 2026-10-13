@@ -505,8 +505,9 @@ function desenhar() {
     cv.addEventListener('pointermove', e => ponteiro(e, 'move'));
     for (const fim of ['pointerup', 'pointercancel']) cv.addEventListener(fim, e => ponteiro(e, 'solta'));
   }
-  definirAoCarregar(() => { if (teste) ligarMundo(teste.S); else { pintarEditor(); pintarAmostras(); } });
-  if (teste) ligarMundo(teste.S); else { pintarEditor(); pintarAmostras(); }
+  const ligarTeste = () => ligarMundo(teste.S, { direcional: dir => motorTeste.segurar(dir) });   // a alavanca anda no TESTE, não no jogo
+  definirAoCarregar(() => { if (teste) ligarTeste(); else { pintarEditor(); pintarAmostras(); } });
+  if (teste) ligarTeste(); else { pintarEditor(); pintarAmostras(); }
   const q = $('#em-quadro'); if (q && 'scrollLeft' in q) { q.scrollLeft = rolagem.qx; q.scrollTop = rolagem.qy; }
   globalThis.scrollTo?.(0, rolagem.y);
 }
@@ -516,8 +517,7 @@ function aoClicar(e) {
   if (doMundo) {
     e.stopPropagation();
     const a = doMundo.dataset.act;
-    if (a === 'saga-andar') motorTeste.andar(doMundo.dataset.v);
-    else if (a === 'saga-toque') { const c = casaDoToque(e); if (c) motorTeste.irPara(...c); }
+    if (a === 'saga-toque') { const c = casaDoToque(e); if (c) motorTeste.irPara(...c); }
     else if (a === 'saga-diario') motorTeste.abrirDiario();
     return;
   }

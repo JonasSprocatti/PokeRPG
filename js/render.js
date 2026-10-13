@@ -1,7 +1,7 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { mundoAtivo, modoComMundo } from './saga-mundo.js';
-import { htmlMundo, ligarMundo, botaoVoltarAoVale } from './saga-cena.js';
+import { htmlMundo, ligarMundo, ligarTelaCheia, atalhosDaLuta, botaoVoltarAoVale } from './saga-cena.js';
 import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais, emCampo, vivos } from './estado.js';
 import { OFICIOS } from './oficios.js';
 import { PERICIAS, periciasDe, periciaPronta, recargaDe, temPericiaPronta } from './pericias.js';
@@ -50,8 +50,10 @@ export const spriteItem = (k, m) => k === ITEM_PEDRA_MEGA ? ITEM_SPR_MEGA(m?.dat
   : k === ITEM_CRISTAL_Z ? ITEM_SPR_Z(primeiroTipoZ(m))
   : k === ITEM_VINCULO ? ITEM_SPR_VINCULO
   : ITEM_SPR(k);
+/* O estilo que vale AGORA: o de ⚙ Ajustes, a não ser que o modo da jornada só use 2D (`sprites2d`, a ⚔ Saga). */
+const estiloDoSprite = () => (DIFICULDADES[dificuldadeDe(G.S)]?.sprites2d ? 'classico' : estiloSpriteAtual());
 export const spriteFrente = m => {
-  const estilo = estiloSpriteAtual();
+  const estilo = estiloDoSprite();
   if (estilo === 'animado') return m.shiny ? SPR_ANIM_SHINY(m.formaSprite || m.id) : SPR_ANIM(m.formaSprite || m.id);
   if (estilo === '3d') return m.shiny ? SPR_3D_SHINY(m.formaSprite || m.id) : SPR_3D(m.formaSprite || m.id);
   return m.shiny ? SPR_SHINY(m.formaSprite || m.id) : espelhar(m.data.sprite);
@@ -59,7 +61,7 @@ export const spriteFrente = m => {
 // "home" (3D) não tem sprite de costas: cai pra null, e quem chama já sabe cair pra frente + flip. O animado
 // (showdown) TEM costas de verdade, então usa a própria.
 export const sprCostas = m => {
-  const estilo = estiloSpriteAtual();
+  const estilo = estiloDoSprite();
   if (estilo === 'animado') return m.shiny ? SPR_ANIM_SHINY_COSTAS(m.formaSprite || m.id) : SPR_ANIM_COSTAS(m.formaSprite || m.id);
   if (estilo === '3d') return null;
   return m.data.back ? (m.shiny ? SPR_SHINY_COSTAS(m.formaSprite || m.id) : espelhar(m.data.back)) : null;
@@ -979,19 +981,25 @@ export function render() {
   // gainExp/useItem chamam render() e podem rodar fora da tela de jogo (ex.: recompensa do co-op)
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
-  document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
-  /* ⚔ Saga: a tela de jogo do mundo é uma CLASSE em `.game` (o CSS faz o resto: mapa em tela cheia, painéis
-     viram gavetas). Em `.game` e não no `body` de propósito — ela só existe nesta tela, então sair pra outra
-     não deixa classe pendurada. */
-  const jogo = $('.game'), noMundo = G.mode === 'explore' && mundoAtivo(G.S);
-  if (!noMundo) G.gaveta = null;
+  /* ⚔ Saga: o modo tem TELA PRÓPRIA, nas duas metades do jogo — o mapa (`mundo`) e a luta (`luta`). As duas são
+     uma CLASSE em `.game` (o CSS faz o resto: tudo cabe na tela, sem rolar a página, e os painéis de sempre viram
+     gavetas). Em `.game` e não no `body` de propósito — ela só existe nesta tela, então sair pra outra não deixa
+     classe pendurada. A luta dos outros modos continua com o `em-batalha` de sempre. */
+  const jogo = $('.game'), noMundo = G.mode === 'explore' && mundoAtivo(G.S), naLuta = G.mode === 'battle' && !!G.B && modoJRPG(G.S);
+  document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B && !naLuta);
+  if (!noMundo && !naLuta) G.gaveta = null;
   if (jogo) {
+    jogo.classList.toggle('cheia', noMundo || naLuta);
     jogo.classList.toggle('mundo', noMundo);
+    jogo.classList.toggle('luta', naLuta);
     jogo.classList.toggle('loja', noMundo && G.panel === 'shop');
-    if (noMundo && G.gaveta) jogo.dataset.gaveta = G.gaveta; else delete jogo.dataset.gaveta;
+    if ((noMundo || naLuta) && G.gaveta) jogo.dataset.gaveta = G.gaveta; else delete jogo.dataset.gaveta;
   }
+  if (noMundo || naLuta) ligarTelaCheia();
   const antes = capturarLargurasBarras(), antesPP = capturarTextosPP();
   renderSheet(); renderScene(); renderActions();
+  // ⚔ Saga, na luta: os atalhos das gavetas (ficha e comitiva) entram no topo do painel de comandos, que é o que está sempre à mão
+  if (naLuta) $('#actions')?.insertAdjacentHTML?.('afterbegin', atalhosDaLuta(G.gaveta));
   animarBarras(antes); animarPP(antesPP);
   atualizarCarteira();   // fora do menu ☰: sempre visível
   // O menu do topo (☰ no celular) oferece EXATAMENTE os mesmos acessos da barra das telas (navegacao.TELAS),

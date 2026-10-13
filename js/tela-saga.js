@@ -11,7 +11,7 @@
    Enquanto anda, NÃO chama `render()`: troca só a posição (a transição do CSS faz o deslize). O render inteiro
    sai no fim, e só se algo além de andar aconteceu. */
 import { G, save, zone, rotasAtuais, rotulo, emCampo, centroPokemon } from './estado.js';
-import { render } from './render.js';
+import { render, modoJRPG } from './render.js';
 import { log, ask, toast, semAnimacao } from './ui.js';
 import { startBattle, startBossBattle, startTrainerBattle } from './batalha.js';
 import { curarNoCentro } from './mundo.js';
@@ -25,7 +25,7 @@ import { ITEMS } from './dados.js';
 import { esc, sleep } from './util.js';
 import { NPCS, MAPAS_SAGA, CAPITULOS } from './dados-saga.js';
 import { DIRS, mundoAtivo, modoComMundo, estadoSaga, mapaDe, passo, caminho, sorteiaEncontro, aplicar, comecarConversa, opcoesDe, bauAberto } from './saga-mundo.js';
-import { MS_PASSO, posicionarMundo, casaDoToque, efeitoDeTela, virarNpc, textoSeguro, htmlDiario, htmlFala } from './saga-cena.js';
+import { MS_PASSO, posicionarMundo, casaDoToque, efeitoDeTela, virarNpc, textoSeguro, htmlDiario, htmlFala, definirDirecional } from './saga-cena.js';
 
 export const PASSOS_POR_EXPLORACAO = 6;   // a cada tantas casas conta um "passo" de ovo, de evolução por passos e de repelente
 const OPOSTO = { n: 's', s: 'n', l: 'o', o: 'l' };
@@ -89,16 +89,23 @@ export function criarMotor(ctx) {
     const lido = o.placa || o.texto;    // placa, ou enfeite que tem o que dizer
     if (lido) return ctx.ask(texto(lido), [{ label: 'Ok', value: 0, ghost: true }]);
   }
+  /* `dirs` é qualquer coisa que se percorra: a lista de um caminho (toque no mapa) ou um gerador que continua
+     dando a mesma direção enquanto a alavanca/tecla estiver segurada. Um laço só pros dois: é o que faz o andar
+     contínuo ser UMA caminhada (um "ocupado", um salvar no fim) e não cem passos avulsos. */
   async function passos(dirs) {
-    if (!dirs.length || ctx.travado()) return;
+    if (ctx.travado()) return;
+    const fila = dirs[Symbol.iterator]();
+    let prox = fila.next();
+    if (prox.done) return;
     ctx.ocupar(true);
-    let aconteceu = false;          // algo além de andar? então a tela inteira precisa ser redesenhada
+    let aconteceu = false, andou = false;   // algo além de andar? então a tela inteira precisa ser redesenhada
     try {
-      for (const d of dirs) {
-        const r = passo(S(), d);
+      for (; !prox.done; prox = fila.next()) {
+        const d = prox.value, r = passo(S(), d);
         if (r.tipo === 'parede') { ctx.mover({}); break; }
         if (r.tipo === 'objeto') { ctx.mover({}); aconteceu = true; await interagir(r.obj, d); break; }
         if (r.tipo === 'porta') { aconteceu = true; await ctx.efeito('apagar', 200); ctx.chegou(r); break; }
+        andou = true;
         ctx.mover({ andando: true });
         await ctx.esperarPasso();
         await ctx.aCadaPasso();
@@ -115,11 +122,22 @@ export function criarMotor(ctx) {
       if (aconteceu) await ctx.depois();
       ctx.ocupar(false);
       if (aconteceu) ctx.redesenhar();
-      ctx.salvar();
+      if (aconteceu || andou) ctx.salvar();     // empurrar uma parede não é motivo pra gravar o save
     }
+  }
+  /* Segurar uma direção (alavanca do celular, tecla): anda sem parar até soltar, bater em algo ou acontecer
+     alguma coisa. `segurar(null)` solta. Chamar de novo com a mesma direção não faz nada — é o que deixa a
+     alavanca e a repetição do teclado mandarem a direção quantas vezes quiserem. */
+  let direcao = null, correndo = false;
+  function segurar(dir) {
+    direcao = DIRS[dir] ? dir : null;
+    if (!direcao || correndo) return;
+    correndo = true;
+    passos((function* () { while (direcao) yield direcao; })()).finally(() => { correndo = false; direcao = null; });
   }
   return {
     andar: dir => DIRS[dir] ? passos([dir]) : null,
+    segurar,
     conversar: id => conversar(id, 's'),          // o ▶ Simular conversa do editor entra direto na fala
     irPara: (x, y) => passos(caminho(S(), x, y)),
     abrirDiario: () => ctx.travado() ? null : ctx.ask(htmlDiario(S()), [{ label: 'Fechar', value: 0, ghost: true }])
@@ -195,13 +213,20 @@ const JOGO = criarMotor({
 });
 
 export const andar = dir => JOGO.andar(dir);
+// Segurar uma direção (alavanca ou tecla) e soltar. `soltar(dir)` só solta se ainda for ESSA a direção — soltar a
+// seta de cima depois de já ter apertado a da direita não pode parar a caminhada.
+let segurada = null;
+export function segurar(dir) { segurada = DIRS[dir] ? dir : null; JOGO.segurar(segurada); }
+export function soltar(dir) { if (!dir || dir === segurada) segurar(null); }
+definirDirecional(segurar);       // a alavanca da tela de jogo fala com este motor
 export const irPara = (x, y) => JOGO.irPara(x, y);
 export const abrirDiario = () => JOGO.abrirDiario();
 // Toque/clique no mapa: anda até a casa (e, se ali há algo que bloqueia, o último passo é o esbarrão).
 export function tocarNoMapa(e) { const c = casaDoToque(e); return c ? JOGO.irPara(c[0], c[1]) : null; }
 // As gavetas da tela de jogo (ficha, comitiva, mochila, missões, registro): abrir, trocar ou fechar.
 export function gaveta(v) {
-  if (G.mode !== 'explore' || !mundoAtivo(G.S) || G.busy) return;
+  const naTelaCheia = (G.mode === 'explore' && mundoAtivo(G.S)) || (G.mode === 'battle' && !!G.B && modoJRPG(G.S));
+  if (!naTelaCheia || G.busy) return;
   G.gaveta = v && G.gaveta !== v ? v : null;
   render();
 }
