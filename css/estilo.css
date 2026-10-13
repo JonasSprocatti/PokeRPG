@@ -1170,43 +1170,142 @@ ul.quase.conquistas .bar{margin:4px 0}
 .auto-stats b,.auto-stats .muted{text-align:right}
 
 /* ============ ⚔ Saga — o mundo andável (saga-cena.js) ============
-   A grade é a câmera (11×9 casas), não o mapa inteiro. O tamanho do emoji e do sprite segue a LARGURA da grade
-   (container query), então o mesmo desenho serve do celular ao painel redimensionado no desktop. */
-.saga-mapa{display:grid;grid-template-columns:repeat(var(--cols),1fr);width:100%;max-width:560px;margin:8px auto;border:3px solid var(--line);border-radius:12px;overflow:hidden;container-type:inline-size;user-select:none;touch-action:manipulation}
-.casa{aspect-ratio:1;position:relative;display:grid;place-items:center;cursor:pointer;font-size:5.6cqw;line-height:1}
-.casa.grama{background:#3f7d3a}
-.casa.mato{background:#2f6a30}
-.casa.trilha{background:#b99a63}
-.casa.arvore{background:#27552a}
-.casa.agua{background:#2f6fb5}
-.casa.rocha{background:#6b665d}
-.casa.parede{background:#23202b}
-.casa.piso{background:#5a5566}
-.casa.piso.escuro{background:#494455}
-.casa.vazio{background:#111;cursor:default}
-/* xadrez leve por cima da cor do tile. `background-image` e não `filter`: filtro cria contexto de empilhamento e
-   prenderia o sprite (que vaza da casa de propósito) atrás da casa vizinha. */
-.casa:nth-child(odd){background-image:linear-gradient(#ffffff0d,#ffffff0d)}
-.casa-e{pointer-events:none}
-.casa-e.chao{opacity:.9}
-.casa-e.aberto{opacity:.35}
-.casa-e.ronda{animation:saga-ronda 1.1s ease-in-out infinite}
-.casa-spr{position:absolute;left:50%;bottom:4%;width:150%;height:150%;transform:translateX(-50%);object-fit:contain;image-rendering:pixelated;pointer-events:none;z-index:1}
-.casa-spr.eu{z-index:2;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 2px 2px #0008)}
-.casa-spr.alfa{width:210%;height:210%;filter:drop-shadow(0 0 4px #f6c744)}
-.casa.cintila::after{content:'✨';position:absolute;font-size:3.4cqw;top:6%;right:6%;animation:saga-ronda 1.4s ease-in-out infinite}
-@keyframes saga-ronda{50%{transform:translateY(-12%)}}
-.saga-rumo{max-width:560px;margin:6px auto 10px}
-.saga-ctl{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.dpad{display:grid;grid-template:repeat(3,48px)/repeat(3,48px);gap:4px}
-.dpad .btn{padding:0;min-width:0;font-size:18px}
+   A TELA DE JOGO do modo. Quando o mundo está ativo, `.game` ganha a classe `mundo` (render.js) e tudo aqui é
+   escopado nela: o mapa ocupa a tela inteira abaixo da barra do topo, e os painéis de sempre (ficha, mochila,
+   registro…) deixam de ficar lado a lado e viram GAVETAS abertas pelos botões redondos. `.game` só existe na
+   tela do jogo, então ir pra Carreira ou pra Conta não precisa "desligar" nada.
+
+   Tudo é medido em `--u`: quantos pixels de tela vale um pixel da arte (1 no celular, 2 em tela larga — sempre
+   inteiro, que é o que mantém o pixel art nítido). Uma casa do mapa tem 32 px de arte; o sprite de um Pokémon,
+   96 — os dois na MESMA escala, de propósito. Os endereços das imagens ficam aqui (e não em variável vinda do
+   JS) porque `url()` relativo só é previsível quando escrito na própria folha de estilo. */
+.game.mundo{display:block;padding:0;max-width:none}
+.game.mundo .zona,.game.mundo .stage{display:contents}
+.game.mundo .zona.vazia::before{content:none}
+.game.mundo .divisor,.game.mundo .painel,.game.mundo #actions{display:none}
+.game.mundo #scene{position:fixed;left:0;right:0;bottom:0;top:var(--saga-topo,56px);z-index:5;padding:0;border:0;border-radius:0;min-height:0;overflow:hidden;background:#0d0b12}
+/* gaveta: o painel escolhido desliza da direita, por cima do mapa */
+.game.mundo[data-gaveta="ficha"] .painel[data-painel="ficha"],
+.game.mundo[data-gaveta="aliados"] .painel[data-painel="aliados"],
+.game.mundo[data-gaveta="mochila"] .painel[data-painel="mochila"],
+.game.mundo[data-gaveta="missoes"] .painel[data-painel="missoes"],
+.game.mundo[data-gaveta="log"] .painel[data-painel="log"]{display:block;position:fixed;top:var(--saga-topo,56px);right:0;bottom:0;width:min(440px,88vw);z-index:8;overflow:auto;border-radius:14px 0 0 0;box-shadow:-12px 0 30px #0009;animation:saga-gaveta .18s ease-out}
+.game.mundo .painel .painel-botoes,.game.mundo .painel .alca{display:none}
+.game.mundo .painel .painel-cab{cursor:default}
+.game.mundo .painel .painel-corpo{display:block!important;height:auto!important;resize:none;overflow:visible}
+.game.mundo .painel[data-painel="log"] .painel-corpo{display:flex!important;min-height:60vh}
+@keyframes saga-gaveta{from{transform:translateX(24px);opacity:0}}
+/* a loja (aberta pelo mercador) cobre a tela, como uma página */
+.game.mundo.loja #actions{display:block;position:fixed;inset:var(--saga-topo,56px) 0 0 0;z-index:8;overflow:auto;background:var(--ink);padding:16px}
+
+.saga-tela{position:absolute;inset:0;overflow:hidden;--u:1;--t:calc(var(--u) * 32px);--passo:170ms;user-select:none;-webkit-user-select:none;touch-action:manipulation;background:#0d0b12}
+.saga-tela.chegou{animation:saga-acender .3s ease-out}
+@keyframes saga-acender{from{opacity:0}}
+.saga-mundo{position:absolute;left:0;top:0;z-index:1;width:calc(var(--mw) * var(--t));height:calc(var(--mh) * var(--t));cursor:pointer;
+  transform:translate3d(calc(var(--cx,0) * -1px),calc(var(--cy,0) * -1px),0);transition:transform var(--passo) linear;will-change:transform}
+.saga-chao{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;image-rendering:crisp-edges;image-rendering:pixelated}
+.ator,.saga-eu{position:absolute;left:0;top:0;width:var(--t);height:var(--t);pointer-events:none}
+.ator{transform:translate(calc(var(--x) * var(--t)),calc(var(--y) * var(--t)))}
+.ator.acima{z-index:9999!important}
+.saga-eu{transform:translate3d(calc(var(--ex,0) * var(--t)),calc(var(--ey,0) * var(--t)),0);transition:transform var(--passo) linear;will-change:transform}
+.saga-tela.seco .saga-mundo,.saga-tela.seco .saga-eu{transition:none}
+
+/* figuras: recortes do atlas (peça de uma casa, enfeite grande) e da folha de gente */
+.peca,.prop,.gente{position:absolute;display:block;background-repeat:no-repeat;image-rendering:crisp-edges;image-rendering:pixelated}
+.peca,.prop{background-image:url(../img/saga/atlas.png);background-size:calc(var(--u) * var(--aw) * 1px) auto}
+.peca{left:0;top:0;width:var(--t);height:var(--t);background-position:calc(var(--ax) * var(--t) * -1) calc(var(--ay) * var(--t) * -1)}
+.prop{left:calc(var(--u) * var(--dx) * 1px);top:calc(var(--u) * var(--dy) * 1px);width:calc(var(--u) * var(--w) * 1px);height:calc(var(--u) * var(--h) * 1px);
+  background-position:calc(var(--u) * var(--sx) * -1px) calc(var(--u) * var(--sy) * -1px)}
+.gente{left:calc(var(--u) * -16px);top:calc(var(--u) * -34px);width:calc(var(--u) * 64px);height:calc(var(--u) * 64px);
+  background-image:url(../img/saga/gente.png);background-size:calc(var(--u) * 320px) auto;background-position:0 calc(var(--u) * var(--lin) * -64px);
+  animation:saga-balanco 2.8s ease-in-out infinite}
+/* Pokémon: o sprite de 96 px da PokéAPI na escala da arte, com os pés na casa. `--vira` espelha (−1 = olhando pra direita). */
+.vira{position:absolute;left:calc(var(--u) * -32px);top:calc(var(--u) * -60px);width:calc(var(--u) * 96px);height:calc(var(--u) * 96px);transform:scaleX(var(--vira,1))}
+.bicho{display:block;width:100%;height:100%;object-fit:contain;image-rendering:crisp-edges;image-rendering:pixelated;transform-origin:50% 88%;animation:saga-respira 2.6s ease-in-out infinite}
+.sombra{position:absolute;left:10%;top:56%;width:80%;height:36%;border-radius:50%;background:#0005}
+.ator .emoji{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--u) * 20px);line-height:1}
+/* parado respira; andando dá um pulinho por casa; quem ronda balança; o Alfa é maior e brilha */
+@keyframes saga-respira{50%{transform:scale(1.02,.97)}}
+@keyframes saga-balanco{50%{transform:translateY(calc(var(--u) * -1px))}}
+@keyframes saga-pulo{45%{transform:translateY(calc(var(--u) * -6px))}}
+@keyframes saga-ronda{0%,100%{transform:translateX(calc(var(--u) * -3px))}50%{transform:translateX(calc(var(--u) * 3px))}}
+@keyframes saga-alfa{0%,100%{transform:scale(1.25)}50%{transform:scale(1.3,1.21)}}
+.saga-mundo.andando .saga-eu .bicho{animation:saga-pulo var(--passo) ease-out infinite}
+/* o seu vulto: por cima de tudo, quase transparente — é o que aparece quando você passa atrás de uma copa */
+.saga-eu.vulto-de-mim{z-index:9998;opacity:.38}
+.ator.npc:nth-of-type(odd) .bicho{animation-delay:-1.1s}
+.ator.npc:nth-of-type(3n) .bicho{animation-delay:-.5s}
+.bicho.vulto{filter:brightness(0) opacity(.72);animation:saga-ronda 1.6s ease-in-out infinite}
+.bicho.alfa{filter:drop-shadow(0 0 5px #f6c744);animation:saga-alfa 2.2s ease-in-out infinite}
+.saga-tela.parado .bicho,.saga-tela.parado .gente,.saga-tela.parado .marca,.saga-tela.parado .cintila{animation:none}
+/* balão em cima de quem tem algo pra você: ! missão nova · ? missão que anda aqui · ⚔ luta */
+.marca{position:absolute;left:50%;top:calc(var(--u) * -70px);min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#f6c744;color:#1b1b2f;
+  font:800 13px/20px var(--display);text-align:center;box-shadow:0 2px 0 #0007;transform:translateX(-50%);animation:saga-marca 1s ease-in-out infinite}
+.marca.entrega{background:#7ee081}
+.marca.perigo{background:#e5484d;color:#fff}
+.gente ~ .marca{top:calc(var(--u) * -48px)}
+.cintila{position:absolute;left:38%;top:-46%;font-size:calc(var(--u) * 13px);animation:saga-marca 1.3s ease-in-out infinite}
+@keyframes saga-marca{50%{transform:translate(-50%,-4px)}}
+
+/* o nome do lugar, quando você chega. Sem animação (movimento reduzido) simplesmente não aparece. */
+.saga-letreiro{position:absolute;left:50%;top:20%;z-index:3;pointer-events:none;opacity:0;transform:translateX(-50%);text-align:center;white-space:nowrap;
+  padding:10px 26px;background:#0b0a12d9;border:2px solid #f6c74488;border-radius:12px;color:#fff;animation:saga-letreiro 2.8s ease-in-out forwards}
+.saga-letreiro b{display:block;font:700 22px var(--titulo,var(--display));color:var(--yellow)}
+.saga-letreiro small{font:500 13px var(--display);opacity:.85}
+@keyframes saga-letreiro{0%{opacity:0;transform:translate(-50%,8px)}12%,74%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}
+/* clarão antes da luta e escurecer ao trocar de mapa (opacidade 0 de base: sem animação, não cobre nada) */
+.saga-tela.clarao::after,.saga-tela.apagar::after{content:'';position:absolute;inset:0;z-index:7;pointer-events:none;opacity:0}
+.saga-tela.clarao::after{background:#fff;animation:saga-clarao .5s steps(5) forwards}
+.saga-tela.apagar::after{background:#000;animation:saga-apagar .2s ease-in forwards}
+@keyframes saga-clarao{20%{opacity:.9}40%{opacity:.1}60%{opacity:.9}80%{opacity:.2}100%{opacity:1}}
+@keyframes saga-apagar{to{opacity:1}}
+
+/* HUD: por cima do mapa, sem roubar o toque dele (só os botões recebem clique) */
+.saga-hud{position:absolute;inset:0;z-index:4;pointer-events:none;display:flex;flex-direction:column;gap:8px;padding:8px}
+.saga-hud button{pointer-events:auto;cursor:pointer;color:#fff}
+.hud-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hud-equipe{display:grid;gap:4px}
+.hud-mon{display:flex;align-items:center;gap:6px;min-width:128px;padding:3px 12px 3px 4px;background:#0b0a12cc;border:1px solid #ffffff22;border-radius:999px;color:#fff;font:600 12px var(--display)}
+.hud-mon img{width:28px;height:28px;object-fit:contain;image-rendering:pixelated}
+.hud-mon span{display:grid;gap:1px;min-width:0}
+.hud-mon b{display:inline-block;max-width:104px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.hud-hp{display:block;height:5px;border-radius:3px;background:#ffffff26;overflow:hidden}
+.hud-hp i{display:block;height:100%;background:#7ee081}
+.hud-mon.mal .hud-hp i{background:#e5484d}
+.hud-local{padding:5px 12px;background:#0b0a12cc;border:1px solid #ffffff22;border-radius:12px;color:#fff;font:700 13px var(--display);text-align:right}
+.hud-local small{display:block;font-weight:500;font-size:11px;opacity:.75}
+.hud-missao{margin:0 auto auto;max-width:min(560px,100%);padding:6px 14px;background:#0b0a12cc;border:1px solid #f6c74455;border-radius:12px;font:500 13px/1.35 var(--body);text-align:left}
+.hud-missao b{margin-right:6px;color:var(--yellow);font-family:var(--display)}
+.hud-missao span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hud-base{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.dpad{display:grid;grid-template:repeat(3,52px)/repeat(3,52px);gap:2px;opacity:.85}
+.dpad button{padding:0;border:2px solid #ffffff33;border-radius:12px;background:#0b0a12b3;font-size:20px;touch-action:manipulation}
+.dpad button:active{background:#f6c744;color:#1b1b2f}
 .dpad-n{grid-area:1/2}.dpad-o{grid-area:2/1}.dpad-l{grid-area:2/3}.dpad-s{grid-area:3/2}
-.saga-lado{flex:1;min-width:180px;display:grid;gap:8px;justify-items:start}
+.hud-botoes{display:grid;gap:6px}
+.hud-botoes button{position:relative;width:46px;height:46px;padding:0;border:2px solid #ffffff33;border-radius:50%;background:#0b0a12cc;font-size:20px;line-height:1}
+.hud-botoes button.on{border-color:var(--yellow);background:#2a2440}
+.hud-botoes .bolinha{position:absolute;right:-5px;top:-5px;margin:0}
+@media (pointer:fine) and (min-width:900px){.dpad{opacity:.4;transition:opacity .15s}.dpad:hover{opacity:.9}}
+.saga-scrim{display:none;position:absolute;inset:0;z-index:6;border:0;background:#0008;cursor:pointer}
+.game.mundo[data-gaveta] .saga-scrim{display:block}
+
+/* diário e caixa de fala (dentro do modal de sempre) */
 .saga-fala{display:flex;gap:14px;align-items:flex-start;text-align:left}
-.saga-fala .retrato{width:96px;height:96px;flex:none;image-rendering:pixelated;background:var(--panel2);border:2px solid var(--line);border-radius:12px}
+.saga-fala .retrato{position:relative;flex:none;width:96px;height:96px;--u:1;--t:32px;overflow:hidden;background:var(--panel2);border:2px solid var(--line);border-radius:12px}
+.saga-fala .retrato .vira{left:0;top:0;width:96px;height:96px;transform:none}
+.saga-fala .retrato .gente{left:16px;top:10px;animation:none;transform:scale(1.4);transform-origin:50% 60%}
+.saga-fala .retrato .bicho{animation:none}
+.saga-fala .retrato .sombra{display:none}
 .saga-fala .quem{font:700 17px var(--display);color:var(--yellow)}
 .saga-fala p{margin:6px 0 0;line-height:1.5}
 .saga-diario{text-align:left}
 .saga-diario h3{margin:0 0 4px;font:700 20px var(--titulo,var(--display))}
 .saga-diario p{margin:6px 0}
-@media (max-width:520px){.saga-fala .retrato{width:64px;height:64px}}
+.saga-creditos{margin-top:14px!important;padding-top:8px;border-top:1px solid var(--line)}
+@media (max-width:520px){
+  .saga-fala .retrato{width:72px;height:72px}
+  .saga-fala .retrato .vira{width:72px;height:72px}
+  .saga-fala .retrato .gente{left:4px;top:0;transform:scale(1.05)}
+  .hud-local small{display:none}
+}

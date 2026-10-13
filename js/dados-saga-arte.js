@@ -1,0 +1,12 @@
+/* GERADO por ferramentas/gerar-atlas-saga.mjs — NÃO editar à mão (figura nova = uma linha lá e rodar de novo).
+   Onde cada figura do mundo da ⚔ Saga está dentro de img/saga/atlas.png e img/saga/gente.png. Arte aberta do
+   Liberated Pixel Cup; crédito e licença em img/saga/CREDITOS.txt. */
+export const ATLAS = {"arquivo":"img/saga/atlas.png","w":1024,"h":928,"tam":32,"cols":32};
+// figura solta → índice na grade do atlas (coluna = i % cols, linha = i / cols)
+export const ARTE = {"grama0":47,"grama1":48,"grama2":49,"gramaTufo0":50,"gramaTufo1":51,"terra0":146,"terra1":147,"terra2":148,"terraEscura0":196,"terraEscura1":197,"terraEscura2":198,"pedra0":246,"pedra1":247,"pedra2":248,"buraco0":296,"buraco1":297,"buraco2":298,"agua0":393,"agua1":394,"agua2":395,"lava0":443,"lava1":444,"lava2":445,"rocha":493,"pedrinhas":494,"bau":495,"bau2":496,"bau3":497,"bau4":498,"bauAberto":499,"bauAberto2":500,"placaPousada":501,"placaForja":502,"placaLoja":503,"balde":504,"baldeCheio":505,"pedregulho":506,"cascalho":507,"estalagmite":508,"estalagmite2":509,"estalagmiteNegra":510,"poco":511,"fenda":512,"pocaLava":513,"lagoinha":514,"breu":515,"flores":516,"floresRosa":517,"floresAzuis":518,"matoAlto":519,"placa":520,"lapide":521};
+// terreno de borda automática → índice da PRIMEIRA das 47 figuras (ordem de saga-arte.MASCARAS_BLOB)
+export const BLOBS = {"grama":0,"gramaClara":52,"terra":99,"terraEscura":149,"pedra":199,"buraco":249,"aguaGrama":299,"agua":346,"lava":396,"lavaRocha":446};
+// enfeite grande → [x, y, largura, altura, dx, dy]: o retângulo no atlas e onde o canto dele fica em relação à casa
+export const PROPS = {"carvalho":[0,544,96,128,-32,-96],"carvalho2":[96,544,96,144,-32,-112],"pinheiro":[192,544,96,128,-32,-96],"pinheiro2":[288,544,96,144,-32,-112],"barril":[384,544,32,64,0,-32],"barris":[416,544,64,64,-16,-32],"casa":[480,544,96,192,-32,-160],"casaPedra":[576,544,96,160,-32,-128],"entradaCaverna":[672,544,64,64,-16,-32],"carvalhoOutono":[736,544,96,128,-32,-96],"carvalho2Outono":[832,544,96,144,-32,-112],"pinheiroNevado":[928,544,96,128,-32,-96],"carvalhoSombrio":[0,736,96,128,-32,-96],"casaVelha":[96,736,96,192,-32,-160]};
+// gente: cada pessoa ocupa 4 linhas (n, o, s, l) de 5 quadros (parado + 4 de caminhada) de 64 px
+export const GENTE = {"arquivo":"img/saga/gente.png","quadro":64,"quadros":5,"nomes":["cacador","patrulheira","menino","menina","velho","lenhador","soldado","soldadoRubro","dama"]};

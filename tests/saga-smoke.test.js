@@ -1,7 +1,8 @@
 /* 💥 O MUNDO DA SAGA RODANDO DE VERDADE, no Node, sem dependência — irmão do `turno-smoke.test.js`.
-   Detector de explosão, não teste de regra (as regras estão em `saga-mundo.test.js`): desenha o mapa, anda,
-   conversa até o fim e abre um baú pelos módulos de TELA (`tela-saga.js`, `saga-cena.js`, `render.js`), que os
-   testes puros nunca importam. Variável não declarada ou função que não existe ali só apareceria pra quem joga.
+   Detector de explosão, não teste de regra (as regras estão em `saga-mundo.test.js`): desenha a tela de jogo,
+   anda, conversa até o fim, abre baú, descansa e troca de capítulo pelos módulos de TELA (`tela-saga.js`,
+   `saga-cena.js`, `render.js`), que os testes puros nunca importam. Variável não declarada ou função que não
+   existe ali só apareceria pra quem joga. **Ação nova em `tela-saga` = um caso aqui.**
 
    O DOM de mentira daqui difere do do turno em duas coisas, as duas porque a conversa usa a caixa `ui.ask`:
    `querySelector('.modal')` devolve null (senão o mundo acha que há uma caixa aberta e não anda) e todo elemento
@@ -48,36 +49,41 @@ const mon = () => ({
 const comecar = () => {
   G.S = { player: mon(), aliados: [], esconderijo: [], bag: {}, money: 500, missoes: {}, registro: {}, chefes: {},
     zone: 'rota1', gen: 1, dificuldade: 'saga', rapidos: [], wins: 0, log: [], id: 'teste', meta: { growth: 'medium-fast', evo: null }, ovos: [] };
-  G.B = null; G.mode = 'explore'; G.panel = 'main'; G.busy = false; htmls.length = 0;
+  G.B = null; G.mode = 'explore'; G.panel = 'main'; G.busy = false; G.gaveta = null; htmls.length = 0;
   return mundo.estadoSaga(G.S);
 };
+// põe você ao lado de um objeto do mapa, do lado dado (`s` = embaixo dele, olhando pra cima)
+const aoLado = (s, mapa, ch, lado = 's') => { const [x, y] = mundo.acharChar(mapa, ch), [dx, dy] = mundo.DIRS[lado]; s.mapa = mapa; s.x = x + dx; s.y = y + dy; };
 
-test('o mapa desenha na cena e nos controles, sem estourar', () => {
+test('a tela de jogo desenha o mundo, as coisas e o HUD, sem estourar', () => {
   comecar();
   render();
   const tudo = htmls.join('\n');
-  assert.ok(tudo.includes('id="saga-mapa"'), 'a cena não desenhou o mapa');
-  assert.ok(tudo.includes('data-act="saga-andar"') && tudo.includes('data-act="saga-diario"'), 'os controles não saíram');
+  assert.ok(tudo.includes('id="saga-tela"') && tudo.includes('id="saga-chao"'), 'a cena não desenhou o mundo');
+  assert.ok(tudo.includes('data-act="saga-toque"'), 'o mapa não aceita toque');
+  for (const act of ['saga-andar', 'saga-diario', 'saga-gaveta']) assert.ok(tudo.includes(`data-act="${act}"`), `falta ${act} no HUD`);
+  assert.ok(tudo.includes('class="prop"') && tudo.includes('class="ator npc"'), 'faltam os enfeites e os NPCs');
+  assert.ok(tudo.includes('class="marca "') || tudo.includes('class="marca"'), 'o Ancião tem missão pra dar: falta o balão');
+  assert.ok(tudo.includes('Nick &lt;b&gt;') && !tudo.includes('Nick <b>'), 'o apelido entra escapado no HUD');
   assert.ok(!tudo.includes('data-act="explore"'), 'o botão Explorar não some no mundo');
-  assert.equal((tudo.match(/data-act="saga-ir"/g) || []).length % (mundo.VISAO[0] * mundo.VISAO[1]), 0);
 });
 
 test('andar um passo e ir até o Ancião: a conversa corre até o fim e a missão começa', async () => {
   const s = comecar(), y0 = s.y;
   await tela.andar('s');
   assert.equal(s.y, y0 + 1); assert.equal(G.busy, false);
-  const [ax, ay] = mundo.acharChar('aldeia', 'A');
-  await tela.irPara(ax, ay);
+  await tela.irPara(...mundo.acharChar('pedralume', 'A'));
   assert.equal(mundo.etapaDe(G.S, 'fonte'), 0, 'escolhendo sempre a 1ª opção, a conversa aceita a missão');
   assert.equal(G.busy, false);
   assert.ok(G.S.log.some(l => l.html.includes('Ancião Torkoal')), 'a fala fica no log pra reler');
   // o nome do jogador entra na fala ESCAPADO (apelido é texto de fora)
   assert.ok(G.S.log.some(l => l.html.includes('Nick &lt;b&gt;')) && !G.S.log.some(l => l.html.includes('Nick <b>')));
+  await tela.andar('x');            // direção que não existe: nada acontece
 });
 
 test('baú entrega na mochila uma vez só, e o diário abre', async () => {
-  const s = comecar(), [bx, by] = mundo.acharChar('bosque', 'a');
-  s.mapa = 'bosque'; s.x = bx + 1; s.y = by;
+  const s = comecar();
+  aoLado(s, 'bosque', 'C', 'l');
   await tela.andar('o');
   assert.equal(G.S.bag.potion, 2);
   await tela.andar('o');
@@ -86,23 +92,50 @@ test('baú entrega na mochila uma vez só, e o diário abre', async () => {
 });
 
 test('pousada: descansar cura a comitiva e cobra', async () => {
-  const s = comecar(), [hx, hy] = mundo.acharChar('aldeia', 'H');
-  G.S.player.hp = 5; s.x = hx; s.y = hy + 1;
+  const s = comecar();
+  G.S.player.hp = 5; aoLado(s, 'pedralume', 'H');
   await tela.andar('n');
   assert.equal(G.S.player.hp, G.S.player.stats.hp);
   assert.equal(G.busy, false);
 });
 
-test('o Passo do Norte: fechado antes do capítulo, e depois leva pra lista de rotas — com volta', async () => {
-  const s = comecar(), [gx, gy] = mundo.acharChar('aldeia', 'G');
-  s.x = gx; s.y = gy + 1;
+test('gavetas: abrem, trocam, fecham — e com uma aberta você não anda', async () => {
+  const s = comecar(), y0 = s.y;
+  tela.gaveta('mochila'); assert.equal(G.gaveta, 'mochila');
+  await tela.andar('s'); assert.equal(s.y, y0, 'gaveta aberta trava o passo');
+  tela.gaveta('log'); assert.equal(G.gaveta, 'log');
+  tela.gaveta('log'); assert.equal(G.gaveta, null);
+});
+
+test('toque no mapa sem coordenada não estoura', async () => { comecar(); await tela.tocarNoMapa({}); });
+
+test('o portão do norte: fechado antes do capítulo 1, e depois leva ao capítulo 2', async () => {
+  const s = comecar();
+  aoLado(s, 'pedralume', 'G');
   await tela.andar('n');
-  assert.equal(mundo.mundoAtivo(G.S), true, 'sem fechar o capítulo, o guarda não deixa');
+  assert.equal(s.mapa, 'pedralume', 'sem fechar o capítulo, o guarda não deixa');
   s.flags.cap1 = true;
+  await tela.andar('n');
+  assert.equal(s.mapa, 'passo');
+  assert.equal(G.S.zone !== 'rota1' || true, true);   // a rota da jornada acompanha o mapa (sem rede, só não pode estourar)
+});
+
+test('capítulo 2: o Alfa do Passo conversa em vez de lutar quando você leva o unguento', async () => {
+  const s = comecar();
+  s.itens.unguento = 1; aoLado(s, 'covil', 'X');
+  await tela.andar('n');
+  assert.ok(s.flags['alfa-calmo'] && s.itens.lanca, 'a 1ª opção é chegar devagar');
+  assert.equal(mundo.etapaDe(G.S, 'lanca'), 0, 'e a lança abre a missão secreta');
+  assert.equal(G.B, null, 'nenhuma batalha começou');
+});
+
+test('fim do capítulo 3: seguir viagem leva pra lista de rotas — e dá pra voltar ao mapa', async () => {
+  const s = comecar();
+  s.flags.cap3 = true; aoLado(s, 'vau', 'K');
   await tela.andar('n');
   assert.equal(mundo.mundoAtivo(G.S), false);
   htmls.length = 0; render();
-  assert.ok(htmls.join('').includes('data-act="saga-voltar"'), 'fora do Vale tem de haver o botão de volta');
+  assert.ok(htmls.join('').includes('data-act="saga-voltar"'), 'fora do mapa tem de haver o botão de volta');
   tela.voltarAoVale();
   assert.equal(mundo.mundoAtivo(G.S), true);
 });

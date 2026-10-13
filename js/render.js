@@ -1,7 +1,7 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
 import { mundoAtivo, modoComMundo } from './saga-mundo.js';
-import { htmlMundo, htmlControles, botaoVoltarAoVale } from './saga-cena.js';
+import { htmlMundo, ligarMundo, botaoVoltarAoVale } from './saga-cena.js';
 import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais, emCampo, vivos } from './estado.js';
 import { OFICIOS } from './oficios.js';
 import { PERICIAS, periciasDe, periciaPronta, recargaDe, temPericiaPronta } from './pericias.js';
@@ -671,12 +671,13 @@ function renderScene() {
           ${AL.map(([A, i]) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A, 'a' + i)}</div>`).join('')}
         </div></div>`;
   } else {
-    /* ⚔ Saga com mundo: a cena de exploração é o MAPA andável (saga-cena.js), não a lista de rotas. A Pokédex da
-       rota continua embaixo — o mapa aponta pra uma rota de verdade, e é dela que saem os encontros. */
+    /* ⚔ Saga com mundo: a cena de exploração é o MAPA andável em tela cheia (saga-cena.js), não a lista de rotas.
+       `ligarMundo` roda DEPOIS do HTML entrar na página: é ele que pinta o chão no canvas e põe a câmera. */
     if (mundoAtivo(G.S)) {
       sc.className = 'scene mundo';
-      const zm = zone();
-      sc.innerHTML = `${htmlMundo(G.S, spriteFrente(G.S.player))}${avisoRepelente(zm)}${pokedexRota(zm)}`;
+      sc.removeAttribute('style');
+      sc.innerHTML = htmlMundo(G.S, { sprite: spriteFrente, rotas: rotasAtuais(), dis: G.busy ? 'disabled' : '', gaveta: G.gaveta, parado: semAnimacao() });
+      ligarMundo(G.S);
       return;
     }
     const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id], g = genDe(G.S);
@@ -879,8 +880,8 @@ function renderActions() {
       ${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid loja-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else if (mundoAtivo(S)) {
-    // ⚔ Saga com mundo: pousada e mercador são LUGARES do mapa, então aqui ficam só os controles de andar
-    a.innerHTML = `${htmlControles(S, dis)}${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}${barraRapidos(dis)}`;
+    // ⚔ Saga com mundo: os controles moram no HUD do mapa (saga-cena.js); este painel só aparece quando é a loja
+    a.innerHTML = '';
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
     const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = S.money < custo;
@@ -979,6 +980,16 @@ export function render() {
   if (!['explore', 'battle'].includes(G.mode) || !G.S) return;
   // no celular, a batalha vira tela fixa (cena em cima, ações embaixo) — ver o bloco "celular" do CSS
   document.body.classList.toggle('em-batalha', G.mode === 'battle' && !!G.B);
+  /* ⚔ Saga: a tela de jogo do mundo é uma CLASSE em `.game` (o CSS faz o resto: mapa em tela cheia, painéis
+     viram gavetas). Em `.game` e não no `body` de propósito — ela só existe nesta tela, então sair pra outra
+     não deixa classe pendurada. */
+  const jogo = $('.game'), noMundo = G.mode === 'explore' && mundoAtivo(G.S);
+  if (!noMundo) G.gaveta = null;
+  if (jogo) {
+    jogo.classList.toggle('mundo', noMundo);
+    jogo.classList.toggle('loja', noMundo && G.panel === 'shop');
+    if (noMundo && G.gaveta) jogo.dataset.gaveta = G.gaveta; else delete jogo.dataset.gaveta;
+  }
   const antes = capturarLargurasBarras(), antesPP = capturarTextosPP();
   renderSheet(); renderScene(); renderActions();
   animarBarras(antes); animarPP(antesPP);

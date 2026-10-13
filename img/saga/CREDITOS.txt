@@ -1,0 +1,38 @@
+ARTE DO MUNDO DA SAGA (img/saga/atlas.png e img/saga/gente.png)
+================================================================
+Estes dois arquivos são obra derivada de arte do Liberated Pixel Cup (LPC) e são distribuídos sob
+Creative Commons Attribution-ShareAlike 3.0 (CC-BY-SA 3.0): https://creativecommons.org/licenses/by-sa/3.0/
+(os originais também estão sob GPL 3.0; os de Lanea Zimmerman e Stephen Challener, também sob OGA-BY 3.0).
+Montados por ferramentas/gerar-atlas-saga.mjs. Flores, mato alto, placa de madeira e lápide são desenho nosso.
+
+Tiles e objetos — "LPC Base Assets"
+  https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+  Lanea Zimmerman (Sharm): terrenos, árvores, casas, baús, barris, placas, pedras, montanhas, a dama.
+  Stephen Challener (Redshrike): moldes de corpo dos personagens.
+  Charles Sanchez (CharlesGabriel), Manuel Riecke (MrBeast), Daniel Armstrong (HughSpectrum): soldados e demais
+  sprites da base. Lista completa em CREDITS.TXT do pacote.
+
+Gente (corpos, cabeças, roupas, cabelos, capuz, botas) — "Universal LPC Spritesheet Character Generator"
+  https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator
+  Autores por camada em CREDITS.csv do repositório. Camadas usadas:
+    spritesheets/body/bodies/female/walk.png
+    spritesheets/body/bodies/male/walk.png
+    spritesheets/body/bodies/teen/walk.png
+    spritesheets/feet/boots/basic/male/walk.png
+    spritesheets/feet/boots/basic/thin/walk.png
+    spritesheets/hair/bangs/adult/walk.png
+    spritesheets/hair/plain/adult/walk.png
+    spritesheets/hat/cloth/hood/adult/walk.png
+    spritesheets/head/heads/human/female/walk.png
+    spritesheets/head/heads/human/female_small/walk.png
+    spritesheets/head/heads/human/male/walk.png
+    spritesheets/head/heads/human/male_elderly/walk.png
+    spritesheets/head/heads/human/male_small/walk.png
+    spritesheets/legs/pants/male/walk.png
+    spritesheets/legs/pants/thin/walk.png
+    spritesheets/torso/clothes/longsleeve/longsleeve/male/walk.png
+    spritesheets/torso/clothes/longsleeve/longsleeve/teen/walk.png
+    spritesheets/torso/clothes/shortsleeve/shortsleeve/teen/walk.png
+    spritesheets/torso/clothes/tunic/female/walk/forest.png
+
+Os sprites dos POKÉMON não estão nestes arquivos: vêm da PokéAPI, como no resto do jogo.

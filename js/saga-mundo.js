@@ -2,13 +2,12 @@
    Andar no mapa, o que bloqueia, condição e efeito de diálogo, missões. Sem DOM, sem rede, sem sorteio escondido
    (quem sorteia recebe `sorte`). Os dados moram em `dados-saga.js`; a tela é `saga-cena.js` + `tela-saga.js`.
    Tudo fica em `S.saga` (vai junto no save): { mapa, x, y, flags, itens, rep, missoes, falas, baus, luta, fora }. */
-import { MAPAS_SAGA, NPCS, MISSOES_SAGA, ITENS_SAGA, DONS, TILES, INICIO, FACCOES } from './dados-saga.js';
+import { MAPAS_SAGA, NPCS, MISSOES_SAGA, ITENS_SAGA, DONS, TILES, INICIO, FACCOES, CAPITULOS } from './dados-saga.js';
 import { DIFICULDADES } from './dados.js';
+import { tileDaCasa } from './saga-arte.js';
 
 export const DIRS = { n: [0, -1], s: [0, 1], o: [-1, 0], l: [1, 0] };
-export const VISAO = [11, 9];        // quantos tiles a câmera mostra (largura, altura)
 export const CHANCE_MATO = 0.14;     // encontro por passo no mato alto
-export const MULT_SOMBRA = 0.5;      // …com o dom Passo de Sombra
 
 /* O mundo vale no modo que tem a flag `mundo`, e enquanto você não saiu pelo Passo (`fora`): além dele as rotas
    seguintes ainda não têm mapa escrito e voltam a ser a lista de rotas de sempre. */
@@ -29,7 +28,12 @@ export function estadoSaga(S) {
   return s;
 }
 export const mapaDe = S => MAPAS_SAGA[estadoSaga(S).mapa];
+export const capituloDe = mapa => CAPITULOS.find(c => c.id === mapa?.cap) || null;
 export const temDom = (m, id) => !!m?.dons?.includes(id);
+/* O efeito dos dons é DADO (`dados-saga.DONS`): o produto de um campo numérico por todos os dons que o Pokémon
+   tem (`encontro` aqui; `dano`/`ruina`/`defesa` em `regras.multSaga`), e `faro` como sim/não. */
+export const multDosDons = (m, campo) => (m?.dons || []).reduce((a, d) => a * (DONS[d]?.[campo] ?? 1), 1);
+export const temFaro = m => (m?.dons || []).some(d => DONS[d]?.faro);
 
 /* ---- missões ---- */
 // 'nao' (não começou) · número (a etapa atual) · 'fim'
@@ -79,11 +83,17 @@ export function aplicar(S, faz) {
     avisos.push(`${FACCOES[fac].emoji} ${FACCOES[fac].nome}: reputação ${n > 0 ? 'sobe' : 'cai'}.`);
   }
   if (faz.missao) {
+    /* Missão só anda PRA FRENTE: repetir uma conversa (ou falar com as pessoas fora de ordem) nunca devolve a
+       missão a uma etapa anterior nem reabre uma concluída. É o que deixa um nó de fala aplicar `missao` sem
+       medo de ser ouvido duas vezes. */
     const [id, e] = faz.missao, m = MISSOES_SAGA[id], antes = etapaDe(S, id);
-    s.missoes[id] = e === 'fim' ? m.etapas.length : e;
-    const selo = m.secreta ? '🕯 Missão secreta' : '📜 Missão';
-    if (e === 'fim') avisos.push(`${selo} concluída: <b>${m.nome}</b>.`);
-    else avisos.push(`${selo} ${antes === 'nao' ? 'nova' : 'atualizada'}: <b>${m.nome}</b> — ${m.etapas[e]}`);
+    const alvo = e === 'fim' ? m.etapas.length : e, atual = antes === 'nao' ? -1 : antes === 'fim' ? Infinity : antes;
+    if (alvo > atual) {
+      s.missoes[id] = alvo;
+      const selo = m.secreta ? '🕯 Missão secreta' : '📜 Missão';
+      if (e === 'fim') avisos.push(`${selo} concluída: <b>${m.nome}</b>.`);
+      else avisos.push(`${selo} ${antes === 'nao' ? 'nova' : 'atualizada'}: <b>${m.nome}</b> — ${m.etapas[e]}`);
+    }
   }
   if (faz.dom && !temDom(S.player, faz.dom)) {
     S.player.dons = [...(S.player.dons || []), faz.dom];
@@ -102,8 +112,9 @@ export function objetoEm(S, mapa, x, y) {
   const o = mapa.objs?.[mapa.grade[y]?.[x]];
   return (o && lista(o).find(v => existe(S, v))) || null;
 }
-export const tileEm = (mapa, x, y) => { const ch = mapa.grade[y]?.[x]; return ch === undefined ? null : TILES[ch] ? ch : mapa.chao; };
-export const atravessa = o => !!(o.porta || o.gatilho || o.chegada);
+// O tile embaixo de uma casa (o do objeto é o que ele imita, ou o chão do mapa) — a mesma leitura que o desenho faz.
+export const tileEm = (mapa, x, y) => tileDaCasa(mapa, x, y, TILES);
+export const atravessa = o => !!(o.porta || o.gatilho || o.chegada || o.passa);
 export function bloqueia(S, mapa, x, y) {
   const t = tileEm(mapa, x, y);
   if (t === null) return true;
@@ -130,8 +141,7 @@ export function passo(S, dir) {
   }
   return { tipo: 'andou', mato: !!TILES[tileEm(mapa, x, y)].mato, gatilho: o?.gatilho ? o : null };
 }
-export const sorteiaEncontro = (S, sorte = Math.random) =>
-  sorte() < CHANCE_MATO * (temDom(S.player, 'sombra') ? MULT_SOMBRA : 1);
+export const sorteiaEncontro = (S, sorte = Math.random) => sorte() < CHANCE_MATO * multDosDons(S.player, 'encontro');
 
 /* Caminho até uma casa (toque no mapa), em busca em largura: lista de direções, [] se não dá. O destino pode
    ser algo que bloqueia — aí o último passo é o esbarrão (é assim que se "toca num NPC pra falar"). */
@@ -157,11 +167,11 @@ export function caminho(S, tx, ty) {
   }
   return [];
 }
-// Canto de cima-esquerda da câmera: centrada em você, presa nas bordas do mapa.
-export function camera(S) {
-  const s = estadoSaga(S), g = mapaDe(S).grade, [vw, vh] = VISAO;
-  const preso = (v, max) => Math.max(0, Math.min(v, Math.max(0, max)));
-  return { x0: preso(s.x - (vw >> 1), g[0].length - vw), y0: preso(s.y - (vh >> 1), g.length - vh) };
+/* Onde a câmera fica num eixo, em pixels: centrada em você, presa nas bordas do mapa — e, se o mapa é menor que
+   a tela, o mapa fica no meio (posição negativa = sobra dos dois lados). `pos` é a casa, `casa` o tamanho dela. */
+export function camera(pos, casa, tela, total) {
+  if (total <= tela) return -(tela - total) / 2;
+  return Math.max(0, Math.min(pos * casa + casa / 2 - tela / 2, total - tela));
 }
 
 /* ---- diálogo ---- */
@@ -173,6 +183,28 @@ export function comecarConversa(S, idNpc) {
   return no;
 }
 export const opcoesDe = (S, no) => (no.opcoes || []).filter(o => vale(S, o.se));
+/* O balão em cima de um NPC: '!' = tem missão nova pra dar, '?' = uma missão sua anda (ou termina) aqui. Lê o que
+   a conversa FARIA agora, andando pelos nós que dá pra alcançar. Missão secreta nunca acende balão — senão não
+   seria secreta. */
+export function marcaDoNpc(S, idNpc) {
+  const npc = NPCS[idNpc];
+  if (!npc) return null;
+  const vistos = new Set(), fila = [npc.falas.find(f => vale(S, f.se))?.no];
+  let marca = null;
+  while (fila.length) {
+    const k = fila.shift(), no = npc.nos[k];
+    if (!no || vistos.has(k)) continue;
+    vistos.add(k);
+    const ops = opcoesDe(S, no);
+    for (const m of [no.faz, ...ops.map(o => o.faz)].map(f => f?.missao).filter(Boolean)) {
+      if (MISSOES_SAGA[m[0]]?.secreta) continue;
+      const e = etapaDe(S, m[0]);
+      if (e === 'nao') marca = marca || '!'; else if (e !== 'fim') marca = '?';
+    }
+    fila.push(no.vai, ...ops.map(o => o.vai));
+  }
+  return marca;
+}
 
 /* ---- luta que o MAPA começou ----
    `tela-saga` anota `S.saga.luta = { flag }` antes de chamar a batalha, e `batalha.endBattle` (a porta única do

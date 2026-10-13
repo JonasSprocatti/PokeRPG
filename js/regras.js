@@ -2,6 +2,7 @@
 // Fórmulas puras (recebem dado, devolvem dado). Sem DOM, sem rede, sem estado global:
 // importável direto no Node — é o que tests/regras.test.js cobre.
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
+import { DONS } from './dados-saga.js';
 import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, ITENS_DE_SELVAGEM } from './dados.js';
 import { hab } from './habilidades.js';
 import { especial, poderDoFling } from './especiais.js';
@@ -1553,9 +1554,9 @@ export const GUARDA = { selvagem: 3, alfa: 6, chefe: 10 };
    a rodada seguinte inteira, que é o "perde o próximo turno" do desenho. Afinar é mexer aqui. */
 export const RUINA_TURNOS = 2;
 /* ✨ Dons (dados-saga.DONS): habilidades que o MUNDO da Saga dá por escolha, guardadas no Pokémon (`m.dons`).
-   Os dois de batalha entram no mesmo multiplicador que o motor já lê uma vez no dano. */
-export const MULT_DOM_BRASA = 1.2;  // Brasa da Forja: +20% em inimigo em Ruína
-export const MULT_DOM_CASCA = 0.9;  // Casca do Bosque: recebe 10% a menos
+   O efeito é DADO, não código: cada dom pode trazer `dano` (o que você causa), `ruina` (o que você causa em
+   inimigo em Ruína) e `defesa` (o que você recebe), e `multSaga` multiplica tudo — no mesmo ponto que o motor
+   já lê uma vez no dano. Os limites de cada número são de `saga-validar.EFEITOS_DE_DOM`. */
 export const MULT_RUINA = 1.5;      // em Ruína, tudo dói 50% mais
 export const MULT_MURALHA = 0.5;    // 🧱 Muralha (perícia do Guardião): a comitiva toma metade
 export const MULT_MARCA = 1.25;     // 🕯 Marca (perícia do Encantador): o marcado toma 25% mais
@@ -1586,11 +1587,12 @@ export function abrirBrecha(m, n) {
 }
 /* O multiplicador de dano da Saga, num ponto só (lido pelo motor em `golpe.executar`): Ruína, Muralha e Marca.
    Fora da Saga nenhuma dessas marcas existe no `vol`, então devolve 1 e o dano é exatamente o de antes. */
-export const multSaga = (u, t) => (emRuina(t) ? MULT_RUINA : 1)
+const multDosDons = (m, campo) => (m?.dons || []).reduce((a, d) => a * (DONS[d]?.[campo] ?? 1), 1);
+export const multSaga = (u, t) => (emRuina(t) ? MULT_RUINA * multDosDons(u, 'ruina') : 1)
   * (t?.vol?.muralha ? MULT_MURALHA : 1)
   * (t?.vol?.marca > 0 ? MULT_MARCA : 1)
-  * (emRuina(t) && u?.dons?.includes('brasa') ? MULT_DOM_BRASA : 1)
-  * (t?.dons?.includes('casca') ? MULT_DOM_CASCA : 1);
+  * multDosDons(u, 'dano')
+  * multDosDons(t, 'defesa');
 /* Fim de rodada da Saga: Ruína, Marca e Brado perdem um turno. Ruína que acaba DEVOLVE a Guarda cheia (como em
    Octopath: quebrou, aproveitou, e o escudo volta) — senão a segunda Brecha seria de graça pra sempre. */
 export function passarSaga(m) {

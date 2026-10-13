@@ -30,7 +30,7 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
-import { andar, irPara, abrirDiario, voltarAoVale } from './tela-saga.js';
+import { andar, tocarNoMapa, abrirDiario, gaveta, voltarAoVale } from './tela-saga.js';
 import { mundoAtivo } from './saga-mundo.js';
 import { completarAlvosDoSave } from './pokemon.js';
 import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
@@ -300,8 +300,9 @@ async function aoClicar(e) {
     case 'explore': return explore();
     // ⚔ Saga: o mapa andável (tela-saga.js)
     case 'saga-andar': return andar(v);
-    case 'saga-ir': { const [x, y] = v.split(',').map(Number); return irPara(x, y); }
+    case 'saga-toque': return tocarNoMapa(e);
     case 'saga-diario': return abrirDiario();
+    case 'saga-gaveta': return gaveta(v);
     case 'saga-voltar': return voltarAoVale();
     case 'zone': {
       const z = rotasAtuais().find(x => x.id === v); // só rotas do mapa atual
@@ -514,6 +515,7 @@ document.addEventListener('keydown', e => {
     const b = $(`[data-rapido="${e.key}"]`);
     if (b) { e.preventDefault(); b.click(); return; }
   }
+  if (e.key === 'Escape' && G.gaveta) { gaveta(null); return; }   // ⚔ Saga: Esc fecha a gaveta aberta
   // ⚔ Saga: setas e WASD andam no mapa (a própria `andar` recusa fora do mundo, em batalha ou com caixa aberta)
   const dir = TECLA_ANDAR[e.key.length === 1 ? e.key.toLowerCase() : e.key];
   if (dir && G.mode === 'explore' && G.S && mundoAtivo(G.S) && !e.target.matches?.('input,textarea,select') && !e.ctrlKey && !e.metaKey && !e.altKey) {
