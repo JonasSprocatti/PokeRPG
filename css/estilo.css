@@ -1198,6 +1198,19 @@ ul.quase.conquistas .bar{margin:4px 0}
 /* a loja (aberta pelo mercador) cobre a tela, como uma página */
 .game.mundo.loja #actions{display:block;position:fixed;inset:var(--saga-topo,56px) 0 0 0;z-index:8;overflow:auto;background:var(--ink);padding:16px}
 
+/* Na tela de jogo a barra do topo fica compacta em QUALQUER largura: os atalhos vão pro ☰, como no celular.
+   Medido em tela: no computador as duas fileiras de botões comiam 190 px — um quarto da altura do mapa.
+   `:has()` porque a barra mora fora de `.game`; num navegador sem ele, a barra só continua alta. */
+body:has(.game.mundo) .top{padding:8px 14px}
+body:has(.game.mundo) .brand small{display:none}
+body:has(.game.mundo) .brand .logo{height:38px}
+body:has(.game.mundo) .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
+body:has(.game.mundo) .menu-links{display:none;position:absolute;top:calc(100% + 6px);right:10px;left:auto;width:min(360px,calc(100vw - 20px));z-index:9;flex-direction:column;gap:10px;
+  max-height:70vh;max-height:70dvh;overflow:auto;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+body:has(.game.mundo) .menu-links.open{display:flex}
+body:has(.game.mundo) .menu-links .top-r,body:has(.game.mundo) #conta-chip{flex-direction:column;align-items:stretch;gap:8px}
+body:has(.game.mundo) .menu-links .btn{width:100%;text-align:center;padding:10px 14px}
+
 .saga-tela{position:absolute;inset:0;overflow:hidden;--u:1;--t:calc(var(--u) * 32px);--passo:170ms;user-select:none;-webkit-user-select:none;touch-action:manipulation;background:#0d0b12}
 .saga-tela.chegou{animation:saga-acender .3s ease-out}
 @keyframes saga-acender{from{opacity:0}}
@@ -1219,8 +1232,10 @@ ul.quase.conquistas .bar{margin:4px 0}
 .gente{left:calc(var(--u) * -16px);top:calc(var(--u) * -34px);width:calc(var(--u) * 64px);height:calc(var(--u) * 64px);
   background-image:url(../img/saga/gente.png);background-size:calc(var(--u) * 320px) auto;background-position:0 calc(var(--u) * var(--lin) * -64px);
   animation:saga-balanco 2.8s ease-in-out infinite}
-/* Pokémon: o sprite de 96 px da PokéAPI na escala da arte, com os pés na casa. `--vira` espelha (−1 = olhando pra direita). */
-.vira{position:absolute;left:calc(var(--u) * -32px);top:calc(var(--u) * -60px);width:calc(var(--u) * 96px);height:calc(var(--u) * 96px);transform:scaleX(var(--vira,1))}
+/* Pokémon: o sprite de 96 px da PokéAPI na escala da arte, com os pés na casa. `--vira` espelha (−1 = olhando pra direita).
+   O −46 foi medido em tela: o desenho não encosta na base do quadro de 96 px (sobram ~18), e com −60 todo mundo
+   flutuava um palmo acima da própria sombra. */
+.vira{position:absolute;left:calc(var(--u) * -32px);top:calc(var(--u) * -46px);width:calc(var(--u) * 96px);height:calc(var(--u) * 96px);transform:scaleX(var(--vira,1))}
 .bicho{display:block;width:100%;height:100%;object-fit:contain;image-rendering:crisp-edges;image-rendering:pixelated;transform-origin:50% 88%;animation:saga-respira 2.6s ease-in-out infinite}
 .sombra{position:absolute;left:10%;top:56%;width:80%;height:36%;border-radius:50%;background:#0005}
 .ator .emoji{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--u) * 20px);line-height:1}
@@ -1239,7 +1254,7 @@ ul.quase.conquistas .bar{margin:4px 0}
 .bicho.alfa{filter:drop-shadow(0 0 5px #f6c744);animation:saga-alfa 2.2s ease-in-out infinite}
 .saga-tela.parado .bicho,.saga-tela.parado .gente,.saga-tela.parado .marca,.saga-tela.parado .cintila{animation:none}
 /* balão em cima de quem tem algo pra você: ! missão nova · ? missão que anda aqui · ⚔ luta */
-.marca{position:absolute;left:50%;top:calc(var(--u) * -70px);min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#f6c744;color:#1b1b2f;
+.marca{position:absolute;left:50%;top:calc(var(--u) * -52px);min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#f6c744;color:#1b1b2f;
   font:800 13px/20px var(--display);text-align:center;box-shadow:0 2px 0 #0007;transform:translateX(-50%);animation:saga-marca 1s ease-in-out infinite}
 .marca.entrega{background:#7ee081}
 .marca.perigo{background:#e5484d;color:#fff}

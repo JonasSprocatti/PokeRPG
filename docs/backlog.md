@@ -51,8 +51,11 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   **Falta do mundo**: os capítulos 4 a 10 (o roteiro está pronto; é montar no editor), os finais, reputação
   mexendo em preço e recruta, Pokédex da rota na tela do mapa, NPC que anda, e a tela de BATALHA no mesmo
   padrão visual. **Falta do editor**: renomear id levando as referências, importar tileset pelo navegador.
-  **⚠ PRECISA DE AÇÃO DO USUÁRIO: olhar numa tela de verdade.** O Pi não tem navegador — o CSS da tela de jogo
-  (tela cheia, HUD, gavetas, deslize) e o do editor foram escritos às cegas e só passaram por teste de fumaça.
+  **Olhado em navegador de verdade em 13/10/2026** (`ferramentas/olhar.mjs`): mapa, andar, gaveta, conversa,
+  zoom de computador e o editor — três defeitos achados e corrigidos (ver `docs/features.md`). **Falta olhar**:
+  batalha começando do mapa, loja, e um aparelho de verdade (toque, emoji, desempenho).
+  **⚠ PRECISA DE AÇÃO DO USUÁRIO**: conferir que a migration `20261013180000_beta_testers.sql` chegou ao
+  Supabase — sem ela a seção 🧪 Testadores mostra o erro do banco e ninguém vira testador.
   **Fora de propósito por ora**: ameaça e Brecha no `mp-motor` (não existe Saga em sala); grupo em luta de
   treinador e de lendários (a fila deles é o balanceamento dos outros modos); seleção manual de alvo aliado;
   Limit Break (as 4 gimmicks já são o ultimate do modo) e Brave/Default (mexeria na economia do turno, que é

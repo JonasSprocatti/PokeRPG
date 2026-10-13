@@ -141,6 +141,18 @@ test('▶ Testar: com erro não entra (e manda pra aba de problemas); inteiro, e
   tela.acao('teste-sair');
 });
 
+test('🧪 testadores: a seção aparece em Publicar, e sem nuvem o erro vira texto na tela (não explosão)', async () => {
+  abrir();
+  tela.acao('aba', 'publicar');
+  assert.ok(ultima().includes('Testadores da Saga') && ultima().includes('data-em="beta-liberar"'));
+  for (let i = 0; i < 4; i++) await esperar();          // a lista é buscada depois: aqui não há nuvem, então chega um erro
+  assert.ok(ultima().includes('Não deu pra ler a lista') || ultima().includes('Ninguém ainda'), 'a busca da lista tem de terminar em texto');
+  tela.acao('beta-liberar');                            // sem código digitado: só avisa
+  tela.acao('beta-tirar', 'ABC123');                    // sem nuvem: avisa o motivo
+  await esperar();
+  assert.equal(ed.rascunhoSaga(), null, 'mexer em testador não cria rascunho do mundo');
+});
+
 test('gerar o arquivo e descartar o rascunho', () => {
   abrir();
   campo(['NPCS', 'pichu', 'nome'], 'Só no rascunho');

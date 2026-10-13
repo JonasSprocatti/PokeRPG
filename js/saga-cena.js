@@ -89,11 +89,11 @@ function htmlCoisas(S, mapa, rotas) {
 
 /* ---- HUD ---- */
 const GAVETAS = [['ficha', '🐾', 'Seu Pokémon'], ['aliados', '👥', 'Comitiva'], ['mochila', '🎒', 'Mochila'], ['missoes', '🎯', 'Missões da conta'], ['log', '💬', 'Registro']];
-function htmlHud(S, sprite, dis, gaveta) {
+function htmlHud(S, sprite, dis, gaveta, nome) {
   const mapa = mapaDe(S), cap = capituloDe(mapa), { ativas } = diario(S), ativa = ativas[0];
   const placa = m => {
     const max = Number(m.stats?.hp) || 1, pct = Math.max(0, Math.min(100, Math.round(100 * (Number(m.hp) || 0) / max)));
-    return `<div class="hud-mon ${pct <= 25 ? 'mal' : ''}"><img src="${urlDeImagem(sprite(m))}" alt="" draggable="false"><span><b>${esc(rotulo(m))}</b> <small>Nv. ${Number(m.level) || 0}</small><i class="hud-hp"><i style="width:${pct}%"></i></i></span></div>`;
+    return `<div class="hud-mon ${pct <= 25 ? 'mal' : ''}"><img src="${urlDeImagem(sprite(m))}" alt="" draggable="false"><span><b>${esc(nome(m))}</b> <small>Nv. ${Number(m.level) || 0}</small><i class="hud-hp"><i style="width:${pct}%"></i></i></span></div>`;
   };
   const seta = (d, s, nome) => `<button class="dpad-${d}" data-act="saga-andar" data-v="${d}" aria-label="Andar pra ${nome}" ${dis}>${s}</button>`;
   return `<div class="saga-hud">
@@ -118,7 +118,7 @@ function htmlHud(S, sprite, dis, gaveta) {
    (pro Alfa e pro vulto do bando); `gaveta` é o painel aberto; `parado` desliga as animações (⚙ Ajustes). O letreiro
    do lugar só aparece quando o mapa muda. */
 let ultimoMapa = null;
-export function htmlMundo(S, { sprite, rotas = [], dis = '', gaveta = null, parado = false } = {}) {
+export function htmlMundo(S, { sprite, rotas = [], dis = '', gaveta = null, parado = false, nome = rotulo } = {}) {
   const s = estadoSaga(S), mapa = mapaDe(S), W = mapa.grade[0].length, H = mapa.grade.length, cap = capituloDe(mapa);
   const chegou = ultimoMapa !== s.mapa; ultimoMapa = s.mapa;
   /* Você aparece DUAS vezes: a de verdade (que passa atrás das copas e das casas, pela linha) e um vulto
@@ -133,7 +133,7 @@ export function htmlMundo(S, { sprite, rotas = [], dis = '', gaveta = null, para
       <div class="saga-eu vulto-de-mim" aria-hidden="true">${eu}</div>
     </div>
     ${chegou ? `<div class="saga-letreiro"><b>${textoSeguro(mapa.nome)}</b>${cap ? `<small>Capítulo ${Number(cap.n) || 0} · ${textoSeguro(cap.nome)}</small>` : ''}</div>` : ''}
-    ${htmlHud(S, sprite, dis, gaveta)}
+    ${htmlHud(S, sprite, dis, gaveta, nome)}
   </div>`;
 }
 
@@ -182,7 +182,7 @@ export function corpoNoCanvas(ctx, sprite, x, y) {
     return !!g;
   }
   const img = Number(sprite) > 0 ? carregarImagem(SPR(sprite)) : null;
-  if (img) ctx.drawImage(img, x * T - 32, y * T - 58, 96, 96);
+  if (img) ctx.drawImage(img, x * T - 32, y * T - 46, 96, 96);
   return !!img;
 }
 
@@ -212,16 +212,33 @@ export function posicionarMundo(S, { seco = false, andando = false } = {}) {
   if (s.dir === 'l') def('--vira', -1); else if (s.dir === 'o') def('--vira', 1);
   mundo.classList.toggle('andando', andando);
 }
+/* A tela muda de tamanho sem avisar: a barra do topo ganha os botões DEPOIS da cena ser desenhada, a fonte
+   termina de carregar, o celular gira, a janela é redimensionada. Câmera e zoom dependem do tamanho — então quem
+   manda recalcular é um observador de tamanho (da tela do mundo E da barra do topo), não o momento do desenho.
+   Foi o primeiro defeito que o navegador de verdade mostrou: medida na hora do desenho, a área do mapa tinha
+   altura 0 e a câmera ia parar no pé do mapa, com a tela quase toda preta. */
+let observador = null, jornadaNaTela = null;
+function reajustar() {
+  const tela = el('saga-tela');
+  if (!tela || !jornadaNaTela) return;
+  medir(tela);
+  posicionarMundo(jornadaNaTela, { seco: true });
+}
 export function ligarMundo(S) {
   const tela = el('saga-tela');
   if (!tela) return;
-  medir(tela);
+  jornadaNaTela = S;
   aoCarregar = () => { if (el('saga-chao')) pintarChao(el('saga-chao'), mapaDe(S)); };
   pintarChao(el('saga-chao'), mapaDe(S));
-  posicionarMundo(S, { seco: true });
+  reajustar();
+  observador?.disconnect();
+  if (typeof ResizeObserver !== 'undefined') {     // (no Node de teste não existe: lá vale só o ajuste de cima)
+    observador = new ResizeObserver(reajustar);
+    observador.observe(tela);
+    const topo = document.querySelector('.top');
+    if (topo) observador.observe(topo);
+  }
 }
-// Girar a tela ou redimensionar a janela muda o zoom e a câmera. (`?.` porque no Node de teste não há janela.)
-globalThis.addEventListener?.('resize', () => { const t = el('saga-tela'); if (t && aoCarregar) { medir(t); t.classList.add('seco'); aoCarregar(); } });
 
 // Em que casa do mapa caiu um toque/clique (ou null, se foi fora).
 export function casaDoToque(e) {

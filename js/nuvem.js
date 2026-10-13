@@ -40,7 +40,7 @@ export function idJogador() {
 
 // estado mostrado na tela de conta / no chip do topo
 export const BADGE_EXIBIDA_KEY = 'pokerpg-badge-exibida';
-export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false, criadoEm: null,
+export const nuvem = { status: 'ocioso', erro: null, naNuvem: 0, apelido: '', ultimaSync: null, icone: null, codigoAmigo: '', amigos: [], admin: false, beta: false, criadoEm: null,
   badgeExibida: store.get(BADGE_EXIBIDA_KEY) || null };   // qual insígnia de evento aparece ao lado do nome (id da badge)
 /* A insígnia que aparece ao lado do nome. Fica neste navegador na hora e, com conta, sobe pro perfil (`perfis.badge_exibida`,
    supabase/migrations/20260925120000_badge_exibida.sql). Se a coluna ainda não existir o jogo segue só com o valor local. */
@@ -66,6 +66,12 @@ export async function salvarTutorialVisto() {
 }
 // conta de manutenção: libera o painel de testes em ⚙ Ajustes (dev.js). Sai de `perfis.admin`, nunca do navegador.
 export const ehAdmin = () => !!nuvem.admin && !!usuario();
+/* 🧪 Testador: conta que o admin escolheu pra jogar um modo em construção (`perfis.beta`). É só a chave do MODO —
+   não abre editor, painel de testes nem o canal de teste do conteúdo. `podeUsarModo` é o ÚNICO ponto que decide
+   se um modo de `DIFICULDADES` existe pra esta conta: a tela de criação (o cartão) e `iniciarJornada` (a trava)
+   perguntam aqui, senão a regra existiria em dois lugares e um deles ficaria velho. */
+export const ehBeta = () => !!nuvem.beta && !!usuario();
+export const podeUsarModo = modo => !modo?.admin || ehAdmin() || (!!modo.beta && ehBeta());
 
 /* ---- ícone do jogador: qualquer Pokémon, normal ou shiny. Sem conta fica só neste navegador. ---- */
 const ICONE_KEY = 'pokerpg-icone';
@@ -256,6 +262,13 @@ async function sincronizarAgora() {
        de mudar essa coluna (supabase/migrations), então ninguém se promove pelo jogo — a promoção é feita à mão
        no SQL Editor. Aqui do lado do cliente isso é só a chave do painel; o que protege dado é a RLS. */
     nuvem.admin = !!perfil?.admin;
+    /* `beta` numa leitura À PARTE, e não junto das outras colunas: se a migration ainda não chegou, pedir a coluna
+       derrubaria a leitura inteira do perfil (apelido, ícone e o próprio `admin` iriam junto). Aqui o erro só
+       quer dizer "ninguém é testador ainda". */
+    try {
+      const { data: pb, error: eb2 } = await c.from('perfis').select('beta').eq('id', u.id).maybeSingle();
+      nuvem.beta = !eb2 && !!pb?.beta;
+    } catch { nuvem.beta = false; }
     nuvem.criadoEm = perfil?.criado_em || null; // insígnia Alpha (alpha.js): a data de criação da conta vem do servidor
     // insígnia de evento escolhida (coluna à parte: se a migração ainda não rodou, o erro é ignorado e vale a do navegador)
     try {
@@ -511,6 +524,21 @@ export async function salvarLembretes(linhas = []) {
 /* Aviso GLOBAL (📜 novidades): o único lembrete que não nasce no aparelho de quem recebe. Vira uma linha `aviso`
    pra cada jogador com push ligado; quem barra pela segunda vez é a função no banco (só `perfis.admin`), porque
    regra que só existe na tela não é regra. Devolve quantas pessoas vão receber. */
+/* 🧪 Testadores (só admin; o banco confere de novo — `definir_beta`/`listar_beta`). A pessoa é apontada pelo
+   código de amigo, que ela vê em 👤 Conta. Erro sobe com a mensagem do banco: "código não encontrado" e "a
+   função não existe" (migration que não chegou) são problemas diferentes, e a tela mostra qual foi. */
+export async function listarBeta() {
+  const c = await sb(); if (!c) throw new Error('A nuvem não está configurada.');
+  const { data, error } = await c.rpc('listar_beta');
+  if (error) throw error;
+  return data || [];
+}
+export async function definirBeta(codigo, valor) {
+  const c = await sb(); if (!c) throw new Error('A nuvem não está configurada.');
+  const { data, error } = await c.rpc('definir_beta', { p_codigo: codigo, p_valor: !!valor });
+  if (error) throw error;
+  return data || '';
+}
 export async function publicarAviso(titulo, corpo) {
   const c = await sb(); if (!c) throw new Error('A nuvem não está configurada.');
   const { data, error } = await c.rpc('publicar_aviso', { p_titulo: titulo, p_corpo: corpo });

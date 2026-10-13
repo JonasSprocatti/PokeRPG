@@ -3343,6 +3343,43 @@ mapa começou, missão secreta) continua como está escrito lá.
 fumaça com DOM de mentira. O que NINGUÉM viu ainda é o CSS em tela de verdade: a tela cheia, o HUD, as gavetas,
 o deslize da câmera e o layout do editor.
 
+## 👀 O primeiro olhar de verdade na Saga, e os 🧪 testadores (13/10/2026, à noite)
+
+**Navegador no Pi.** O usuário instalou `chromium-headless-shell` (apt; ~800 MB com as 170 bibliotecas — o disco
+foi de 1,4 GB a 615 MB livres) e nasceu `ferramentas/olhar.mjs`: sobe o navegador sem janela, fala o protocolo do
+DevTools pelo WebSocket do Node 22 (zero dependência), roda JS na página, aperta tecla, clica e fotografa.
+Considerado e descartado: Playwright (faltavam 9 das 16 bibliotecas, e pediria sudo do mesmo jeito), limitar a
+memória por cgroup (o usuário só tem `cpu` e `pids` delegados) — ficou `choom -n 1000`, que faz o kernel matar o
+navegador antes da sessão. Na prática: 20 s por roteiro, memória folgada.
+
+**O que a primeira foto mostrou** (nada disto um teste com DOM de mentira pegaria):
+- **Tela quase toda preta.** A câmera era calculada dentro do `render()`, antes de a barra do topo receber os
+  botões; a área do mapa media altura 0 e a câmera ia pro pé do mapa. E o tratador de `resize` repintava o chão
+  mas esquecia de reposicionar. Virou um `ResizeObserver` na tela do mundo E na barra do topo.
+- **Pokémon flutuando** um palmo acima da própria sombra: o desenho não encosta na base do quadro de 96 px.
+  O deslocamento foi de −60 pra −46 (medido olhando), e o balão de missão desceu junto.
+- **A barra do topo comia 190 px no computador** (duas fileiras de atalhos): na tela de jogo ela fica compacta em
+  qualquer largura, com os atalhos no ☰ — `body:has(.game.mundo)`, porque a barra mora fora de `.game`.
+- No ▶ Testar do editor o nome saía "Voce selvagem" (`rotulo` não conhece o jogador de mentira): a cena aceita
+  quem nomeia.
+- **Conferido e certo**: andar e a câmera deslizando, a gaveta por cima do mapa, a caixa de conversa, o zoom 2 no
+  computador, o balão "!" do Ancião, a paleta do editor com as miniaturas, o mapa do editor com as letras dos
+  objetos, o teste dentro do editor com o vulto atravessando a copa.
+- **Não conferido**: batalha começando do mapa (precisa de rede e é lenta no Pi), loja, e a aparência dos emojis
+  (o Pi não tem fonte de emoji; na foto viram quadradinhos).
+
+**🧪 Testadores** (pedido do usuário: *"liberar apenas o modo saga para alguns jogadores que eu escolher"*).
+- `perfis.beta` + a flag `beta: true` no modo. **`nuvem.podeUsarModo` é o único ponto que decide** — eram três
+  cópias de `!x.admin || ehAdmin()` em `criacao.js`, e a quarta nasceria errada.
+- **É só a chave do modo.** Testador não vê editor, painel de testes nem o **canal de teste** do conteúdo: joga o
+  que está liberado pra todos (ou o de fábrica). Considerado: dar o canal de teste também — descartado por ora
+  porque o pacote é UM, e o testador receberia junto rotas, itens e música em teste.
+- **No banco**: o gatilho deixa a coluna mudar só quando QUEM PEDE é admin — a mesma pergunta pela API e de
+  dentro de `definir_beta` (security definer mantém o `auth.uid()` de quem chamou), sem variável de sessão.
+- `beta` é lido numa consulta à parte: junto das outras colunas, a falta da migration derrubaria o perfil
+  inteiro, e o admin perderia o próprio acesso até ela chegar.
+- **Continua fora dos patch notes**: o teste é "um jogador comum consegue usar?", e testador é escolhido.
+
 ## 📈 Taxas e probabilidades: uma tela com tudo o que o jogo sorteia (06/10/2026)
 
 Pedido do usuário: *"Crie uma tela no site que demonstra as taxas, possibilidades, o que pode acontecer em tudo

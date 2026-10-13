@@ -17,7 +17,7 @@ import { G } from './estado.js';
 import { $, toast, ask, limparTopo, semAnimacao } from './ui.js';
 import { esc, sleep } from './util.js';
 import { barraTelas } from './navegacao.js';
-import { ehAdmin } from './nuvem.js';
+import { ehAdmin, listarBeta, definirBeta } from './nuvem.js';
 import { SPR, ITEMS, TYPE_PT } from './dados.js';
 import { TILES, TEMAS } from './dados-saga.js';
 import { ARTE, PROPS, GENTE, ATLAS } from './dados-saga-arte.js';
@@ -45,6 +45,7 @@ const ARTES_SOLTAS = Object.keys(ARTE).filter(n => !/^(grama|terra|terraEscura|p
 let R = null, aoVivoAntes = null;           // o rascunho, e o que estava no ar quando o editor abriu (pro 🗑 Descartar)
 let aba = 'mapas', mapaSel = null, ferramenta = 'mover', tileSel = '=', objSel = null, varSel = 0, armado = 'npc';
 let ligando = null, npcSel = null, zoomEd = 1, arrasto = null, teste = null, tipoTeste = 'normal', saida = '';
+let betas = null;      // 🧪 testadores: null = ainda não buscou · lista · { erro }
 const historico = [];
 
 /* ---- utilidades de tela ---- */
@@ -375,10 +376,39 @@ function abaPublicar(lista) {
       <button class="btn ghost" data-em="descartar" ${tem ? '' : 'disabled'}>🗑 Descartar o rascunho</button>
     </div>
     <p class="small muted"><b>📤 Publicar no teste</b> manda o rascunho pra nuvem num canal que só a conta de manutenção vê — é como você joga o mundo novo numa jornada de verdade, neste e em outros aparelhos. <b>✅ Liberar pra todos</b> promove o que está no teste. O pacote é <b>um só</b>: sai junto com rotas, música e o resto.</p>
+    ${blocoBetas()}
     <h3>⬇ Arquivo pro repositório</h3>
     <p class="small muted">O conteúdo publicado some se a nuvem sumir; o repositório não. Gere o arquivo e cole em <code>js/dados-saga-mundo.js</code> pra que o mundo vire o de fábrica.</p>
     <div class="em-linha"><button class="btn ghost sm" data-em="gerar">⬇ Gerar e copiar o arquivo</button></div>
     <textarea id="em-saida" rows="8" readonly placeholder="O arquivo aparece aqui.">${esc(saida)}</textarea>`;
+}
+
+/* 🧪 Testadores: as contas que você escolhe pra jogar a Saga antes de ela abrir pra todos. É só a chave do modo —
+   testador não vê editor nem o canal de teste; joga o que está publicado pra todo mundo (ou o de fábrica).
+   A lista vem do banco, e o erro aparece com o texto de verdade ("código não encontrado" ≠ "a função não
+   existe", que é migration que ainda não chegou). */
+function blocoBetas() {
+  const corpo = betas === null ? '<p class="small muted">Buscando a lista…</p>'
+    : betas.erro ? `<p class="em-aviso">Não deu pra ler a lista: ${esc(betas.erro)}</p>`
+      : betas.length ? `<ul class="em-problemas">${betas.map(b => `<li>🧪 <b>${esc(b.apelido || '(sem apelido)')}</b> <span class="muted">código ${esc(b.codigo_amigo || '?')}</span> <button class="btn ghost sm" data-em="beta-tirar" data-v="${esc(b.codigo_amigo || '')}">Tirar o acesso</button></li>`).join('')}</ul>`
+        : '<p class="small muted">Ninguém ainda.</p>';
+  return `<h3>🧪 Testadores da Saga</h3>
+    <p class="small muted">Jogadores que você escolhe pra ver o modo ⚔ Saga na tela de criação, antes de ele abrir pra todos. Peça o <b>código de amigo</b> da pessoa (fica em 👤 Conta). Testador joga o que está <b>liberado pra todos</b> — não vê o canal de teste nem os editores.</p>
+    <div class="em-linha"><input type="text" id="em-beta-codigo" class="em-id" placeholder="código de amigo" maxlength="12" autocapitalize="characters"><button class="btn sm" data-em="beta-liberar">🧪 Liberar a Saga pra esta conta</button></div>
+    ${corpo}`;
+}
+async function carregarBetas() {
+  try { betas = await listarBeta(); } catch (e) { console.error('testadores: ler a lista', e); betas = { erro: e.message || String(e) }; }
+  if (aba === 'publicar' && !teste && G.mode === 'editor-mundo') desenhar();
+}
+async function mudarBeta(codigo, valor) {
+  const cod = String(codigo || '').trim();
+  if (!cod) return toast('Digite o código de amigo da pessoa (ela vê em 👤 Conta).');
+  try {
+    const nome = await definirBeta(cod, valor);
+    toast(valor ? `🧪 ${esc(nome || cod)} agora vê o modo Saga. (Ela precisa abrir o jogo de novo.)` : `${esc(nome || cod)} não é mais testador.`);
+  } catch (e) { console.error('testadores: mudar', e); return toast(`Não deu: ${esc(e.message || String(e))}`); }
+  betas = null; desenhar(); carregarBetas();
 }
 
 /* ================= ▶ Testar ================= */
@@ -432,7 +462,7 @@ function htmlTeste() {
       <label class="em-mini">Testar como tipo <select data-em-set="tipoTeste">${Object.entries(TYPE_PT).map(([k, v]) => `<option value="${k}" ${k === tipoTeste ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
     </div>
     <p class="small muted">Ande com as setas, WASD, o direcional ou tocando no mapa. A luta vira uma pergunta; nada aqui encosta em save.</p>
-    <div class="em-teste" id="em-teste">${htmlMundo(teste.S, { sprite, rotas: [], parado: semAnimacao() })}</div>
+    <div class="em-teste" id="em-teste">${htmlMundo(teste.S, { sprite, rotas: [], parado: semAnimacao(), nome: () => 'Você (teste)' })}</div>
     <details class="em-estado" open><summary>Estado do teste</summary>
       ${linha('Marcas', Object.keys(s.flags).map(esc).join(', '))}
       ${linha('Itens-chave', Object.keys(s.itens).map(k => esc(R.ITENS[k]?.nome || k)).join(', '))}
@@ -507,7 +537,9 @@ export function acao(nome, v, d = {}) {
   const caminho = d.c ? JSON.parse(d.c) : null;
   const objBase = () => (Array.isArray(m.objs[objSel]) ? ['MAPAS', mapaSel, 'objs', objSel, varSel] : ['MAPAS', mapaSel, 'objs', objSel]);
   const fazer = {
-    aba: () => { aba = v; },
+    aba: () => { aba = v; if (v === 'publicar') { betas = null; carregarBetas(); } },
+    'beta-liberar': () => { mudarBeta($('#em-beta-codigo')?.value, true); return 'feito'; },
+    'beta-tirar': () => { mudarBeta(v, false); return 'feito'; },
     ferramenta: () => { ferramenta = v; },
     tile: () => { tileSel = v; },
     armar: () => { armado = v; },
