@@ -1173,28 +1173,28 @@ ul.quase.conquistas .bar{margin:4px 0}
    A grade é a câmera (11×9 casas), não o mapa inteiro. O tamanho do emoji e do sprite segue a LARGURA da grade
    (container query), então o mesmo desenho serve do celular ao painel redimensionado no desktop. */
 .saga-mapa{display:grid;grid-template-columns:repeat(var(--cols),1fr);width:100%;max-width:560px;margin:8px auto;border:3px solid var(--line);border-radius:12px;overflow:hidden;container-type:inline-size;user-select:none;touch-action:manipulation}
-.st{aspect-ratio:1;position:relative;display:grid;place-items:center;cursor:pointer;font-size:5.6cqw;line-height:1}
-.st.grama{background:#3f7d3a}
-.st.mato{background:#2f6a30}
-.st.trilha{background:#b99a63}
-.st.arvore{background:#27552a}
-.st.agua{background:#2f6fb5}
-.st.rocha{background:#6b665d}
-.st.parede{background:#23202b}
-.st.piso{background:#5a5566}
-.st.piso.escuro{background:#494455}
-.st.vazio{background:#111;cursor:default}
+.casa{aspect-ratio:1;position:relative;display:grid;place-items:center;cursor:pointer;font-size:5.6cqw;line-height:1}
+.casa.grama{background:#3f7d3a}
+.casa.mato{background:#2f6a30}
+.casa.trilha{background:#b99a63}
+.casa.arvore{background:#27552a}
+.casa.agua{background:#2f6fb5}
+.casa.rocha{background:#6b665d}
+.casa.parede{background:#23202b}
+.casa.piso{background:#5a5566}
+.casa.piso.escuro{background:#494455}
+.casa.vazio{background:#111;cursor:default}
 /* xadrez leve por cima da cor do tile. `background-image` e não `filter`: filtro cria contexto de empilhamento e
    prenderia o sprite (que vaza da casa de propósito) atrás da casa vizinha. */
-.st:nth-child(odd){background-image:linear-gradient(#ffffff0d,#ffffff0d)}
-.st-e{pointer-events:none}
-.st-e.chao{opacity:.9}
-.st-e.aberto{opacity:.35}
-.st-e.ronda{animation:saga-ronda 1.1s ease-in-out infinite}
-.st-spr{position:absolute;left:50%;bottom:4%;width:150%;height:150%;transform:translateX(-50%);object-fit:contain;image-rendering:pixelated;pointer-events:none;z-index:1}
-.st-spr.eu{z-index:2;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 2px 2px #0008)}
-.st-spr.alfa{width:210%;height:210%;filter:drop-shadow(0 0 4px #f6c744)}
-.st.cintila::after{content:'✨';position:absolute;font-size:3.4cqw;top:6%;right:6%;animation:saga-ronda 1.4s ease-in-out infinite}
+.casa:nth-child(odd){background-image:linear-gradient(#ffffff0d,#ffffff0d)}
+.casa-e{pointer-events:none}
+.casa-e.chao{opacity:.9}
+.casa-e.aberto{opacity:.35}
+.casa-e.ronda{animation:saga-ronda 1.1s ease-in-out infinite}
+.casa-spr{position:absolute;left:50%;bottom:4%;width:150%;height:150%;transform:translateX(-50%);object-fit:contain;image-rendering:pixelated;pointer-events:none;z-index:1}
+.casa-spr.eu{z-index:2;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 2px 2px #0008)}
+.casa-spr.alfa{width:210%;height:210%;filter:drop-shadow(0 0 4px #f6c744)}
+.casa.cintila::after{content:'✨';position:absolute;font-size:3.4cqw;top:6%;right:6%;animation:saga-ronda 1.4s ease-in-out infinite}
 @keyframes saga-ronda{50%{transform:translateY(-12%)}}
 .saga-rumo{max-width:560px;margin:6px auto 10px}
 .saga-ctl{display:flex;gap:16px;align-items:center;flex-wrap:wrap}

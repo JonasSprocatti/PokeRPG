@@ -11,17 +11,17 @@ import { TILES, NPCS, FACCOES, ITENS_SAGA, DONS } from './dados-saga.js';
 import { VISAO, estadoSaga, mapaDe, objetoEm, tileEm, camera, bauAberto, diario, temDom } from './saga-mundo.js';
 
 const EMOJI_INIMIGO = { bando: '🐾', treinador: '🎒' };
-const boneco = (src, cls, nome) => `<img class="st-spr ${cls}" src="${src}" alt="${esc(nome)}" title="${esc(nome)}" draggable="false">`;
+const boneco = (src, cls, nome) => `<img class="casa-spr ${cls}" src="${src}" alt="${esc(nome)}" title="${esc(nome)}" draggable="false">`;
 
 function htmlObjeto(S, mapa, o) {
   if (o.npc) return boneco(SPR(NPCS[o.npc].sprite), 'npc', NPCS[o.npc].nome);
   if (o.inimigo) {
     const alfa = o.inimigo.tipo === 'alfa' && rotasAtuais()[mapa.rota]?.chefe;
-    return alfa ? boneco(SPR(alfa.id), 'alfa', `Alfa: ${alfa.nome}`) : `<span class="st-e ronda">${EMOJI_INIMIGO[o.inimigo.tipo] || '🐾'}</span>`;
+    return alfa ? boneco(SPR(alfa.id), 'alfa', `Alfa: ${alfa.nome}`) : `<span class="casa-e ronda">${EMOJI_INIMIGO[o.inimigo.tipo] || '🐾'}</span>`;
   }
-  if (o.bau) return `<span class="st-e ${bauAberto(S, o.bau) ? 'aberto' : ''}">${o.emoji || '🧰'}</span>`;
-  if (o.placa) return `<span class="st-e">${o.emoji || '🪧'}</span>`;
-  return o.emoji ? `<span class="st-e">${o.emoji}</span>` : '';
+  if (o.bau) return `<span class="casa-e ${bauAberto(S, o.bau) ? 'aberto' : ''}">${o.emoji || '🧰'}</span>`;
+  if (o.placa) return `<span class="casa-e">${o.emoji || '🪧'}</span>`;
+  return o.emoji ? `<span class="casa-e">${o.emoji}</span>` : '';
 }
 // Só a grade (é o que se repinta a cada passo, sem redesenhar a ficha inteira).
 export function htmlGrade(S, spriteEu) {
@@ -29,10 +29,10 @@ export function htmlGrade(S, spriteEu) {
   let h = '';
   for (let y = y0; y < y0 + VISAO[1]; y++) for (let x = x0; x < x0 + VISAO[0]; x++) {
     const ch = tileEm(mapa, x, y);
-    if (ch === null) { h += '<div class="st vazio"></div>'; continue; }
+    if (ch === null) { h += '<div class="casa vazio"></div>'; continue; }
     const o = objetoEm(S, mapa, x, y), t = TILES[o?.como || ch], eu = x === s.x && y === s.y;
     const dentro = eu ? boneco(urlDeImagem(spriteEu), 'eu', 'Você') : o ? htmlObjeto(S, mapa, o) : '';
-    h += `<div class="st ${t.c}${t.falsa && faro ? ' cintila' : ''}" data-act="saga-ir" data-v="${x},${y}">${dentro || (t.e ? `<span class="st-e chao">${t.e}</span>` : '')}</div>`;
+    h += `<div class="casa ${t.c}${t.falsa && faro ? ' cintila' : ''}" data-act="saga-ir" data-v="${x},${y}">${dentro || (t.e ? `<span class="casa-e chao">${t.e}</span>` : '')}</div>`;
   }
   return h;
 }
