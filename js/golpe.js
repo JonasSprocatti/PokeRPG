@@ -17,14 +17,15 @@
 import { STAT_PT, AIL_MSG, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, ALVOS_ALIADOS, TYPE_PT } from './dados.js';
 import { GOLPE_AREA } from './dados-golpe-flags.js';
 import { hab } from './habilidades.js';
-import { especial, GOLPE_DO_TERRENO } from './especiais.js';
-import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem, frutaDeAperto } from './segurados.js';
-import { ITEMS, ITEM_VINCULO } from './dados.js';
+import { especial, GOLPE_DO_TERRENO, TIPO_DO_TERRENO, TIPO_DA_FRUTA_DE_CURA, PODER_NATURAL_GIFT } from './especiais.js';
+import { seg, fimDeTurnoDoItem, frutaAgora, statusDoItem, frutaDeAperto, SEGURADOS } from './segurados.js';
+import { ITEMS, ITEM_VINCULO, FRUTA_DO_TIPO, ALVOS_OPONENTES as AO } from './dados.js';
 import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, danoResidual, chanceOhko, effStat,
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, MULT_AREA, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
-  GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX, APERTO_FRACAO, danoFixoDe, podeCopiar,
+  GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX, APERTO_FRACAO, danoFixoDe, podeCopiar, danoDoContra, tipoQueResiste,
+  SALA_TURNOS, salaAtiva, GUARDAS_DE_LADO,
   fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia,
   multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO, golpeDeApoio } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
@@ -161,6 +162,27 @@ const golpeDeNome = (nome, donos) => {
   return null;
 };
 const copiaveis = m => (m?.moves || []).filter(g => podeCopiar(g?.name));
+/* 🎒 ANOTA o item antes de qualquer golpe mexer nele. Pedido do usuário (13/10/2026): numa batalha VENCIDA o que
+   era seu volta (`batalha.desfazerItens`). `'itemAntes' in m` em vez de `??=` porque "não tinha item" (null) é
+   diferente de "ainda não anotei" (undefined) — e é essa diferença que faz o Thief continuar valendo a pena:
+   quem roubou de MÃO VAZIA fica com o espólio, quem foi roubado recupera o seu. */
+export const anotarItem = m => { if (m && !('itemAntes' in m)) m.itemAntes = m.item ?? null; };
+/* Item CONSUMIDO (fruta comida, Faixa de Foco gasta, Erva usada, Fling arremessado). Guarda o id em
+   `vol.itemGasto` pro ♻ Recycle e some com ele. NÃO anota `itemAntes`: consumo não é roubo, e `desfazerItens`
+   não deve devolver uma fruta que foi comida — só o que outro Pokémon tirou de você. */
+export const gastarItem = m => { if (m?.item) { m.vol.itemGasto = m.item; m.item = null; } };
+const trocaItemDe = (m, novo) => { anotarItem(m); m.item = novo; };
+/* …e o par que desfaz, no fim de uma batalha VENCIDA (`batalha.endBattle`). A regra é UMA: **o que era seu volta;
+   o que você ganhou de mão vazia, fica.** É o que mantém o Thief valendo a pena (roubar segurando nada rende o
+   espólio) sem deixar nenhum golpe do inimigo tomar o seu Restos pra sempre. Devolve o id que voltou, pra narrar.
+   Fica aqui e não em `batalha.js` porque é função PURA sobre um Pokémon — e porque ali ela não seria testável
+   sem DOM (`batalha.js` importa `ui.js`), que é exatamente o erro que ela deu quando nasceu no lugar errado. */
+export function desfazerItens(m) {
+  if (!m || !('itemAntes' in m)) return null;
+  const antes = m.itemAntes; delete m.itemAntes;
+  if (antes && m.item !== antes) { m.item = antes; return antes; }
+  return null;
+}
 const todosEmCampo = (u, ctx) => [u, ...(ctx.aliadosDe?.(u) || []), ...(ctx.oponentesDe?.(u) || [])].filter(m => m?.hp > 0);
 
 /* Roda um golpe COPIADO. De propósito NÃO é uma chamada recursiva de `usarGolpe`: o golpe de cópia já passou por
@@ -200,12 +222,20 @@ export function desfazerCopia(m) {
 }
 
 // Golpe em que o Pokémon está travado (carregando, em fúria) — a escolha do jogador/IA é ignorada neste turno
-export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || null;
+export const golpeTravado = m => m.vol?.carregando || m.vol?.furia?.golpe || m.vol?.bide?.golpe || null;
 // Algo impediu de agir: carga e fúria se perdem (como nos jogos)
 function interromper(u) { delete u.vol.carregando; delete u.vol.invul; delete u.vol.furia; }
 // Fim da rodada (depois de todos agirem): proteções de um turno só acabam
 // `muralha` (⚔ Saga, perícia do Guardião) tem exatamente a vida de `protegido`/`aguenta`: vale a rodada e acaba
-export function fimDaRodada(m) { if (!m.vol) return; delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false; delete m.vol.punicao; delete m.vol.muralha; delete m.vol.ajuda; delete m.vol.chamariz; }
+export function fimDaRodada(m) {
+  if (!m.vol) return;
+  delete m.vol.golpeEscolhido; delete m.vol.recemEntrou; m.vol.flinch = false; m.vol.protegido = false; m.vol.aguenta = false;
+  delete m.vol.punicao; delete m.vol.muralha; delete m.vol.ajuda; delete m.vol.chamariz;
+  /* Da leva de 13/10: o contra-ataque conta só o dano DESTA rodada (`ultimoDano`), e Destiny Bond, Grudge, Magic
+     Coat, Snatch, Powder, Electrify e Ally Switch valem só até o fim dela — é o que os separa de um buff. */
+  delete m.vol.ultimoDano; delete m.vol.laco; delete m.vol.rancor; delete m.vol.manto; delete m.vol.furtar;
+  delete m.vol.poExplosivo; delete m.vol.eletrificado;
+}
 
 // Muda estágios. `fonte` = quem causou (se for outro Pokémon, Clear Body & cia. podem impedir a queda)
 /* Em QUEM o golpe mexe os atributos. A PokéAPI separa por categoria:
@@ -545,6 +575,11 @@ export async function aplicarArmadilhas(m, ctx) {
     const d = danoEspinhos(m, lado.espinhos);
     if (d) { m.hp = Math.max(0, m.hp - d); up(ctx); await ctx.say(`${ctx.nome(m)} pisa nos espinhos! (−${d})`, 'hit'); }
   }
+  // 🕸 Sticky Web: quem entra em campo tem a Velocidade baixada (quem voa não encosta na teia)
+  if (m.hp > 0 && lado.teia && noChao(m)) {
+    await ctx.say(`${ctx.nome(m)} se enrosca na teia!`, 'status');
+    await mudarEstagios(m, [{ stat: 'speed', change: -1 }], ctx);
+  }
   if (m.hp > 0 && lado.toxinas) {
     const r = efeitoToxinas(m, lado.toxinas);
     if (r === 'limpa') { lado.toxinas = 0; await ctx.say(`${ctx.nome(m)} absorveu os espinhos venenosos.`, 'muted'); }
@@ -688,7 +723,11 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro, dest = u) {
     if (!meu) { await ctx.say('Mas falhou!'); return true; }
     if (esp.soNoGelo && !['granizo', 'neve'].includes(climaDoCtx(ctx))) { await ctx.say('Mas falhou! (só funciona no granizo ou na neve)'); return true; }
     if (meu[esp.lado] > 0) { await ctx.say('Mas falhou! (já está no ar)'); return true; }
-    meu[esp.lado] = esp.lado === 'vento' ? VENTO_TURNOS : TELA_TURNOS;
+    // Mat Block só vale na ESTREIA de quem usa, como nos jogos
+    if (esp.soPrimeiroTurno && u.vol.golpesDados > 1) { await ctx.say('Mas falhou! (só no primeiro turno em campo)'); return true; }
+    // `umTurno` = as guardas de uma rodada (Wide/Quick Guard, Crafty Shield, Mat Block): nascem com 1 e
+    // `regras.passarLado` as zera no fim da própria rodada
+    meu[esp.lado] = esp.umTurno ? 1 : esp.lado === 'vento' ? VENTO_TURNOS : TELA_TURNOS;
     await ctx.say(`${NOME_LADO[esp.lado]} protege o lado de ${U} por ${meu[esp.lado]} turnos!`, 'good');
     return true;
   }
@@ -1011,6 +1050,199 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro, dest = u) {
     await usarCopia(u, t, g2, primeiro, ctx, esp.mult || 1);
     return true;
   }
+
+  /* ---- 🎒 ITEM do outro. Sticky Hold (`protegeItem`) barra todos, como no Knock Off que já existia. ---- */
+  if (esp.trocaItem || esp.daItem) {
+    if (hab(t).protegeItem) { await ctx.say(`${T} não solta o item de jeito nenhum. (${fmt(t.ability)})`); return true; }
+    if (esp.daItem) {
+      if (!u.item) { await ctx.say('Mas falhou! (você não tem item pra dar)'); return true; }
+      if (t.item) { await ctx.say(`Mas falhou! (${T} já segura algo)`); return true; }
+      const nome = ITEMS[u.item]?.name || 'o item';
+      trocaItemDe(t, u.item); trocaItemDe(u, null); up(ctx);
+      await ctx.say(`${U} entregou <b>${nome}</b> para ${T}!`, 'status'); return true;
+    }
+    if (!u.item && !t.item) { await ctx.say('Mas falhou! (ninguém tem item pra trocar)'); return true; }
+    const meu = u.item, dele = t.item;
+    trocaItemDe(u, dele); trocaItemDe(t, meu); up(ctx);
+    await ctx.say(`${U} trocou de item com ${T}! ${U} ficou com ${dele ? `<b>${ITEMS[dele]?.name || dele}</b>` : 'nada'} e ${T} com ${meu ? `<b>${ITEMS[meu]?.name || meu}</b>` : 'nada'}.`, 'status');
+    return true;
+  }
+  // Recycle: devolve o último item que VOCÊ gastou nesta luta (`vol.itemGasto`, escrito por `gastarItem`)
+  if (esp.reciclar) {
+    if (u.item || !u.vol.itemGasto) { await ctx.say('Mas falhou! (não há item gasto pra reciclar)'); return true; }
+    const id = u.vol.itemGasto; delete u.vol.itemGasto;
+    trocaItemDe(u, id); up(ctx);
+    await ctx.say(`${U} recuperou a <b>${ITEMS[id]?.name || id}</b>!`, 'good'); return true;
+  }
+  // Teatime: TODO mundo em campo come a fruta que estiver segurando, queira ou não
+  if (esp.horaDoCha) {
+    const comeram = [];
+    for (const m of todosEmCampo(u, ctx)) {
+      if (!m.item?.endsWith('-berry')) continue;
+      comeram.push(ctx.nome(m)); await comerFruta(m, ctx, false, true);
+    }
+    await ctx.say(comeram.length ? `☕ Hora do chá! ${comeram.join(', ')} ${comeram.length > 1 ? 'comeram' : 'comeu'} a fruta.` : 'Mas ninguém tinha fruta pra comer.', comeram.length ? 'good' : 'muted');
+    return true;
+  }
+
+  /* ---- 🏠 as salas e os "sports": estado do CAMPO, 5 turnos, valendo pros dois lados ---- */
+  if (esp.sala) {
+    const nomes = { salaInvertida: 'Sala Estranha', salaMaravilhas: 'Sala das Maravilhas', salaMagica: 'Sala Mágica' };
+    if (!ctx.campo) { await ctx.say('Mas falhou!'); return true; }
+    const ligando = !salaAtiva(ctx.campo, esp.sala);
+    ctx.campo[esp.sala] = ligando ? SALA_TURNOS : 0;      // usar de novo DESLIGA, como nos jogos
+    /* As duas que agem em cada Pokémon marcam o `vol` de quem está em campo (o desenho da Gravidade): o Wonder
+       Room troca os atributos dentro de `calcDamage`, e a Sala Mágica desliga o item dentro de `seg`. */
+    if (esp.sala !== 'salaInvertida') {
+      const marca = esp.sala === 'salaMaravilhas' ? 'salaMaravilhas' : 'semItem';
+      for (const m of todosEmCampo(u, ctx)) { if (ligando) m.vol[marca] = esp.sala === 'salaMaravilhas' ? true : SALA_TURNOS; else delete m.vol[marca]; }
+    }
+    await ctx.say(`🏠 ${nomes[esp.sala]} ${ligando ? 'se abriu!' : 'se fechou.'}`, ligando ? 'status' : 'muted');
+    return true;
+  }
+  if (esp.sport) {
+    if (!ctx.campo) { await ctx.say('Mas falhou!'); return true; }
+    if (ctx.campo.sports?.includes(esp.sport)) { await ctx.say('Mas falhou! (já está valendo)'); return true; }
+    (ctx.campo.sports ||= []).push(esp.sport);
+    await ctx.say(`Golpes de ${TYPE_PT[esp.sport] || esp.sport} ficam mais fracos para todos!`, 'status'); return true;
+  }
+  if (esp.ionizado) { if (ctx.campo) ctx.campo.ionizado = true; await ctx.say('O ar se enche de carga: golpes Normais viram Elétricos nesta rodada!', 'status'); return true; }
+  if (esp.travaFuga) { if (ctx.campo) ctx.campo.travaFuga = 2; await ctx.say('Um campo de força impede qualquer fuga!', 'status'); return true; }
+  if (esp.trocaLados) {
+    const lados = ctx.campo?.lados, chaves = Object.keys(lados || {});
+    if (chaves.length < 2) { await ctx.say('Mas falhou! (não há nada pra trocar de lado)'); return true; }
+    const [a, b] = chaves; [lados[a], lados[b]] = [lados[b], lados[a]];
+    await ctx.say('Os campos trocaram de lado! Telas e armadilhas foram para o outro lado.', 'status'); return true;
+  }
+
+  /* ---- 🔄 os que dependem de trocar de Pokémon: aqui o "substituto" é um COMPANHEIRO em campo ---- */
+  if (esp.desejoDeCura || esp.reviver) {
+    const amigos = (ctx.aliadosDe?.(u) || []);
+    const alvoCura = esp.reviver ? amigos.find(a => a.hp <= 0) : amigos.find(a => a.hp > 0 && (a.hp < a.stats.hp || a.status));
+    if (!alvoCura) { await ctx.say(`Mas falhou! (não há companheiro ${esp.reviver ? 'caído pra levantar' : 'pra curar'})`); return true; }
+    if (esp.reviver) {
+      alvoCura.hp = Math.max(1, Math.floor(alvoCura.stats.hp / 2)); alvoCura.status = null; alvoCura.sleep = 0; delete alvoCura.vol.toxico;
+      up(ctx); await ctx.say(`✨ ${ctx.nome(alvoCura)} voltou à luta com metade do HP!`, 'level'); return true;
+    }
+    alvoCura.hp = alvoCura.stats.hp; alvoCura.status = null; alvoCura.sleep = 0; delete alvoCura.vol.toxico;
+    if (esp.devolvePP) alvoCura.moves?.forEach(mv => { mv.ppLeft = mv.pp; });
+    u.hp = 0; up(ctx);
+    await ctx.say(`${U} se sacrifica: ${ctx.nome(alvoCura)} está curado${esp.devolvePP ? ' e com os PP cheios' : ''}!`, 'good');
+    return true;
+  }
+
+  /* ---- ⏱ ordem do turno. O motor só PEDE (`ctx.reordenar`), como no `ctx.forcarSaida`: quem tem a fila é quem
+     roda a rodada. Sem o gancho (luta de sala) o golpe diz que ali não dá, em vez de fingir. ---- */
+  if (esp.reordena) {
+    const r = ctx.reordenar ? ctx.reordenar(t, esp.reordena) : undefined;
+    if (r === undefined) await ctx.say('Mas falhou! (este golpe não funciona em luta de sala)');
+    else if (!r) await ctx.say(`Mas falhou! (${T} já agiu neste turno)`);
+    else await ctx.say(esp.reordena === 'proximo' ? `${T} vai agir em seguida!` : `${T} foi empurrado para o fim da fila!`, 'status');
+    return true;
+  }
+  /* Ally Switch: não existem POSIÇÕES em campo aqui, então a tradução é o efeito que ele tem nos jogos — o
+     companheiro passa a receber os golpes mirados em você até o fim da rodada. É o mesmo `vol.chamariz` do
+     Follow Me; a diferença é quem decide. */
+  if (esp.trocaLugar) {
+    const amigo = (ctx.aliadosDe?.(u) || []).find(a => a.hp > 0 && !a.vol?.retirado);
+    if (!amigo) { await ctx.say('Mas falhou! (não há companheiro pra trocar de lugar)'); return true; }
+    amigo.vol.chamariz = true;
+    await ctx.say(`${U} trocou de lugar com ${ctx.nome(amigo)}! Os golpes vão nele até o fim da rodada.`, 'good'); return true;
+  }
+
+  /* ---- o resto ---- */
+  // Curse: Fantasma paga METADE do HP máximo pra sangrar o alvo; quem não é Fantasma se buffa (vem do `meta`)
+  if (esp.maldicao) {
+    if (!tiposDefensivos(u).includes('ghost')) {
+      await mudarEstagios(u, [{ stat: 'speed', change: -1 }, { stat: 'attack', change: 1 }, { stat: 'defense', change: 1 }], ctx, u);
+      return true;
+    }
+    if (t.vol.maldicao) { await ctx.say(`${T} já está amaldiçoado!`); return true; }
+    const custo = Math.max(1, Math.floor(u.stats.hp / 2));
+    u.hp = Math.max(0, u.hp - custo); t.vol.maldicao = true; up(ctx);
+    await ctx.say(`${U} entrega metade do próprio HP (−${custo}) e amaldiçoa ${T}!`, 'status'); return true;
+  }
+  if (esp.laco) { u.vol.laco = true; await ctx.say(`${U} se prepara para levar alguém junto!`, 'status'); return true; }
+  if (esp.rancor) { u.vol.rancor = true; await ctx.say(`${U} guarda rancor: quem o derrubar perde o golpe!`, 'status'); return true; }
+  if (esp.tiraPP) {
+    const g2 = t.moves?.find(x => x.name === t.vol.ultimo);
+    if (!g2 || g2.ppLeft === undefined) { await ctx.say(`Mas falhou! (${T} não usou nada ainda)`); return true; }
+    const antes = g2.ppLeft; g2.ppLeft = Math.max(0, g2.ppLeft - esp.tiraPP);
+    await ctx.say(`${fmt(g2.name)} de ${T} perdeu ${antes - g2.ppLeft} PP!`, 'status'); return true;
+  }
+  /* Imprison: copia pro `vol` do alvo os NOMES dos golpes que os dois sabem. É isso que faz o golpe caber sem
+     mexer em `regras.motivoBloqueio` (que é puro e recebe um Pokémon só) — a lista viaja com o alvo. */
+  if (esp.selaGolpes) {
+    const comuns = (u.moves || []).map(x => x.name).filter(n => t.moves?.some(x => x.name === n));
+    if (!comuns.length) { await ctx.say('Mas falhou! (vocês não têm golpe em comum)'); return true; }
+    t.vol.proibidos = comuns;
+    await ctx.say(`${U} selou os golpes que ${T} também sabe: ${comuns.map(n => fmt(n)).join(', ')}!`, 'status'); return true;
+  }
+  // Heal Block, Embargo e Throat Chop: turnos no `vol`, lidos por regras.heal, segurados.seg e motivoBloqueio
+  for (const [chave, campo, texto] of [['semCura', 'semCura', 'não vai conseguir se curar'], ['semItem', 'semItem', 'não vai conseguir usar o item'], ['calaPorTurnos', 'calado', 'não vai conseguir usar golpes de som']]) {
+    if (!esp[chave]) continue;
+    if (t.vol[campo] > 0) { await ctx.say('Mas falhou! (já está valendo)'); return true; }
+    t.vol[campo] = esp[chave];
+    await ctx.say(`${T} ${texto} por ${esp[chave]} turnos!`, 'status'); return true;
+  }
+  if (esp.manto) { u.vol.manto = true; await ctx.say(`${U} se cobre: o próximo golpe de status volta pro dono!`, 'good'); return true; }
+  if (esp.furtar) { u.vol.furtar = true; await ctx.say(`${U} está à espreita para furtar um golpe!`, 'good'); return true; }
+  if (esp.passaStatus) {
+    if (!u.status) { await ctx.say('Mas falhou! (você não tem status pra passar)'); return true; }
+    const meu = u.status;
+    if (!await aplicarStatus(t, meu, ctx, true, u)) return true;
+    if (t.status === meu) { u.status = null; u.sleep = 0; delete u.vol.toxico; up(ctx); await ctx.say(`${U} passou a própria condição para ${T}!`, 'status'); }
+    return true;
+  }
+  // os quatro que mudam o TIPO de quem usa. O tipo novo mora no `vol` (regras.tiposDe), nunca em `m.data`.
+  if (esp.tipoDoTerreno || esp.tipoDoMeuGolpe || esp.tipoQueResiste || esp.tipoDoAlvo) {
+    let novos = null;
+    if (esp.tipoDoTerreno) novos = [TIPO_DO_TERRENO[terrenoDoCtx(ctx)] || 'normal'];
+    else if (esp.tipoDoMeuGolpe) { const l = (u.moves || []).filter(x => x.type); novos = l.length ? [l[rand(0, l.length - 1)].type] : null; }
+    else if (esp.tipoQueResiste) { const tp = u.vol.ultimoDano?.tipo && tipoQueResiste(u.vol.ultimoDano.tipo); novos = tp ? [tp] : null; }
+    else novos = [...tiposDe(t)];
+    if (!novos?.length) { await ctx.say(`Mas falhou!${esp.tipoQueResiste ? ' (ninguém te acertou neste turno)' : ''}`); return true; }
+    if (u.tera) { await ctx.say(`Mas falhou! (${U} está terastalizado)`); return true; }
+    if (tiposDe(u).join() === novos.join()) { await ctx.say('Mas falhou!'); return true; }
+    u.vol.tipos = novos;
+    await ctx.say(`${U} agora é do tipo ${novos.map(x => TYPE_PT[x] || x).join('/')}!`, 'status'); return true;
+  }
+  /* 👁 Foresight / Odor Sleuth / Miracle Eye: tiram a IMUNIDADE de tipo do alvo. A marca é lida por
+     `regras.eficacia` — a porta única de "esse golpe faz algo?" —, então vale no dano, no motor e na IA de uma vez. */
+  if (esp.semImunidade) {
+    const ja = t.vol.semImunidade || [];
+    const novas = esp.semImunidade.filter(d => !ja.includes(d));
+    if (!novas.length) { await ctx.say(`Mas falhou! (${T} já está identificado)`); return true; }
+    t.vol.semImunidade = [...ja, ...novas];
+    await ctx.say(`${T} foi identificado! As imunidades dele não valem mais contra você.`, 'status'); return true;
+  }
+  if (esp.miraCerta) { u.vol.miraCerta = true; await ctx.say(`${U} mirou em ${T}: o próximo golpe não vai errar!`, 'good'); return true; }
+  if (esp.critoCerto) { u.vol.critoCerto = true; await ctx.say(`${U} se concentrou: o próximo golpe será crítico!`, 'good'); return true; }
+  // Spotlight: marca o alvo com o MESMO `vol.chamariz` do Follow Me — os golpes do seu lado passam a ir nele
+  if (esp.holofote) { t.vol.chamariz = true; await ctx.say(`${T} ficou em evidência: os golpes vão todos nele!`, 'status'); return true; }
+  if (esp.trancar) {
+    if (t.vol.octolock) { await ctx.say(`${T} já está trancado!`); return true; }
+    t.vol.octolock = true; t.vol.preso = true;
+    await ctx.say(`${T} foi trancado! Não consegue mais fugir, e vai perdendo defesa a cada turno.`, 'status'); return true;
+  }
+  if (esp.poExplosivo) { t.vol.poExplosivo = true; await ctx.say(`${T} ficou coberto por um pó explosivo!`, 'status'); return true; }
+  if (esp.eletrifica) { t.vol.eletrificado = true; await ctx.say(`O golpe de ${T} vai sair Elétrico nesta rodada!`, 'status'); return true; }
+  /* Stockpile / Spit Up / Swallow: `vol.estoque` vai até 3. O Stockpile sobe Defesa e Def. Esp. pelo `meta`, então
+     aqui só a contagem; Spit Up vira dano (100 por carga, em `executar`) e Swallow vira cura. Os dois ZERAM. */
+  if (esp.estocar) {
+    if ((u.vol.estoque || 0) >= 3) { await ctx.say('Mas falhou! (já guardou o máximo)'); return true; }
+    u.vol.estoque = (u.vol.estoque || 0) + 1;
+    await ctx.say(`${U} guardou energia! (${u.vol.estoque}/3)`, 'good');
+    return false;   // deixa o genérico subir Defesa/Def.Esp. pelo `meta`
+  }
+  if (esp.engolir) {
+    const n = u.vol.estoque || 0;
+    if (!n) { await ctx.say('Mas falhou! (não há energia guardada)'); return true; }
+    delete u.vol.estoque;
+    const cura = Math.floor(u.stats.hp * [0, 1 / 4, 1 / 2, 1][n]);
+    if (u.hp >= u.stats.hp) { await ctx.say(`O HP de ${U} já está cheio!`); return true; }
+    heal(u, cura); up(ctx); await ctx.say(`${U} engoliu a energia guardada e recuperou HP!`, 'good'); return true;
+  }
   return false;
 }
 
@@ -1079,6 +1311,12 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
     if (r.golpe) { g = r.golpe; u.boss.soltouTodos = !!r.todos; }   // mp-motor lê isto pra acertar os outros alvos
   }
   if (hu.preguica && u.vol.folga) { u.vol.folga = false; interromper(u); await ctx.say(`${U} está com preguiça...`); return; } // Truant: folga no turno seguinte a um golpe
+  // 💥 Powder: coberto de pó, golpe de Fogo explode na própria cara e não sai
+  if (u.vol.poExplosivo && g.type === 'fire') {
+    delete u.vol.poExplosivo; interromper(u);
+    if (!indireto(u)) { const d = Math.max(1, Math.floor(u.stats.hp / 4)); u.hp = Math.max(0, u.hp - d); up(ctx); }
+    await ctx.say(`💥 O pó explode na cara de ${U}! O golpe de Fogo não saiu.`, 'hit'); return;
+  }
   const travado = golpeTravado(u);                                                    // carga / fúria: repete sozinho
   if (travado) g = travado;
   /* Dormindo o turno é perdido — MENOS com Sleep Talk e Snore (`soNoSono`), que existem exatamente pra isso e por
@@ -1202,6 +1440,7 @@ export async function usarGolpe(u, t, g, primeiro, ctx, opcoes = {}) {
      der certo; senão a perícia viraria um buff permanente até acertar. Perícia não passa por aqui (ela não é
      golpe), então a marca nunca é consumida pelo turno em que foi invocada. */
   delete u.vol.selo; delete u.vol.estocada;
+  delete u.vol.miraCerta; delete u.vol.critoCerto;   // 🎯 Mind Reader/Lock On e 🔦 Laser Focus valem UM golpe
   if (esp.autoDesmaio && u.hp > 0) { u.hp = 0; up(ctx); (ctx.tremer || nada)(u); await ctx.say(`${U} desmaiou com o esforço!`, 'hit'); }
   if (esp.recarga && res === 'acertou' && u.hp > 0) u.vol.recarga = true;
   if (u.vol.furia && --u.vol.furia.turnos <= 0) {
@@ -1218,6 +1457,24 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   g = golpeDaConversaoDeTipo(g, u);       // Aerilate/Pixilate/Refrigerate/Galvanize/Normalize: ANTES do Tera (roda com Weather Ball sem clima ativo)
   g = golpeDoTera(g, u);                  // Tera Blast: tipo de quem usa, se estiver terastalizado
   g = golpeDoBattleBond(g, u);            // Water Shuriken vira fixo (poder 20, 3 acertos) se já é Ash-Greninja
+  /* ⚡ Ion Deluge (campo) e Electrify (no alvo): golpe que ia sair Normal sai Elétrico nesta rodada. Entra na
+     MESMA fila de reescritas de cima, pela mesma razão — é o golpe que muda, não o dano. */
+  if (g.type === 'normal' && (ctx.campo?.ionizado || u.vol?.eletrificado)) g = { ...g, type: 'electric' };
+  /* 🎁 Natural Gift e 🤮 Spit Up reescrevem o golpe a partir do que quem usa TEM na mão ou guardou. Ficam aqui
+     porque mudam tipo/poder, não o efeito — daí pra baixo são golpes comuns. */
+  if (especial(g).presenteDaNatureza) {
+    const tipoFruta = Object.entries(FRUTA_DO_TIPO).find(([, [id]]) => id === u.item)?.[0] || TIPO_DA_FRUTA_DE_CURA[u.item];
+    if (!tipoFruta) { await ctx.say(`${ctx.nome(u)} não tem fruta nenhuma: o golpe falhou!`); return; }
+    g = { ...g, type: tipoFruta, power: PODER_NATURAL_GIFT };
+    gastarItem(u);   // a fruta se gasta no golpe, como nos jogos
+  }
+  if (especial(g).cuspir) {
+    const n = u.vol?.estoque || 0;
+    if (!n) { await ctx.say('Mas falhou! (não há energia guardada)'); return; }
+    delete u.vol.estoque;
+    g = { ...g, power: 100 * n };
+  }
+  if (especial(g).arremessa && !u.item) { await ctx.say(`${ctx.nome(u)} não tem item pra arremessar: o golpe falhou!`); return; }
   const U = ctx.nome(u), T = ctx.nome(t), hu = hab(u), ht = hab(t);
   const selfT = SELF_TARGETS.has(g.target), meta = g.meta || {};
   /* Quem RECEBE o efeito deste golpe de status. Quase sempre é o próprio (`user`, Swords Dance) ou o alvo
@@ -1245,6 +1502,41 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     return;
   }
   if (!selfT && t.vol.invul) { await ctx.say('Mas errou!'); return; }                 // alvo no ar / debaixo da terra
+  /* 🛡 PROTEÇÃO DE LADO (Wide Guard, Quick Guard, Crafty Shield, Mat Block). Cada uma barra uma FAMÍLIA de golpe
+     — `regras.GUARDAS_DE_LADO` diz qual —, protege o lado inteiro e vale uma rodada (`passarLado` as zera).
+     Fica junto do Protect porque é a mesma pergunta ("esse golpe chega?") e o `return` resolve igual. */
+  if (!selfT && u !== t) {
+    const deles = ladoDoCampo(ctx, t);
+    const alcance = g.target || GOLPE_AREA[g.name];
+    const familia = { area: AO.has(alcance) || ALVOS_TODOS.has(alcance), prioridade: (g.priority || 0) > 0, status: g.cls === 'status', dano: g.cls !== 'status' };
+    for (const [chave, qual] of Object.entries(GUARDAS_DE_LADO)) {
+      if (deles?.[chave] > 0 && familia[qual]) { await ctx.say(`${NOME_LADO[chave]} protege ${T}!`); return; }
+    }
+  }
+  /* 🪞 Magic Coat e 🫱 Snatch: interceptam o golpe de STATUS do outro. O que faltava pra eles caberem era um
+     ponto onde o golpe já está decidido mas ainda não resolveu — e `executar` é exatamente isso.
+     Magic Coat devolve o golpe pro dono (só o que tem a flag `reflectable` da PokéAPI); Snatch rouba o golpe que
+     o outro ia usar EM SI MESMO (flag `snatch`) e usa no lugar. Os dois valem uma vez e se gastam. */
+  if (g.cls === 'status') {
+    // 🪞 Magic Coat devolve pro dono um golpe mirado em VOCÊ (daí o `u !== t`)
+    if (!selfT && u !== t && t.vol.manto && temFlag(g, 'reflectable')) {
+      delete t.vol.manto;
+      await ctx.say(`${T} refletiu ${ctx.golpe(g)} de volta!`, 'status');
+      await golpeDeStatus(t, u, g, false, ctx, primeiro, u);
+      return 'acertou';
+    }
+    /* 🫱 Snatch rouba golpe AUTO-DIRIGIDO (Swords Dance, Recover…), e nesses `u === t` — era justamente a trava
+       `u !== t` que fazia o Snatch nunca disparar. A flag `snatch` da PokéAPI diz quais são roubáveis. */
+    if (selfT && temFlag(g, 'snatch')) {
+      const ladrao = (ctx.oponentesDe?.(u) || []).find(o => o.vol?.furtar && o.hp > 0);
+      if (ladrao) {
+        delete ladrao.vol.furtar;
+        await ctx.say(`${ctx.nome(ladrao)} furtou ${ctx.golpe(g)} de ${U}!`, 'status');
+        await golpeDeStatus(ladrao, ladrao, g, true, ctx, primeiro, ladrao);
+        return 'acertou';
+      }
+    }
+  }
   // Soundproof/Bulletproof: imunidade por FLAG do golpe, não por tipo — vale pra golpe de dano E de status (Growl,
   // Sing…), por isso checado antes até do golpe de status. Golpe fora da tabela (dados-golpe-flags.js) não tem a
   // flag marcada, então não é bloqueado — mais seguro que fingir saber.
@@ -1334,6 +1626,32 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
      o número vem de `regras.danoFixoDe` e não passa pela fórmula — sem atributo, sem crítico, sem clima. O que
      ele AINDA respeita é a tabela de tipos (a eficácia zero já barrou lá em cima: Night Shade não pega Normal) e
      o chefe de evento, pela mesma razão do Endeavor: dano que fura a couraça seria um botão de vitória. */
+  /* 🥊 Bide: dois turnos guardando TUDO o que levou (somado em `vol.bide.total`, no bloco de dano) e no terceiro
+     devolve o DOBRO. Trava quem usa, como a carga e a fúria — `golpeTravado` o repete sozinho. */
+  if (esp.bide) {
+    const b = (u.vol.bide ||= { golpe: g, turnos: 2, total: 0 });
+    if (b.turnos > 0) { b.turnos--; await ctx.say(`${U} está guardando energia!`, 'muted'); return; }
+    const soma = b.total; delete u.vol.bide;
+    if (!soma) { await ctx.say('Mas falhou! (não levou dano nenhum pra devolver)'); return; }
+    const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, soma * 2, g.type, 1) : soma * 2);
+    t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t, g.type);
+    somarAmeaca(u, feito);
+    await ctx.say(`${U} devolve tudo de uma vez! ${T} perdeu ${feito} HP.`, 'hit');
+    if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
+    return 'acertou';
+  }
+  /* ⚔ Counter / Mirror Coat / Metal Burst: devolvem o dano que você levou NESTE turno (`regras.danoDoContra`,
+     sobre `vol.ultimoDano`). Falham quando ninguém te bateu antes de você agir — é o preço deles. */
+  if (esp.contra) {
+    const devolver = danoDoContra(u, esp);
+    if (devolver == null) { await ctx.say(`Mas falhou! (ninguém acertou ${U} com golpe ${esp.contra.classe === 'physical' ? 'físico' : esp.contra.classe === 'special' ? 'especial' : 'nenhum'} neste turno)`); return; }
+    const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, devolver, g.type, 1) : devolver);
+    t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t, g.type);
+    somarAmeaca(u, feito);
+    await ctx.say(`${U} devolve o golpe! ${T} perdeu ${feito} HP.`, 'hit');
+    if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
+    return 'acertou';
+  }
   const fixo = danoFixoDe(u, t, esp);
   if (fixo != null) {
     const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, fixo, g.type, ef) : fixo);
@@ -1342,6 +1660,36 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     somarAmeaca(u, feito);
     await ctx.say(`${T} perdeu ${feito} HP.`, 'hit');
     if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
+    return 'acertou';
+  }
+
+  /* 🎁 Present: sorteia entre três poderes — ou CURA o alvo em 1/4, que é a piada do golpe. Os pesos são os dos
+     jogos (40% / 30% / 10% de dano e 20% de cura). */
+  if (esp.presente) {
+    const r = Math.random();
+    if (r < 0.2) {
+      if (t.hp >= t.stats.hp) { await ctx.say(`O HP de ${T} já está cheio!`); return 'acertou'; }
+      heal(t, Math.floor(t.stats.hp / 4)); up(ctx);
+      await ctx.say(`🎁 O presente era um agrado: ${T} recuperou HP!`, 'muted'); return 'acertou';
+    }
+    g = { ...g, power: r < 0.6 ? 40 : r < 0.9 ? 80 : 120 };
+  }
+  /* 👊 Beat Up: um acerto por Pokémon EM PÉ do seu lado, e o poder de cada acerto sai do Ataque BASE de quem
+     bate (a fórmula dos jogos). Sozinho é um acerto só — o golpe não falha, só rende pouco. */
+  if (esp.surra) {
+    const turma = [u, ...(ctx.aliadosDe?.(u) || [])].filter(m => m.hp > 0);
+    let somado = 0;
+    for (const quem of turma) {
+      if (t.hp <= 0) break;
+      const golpinho = { ...g, power: Math.floor((quem.data.base?.attack ?? 50) / 10) + 5 };
+      const r = calcDamage(u, t, golpinho, climaDoCtx(ctx), terrenoDoCtx(ctx), ladoDoCampo(ctx, t));
+      const d = Math.min(t.hp, t.boss ? danoNoChefe(t, r.dmg, g.type, 1) : r.dmg);
+      t.hp -= d; somado += d;
+    }
+    up(ctx); (ctx.tremer || nada)(t, g.type);
+    somarAmeaca(u, somado);
+    await ctx.say(`A turma inteira caiu em cima! ${turma.length} acerto${turma.length > 1 ? 's' : ''}. ${T} perdeu ${somado} HP.`, 'hit');
+    if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, somado), ctx);
     return 'acertou';
   }
 
@@ -1372,6 +1720,8 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     if (area.varios) dano = Math.max(1, Math.floor(dano * MULT_AREA));                  // golpe de área pegando mais de um
     // ⚔ Saga num ponto só (regras.multSaga): Ruína (+50%), 🧱 Muralha (−50%) e 🕯 Marca (+25%). Fora da Saga é ×1.
     const ms = multSaga(u, t); if (ms !== 1) dano = Math.max(1, Math.floor(dano * ms));
+    // 💧 Mud Sport / Water Sport: o tipo marcado no campo sai pela metade pros DOIS lados
+    if (ctx.campo?.sports?.includes(g.type)) dano = Math.max(1, Math.floor(dano * 0.5));
     if (ht.aguenta && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; aguentou = true; }  // Sturdy
     else if (t.vol.aguenta && dano >= t.hp) { dano = t.hp - 1; resistiu = true; }            // Endure
     else if (seg(t).aguentaCheio && cheio && i === 0 && dano >= t.hp) { dano = t.hp - 1; faixa = t.item; t.item = null; } // Faixa de Foco
@@ -1379,6 +1729,13 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     if (r.crit) u.vol.criticos = (u.vol.criticos || 0) + 1;                                  // Sirfetch'd (evolucao.js)
   }
   t.vol.danoSofrido = (t.vol.danoSofrido || 0) + total;                                      // Runerigus (evolucao.js)
+  /* ⚔ O que ele levou NESTE turno, pra Counter/Mirror Coat/Metal Burst (`regras.danoDoContra`) e pro Bide. Só
+     dano de GOLPE entra — veneno, clima e armadilha não têm quem contra-atacar. Apagado em `fimDaRodada`, e é
+     justamente isso que faz o contra-ataque falhar quando ninguém bateu antes de você agir. */
+  if (total > 0) {
+    t.vol.ultimoDano = { valor: total, classe: g.cls, tipo: g.type };
+    if (t.vol.bide) t.vol.bide.total = (t.vol.bide.total || 0) + total;                    // Bide guarda o que levou
+  }
   somarAmeaca(u, total);   // ⚔ ameaça (regras.alvoPorAmeaca): quem bate atrai. Acumula sempre; só a Saga LÊ
   up(ctx); (ctx.tremer || nada)(t, g.type);
   if (crit) await ctx.say('Um golpe crítico!', 'crit');
@@ -1449,17 +1806,30 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   const roubo = hu.roubaItem && (hu.roubaItem === 'ataque' || encostou) ? fmt(u.ability) : esp.roubaItem ? fmt(g.name) : null;
   if (total > 0 && t.hp > 0 && u.hp > 0 && !u.item && t.item && !ht.protegeItem && roubo) {
     const nome = ITEMS[t.item]?.name || 'o item';
+    anotarItem(u); anotarItem(t);                 // numa batalha vencida, `batalha.desfazerItens` devolve o que era seu
     u.item = t.item; t.item = null; up(ctx);
     await ctx.say(`${U} roubou <b>${nome}</b> de ${T}! (${roubo})`, 'good');
   } else if (total > 0 && t.item && esp.derrubaItem) {
     // Knock Off: o item não troca de mão, se perde. Sticky Hold barra; quem já segura algo também consegue derrubar.
     if (ht.protegeItem) await ctx.say(`${T} não solta o item de jeito nenhum. (${fmt(t.ability)})`, 'muted');
-    else { const nome = ITEMS[t.item]?.name || 'o item'; t.item = null; up(ctx); await ctx.say(`${U} derrubou <b>${nome}</b> de ${T}! O item se perdeu.`, 'good'); }
+    else { const nome = ITEMS[t.item]?.name || 'o item'; anotarItem(t); t.item = null; up(ctx); await ctx.say(`${U} derrubou <b>${nome}</b> de ${T}! O item se perdeu${ctx.trocaDePokemon === undefined ? '' : ' (volta se você vencer)'}.`, 'good'); }
   }
 
   /* 🪨 Smack Down / Thousand Arrows: o alvo é posto no chão de vez (`vol.noSolo: true` — sem origem, pra a
      gravidade passando não o levantar de volta). Daí em diante ele sente o terreno, pisa nas armadilhas e leva
      golpe Terrestre (`regras.noChao`/`eficacia`). Não é efeito secundário: Shield Dust não protege. */
+  // 🤹 Fling: o item voou e se perdeu (vai pro `vol.itemGasto`, então o Recycle o traz de volta)
+  if (esp.arremessa && u.item) { const nome = ITEMS[u.item]?.name || 'o item'; gastarItem(u); up(ctx); await ctx.say(`${U} arremessou <b>${nome}</b>!`, 'muted'); }
+  /* 💀 Destiny Bond e 😤 Grudge: cobram de quem DERRUBOU. Ficam aqui porque é o único ponto que sabe ao mesmo
+     tempo quem caiu, quem bateu e com qual golpe — e as duas marcas valem só a rodada (`fimDaRodada`). */
+  if (t.hp <= 0 && total > 0 && t.vol.laco && u.hp > 0 && u !== t) {
+    delete t.vol.laco; u.hp = 0; up(ctx);
+    await ctx.say(`💀 ${T} levou ${U} junto com o Laço do Destino!`, 'hit');
+  }
+  if (t.hp <= 0 && total > 0 && t.vol.rancor && u.hp > 0 && g.ppLeft !== undefined) {
+    delete t.vol.rancor; g.ppLeft = 0;
+    await ctx.say(`😤 O rancor de ${T} zerou o PP de ${ctx.golpe(g)}!`, 'status');
+  }
   if (esp.poeNoChao && total > 0 && t.hp > 0 && !t.vol.noSolo) {
     const voava = !noChao(t);
     t.vol.noSolo = true; delete t.vol.voando; delete t.vol.balao;
@@ -1610,6 +1980,17 @@ export async function fimDeTurno(m, ctx) {
     if (--m.vol.aperto.turnos <= 0) { delete m.vol.aperto; await ctx.say(`${ctx.nome(m)} se soltou!`, 'muted'); }
     if (m.hp <= 0) return;
   }
+  // 👻 Maldição: 1/4 do HP por turno, até o fim da luta (quem lançou pagou metade do próprio HP por isso)
+  if (m.hp > 0 && m.vol.maldicao && !indireto(m)) {
+    const d = Math.max(1, Math.floor(m.stats.hp / 4));
+    m.hp = Math.max(0, m.hp - d); up(ctx);
+    await ctx.say(`${ctx.nome(m)} sofre com a maldição. (−${d})`, 'hit');
+    if (m.hp <= 0) return;
+  }
+  // 🐙 Octolock: aperta mais a cada turno — Defesa e Def. Esp. caem
+  if (m.hp > 0 && m.vol.octolock) {
+    await mudarEstagios(m, [{ stat: 'defense', change: -1 }, { stat: 'special-defense', change: -1 }], ctx);
+  }
   // 😱 Pesadelo: 1/4 do HP por turno, e só enquanto o alvo DORME (acordar desfaz sozinho)
   if (m.hp > 0 && m.vol.pesadelo) {
     if (m.status !== 'sleep') { delete m.vol.pesadelo; await ctx.say(`${ctx.nome(m)} acordou — os pesadelos passaram.`, 'muted'); }
@@ -1688,9 +2069,11 @@ export async function fimDeTurno(m, ctx) {
    `travado` = true quando quem ele acabou de trocar golpe tem Unnerve (golpe.executar manda `hu.unnerve`/
    `ht.unnerve` do OUTRO lado) — simplificação: só vale nessa troca direta, não no fim de turno (que não sabe
    quem é "o oponente" de cada Pokémon sem uma lista de lados pronta). */
-export async function comerFruta(m, ctx, travado = false) {
+export async function comerFruta(m, ctx, travado = false, forcar = false) {
   if (travado) return;
-  const f = frutaAgora(m); if (!f) return;
+  // `forcar` = ☕ Teatime: come a fruta queira ou não, mesmo sem a condição dela ter chegado (frutaAgora diz não)
+  const f = forcar ? SEGURADOS[m?.item] : frutaAgora(m);
+  if (!f) return;
   const h = hab(m), nome = nomeDoItem(m);
   m.item = null;
   if (f.curaStatus) { m.status = null; m.sleep = 0; delete m.vol.toxico; up(ctx); await ctx.say(`${ctx.nome(m)} comeu a ${nome} e se curou!`, 'good'); }

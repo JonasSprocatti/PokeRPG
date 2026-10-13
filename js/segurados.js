@@ -112,7 +112,11 @@ export const SEGURADOS = {
 // o que este Pokémon está segurando (objeto vazio = nada). Klutz (semItemEmBatalha): o item continua segurado
 // (pode ser roubado, aparece pro Frisk…), só não tem NENHUM efeito em batalha — por isso é aqui, no único lugar
 // por onde toda leitura de item passa, e não em cada gancho separado.
-export const seg = m => (hab(m).semItemEmBatalha ? {} : SEGURADOS[m?.item] || {});
+/* `vol.semItem` = 🔒 **Embargo** (5 turnos, num Pokémon) e 🏠 **Magic Room** (5 turnos, em todo mundo em campo).
+   Fica AQUI, junto do `semItemEmBatalha` do Klutz, porque `seg` é a porta ÚNICA por onde todo efeito de item
+   segurado passa — uma linha desliga os 76 de uma vez. Mora no `vol`: morre sozinho e o item continua na mão
+   (a ficha mostra o que ele segura, só não vale nada agora). */
+export const seg = m => ((hab(m).semItemEmBatalha || m?.vol?.semItem > 0) ? {} : SEGURADOS[m?.item] || {});
 export const temSegurado = m => !!SEGURADOS[m?.item];
 // itens segurados que existem na mochila/loja (dados.js) — o teste confere que as duas listas batem
 export const IDS_SEGURADOS = [...Object.keys(ITENS_SEGURADOS), ...Object.keys(ITENS_RAIDE_SEGURADOS), ...Object.keys(ITENS_VANTAGEM_TIPO), ...Object.keys(ITENS_FRUTA_TIPO), ...IDS_EVO_EM_BATALHA];

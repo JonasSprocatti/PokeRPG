@@ -4099,3 +4099,124 @@ por isso nem passa por lá: grava no save e pronto.
   trava precisa ler o moveset do OUTRO lado — e `motivoBloqueio(m, g)` é puro e recebe só um Pokémon.
 - **Substituto com Baton Pass / Shed Tail passando o boneco pra quem cobre**: o `revezamento` tira quem usou e
   põe um aliado, e o boneco fica com quem saiu. Transferi-lo exigiria `forcarSaida` devolvendo QUEM entrou.
+
+## 🏁 A cauda longa dos golpes: as 8 famílias que faltavam (13/10/2026)
+
+O pedido foi "faça todos esses" sobre a tabela de famílias que o relatório anterior deixou. **65 → 0**: a
+varredura de `dados-ref/golpes.tsv` × `GOLPES_ESPECIAIS` + os `ailment` de `aplicarStatus` hoje só acusa
+`victory-dance`, `shelter` e `hard-press`, e esses três são **falso positivo do dump de 2020** (metadado vazio
+nos Gen 8/9 que a API viva preenche — eles já funcionavam pelo caminho comum).
+
+**Dois "bloqueios" estavam vencidos**, e esse foi o achado mais útil do levantamento:
+
+- **"o inimigo não segura item"** — venceu quando `batalha.novoOponente` passou a dar item ao selvagem
+  (`regras.itemDeSelvagem`, relato #77). Trick, Switcheroo e Corrosive Gas tinham com o que trabalhar desde
+  então; a nota do backlog é que estava velha.
+- **"o Sticky Web só pega quem entra em campo, e do seu lado ninguém entra"** — meia verdade. Do lado do
+  **inimigo** entra sempre (treinador manda o próximo, a fila de lendários), e do seu lado o 🔄 revezamento traz
+  o aliado de volta pelas armadilhas. A teia funciona onde importa.
+
+### O padrão que fez 65 golpes caberem
+
+Quase nada aqui é sistema novo. O que resolveu família após família foi sempre a mesma pergunta: **qual é a porta
+única por onde isso já passa?**
+
+| família | a porta única | custo |
+|---|---|---|
+| 👁 tirar imunidade (3) | `regras.eficacia` | 2 linhas — é o avesso do `vol.noSolo` da Gravidade |
+| 🚫 Heal Block | `regras.heal` | 1 linha, e cobre as ~25 chamadas de cura do jogo |
+| 🔒 Embargo e Magic Room | `segurados.seg` | 1 linha, e desliga os 76 itens segurados |
+| 🔗 Imprison e Throat Chop | `regras.motivoBloqueio` | 2 linhas — as 3 telas, a IA e o motor obedecem de graça |
+| 🛡 proteção de lado (6) | o `return` de `golpe.executar` | um laço sobre `GUARDAS_DE_LADO` |
+| ⚔ contra-ataque (4) | `vol.ultimoDano` escrito no único ponto de dano | 1 escrita + 1 função pura |
+
+**Imprison merece registro**, porque o motivo de ele estar na lista de "caros" era real e a saída foi lateral:
+`motivoBloqueio(m, g)` é pura e recebe **um** Pokémon, então não podia ver o moveset do outro lado. A solução não
+foi dar o outro lado pra ela — foi **copiar os nomes dos golpes em comum pro `vol` do alvo** na hora do golpe
+(`vol.proibidos`). A lista viaja com quem foi selado, a função continua pura, e as 3 telas de golpe passaram a
+respeitar o selo sem uma linha nova.
+
+### 🎒 O item que volta na vitória (pedido do usuário, no meio da leva)
+
+> *"moves que derrubam item ou trocam item, ao fim da batalha, se tiver vencido, os itens voltam ao normal"*
+
+A regra ficou **uma**, e é ela que resolve a tensão: **o que era seu volta; o que você ganhou de mão vazia, fica.**
+
+```js
+export function desfazerItens(m) {
+  if (!m || !('itemAntes' in m)) return null;
+  const antes = m.itemAntes; delete m.itemAntes;
+  if (antes && m.item !== antes) { m.item = antes; return antes; }   // o seu Restos volta
+  return null;                                                       // o espólio do Thief fica
+}
+```
+
+`'itemAntes' in m` em vez de `??=` **é a parte que importa**: "não tinha item" (`null`) e "ainda não anotei"
+(`undefined`) precisam ser estados diferentes, e é essa diferença que mantém o Thief valendo a pena sem deixar
+nenhum golpe do inimigo tomar o seu item pra sempre. O espólio de vitória já existia por outro caminho
+(`itemCaiComoEspolio`), então não há duplicidade.
+
+Quem mexe no item **anota** (`golpe.anotarItem`), e isso inclui o Knock Off e o Thief que já existiam —
+retroativamente consertados pela mesma regra. **Perder ou fugir não devolve**: aí a perda vale, como qualquer
+consequência de uma derrota. E `endBattle` ganhou o parâmetro `venceu`, passado pelas duas portas de vitória
+(`win` e `vencerGen`).
+
+**Item CONSUMIDO é outra coisa** e não entra: `gastarItem` (fruta comida, Faixa gasta, Erva usada, Fling
+arremessado) grava em `vol.itemGasto` — que é de onde o ♻ **Recycle** o traz de volta — e nunca anota `itemAntes`.
+Consumo não é roubo.
+
+### ⏱ A peça que destravou cinco golpes de uma vez
+
+After You, Quash, Trick Room, Magic Coat e Snatch estavam juntos no backlog por precisarem "de um gancho na fila
+de ações". Eram dois problemas diferentes:
+
+- **Trick Room** não precisava de gancho nenhum: `ordenarAcoes(acoes, sorte, invertido)` ganhou um parâmetro, e
+  os dois motores já têm o `campo` na mão quando montam a fila. A sala inverte a **velocidade**, não a ordem toda
+  — prioridade, Garra Rápida e Stall continuam valendo por cima, como nos jogos.
+- **After You e Quash** precisavam mexer na fila **no meio** da rodada. Aí entrou `ctx.reordenar(m, modo)`, o
+  mesmo desenho de `ctx.forcarSaida` e `ctx.abrirBrecha`: o motor só **pede**, quem tem a fila atende. Sem o
+  gancho (luta de sala) o golpe diz que ali não dá, em vez de fingir.
+- **Magic Coat e Snatch** não eram problema de fila: eram de **momento**. O que faltava era um ponto onde o golpe
+  já está decidido e ainda não resolveu — e `executar` é exatamente isso. Duas condições no topo dele.
+
+**E aqui o bug da leva**, que vale mais que a feature: a primeira versão de `batalha.reordenar` guardava
+`agora: () => i` apontando pro `i` do `for` declarado **logo abaixo**, fora de escopo. `node --check` passou
+(identificador solto é JS válido) **e o teste de unidade passou também** — porque lá o `ctx.reordenar` é
+**mockado**: o mock provava o motor pedindo, nunca o jogo atendendo. É a armadilha do `T` do `win()` repetida,
+com uma lição nova:
+
+> **Mock de gancho de `ctx` testa metade do contrato.** Gancho novo = um caso em `tests/turno-smoke.test.js`, com
+> o ctx de verdade.
+
+O ponteiro virou um **campo** do objeto (`filaDoTurno.i`), atualizado dentro do laço, e o smoke test roda o
+`turn()` inteiro com After You na mão.
+
+### As traduções conscientes
+
+Três golpes não têm análogo aqui e foram traduzidos em vez de recusados — cada um para o efeito que ele **tem**
+nos jogos, não para a mecânica que ele usa:
+
+| golpe | nos jogos | aqui | por quê |
+|---|---|---|---|
+| **Ally Switch** | troca de POSIÇÃO com o parceiro | o companheiro passa a receber os golpes mirados em você (`vol.chamariz`) | não há posições em campo, mas o *efeito* é esse — e é o mesmo campo do Follow Me; muda só quem decide |
+| **Healing Wish / Lunar Dance** | você desmaia, o substituto que ENTRA vem curado | você desmaia, um companheiro **em campo** fica curado | é a mesma tradução que o Baton Pass já usava |
+| **Revival Blessing** | revive alguém do banco | levanta um companheiro **caído em campo** com metade do HP | mesma família; sem ninguém caído, falha e diz |
+| **Metronome** | qualquer golpe do jogo | sorteia entre os golpes de quem está em campo | id aleatório pediria rede por uso e quebraria offline (ceiling marcado com `ponytail:`) |
+
+### O que ficou de fora, agora de verdade
+
+A lista de golpes sem efeito acabou. O que sobrou são **tetos conscientes dentro de golpes que funcionam**, todos
+marcados no código:
+
+- **Recuo e dreno não contam o dano feito ao Substituto** (nos jogos contam) — o `return` que torna o boneco
+  simples engole junto o único efeito de quem ATACA.
+- **Golpe de dois turnos copiado sai na hora** em vez de carregar — e por isso Fly, Dig & cia. estão em
+  `SEM_COPIA`.
+- **Shed Tail não passa o boneco pra quem cobre**: o `revezamento` tira quem usou e põe um aliado, mas
+  transferir o substituto exigiria `forcarSaida` devolvendo QUEM entrou.
+- **Transform não copia a gimmick do alvo** (Mega/Tera/Dynamax). Leva os atributos já transformados, que é o
+  certo; virar um Charizard Mega Y exigiria rodar `mega.js` num Ditto.
+- **Fling usa uma tabela de 8 potências** (111 dos nossos 160 itens, agrupados) e `PODER_FLING = 30` pros 49 que
+  a PokéAPI não classifica — todos itens nossos, inventados.
+- **Natural Gift lê o tipo das 17 frutas de aperto** (`dados.FRUTA_DO_TIPO`, a fonte única) + as 3 de cura. As
+  outras frutas dos jogos não existem aqui.

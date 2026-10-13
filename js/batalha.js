@@ -9,7 +9,7 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { healFull, CTX, changeStats } from './efeitos.js';
-import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarGravidade, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace, desfazerCopia } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarGravidade, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace, desfazerCopia, anotarItem, desfazerItens } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem, addItem } from './itens.js';
@@ -18,7 +18,7 @@ import { makeMon, IVS_MAX } from './pokemon.js';
 import { encerrarJornada, telaEscolherGen } from './fim.js';
 import { API, STATS, STAT_PT, TYPE_PT, STRUGGLE, ZONES, BOLAS, CLASSES_TREINADOR, NOMES_TREINADOR, DIFICULDADES, ITEMS, ITENS_EVO_ACHADOS } from './dados.js';
 import {
-  freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs,
+  freshVol, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, golpeDoAliado, golpesPermitidos, golpeForcado, xpPorVitoria, ganhoDeEVs, salaAtiva,
   novoCampo, climaDasRotasAtivo, CLIMA_TURNOS, premioTreinador, bolaPorNivel, treinadorLancaBola, valorCaptura, balancosDaCaptura,
   statsDeChefe, premioChefe, zonaLiberada, desmaioPrecisaRevive, multShiny, climaDe, terrenoDe, escolhaIA, ESPERTEZA, multVento, poderZ, TURNOS_DYNAMAX, sortearTipoTera, noChao,
   prioridadeEfetiva, sempreUltimo, efeitosAoVencer, tiposDefensivos, tiposOfensivos, alvoPorAmeaca, GRUPO_MAX, golpeDoPlano, especiesDobradas,
@@ -332,6 +332,24 @@ async function forcarSaida(m, { motivo = 'forcada', para = null } = {}) {
   return true;
 }
 CTX.forcarSaida = forcarSaida;
+
+/* ⏱ A FILA da rodada em andamento, pra After You e Quash. Vive num módulo e não no `G.B` porque é estado de
+   dentro do laço do turno: nasce quando a ordem é montada e morre quando a rodada acaba. O motor (`golpe.js`) só
+   PEDE — mesmo desenho de `forcarSaida`/`abrirBrecha` —, e sem o gancho (luta de sala) o golpe diz que ali não dá.
+   `filaDoTurno.i` é onde a rodada está: mover alguém pra ANTES de quem já agiu não teria efeito, e falha. */
+let filaDoTurno = null;
+function reordenar(m, modo) {
+  if (!filaDoTurno) return false;
+  const { ordem, i } = filaDoTurno;
+  const j = ordem.findIndex(a => a.quem === m);
+  if (j <= i) return false;                       // já agiu (ou é quem está agindo agora): não dá mais
+  const [acao] = ordem.splice(j, 1);
+  if (modo === 'proximo') ordem.splice(i + 1, 0, acao);
+  else ordem.push(acao);
+  return true;
+}
+CTX.reordenar = reordenar;
+
 
 /* Quem saiu por revezamento volta no FIM da rodada. Chamado depois do `fimDaRodada` de propósito: é ele que apaga
    o `recemEntrou`, e quem volta precisa entrar com essa marca ligada (Stakeout e companhia leem dela). */
@@ -765,6 +783,7 @@ export async function turn(action) {
       await vez('p');
       const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
       // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão)
+      if (B.campo?.travaFuga > 0) { await say('Um campo de força impede a fuga!', 'muted'); return; }   // 🧚 Fairy Lock
       const preso = hab(E).prendeTipo?.some(t => tiposDefensivos(P).includes(t))
         || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P)) || !!P.vol.preso || !!P.vol.aperto;   // habilidade OU golpe (Mean Look, Block, Spider Web, Bind & cia.)
       if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability, undefined, preso)) {
@@ -853,9 +872,19 @@ export async function turn(action) {
     // o que cada um vai usar neste turno (Sucker Punch olha isso: só funciona contra quem vai atacar). Golpe travado (carga/fúria) vale.
     for (const m of [...ladoJogador(), ...B.inimigos]) delete m.vol.golpeEscolhido;
     for (const a of acoes) if (a.golpe) a.quem.vol.golpeEscolhido = golpeTravado(a.quem) || a.golpe;
-    const ordem = ordenarAcoes(acoes);
+    // 🏠 Trick Room: dentro da mesma prioridade, o mais LENTO age primeiro (regras.ordenarAcoes)
+    const ordem = ordenarAcoes(acoes, undefined, salaAtiva(B.campo, 'salaInvertida'));
     const posicao = m => ordem.findIndex(a => a.quem === m); // -1 = não age neste turno
+    /* ⏱ After You / Quash mexem na fila NO MEIO da rodada, então o motor não pode decidir sozinho: ele PEDE por
+       `ctx.reordenar` (o mesmo desenho de `ctx.forcarSaida` e `ctx.abrirBrecha`). `ordem` é mutável e o laço abaixo
+       relê `ordem[i]` a cada passo, então mover alguém pra frente do ponteiro surte efeito de verdade.
+       O ponteiro é um CAMPO do objeto, atualizado dentro do laço — a primeira versão guardava `agora: () => i`
+       apontando pro `i` do `for` logo abaixo, que não existe neste escopo: `node --check` passa (identificador
+       solto é JS válido) e o teste de unidade também, porque ele mocka o `ctx.reordenar` em vez de usar este.
+       É a armadilha do `T` do `win()` outra vez; o guarda agora é um caso em tests/turno-smoke.test.js. */
+    filaDoTurno = { ordem, i: 0 };
     for (let i = 0; i < ordem.length; i++) {
+      filaDoTurno.i = i;                 // ⏱ onde a rodada está agora (lido por `reordenar`)
       const a = ordem[i];
       /* O foco pode ter caído no meio do turno (⚔ Saga): passa pro próximo inimigo de pé, senão o resto do
          turno bate num corpo. A luta só termina quando o GRUPO inteiro cai. */
@@ -917,6 +946,7 @@ export async function turn(action) {
     // veneno, clima e fim de rodada valem pro GRUPO inimigo inteiro (⚔ Saga), não só pra quem está em foco
     // 🪐 a gravidade recebe a MESMA lista do fim de turno: é o único efeito de campo que marca cada Pokémon
     if (P.hp > 0 && !grupoInimigoCaiu()) { const todos = [...vivos(emCampo()), ...inimigosEmCampo()]; await vez('fim'); for (const m of todos) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarGravidade(B.campo, CTX, todos); await passarLados(B.campo, CTX); await anunciarQuedas(); }
+    filaDoTurno = null;   // ⏱ a fila desta rodada acabou: After You/Quash não têm mais o que reordenar
     // recuo, Protect e Endure valem só um turno; `passarSaga`/`passarRecargas` cuidam de Ruína, Marca, Brado e
     // da recarga das perícias (⚔ Saga). Fora da Saga nenhuma dessas marcas existe no `vol` e as duas são no-op.
     for (const m of [...ladoJogador(), ...B.inimigos]) { fimDaRodada(m); passarSaga(m); passarRecargas(m); }
@@ -1039,7 +1069,7 @@ async function win() {
     S.money += premio; S.treinadoresVencidos = (S.treinadoresVencidos || 0) + 1;
     await say(`Você derrotou ${esc(T.nome)}! Na fuga, deixou cair ₽${premio}.`, 'good');
   }
-  endBattle();
+  endBattle(true);
 }
 // Fim de uma vitória (antes de endBattle zerar m.vol): +1 de vínculo pra quem lutou, e evoluções que dependem do
 // que aconteceu NESTA batalha (evolucao.js 'pos-batalha': Sirfetch'd com 3 críticos, Runerigus que aguentou 49 de dano)
@@ -1059,7 +1089,7 @@ async function vencerGen() {
   if (!(S.gensVencidas ||= []).includes(g)) S.gensVencidas.push(g);
   S.money += premio;
   await say(`🏆 Você venceu os lendários de ${regiao}! A Gen ${g} está fechada. Prêmio: ₽${premio}.`, 'level');
-  endBattle();
+  endBattle(true);
   if (DIFICULDADES[dificuldadeDe(S)].fimNaGen) {
     // A vitória fica GRAVADA no save agora (não no fim da run): quem escolhe seguir no Santuário e morre lá termina
     // em derrota, mas a Gen vencida continua contando pro desbloqueio do mapa seguinte (mapas.gensLiberadasRoguelike).
@@ -1137,7 +1167,11 @@ async function serCapturado() {
 /* A Mega dura até o fim da batalha. `desfazerMega` é chamado pra TODO mundo do seu lado (quem não megaevoluiu
    é ignorado): é mais seguro varrer a equipe do que lembrar quem virou. Sem isto o Pokémon ficaria Mega pra
    sempre — `M.data` vai junto no save. O inimigo some com a batalha, não precisa desfazer. */
-export function endBattle() {
+/* `venceu` = a batalha acabou em VITÓRIA. Só então os itens voltam ao normal (pedido do usuário, 13/10/2026):
+   golpe que derruba ou troca item (Knock Off, Trick, Switcheroo, Corrosive Gas, Thief, Bestow, Pickpocket…)
+   anota `itemAntes` em `golpe.anotarItem`, e aqui `desfazerItens` devolve. Perder a luta ou fugir **não** devolve
+   — aí a perda vale, como qualquer outra consequência de uma derrota. */
+export function endBattle(venceu = false) {
   /* 🥎 Aliado que ficou NA BOLA quando a luta terminou sem vitória (você fugiu, foi derrotado, a luta se desfez)
      foi levado pelo treinador — e é perda de verdade, igual ao permadeath do Roguelike. `win()` solta todo mundo
      ANTES de chegar aqui, então quem sobrou em `B.presos` neste ponto é exatamente quem se perdeu.
@@ -1152,7 +1186,12 @@ export function endBattle() {
   if (levados.length) G.abertos?.clear();
   G.alvoDe = null;
   G.B = null; G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar', G.S ? zone() : null);
-  for (const m of ladoJogador()) { desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); desfazerTrace(m); desfazerCopia(m); m.vol = freshVol(); }
+  for (const m of ladoJogador()) {
+    desfazerMega(m); desfazerTera(m); desfazerDynamax(m); desfazerForma(m); desfazerAshGreninja(m); desfazerTrace(m); desfazerCopia(m);
+    const voltou = venceu ? desfazerItens(m) : (delete m.itemAntes, null);
+    if (voltou) log(`🎒 ${esc(m.nick || fmt(m.name))} recuperou ${esc(ITEMS[voltou]?.name || voltou)} depois da vitória.`, 'good');
+    m.vol = freshVol();
+  }
 }
 
 /* ---- batalha em andamento no save (sem fuga por F5) ----

@@ -140,7 +140,9 @@ export const GOLPES_ESPECIAIS = {
   'sucker-punch': { soSeAlvoAtaca: true }, thunderclap: { soSeAlvoAtaca: true },
   // clima (regras.CLIMAS): duram CLIMA_TURNOS e valem pros dois lados
   'rain-dance': { clima: 'chuva' }, 'sunny-day': { clima: 'sol' }, sandstorm: { clima: 'areia' },
-  hail: { clima: 'granizo' }, snowscape: { clima: 'neve' }, chillyreception: { clima: 'neve' },
+  hail: { clima: 'granizo' }, snowscape: { clima: 'neve' },
+  // `chillyreception` (sem hífen) ficou aqui de 05/10 a 13/10/2026 e NUNCA casou: o nome da PokéAPI tem hífen.
+  // A entrada certa está na seção dos golpes que trocam de Pokémon, mais abaixo, com o `revezamento` que faltava.
   // terrenos (regras.TERRENOS): duram TERRENO_TURNOS e só valem pra quem está no chão
   'electric-terrain': { terreno: 'eletrico' }, 'grassy-terrain': { terreno: 'grama' },
   'psychic-terrain': { terreno: 'psiquico' }, 'misty-terrain': { terreno: 'fada' },
@@ -190,7 +192,7 @@ export const GOLPES_ESPECIAIS = {
   'belly-drum': { tambor: true },              // paga metade do HP máximo e põe o Ataque no +6
   'topsy-turvy': { inverteEstagios: true },    // inverte o sinal de todos os estágios do alvo
   'pain-split': { divideHp: true },            // os dois ficam com a média do HP atual
-  'power-trick': { trocaProprios: ['attack', 'defense'] },        // troca os PRÓPRIOS Ataque e Defesa
+  'power-trick': { trocaProprios: [['attack', 'defense']] },      // troca os PRÓPRIOS Ataque e Defesa
   'power-swap': { trocaEstagios: ['attack', 'special-attack'] },  // troca os ESTÁGIOS com o alvo
   'guard-swap': { trocaEstagios: ['defense', 'special-defense'] },
   'heart-swap': { trocaEstagios: 'todos' },
@@ -259,7 +261,88 @@ export const GOLPES_ESPECIAIS = {
   'skill-swap': { trocaHabilidade: true },
   'simple-beam': { poeHabilidade: 'simple' },
   'worry-seed': { poeHabilidade: 'insomnia' },
-  'gastro-acid': { anulaHabilidade: true }
+  'gastro-acid': { anulaHabilidade: true },
+
+  /* ---- 🎒 mexer no ITEM do outro ----
+     O bloqueio histórico ("inimigo não segura item") venceu: `batalha.novoOponente` dá item ao selvagem desde o
+     relato #77. Todos passam por `golpe.mexerNoItem`, que ANOTA `m.itemAntes` — e no fim de uma batalha VENCIDA
+     `batalha.desfazerItens` devolve o que era seu (pedido do usuário, 13/10/2026). Sticky Hold barra todos. */
+  trick: { trocaItem: true }, switcheroo: { trocaItem: true },
+  bestow: { daItem: true },                       // dá o SEU item pro alvo (que precisa estar de mão vazia)
+  'corrosive-gas': { derrubaItem: true },         // mesmo comportamento do Knock Off, sem o dano
+  recycle: { reciclar: true },                    // devolve o último item que VOCÊ gastou (vol.itemGasto)
+  fling: { arremessa: true, poder: 'fling' },     // o poder sai do item (poderDoFling); o item se perde
+  'natural-gift': { presenteDaNatureza: true },   // tipo e poder saem da FRUTA segurada; sem fruta, falha
+  teatime: { horaDoCha: true },                   // TODO mundo em campo come a fruta que estiver segurando
+  // 🔒 Embargo e 🏠 Magic Room desligam o item por turnos — `vol.semItem`, lido dentro de `segurados.seg`
+  embargo: { semItem: 5 },
+
+  /* ---- ⚔ contra-ataque (regras.danoDoContra, sobre `vol.ultimoDano`) ----
+     `contra: { classe?, mult }` devolve o dano que você levou NESTE turno, multiplicado. Sem classe, qualquer um. */
+  counter: { contra: { classe: 'physical', mult: 2 } },
+  'mirror-coat': { contra: { classe: 'special', mult: 2 } },
+  'metal-burst': { contra: { mult: 1.5 } },
+  bide: { bide: true },                           // 2 turnos guardando o que levou, e devolve o DOBRO
+
+  /* ---- 🏠 as salas e os "sports" (campo, 5 turnos, valem pros dois lados) ---- */
+  'trick-room': { sala: 'salaInvertida' },        // o mais LENTO age primeiro (regras.ordenarAcoes)
+  'wonder-room': { sala: 'salaMaravilhas' },      // Defesa e Def. Esp. trocadas em todo mundo (regras.calcDamage)
+  'magic-room': { sala: 'salaMagica' },           // item segurado não vale nada (segurados.seg, por `vol.semItem`)
+  'mud-sport': { sport: 'electric' }, 'water-sport': { sport: 'fire' },   // corta esse tipo pela metade
+  'ion-deluge': { ionizado: true },               // golpe Normal vira Elétrico nesta rodada
+  'fairy-lock': { travaFuga: true },              // ninguém foge na rodada seguinte
+
+  /* ---- 🛡 proteção de LADO (um turno, em `campo.lados`) e a teia ---- */
+  'wide-guard': { lado: 'wide', umTurno: true },       // barra golpe de ÁREA
+  'quick-guard': { lado: 'rapido', umTurno: true },    // barra golpe de PRIORIDADE
+  'crafty-shield': { lado: 'astuto', umTurno: true },  // barra golpe de STATUS
+  'mat-block': { lado: 'tapete', umTurno: true, soPrimeiroTurno: true },  // barra golpe de DANO, só na estreia
+  'lucky-chant': { lado: 'sorte' },                    // nada de crítico contra o seu lado, 5 turnos
+  'sticky-web': { armadilha: 'teia' },                 // baixa a Velocidade de quem ENTRAR em campo
+
+  /* ---- 👁 tirar imunidade (regras.eficacia, pelo `vol.semImunidade`) ---- */
+  foresight: { semImunidade: ['ghost'] }, 'odor-sleuth': { semImunidade: ['ghost'] },
+  'miracle-eye': { semImunidade: ['dark'] },
+
+  /* ---- 🔄 os que nos jogos dependem de trocar de Pokémon ----
+     Aqui "o substituto que entra" é um COMPANHEIRO em campo (`ctx.aliadosDe`) — a mesma tradução que o Baton Pass
+     já usa. Sem companheiro, o golpe falha e diz isso, em vez de matar você por nada. */
+  'healing-wish': { desejoDeCura: true },                      // você desmaia; um companheiro fica curado
+  'lunar-dance': { desejoDeCura: true, devolvePP: true },       // …e com os PP cheios
+  'revival-blessing': { reviver: true },                       // levanta um companheiro caído com metade do HP
+  'chilly-reception': { clima: 'neve', revezamento: true },    // nevasca + sai de campo
+
+  /* ---- ⏱ ordem do turno (`ctx.reordenar`, implementado em batalha.js) ---- */
+  'after-you': { reordena: 'proximo' }, quash: { reordena: 'ultimo' },
+  'ally-switch': { trocaLugar: true },            // o companheiro passa a receber os golpes mirados em você
+
+  /* ---- o resto, um a um ---- */
+  curse: { maldicao: true },                      // Fantasma paga meio HP pra sangrar o alvo; os outros se buffam
+  'destiny-bond': { laco: true },                 // se você cair neste turno, quem te derrubou cai junto
+  grudge: { rancor: true },                       // se você cair neste turno, o golpe que te derrubou zera o PP
+  spite: { tiraPP: 4 },                           // −4 PP no último golpe do alvo
+  imprison: { selaGolpes: true },                 // o alvo não pode usar os golpes que VOCÊ também sabe
+  'heal-block': { semCura: 5 },                   // nada cura o alvo por 5 turnos (regras.heal)
+  'magic-coat': { manto: true },                  // o primeiro golpe de status refletível volta pro dono
+  snatch: { furtar: true },                       // o próximo golpe de status que o outro usar EM SI vira seu
+  'psycho-shift': { passaStatus: true },
+  camouflage: { tipoDoTerreno: true },            // seu tipo vira o do chão (especiais.TIPO_DO_TERRENO)
+  conversion: { tipoDoMeuGolpe: true },           // seu tipo vira o de um dos seus golpes
+  'conversion-2': { tipoQueResiste: true },       // seu tipo vira um que RESISTE ao último golpe que te acertou
+  'reflect-type': { tipoDoAlvo: true },
+  'mind-reader': { miraCerta: true }, 'lock-on': { miraCerta: true },
+  'laser-focus': { critoCerto: true },
+  spotlight: { holofote: true },                  // marca o alvo: os golpes do SEU lado vão todos nele
+  octolock: { trancar: true },                    // não foge, e perde Defesa e Def. Esp. a cada turno
+  powder: { poExplosivo: true },                  // se o alvo usar golpe de Fogo nesta rodada, explode nele
+  electrify: { eletrifica: true },                // o golpe do alvo vira Elétrico nesta rodada
+  'court-change': { trocaLados: true },           // os efeitos de lado trocam de lado
+  present: { presente: true },                    // 40/80/120 de dano — ou CURA o alvo em 1/4
+  'beat-up': { surra: true },                     // um acerto por companheiro em pé, pelo Ataque base de cada um
+  stockpile: { estocar: true }, 'spit-up': { cuspir: true }, swallow: { engolir: true },
+  'trump-card': { poder: 'ppRestante' },
+  'power-shift': { trocaProprios: [['attack', 'defense'], ['special-attack', 'special-defense']] },
+  'throat-chop': { calaPorTurnos: 2 }             // nada de golpe de SOM por 2 turnos (regras.motivoBloqueio)
 };
 
 /* 🌿 Nature Power vira um golpe diferente conforme o chão (`regras.terrenoDe`). Os cinco são TABELA e não busca
@@ -275,3 +358,27 @@ export const GOLPE_DO_TERRENO = {
   psiquico: { name: 'psychic', type: 'psychic', cls: 'special', power: 90, acc: 100, pp: 10, priority: 0, target: 'selected-pokemon', stats: [{ stat: 'special-defense', change: -1 }], meta: { statChance: 10 } }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};
+
+/* 🤹 **Fling**: o poder sai do item segurado. A tabela é por POTÊNCIA (não por item) porque é assim que ela se lê
+   e se confere — são 111 dos nossos 160 itens, agrupados nos 8 valores que a PokéAPI dá. Fruta é sempre 10, e o
+   que não está em lugar nenhum vale `PODER_FLING` (30, o valor da maioria). Dado que não muda = tabela, não busca. */
+const FLING_POR_PODER = {
+  10: ['leftovers', 'focus-sash', 'red-card', 'expert-belt', 'muscle-band', 'wise-glasses', 'choice-band', 'choice-specs',
+    'choice-scarf', 'air-balloon', 'white-herb', 'mental-herb', 'power-herb', 'destiny-knot', 'reaper-cloth', 'strawberry-sweet'],
+  40: ['eviolite'], 50: ['dubious-disc'], 60: ['rocky-helmet'],
+  80: ['assault-vest', 'quick-claw', 'weakness-policy', 'shiny-stone', 'dusk-stone', 'dawn-stone', 'protector',
+    'electirizer', 'magmarizer', 'sachet', 'whipped-dream', 'razor-claw', 'oval-stone', 'cracked-pot'],
+  90: ['deep-sea-tooth'], 100: ['hard-stone'], 130: ['iron-ball']
+};
+export const PODER_FLING = 30, PODER_FLING_FRUTA = 10;
+const FLING = Object.fromEntries(Object.entries(FLING_POR_PODER).flatMap(([p, ids]) => ids.map(id => [id, +p])));
+export const poderDoFling = id => !id ? null : FLING[id] ?? (id.endsWith('-berry') ? PODER_FLING_FRUTA : PODER_FLING);
+
+/* 🎁 **Natural Gift**: o tipo e o poder saem da FRUTA segurada. As 17 frutas de aperto já dizem o tipo delas
+   (`dados.FRUTA_DO_TIPO` é a fonte única, lida de fora pra este módulo não importar nada), e as três de cura
+   têm o tipo que os jogos dão. Fruta nenhuma na mão = o golpe falha, como nos jogos. */
+export const PODER_NATURAL_GIFT = 80;
+export const TIPO_DA_FRUTA_DE_CURA = { 'oran-berry': 'poison', 'sitrus-berry': 'psychic', 'lum-berry': 'flying' };
+
+// 🥷 Camouflage: o tipo de quem usa passa a ser o do CHÃO (regras.terrenoDe). Sem terreno, Normal — como nos jogos.
+export const TIPO_DO_TERRENO = { eletrico: 'electric', grama: 'grass', psiquico: 'psychic', fada: 'fairy' };

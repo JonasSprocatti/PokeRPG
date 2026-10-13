@@ -4,7 +4,7 @@
 // A aleatoriedade usa Math.random/rand direto; os testes substituem Math.random quando precisam.
 import { API, STATS, STAT_PT, CHART, NATURES, ITEMS, DIFICULDADES, SELF_TARGETS, ALVOS_OPONENTES, ALVOS_TODOS, ITENS_DE_SELVAGEM } from './dados.js';
 import { hab } from './habilidades.js';
-import { especial } from './especiais.js';
+import { especial, poderDoFling } from './especiais.js';
 import { seg, multDanoDoItem, resisteDoItem, multEviolite, multStatDoItem } from './segurados.js';
 import { rand, clamp, fmt } from './util.js';
 import { GOLPE_FLAGS, GOLPE_AREA } from './dados-golpe-flags.js';
@@ -105,7 +105,12 @@ export function eficacia(hu, tipo, alvo) {
      não em `typeEff`, porque a tabela de tipos é dado e isto é estado da luta — e porque esta já é a porta única
      de "esse golpe faz algo?" (dano, motor e IA leem daqui). A imunidade de HABILIDADE (Levitate) cai no mesmo
      caso, mas ela é checada em golpe.executar, que também pergunta pelo `noSolo`. */
-  const defs = tipo === 'ground' && alvo?.vol?.noSolo ? tipos.filter(d => d !== 'flying') : tipos;
+  let defs = tipo === 'ground' && alvo?.vol?.noSolo ? tipos.filter(d => d !== 'flying') : tipos;
+  /* 👁 `vol.semImunidade` = Foresight / Odor Sleuth (Fantasma deixa de ser imune a Normal e Lutador) e Miracle Eye
+     (Sombrio deixa de ser imune a Psíquico). É o MESMO desenho do `noSolo` logo acima — tirar um tipo da conta
+     defensiva —, e por isso mora no mesmo lugar: a porta única de "esse golpe faz algo?". */
+  const sem = alvo?.vol?.semImunidade;
+  if (sem && typeEff(tipo, defs) === 0) defs = defs.filter(d => !sem.includes(d));
   const e = typeEff(tipo, defs);
   if (e !== 0 || !hu?.ignoraImunidade) return e;
   return typeEff(tipo, defs.filter(d => !hu.ignoraImunidade.includes(d)));
@@ -273,8 +278,29 @@ export function poderEspecial(u, t, move) {
     // Magnitude: o poder é sorteado na hora, com os mesmos pesos dos jogos (o 70 é o mais comum)
     case 'magnitude': return [[10, 5], [30, 10], [50, 20], [70, 30], [90, 20], [110, 10], [150, 5]]
       .reduce((a, [p, w]) => a.concat(Array(w).fill(p)), [])[rand(0, 99)];
+    // Trump Card: quanto MENOS PP sobrou, mais forte — o último uso é o de 200
+    case 'ppRestante': return [200, 80, 60, 50, 40][Math.min(4, Math.max(0, move.ppLeft ?? 4))];
+    // Fling: o poder é o do item na mão (especiais.poderDoFling). Sem item o golpe falha antes de chegar aqui.
+    case 'fling': return poderDoFling(u.item);
   }
   return null;
+}
+/* ⚔ **Contra-ataque** (Counter, Mirror Coat, Metal Burst): devolve o dano que você levou NESTE turno, vezes o
+   multiplicador. `vol.ultimoDano` é escrito por `golpe.executar` e apagado em `fimDaRodada` — "neste turno" é
+   literal, e é o que faz o golpe falhar quando ninguém te bateu antes de você agir.
+   `classe` filtra físico × especial (Counter só devolve físico, Mirror Coat só especial); Metal Burst não filtra. */
+export function danoDoContra(u, esp) {
+  const c = esp?.contra, d = u?.vol?.ultimoDano;
+  if (!c || !d?.valor) return null;
+  if (c.classe && d.classe !== c.classe) return null;
+  return Math.max(1, Math.floor(d.valor * c.mult));
+}
+/* 🎨 **Conversion 2**: o tipo de quem usa passa a ser um que RESISTE (ou é imune) ao último golpe que o acertou.
+   Sorteia entre todos os que servem, como nos jogos — a tabela de tipos é a fonte, não uma lista nossa. */
+export function tipoQueResiste(tipoDoGolpe, sorte = Math.random) {
+  if (!CHART[tipoDoGolpe]) return null;
+  const servem = Object.keys(CHART).filter(d => typeEff(tipoDoGolpe, [d]) < 1);
+  return servem.length ? servem[Math.floor(sorte() * servem.length)] : null;
 }
 /* Golpes de dano FIXO: não passam pela fórmula de dano (nem tipo, nem atributo, nem crítico). Devolve o dano
    BRUTO ou null — quem chama (golpe.executar) ainda passa pelo chefe de evento, como o Endeavor já fazia:
@@ -323,7 +349,11 @@ export const CLIMA_TURNOS = 5;
    o próximo Pokémon. Você nunca troca de Pokémon, então armadilha no seu lado não tem em quem pegar: os golpes
    dizem isso na hora de usar, em vez de fingir que funcionaram. */
 // `resisteRaide` = { tipo, turnos }: Cinza Vulcânica/Escama Abissal (itens de raide, boss.js) — resiste um tipo por N turnos
-export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, neblina: 0, vento: 0, pedras: false, espinhos: 0, toxinas: 0, resisteRaide: null });
+/* As seis últimas são de 13/10/2026. `sorte` (Lucky Chant) dura 5 turnos como as telas; `wide`/`rapido`/`astuto`/
+   `tapete` são as proteções de UM turno (Wide Guard, Quick Guard, Crafty Shield, Mat Block) e por isso nascem com
+   1 — `passarLado` as zera no fim da própria rodada. `teia` é o Sticky Web, armadilha como as outras. */
+export const LADO_VAZIO = () => ({ reflect: 0, luz: 0, veu: 0, salvaguarda: 0, neblina: 0, vento: 0, pedras: false, espinhos: 0, toxinas: 0, resisteRaide: null,
+  sorte: 0, wide: 0, rapido: 0, astuto: 0, tapete: 0, teia: 0 });
 export const TELA_TURNOS = 5, VENTO_TURNOS = 4;
 export const MAX_ESPINHOS = 3, MAX_TOXINAS = 2;
 /* Golpe de área (`target` = all-opponents / all-other-pokemon) que pega mais de um alvo bate 25% mais fraco em
@@ -370,13 +400,16 @@ export function efeitoToxinas(m, camadas) {
 // fim da rodada: tudo que conta turno anda um. Devolve o que acabou agora, pra narrar.
 export function passarLado(lado) {
   const acabou = [];
-  for (const k of ['reflect', 'luz', 'veu', 'salvaguarda', 'neblina', 'vento']) {
+  for (const k of ['reflect', 'luz', 'veu', 'salvaguarda', 'neblina', 'vento', 'sorte', 'wide', 'rapido', 'astuto', 'tapete']) {
     if (lado?.[k] > 0 && --lado[k] === 0) acabou.push(k);
   }
   if (lado?.resisteRaide && --lado.resisteRaide.turnos <= 0) { lado.resisteRaide = null; acabou.push('resisteRaide'); }
   return acabou;
 }
-export const NOME_LADO = { reflect: 'Refletir', luz: 'Tela de Luz', veu: 'Véu da Aurora', salvaguarda: 'Salvaguarda', neblina: 'Névoa', vento: 'Vento de Cauda', resisteRaide: 'A proteção elemental' };
+export const NOME_LADO = { reflect: 'Refletir', luz: 'Tela de Luz', veu: 'Véu da Aurora', salvaguarda: 'Salvaguarda', neblina: 'Névoa', vento: 'Vento de Cauda', resisteRaide: 'A proteção elemental',
+  sorte: 'O Canto da Sorte', wide: 'A Guarda Ampla', rapido: 'A Guarda Rápida', astuto: 'O Escudo Astuto', tapete: 'O Tapete', teia: 'A teia' };
+// as proteções de lado que valem UM turno: cada uma barra uma família de golpe (golpe.executar)
+export const GUARDAS_DE_LADO = { wide: 'area', rapido: 'prioridade', astuto: 'status', tapete: 'dano' };
 
 /* ---- terrenos ----
    Também vivem no campo (`campo.terreno` / `campo.terrenoTurnos`) e duram 5 turnos, mas só valem pra quem está NO
@@ -517,8 +550,8 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
   // `critContraStatus` (Merciless): contra alvo com esse status o crítico é garantido (ainda respeitando o semCritico)
   // `vol.estocada` (⚔ Saga, perícia do Guerreiro): crítico garantido — e ainda assim respeitando `semCritico`,
   // que é exatamente pra isso que Battle Armor/Shell Armor existem.
-  const crit = !esperado && !ht.semCritico
-    && (!!u.vol?.estocada
+  const crit = !esperado && !ht.semCritico && !(ladoAlvo?.sorte > 0)        // 🍀 Lucky Chant: nada de crítico naquele lado
+    && (!!u.vol?.estocada || !!u.vol?.critoCerto                            // 🔦 Laser Focus: crítico garantido
       || (hu.critContraStatus && t.status === hu.critContraStatus)
       || Math.random() < DEGRAUS_CRITICO[Math.min(DEGRAUS_CRITICO.length - 1, (move.meta?.crit || 0) + (u.vol?.foco || 0) + (hu.focoBase || 0) + (seg(u).critExtra || 0))]);
   // Unaware: quem tem ignora os degraus do OUTRO lado (o Ataque de quem o ataca, a Defesa de quem ele ataca)
@@ -527,7 +560,11 @@ export function calcDamage(u, t, move, clima = null, terreno = null, ladoAlvo = 
      que batem na Defesa física. */
   const esp = especial(move);
   const A = effStat(esp.atkDoAlvo ? t : u, esp.atkDe || (phys ? 'attack' : 'special-attack'), crit, true, clima, terreno, !!ht.ignoraEstagios);
-  const D = effStat(t, esp.defDe || (phys ? 'defense' : 'special-defense'), crit, false, clima, terreno, !!hu.ignoraEstagios);
+  /* 🏠 Wonder Room (`vol.salaMaravilhas`): Defesa e Def. Esp. trocam de papel. A marca mora no `vol` de quem está
+     em campo — o mesmo desenho da Gravidade — porque `calcDamage` recebe o Pokémon mas não o campo. */
+  let statD = esp.defDe || (phys ? 'defense' : 'special-defense');
+  if (t.vol?.salaMaravilhas && !esp.defDe) statD = phys ? 'special-defense' : 'defense';
+  const D = effStat(t, statD, crit, false, clima, terreno, !!hu.ignoraEstagios);
   const base = Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * power * A / D) / 50) + 2;
   let mod = (crit ? hu.critico || 1.5 : 1) * (esperado ? 92.5 : rand(85, 100)) / 100;
   mod *= multStab(u, move.type, hu.stab || 1.5);                                      // STAB (Adaptability = ×2; Tera muda a conta)
@@ -573,7 +610,10 @@ export function confDamage(u) {
   const A = effStat(u, 'attack'), D = effStat(u, 'defense');
   return Math.max(1, Math.floor(Math.floor(Math.floor(2 * u.level / 5 + 2) * 40 * A / D) / 50) + 2);
 }
-export const heal = (m, h) => { m.hp = Math.min(m.stats.hp, m.hp + h); };
+/* `vol.semCura` = **Heal Block**: por 5 turnos nada cura este Pokémon. Fica AQUI porque `heal` é a porta única de
+   toda cura do jogo (golpe, dreno, item, habilidade, fim de turno) — uma linha cobre as ~25 chamadas, e uma trava
+   por chamada seria um remendo em cada uma. Mora no `vol`: morre sozinho e não encosta no save. */
+export const heal = (m, h) => { if (m?.vol?.semCura > 0) return 0; m.hp = Math.min(m.stats.hp, m.hp + h); return h; };
 
 /* ---- extraídas de dentro da batalha (antes eram contas inline em useMove/turn/win/inflict/residual) ---- */
 
@@ -581,7 +621,7 @@ export const heal = (m, h) => { m.hp = Math.min(m.stats.hp, m.hp + h); };
 export function chanceAcerto(move, user, target, clima = null) {
   // ⚔ Saga, ⚔ Estocada (perícia do Guerreiro): o próximo golpe NÃO erra. A marca é consumida pelo golpe em
   // golpe.usarGolpe; fora da Saga ela nunca existe no `vol`, então nada muda.
-  if (user?.vol?.estocada) return 1;
+  if (user?.vol?.estocada || user?.vol?.miraCerta) return 1;   // ⚔ Estocada (Saga) · 🎯 Mind Reader / Lock On
   const h = hab(user), ht = hab(target);
   // Unaware: quem ataca ignora a evasão do alvo; quem é atacado ignora a precisão de quem ataca
   const n = clamp((ht.ignoraEstagios ? 0 : user.vol.stages.accuracy || 0) - (h.ignoraEstagios ? 0 : target.vol.stages.evasion || 0), -6, 6);
@@ -765,11 +805,19 @@ export const sempreUltimo = m => !!hab(m).sempreLento;
 // Ordena as ações do turno: prioridade maior primeiro; dentro dela, quem ativou Garra Rápida/Quick Draw
 // (`rapido`) primeiro e quem tem Stall (`lento`) por último; entre os do meio, velocidade maior; empate = moeda.
 // Cada ação: { prio, vel, rapido?, lento?, ... } (o resto passa intacto). Não muta a lista recebida.
-export function ordenarAcoes(acoes, sorte = Math.random) {
+/* `invertido` = 🏠 **Trick Room**: dentro da mesma prioridade, quem é mais LENTO age primeiro. Entra como
+   parâmetro (e não como marca no `vol` de cada um, que é como a Gravidade resolveu o problema dela) porque aqui
+   o estado já chega até a função: os dois motores montam a fila e têm o `campo` na mão. Prioridade, Garra Rápida
+   e Stall continuam valendo por cima — a sala inverte a VELOCIDADE, não a ordem toda, como nos jogos. */
+export function ordenarAcoes(acoes, sorte = Math.random, invertido = false) {
+  const v = invertido ? -1 : 1;
   return acoes.map(a => ({ a, k: sorte() }))
-    .sort((x, y) => (y.a.prio - x.a.prio) || ((y.a.rapido ? 1 : 0) - (x.a.rapido ? 1 : 0)) || ((x.a.lento ? 1 : 0) - (y.a.lento ? 1 : 0)) || (y.a.vel - x.a.vel) || (x.k - y.k))
+    .sort((x, y) => (y.a.prio - x.a.prio) || ((y.a.rapido ? 1 : 0) - (x.a.rapido ? 1 : 0)) || ((x.a.lento ? 1 : 0) - (y.a.lento ? 1 : 0)) || v * (y.a.vel - x.a.vel) || (x.k - y.k))
     .map(x => x.a);
 }
+export const SALA_TURNOS = 5;
+// a sala está de pé? (Trick Room, Wonder Room, Magic Room guardam turnos no campo, como o clima)
+export const salaAtiva = (campo, qual) => (campo?.[qual] || 0) > 0;
 // Prankster (+1 golpe de status), Gale Wings (+1 golpe Voador com HP cheio), Triage (+3 golpe de cura)
 export function prioridadeEfetiva(m, g) {
   let p = g.priority || 0;
@@ -837,6 +885,12 @@ export function motivoBloqueio(m, g) {
      não há lista nossa pra manter. Entra aqui, e não numa trava do motor, pra as 3 telas de golpe e a IA já
      respeitarem de graça. `vol.gravidade` é posto e tirado por golpe.mudarGravidade/passarGravidade. */
   if (v.gravidade && temFlag(g, 'gravity')) return { causa: 'gravidade', texto: 'a gravidade não deixa sair do chão' };
+  /* 🔇 Throat Chop (`vol.calado`): nada de golpe SONORO por 2 turnos. A flag `sound` é da PokéAPI.
+     🔗 Imprison (`vol.proibidos`): os golpes que QUEM USOU também sabe ficam proibidos. A lista de nomes é
+     copiada pro `vol` do alvo na hora do golpe — assim `motivoBloqueio` continua puro e recebendo um Pokémon só,
+     que era o que faltava pra este golpe caber (ele precisaria ver o moveset do outro lado). */
+  if (v.calado > 0 && temFlag(g, 'sound')) return { causa: 'calado', texto: 'está calado e não pode usar golpes de som' };
+  if (v.proibidos?.includes(g.name)) return { causa: 'imprison', texto: `${fmt(g.name)} está selado` };
   return null;
 }
 export const golpePermitido = (m, g) => g.ppLeft > 0 && !motivoBloqueio(m, g);
@@ -874,6 +928,7 @@ export function passarTravas(m) {
   for (const k of ['encore', 'desativado']) if (v[k] && --v[k].turnos <= 0) { delete v[k]; fim.push(k); }
   // 🧲 Magnet Rise / Telekinesis: a flutuação conta turnos igual às travas, no mesmo lugar
   if (v.voando > 0 && --v.voando <= 0) { delete v.voando; fim.push('voando'); }
+  for (const k of ['calado', 'semCura', 'semItem']) if (v[k] > 0 && --v[k] <= 0) { delete v[k]; fim.push(k); }
   return fim;
 }
 // Linhas pra mostrar ao jogador o que está travando o Pokémon dele (as 3 telas de golpe usam a mesma)
@@ -935,6 +990,10 @@ export function notaDoGolpe(g, c) {
     /* 💥 Dano FIXO: `calcDamage` não sabe calcular estes (o poder é 0 ou mentira), então a nota sai do dano de
        verdade — senão a IA os trataria como golpe de poder nulo e nunca os usaria. Final Gambit leva o próprio
        dono junto, e por isso só vale a pena quando o troco derruba o alvo. */
+    // Fling e Natural Gift falham sem o item/fruta na mão; Spit Up sem energia guardada; Beat Up/Present valem sempre
+    if (esp.arremessa && !u.item) return IMPOSSIVEL;
+    if (esp.presenteDaNatureza && !u.item?.endsWith('-berry')) return IMPOSSIVEL;
+    if (esp.cuspir) return (u.vol?.estoque || 0) ? 30 * (u.vol.estoque / 3) + 20 : IMPOSSIVEL;
     const fixo = danoFixoDe(u, alvo, esp);
     if (fixo != null) {
       const nota = Math.min(1, fixo / Math.max(1, alvo.hp)) * 100 * acerto;
@@ -1051,6 +1110,49 @@ export function notaDoGolpe(g, c) {
     if (esp.copiaHabilidade === 'proAlvo') return minha && !dele ? 14 : 2;                    // Entrainment: dar a sua pra ele
     return dele > minha ? 24 : 3;                                                            // Role Play / Skill Swap / Doodle
   }
+  /* A cauda longa de 13/10/2026. O padrão continua o mesmo: a linha existe pra dizer quando o golpe NÃO tem o que
+     fazer — a IA gastando turno em cima de um efeito já ativo é pior que ela nunca o usar. */
+  if (esp.contra) return u.vol?.ultimoDano && (!esp.contra.classe || u.vol.ultimoDano.classe === esp.contra.classe) ? 50 : IMPOSSIVEL;
+  if (esp.bide) return u.vol?.bide ? IGNORADO : frac(u) > 0.6 ? 12 : IMPOSSIVEL;
+  if (esp.semImunidade) return esp.semImunidade.some(d => tiposDefensivos(alvo).includes(d)) && !alvo.vol?.semImunidade ? 26 : IMPOSSIVEL;
+  if (esp.sala) return salaAtiva(campo, esp.sala) ? IMPOSSIVEL
+    : esp.sala === 'salaInvertida' ? (effStat(u, 'speed') < effStat(alvo, 'speed') ? 36 : 2)   // só serve a quem é lento
+    : esp.sala === 'salaMagica' ? (alvo.item ? 20 : 2) : 14;
+  if (esp.sport) return campo?.sports?.includes(esp.sport) ? IMPOSSIVEL : alvo.moves?.some(m => m.ppLeft > 0 && m.type === esp.sport) ? 22 : 3;
+  if (esp.ionizado || esp.travaFuga) return campo?.[esp.ionizado ? 'ionizado' : 'travaFuga'] ? IMPOSSIVEL : 8;
+  if (esp.trocaLados) return Object.values(ladoAlvo || {}).some(v => v) || Object.values(ladoU || {}).some(v => v) ? 18 : IMPOSSIVEL;
+  if (esp.desejoDeCura) return (c.aliados || 0) ? (frac(u) < 0.25 ? 30 : IMPOSSIVEL) : IMPOSSIVEL;   // só valendo pouco de HP
+  if (esp.reviver) return (c.aliados || 0) ? 30 : IMPOSSIVEL;
+  if (esp.reordena || esp.trocaLugar) return (c.aliados || 0) || esp.reordena ? 8 : IMPOSSIVEL;
+  if (esp.maldicao) return tiposDefensivos(u).includes('ghost') ? (alvo.vol?.maldicao || frac(u) < 0.6 ? IMPOSSIVEL : 34) : 18;
+  if (esp.laco || esp.rancor) return frac(u) < 0.3 ? 32 : 2;                                  // só faz sentido caindo
+  if (esp.tiraPP) return alvo.vol?.ultimo ? 10 : IMPOSSIVEL;
+  if (esp.selaGolpes) return (u.moves || []).some(x => alvo.moves?.some(y => y.name === x.name)) ? 24 : IMPOSSIVEL;
+  if (esp.semCura) return alvo.vol?.semCura > 0 ? IMPOSSIVEL : 16;
+  if (esp.semItem) return alvo.vol?.semItem > 0 || !alvo.item ? IMPOSSIVEL : 20;
+  if (esp.calaPorTurnos) return alvo.vol?.calado > 0 ? IMPOSSIVEL : alvo.moves?.some(m => m.ppLeft > 0 && temFlag(m, 'sound')) ? 24 : 2;
+  if (esp.manto || esp.furtar) return 6;                                                      // depende do que o outro fizer
+  if (esp.passaStatus) return u.status && !alvo.status ? 36 : IMPOSSIVEL;
+  if (esp.tipoDoTerreno || esp.tipoDoMeuGolpe || esp.tipoQueResiste || esp.tipoDoAlvo) {
+    if (u.tera) return IMPOSSIVEL;
+    if (esp.tipoQueResiste) return u.vol?.ultimoDano?.tipo ? 18 : IMPOSSIVEL;
+    return 10;
+  }
+  if (esp.miraCerta) return u.vol?.miraCerta ? IMPOSSIVEL : acerto < 0.7 ? 24 : 3;            // vale contra golpe que erra
+  if (esp.critoCerto) return u.vol?.critoCerto ? IMPOSSIVEL : 18;
+  if (esp.holofote) return (c.aliados || 0) ? 12 : IMPOSSIVEL;
+  if (esp.trancar) return alvo.vol?.octolock ? IMPOSSIVEL : 28;
+  if (esp.poExplosivo) return alvo.moves?.some(m => m.ppLeft > 0 && m.type === 'fire') ? 26 : IMPOSSIVEL;
+  if (esp.eletrifica) return alvo.vol?.eletrificado ? IMPOSSIVEL : 6;
+  if (esp.estocar) return (u.vol?.estoque || 0) >= 3 ? IMPOSSIVEL : 20;
+  if (esp.engolir) return (u.vol?.estoque || 0) && frac(u) < 0.6 ? 34 : IMPOSSIVEL;
+  if (esp.trocaItem || esp.daItem) {
+    if (ht.protegeItem) return IMPOSSIVEL;
+    if (esp.daItem) return u.item && !alvo.item ? 10 : IMPOSSIVEL;
+    return u.item || alvo.item ? 20 : IMPOSSIVEL;
+  }
+  if (esp.reciclar) return !u.item && u.vol?.itemGasto ? 24 : IMPOSSIVEL;
+  if (esp.horaDoCha) return alvo.item?.endsWith('-berry') ? 6 : IMPOSSIVEL;
   if (esp.copia) {
     if (esp.soNoSono) return u.status === 'sleep' ? 40 : IMPOSSIVEL;                          // Sleep Talk só dormindo
     if (esp.copia === 'ultimoDoAlvo') return podeCopiar(alvo.vol?.ultimo) ? (esp.guardaNoSlot ? 16 : 30) : IMPOSSIVEL;

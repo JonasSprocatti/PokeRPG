@@ -131,6 +131,7 @@ test('todo golpe de lado/armadilha da tabela aponta pra um campo que existe', ()
   const campos = Object.keys(LADO_VAZIO());
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {
     if (e.lado) assert.ok(campos.includes(e.lado), `${n}: lado "${e.lado}"`);
-    if (e.armadilha) assert.ok(['pedras', 'espinhos', 'toxinas'].includes(e.armadilha), `${n}: armadilha "${e.armadilha}"`);
+    // `teia` (Sticky Web) entrou em 13/10/2026: é a 4ª armadilha, e baixa Velocidade em vez de tirar HP
+    if (e.armadilha) assert.ok(['pedras', 'espinhos', 'toxinas', 'teia'].includes(e.armadilha), `${n}: armadilha "${e.armadilha}"`);
   }
 });

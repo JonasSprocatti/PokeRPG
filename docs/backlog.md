@@ -57,20 +57,20 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   Provado ao contrário: tirando o `case 'recuar'`, o teste falha nomeando o órfão.
 - **Lendários no co-op**.
 - **Roar & cia. e o 🔄 Recuar em luta de SALA (multiplayer)**: hoje falham com aviso (`ctx.forcarSaida` só existe no single player; o Recuar nem aparece de botão lá). Regenerator/Natural Cure/Wimp Out também só valem no single player. Precisaria de "tirar da luta" no `mp-motor` (o Pokémon fora não é derrotado, e o resultado volta por fração de HP). **Eject Button/Eject Pack não foram feitos**: só serviriam a aliados (no seu principal a saída voluntária não vale). Shed Tail não foi feito (não existe Substitute). Detalhes em `docs/features.md` ("Travas, IA e troca de Pokémon").
-- **Golpes que mexem na ORDEM do turno**: After You, Quash, Instruct e **Trick Room**. Ficaram de fora da leva de
-  golpes de companheiro (09/10/2026) e da de 13/10/2026 porque não são problema de ALVO nem de efeito — pedem
-  reordenar a fila de `acoes` no meio da rodada, nos dois motores. Hoje dizem que o efeito será ajustado. Junto
-  deles: **Ally Switch** (não há posições em campo) e **Spotlight** (chamariz ao contrário: exigiria a escolha do
-  SEU golpe ler o chamariz do lado de lá).
-- **Os ~62 golpes que ainda não têm efeito** (eram 121 no começo de 13/10/2026; a leva de chão/aperto/fim-de-turno fechou 39 e a de cópia/substituto/habilidade fechou 21). A lista NÃO está escrita aqui de
-  propósito: ela se refaz cruzando `dados-ref/golpes.tsv` com `especiais.GOLPES_ESPECIAIS` + os `ailment` que
-  `golpe.aplicarStatus` trata — texto copiado envelhece calado, e já houve seis afirmações erradas por isso. Os
-  MOTIVOS de cada família (copiar golpe alheio, Substitute, trocar habilidade/item, contra-ataque, tirar
-  imunidade, proteção de lado) estão em `docs/features.md` → "A terceira leva de golpes". As famílias mais caras,
-  em ordem: **Substitute** (camada de HP que todo efeito teria de consultar), **copiar/usar golpe alheio** (Mimic,
-  Metronome, Transform, Sleep Talk, Me First…) e **trocar habilidade** (mexe em `m.ability`, que vai no save).
-  As mais baratas, se virar leva nova: **tirar imunidade** (Foresight, Odor Sleuth, Miracle Eye — é o avesso do
-  `vol.noSolo` que já existe) e **Counter/Mirror Coat/Metal Burst** (só precisa guardar o último dano do turno).
+- ~~**Golpes que mexem na ORDEM do turno**~~ **✅ FEITO (13/10/2026)** — Trick Room saiu com um parâmetro em
+  `regras.ordenarAcoes` (os dois motores já tinham o campo na mão); After You e Quash com **`ctx.reordenar`**, o
+  mesmo desenho de `ctx.forcarSaida` — o motor só pede, quem tem a fila atende, e em luta de sala o golpe avisa
+  que ali não dá. Ally Switch e Spotlight foram TRADUZIDOS em vez de recusados (o efeito que eles têm, não a
+  mecânica de posição que eles usam) — detalhe em `docs/features.md`. **Instruct** já tinha saído em 13/10 pela
+  leva de cópia, fora da ordem da fila: o alvo repete o golpe na hora, não no lugar dele na fila.
+- ~~**Golpes sem efeito**~~ **✅ FEITO (13/10/2026)** — eram 121 no começo do dia. Três levas (chão/aperto/fim de
+  turno · cópia/substituto/habilidade · a cauda de 8 famílias) fecharam todas. A varredura
+  (`dados-ref/golpes.tsv` × `GOLPES_ESPECIAIS` × os `ailment` de `aplicarStatus`) só acusa `victory-dance`,
+  `shelter` e `hard-press`, e os três são **falso positivo do dump de 2020** — funcionam pelo caminho comum.
+  O que sobrou são TETOS CONSCIENTES dentro de golpes que funcionam, cada um marcado com `ponytail:` no código e
+  listado em `docs/features.md` → "A cauda longa dos golpes": recuo/dreno não contam o dano no Substituto, golpe
+  de 2 turnos copiado não carrega, Shed Tail não transfere o boneco, Transform não copia gimmick, Metronome
+  sorteia entre os golpes em campo (não entre os ~900) e Fling usa 8 faixas de potência em vez de 160 valores.
 - **Habilidades**: 249 de 314. As 65 restantes estão documentadas como intencionalmente fora, por quatro motivos, no fim da tabela em `js/habilidades.js` (troca de Pokémon, forma dinâmica, estado de turno que o motor não guarda, regra compartilhada arriscada).
 
 - **Heavy-Duty Boots** (pedido em 30/09/2026, **não construído de propósito**): o item ignora armadilha de entrada,

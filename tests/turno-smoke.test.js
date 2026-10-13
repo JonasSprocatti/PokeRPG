@@ -225,3 +225,59 @@ test('você preso NÃO é removido da equipe pelo endBattle (você não é aliad
   batalha.endBattle();
   assert.equal(G.S.player, P, 'você continua sendo você — quem resolve a sua captura é `serCapturado`');
 });
+
+/* ⏱ After You / Quash e 🏠 Trick Room rodando no `turn()` DE VERDADE. Este caso existe porque a primeira versão
+   de `batalha.reordenar` guardava `agora: () => i` apontando pro `i` do `for` declarado LOGO ABAIXO — fora de
+   escopo. `node --check` passava (identificador solto é JS válido) e o teste de unidade de `especiais.test.js`
+   passava também, porque lá o `ctx.reordenar` é MOCKADO: o mock testava o motor pedindo, nunca o jogo atendendo.
+   É a armadilha do `T` do `win()` repetida. Daí a regra: gancho novo de `ctx` = um caso aqui, com o ctx real. */
+test('⏱ After You dentro do turno real: a fila é reordenada sem estourar', async () => {
+  const depressa = golpe({ name: 'after-you', cls: 'status', power: null, acc: null, target: 'selected-pokemon' });
+  const aliado = mon({ name: 'bulbasaur', id: 1 });
+  const B = await rodar({ type: 'move', idx: 0 }, {
+    inimigos: [mon({ name: 'pidgey', id: 16, stats: { ...mon().stats, speed: 5 } })]
+  });
+  assert.ok(B, 'o turno comum segue de pé');
+  // agora com o golpe de verdade na mão e um aliado em campo, pra haver mais de uma ação na fila
+  G.S = { ...G.S, aliados: [aliado] };
+  G.S.player.moves = [depressa, golpe()];
+  G.mode = 'battle'; G.busy = false; G.panel = null;
+  G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 })]);
+  await batalha.turn({ type: 'move', idx: 0 });
+  // o observável é a RODADA ter atravessado: o `reordenar` roda no meio do laço, e um `i` fora de escopo
+  // estourava exatamente aqui. A luta pode ou não ter acabado — o que não pode é explodir no caminho.
+  assert.ok(G.B === null || G.B.turn > 1, 'o turno inteiro passou pelo reordenar sem estourar');
+});
+
+test('🏠 Trick Room no campo: o turno roda com a fila invertida', async () => {
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  G.S.aliados = [mon({ name: 'bulbasaur', id: 1 })];
+  G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 })], { campo: { lados: {}, salaInvertida: 4 } });
+  await batalha.turn({ type: 'move', idx: 0 });
+  // o que importa é que `ordenarAcoes` com a inversão ligada atravessou o turno inteiro
+  assert.ok(true);
+});
+
+test('🎒 vencer devolve o item que o inimigo derrubou (e não devolve o que você roubou de mão vazia)', async () => {
+  G.S = saveFalso(); G.mode = 'battle'; G.busy = false; G.panel = null; G.abertos = new Set();
+  const meu = G.S.player;
+  meu.item = 'oran-berry'; meu.itemAntes = 'leftovers';      // o inimigo trocou/derrubou no meio da luta
+  const aliado = mon({ name: 'bulbasaur', id: 1, item: 'sitrus-berry' });
+  aliado.itemAntes = null;                                    // este ROUBOU de mão vazia: fica com o espólio
+  G.S.aliados = [aliado];
+  G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16, hp: 0 })]);
+  batalha.endBattle(true);
+  assert.equal(meu.item, 'leftovers', 'o que era seu voltou');
+  assert.equal(aliado.item, 'sitrus-berry', 'o espólio ficou');
+  assert.equal('itemAntes' in meu, false, 'a anotação é consumida');
+});
+
+test('🎒 PERDER não devolve o item: a perda é consequência da derrota', () => {
+  G.S = saveFalso(); G.mode = 'battle'; G.abertos = new Set();
+  const meu = G.S.player;
+  meu.item = null; meu.itemAntes = 'leftovers';
+  G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 })]);
+  batalha.endBattle();                                        // sem `venceu`
+  assert.equal(meu.item, null);
+  assert.equal('itemAntes' in meu, false, 'mas a anotação não fica pendurada no save');
+});

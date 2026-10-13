@@ -8,7 +8,7 @@
 // mon (fotoDoMon): { ref, dono, nome, level, stats, hp, status, sleep, moves[{…, ppLeft}], ability, data{types…}, vol }
 // Ação: { ref, tipo: 'golpe', golpe: índice (-1 = Struggle), alvo: ref } | { ref, tipo: 'fugir' }
 import { STRUGGLE, STATS, TYPE_PT, ITEMS } from './dados.js';
-import { novoCampo, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, sempreUltimo, prioridadeEfetiva, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, golpesPermitidos, golpeForcado, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO, noChao, tiposDefensivos, tiposOfensivos } from './regras.js';
+import { novoCampo, effStat, consegueFugir, ordenarAcoes, salaAtiva, ativouQuickClaw, sempreUltimo, prioridadeEfetiva, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, golpesPermitidos, golpeForcado, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO, noChao, tiposDefensivos, tiposOfensivos } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarGravidade, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
 import { aplicarForma, verboDaForma } from './mega.js';
@@ -320,6 +320,7 @@ export async function resolverTurnoMP(estado, acoes) {
     const quem = fugindo.reduce((a, b) => effStat(b, 'speed') > effStat(a, 'speed') ? b : a);
     const inimigoRapido = Math.max(...vivosMP(s.lados.B).map(m => effStat(m, 'speed')));
     // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão): qualquer inimigo vivo com a habilidade prende
+    if (s.campo?.travaFuga > 0) { say('Um campo de força impede a fuga!', 'muted'); return { estado: s, eventos: ev }; }   // 🧚 Fairy Lock
     const preso = vivosMP(s.lados.B).some(m => hab(m).prendeTipo?.some(t => quem.data.types.includes(t))
       || hab(m).prendeQualquer === true || (hab(m).prendeQualquer === 'chao' && noChao(quem))) || !!quem.vol?.preso || !!quem.vol?.aperto;   // ou um golpe (Mean Look, Block, Spider Web, Bind & cia.)
     if (consegueFugir(effStat(quem, 'speed'), inimigoRapido, s.fugas, quem.ability, undefined, preso)) {
@@ -341,7 +342,8 @@ export async function resolverTurnoMP(estado, acoes) {
   // o que cada um vai usar neste turno (Sucker Punch: só funciona contra quem vai atacar); limpo em fimDaRodada
   for (const m of todosMP(s)) delete m.vol.golpeEscolhido;
   for (const a of golpes) a.m.vol.golpeEscolhido = golpeTravado(a.m) || a.g;
-  const ordem = ordenarAcoes(golpes), pos = ref => ordem.findIndex(o => o.ref === ref);
+  // 🏠 Trick Room: o mais LENTO age primeiro (o mesmo `salaAtiva` do single player — o campo é compartilhado)
+  const ordem = ordenarAcoes(golpes, undefined, salaAtiva(s.campo, 'salaInvertida')), pos = ref => ordem.findIndex(o => o.ref === ref);
   for (let i = 0; i < ordem.length; i++) {
     const a = ordem[i];
     if (a.m.hp <= 0) continue;
