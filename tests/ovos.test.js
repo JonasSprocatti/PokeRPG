@@ -9,7 +9,7 @@ import {
   MAX_OVOS, CHANCE_OVO, CICLOS_PADRAO, PASSOS_MIN, PASSOS_MAX, CICLOS_PSEUDO, CICLOS_LENDARIO, IVS_HERDADOS, GRUPO_SEM_OVO,
   IVS_COM_NO, GRUPO_DITTO, ITEM_NATUREZA, ITEM_IVS, CHANCE_GOLPE_OVO,
   MS_POR_PASSO, ovos, acharPar, parCompativel, podeCruzar, ivsHerdados, golpeHerdado, criarOvo, ovoDeBadge, andarOvos, andarNoTempo, tirarOvo, passosParaChocar,
-  situacaoDoNinho, quantosIvsHerdados, naturezaHerdada, golpeOvo, ehDitto
+  situacaoDoNinho, semParNoNinho, quantosIvsHerdados, naturezaHerdada, golpeOvo, ehDitto
 } from '../js/ovos.js';
 import { STATS } from '../js/dados.js';
 
@@ -240,4 +240,45 @@ test('o status `pronto` concorda com quem realmente põe o ovo (acharPar)', () =
     const prometeu = situacaoDoNinho(lista, g, 0).status === 'pronto';
     assert.equal(prometeu, !!acharPar(lista, g, () => 0), `a tela e o motor discordam em ${lista.map(m => `${m.name}(${m.genero})`).join('+')}`);
   }
+});
+
+/* Relato de 13/10/2026: "só a primeira espécie que fez par no esconderijo põe ovos — 2 Starly e 2 Riolu, e nunca
+   vinha ovo de Riolu". O sorteio estava certo; Riolu é BEBÊ (grupo `no-eggs`) e não cruza mesmo. O que faltava era
+   a tela contar isso — `semParNoNinho` é a resposta, e `acharPar` aqui prova que dois casais válidos SORTEIAM. */
+test('ninho com dois casais sorteia entre eles — não fica preso no primeiro', () => {
+  const grupos = new Map([['starly', ['flying']], ['pidgey', ['flying']]]);
+  const lista = [
+    { data: { speciesName: 'starly' }, genero: 'm', name: 'starly' },
+    { data: { speciesName: 'starly' }, genero: 'f', name: 'starly' },
+    { data: { speciesName: 'pidgey' }, genero: 'm', name: 'pidgey' },
+    { data: { speciesName: 'pidgey' }, genero: 'f', name: 'pidgey' }
+  ];
+  // sorte = 0 pega o primeiro par da varredura, sorte ≈ 1 pega o último: os dois casais saem
+  const primeiro = acharPar(lista, grupos, () => 0);
+  const ultimo = acharPar(lista, grupos, () => 0.999);
+  assert.notEqual(primeiro.mae.data.speciesName, ultimo.mae.data.speciesName);
+});
+
+test('semParNoNinho explica quem está ali de enfeite (bebê, sem sexo, sem par)', () => {
+  const grupos = new Map([['starly', ['flying']], ['riolu', ['no-eggs']], ['magnemite', ['mineral']], ['pikachu', ['field', 'fairy']]]);
+  const guardados = [
+    { data: { speciesName: 'starly' }, genero: 'm', name: 'starly' },
+    { data: { speciesName: 'starly' }, genero: 'f', name: 'starly' },
+    { data: { speciesName: 'riolu' }, genero: 'm', name: 'riolu' },
+    { data: { speciesName: 'magnemite' }, genero: null, name: 'magnemite' },
+    { data: { speciesName: 'pikachu' }, genero: 'm', name: 'pikachu' },
+    { data: { speciesName: 'sem-ficha' }, genero: 'f', name: 'misterioso' }
+  ];
+  const fora = semParNoNinho(guardados, grupos);
+  assert.deepEqual(fora.map(f => [f.mon.name, f.motivo]), [
+    ['riolu', 'nao-cruza'],        // bebê: grupo `no-eggs` nos jogos
+    ['magnemite', 'sem-sexo'],     // só com Ditto
+    ['pikachu', 'sem-par'],        // tem sexo e grupo, mas ninguém combina aqui
+    ['misterioso', 'desconhecido'] // ficha de espécie fora do cache
+  ]);
+  // e o casal de Starly continua sendo o que a tela anuncia, com os quatro de fora listados do lado
+  const s = situacaoDoNinho(guardados, grupos, 0);
+  assert.equal(s.status, 'pronto');
+  assert.equal(s.quantos, 1);
+  assert.equal(s.semPar.length, 4);
 });

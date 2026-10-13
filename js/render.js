@@ -509,20 +509,34 @@ function linhaDoNinho(S, guardados) {
     const sp = A.data.speciesUrl ? syncGet('sp2:' + A.data.speciesUrl.replace(/\/$/, '').split('/').pop()) : null;
     if (sp?.eggGroups) grupos.set(nome, sp.eggGroups);
   }
-  const { status, casal } = situacaoDoNinho(guardados, grupos, ovos(S).length);
+  const { status, casal, quantos, semPar } = situacaoDoNinho(guardados, grupos, ovos(S).length);
   const nome = m => `${esc(m.nick || fmt(m.name))}${sexo(m)}`;
   const txt = {
     'ninho-cheio': `O ninho está cheio (${MAX_OVOS} ovos). Choque um antes que apareça outro.`,
     vazio: 'Guarde <b>dois</b> aqui e eles podem deixar um ovo enquanto você explora.',
     sozinho: 'Só um aqui. Guarde <b>mais um</b>, de <b>sexo oposto</b> e de grupo parecido, e eles podem deixar um ovo.',
-    pronto: casal ? `<b>${nome(casal[0])}</b> e <b>${nome(casal[1])}</b> se dão bem: <b>pode aparecer um ovo</b> enquanto você explora.` : '',
+    // com mais de um casal o ovo sai de QUALQUER um deles, sorteado (ovos.acharPar) — e a tela diz isso, senão
+    // quem guardou dois casais acha que só o primeiro conta (relato de 13/10/2026)
+    pronto: casal ? `<b>${nome(casal[0])}</b> e <b>${nome(casal[1])}</b> se dão bem: <b>pode aparecer um ovo</b> enquanto você explora.${quantos > 1 ? ` São <b>${quantos} casais</b> aqui — o ovo sai de um deles, sorteado.` : ''}` : '',
     'mesmo-sexo': 'Os que estão aqui são todos do <b>mesmo sexo</b> — não vai sair ovo. Guarde alguém de sexo oposto (ou um <b>Ditto</b>, que cruza com qualquer um).',
     'sem-sexo': 'Alguém aqui <b>não tem sexo</b> (Magnemite, Voltorb, Beldum…) e, como nos jogos, só cruza com um <b>Ditto</b>. Lendário e mítico não cruzam nem assim.',
     'grupos-diferentes': 'Nenhum casal aqui: eles precisam de um <b>grupo-ovo em comum</b> (bichos parecidos entre si).',
     desconhecido: 'Ainda não sei se esses dois combinam — explore um pouco (ou entre com internet uma vez) e eu confiro.'
   }[status] || '';
   if (!txt) return '';
-  return `<p class="small ${status === 'pronto' ? 'ninho-ok' : 'muted'}">🥚 <b>Ninho:</b> ${txt}</p>`;
+  /* 🥚 Quem está no ninho mas NÃO cruza (ovos.semParNoNinho). Sem esta linha, dois Riolu (bebês, grupo `no-eggs`)
+     guardados ao lado de um casal que funciona pareciam "o jogo só dá ovo do primeiro par" — o relato que fez
+     esta linha existir. Só aparece quando há casal: sem nenhum, as frases de `status` já explicam o porquê. */
+  const MOTIVO = {
+    'nao-cruza': 'não cruza (bebê, lendário ou mítico — bebê só depois de evoluir)',
+    'sem-sexo': 'não tem sexo: só com um <b>Ditto</b>',
+    'sem-par': 'sem par aqui: precisa de sexo oposto e grupo-ovo em comum',
+    desconhecido: 'ainda não sei'
+  };
+  const fora = status === 'pronto' && semPar?.length
+    ? `<p class="small muted">🥚 <b>Sem par no ninho:</b> ${semPar.map(({ mon, motivo }) => `${nome(mon)} — ${MOTIVO[motivo]}`).join(' · ')}</p>`
+    : '';
+  return `<p class="small ${status === 'pronto' ? 'ninho-ok' : 'muted'}">🥚 <b>Ninho:</b> ${txt}</p>${fora}`;
 }
 /* A ficha de quem está guardado: a MESMA do aliado (stats/IVs/EVs, natureza, vínculo, habilidade, golpes), só que
    em leitura — sem `quem`, então nada de reordenar golpe nem mexer em item daqui (o `quem` dos botões aponta pra

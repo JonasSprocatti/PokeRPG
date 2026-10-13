@@ -9,7 +9,7 @@ import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especi
 import { log, say, ask } from './ui.js';
 import { render } from './render.js';
 import { healFull, CTX, changeStats } from './efeitos.js';
-import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarGravidade, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
 import { ganharFelicidade } from './evolucao.js';
 import { useItem, addItem } from './itens.js';
@@ -766,7 +766,7 @@ export async function turn(action) {
       const cl = climaDe(B.campo); // fugir também sente o clima (Swift Swim e cia.)
       // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão)
       const preso = hab(E).prendeTipo?.some(t => tiposDefensivos(P).includes(t))
-        || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P)) || !!P.vol.preso;   // habilidade OU golpe (Mean Look, Block, Spider Web)
+        || hab(E).prendeQualquer === true || (hab(E).prendeQualquer === 'chao' && noChao(P)) || !!P.vol.preso || !!P.vol.aperto;   // habilidade OU golpe (Mean Look, Block, Spider Web, Bind & cia.)
       if (consegueFugir(effStat(P, 'speed', false, true, cl), effStat(E, 'speed', false, true, cl), B.runs, P.ability, undefined, preso)) {
         await say('Você fugiu em segurança!'); endBattle(); return;
       }
@@ -915,7 +915,8 @@ export async function turn(action) {
     if (B.capturado) { await serCapturado(); return; }
     if (B.saidaForcada) { endBattle(); return; }   // selvagem afugentado, ou o último do seu lado arrastado: acaba como uma fuga, sem XP nem penalidade
     // veneno, clima e fim de rodada valem pro GRUPO inimigo inteiro (⚔ Saga), não só pra quem está em foco
-    if (P.hp > 0 && !grupoInimigoCaiu()) { await vez('fim'); for (const m of [...vivos(emCampo()), ...inimigosEmCampo()]) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarLados(B.campo, CTX); await anunciarQuedas(); }
+    // 🪐 a gravidade recebe a MESMA lista do fim de turno: é o único efeito de campo que marca cada Pokémon
+    if (P.hp > 0 && !grupoInimigoCaiu()) { const todos = [...vivos(emCampo()), ...inimigosEmCampo()]; await vez('fim'); for (const m of todos) await residual(m); await passarClima(B.campo, CTX); await passarTerreno(B.campo, CTX); await passarGravidade(B.campo, CTX, todos); await passarLados(B.campo, CTX); await anunciarQuedas(); }
     // recuo, Protect e Endure valem só um turno; `passarSaga`/`passarRecargas` cuidam de Ruína, Marca, Brado e
     // da recarga das perícias (⚔ Saga). Fora da Saga nenhuma dessas marcas existe no `vol` e as duas são no-op.
     for (const m of [...ladoJogador(), ...B.inimigos]) { fimDaRodada(m); passarSaga(m); passarRecargas(m); }

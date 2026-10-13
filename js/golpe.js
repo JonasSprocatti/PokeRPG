@@ -24,6 +24,7 @@ import { calcDamage, confDamage, heal, typeEff, chanceAcerto, imuneAoStatusMon, 
   CLIMAS, CLIMA_TURNOS, climaDe, danoClima, TERRENOS, TERRENO_TURNOS, terrenoDe, terrenoBloqueiaStatus, noChao,
   LADO_VAZIO, TELA_TURNOS, VENTO_TURNOS, MAX_ESPINHOS, MAX_TOXINAS, MULT_AREA, multTelas, temSalvaguarda, temNeblina,
   passarLado, NOME_LADO, danoPedras, danoEspinhos, efeitoToxinas, recalc, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpeDaConversaoDeTipo, tiposDefensivos, tiposDe, maiorStatBase,
+  GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX, APERTO_FRACAO, danoFixoDe,
   fazContato, temFlag, motivoBloqueio, golpeForcado, falhaDaTrava, passarTravas, TURNOS_TRAVA, generoOposto, somarAmeaca, eficacia,
   multSaga, BRECHA_SUPER, BRECHA_CRITICO, BRECHA_STATUS, BRECHA_SELO, golpeDeApoio } from './regras.js';
 import { danoNoChefe, aposDanoNoChefe, antesDoChefeAgir, drenoDoChefe, anulaTexto } from './boss.js';
@@ -101,6 +102,39 @@ export async function passarClima(campo, ctx) {
   if (c) await ctx.say(c.acaba, 'muted');
   const p = campo.padrao?.clima;                            // acabou o que foi trocado: a rota volta ao tempo dela
   if (p && CLIMAS[p]) { campo.clima = p; campo.turnos = CLIMA_TURNOS; campo.climaFixo = true; await ctx.say(`${CLIMAS[p].icone} ${CLIMAS[p].comeca}`, 'status'); }
+}
+
+/* ---- 🪐 Gravidade (Gravity) ----
+   É o único efeito de campo que mexe em cada Pokémon, não só num número do `campo`: enquanto ela vale, todo mundo
+   em campo fica com `vol.noSolo` (sente o terreno, pisa nos espinhos, leva golpe Terrestre) e `vol.gravidade` (os
+   golpes com a flag `gravity` ficam proibidos — regras.motivoBloqueio). Por isso ela recebe a LISTA de quem está
+   em campo, dos dois lados: quem conta os turnos já tem essa lista na mão (batalha.js e mp-motor.js a montam pro
+   fim de turno), e sem ela não haveria como desfazer a marca de cada um quando a gravidade passa.
+   Marca a diferença entre "posto no chão pela gravidade" e "derrubado pelo Smack Down" guardando a ORIGEM em
+   `vol.noSolo` — senão o fim da gravidade levantaria de volta quem o Thousand Arrows tinha derrubado de vez. */
+export async function mudarGravidade(ctx, mons, quem = null) {
+  if (!ctx.campo) return false;
+  if (ctx.campo.gravidade > 0) { await ctx.say('Mas falhou! (a gravidade já está pesando)'); return true; }
+  ctx.campo.gravidade = GRAVIDADE_TURNOS;
+  await ctx.say(`🪐 A gravidade fica intensa!${quem ? ` (${ctx.nome(quem)})` : ''}`, 'status');
+  for (const m of mons || []) {
+    if (m.hp <= 0 || !m.vol) continue;
+    const voava = m.vol.voando > 0 || !noChao(m);
+    m.vol.gravidade = true; m.vol.noSolo ||= 'gravidade'; delete m.vol.voando;
+    if (voava) await ctx.say(`${ctx.nome(m)} é puxado para o chão!`, 'muted');
+  }
+  return true;
+}
+// fim da rodada: a gravidade anda um turno (chamada junto de passarClima, com a MESMA lista do fim de turno)
+export async function passarGravidade(campo, ctx, mons) {
+  if (!campo?.gravidade) return;
+  if (--campo.gravidade > 0) return;
+  for (const m of mons || []) {
+    if (!m.vol) continue;
+    delete m.vol.gravidade;
+    if (m.vol.noSolo === 'gravidade') delete m.vol.noSolo;   // o Smack Down (`noSolo: true`) continua valendo
+  }
+  await ctx.say('🪐 A gravidade voltou ao normal.', 'muted');
 }
 
 // Golpe em que o Pokémon está travado (carregando, em fúria) — a escolha do jogador/IA é ignorada neste turno
@@ -507,6 +541,30 @@ export async function aplicarStatus(t, ail, ctx, avisar = false, fonte = null) {
     if (t.vol.paixao) { if (avisar) await ctx.say(`${ctx.nome(t)} já está apaixonado!`); return; }
     t.vol.paixao = true; await ctx.say(`${ctx.nome(t)} se apaixonou por ${ctx.nome(fonte)}!`, 'status'); return;
   }
+  /* 🪢 APERTO (`trap`): Bind, Wrap, Fire Spin, Clamp, Whirlpool, Sand Tomb, Magma Storm, Infestation, Snap Trap e
+     Thunder Cage. 4 a 5 turnos tirando 1/8 do HP máximo no fim de cada um, e sem poder fugir enquanto durar.
+     São DEZ golpes com um `ailment` só na PokéAPI, então nenhum deles precisa de linha em `especiais.js`: vir
+     pelo `ail` é o que faz a lista crescer sozinha se a API trouxer mais um. O nome do golpe vai junto só pra
+     narrar ("Fire Spin continua queimando"). */
+  if (ail === 'trap') {
+    if (t.vol.aperto) { if (avisar) await ctx.say(`${ctx.nome(t)} já está preso!`); return; }
+    t.vol.aperto = { turnos: rand(APERTO_MIN, APERTO_MAX), golpe: fonte?.vol?.ultimo || null };
+    await ctx.say(`${ctx.nome(t)} ficou preso e não consegue escapar!`, 'status');
+    if (fonte && fonte !== t) await ctx.abrirBrecha?.(t, BRECHA_STATUS);
+    return;
+  }
+  /* 🌱 `leech-seed` como ailment de golpe de DANO (Sappy Seed, do Pokémon Unite/LGPE): planta a mesma semente do
+     Leech Seed, que já tem motor próprio (`esp.semente` + o dreno em fimDeTurno). */
+  if (ail === 'leech-seed') {
+    if (tiposDefensivos(t).includes('grass') || t.vol.semente != null) { if (avisar) await ctx.say(`Não afeta ${ctx.nome(t)}...`); return; }
+    t.vol.semente = fonte && ctx.refDe ? ctx.refDe(fonte) : true;
+    await ctx.say(`${ctx.nome(t)} foi semeado!`, 'status'); return;
+  }
+  /* `unknown` é como a PokéAPI descreve o status do **Tri Attack**: 20% de queimar, congelar OU paralisar, um
+     sorteado. Sem este caso o golpe dizia "nada aconteceu" na chance que deveria ser a interessante dele. */
+  if (ail === 'unknown') {
+    await aplicarStatus(t, ['burn', 'freeze', 'paralysis'][rand(0, 2)], ctx, avisar, fonte); return;
+  }
   if (!AIL_MSG[ail]) { if (avisar) await ctx.say('Mas nada aconteceu... (este efeito será ajustado em atualizações futuras)', 'muted'); return; }
   if (t.status) { if (avisar) await ctx.say(`${ctx.nome(t)} já tem uma condição de status.`); return; }
   t.status = ail; delete t.vol.toxico; if (ail === 'sleep') t.sleep = rand(2, 4);
@@ -680,6 +738,109 @@ async function statusEspecial(u, t, g, esp, ctx, primeiro, dest = u) {
     if (tiposDefensivos(t).includes('grass')) { await ctx.say(`Não afeta ${T}...`); return true; }
     if (t.vol.semente != null) { await ctx.say(`${T} já está semeado!`); return true; }
     t.vol.semente = ctx.refDe ? ctx.refDe(u) : true; await ctx.say(`${T} foi semeado!`, 'status'); return true;
+  }
+  /* 🪐 Gravidade: mexe em todo mundo em campo, então precisa da lista dos dois lados. `ctx.aliadosDe`/
+     `ctx.oponentesDe` são os mesmos ganchos do Friend Guard e do Bad Dreams — existem nos dois ctx. */
+  if (esp.gravidade) {
+    await mudarGravidade(ctx, [u, ...(ctx.aliadosDe?.(u) || []), ...(ctx.oponentesDe?.(u) || [])], u);
+    return true;
+  }
+  // 🧲 Magnet Rise (em si) e Telekinesis (`noAlvo`, no inimigo): sai do chão por alguns turnos
+  if (esp.voa) {
+    const quem = esp.noAlvo ? t : u, Q = ctx.nome(quem);
+    if (ctx.campo?.gravidade > 0) { await ctx.say('Mas falhou! (a gravidade não deixa ninguém sair do chão)'); return true; }
+    if (quem.vol.voando > 0) { await ctx.say('Mas falhou! (já está flutuando)'); return true; }
+    if (quem.vol.noSolo) { await ctx.say(`Mas falhou! (${Q} está preso ao chão)`); return true; }
+    quem.vol.voando = esp.voa;
+    await ctx.say(`${Q} flutua no ar por ${esp.voa} turnos! (golpe Terrestre não alcança)`, 'good'); return true;
+  }
+  // 💀 Canção Final: quem OUVIU (os dois lados, como nos jogos) desmaia em 3 turnos — a contagem é em fimDeTurno
+  if (esp.cancaoFinal) {
+    const todos = [u, ...(ctx.aliadosDe?.(u) || []), ...(ctx.oponentesDe?.(u) || [])].filter(m => m.hp > 0 && m.vol && !m.vol.cancaoFinal);
+    if (!todos.length) { await ctx.say('Mas falhou! (todos já ouviram a canção)'); return true; }
+    for (const m of todos) m.vol.cancaoFinal = 3;
+    await ctx.say(`${U} entoa uma canção sinistra — quem ouviu desmaia em 3 turnos!`, 'status'); return true;
+  }
+  // 🥱 Bocejo: dorme no fim do turno SEGUINTE (2 = este turno e o próximo). Falha em quem não pode dormir
+  if (esp.bocejo) {
+    if (t.status || t.vol.bocejo) { await ctx.say('Mas falhou!'); return true; }
+    if (imuneAoStatusMon(t, 'sleep')) { await ctx.say(`Não afeta ${T}...`); return true; }
+    t.vol.bocejo = 2; await ctx.say(`${T} fica com sono... vai dormir no próximo turno!`, 'status'); return true;
+  }
+  // 😱 Pesadelo: só pega quem está DORMINDO (e acaba sozinho quando ele acorda)
+  if (esp.pesadeloGolpe) {
+    if (t.status !== 'sleep') { await ctx.say(`Mas falhou! (só funciona em quem está dormindo)`); return true; }
+    if (t.vol.pesadelo) { await ctx.say(`${T} já está tendo pesadelos!`); return true; }
+    t.vol.pesadelo = true; await ctx.say(`${T} começa a ter pesadelos!`, 'status'); return true;
+  }
+  // 🌱 Raiz: cura 1/16 por turno e não sai mais de campo (é a mesma trava de fuga do Mean Look)
+  if (esp.raiz) {
+    if (u.vol.raiz) { await ctx.say('Mas falhou! (já está enraizado)'); return true; }
+    u.vol.raiz = true; u.vol.preso = true;
+    await ctx.say(`${U} criou raízes! Vai se curando — e não consegue mais sair.`, 'good'); return true;
+  }
+  if (esp.anel) {
+    if (dest.vol.anel) { await ctx.say('Mas falhou! (o véu de água já está aí)'); return true; }
+    dest.vol.anel = true; await ctx.say(`${D} se envolveu num véu de água! Vai se curando a cada turno.`, 'good'); return true;
+  }
+  // 🌟 Desejo: metade do HP máximo volta no fim do turno SEGUINTE. Guarda a cura JÁ CALCULADA, como nos jogos
+  if (esp.desejo) {
+    if (u.vol.desejo) { await ctx.say('Mas falhou! (já há um desejo no ar)'); return true; }
+    u.vol.desejo = { turnos: 2, cura: Math.max(1, Math.floor(u.stats.hp / 2)) };
+    await ctx.say(`${U} faz um desejo — a cura chega no próximo turno.`, 'good'); return true;
+  }
+  // 📊 Haze: zera os estágios de TODO mundo em campo, dos dois lados (inclusive os seus)
+  if (esp.limpaEstagios) {
+    for (const m of [u, ...(ctx.aliadosDe?.(u) || []), ...(ctx.oponentesDe?.(u) || [])]) {
+      if (!m.vol?.stages) continue;
+      for (const k of Object.keys(m.vol.stages)) m.vol.stages[k] = 0;
+    }
+    up(ctx); await ctx.say('Uma névoa apaga todas as mudanças de atributo!', 'status'); return true;
+  }
+  if (esp.copiaEstagios) {
+    u.vol.stages = { ...t.vol.stages }; up(ctx);
+    await ctx.say(`${U} copiou as mudanças de atributo de ${T}!`, 'good'); return true;
+  }
+  if (esp.inverteEstagios) {
+    if (!Object.values(t.vol.stages).some(v => v !== 0)) { await ctx.say('Mas falhou! (não há nada pra inverter)'); return true; }
+    for (const k of Object.keys(t.vol.stages)) t.vol.stages[k] = -t.vol.stages[k];
+    up(ctx); await ctx.say(`As mudanças de atributo de ${T} foram invertidas!`, 'status'); return true;
+  }
+  // 🥁 Belly Drum: paga metade do HP MÁXIMO e põe o Ataque no teto (+6), não "+6 estágios"
+  if (esp.tambor) {
+    const custo = Math.floor(u.stats.hp / 2);
+    if (u.hp <= custo || u.vol.stages.attack >= 6) { await ctx.say('Mas falhou!'); return true; }
+    u.hp -= custo; u.vol.stages.attack = 6; up(ctx);
+    await ctx.say(`${U} bate no próprio peito (−${custo}) e o Ataque vai ao máximo!`, 'good'); return true;
+  }
+  if (esp.divideHp) {
+    const media = Math.floor((u.hp + t.hp) / 2);
+    u.hp = Math.min(u.stats.hp, media); t.hp = Math.min(t.stats.hp, media); up(ctx);
+    await ctx.say(`O sofrimento foi dividido: os dois ficam com ${media} HP.`, 'status'); return true;
+  }
+  /* Trocas e médias de atributo. `trocaProprios`/`trocaStat`/`mediaStat` mexem no `stats` calculado (e por isso
+     NÃO sobrevivem a um `recalc`, o que é certo: subir de nível refaz os atributos do zero); `trocaEstagios` mexe
+     só nos estágios, que é onde o Heart Swap & cia. valem. */
+  if (esp.trocaProprios) {
+    const [a, b] = esp.trocaProprios;
+    [u.stats[a], u.stats[b]] = [u.stats[b], u.stats[a]]; up(ctx);
+    await ctx.say(`${U} trocou ${STAT_PT[a]} por ${STAT_PT[b]}!`, 'status'); return true;
+  }
+  if (esp.trocaEstagios) {
+    const chaves = esp.trocaEstagios === 'todos' ? Object.keys(u.vol.stages) : esp.trocaEstagios;
+    for (const k of chaves) [u.vol.stages[k], dest.vol.stages[k]] = [dest.vol.stages[k] || 0, u.vol.stages[k] || 0];
+    up(ctx); await ctx.say(`${U} trocou mudanças de atributo com ${D}!`, 'status'); return true;
+  }
+  if (esp.trocaStat) {
+    [u.stats[esp.trocaStat], dest.stats[esp.trocaStat]] = [dest.stats[esp.trocaStat], u.stats[esp.trocaStat]];
+    up(ctx); await ctx.say(`${U} e ${D} trocaram de ${STAT_PT[esp.trocaStat]}!`, 'status'); return true;
+  }
+  if (esp.mediaStat) {
+    for (const k of esp.mediaStat) {
+      const media = Math.floor((u.stats[k] + dest.stats[k]) / 2);
+      u.stats[k] = media; dest.stats[k] = media;
+    }
+    up(ctx); await ctx.say(`${U} e ${D} dividiram ${esp.mediaStat.map(k => STAT_PT[k]).join(' e ')}!`, 'status'); return true;
   }
   return false;
 }
@@ -927,8 +1088,9 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     return;
   }
 
-  // imunidades e absorções de tipo por habilidade
-  if (ht.imuneTipo === g.type) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
+  // imunidades e absorções de tipo por habilidade. Levitate cai quando o alvo foi posto no chão (Gravidade,
+  // Smack Down) — a imunidade de TIPO do Voador já cai sozinha em `regras.eficacia`, pelo mesmo `vol.noSolo`.
+  if (ht.imuneTipo === g.type && !(g.type === 'ground' && t.vol?.noSolo)) { await ctx.say(`${T} não é afetado graças a ${fmt(t.ability)}!`); return; }
   if (ht.absorve === g.type) {
     await ctx.say(`A habilidade ${fmt(t.ability)} de ${T} absorveu o golpe!`);
     if (ht.cura && t.hp < t.stats.hp) { heal(t, Math.floor(t.stats.hp * ht.cura)); up(ctx); await ctx.say(`${T} recuperou HP.`, 'good'); }
@@ -938,6 +1100,8 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
   }
   // Balão de Ar: quem flutua não é alcançado por golpe Terrestre (o balão só estoura com golpe que ACERTA)
   if (g.type === 'ground' && t.vol?.balao) { await ctx.say(`${T} está flutuando no Balão de Ar!`); return; }
+  // 🧲 Magnet Rise / Telekinesis: mesma ideia do balão, só que por turnos
+  if (g.type === 'ground' && t.vol?.voando > 0) { await ctx.say(`${T} está flutuando no ar — o golpe passa embaixo!`); return; }
   let ef = eficacia(hu, g.type, t);                          // Tera defende pelo tipo Tera; Scrappy/Mind's Eye ignoram a imunidade
   if (ef === 0) { await ctx.say(`Não afeta ${T}...`); return; }
   // ⚔ Saga, 🔮 Selo Arcano: nenhuma RESISTÊNCIA reduz o golpe selado. Imunidade (ef 0) continua valendo — o selo
@@ -956,6 +1120,21 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     const bruto = t.hp - u.hp;
     const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, bruto, g.type, ef) : bruto);
     t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t, g.type);
+    somarAmeaca(u, feito);
+    await ctx.say(`${T} perdeu ${feito} HP.`, 'hit');
+    if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
+    return 'acertou';
+  }
+
+  /* 💥 Dano FIXO (Sonic Boom, Seismic Toss, Night Shade, Psywave, Super Fang, Nature's Madness, Final Gambit):
+     o número vem de `regras.danoFixoDe` e não passa pela fórmula — sem atributo, sem crítico, sem clima. O que
+     ele AINDA respeita é a tabela de tipos (a eficácia zero já barrou lá em cima: Night Shade não pega Normal) e
+     o chefe de evento, pela mesma razão do Endeavor: dano que fura a couraça seria um botão de vitória. */
+  const fixo = danoFixoDe(u, t, esp);
+  if (fixo != null) {
+    const feito = Math.min(t.hp, t.boss ? danoNoChefe(t, fixo, g.type, ef) : fixo);
+    t.hp = Math.max(0, t.hp - feito); up(ctx); (ctx.tremer || nada)(t, g.type);
+    t.vol.danoSofrido = (t.vol.danoSofrido || 0) + feito;
     somarAmeaca(u, feito);
     await ctx.say(`${T} perdeu ${feito} HP.`, 'hit');
     if (t.boss) await aplicarEfeitosChefe(t, aposDanoNoChefe(t, feito), ctx);
@@ -1074,6 +1253,14 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     else { const nome = ITEMS[t.item]?.name || 'o item'; t.item = null; up(ctx); await ctx.say(`${U} derrubou <b>${nome}</b> de ${T}! O item se perdeu.`, 'good'); }
   }
 
+  /* 🪨 Smack Down / Thousand Arrows: o alvo é posto no chão de vez (`vol.noSolo: true` — sem origem, pra a
+     gravidade passando não o levantar de volta). Daí em diante ele sente o terreno, pisa nas armadilhas e leva
+     golpe Terrestre (`regras.noChao`/`eficacia`). Não é efeito secundário: Shield Dust não protege. */
+  if (esp.poeNoChao && total > 0 && t.hp > 0 && !t.vol.noSolo) {
+    const voava = !noChao(t);
+    t.vol.noSolo = true; delete t.vol.voando; delete t.vol.balao;
+    if (voava) await ctx.say(`${T} foi derrubado no chão!`, 'status');
+  }
   // efeitos secundários: Serene Grace dobra a chance; Shield Dust protege o alvo; Sheer Force os apaga (já bateu mais forte lá em cima)
   const chance = p => Math.random() * 100 < p * (hu.chanceSecundaria || 1);
   if (!hu.sheerForce && g.stats.length && chance(meta.statChance || 100)) {
@@ -1177,7 +1364,7 @@ export async function fimDeTurno(m, ctx) {
   if (m.hp <= 0) return;
   const h = hab(m), clima = climaDoCtx(ctx);
   // Taunt, Encore e Disable contam turnos (regras.passarTravas devolve o que acabou agora)
-  const AVISO_TRAVA = { provocado: 'não está mais provocado.', encore: 'não está mais sob Encore.', desativado: 'pode usar o golpe desativado de novo.' };
+  const AVISO_TRAVA = { provocado: 'não está mais provocado.', encore: 'não está mais sob Encore.', desativado: 'pode usar o golpe desativado de novo.', voando: 'voltou ao chão.' };
   for (const fim of passarTravas(m)) await ctx.say(`${ctx.nome(m)} ${AVISO_TRAVA[fim]}`, 'muted');
   m.vol.turnosEmCampo = (m.vol.turnosEmCampo || 0) + 1;                                // Slow Start
   if (clima) {
@@ -1207,6 +1394,34 @@ export async function fimDeTurno(m, ctx) {
     m.hp -= s; up(ctx); await ctx.say(`A semente drenou ${ctx.nome(m)}. (−${s})`, 'hit');
     const quem = ctx.monPorRef?.(m.vol.semente);
     if (quem && quem.hp > 0 && quem.hp < quem.stats.hp) { heal(quem, s); up(ctx); await ctx.say(`${ctx.nome(quem)} recuperou ${s} HP.`, 'good'); }
+  }
+  /* 🪢 Aperto (Bind, Fire Spin & cia.): 1/8 do HP máximo por turno, 4–5 turnos. Magic Guard (`indireto`) não
+     sente o dano, mas continua PRESO — nos jogos a habilidade poupa o HP, não solta o abraço. */
+  if (m.hp > 0 && m.vol.aperto) {
+    if (!indireto(m)) {
+      const d = Math.max(1, Math.floor(m.stats.hp * APERTO_FRACAO));
+      m.hp = Math.max(0, m.hp - d); up(ctx);
+      await ctx.say(`${ctx.nome(m)} se debate, preso. (−${d})`, 'hit');
+    }
+    if (--m.vol.aperto.turnos <= 0) { delete m.vol.aperto; await ctx.say(`${ctx.nome(m)} se soltou!`, 'muted'); }
+    if (m.hp <= 0) return;
+  }
+  // 😱 Pesadelo: 1/4 do HP por turno, e só enquanto o alvo DORME (acordar desfaz sozinho)
+  if (m.hp > 0 && m.vol.pesadelo) {
+    if (m.status !== 'sleep') { delete m.vol.pesadelo; await ctx.say(`${ctx.nome(m)} acordou — os pesadelos passaram.`, 'muted'); }
+    else if (!indireto(m)) {
+      const d = Math.max(1, Math.floor(m.stats.hp / 4));
+      m.hp = Math.max(0, m.hp - d); up(ctx);
+      await ctx.say(`${ctx.nome(m)} se contorce num pesadelo. (−${d})`, 'hit');
+      if (m.hp <= 0) return;
+    }
+  }
+  // 🌱 Raiz (Ingrain) e 💧 Véu de Água (Aqua Ring): 1/16 do HP máximo por turno, cada um por conta
+  for (const [chave, texto] of [['raiz', 'se alimenta pelas raízes'], ['anel', 'se recupera no véu de água']]) {
+    if (m.hp > 0 && m.vol[chave] && m.hp < m.stats.hp) {
+      const n = Math.max(1, Math.floor(m.stats.hp / 16)); heal(m, n); up(ctx);
+      await ctx.say(`${ctx.nome(m)} ${texto}. (+${n})`, 'good');
+    }
   }
   // Campo de Grama: cura quem está no chão
   const terr = terrenoDoCtx(ctx), tCura = TERRENOS[terr]?.cura;
@@ -1245,6 +1460,23 @@ export async function fimDeTurno(m, ctx) {
       await ctx.say(`${ctx.nome(o)} tem pesadelos com ${ctx.nome(m)}. (−${n})`, 'hit');
     }
   }
+  /* ⏳ Os que resolvem no fim do turno SEGUINTE, e por isso contam ao fim de cada um. Ficam juntos aqui, depois
+     do dano e da cura, porque é essa a ordem dos jogos: o desejo cura DEPOIS dos restos, e o bocejo só pega quem
+     chegou vivo ao fim do turno. A 💀 Canção Final vem por último — ela derruba sem olhar HP. */
+  if (m.hp > 0 && m.vol.desejo && --m.vol.desejo.turnos <= 0) {
+    const n = m.vol.desejo.cura; delete m.vol.desejo;
+    if (m.hp < m.stats.hp) { heal(m, n); up(ctx); await ctx.say(`🌟 O desejo de ${ctx.nome(m)} se realiza! (+${n})`, 'good'); }
+  }
+  if (m.hp > 0 && m.vol.bocejo && --m.vol.bocejo <= 0) {
+    delete m.vol.bocejo;
+    await aplicarStatus(m, 'sleep', ctx, true, null);
+  }
+  if (m.hp > 0 && m.vol.cancaoFinal && --m.vol.cancaoFinal <= 0) {
+    delete m.vol.cancaoFinal; m.hp = 0; up(ctx);
+    await ctx.say(`💀 A canção se completou: ${ctx.nome(m)} desmaia!`, 'hit');
+    return;
+  }
+  if (m.hp > 0 && m.vol.cancaoFinal) await ctx.say(`💀 A canção ecoa em ${ctx.nome(m)}: ${m.vol.cancaoFinal} turno(s).`, 'muted');
   await comerFruta(m, ctx);
   await ajustarForma(m, ctx);
 }

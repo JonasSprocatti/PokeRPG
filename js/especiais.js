@@ -53,6 +53,13 @@
 //   statAleatorio: n sobe n estágios de um atributo sorteado (Acupressure)
 //   focoDragao: n    `foco` vale n se quem recebe for do tipo Dragão (Dragon Cheer)
 //   semEfeitoReal    nos jogos este golpe não faz nada mesmo (Hold Hands) — não é efeito faltando
+//   gravidade        põe TODO mundo em campo no chão por GRAVIDADE_TURNOS (Gravity); golpe com a flag `gravity` falha
+//   voa: n           levanta do chão por n turnos (Magnet Rise); `noAlvo` = levanta o ALVO (Telekinesis)
+//   poeNoChao        o ALVO fica preso ao chão de vez (Smack Down, Thousand Arrows) — golpe de dano
+//   bocejo/pesadeloGolpe/raiz/anel/cancaoFinal/desejo   efeitos resolvidos no fim do turno (golpe.fimDeTurno)
+//   limpaEstagios/copiaEstagios/tambor/inverteEstagios/divideHp/trocaProprios/trocaEstagios/trocaStat/mediaStat
+//                    contas sobre os estágios e atributos que o motor já guarda (Haze, Psych Up, Belly Drum…)
+//   danoFixo         dano que NÃO passa pela fórmula (regras.danoFixoDe): número, nivel, nivelVariado, metadeDoAlvo, hpProprio
 export const GOLPES_ESPECIAIS = {
   /* `protege` sozinho só bloqueia o golpe. `puneContato` = o que a barreira faz com quem encostou nela (golpe
      FÍSICO, a mesma regra de contato que Static e Elmo Rochoso já usam):
@@ -150,6 +157,56 @@ export const GOLPES_ESPECIAIS = {
   'dragon-cheer': { foco: 1, focoDragao: 2, soAliados: true },
   coaching: { soAliados: true },                               // "falha se não houver companheiro" — os atributos vêm do meta
   'gear-up': { soPlusMinus: true }, 'magnetic-flux': { soPlusMinus: true },
-  'hold-hands': { semEfeitoReal: true }
+  'hold-hands': { semEfeitoReal: true },
+
+  /* ---- 🪐 chão e flutuação (regras.noChao, regras.eficacia) ----
+     `gravidade` liga `campo.gravidade` por GRAVIDADE_TURNOS: todo mundo em campo é posto no chão (`vol.noSolo`),
+     a flutuação cai e os golpes com a flag `gravity` ficam proibidos (regras.motivoBloqueio).
+     `voa: n` levanta QUEM USA por n turnos (`vol.voando`): golpe Terrestre não alcança e o terreno não vale.
+     `poeNoChao` derruba o ALVO de vez (Smack Down, Thousand Arrows): é golpe de DANO, aplicado depois de acertar. */
+  gravity: { gravidade: true },
+  'magnet-rise': { voa: 5 }, telekinesis: { voa: 3, noAlvo: true },
+  'smack-down': { poeNoChao: true }, 'thousand-arrows': { poeNoChao: true },
+
+  /* ---- ⏳ efeitos que só acontecem no FIM DO TURNO (golpe.fimDeTurno) ----
+     Cada um vive num campo do `vol`, como a semente do Leech Seed, e morre com ela ao sair de campo. */
+  yawn: { bocejo: true },            // 🥱 no fim do turno SEGUINTE o alvo dorme (vol.bocejo conta 2)
+  nightmare: { pesadeloGolpe: true },// 😱 1/4 do HP por turno enquanto o alvo dorme; acorda, acabou
+  ingrain: { raiz: true },           // 🌱 cura 1/16 por turno e não consegue mais sair de campo
+  'aqua-ring': { anel: true },       // 💧 cura 1/16 por turno
+  'perish-song': { cancaoFinal: true }, // 💀 quem ouviu (os DOIS lados) desmaia em 3 turnos
+  wish: { desejo: true },            // 🌟 no fim do turno seguinte, metade do HP máximo volta
+
+  /* ---- 📊 estágios e HP (contas puras sobre o que já existe no `vol.stages`) ----
+     Nenhum destes precisou de mecânica nova: são leitura e escrita dos estágios que o motor já guarda. */
+  haze: { limpaEstagios: true },               // zera os estágios de TODO mundo em campo
+  'psych-up': { copiaEstagios: true },         // quem usa fica com os estágios do alvo
+  'belly-drum': { tambor: true },              // paga metade do HP máximo e põe o Ataque no +6
+  'topsy-turvy': { inverteEstagios: true },    // inverte o sinal de todos os estágios do alvo
+  'pain-split': { divideHp: true },            // os dois ficam com a média do HP atual
+  'power-trick': { trocaProprios: ['attack', 'defense'] },        // troca os PRÓPRIOS Ataque e Defesa
+  'power-swap': { trocaEstagios: ['attack', 'special-attack'] },  // troca os ESTÁGIOS com o alvo
+  'guard-swap': { trocaEstagios: ['defense', 'special-defense'] },
+  'heart-swap': { trocaEstagios: 'todos' },
+  'speed-swap': { trocaStat: 'speed' },                           // troca a Velocidade de verdade com o alvo
+  'guard-split': { mediaStat: ['defense', 'special-defense'] },    // os dois ficam com a média dos dois atributos
+  'power-split': { mediaStat: ['attack', 'special-attack'] },
+
+  /* ---- 💥 dano FIXO (regras.danoFixoDe) — não passa pela fórmula de dano ---- */
+  'sonic-boom': { danoFixo: 20 }, 'dragon-rage': { danoFixo: 40 },
+  'seismic-toss': { danoFixo: 'nivel' }, 'night-shade': { danoFixo: 'nivel' },
+  psywave: { danoFixo: 'nivelVariado' },
+  'super-fang': { danoFixo: 'metadeDoAlvo' }, 'natures-madness': { danoFixo: 'metadeDoAlvo' },
+  'final-gambit': { danoFixo: 'hpProprio', autoDesmaio: true },
+
+  // poder que sai da FELICIDADE e do sorteio (regras.poderEspecial)
+  return: { poder: 'felicidade' }, frustration: { poder: 'felicidadeInversa' }, magnitude: { poder: 'magnitude' },
+
+  /* ---- golpes que nos jogos NÃO FAZEM NADA ----
+     Mesmo caso do Hold Hands: dizer "será ajustado em atualizações futuras" seria prometer efeito inexistente.
+     (Happy Hour dobra o dinheiro do prêmio nos jogos; aqui o prêmio sai da rota, então ele entra nesta lista.) */
+  splash: { semEfeitoReal: true }, celebrate: { semEfeitoReal: true }, 'happy-hour': { semEfeitoReal: true },
+  // Refresh limpa o PRÓPRIO status: é o `curaStatus` que o Heal Bell já usa, só que o `target` é `user`
+  refresh: { curaStatus: true }
 };
 export const especial = g => GOLPES_ESPECIAIS[g?.name] || {};

@@ -3841,3 +3841,126 @@ pronto", e é abrir o jogo que revela — a parte "interativa" do pedido mora no
 - **Deep link do push pra uma tela específica.** Só existe UMA tela (o jogo inteiro), e `abrirJornada` já roda
   `cuidarDosOvos` sozinho a cada abertura — não há "tela do ovo" separada pra apontar. O clique do push já abre
   (ou foca) a aba existente (`sw.js:notificationclick`), que é o que importa.
+
+## 🪐 A terceira leva de golpes: chão, aperto e fim de turno (13/10/2026)
+
+O relato vinha junto do bug dos ovos: *"ajuste mais moves, Yawn, Magnetic Rise e Gravity não estão funcionando
+por exemplo, me liste todos os moves que ainda faltam"*. Os três caíam no `Mas nada aconteceu...` — e o pedido da
+lista é o que fez esta leva ser **escolhida por levantamento**, não por palpite.
+
+### O levantamento, e por que `dados-ref/` existia pra isto
+
+A conta de "quantos golpes faltam" sai de cruzar `dados-ref/golpes.tsv` (a Pokédex-fonte, 💾 gerada, não a API
+REST) com duas coisas do código: `especiais.GOLPES_ESPECIAIS` e os `ailment` que `golpe.aplicarStatus` sabe
+resolver. Um golpe **funciona** se tem poder (passa pela fórmula de dano), ou mudança de atributo, ou cura, ou um
+`ailment` tratado, ou uma linha na tabela de especiais. O resto diz "será ajustado".
+
+Tirando Z-Move, Max/G-Max e os golpes Shadow (nada disso é aprendível aqui), o levantamento deu **121 golpes sem
+efeito nenhum**. Esta leva fechou **39 deles** — e as duas armadilhas do levantamento valem registro:
+
+- **`confusion` e `infatuation` NÃO estavam faltando.** `AIL_MSG` (`dados.js`) tem só os 5 status maiores, porque
+  é a tabela de "o que escrever quando pega"; confusão e paixão são tratados **antes** dela em `aplicarStatus`,
+  por morarem no `vol`. Um levantamento ingênuo marca 15 golpes como quebrados por isso.
+- **O dump de `dados-ref/` é de 2020** e tem o metadado **vazio** nos golpes de Gen 8/9 (Victory Dance aparece
+  sem `stats`). Na API VIVA eles vêm completos e funcionam. São 8 nomes: `victory-dance`, `shelter` e
+  `hard-press` já funcionavam; `power-shift`, `revival-blessing`, `doodle`, `shed-tail` e `chilly-reception` não.
+
+### Os 5 grupos, e o que cada um custou
+
+| grupo | golpes | o que foi preciso construir |
+|---|---|---|
+| 🪐 chão e flutuação | Gravity, Magnet Rise, Telekinesis, Smack Down, Thousand Arrows | `vol.noSolo` / `vol.voando` + 3 linhas em `regras` |
+| 🪢 aperto | Bind, Wrap, Fire Spin, Clamp, Whirlpool, Sand Tomb, Magma Storm, Infestation, Snap Trap, Thunder Cage | **um** `ailment` em `aplicarStatus` |
+| ⏳ fim de turno | Yawn, Nightmare, Ingrain, Aqua Ring, Perish Song, Wish | um campo no `vol` cada, resolvido em `fimDeTurno` |
+| 📊 estágios e HP | Haze, Psych Up, Belly Drum, Topsy-Turvy, Pain Split, Power Trick, Power/Guard/Heart Swap, Speed Swap, Guard/Power Split | contas puras sobre o que o motor já guardava |
+| 💥 dano fixo e poder | Sonic Boom, Dragon Rage, Seismic Toss, Night Shade, Psywave, Super Fang, Nature's Madness, Final Gambit · Return, Frustration, Magnitude, Tri Attack, Splash, Celebrate, Happy Hour, Refresh, Sappy Seed | `regras.danoFixoDe` + 3 fórmulas de poder |
+
+**O aperto foi o melhor negócio da leva:** dez golpes com UMA linha, porque a PokéAPI já os descreve pelo mesmo
+`ailment: 'trap'`. Nenhum deles tem entrada em `especiais.js` — e se a API trouxer um décimo primeiro, ele
+funciona sozinho. É o oposto de uma lista nossa pra manter.
+
+### A regra que a gravidade quebrava
+
+A gravidade é **o único efeito de campo que marca cada Pokémon**, não só um número do `campo`: enquanto ela vale,
+todo mundo em campo precisa sentir o terreno, pisar nos espinhos e levar golpe Terrestre. Duas saídas foram
+consideradas:
+
+1. **`campo` por parâmetro** em `noChao(m, campo)` e `eficacia(hu, tipo, alvo, campo)`. Honesto, e **espalhado**:
+   `noChao` é chamado em 8 lugares, `eficacia` em 4, e `calcDamage` recebe `clima`/`terreno`/`lado` separados, não
+   o campo — a conta não para de crescer.
+2. **Marca no `vol` de quem está em campo** (`vol.noSolo`, `vol.gravidade`), posta por `mudarGravidade` e tirada
+   por `passarGravidade`. Zero threading: `noChao`, `eficacia` e `motivoBloqueio` continuam lendo só o Pokémon.
+
+Foi a 2. O preço é que `passarGravidade(campo, ctx, mons)` precisa da **lista de quem está em campo** — e ela já
+estava na mão nos dois pontos que contam os turnos (`batalha.js` e `mp-motor.js` montam essa lista pro fim de
+turno). O `vol.noSolo` guarda a **origem** (`'gravidade'` × `true`): sem isso, a gravidade passando levantaria de
+volta quem o Thousand Arrows tinha derrubado de vez.
+
+**Quais golpes a gravidade proíbe não é lista nossa.** A flag `gravity` da PokéAPI (uma das 21 de
+`dados-golpe-flags.js`) existe exatamente pra isso, e `regras.motivoBloqueio` a lê — então as 3 telas de golpe, a
+IA e o motor respeitam de graça, pelo mesmo caminho do Taunt e do Encore. Flag nova na API = golpe novo proibido,
+sem commit.
+
+### O que a IA precisou saber
+
+Golpe sem linha em `notaDoGolpe` vale `IGNORADO`, e aí o inimigo **o usa em cima de um já ativo** — um Hypno
+gastaria quatro turnos bocejando. Cada grupo ganhou a sua: a gravidade vale muito contra quem flutua e nada
+contra quem já está no chão; Magnet Rise só presta se o alvo tiver golpe Terrestre; Pain Split só se o alvo tem
+muito mais HP; Final Gambit só quando o troco derruba. O dano fixo precisava de linha **própria** porque
+`calcDamage` não sabe calculá-lo (o poder é 0 ou mentira) — sem ela a IA o tratava como golpe de poder nulo.
+
+### O que ficou de fora, por motivo
+
+- **Copiar/usar golpe alheio** (Mimic, Metronome, Mirror Move, Transform, Sketch, Sleep Talk, Copycat, Assist,
+  Nature Power, Me First, Instruct): todos pedem **executar um golpe que não é o escolhido**, e o `ppLeft`/`meta`
+  do golpe copiado tem de vir de algum lugar. É um sistema, não uma tabela.
+- **Substitute** (e o Shed Tail, que depende dele): uma camada de HP entre o golpe e o Pokémon, lida por todo
+  efeito de status, dreno, recuo e contato. O maior item que sobrou.
+- **Trocar habilidade** (Role Play, Skill Swap, Gastro Acid, Simple Beam, Entrainment, Worry Seed, Doodle):
+  `hab(m)` lê `m.ability`, que **vai no save** — mexer nele pede o mesmo cuidado do `abilityAntes` do Trace, e
+  o `endBattle` teria de desfazer sete caminhos novos.
+- **Trocar item** (Trick, Switcheroo, Bestow, Corrosive Gas, Recycle, Fling, Natural Gift, Teatime): o inimigo
+  **não segura item** hoje, então metade deles não teria o que trocar. Mesma razão do Heavy-Duty Boots.
+- **Contra-ataque** (Counter, Mirror Coat, Metal Burst, Bide): precisa guardar **quanto e de que classe** foi o
+  último dano recebido neste turno — estado de turno que o motor não tem.
+- **Ordem do turno** (Trick Room, After You, Quash) e **proteção de lado** (Wide Guard, Quick Guard, Crafty
+  Shield, Mat Block): já estavam no backlog pelo mesmo motivo (reordenar `acoes` / proteger um lado inteiro).
+- **Tirar imunidade** (Foresight, Odor Sleuth, Miracle Eye): é o avesso do `vol.noSolo` desta leva e caberia bem,
+  mas pede uma marca "ignore a imunidade DESTE tipo neste alvo" em `eficacia` — vale como leva própria.
+- **Os que dependem de trocar de Pokémon** (Healing Wish, Lunar Dance, Revival Blessing, Chilly Reception):
+  mesma família do Shed Tail e do Eject Button, já documentada em "Travas, IA e troca de Pokémon".
+- **Sticky Web e Lucky Chant**: caberiam em `LADO_VAZIO` com pouca coisa, mas a teia só pega **quem entra em
+  campo** — e do seu lado ninguém entra, como o `esp.armadilha` já avisa. Ficaram pra quando (se) houver troca.
+
+**Saldo: 121 → 82 golpes sem efeito.** A conta se refaz a qualquer momento cruzando `dados-ref/golpes.tsv` com
+`GOLPES_ESPECIAIS` + os `ailment` de `aplicarStatus` — não há lista escrita à mão pra envelhecer.
+
+## 🥚 "Só o primeiro par põe ovo" — e o Riolu que nunca ia pôr (13/10/2026)
+
+> *"Peguei 2 Starly para breedar, logo após coloquei 2 Riolu, mas só vem ovos de Starly, nunca de Riolu."*
+
+**Não era bug de sorteio.** `ovos.acharPar` varre todos contra todos e **sorteia** entre os pares (`pares[
+Math.floor(sorte() * pares.length)]`) desde que existe — dois casais válidos dão 50/50. O que foi descartado no
+diagnóstico, nesta ordem: o sorteio (lido e testado), a montagem do `grupos` (o `grupos.has(nome)` dedupa certo
+porque a checagem é síncrona), e o `MAX_OVOS` (ovo que choca libera a vaga).
+
+**O Riolu é que não cruza.** Ele é **bebê**, e bebê está no grupo-ovo `no-eggs` nos jogos — a espécie só põe ovo
+depois de evoluir (vale pra Pichu, Igglybuff, Munchlax, Riolu…). `dados-ref/especies.tsv` responde isso em uma
+linha: `riolu … no-eggs`, contra `starly … flying`. `parCompativel` estava **certo**.
+
+**O defeito era de TELA, e é o mesmo de 06/10.** `situacaoDoNinho` devolvia só `pares[0]`: com um casal de Starly
+funcionando, a frase era "Starly e Starly se dão bem" e **nada** dizia que os dois Riolu ao lado estavam ali de
+enfeite. Quem joga não tem como adivinhar o grupo-ovo de uma espécie. Mecânica sem porta de entrada na tela é
+mecânica que não existe — e aqui a tela estava pior que calada: estava **respondendo sobre outro casal**.
+
+O conserto são duas frases, nenhuma mecânica nova:
+
+- **`ovos.semParNoNinho`** (pura, testada): quem não entrou em casal nenhum, com o **motivo** — `nao-cruza`
+  (bebê/lendário/mítico), `sem-sexo` (só com Ditto), `sem-par` (tem tudo, mas ninguém combina aqui) e
+  `desconhecido` (ficha de espécie fora do cache). Os quatro motivos são frases diferentes de propósito: "não dá"
+  e "ainda não sei" não são a mesma informação.
+- **"São 2 casais aqui — o ovo sai de um deles, sorteado"**, quando `quantos > 1`. O campo `quantos` já existia e
+  ninguém lia.
+
+**Por que não "deixar o bebê cruzar"**: seria inventar regra, não portar. A fidelidade aqui é o que faz o jogador
+que conhece os jogos reconhecer o sistema — e quem não conhece agora **aprende pela tela**, que é o lugar certo.

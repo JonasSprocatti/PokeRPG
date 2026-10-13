@@ -2,8 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GOLPES_ESPECIAIS } from '../js/especiais.js';
-import { usarGolpe, fimDeTurno, fimDaRodada, golpeTravado } from '../js/golpe.js';
-import { freshVol, poderEspecial, chanceOhko, danoResidual, calcDamage, TRAVAS } from '../js/regras.js';
+import { usarGolpe, fimDeTurno, fimDaRodada, golpeTravado, passarGravidade } from '../js/golpe.js';
+import { freshVol, poderEspecial, chanceOhko, danoResidual, calcDamage, TRAVAS, GRAVIDADE_TURNOS, APERTO_MIN, APERTO_MAX,
+  noChao, eficacia, motivoBloqueio, passarTravas } from '../js/regras.js';
 
 const golpe = (o = {}) => ({ name: 'tackle', type: 'normal', cls: 'physical', power: 40, acc: 100, pp: 35, ppLeft: 35, priority: 0, target: 'selected-pokemon', meta: {}, stats: [], ...o });
 const status = (name, o = {}) => golpe({ name, cls: 'status', power: null, acc: null, target: 'user', ...o });
@@ -35,9 +36,19 @@ test('tabela: só comportamentos que o motor conhece', () => {
     'curaStatus', 'cura', 'sobeEstagios',     // Heal Bell, Aromatherapy, Purify, Lunar Blessing, Take Heart
     'soAliados', 'soPlusMinus',               // Coaching/Dragon Cheer não pegam quem usou; Gear Up/Magnetic Flux só Plus e Minus
     'statAleatorio', 'focoDragao',            // Acupressure; Dragon Cheer vale o dobro no Dragão
-    'semEfeitoReal']);                        // Hold Hands não faz nada nos jogos — não é efeito faltando
+    'semEfeitoReal',                          // Hold Hands, Splash, Celebrate não fazem nada nos jogos — não é efeito faltando
+    // 🪐 chão e flutuação (regras.noChao/eficacia): Gravity põe todo mundo no chão, Magnet Rise/Telekinesis levantam,
+    // Smack Down/Thousand Arrows derrubam de vez
+    'gravidade', 'voa', 'noAlvo', 'poeNoChao',
+    // ⏳ resolvidos no fim do turno (golpe.fimDeTurno): Yawn, Nightmare, Ingrain, Aqua Ring, Perish Song, Wish
+    'bocejo', 'pesadeloGolpe', 'raiz', 'anel', 'cancaoFinal', 'desejo',
+    // 📊 contas sobre os estágios e atributos que o motor já guarda (Haze, Psych Up, Belly Drum, Pain Split, os swaps)
+    'limpaEstagios', 'copiaEstagios', 'tambor', 'inverteEstagios', 'divideHp',
+    'trocaProprios', 'trocaEstagios', 'trocaStat', 'mediaStat',
+    'danoFixo']);                             // dano que não passa pela fórmula (regras.danoFixoDe)
   const formulas = new Set(['hpBaixo', 'hpAlto', 'giroscopio', 'eletro', 'dobraAlvoComStatus', 'dobraComStatus', 'dobraAlvoEnvenenado', 'dobraAlvoMetade',
-    'pesoDoAlvo', 'pesoRelativo', 'estagios', 'estagiosDoAlvo', 'hpDoAlvo']);
+    'pesoDoAlvo', 'pesoRelativo', 'estagios', 'estagiosDoAlvo', 'hpDoAlvo',
+    'felicidade', 'felicidadeInversa', 'magnitude']);                                     // Return, Frustration, Magnitude
   for (const [n, e] of Object.entries(GOLPES_ESPECIAIS)) {
     for (const k of Object.keys(e)) assert.ok(ok.has(k), `${n}: comportamento desconhecido "${k}"`);
     if (e.poder) assert.ok(formulas.has(e.poder), `${n}: fórmula "${e.poder}"`);
@@ -272,4 +283,201 @@ test('Suction Cups segura o arrastão, não a própria vontade de sair', async (
   // o U-turn DELE mesmo continua funcionando
   await usarGolpe(mon({ ability: 'suction-cups' }), mon(), golpe({ name: 'u-turn', power: 70 }), true, c);
   assert.deepEqual(motivos, ['revezamento']);
+});
+
+/* ---- leva de 13/10/2026: chão e gravidade, aperto, fim de turno, estágios e dano fixo ---- */
+
+test('Gravidade: põe todo mundo no chão, derruba quem flutua e proíbe golpe de voo', async () => {
+  const voador = mon({ data: { types: ['flying'] }, nome: 'V' });
+  const u = mon({ nome: 'U' });
+  const campo = { lados: {} };
+  const c = ctx({ campo, aliadosDe: () => [], oponentesDe: m => m === u ? [voador] : [u] });
+  await usarGolpe(u, voador, status('gravity', { target: 'entire-field' }), true, c);
+  assert.equal(campo.gravidade, GRAVIDADE_TURNOS);
+  assert.equal(voador.vol.noSolo, 'gravidade');
+  assert.equal(noChao(voador), true, 'o Voador passa a sentir o chão');
+  // a imunidade de TIPO a Terrestre cai: um golpe de Terra agora acerta
+  assert.ok(eficacia({}, 'ground', voador) > 0);
+  // e os golpes que saem do chão ficam proibidos nas telas, na IA e no motor (flag `gravity` da PokéAPI)
+  assert.equal(motivoBloqueio(voador, golpe({ name: 'fly', type: 'flying' }))?.causa, 'gravidade');
+  assert.equal(motivoBloqueio(voador, golpe({ name: 'tackle' })), null);
+  // 5 rodadas e ela passa — quem foi derrubado pela GRAVIDADE volta a flutuar
+  for (let i = 0; i < GRAVIDADE_TURNOS; i++) await passarGravidade(campo, c, [u, voador]);
+  assert.equal(voador.vol.noSolo, undefined);
+  assert.equal(noChao(voador), false);
+});
+
+test('Magnet Rise levanta do chão; Smack Down derruba de vez (e a gravidade não o levanta)', async () => {
+  const u = mon();
+  await usarGolpe(u, mon(), status('magnet-rise'), true, ctx({ campo: { lados: {} } }));
+  assert.equal(u.vol.voando, 5);
+  assert.equal(noChao(u), false);
+  // golpe Terrestre passa embaixo
+  const c = ctx();
+  await usarGolpe(mon(), u, golpe({ name: 'earthquake', type: 'ground', power: 100 }), true, c);
+  assert.equal(u.hp, 160, c.msgs.join(' | '));
+  // a flutuação conta turnos junto das travas (regras.passarTravas)
+  for (let i = 0; i < 5; i++) assert.ok(passarTravas(u).length >= 0);
+  assert.equal(u.vol.voando, undefined);
+
+  // Smack Down: derruba e NÃO é desfeito pelo fim da gravidade
+  const voador = mon({ data: { types: ['flying'] } });
+  await usarGolpe(mon(), voador, golpe({ name: 'smack-down', type: 'rock', power: 50 }), true, ctx());
+  assert.equal(voador.vol.noSolo, true);
+  const campo = { lados: {}, gravidade: 1 };
+  await passarGravidade(campo, ctx(), [voador]);
+  assert.equal(voador.vol.noSolo, true, 'o Smack Down vale além da gravidade');
+});
+
+test('Aperto (Bind & cia.): 1/8 por turno, 4–5 turnos, e não deixa fugir', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const alvo = mon();
+  await usarGolpe(mon(), alvo, golpe({ name: 'fire-spin', type: 'fire', power: 35, meta: { ailment: 'trap', ailChance: 100 } }), true, ctx());
+  assert.ok(alvo.vol.aperto, 'ficou preso');
+  const turnos = alvo.vol.aperto.turnos;
+  assert.ok(turnos >= APERTO_MIN && turnos <= APERTO_MAX);
+  const antes = alvo.hp;
+  await fimDeTurno(alvo, ctx());
+  assert.equal(alvo.hp, antes - Math.floor(160 / 8));
+  assert.equal(alvo.vol.aperto.turnos, turnos - 1);
+  // os turnos acabam e ele se solta
+  for (let i = 0; i < turnos; i++) await fimDeTurno(alvo, ctx());
+  assert.equal(alvo.vol.aperto, undefined);
+});
+
+test('Bocejo dorme no turno seguinte; Pesadelo só vale dormindo; Desejo cura depois', async t => {
+  t.mock.method(Math, 'random', () => 0.5);
+  const alvo = mon();
+  await usarGolpe(mon(), alvo, status('yawn', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(alvo.vol.bocejo, 2);
+  await fimDeTurno(alvo, ctx());
+  assert.equal(alvo.status, null, 'ainda não: é no fim do turno SEGUINTE');
+  await fimDeTurno(alvo, ctx());
+  assert.equal(alvo.status, 'sleep');
+
+  // Pesadelo: agora que ele dorme, pega — e 1/4 do HP por turno
+  await usarGolpe(mon(), alvo, status('nightmare', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(alvo.vol.pesadelo, true);
+  const antes = alvo.hp;
+  await fimDeTurno(alvo, ctx());
+  assert.ok(alvo.hp <= antes - Math.floor(160 / 4));
+  // acordar desfaz sozinho
+  alvo.status = null; alvo.sleep = 0;
+  await fimDeTurno(alvo, ctx());
+  assert.equal(alvo.vol.pesadelo, undefined);
+
+  // Desejo: a cura é a de QUANDO foi pedida, e chega no turno seguinte
+  const u = mon({ hp: 40 });
+  await usarGolpe(u, mon(), status('wish'), true, ctx());
+  assert.equal(u.vol.desejo.cura, 80);
+  await fimDeTurno(u, ctx());
+  assert.equal(u.hp, 40, 'ainda não');
+  await fimDeTurno(u, ctx());
+  assert.equal(u.hp, 120);
+});
+
+test('Canção Final derruba os dois lados em 3 turnos', async () => {
+  const u = mon({ nome: 'U' }), inimigo = mon({ nome: 'I' });
+  const c = ctx({ aliadosDe: () => [], oponentesDe: m => m === u ? [inimigo] : [u] });
+  await usarGolpe(u, inimigo, status('perish-song', { target: 'all-pokemon' }), true, c);
+  assert.equal(u.vol.cancaoFinal, 3);
+  assert.equal(inimigo.vol.cancaoFinal, 3);
+  for (let i = 0; i < 3; i++) { await fimDeTurno(u, c); await fimDeTurno(inimigo, c); }
+  assert.equal(u.hp, 0);
+  assert.equal(inimigo.hp, 0);
+});
+
+test('Haze zera, Psych Up copia, Topsy-Turvy inverte e Belly Drum paga meio HP pelo +6', async () => {
+  const u = mon({ nome: 'U' }), inimigo = mon({ nome: 'I' });
+  inimigo.vol.stages.attack = 3; u.vol.stages.speed = 2;
+  const c = ctx({ aliadosDe: () => [], oponentesDe: m => m === u ? [inimigo] : [u] });
+  await usarGolpe(u, inimigo, status('haze', { target: 'all-pokemon' }), true, c);
+  assert.equal(inimigo.vol.stages.attack, 0);
+  assert.equal(u.vol.stages.speed, 0, 'a névoa também apaga os SEUS');
+
+  inimigo.vol.stages.attack = 2; inimigo.vol.stages.defense = -1;
+  await usarGolpe(u, inimigo, status('psych-up', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(u.vol.stages.attack, 2);
+  assert.equal(u.vol.stages.defense, -1);
+
+  await usarGolpe(u, inimigo, status('topsy-turvy', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(inimigo.vol.stages.attack, -2);
+  assert.equal(inimigo.vol.stages.defense, 1);
+
+  const d = mon();
+  await usarGolpe(d, mon(), status('belly-drum'), true, ctx());
+  assert.equal(d.hp, 80);
+  assert.equal(d.vol.stages.attack, 6);
+  // sem HP pra pagar, falha
+  const fraco = mon({ hp: 50 });
+  await usarGolpe(fraco, mon(), status('belly-drum'), true, ctx());
+  assert.equal(fraco.hp, 50);
+});
+
+test('Pain Split, Speed Swap e Guard Split igualam os números dos dois', async () => {
+  const u = mon({ hp: 20 }), a = mon({ hp: 160 });
+  await usarGolpe(u, a, status('pain-split', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(u.hp, 90); assert.equal(a.hp, 90);
+
+  const x = mon(), y = mon();
+  x.stats.speed = 200; y.stats.speed = 50;
+  await usarGolpe(x, y, status('speed-swap', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(x.stats.speed, 50); assert.equal(y.stats.speed, 200);
+
+  x.stats.defense = 100; y.stats.defense = 200;
+  x.stats['special-defense'] = 60; y.stats['special-defense'] = 40;
+  await usarGolpe(x, y, status('guard-split', { target: 'selected-pokemon' }), true, ctx());
+  assert.equal(x.stats.defense, 150); assert.equal(y.stats.defense, 150);
+  assert.equal(x.stats['special-defense'], 50); assert.equal(y.stats['special-defense'], 50);
+});
+
+test('Dano fixo: número, nível, metade do HP e o próprio HP (Final Gambit leva o dono)', async () => {
+  const alvo = () => mon();
+  const a = alvo();
+  await usarGolpe(mon(), a, golpe({ name: 'dragon-rage', type: 'dragon', power: null }), true, ctx());
+  assert.equal(a.hp, 120, 'Dragon Rage dá 40, sempre');
+
+  const b = alvo();
+  await usarGolpe(mon({ level: 73 }), b, golpe({ name: 'seismic-toss', type: 'fighting', power: null }), true, ctx());
+  assert.equal(b.hp, 160 - 73, 'Seismic Toss dá o nível de quem usou');
+
+  const c2 = alvo();
+  await usarGolpe(mon(), c2, golpe({ name: 'super-fang', type: 'normal', power: null }), true, ctx());
+  assert.equal(c2.hp, 80, 'Super Fang tira metade do HP ATUAL');
+
+  // Night Shade continua respeitando a tabela de tipos: Fantasma não pega Normal
+  const normal = mon({ data: { types: ['normal'] } });
+  const cn = ctx();
+  await usarGolpe(mon(), normal, golpe({ name: 'night-shade', type: 'ghost', power: null }), true, cn);
+  assert.equal(normal.hp, 160, cn.msgs.join(' | '));
+
+  const u = mon({ hp: 55 }), d = alvo();
+  await usarGolpe(u, d, golpe({ name: 'final-gambit', type: 'fighting', power: null }), true, ctx());
+  assert.equal(d.hp, 105);
+  assert.equal(u.hp, 0, 'quem usa Final Gambit desmaia');
+});
+
+test('Return e Frustration saem da felicidade; sem felicidade vale o inicial dos jogos', () => {
+  const ret = GOLPES_ESPECIAIS.return, fru = GOLPES_ESPECIAIS.frustration;
+  assert.equal(poderEspecial(mon({ felicidade: 255 }), mon(), golpe({ name: 'return', ...ret })), 102);
+  assert.equal(poderEspecial(mon({ felicidade: 0 }), mon(), golpe({ name: 'return', ...ret })), 1);
+  assert.equal(poderEspecial(mon({ felicidade: 0 }), mon(), golpe({ name: 'frustration', ...fru })), 102);
+  // selvagem (sem o campo): 70, o inicial dos jogos — nunca NaN
+  assert.equal(poderEspecial(mon(), mon(), golpe({ name: 'return', ...ret })), 28);
+});
+
+test('Tri Attack sorteia entre queimar, congelar e paralisar em vez de "nada aconteceu"', async t => {
+  // efeito de chance se testa FIXANDO o sorteio: 0.0 cai no primeiro da lista (burn)
+  t.mock.method(Math, 'random', () => 0);
+  const alvo = mon();
+  const c = ctx();
+  await usarGolpe(mon(), alvo, golpe({ name: 'tri-attack', type: 'normal', power: 80, meta: { ailment: 'unknown', ailChance: 20 } }), true, c);
+  assert.equal(alvo.status, 'burn', c.msgs.join(' | '));
+  assert.ok(!c.msgs.some(m => m.includes('será ajustado')));
+});
+
+test('Splash não promete efeito futuro — nos jogos ele não faz nada mesmo', async () => {
+  const c = ctx();
+  await usarGolpe(mon(), mon(), status('splash'), true, c);
+  assert.ok(!c.msgs.some(m => m.includes('será ajustado')), c.msgs.join(' | '));
 });

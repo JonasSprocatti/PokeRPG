@@ -10,7 +10,7 @@
 import { STRUGGLE, STATS, TYPE_PT, ITEMS } from './dados.js';
 import { novoCampo, effStat, consegueFugir, ordenarAcoes, ativouQuickClaw, sempreUltimo, prioridadeEfetiva, freshVol, calcStats, climaDe, terrenoDe, escolhaIA, golpesPermitidos, golpeForcado, ESPERTEZA, multVento, TURNOS_DYNAMAX, itemTemEfeito, heal, LADO_VAZIO, noChao, tiposDefensivos, tiposOfensivos } from './regras.js';
 import { golpeCanhao, usarItemDeRaide } from './boss.js';
-import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
+import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarGravidade, passarLados, aoEntrarEmCampo, mudarEstagios } from './golpe.js';
 import { aplicarForma, verboDaForma } from './mega.js';
 import { megasDe } from './dados-megas.js';
 import { teracristalizar } from './tera.js';
@@ -321,7 +321,7 @@ export async function resolverTurnoMP(estado, acoes) {
     const inimigoRapido = Math.max(...vivosMP(s.lados.B).map(m => effStat(m, 'speed')));
     // Magnet Pull (só Aço), Shadow Tag (todo mundo) e Arena Trap (só quem está no chão): qualquer inimigo vivo com a habilidade prende
     const preso = vivosMP(s.lados.B).some(m => hab(m).prendeTipo?.some(t => quem.data.types.includes(t))
-      || hab(m).prendeQualquer === true || (hab(m).prendeQualquer === 'chao' && noChao(quem))) || !!quem.vol?.preso;   // ou um golpe (Mean Look, Block, Spider Web)
+      || hab(m).prendeQualquer === true || (hab(m).prendeQualquer === 'chao' && noChao(quem))) || !!quem.vol?.preso || !!quem.vol?.aperto;   // ou um golpe (Mean Look, Block, Spider Web, Bind & cia.)
     if (consegueFugir(effStat(quem, 'speed'), inimigoRapido, s.fugas, quem.ability, undefined, preso)) {
       say(`${quem.nome} achou uma saída e todo mundo fugiu!`, 'good');
       s.fim = 'fuga'; return { estado: s, eventos: ev };
@@ -371,7 +371,7 @@ export async function resolverTurnoMP(estado, acoes) {
   }
 
   // 3) fim de turno: queimadura/veneno, desmaios, quem venceu
-  if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { for (const m of vivosMP(todosMP(s))) await porConta(m.ref, () => fimDeTurno(m, ctx)); await passarClima(s.campo, ctx); await passarTerreno(s.campo, ctx); await passarLados(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
+  if (vivosMP(s.lados.A).length && vivosMP(s.lados.B).length) { const todos = vivosMP(todosMP(s)); for (const m of todos) await porConta(m.ref, () => fimDeTurno(m, ctx)); await passarClima(s.campo, ctx); await passarTerreno(s.campo, ctx); await passarGravidade(s.campo, ctx, todos); await passarLados(s.campo, ctx); } // + Speed Boost, Shed Skin, clima
   for (const m of todosMP(s)) if (passarDynamax(m) === 'acabou') say(`${m.nome} voltou ao tamanho normal.`, 'status');   // o gigante encolhe no fim da rodada
   for (const m of todosMP(s)) { fimDaRodada(m); if (m.hp <= 0 && !m.caido) { m.caido = true; say(`${m.nome} desmaiou!`, 'hit'); } }
   if (!vivosMP(s.lados.B).length) s.fim = 'A';

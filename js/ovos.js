@@ -120,6 +120,23 @@ export function parCompativel(a, b, grupos) {
    `status` pra tela escolher a frase e `casal` pra ela nomear quem está pronto.
    Pura e sem rede: `grupos` vem de fora (a tela lê do cache, síncrono), e grupo que FALTA vira `desconhecido` em
    vez de "não cruza" — na tela, "ainda não sei" e "não dá" são frases diferentes. */
+/* Quem NÃO entrou em casal nenhum, e por quê. Existe por um relato (13/10/2026): o jogador guardou 2 Starly e
+   2 Riolu e só via ovos de Starly — "só o primeiro par põe ovo". O sorteio estava certo (`acharPar` sorteia entre
+   TODOS os pares, sempre esteve); o Riolu é que não cruza, porque é BEBÊ, e bebê está no grupo `no-eggs` nos jogos
+   (Pichu, Igglybuff, Riolu, Munchlax… a espécie só cruza depois de evoluir). O defeito era de TELA: com um casal
+   válido no ninho a frase era "pronto" e nada contava que os outros dois estavam ali de enfeite.
+   Mesma lição do "os ovos estão funcionando?" de 06/10 — regra que a tela não conta não existe. */
+export function semParNoNinho(guardados = [], grupos) {
+  const emPar = new Set();
+  for (let i = 0; i < guardados.length; i++)
+    for (let j = i + 1; j < guardados.length; j++)
+      if (parCompativel(guardados[i], guardados[j], grupos)) { emPar.add(guardados[i]); emPar.add(guardados[j]); }
+  return guardados.filter(m => !emPar.has(m)).map(m => {
+    const g = grupos?.get?.(m?.data?.speciesName) || [];
+    const motivo = !g.length ? 'desconhecido' : g.includes(GRUPO_SEM_OVO) ? 'nao-cruza' : !m.genero ? 'sem-sexo' : 'sem-par';
+    return { mon: m, motivo };
+  });
+}
 export function situacaoDoNinho(guardados = [], grupos, quantosOvos = 0) {
   const n = guardados.length;
   if (quantosOvos >= MAX_OVOS) return { status: 'ninho-cheio', casal: null };
@@ -128,10 +145,10 @@ export function situacaoDoNinho(guardados = [], grupos, quantosOvos = 0) {
   const pares = [];
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (parCompativel(guardados[i], guardados[j], grupos)) pares.push([guardados[i], guardados[j]]);
   if (pares.length) {
-    const [a, b] = pares[0];
+    const [a, b] = pares[0], semPar = semParNoNinho(guardados, grupos);
     // com Ditto o "casal" é Ditto + o outro; quem aparece primeiro é quem dá a espécie, como em `acharPar`
-    if (ehDitto(a, grupos) || ehDitto(b, grupos)) return { status: 'pronto', casal: ehDitto(a, grupos) ? [b, a] : [a, b], quantos: pares.length };
-    return { status: 'pronto', casal: a.genero === 'f' ? [a, b] : [b, a], quantos: pares.length };
+    if (ehDitto(a, grupos) || ehDitto(b, grupos)) return { status: 'pronto', casal: ehDitto(a, grupos) ? [b, a] : [a, b], quantos: pares.length, semPar };
+    return { status: 'pronto', casal: a.genero === 'f' ? [a, b] : [b, a], quantos: pares.length, semPar };
   }
   // sem par: a tela precisa distinguir "não dá" de "o jogo ainda não sabe" (ficha de espécie fora do cache)
   if (guardados.some(m => !(grupos?.get?.(m?.data?.speciesName) || []).length)) return { status: 'desconhecido', casal: null };

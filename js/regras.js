@@ -100,9 +100,15 @@ export const tiposOfensivos = m => m?.tera ? [...new Set([m.tera, ...tiposDe(m)]
    coisa: um golpe Sombrio em Gengar (Fantasma/Venenoso) perderia o super efetivo sem motivo nenhum. Toda decisão
    de "esse golpe faz algo?" passa por aqui: o dano (calcDamage), o motor (golpe.executar, OHKO incluído) e a IA. */
 export function eficacia(hu, tipo, alvo) {
-  const tipos = tiposDefensivos(alvo), e = typeEff(tipo, tipos);
+  const tipos = tiposDefensivos(alvo);
+  /* Posto NO CHÃO (Gravidade, Smack Down, Thousand Arrows): o Voador perde a imunidade a Terrestre. Fica aqui, e
+     não em `typeEff`, porque a tabela de tipos é dado e isto é estado da luta — e porque esta já é a porta única
+     de "esse golpe faz algo?" (dano, motor e IA leem daqui). A imunidade de HABILIDADE (Levitate) cai no mesmo
+     caso, mas ela é checada em golpe.executar, que também pergunta pelo `noSolo`. */
+  const defs = tipo === 'ground' && alvo?.vol?.noSolo ? tipos.filter(d => d !== 'flying') : tipos;
+  const e = typeEff(tipo, defs);
   if (e !== 0 || !hu?.ignoraImunidade) return e;
-  return typeEff(tipo, tipos.filter(d => !hu.ignoraImunidade.includes(d)));
+  return typeEff(tipo, defs.filter(d => !hu.ignoraImunidade.includes(d)));
 }
 /* Tipo Tera SORTEADO do inimigo: qualquer um dos 18, do tipo dele ou não, com a mesma chance. O fator surpresa é
    não dar pra prever pra onde ele vira. `rnd` injetável pros testes. */
@@ -259,6 +265,33 @@ export function poderEspecial(u, t, move) {
     case 'dobraComStatus': return u.status ? base * 2 : base;                                          // Facade
     case 'dobraAlvoEnvenenado': return t.status === 'poison' ? base * 2 : base;                       // Venoshock
     case 'dobraAlvoMetade': return t.hp <= t.stats.hp / 2 ? base * 2 : base;                           // Brine
+    /* Return / Frustration: o poder sai da FELICIDADE, de 0 a 102 (felicidade/2,5), como nos jogos. Aqui a
+       felicidade do seu Pokémon é a `m.felicidade` que o petisco e a amizade mexem (amizade.js), e a de um
+       selvagem não existe — `?? 70` é o valor inicial dos jogos, que dá ~28 de poder. */
+    case 'felicidade': return Math.max(1, Math.floor((u.felicidade ?? 70) / 2.5));
+    case 'felicidadeInversa': return Math.max(1, Math.floor((255 - (u.felicidade ?? 70)) / 2.5));
+    // Magnitude: o poder é sorteado na hora, com os mesmos pesos dos jogos (o 70 é o mais comum)
+    case 'magnitude': return [[10, 5], [30, 10], [50, 20], [70, 30], [90, 20], [110, 10], [150, 5]]
+      .reduce((a, [p, w]) => a.concat(Array(w).fill(p)), [])[rand(0, 99)];
+  }
+  return null;
+}
+/* Golpes de dano FIXO: não passam pela fórmula de dano (nem tipo, nem atributo, nem crítico). Devolve o dano
+   BRUTO ou null — quem chama (golpe.executar) ainda passa pelo chefe de evento, como o Endeavor já fazia:
+   dano que fura a couraça do chefe seria um botão de vitória.
+     número         sempre esse tanto (Sonic Boom 20, Dragon Rage 40)
+     nivel          o nível de quem usou (Seismic Toss, Night Shade)
+     nivelVariado   de 50% a 150% do nível (Psywave)
+     metadeDoAlvo   metade do HP ATUAL do alvo (Super Fang, Nature's Madness)
+     hpProprio      o HP que sobrou em quem usou, que desmaia depois (Final Gambit) */
+export function danoFixoDe(u, t, esp, sorte = Math.random) {
+  const f = esp?.danoFixo; if (f == null) return null;
+  if (typeof f === 'number') return f;
+  switch (f) {
+    case 'nivel': return u.level;
+    case 'nivelVariado': return Math.max(1, Math.floor(u.level * (0.5 + sorte())));
+    case 'metadeDoAlvo': return Math.max(1, Math.floor(t.hp / 2));
+    case 'hpProprio': return u.hp;
   }
   return null;
 }
@@ -424,8 +457,16 @@ export function golpeDaConversaoDeTipo(g, u) {
   return { ...g, type: c.para, power: g.power ? Math.floor(g.power * (c.mult || 1)) : g.power };
 }
 export const terrenoDe = campo => (campo?.terrenoTurnos > 0 && TERRENOS[campo.terreno]) ? campo.terreno : null;
-// quem está no chão sente o terreno; Voador e Levitate flutuam
-export const noChao = m => !tiposDe(m).includes('flying') && hab(m).imuneTipo !== 'ground' && !m?.vol?.balao;
+/* Quem está no chão sente o terreno; Voador e Levitate flutuam.
+   🪨 `vol.noSolo` (Gravidade, Smack Down, Thousand Arrows) força PRA BAIXO e 🧲 `vol.voando` (Magnet Rise,
+   Telekinesis) força PRA CIMA — nesta ordem, como nos jogos: a gravidade vence a flutuação, e é por isso que
+   `mudarGravidade` apaga o `voando` de quem estava no ar. Um Pokémon posto no chão sente o terreno, pisa nos
+   espinhos, pega as toxinas e passa a levar golpe Terrestre (`regras.eficacia`). */
+export const noChao = m => m?.vol?.noSolo ? true : m?.vol?.voando > 0 ? false
+  : !tiposDe(m).includes('flying') && hab(m).imuneTipo !== 'ground' && !m?.vol?.balao;
+/* Turnos de cada coisa que mexe com o chão e com o aperto. `APERTO_MIN/MAX` são os 4–5 turnos dos jogos (Bind,
+   Fire Spin, Whirlpool…), e `APERTO_FRACAO` o 1/8 do HP máximo por turno. */
+export const GRAVIDADE_TURNOS = 5, APERTO_MIN = 4, APERTO_MAX = 5, APERTO_FRACAO = 1 / 8;
 export function multTerreno(terreno, tipo, atacante) {
   const t = TERRENOS[terreno]; if (!t || !atacante || !noChao(atacante)) return 1;
   return t.sobe?.[tipo] || t.desce?.[tipo] || 1;
@@ -781,6 +822,11 @@ export function motivoBloqueio(m, g) {
   if (s.semStatus && g.cls === 'status') return { causa: 'colete', texto: `o ${item} não deixa usar golpes de status` };
   if (v.desativado && g.name === v.desativado.golpe) return { causa: 'disable', texto: `${fmt(g.name)} está desativado` };
   if (v.tormento && v.ultimo === g.name) return { causa: 'tormento', texto: 'atormentado, não pode repetir o golpe anterior' };
+  /* 🪐 Gravidade: os golpes que saem do chão (Fly, Bounce, Magnet Rise, Telekinesis…) não funcionam. Quem diz
+     QUAIS é a flag `gravity` da própria PokéAPI (dados-golpe-flags.js) — ela existe exatamente pra isto, então
+     não há lista nossa pra manter. Entra aqui, e não numa trava do motor, pra as 3 telas de golpe e a IA já
+     respeitarem de graça. `vol.gravidade` é posto e tirado por golpe.mudarGravidade/passarGravidade. */
+  if (v.gravidade && temFlag(g, 'gravity')) return { causa: 'gravidade', texto: 'a gravidade não deixa sair do chão' };
   return null;
 }
 export const golpePermitido = (m, g) => g.ppLeft > 0 && !motivoBloqueio(m, g);
@@ -816,6 +862,8 @@ export function passarTravas(m) {
   const fim = [];
   if (v.provocado > 0 && --v.provocado <= 0) { delete v.provocado; fim.push('provocado'); }
   for (const k of ['encore', 'desativado']) if (v[k] && --v[k].turnos <= 0) { delete v[k]; fim.push(k); }
+  // 🧲 Magnet Rise / Telekinesis: a flutuação conta turnos igual às travas, no mesmo lugar
+  if (v.voando > 0 && --v.voando <= 0) { delete v.voando; fim.push('voando'); }
   return fim;
 }
 // Linhas pra mostrar ao jogador o que está travando o Pokémon dele (as 3 telas de golpe usam a mesma)
@@ -873,6 +921,14 @@ export function notaDoGolpe(g, c) {
     if (esp.soDormindo && alvo.status !== 'sleep') return IMPOSSIVEL;
     if (esp.soPrimeiroTurno && u.vol?.golpesDados) return IMPOSSIVEL;
     if (esp.ohko) return u.level < alvo.level ? IMPOSSIVEL : Math.min(90, 30 + u.level - alvo.level) * 0.9;
+    /* 💥 Dano FIXO: `calcDamage` não sabe calcular estes (o poder é 0 ou mentira), então a nota sai do dano de
+       verdade — senão a IA os trataria como golpe de poder nulo e nunca os usaria. Final Gambit leva o próprio
+       dono junto, e por isso só vale a pena quando o troco derruba o alvo. */
+    const fixo = danoFixoDe(u, alvo, esp);
+    if (fixo != null) {
+      const nota = Math.min(1, fixo / Math.max(1, alvo.hp)) * 100 * acerto;
+      return esp.autoDesmaio ? (fixo >= alvo.hp ? nota : nota - 60) : nota + (fixo >= alvo.hp ? 40 : 0);
+    }
     const { dmg } = calcDamage(u, alvo, g, clima, terreno, ladoAlvo, true);
     let nota = Math.min(1, dmg / Math.max(1, alvo.hp)) * 100 * acerto;
     if (dmg >= alvo.hp && acerto > 0.6) nota += 40 + ((g.priority || 0) > 0 ? 30 : 0);      // derruba: vence qualquer outra ideia (e a prioridade garante)
@@ -948,6 +1004,28 @@ export function notaDoGolpe(g, c) {
   if (esp.foco) return u.vol?.foco ? IMPOSSIVEL : frac(u) > 0.6 ? 10 : 2;
   if (esp.semente) return tiposDefensivos(alvo).includes('grass') || alvo.vol?.semente != null ? IMPOSSIVEL : 32 * acerto;
   if (esp.armadilha) return IMPOSSIVEL;                                                     // do lado do jogador ninguém troca de Pokémon: não pega ninguém
+  /* A leva de 09/2026 (gravidade, bocejo, raiz, trocas de atributo…). Sem uma linha aqui o golpe vale `IGNORADO`
+     e o inimigo o usa de graça em cima de outro já ativo — era o que fazia um Hypno gastar 4 turnos bocejando. */
+  if (esp.gravidade) return campo?.gravidade > 0 ? IMPOSSIVEL : noChao(alvo) ? 6 : 30;      // vale quando o alvo FLUTUA
+  if (esp.voa) {
+    const quem = esp.noAlvo ? alvo : u;
+    if (campo?.gravidade > 0 || quem.vol?.voando > 0 || quem.vol?.noSolo) return IMPOSSIVEL;
+    if (esp.noAlvo) return 6;                                                               // Telekinesis no inimigo: pouco proveito pra IA
+    return alvo.moves?.some(m => m.ppLeft > 0 && m.type === 'ground') ? 28 : 4;              // Magnet Rise só serve contra golpe Terrestre
+  }
+  if (esp.poeNoChao) return noChao(alvo) ? IGNORADO : 24;
+  if (esp.bocejo) return alvo.status || alvo.vol?.bocejo || imuneAoStatusMon(alvo, 'sleep') || ladoAlvo?.salvaguarda > 0 ? IMPOSSIVEL : 42 * acerto;
+  if (esp.pesadeloGolpe) return alvo.status === 'sleep' && !alvo.vol?.pesadelo ? 40 : IMPOSSIVEL;
+  if (esp.raiz) return u.vol?.raiz ? IMPOSSIVEL : frac(u) < 0.7 ? 18 : 6;
+  if (esp.anel) return u.vol?.anel ? IMPOSSIVEL : frac(u) < 0.8 ? 20 : 8;
+  if (esp.desejo) return u.vol?.desejo ? IMPOSSIVEL : frac(u) < 0.6 ? 34 : IMPOSSIVEL;
+  if (esp.cancaoFinal) return u.vol?.cancaoFinal ? IMPOSSIVEL : frac(u) < 0.3 ? 40 : 8;      // caindo: leva o outro junto
+  if (esp.tambor) return u.hp > u.stats.hp / 2 && (u.vol?.stages?.attack || 0) < 6 && frac(u) > 0.8 ? 55 : IMPOSSIVEL;
+  if (esp.divideHp) return alvo.hp > u.hp * 1.5 ? 36 : IMPOSSIVEL;                           // só vale se o alvo tem MUITO mais HP
+  if (esp.limpaEstagios) return estagiosPositivos(alvo) > estagiosPositivos(u) ? 30 : IMPOSSIVEL;
+  if (esp.copiaEstagios) return estagiosPositivos(alvo) >= 2 ? 32 : IMPOSSIVEL;
+  if (esp.inverteEstagios) return estagiosPositivos(alvo) >= 2 ? 34 : IMPOSSIVEL;
+  if (esp.trocaEstagios || esp.trocaProprios || esp.trocaStat || esp.mediaStat) return 8;    // situacional demais pra IA julgar: usa pouco
   if (esp.autoDesmaio) return -60;
   if (esp.clima) {
     if (clima === esp.clima) return IMPOSSIVEL;
