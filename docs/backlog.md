@@ -44,8 +44,11 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   `admin: true`, nenhuma leva da Saga vira patch note**; quando o modo abrir pra todos, sai UMA entrada contando
   o modo inteiro.
   **Falta, e é o que mantém o modo `admin: true`**: a **fase 2** (Juramentos, ordens por ofício, tela de comitiva)
-  e a **fase 3/4** — o MUNDO do modo: trilhas em grafo de nós, NPCs Pokémon com diálogo, três facções com
-  reputação, capítulos e finais. O trabalho da fase 3 é **escrever**, não programar.
+  e os **capítulos 2 e 3** do mundo. **✅ O capítulo 1 do MUNDO saiu em 13/10/2026** (mapa andável, NPCs com
+  diálogo, missões e missão secreta, 3 facções, 3 finais, dons) — registro em `docs/features.md` → "⚔ Saga, o
+  mundo andável". Do mundo falta: mapas das rotas 4 a 10 (hoje seguem pela lista de rotas, depois do Passo do
+  Norte), reputação mexendo em preço e recruta, e o final da Gen mudando com a facção. **Falta olhar o mapa numa
+  tela de verdade** (o Pi não tem navegador; o CSS foi escrito às cegas).
   **Fora de propósito por ora**: ameaça e Brecha no `mp-motor` (não existe Saga em sala); grupo em luta de
   treinador e de lendários (a fila deles é o balanceamento dos outros modos); seleção manual de alvo aliado;
   Limit Break (as 4 gimmicks já são o ultimate do modo) e Brave/Default (mexeria na economia do turno, que é

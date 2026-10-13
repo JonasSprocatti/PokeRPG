@@ -62,6 +62,8 @@ acha em um segundo. O *porquê* de cada arquivo (o que foi considerado, o que fi
 | `js/golpe.js` | **Motor único do golpe** (ver Arquitetura). |
 | `js/habilidades.js` | Tabela de ganchos + `IMPL`. **Só o que está na tabela tem efeito** (hoje 251 de 314 reais). Gancho novo = código no motor + teste. |
 | `js/oficios.js` · `js/pericias.js` | ⚔ Saga (puros, sem imports — são CHÃO do grafo): os 6 ofícios lidos dos stats base + learnset · as 8 perícias (recarga em `m.vol.cd`). Quem EXECUTA perícia é `batalha.usarPericia`. |
+| `js/dados-saga.js` · `js/saga-mundo.js` | ⚔ Saga, o MUNDO andável: mapas em grade de texto, NPCs, diálogos, missões, itens-chave e dons (dado puro, sem imports) · as regras (puro, testado): passo, bloqueio, caminho, condição `vale`, efeito `aplicar`, `fimDaLuta`. Tudo em `S.saga`. |
+| `js/saga-cena.js` · `js/tela-saga.js` | O HTML do mapa/diário/fala (fica ABAIXO do `render.js`, que desenha o mapa na cena — nunca importa batalha) · as ações: andar, esbarrar, conversar, começar luta (fica ACIMA de `mundo.js`). |
 | `js/especiais.js` | Golpes cujo efeito não cabe no `meta` da PokéAPI. Sem imports. |
 | `js/segurados.js` | Itens segurados (puro). `seg(m)` é o ÚNICO ponto por onde toda leitura de item passa. |
 | `js/batalha.js` | `turn(action)` é a única entrada da UI. Começo de batalha, vitória, derrota, captura, `endBattle`. |
@@ -198,8 +200,12 @@ O pacote (`conteudo.js`) carrega **`alfas`** · **`missoesRota`** · **`mapas`**
 - **Batalha sobrevive ao F5**: `S.batalha = ganchosSave.serializarBatalha(G.B)`; `restaurarBatalha` reaponta `B.enemy` pra `trainer.equipe[atual]`.
 - **Segredo do brilho**: jogador shiny ganha XP e dinheiro em dobro e Centro grátis. **É segredo — não entra no README nem nos patch notes.**
 
-### ⚔ Saga (modo `saga`, `admin: true` — fase 1 do plano, FECHADA)
-Lê sempre as FLAGS: `jrpg` (janela de comandos, perícias, Brecha/Ruína, vocabulário), `ameaca` (alvo por aggro), `grupos` (grupo SEMPRE, em vez da chance de `regras.chanceDeGrupo`), `aliadosEmCampo: 3`. **Nunca o nome do modo.**
+### ⚔ Saga (modo `saga`, `admin: true` — combate FECHADO, mundo com o capítulo 1)
+Lê sempre as FLAGS: `jrpg` (janela de comandos, perícias, Brecha/Ruína, vocabulário), `ameaca` (alvo por aggro), `grupos` (grupo SEMPRE, em vez da chance de `regras.chanceDeGrupo`), `aliadosEmCampo: 3`, `mundo` (mapa andável no lugar da lista de rotas). **Nunca o nome do modo.**
+- **🗺 O mundo é uma CAMADA sobre as rotas** (`saga-mundo.mundoAtivo(S)`): cada mapa de `dados-saga.MAPAS_SAGA` aponta pra uma rota da Gen pelo ÍNDICE, e encontro/Alfa/treinador saem dos `start*` de sempre com aquela rota. Por isso **nenhuma busca nova** (o `baixarGen` já cobre) e **a história nunca cita a espécie de um inimigo** — quem é o Alfa depende da Gen. Inimigo com espécie fixa quebraria as duas coisas.
+- **Conteúdo é dado, e o teste é a rede**: mapa em grade de texto, objeto com variantes (vale a primeira cujo `se` fecha), diálogo em nós. `tests/saga-mundo.test.js` cobra geografia (tudo alcançável a pé, ninguém encurralado numa porta) e referência (todo `vai`/item/missão/dom existe). **Condição ou efeito novo = uma linha em `vale`/`aplicar` + teste**; o que não é dado puro (mochila, cura, loja, viagem) volta como `pedidos` pra `tela-saga`.
+- **Luta que o mapa começou** anota `S.saga.luta = { flag }`, e quem marca a vitória é `batalha.endBattle` → `saga-mundo.fimDaLuta` (porta única do fim de luta, vai no save). **Dons** moram em `m.dons` do jogador; os de batalha entram em `regras.multSaga`.
+- **Depois do capítulo** (`S.saga.fora`) o jogo volta pra lista de rotas, com botão de volta ao Vale: as rotas sem mapa continuam alcançáveis. `tests/saga-smoke.test.js` roda mapa, conversa, baú e pousada com DOM de mentira — **ação nova em `tela-saga` = um caso lá**.
 - **Ofício** congelado em `m.oficio` (`oficios.oficioDe`, decidido uma vez em `makeMon`, não muda na evolução).
 - **Perícia** (`pericias.js`, 8) é a **AÇÃO da rodada**, não gasta PP, custa recarga em `m.vol.cd`. Só o ofício MAIOR dá perícia. `batalha.usarPericia` executa e **reconfere `periciaPronta`** (plano é escrito antes do turno rodar). Perícia sem o que fazer **não gasta recarga**.
 - **Brecha/Ruína**: `vol.guardaMax`/`guarda` só nos INIMIGOS (`batalha.armarGuarda`, chamada em TODA entrada em campo do lado de lá). O motor só PEDE por **`ctx.abrirBrecha`** (mesmo padrão do `ctx.forcarSaida`) e lê **`regras.multSaga`** uma vez no dano (Ruína ×1,5 · Muralha ×0,5 · Marca ×1,25). Sem o gancho (multiplayer) e sem `guardaMax` (outros modos), tudo vira no-op.

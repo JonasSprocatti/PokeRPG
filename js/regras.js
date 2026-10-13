@@ -1552,6 +1552,10 @@ export const GUARDA = { selvagem: 3, alfa: 6, chefe: 10 };
    Com 1, derrubar a Guarda com o último a agir não custava NADA ao inimigo. Com 2 ele perde o resto da rodada e
    a rodada seguinte inteira, que é o "perde o próximo turno" do desenho. Afinar é mexer aqui. */
 export const RUINA_TURNOS = 2;
+/* ✨ Dons (dados-saga.DONS): habilidades que o MUNDO da Saga dá por escolha, guardadas no Pokémon (`m.dons`).
+   Os dois de batalha entram no mesmo multiplicador que o motor já lê uma vez no dano. */
+export const MULT_DOM_BRASA = 1.2;  // Brasa da Forja: +20% em inimigo em Ruína
+export const MULT_DOM_CASCA = 0.9;  // Casca do Bosque: recebe 10% a menos
 export const MULT_RUINA = 1.5;      // em Ruína, tudo dói 50% mais
 export const MULT_MURALHA = 0.5;    // 🧱 Muralha (perícia do Guardião): a comitiva toma metade
 export const MULT_MARCA = 1.25;     // 🕯 Marca (perícia do Encantador): o marcado toma 25% mais
@@ -1584,7 +1588,9 @@ export function abrirBrecha(m, n) {
    Fora da Saga nenhuma dessas marcas existe no `vol`, então devolve 1 e o dano é exatamente o de antes. */
 export const multSaga = (u, t) => (emRuina(t) ? MULT_RUINA : 1)
   * (t?.vol?.muralha ? MULT_MURALHA : 1)
-  * (t?.vol?.marca > 0 ? MULT_MARCA : 1);
+  * (t?.vol?.marca > 0 ? MULT_MARCA : 1)
+  * (emRuina(t) && u?.dons?.includes('brasa') ? MULT_DOM_BRASA : 1)
+  * (t?.dons?.includes('casca') ? MULT_DOM_CASCA : 1);
 /* Fim de rodada da Saga: Ruína, Marca e Brado perdem um turno. Ruína que acaba DEVOLVE a Guarda cheia (como em
    Octopath: quebrou, aproveitou, e o escudo volta) — senão a segunda Brecha seria de graça pra sempre. */
 export function passarSaga(m) {

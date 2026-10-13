@@ -3158,8 +3158,70 @@ render estourou.
 - **Marca escolhendo o alvo**: ela cai em quem está **em foco** na cena, que é o alvo que você já escolhe com um
   toque. Um segundo seletor de alvo só pra uma perícia seria UI nova pra um caso.
 - **Ameaça e Brecha no `mp-motor`**: não existe Saga em sala. As funções são as mesmas quando chegar a hora.
-- **O mundo da Saga** (trilhas, NPCs Pokémon, facções com reputação): é a fase 3 do plano, e o trabalho lá é
-  ESCREVER, não programar. Por isso o modo continua `admin: true`.
+- **O mundo da Saga** (trilhas, NPCs Pokémon, facções com reputação): era a fase 3 do plano. **O capítulo 1 foi
+  entregue em 13/10/2026** — ver "⚔ Saga, o mundo andável" abaixo. O modo continua `admin: true` até haver mais
+  capítulos.
+
+## ⚔ Saga, o mundo andável: capítulo 1, o Vale do Orvalho (13/10/2026)
+
+Pedido do usuário: *"quero inovar, quero criar um mundo de RPG com missões, NPCs, diálogos realistas, missões
+secretas, itens, habilidades únicas, um mapa onde eu realmente possa andar"*, com o combate continuando por
+turnos. É a fase 3 do `docs/plano-saga.md`, com UMA mudança de rumo em relação ao que estava desenhado: o plano
+previa **trilhas em grafo de nós** (estilo Slay the Spire) e o pedido foi um mapa **onde se anda**. Virou grade de
+casas com câmera.
+
+**Os quatro arquivos, e por que quatro**: `dados-saga.js` (conteúdo, sem imports) · `saga-mundo.js` (regras
+puras, testadas) · `saga-cena.js` (só HTML) · `tela-saga.js` (ações). A cena e as ações estão separadas por causa
+do grafo de imports: quem desenha o mapa é o `render.js`, que fica ABAIXO de `batalha.js`; quem começa luta
+precisa ficar ACIMA. Um arquivo só fecharia um ciclo.
+
+- **O mundo é uma CAMADA sobre as rotas, não um mundo paralelo.** Cada mapa aponta pra uma rota da Gen da jornada
+  pelo índice (`rota: 0`); o mato alto chama `startBattle` daquela rota, o Alfa das ruínas é o `startBossBattle`
+  dela. É a decisão que paga todas as outras: níveis escalados, pool, Pokédex da rota, grupo inimigo, modo
+  offline (`baixarGen` já cobre — **nenhuma busca nova**) e as 9 Gens funcionam sem uma linha. O preço é que **a
+  história nunca cita a espécie de um inimigo** (quem é o Alfa depende da Gen): o texto diz "o Alfa", e o mapa
+  mostra o sprite do Alfa daquela Gen. NPC tem espécie fixa porque NPC é só imagem.
+- **Mapa escrito em texto** (`grade`: linhas do mesmo tamanho; cada caractere é um tile de `TILES` ou a chave de
+  um objeto em `objs`). Legível no diff e editável sem ferramenta. O risco é o de todo conteúdo escrito à mão —
+  erro que não estoura, só estraga — e por isso `tests/saga-mundo.test.js` cobra geografia: linhas iguais,
+  caractere conhecido, porta com volta, **todo objeto alcançável a pé** e **ninguém encurralado ao chegar por uma
+  porta**. Esse último pegou um erro de verdade no primeiro mapa (a NPC da clareira estava na frente da porta).
+- **Objeto com VARIANTES**: uma casa pode ter uma lista, e vale a primeira cujo `se` fecha. É o que faz o Alfa
+  virar o Coração da Fonte e depois o leito vazio, e a fenda das ruínas deixar de bloquear com a lamparina — sem
+  código por caso.
+- **Esbarrar é interagir.** Andar contra NPC, baú, placa ou inimigo é o "botão A". Tocar numa casa anda até lá
+  por busca em largura (`caminho`), e se o destino bloqueia, o último passo é o esbarrão — no celular, tocar no
+  NPC é falar com ele. Zero botão de ação.
+- **Diálogo como dado**, na caixa que já existia (`ui.ask`, com retrato): `falas` escolhe por onde a conversa
+  começa (primeira entrada cujo `se` vale), cada nó tem `fala`, `faz`, `opcoes` ou `vai`. **Condição** (`vale`) e
+  **efeito** (`aplicar`) são puros; o que não é dado puro — mochila, cura, loja, viagem — volta como `pedidos` pra
+  `tela-saga` executar. Toda fala vai pro log, pra reler.
+- **Missão secreta = missão que o diário não mostra até começar.** O gatilho da do capítulo é falar com o mesmo
+  NPC três vezes (`se.falas`), e o caminho é uma **árvore falsa** (tile `t`: desenha como árvore, deixa passar).
+  Quem acha a clareira por conta própria entra na missão já na 2ª etapa — por isso o texto dela serve aos dois.
+- **Consequência é dado, não sistema**: uma flag fecha um começo de conversa pra sempre (vender o minério ao
+  Sableye faz a ferreira recusar o Coração — o final da Forja some), a reputação negativa muda como te recebem, e
+  o 3º final só abre com a missão secreta OU sendo Fantasma/Sombrio/Veneno (`se.tipo`: quem você é conta).
+- **Dons** (`DONS`, em `m.dons` do SEU Pokémon): os dois de batalha entram em `regras.multSaga`, que o motor já
+  lia uma vez no dano (Brasa: ×1,2 em inimigo em Ruína · Casca: ×0,9 no que você recebe); os dois de mapa são
+  lidos em `saga-mundo` (Passo de Sombra corta o encontro pela metade · Faro faz a árvore falsa cintilar).
+- **Luta que o mapa começou**: `tela-saga` anota `S.saga.luta = { flag }` e `batalha.endBattle(venceu)` — a porta
+  única do fim de luta — chama `saga-mundo.fimDaLuta`. Vai no save, então F5 no meio não ganha nem perde a marca.
+- **Enquanto anda não chama `render()`**: repinta só a grade (`pintarMapa`) e o render inteiro sai no fim, se algo
+  além de andar aconteceu. A cada `PASSOS_POR_EXPLORACAO` casas conta um "passo" de ovo, de evolução por passos e
+  de repelente — o mesmo que um clique em Explorar faz.
+- **Depois do capítulo**: o guarda abre o Passo do Norte e a jornada segue pela **lista de rotas de sempre**
+  (`S.saga.fora`), com um botão de volta ao Vale. É o que impede o capítulo 1 de encolher o jogo: as rotas 4 a
+  10 e os lendários continuam alcançáveis enquanto não têm mapa.
+
+**Simplificado de propósito**: inimigo à vista não anda nem reaparece (o mato alto é o grind) · a reputação muda
+conversa e final, mas **não** muda preço do mercador nem recruta · Juramentos (fase 2) seguem não construídos ·
+o capítulo cobre as rotas 1 a 3. **Sem navegador no Pi**: conferido por `tests/saga-smoke.test.js` (mapa
+desenhado, andar, conversa até o fim, baú, pousada, o Passo e a volta), não por olho — a aparência do mapa
+(`css/estilo.css`, bloco "⚔ Saga — o mundo andável") precisa de uma olhada em tela de verdade.
+
+**Como escrever o capítulo 2**: mapas e NPCs em `dados-saga.js` (os testes dizem o que faltar); `rota` com índice
+novo pede subir o teto no teste; condição ou efeito que ainda não existe = uma linha em `vale`/`aplicar` + teste.
 
 ## 📈 Taxas e probabilidades: uma tela com tudo o que o jogo sorteia (06/10/2026)
 

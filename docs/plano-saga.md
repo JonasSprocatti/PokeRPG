@@ -185,6 +185,13 @@ Bálsamo também dá +1 Def; Arcano+Encantador → a Marca vira +40%). Reaprovei
 
 ## 6. O mundo: trilhas, NPCs Pokémon e consequência
 
+> **CAPÍTULO 1 CONSTRUÍDO em 13/10/2026 — e saiu DIFERENTE do desenho abaixo num ponto**: o usuário pediu *"um
+> mapa onde eu realmente possa andar"*, então em vez de grafo de nós é uma **grade de casas** com câmera
+> (`dados-saga.js` · `saga-mundo.js` · `saga-cena.js` · `tela-saga.js`). Diálogo como dado, `ui.ask`, facções com
+> reputação, flags e trilha fechada pra sempre saíram como desenhado. Registro em `docs/features.md` → "⚔ Saga,
+> o mundo andável". **Falta deste item**: capítulos 2–3, aliado que rompe o Juramento (depende da fase 2) e o
+> chefe final mudando com a facção. O texto abaixo fica como o desenho original.
+
 O mapa de rotas atual não serve (é pool de encontro ponderado). A Saga usa **grafo de nós por capítulo**, estilo
 Slay the Spire: `nó = { id, tipo: 'luta'|'npc'|'pousada'|'mercador'|'escolha'|'chefe', saidas: [ids], exige?: flag }`.
 Vocabulário da tela: **trilha** (o caminho), **pousada** (descanso), **mercador** (loja), **capítulo** (o mapa).

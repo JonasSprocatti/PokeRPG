@@ -64,8 +64,23 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 ### ⚔ Saga (em construção, só na conta admin)
 
 Um modo separado, de **RPG japonês** medieval fantástico: você anda com uma **comitiva de quatro**, cada Pokémon
-tem um **ofício** na luta e os inimigos vêm em grupo. O combate já está jogável de ponta a ponta; o mundo
-(trilhas, NPCs Pokémon, facções) ainda não existe — por isso o modo continua escondido de quem joga.
+tem um **ofício** na luta e os inimigos vêm em grupo. O combate já está jogável de ponta a ponta e o mundo tem o
+**capítulo 1** escrito; faltam os capítulos seguintes — por isso o modo continua escondido de quem joga.
+
+- **🗺 Um mundo pra andar.** Na Saga a lista de rotas dá lugar a um **mapa**: você anda casa a casa pelo **Vale do
+  Orvalho** (setas, WASD, o direcional da tela, ou tocando no lugar pra onde quer ir) — a aldeia de Pedralume, o
+  Bosque do Orvalho, a Estrada Velha e as Ruínas da Fonte. Mato alto esconde encontro; bando, caçador e Alfa
+  ficam **à vista** no mapa e só lutam se você for até eles. Pousada e mercador são lugares, não botões.
+- **💬 NPCs Pokémon com conversa de verdade.** Esbarre em alguém pra falar. O que cada um diz muda com o que você
+  já fez, com quem você ajudou e até com **o tipo do seu Pokémon** — e algumas respostas só aparecem pra quem
+  tem o que mostrar.
+- **📜 Missões, e 🕯 missões secretas.** O 📖 Diário guarda as missões em andamento, os itens-chave, os dons e a
+  reputação. Missão secreta não aparece em lugar nenhum até você tropeçar nela: ninguém avisa que existe.
+- **⚖ Três facções e escolha com consequência.** ⚒ Ordem da Forja, 🌿 Círculo do Bosque e 🌑 Corte do Abismo
+  querem a mesma coisa, cada uma por um motivo defensável. Ajudar uma custa a outra, uma porta fechada **não
+  reabre**, e o capítulo tem **três finais** — um deles só existe pra quem achou o que estava escondido.
+- **✨ Dons.** Habilidades que só a Saga dá, ganhas por escolha e não por nível: cada final ensina um dom
+  diferente, e eles valem em batalha (ou no mapa) pelo resto da jornada.
 
 - **Seis ofícios**, lidos dos atributos e do que a espécie aprende (nada de tabela escrita à mão): 🛡 **Guardião**
   segura a linha · 💚 **Curandeiro** cura e limpa · 🔮 **Arcano** lança o fogo de longe · ⚔ **Guerreiro** abate ·

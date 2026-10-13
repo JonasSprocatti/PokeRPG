@@ -30,6 +30,8 @@ import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalh
   escolherEntradaNaSala, escolherConvidadoNaSala } from './multiplayer.js';
 import { iniciarPaineis } from './paineis.js';
 import { explore, desafiarChefe, desafiarEvento, curarNoCentro } from './mundo.js';
+import { andar, irPara, abrirDiario, voltarAoVale } from './tela-saga.js';
+import { mundoAtivo } from './saga-mundo.js';
 import { completarAlvosDoSave } from './pokemon.js';
 import { escolherAlvoAuto, pararAuto, limparAuto } from './auto.js';
 import { pedirPermissao, desligarNotificacoes, agendarLembretes } from './notificacoes.js';
@@ -296,6 +298,11 @@ async function aoClicar(e) {
     case 'recomecar': G.S = null; G.B = null; G.PV = null; return showCreate();
     case 'start': return startGame(b);
     case 'explore': return explore();
+    // ⚔ Saga: o mapa andável (tela-saga.js)
+    case 'saga-andar': return andar(v);
+    case 'saga-ir': { const [x, y] = v.split(',').map(Number); return irPara(x, y); }
+    case 'saga-diario': return abrirDiario();
+    case 'saga-voltar': return voltarAoVale();
     case 'zone': {
       const z = rotasAtuais().find(x => x.id === v); // só rotas do mapa atual
       if (!z || !zonaLiberada(z, G.S.player.level, G.S)) return; // chip trancado já vem desativado; isto é a garantia
@@ -492,6 +499,7 @@ document.addEventListener('toggle', e => {
   const i = e.target.dataset?.aliado; if (i === undefined) return;
   if (e.target.open) G.abertos.add(i); else G.abertos.delete(i);
 }, true);
+const TECLA_ANDAR = { ArrowUp: 'n', ArrowDown: 's', ArrowLeft: 'o', ArrowRight: 'l', w: 'n', s: 's', a: 'o', d: 'l' };
 document.addEventListener('keydown', e => {
   // Esc volta da tela em que você está (o mesmo botão de voltar da barra de navegação), menos no meio do jogo
   if (e.key === 'Escape' && !['explore', 'battle', 'create'].includes(G.mode) && !document.querySelector('.modal')) {
@@ -505,6 +513,11 @@ document.addEventListener('keydown', e => {
       && !e.target.matches?.('input,textarea,select') && !document.querySelector('.modal')) {
     const b = $(`[data-rapido="${e.key}"]`);
     if (b) { e.preventDefault(); b.click(); return; }
+  }
+  // ⚔ Saga: setas e WASD andam no mapa (a própria `andar` recusa fora do mundo, em batalha ou com caixa aberta)
+  const dir = TECLA_ANDAR[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+  if (dir && G.mode === 'explore' && G.S && mundoAtivo(G.S) && !e.target.matches?.('input,textarea,select') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault(); andar(dir).catch(avisarErro); return;
   }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'q') previewSearch(e.target.value);

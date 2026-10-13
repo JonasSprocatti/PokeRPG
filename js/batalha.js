@@ -3,6 +3,7 @@
 // pode gastar a vez lançando bola em você). `turn(action)` é o único ponto de entrada da UI: trava `G.busy`, resolve
 // jogador + inimigo na ordem certa, residual, vitória/derrota, e sempre salva no `finally`.
 // As contas (precisão, fuga, ordem, residual, XP, EVs) moram em regras.js; aqui fica a narração.
+import { fimDaLuta } from './saga-mundo.js';
 import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, registrarVisto, zerarDescontoCentro, rotasAtuais, rotulo, zone,
   ligarInimigos, inimigosEmCampo, grupoInimigoCaiu } from './estado.js';
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
@@ -1184,6 +1185,7 @@ export function endBattle(venceu = false) {
     log(`🥎 ${esc(A.nick || fmt(A.name))} ficou com ${esc(G.B?.trainer?.nome || 'o treinador')}. Você não vai mais vê-lo.`, 'hit');
   }
   if (levados.length) G.abertos?.clear();
+  fimDaLuta(G.S, venceu);   // ⚔ Saga: a luta que o MAPA começou marca o que foi vencido (saga-mundo.js)
   G.alvoDe = null;
   G.B = null; G.mode = 'explore'; G.panel = 'main'; tocarMusica('explorar', G.S ? zone() : null);
   for (const m of ladoJogador()) {

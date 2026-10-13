@@ -35,7 +35,8 @@ const PRECACHE = [
   './js/conteudo.js', './js/conteudo-nuvem.js', './js/editor-rotas.js', './js/tela-editor-rotas.js',
   './js/dados-musica.js', './js/editor-musica.js', './js/tela-editor-musica.js',
   './js/editor-conteudo.js', './js/tela-editor-conteudo.js',
-  './js/oficios.js', './js/pericias.js'
+  './js/oficios.js', './js/pericias.js',
+  './js/dados-saga.js', './js/saga-mundo.js', './js/saga-cena.js', './js/tela-saga.js'
 ];
 // origens de terceiros que podem ir pro cache (conteúdo estável)
 // cdn.jsdelivr.net é de onde vêm as imagens e os cries (espelho dos repositórios de sprites/cries da PokéAPI — ver dados.js);

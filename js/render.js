@@ -1,5 +1,7 @@
 /* ============ render: jogo ============ */
 // Re-render total a partir de G (sem diffing): ficha à esquerda, cena (zona ou batalha) + log + ações à direita.
+import { mundoAtivo, modoComMundo } from './saga-mundo.js';
+import { htmlMundo, htmlControles, botaoVoltarAoVale } from './saga-cena.js';
 import { G, zone, rotulo, nm, dificuldadeDe, centroPokemon, rotasAtuais, emCampo, vivos } from './estado.js';
 import { OFICIOS } from './oficios.js';
 import { PERICIAS, periciasDe, periciaPronta, recargaDe, temPericiaPronta } from './pericias.js';
@@ -669,6 +671,14 @@ function renderScene() {
           ${AL.map(([A, i]) => `<div class="plate mini ${B.vez === 'a' + i ? 'agindo' : ''}">${plate(A, 'a' + i)}</div>`).join('')}
         </div></div>`;
   } else {
+    /* ⚔ Saga com mundo: a cena de exploração é o MAPA andável (saga-cena.js), não a lista de rotas. A Pokédex da
+       rota continua embaixo — o mapa aponta pra uma rota de verdade, e é dela que saem os encontros. */
+    if (mundoAtivo(G.S)) {
+      sc.className = 'scene mundo';
+      const zm = zone();
+      sc.innerHTML = `${htmlMundo(G.S, spriteFrente(G.S.player))}${avisoRepelente(zm)}${pokedexRota(zm)}`;
+      return;
+    }
     const z = zone(), nv = G.S.player.level, c = z.chefe, venceu = !!G.S.chefes?.[z.id], g = genDe(G.S);
     sc.className = 'scene';
     // rota bloqueada: chip desativado com 🔒 e o nível pedido; ★ = rota final (lendários)
@@ -868,6 +878,9 @@ function renderActions() {
       <div class="subrow"><button class="btn ghost sm" data-act="panel" data-v="main">Sair da loja</button></div>
       ${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid loja-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
+  } else if (mundoAtivo(S)) {
+    // ⚔ Saga com mundo: pousada e mercador são LUGARES do mapa, então aqui ficam só os controles de andar
+    a.innerHTML = `${htmlControles(S, dis)}${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}${barraRapidos(dis)}`;
   } else {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
     const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = S.money < custo;
@@ -878,6 +891,7 @@ function renderActions() {
       ${ehAdmin() && !G.auto?.ativo && !esgotada ? `<button class="btn ghost" data-act="auto" ${dis}>🤖 Explorar automaticamente <small class="muted">(só admin)</small></button>` : ''}
       <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">Centro Pokémon${!precisa ? ' (todos saudáveis)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}${semGrana ? ' (sem dinheiro)' : ''}`}</button>
       <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>
+      ${modoComMundo(S) ? botaoVoltarAoVale(dis) : ''}
       ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}
       ${barraRapidos(dis)}`;
   }
