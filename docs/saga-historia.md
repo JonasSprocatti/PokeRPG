@@ -17,6 +17,10 @@ roteiro existe pra que quem mexer num capítulo saiba de onde a história vem e 
    dois capítulos depois, tira um final da mesa.
 5. **Todo capítulo tem**: uma vila ou acampamento (onde se conversa), um ermo (mato alto), uma toca ou ruína (o
    chefe), uma missão principal com escolha, uma lateral, e **uma secreta** que nenhuma placa anuncia.
+6. **Fala curta e direta** (pedido do usuário, 13/10/2026: "mais realista e menos enrolado"). O personagem diz o
+   que aconteceu, o que quer e pra onde ir, como gente fala. Uma ideia por frase. Nada de aforismo pra fechar a
+   fala, metáfora em cima de metáfora ou charada no lugar de instrução. O jeito de cada um aparece numa palavra,
+   não num parágrafo.
 
 ## O mundo
 
@@ -163,8 +167,8 @@ qual companheiro vai embora.
 **No jogo:** Acampamento do Degelo · Geleira Rachada · Garganta do Degelo. Marcas `sobe-forja` / `sobe-bosque` /
 `sobe-abismo` / `sobe-so`. Ordem com reputação abaixo de zero não manda ninguém conversar: manda **cobrar** (uma
 luta no lugar da tenda). Com as três presentes, o Tio do Poço — que saiu de Pedralume no mesmo dia que você e
-chegou ontem — liga `conselho-pleno`. O Carteiro entrega cartas dos capítulos anteriores. **Não entrou:** o
-companheiro que vai embora.
+chegou ontem — liga `conselho-pleno`. O Carteiro entrega cartas dos capítulos anteriores. **O companheiro que
+vai embora**: na entrada do acampamento, a ordem ferida chama de volta quem anda com você e é dela (pelo tipo).
 
 ### 10 · A Nascente — rota final · ✅ jogável
 Os Antigos estão fechando a primeira fonte. A luta final é contra eles (os lendários da Gen, um por vez).

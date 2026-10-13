@@ -3380,6 +3380,31 @@ navegador antes da sessão. Na prática: 20 s por roteiro, memória folgada.
   inteiro, e o admin perderia o próprio acesso até ela chegar.
 - **Continua fora dos patch notes**: o teste é "um jogador comum consegue usar?", e testador é escolhido.
 
+## ⚔ Saga: o companheiro que vai embora, e as falas reescritas (13/10/2026)
+
+Dois pedidos do usuário logo depois de ver a história inteira: *"o companheiro indo embora, pode colocar, gostei
+da ideia"* e *"revise as falas dos personagens, quero algo mais realista e menos enrolado, alguns têm falas
+confusas"*.
+
+- **💔 O companheiro que vai embora** (capítulo 9): na entrada do Acampamento do Degelo, cada ordem que você
+  feriu (reputação abaixo de zero) chama de volta quem anda com você e é dela. "Ser da ordem" é ter um dos tipos
+  que a facção declara (`FACCOES[id].tipos`: Forja = aço/pedra/fogo, Círculo = planta/inseto/fada, Corte =
+  sombrio/fantasma/veneno). São duas peças de dado novas: a condição **`aliado: facção`** (há alguém da ordem na
+  comitiva) e o efeito **`parte: facção`** (o primeiro da ordem sai de `S.aliados`). É perda de verdade, como a
+  bola do treinador; o item que ele segurava volta pra mochila (a ordem chamou o Pokémon, não o equipamento).
+  Um chamado por ordem, uma vez só — quem entrar na comitiva depois não é chamado de novo. Sem ninguém daquela
+  ordem, o gatilho nem existe. **Não tem confirmação de propósito**: é consequência, não escolha; o que avisa é a
+  reputação, que o diário mostra o tempo todo. Quem tem as três ordens em paz (o caminho do final verdadeiro)
+  nunca perde ninguém.
+- **As falas**: 525 das 533 foram reescritas. A regra nova está em `docs/saga-historia.md` (regra 6): gente fala
+  curto e direto — diz o que aconteceu, o que quer e pra onde ir. Saíram os aforismos de fecho de fala ("Pedra
+  não negocia. Pedra cai."), as metáforas empilhadas e as charadas; ficaram o jeito de cada um e a informação.
+  A média caiu pra 116 letras por fala. **Texto de resposta do jogador, placa, baú e narração de luta não
+  mudaram** — o pedido foi sobre as falas; se também estiverem enroladas, é a próxima passada.
+- Como foi feito sem quebrar nada: as falas novas moram em três arquivos de troca aplicados por um script que
+  acha o nó pelo personagem e recusa texto que perca `{eu}`/`{custo}`. Os testes da história (que conferem o
+  CAMINHO, não a letra) passaram sem tocar.
+
 ## ⚔ Saga: os capítulos 4 a 10, o fim da história e a 🗺 carta da região (13/10/2026)
 
 Dois pedidos do usuário, no mesmo dia: *"pode seguir com as próximas partes da história também, cap 4 a 10"* e
@@ -3469,8 +3494,7 @@ o validador recusa objeto fora de alcance.
   no computador, e um passeio pelos sete biomas novos sem erro no console.
 
 ### Ficou de fora, de propósito
-- **Companheiro que vai embora no capítulo 9** (está no roteiro): tirar aliado da comitiva por diálogo é perda de
-  verdade, e pediria um efeito novo com confirmação. A consequência ficou nas tendas e nas cartas.
+- ~~Companheiro que vai embora no capítulo 9~~ — entrou no mesmo dia, a pedido (seção acima).
 - **Reputação mexendo em preço** e **NPC que anda**: seguem no backlog.
 - **Consertar reputação no capítulo 9**: quem chega lá com uma ordem abaixo de zero não reúne o conselho nesta
   jornada. É o "consequência é porta fechada" do roteiro; o diário mostra a reputação o tempo todo.

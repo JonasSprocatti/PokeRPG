@@ -5,6 +5,7 @@
 import { MAPAS_SAGA, NPCS, MISSOES_SAGA, ITENS_SAGA, DONS, TILES, TEMAS, INICIO, FACCOES, CAPITULOS } from './dados-saga.js';
 import { DIFICULDADES } from './dados.js';
 import { tileDaCasa, defDoTile } from './saga-arte.js';
+import { esc, fmt } from './util.js';
 
 export const DIRS = { n: [0, -1], s: [0, 1], o: [-1, 0], l: [1, 0] };
 export const CHANCE_MATO = 0.14;     // encontro por passo no mato alto
@@ -57,6 +58,8 @@ export function diario(S) {
 
 /* ---- condição e efeito ---- */
 const lista = v => [].concat(v);
+// "É da ordem": tem algum dos tipos que a facção diz que são dela (`FACCOES[id].tipos`).
+export const daOrdem = (m, fac) => !!m?.data?.types?.some(t => (FACCOES[fac]?.tipos || []).includes(t));
 export function vale(S, se) {
   if (!se) return true;
   const s = estadoSaga(S), P = S.player;
@@ -69,7 +72,8 @@ export function vale(S, se) {
     && (!se.missao || etapaDe(S, se.missao[0]) === se.missao[1])
     && (!se.tipo || !!P?.data?.types?.some(t => se.tipo.includes(t)))
     && (!se.falas || (s.falas[se.falas[0]] || 0) >= se.falas[1])
-    && (!se.dom || temDom(P, se.dom));
+    && (!se.dom || temDom(P, se.dom))
+    && (!se.aliado || (S.aliados || []).some(a => daOrdem(a, se.aliado)));
 }
 /* Aplica um `faz` no save e devolve o que a tela precisa fazer com isso: `avisos` (linhas pro log) e `pedidos`
    (o que não é dado puro — mochila, cura, loja, viagem — fica pra quem tem `G` e tela). */
@@ -102,6 +106,18 @@ export function aplicar(S, faz) {
   if (faz.dom && !temDom(S.player, faz.dom)) {
     S.player.dons = [...(S.player.dons || []), faz.dom];
     avisos.push(`✨ Dom aprendido: <b>${DONS[faz.dom].nome}</b> — ${DONS[faz.dom].desc}`);
+  }
+  /* Um companheiro da ordem VAI EMBORA (o primeiro da comitiva que for dela). É perda de verdade, como a bola do
+     treinador: sai de `S.aliados` e não volta. O que ele segurava fica na sua mochila — a ordem chamou o
+     Pokémon, não o equipamento. Sem ninguém daquela ordem na comitiva, não acontece nada. */
+  if (faz.parte) {
+    const i = (S.aliados || []).findIndex(a => daOrdem(a, faz.parte));
+    if (i >= 0) {
+      const [A] = S.aliados.splice(i, 1), f = FACCOES[faz.parte];
+      if (A.item) (S.bag ||= {})[A.item] = (S.bag[A.item] || 0) + 1;
+      avisos.push(`💔 <b>${esc(A.nick || fmt(A.name))}</b> foi embora: ${esc(f.emoji)} ${esc(f.nome)} chamou os seus de volta.${A.item ? ' O que ele segurava ficou na sua mochila.' : ''}`);
+      pedidos.push({ partiu: true });
+    }
   }
   for (const [k, n] of faz.bag || []) pedidos.push({ bag: [k, n] });
   for (const k of ['cura', 'loja', 'viajar']) if (faz[k]) pedidos.push({ [k]: true });

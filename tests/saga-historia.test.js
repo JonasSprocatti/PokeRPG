@@ -238,6 +238,16 @@ test('capítulo 9: as três ordens no mesmo fogo só com ninguém abaixo de zero
   assert.deepEqual(falar(T, 'tio9', ['Subir por conta própria']), ['falta', 'escolha', 'so']);
   assert.ok(tem(T, 'sobe-so') && !tem(T, 'conselho-pleno'));
   vencer(T, 'cobraForja'); assert.equal(em(T, 'degelo', 'F'), null, 'vencer os cobradores não traz a Brasa de volta');
+  // o companheiro que vai embora: na entrada, a ordem ferida chama quem anda com você e é dela — uma vez só
+  const U = jornada({ rep: { forja: -2 } });
+  U.aliados = [{ name: 'eevee', data: { types: ['normal'] } }, { name: 'aron', data: { types: ['steel', 'rock'] } }];
+  assert.equal(em(U, 'degelo', '2'), null, 'o Círculo não tem do que reclamar');
+  const chamado = em(U, 'degelo', '1'); assert.equal(chamado.gatilho, 'chamado-forja');
+  aplicar(U, chamado.faz);
+  assert.deepEqual(U.aliados.map(a => a.name), ['eevee']); assert.equal(em(U, 'degelo', '1'), null);
+  U.aliados.push({ name: 'geodude', data: { types: ['rock'] } });
+  assert.equal(em(U, 'degelo', '1'), null, 'quem entra na comitiva depois não é chamado de novo');
+  assert.equal(em(jornada({ rep: { forja: -2 } }), 'degelo', '1'), null, 'sem ninguém da ordem na comitiva, ninguém aparece');
   // o Carteiro: a carta de cada lugar muda com o que você fez lá, e a sem dono abre a missão secreta
   assert.deepEqual(falar(S, 'carteiro', ['Ler as cartas', 'Da Serra do Fumo', 'A que não tem dono', 'Chega de carta']), ['oi', 'cartas', 'cSerraPeixe', 'cartas', 'cGelo', 'cartas']);
   assert.equal(etapaDe(S, 'gelo'), 0);

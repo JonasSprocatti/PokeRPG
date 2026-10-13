@@ -107,6 +107,8 @@ e ajustado.
   deserto de sal, a serra gelada — cada região com o seu chão, o seu Alfa e a sua decisão. No fim, os **Antigos**
   (os lendários da região) não são derrotados: são feitos **escutar**, e o que você diz a eles depende de tudo o
   que carregou até ali. Um dos finais só existe pra quem chegou com as três ordens ainda sentadas no mesmo fogo.
+- **💔 Reputação vira gente.** Perto do fim, cada ordem que você prejudicou manda cobrar — e chama de volta o
+  companheiro da sua comitiva que for dela. Ele vai embora de verdade (o que segurava fica com você).
 
 - **Seis ofícios**, lidos dos atributos e do que a espécie aprende (nada de tabela escrita à mão): 🛡 **Guardião**
   segura a linha · 💚 **Curandeiro** cura e limpa · 🔮 **Arcano** lança o fogo de longe · ⚔ **Guerreiro** abate ·

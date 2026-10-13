@@ -5,10 +5,11 @@
    efeito são escritos está no cabeçalho de `dados-saga.js`; o roteiro, em `docs/saga-historia.md`.
    Quem importa, importa de `dados-saga.js`, que reexporta tudo daqui. */
 
+// `tipos`: quem é "da ordem" (a condição `aliado` e o efeito `parte` leem daqui)
 export const FACCOES = {
-  forja: { nome: 'Ordem da Forja', emoji: '⚒' },
-  bosque: { nome: 'Círculo do Bosque', emoji: '🌿' },
-  abismo: { nome: 'Corte do Abismo', emoji: '🌑' }
+  forja: { nome: 'Ordem da Forja', emoji: '⚒', tipos: ['steel', 'rock', 'fire'] },
+  bosque: { nome: 'Círculo do Bosque', emoji: '🌿', tipos: ['grass', 'bug', 'fairy'] },
+  abismo: { nome: 'Corte do Abismo', emoji: '🌑', tipos: ['dark', 'ghost', 'poison'] }
 };
 
 /* Capítulos: agrupam os mapas (`mapa.cap`) e dão o título que aparece na tela. A regra do roteiro é um capítulo
@@ -1194,13 +1195,18 @@ export const MAPAS_SAGA = {
       'T..hhh........=........hhh...T',
       'T..hch........=........hch...T',
       'T...A.........=.........I....T',
-      'T...=.........=.........=....T',
-      'T...=====================..M.T',
-      'T.............=..............T',
+      'T...=.........3.........=....T',
+      'T...==========2==========..M.T',
+      'T.............1..............T',
       'TTTTTTTTTTTTTTNTTTTTTTTTTTTTTT'
     ],
     objs: {
       N: { porta: ['cidadeSal', 'N'], como: '=' },
+      /* O companheiro que vai embora: na entrada do acampamento, cada ordem que você feriu (reputação abaixo de
+         zero) chama de volta quem anda com você e é dela. Só acontece se houver alguém assim na comitiva. */
+      '1': { se: { repAbaixo: ['forja', 0], aliado: 'forja', sem: 'chamado-forja' }, gatilho: 'chamado-forja', como: '=', texto: 'Na entrada do acampamento, um mensageiro com o martelo marcado no ombro para na sua frente. Não fala com você. Fala com o seu companheiro.<br><br>— A Ordem está chamando os dela. Quem ficar com quem nos prejudicou não entra mais em Ferro-Fundo.<br><br>Seu companheiro olha pra você por um tempo. Depois vai com o mensageiro.', faz: { parte: 'forja', flag: 'chamado-forja' } },
+      '2': { se: { repAbaixo: ['bosque', 0], aliado: 'bosque', sem: 'chamado-bosque' }, gatilho: 'chamado-bosque', como: '=', texto: 'Uma enviada do Círculo espera na beira da trilha. Ela não olha pra você: olha pro seu companheiro.<br><br>— O bosque está indo embora, e chama cada um dos seus. Quem não vier agora não acha mais o caminho.<br><br>Seu companheiro encosta em você, uma vez. Depois segue a enviada.', faz: { parte: 'bosque', flag: 'chamado-bosque' } },
+      '3': { se: { repAbaixo: ['abismo', 0], aliado: 'abismo', sem: 'chamado-abismo' }, gatilho: 'chamado-abismo', como: '=', texto: 'Um cobrador da Corte sai de trás de uma tenda e barra o seu companheiro, não você.<br><br>— Você deve à Corte, e ela cobra de quem pode. Ou ele volta com a gente, ou a família dele paga.<br><br>Seu companheiro não discute. Olha pra você, pede desculpa do jeito dele, e vai.', faz: { parte: 'abismo', flag: 'chamado-abismo' } },
       G: [{ se: { sem: 'subida' }, placa: 'A trilha da geleira, ao norte. Ninguém sobe sem saber quem vai na frente — é a única regra em que as três ordens concordam.', como: '=' },
           { porta: ['geleira', 'G'], como: '=' }],
       // cada ordem manda quem ainda fala com você — ou, se você a feriu, manda cobrar
@@ -1356,27 +1362,27 @@ export const NPCS = {
       { no: 'inicio' }
     ],
     nos: {
-      inicio: { fala: 'Hm. Você não é daqui. Dá pra ver pelo jeito que olha a praça — como quem ainda acha que tem água nela.', vai: 'inicio2' },
-      inicio2: { fala: 'A Fonte de Pedralume secou faz onze dias. Não foi minguando, não. Num entardecer estava cantando; na manhã seguinte, pedra seca. Eu tenho idade pra saber que nascente não morre assim, de um dia pro outro.',
+      inicio: { fala: 'Você não é daqui, né? Dá pra ver. Chegou numa hora ruim.', vai: 'inicio2' },
+      inicio2: { fala: 'A fonte da aldeia secou faz onze dias. De um dia pro outro: de tarde tinha água, de manhã não tinha mais. Fonte não seca assim.',
         opcoes: [{ t: 'O que aconteceu?', vai: 'oque' }, { t: 'E por que me contar isso?', vai: 'porque' }, { t: 'Não é problema meu.', vai: 'recusa' }] },
-      oque: { fala: 'Depende de pra quem você pergunta. A ferreira jura que o Círculo do Bosque deixou as raízes entupirem a nascente. O Círculo jura que a Forja cavou fundo demais atrás de minério. Os dois falam alto. Nenhum dos dois subiu lá pra olhar.', vai: 'pedido' },
-      porque: { fala: 'Porque todo mundo aqui já escolheu um lado, e quem escolheu lado não enxerga mais. Você chegou hoje. Ainda tem os dois olhos.', vai: 'pedido' },
-      recusa: { fala: 'Não é. Ainda. Mas você vai querer beber alguma coisa antes de ir embora, e aí vai ser.' },
-      pedido: { fala: 'Faça um favor a um velho: ouça a Brasa, aqui na forja, e a Mãe Meganium, lá no fundo do bosque, a oeste. Depois volte e me diga o que eles <b>não</b> disseram. É no que fica de fora que a verdade costuma morar.',
+      oque: { fala: 'Ninguém sabe. A ferreira diz que o Círculo do Bosque deixou as raízes entupirem a nascente. O Círculo diz que a Forja cavou fundo demais. Os dois brigam, e nenhum subiu lá pra olhar.', vai: 'pedido' },
+      porque: { fala: 'Porque aqui todo mundo já escolheu um lado. Você chegou hoje e ainda não tem lado. É de alguém assim que eu preciso.', vai: 'pedido' },
+      recusa: { fala: 'Tudo bem. Mas você também vai precisar de água, cedo ou tarde. Se mudar de ideia, eu estou aqui.' },
+      pedido: { fala: 'Me faz um favor: ouve a Brasa, aqui na forja, e a Mãe Meganium, no fundo do bosque, a oeste. Depois volta e me conta o que cada uma disse.',
         opcoes: [{ t: 'Eu vou.', faz: { missao: ['fonte', 0] }, vai: 'aceitou' }, { t: 'Preciso pensar.' }] },
-      aceitou: { fala: 'Bom. E, {eu}… não prometa nada a nenhum dos dois. Promessa aqui virou moeda.' },
-      espera: { fala: 'Já ouviu os dois? A Brasa fica na forja, a nordeste da praça. A Mãe Meganium, no fundo do bosque, onde as flores ainda teimam.' },
-      doisLados: { fala: 'Então. O que eles não disseram?',
+      aceitou: { fala: 'Obrigado, {eu}. Só um conselho: não prometa nada a nenhuma das duas.' },
+      espera: { fala: 'Já ouviu as duas? A Brasa fica na forja, a nordeste da praça. A Mãe Meganium, no fundo do bosque, a oeste.' },
+      doisLados: { fala: 'E então? O que você achou?',
         opcoes: [{ t: 'Nenhum dos dois foi até a nascente.', vai: 'certo' }, { t: 'Os dois têm medo de alguma coisa lá em cima.', vai: 'certo' }] },
-      certo: { fala: 'Isso. Onze dias de gritaria e ninguém subiu, porque tem algo nas ruínas que não deixa. Eu ouço de noite. Não é raiz e não é picareta.', vai: 'lamparina' },
-      lamparina: { fala: 'Tome. Era do sineiro, quando a aldeia ainda tinha um. As ruínas ficam no fim da Estrada Velha, a leste — uma gruta no paredão. Leve gente com você, se tiver: o que está lá em cima não mora sozinho.', faz: { item: 'lamparina', missao: ['fonte', 1] } },
-      vaiLa: { fala: 'As ruínas ficam no fim da Estrada Velha, a leste. E descanse antes, na pousada. Herói cansado é só um cansado.' },
-      comCoracao: { fala: '…Então era isso. O Coração da Fonte, fora do leito.', vai: 'comCoracao2' },
-      comCoracao2: { fala: 'Não me dê. Eu sou velho demais pra carregar o que uma aldeia inteira vai disputar. A Forja diz que sabe assentá-lo com ferro. O Círculo, com raiz. Os dois sabem, cada um do seu jeito — e cada jeito tem um preço que o outro paga.' },
-      depoisForja: { fala: 'A água voltou. Vem por cano de ferro, com gosto de moeda, mas vem. O bosque lá embaixo anda mais calado. Você fez uma escolha, {eu}. Eu só queria que alguém fizesse.', vai: 'norte' },
-      depoisBosque: { fala: 'A água voltou — fina, fria, e só até onde as raízes deixam. A forja apagou dois fornos e a Brasa não fala comigo. Acho que nem com você. Mas as crianças estão bebendo.', vai: 'norte' },
-      depoisAbismo: { fala: 'A fonte continua seca. E um Sableye anda rindo sozinho pela estrada. Eu não sei o que você fez, {eu}. Só sei que perguntei pra pessoa errada.', vai: 'norte' },
-      norte: { fala: 'Uma coisa, antes de você ir. O Coração — onde quer que ele esteja agora — <b>puxa pro norte</b>. Você não sentiu? Eu senti a vida inteira e fingi que era frio. Mandei abrir o Passo. Vai ver o que tem lá em cima chamando.' }
+      certo: { fala: 'Foi o que eu pensei. Onze dias de briga e ninguém subiu, porque tem alguma coisa nas ruínas. Eu ouço de noite. É bicho, e é grande.', vai: 'lamparina' },
+      lamparina: { fala: 'Leva esta lamparina: sem luz não dá pra entrar. As ruínas ficam no fim da Estrada Velha, a leste. É uma gruta no paredão. Se tiver companhia, leva. O que está lá não está sozinho.', faz: { item: 'lamparina', missao: ['fonte', 1] } },
+      vaiLa: { fala: 'As ruínas ficam no fim da Estrada Velha, a leste. Descansa na pousada antes de ir.' },
+      comCoracao: { fala: 'Então era isso. O Coração da Fonte saiu do lugar.', vai: 'comCoracao2' },
+      comCoracao2: { fala: 'Não me dá, não: eu não sei o que fazer com ele. A Brasa sabe prender com ferro; a Mãe Meganium, com raiz. As duas resolvem, mas quem ficar com a pedra deixa a outra com menos água. Você decide.' },
+      depoisForja: { fala: 'A água voltou, pelo cano de ferro. O bosque lá embaixo ficou com menos. Alguém tinha que decidir, {eu}, e foi você. Obrigado.', vai: 'norte' },
+      depoisBosque: { fala: 'A água voltou. Pouca, e só até onde as raízes deixam. A forja apagou dois fornos e a Brasa não fala mais comigo. Mas as crianças estão bebendo.', vai: 'norte' },
+      depoisAbismo: { fala: 'A fonte continua seca, e tem um Sableye rindo sozinho na estrada. Não sei o que você fez, {eu}, mas não era o que eu esperava.', vai: 'norte' },
+      norte: { fala: 'Mais uma coisa. O Coração <b>puxa pro norte</b>, esteja onde estiver. Eu sinto isso desde moço. Mandei abrir o Passo do Norte pra você: vai ver o que tem lá.' }
     } },
 
   brasa: { nome: 'Brasa, a ferreira', sprite: 126,
@@ -1392,28 +1398,28 @@ export const NPCS = {
       { no: 'padrao' }
     ],
     nos: {
-      ocupada: { fala: 'Se veio encomendar, entra na fila: sem água eu não tempero nem prego. Se veio só olhar, olha de longe, que faísca não escolhe.' },
-      padrao: { fala: 'Sem água, sem têmpera. Sem têmpera, sem conversa.' },
-      versao: { fala: 'O velho te mandou, né. Ele manda todo mundo que chega. Tá, escuta: a Forja cava naquele morro há três gerações e a fonte nunca reclamou. Aí o Círculo resolve “deixar o bosque respirar”, para de podar raiz, e onze dias atrás a água some. Eu sei somar.',
+      ocupada: { fala: 'Se veio encomendar, vai demorar: sem água eu não consigo temperar o ferro. Se veio só olhar, fica longe da faísca.' },
+      padrao: { fala: 'Sem água a forja não trabalha. Não tenho nada pra você agora.' },
+      versao: { fala: 'O velho te mandou, né? Então escuta. A Forja cava nesse morro há três gerações e a fonte nunca secou. Aí o Círculo parou de podar as raízes perto da nascente, e onze dias atrás a água sumiu. Pra mim está claro de quem é a culpa.',
         opcoes: [{ t: 'Vocês cavaram mais fundo este ano?', vai: 'fundo' }, { t: 'Alguém da Forja subiu até a nascente?', vai: 'subiu' }] },
-      fundo: { fala: '…Um veio novo. Fundo, sim. Mas longe da nascente — eu mesma medi. Medi duas vezes. E não leva isso pro velho como se fosse confissão.', faz: { flag: 'ouviu-forja' }, vai: 'servico' },
-      subiu: { fala: 'Mandei dois aprendizes. Voltaram no mesmo dia, sem as ferramentas e sem querer falar. Aprendiz é assim, se assusta com a própria sombra. …Era o que eu achava, pelo menos.', faz: { flag: 'ouviu-forja' }, vai: 'servico' },
-      servico: { fala: 'Já que você anda por aí: um caixote do meu minério ficou na Estrada Velha quando a carroça quebrou. Tem bicho rondando e ninguém meu volta lá. Me traz, e eu te pago em coisa que presta, não em moeda.',
+      fundo: { fala: 'Abrimos um veio novo este ano, sim, e é fundo. Mas fica longe da nascente: eu mesma medi, duas vezes. Não vai contar isso pro velho como se fosse confissão.', faz: { flag: 'ouviu-forja' }, vai: 'servico' },
+      subiu: { fala: 'Mandei dois aprendizes. Voltaram no mesmo dia, sem as ferramentas, e não quiseram contar o que viram. Achei que era medo bobo. Agora já não sei.', faz: { flag: 'ouviu-forja' }, vai: 'servico' },
+      servico: { fala: 'Já que você anda por aí: um caixote do meu minério ficou na Estrada Velha quando a carroça quebrou. Tem bicho rondando e ninguém meu quer voltar lá. Se você trouxer, eu pago bem.',
         opcoes: [{ t: 'Trago.', faz: { missao: ['minerio', 0] }, vai: 'combinado' }, { t: 'Agora não.' }] },
-      combinado: { fala: 'Recanto de pedra, do lado leste da estrada. Caixote com a marca do martelo. Não tem como errar.' },
-      cade: { fala: 'Caixote. Marca do martelo. Recanto de pedra, a leste. Eu continuo sem prego.' },
-      trouxe: { fala: 'Olha só. Inteiro, e com a marca. Meus aprendizes levariam uma semana pra criar essa coragem.', vai: 'paga' },
-      paga: { fala: 'Pega. Forjei pra alguém que desistiu de vir buscar. Em você vai fazer mais serviço.', faz: { perde: 'minerio', missao: ['minerio', 'fim'], rep: { forja: 2 }, bag: [['muscle-band', 1]], dinheiro: 200 } },
-      traida: { fala: 'Um Sableye andou vendendo minério com a <b>minha</b> marca na estrada. Engraçado, né? Não tenho nada pra você. Nem prego. E o que quer que esteja carregando aí, leva pra outro.' },
-      coracao: { fala: 'Isso na sua pata é… é o Coração. Estava <b>fora</b> do leito? Então não foi raiz. …Nem só picareta.', vai: 'coracao2' },
-      coracao2: { fala: 'Me dá. Eu assento em bronze e puxo a água por cano até a praça. Nunca mais seca, nunca mais depende de humor de árvore. O bosque vai receber menos, é verdade. Tudo tem custo.',
+      combinado: { fala: 'Fica num recanto de pedra, do lado leste da estrada. É um caixote com um martelo marcado na tampa.' },
+      cade: { fala: 'O caixote com a marca do martelo. Recanto de pedra, lado leste da Estrada Velha.' },
+      trouxe: { fala: 'Você trouxe mesmo! E inteiro. Meus aprendizes não tiveram essa coragem.', vai: 'paga' },
+      paga: { fala: 'Toma. Fiz isto pra um cliente que nunca veio buscar. Vai ser mais útil com você.', faz: { perde: 'minerio', missao: ['minerio', 'fim'], rep: { forja: 2 }, bag: [['muscle-band', 1]], dinheiro: 200 } },
+      traida: { fala: 'Um Sableye andou vendendo minério com a <b>minha</b> marca na estrada. Foi você que vendeu pra ele. Não tenho mais nada pra tratar com você.' },
+      coracao: { fala: 'Isso é o Coração da Fonte? Ele estava <b>fora</b> do lugar? Então não foi só raiz… e nem só picareta.', vai: 'coracao2' },
+      coracao2: { fala: 'Me dá. Eu prendo em bronze e levo a água por cano até a praça. Nunca mais seca. O bosque vai receber menos, é verdade. Não tem como agradar todo mundo.',
         opcoes: [
           { t: '⚒ Entregar o Coração à Forja.', faz: { perde: 'coracao', flag: ['cap1', 'fim-forja'], missao: ['fonte', 'fim'], rep: { forja: 3, bosque: -3 }, dom: 'brasa', dinheiro: 800 }, vai: 'fimForja' },
           { t: 'Ainda vou ouvir o Círculo.' }] },
-      fimForja: { fala: 'Você não vai se arrepender. Bom — talvez um pouco, quando passar pelo bosque. Chega perto do forno. Tem uma coisa que a Ordem só ensina a quem carrega peso por ela.' },
-      depoisForja: { fala: 'Cano firme, água correndo. Passa aqui quando precisar de ferro, {eu}. Pra você a fila não existe.' },
-      depoisBosque: { fala: 'Deu pras árvores. Tá. A água vem até onde elas querem e eu apaguei dois fornos. Não vou cuspir em você, mas também não vou fingir.' },
-      depoisAbismo: { fala: 'Não sei onde foi parar o Coração e prefiro não saber. Porque, se eu souber, eu vou atrás.' }
+      fimForja: { fala: 'Você fez bem. O bosque vai reclamar, mas a aldeia vai ter água. Chega perto do forno: vou te ensinar uma coisa.' },
+      depoisForja: { fala: 'O cano está firme e a água está correndo. Quando precisar de ferro, {eu}, é só vir.' },
+      depoisBosque: { fala: 'Você deu o Coração pras árvores. A água só chega até onde elas deixam, e eu apaguei dois fornos. Não vou te tratar mal, mas não espera que eu fique contente.' },
+      depoisAbismo: { fala: 'Eu não sei onde o Coração foi parar, e é melhor eu não saber. Se eu descobrir, vou atrás.' }
     } },
 
   meganium: { nome: 'Mãe Meganium', sprite: 154,
@@ -1424,21 +1430,21 @@ export const NPCS = {
       { no: 'padrao' }
     ],
     nos: {
-      padrao: { fala: 'Pise leve. É só o que o bosque pede de quem passa.' },
-      versao: { fala: 'Chegue devagar. Estas são as últimas flores do vale que ainda abrem, e elas se assustam. O Ancião mandou você — ele sempre manda alguém de fora, como se a verdade precisasse de sotaque.', vai: 'versao2' },
-      versao2: { fala: 'A Forja abriu um veio novo na primavera. Fundo. A terra treme de noite, as raízes mais velhas racharam, e onze dias atrás a água parou de descer. Não é preciso ser sábia pra ligar uma coisa à outra.',
+      padrao: { fala: 'Anda com cuidado por aqui. As plantas estão fracas.' },
+      versao: { fala: 'Chega devagar. Estas são as últimas flores do vale que ainda abrem. O Ancião te mandou, não foi? Ele sempre manda alguém de fora.', vai: 'versao2' },
+      versao2: { fala: 'A Forja abriu um veio novo na primavera, bem fundo. A terra treme de noite, as raízes mais velhas racharam, e onze dias atrás a água parou. Pra mim, uma coisa causou a outra.',
         opcoes: [{ t: 'O Círculo parou de podar as raízes perto da nascente?', vai: 'raizes' }, { t: 'Alguém do Círculo subiu até lá?', vai: 'subiu' }] },
-      raizes: { fala: 'Paramos. Raiz não é erva daninha, é a mão do bosque. …Sim, elas cresceram na direção da água. É o que mãos fazem quando têm sede.', faz: { flag: 'ouviu-bosque' } },
-      subiu: { fala: 'A Vó Vileplume tentou. Voltou dizendo que o ar lá em cima estava “ocupado”. Foi a palavra dela. Não tornou a subir, e eu não pedi.', faz: { flag: 'ouviu-bosque' } },
-      coracao: { fala: 'Ah. Então ele saiu do leito. Coitado — e coitado de quem o tirou de lá também. Nada arranca um Coração por maldade; arranca por fome.', vai: 'coracao2' },
-      coracao2: { fala: 'Deixe-o comigo. As raízes o levam de volta pra baixo da terra, onde ele dorme. A água volta a descer como sempre desceu: pouca, limpa e de todos — do bosque primeiro, é verdade, porque o bosque está no caminho. A forja vai sentir. Forno sente sede mais alto que flor.',
+      raizes: { fala: 'Paramos de podar, sim. E as raízes cresceram na direção da água, porque estavam com sede. Eu não achei que isso fosse fazer mal.', faz: { flag: 'ouviu-bosque' } },
+      subiu: { fala: 'A Vó Vileplume tentou. Voltou dizendo que tinha alguma coisa lá em cima, e não quis subir de novo. Eu não insisti.', faz: { flag: 'ouviu-bosque' } },
+      coracao: { fala: 'Então o Coração saiu do lugar. Coitado de quem mexeu nele: ninguém faz isso por maldade, faz por precisar.', vai: 'coracao2' },
+      coracao2: { fala: 'Deixa comigo. As raízes levam o Coração de volta pra debaixo da terra, e a água volta a descer como antes: pouca, limpa, passando primeiro pelo bosque. A forja vai ficar com menos, eu sei.',
         opcoes: [
           { t: '🌿 Entregar o Coração ao Círculo.', faz: { perde: 'coracao', flag: ['cap1', 'fim-bosque'], missao: ['fonte', 'fim'], rep: { bosque: 3, forja: -3 }, dom: 'casca', bag: [['sitrus-berry', 3], ['leftovers', 1]] }, vai: 'fimBosque' },
           { t: 'Ainda vou ouvir a Forja.' }] },
-      fimBosque: { fala: 'Obrigada. Estenda a pata… assim. Vai coçar um pouco. É casca: o bosque veste quem o veste.' },
-      depoisBosque: { fala: 'Ouve? Voltou a correr. Baixinho, do jeito certo.' },
-      depoisForja: { fala: 'A água passa por cima de nós agora, dentro de um cano, e não desce. Eu não tenho raiva de você. Tenho flores morrendo, que é uma coisa diferente — e pior.' },
-      depoisAbismo: { fala: 'O Coração não está em bronze nem em terra. Sinto a falta dele como se sente a de um dente. O que você fez, criança?' }
+      fimBosque: { fala: 'Obrigada. Estende a pata. Vai coçar um pouco: é casca, um presente do bosque.' },
+      depoisBosque: { fala: 'Está ouvindo? A água voltou a correr.' },
+      depoisForja: { fala: 'Agora a água passa por cima de nós, dentro de um cano, e não desce. Não tenho raiva de você. Mas as flores estão morrendo.' },
+      depoisAbismo: { fala: 'O Coração não está na forja nem na terra. Eu sinto a falta dele. O que você fez?' }
     } },
 
   vo: { nome: 'Vó Vileplume', sprite: 45,
@@ -1450,19 +1456,19 @@ export const NPCS = {
       { no: 'pedido' }
     ],
     nos: {
-      pedido: { fala: 'Não pisa aí! …Ah, não é você. Desculpa, filho, é que eu já grito antes de olhar. Tem um bando acampado nos meus canteiros, ali pro sul, perto do lago. Onze dias sem a fonte e os bichos descem todos pra cá, atrás de qualquer coisa verde.',
+      pedido: { fala: 'Não pisa aí! …Ah, desculpa, filho, não era com você. É que tem um bando acampado nos meus canteiros, ali pro sul, perto do lago. Sem a fonte, os bichos descem todos pra cá atrás de comida.',
         opcoes: [
           { t: 'Eu tiro eles de lá.', faz: { missao: ['canteiros', 0] }, vai: 'vai' },
           { t: 'Eu sou do verde também, Vó.', se: { tipo: ['grass', 'bug', 'fairy'], sem: 'mimo-vo' }, faz: { flag: 'mimo-vo', bag: [['oran-berry', 3]] }, vai: 'parente' },
           { t: 'Boa sorte com isso.' }] },
-      parente: { fala: 'Eu vi! Tá na cara, tá no cheiro. Toma, leva: parente não sai da minha porta de pata vazia. Agora, sobre o bando…',
+      parente: { fala: 'Eu vi logo que você é dos nossos! Toma, leva estas frutas. Agora, sobre o bando…',
         opcoes: [{ t: 'Eu tiro eles de lá.', faz: { missao: ['canteiros', 0] }, vai: 'vai' }, { t: 'Outra hora, Vó.' }] },
-      vai: { fala: 'Tira com jeito, que eles também têm sede. Mas tira.' },
-      ainda: { fala: 'Ainda estão lá. Eu ouço mastigando daqui.' },
-      obrigada: { fala: 'Sumiram! E você nem pisou na arruda. Toma — é pouco, mas é do que sobrou.', faz: { missao: ['canteiros', 'fim'], rep: { bosque: 2 }, bag: [['oran-berry', 3], ['full-heal', 1]], dinheiro: 120 }, vai: 'dica' },
-      dica: { fala: 'E escuta uma coisa de velha: lá pro norte do bosque tem uma árvore que nunca deu sombra. Sessenta anos que eu passo por ela. Árvore que não dá sombra não é árvore.' },
-      cha: { fala: 'Senta, toma um chá. Não tem chá, não tem água. Senta mesmo assim.' },
-      magoada: { fala: 'Eu sei pra onde foi o Coração. A arruda que você não pisou morreu de sede do mesmo jeito. Vai, vai.' }
+      vai: { fala: 'Tira eles de lá sem machucar muito, que eles também estão com fome. Mas tira.' },
+      ainda: { fala: 'Eles ainda estão lá. Dá pra ouvir daqui.' },
+      obrigada: { fala: 'Foram embora! E você nem pisou nas minhas plantas. Toma, é pouco, mas é de coração.', faz: { missao: ['canteiros', 'fim'], rep: { bosque: 2 }, bag: [['oran-berry', 3], ['full-heal', 1]], dinheiro: 120 }, vai: 'dica' },
+      dica: { fala: 'Vou te contar uma coisa. No norte do bosque tem uma árvore esquisita: passo por ela há sessenta anos e ela nunca deu sombra. Pra mim aquilo não é árvore.' },
+      cha: { fala: 'Senta um pouco. Eu ia te oferecer um chá, mas sem água não tem chá.' },
+      magoada: { fala: 'Eu soube pra onde foi o Coração. Minhas plantas morreram de sede. Hoje eu não quero conversa.' }
     } },
 
   slowpoke: { nome: 'Tio do Poço', sprite: 79,
@@ -1477,23 +1483,23 @@ export const NPCS = {
     nos: {
       primeira: { fala: '…' },
       segunda: { fala: '… …tinha água aqui.' },
-      terceira: { fala: '…Tinha um sino, também. Antes da água ir, foi o sino. Ninguém lembra do sino. Eu lembro devagar, mas lembro.', vai: 'terceira2' },
-      terceira2: { fala: 'Tocava quando vinha coisa ruim da estrada. Aí um dia não tocou mais, e ninguém perguntou. Procura a árvore que não é árvore. No bosque. Eu… eu ia lá. Faz tempo.', faz: { missao: ['sino', 0] } },
-      arvore: { fala: 'A árvore… que não é árvore. Pro norte do bosque. …Eu acho. Faz tempo.' },
-      sino: { fala: '…Ah.<br><br>É ele. Rachou do lado que eu lembrava.', vai: 'sino2' },
-      sino2: { fala: 'Foi o Ancião que mandou calar. Quando expulsaram a Corte do Abismo da aldeia, o sineiro — um velho amigo meu — não quis tocar o alarme contra a própria gente. Tiraram o sino. Ele foi junto. Onze <b>anos</b>, não onze dias. Onze anos que esta aldeia não escuta o que vem da estrada.', vai: 'sino3' },
-      sino3: { fala: 'Você ouviu um velho lerdo até o fim. Quase ninguém ouve. Fica com isto: é o jeito de olhar de quem não tem pressa. Coisa escondida cintila pra quem espera.', faz: { missao: ['sino', 'fim'], flag: ['confianca-abismo', 'sino-devolvido'], rep: { abismo: 2 }, dom: 'faro' } },
-      lembrou: { fala: '…Onze anos. Eu contei devagar, mas contei certo.' }
+      terceira: { fala: '…Tinha um sino, também. O sino sumiu antes da água. Ninguém mais lembra dele. Eu lembro.', vai: 'terceira2' },
+      terceira2: { fala: 'Ele tocava quando vinha perigo pela estrada. Um dia parou de tocar. Procura a árvore que não é árvore, no norte do bosque. Eu ia lá, faz tempo.', faz: { missao: ['sino', 0] } },
+      arvore: { fala: 'A árvore que não é árvore. No norte do bosque. …Eu acho.' },
+      sino: { fala: '…É ele. O sino. Rachou do lado que eu lembrava.', vai: 'sino2' },
+      sino2: { fala: 'Foi o Ancião que mandou tirar. Quando expulsaram a Corte do Abismo da aldeia, o sineiro era meu amigo e não quis tocar o alarme contra eles. Tiraram o sino e mandaram ele embora junto. Isso faz onze <b>anos</b>.', vai: 'sino3' },
+      sino3: { fala: 'Você me ouviu até o fim. Quase ninguém tem paciência. Vou te ensinar a olhar devagar: assim você enxerga o que está escondido.', faz: { missao: ['sino', 'fim'], flag: ['confianca-abismo', 'sino-devolvido'], rep: { abismo: 2 }, dom: 'faro' } },
+      lembrou: { fala: '…Onze anos. Eu contei certo.' }
     } },
 
   veu: { nome: 'Dama Véu', sprite: 429,
     falas: [{ se: { item: 'sino' }, no: 'levou' }, { se: { missao: ['sino', 'fim'] }, no: 'levou' }, { no: 'guarda' }],
     nos: {
-      guarda: { fala: 'Não se assuste. Quem acha esta clareira já provou que sabe olhar. Eu só guardo o túmulo — e o que ficou com ele.',
+      guarda: { fala: 'Não se assusta. Pouca gente acha esta clareira. Eu cuido deste túmulo.',
         opcoes: [{ t: 'De quem é o túmulo?', vai: 'quem' }, { t: 'O que tem no baú?', vai: 'bau' }, { t: 'Vou deixar você em paz.' }] },
-      quem: { fala: 'Do último sineiro de Pedralume. Meu mestre. Recusou-se a tocar o sino contra os dele, e a aldeia o deixou terminar aqui, do lado de fora, atrás de uma árvore que todo mundo combinou de não enxergar.' },
-      bau: { fala: 'O sino. Rachado, mas ainda sabe a verdade. Leve, se tiver a quem mostrar. Só saiba: tem gente em Pedralume que dorme melhor com ele enterrado.' },
-      levou: { fala: 'Então você levou. Que ele toque — nem que seja uma vez só, e só na cabeça de quem precisa lembrar.' }
+      quem: { fala: 'É do último sineiro de Pedralume. Ele foi meu mestre. Não quis tocar o sino contra a própria gente, e a aldeia o expulsou. Ele morreu aqui, escondido atrás daquela árvore.' },
+      bau: { fala: 'É o sino dele. Está rachado. Pode levar, se tiver a quem mostrar. Só saiba que tem gente em Pedralume que prefere esquecer essa história.' },
+      levou: { fala: 'Você levou o sino. Que bom. Alguém precisava se lembrar dele.' }
     } },
 
   lasca: { nome: 'Lasca', sprite: 302,
@@ -1508,89 +1514,89 @@ export const NPCS = {
       { no: 'estranho' }
     ],
     nos: {
-      estranho: { fala: 'Carroça quebrada, tá vendo? Tragédia. Não, não era minha. Não, eu não vi nada. Sim, você pode continuar andando.' },
-      amigo: { fala: 'Psiu. Você tem o cheiro certo — de quem já ficou do lado de fora de uma porta. A Corte do Abismo não morreu, só mudou de endereço. Se um dia tiver na pata algo que os dois lados querem… lembra que existe um terceiro que paga.' },
-      minerio: { fala: 'Opa, opa. Marca do martelo. Isso aí a ferreira paga com um “obrigada” e um prego. Eu pago ₽600, agora, sem pergunta. Ela nunca vai saber. …Bom, vai. Mas aí você já está longe.',
+      estranho: { fala: 'A carroça quebrada? Não é minha. Eu não vi nada. Pode ir andando.' },
+      amigo: { fala: 'Psiu. Você parece ser dos nossos. Eu sou da Corte do Abismo. A gente foi expulso, mas continua por aí. Se um dia você tiver uma coisa que os dois lados querem, lembra que existe um terceiro — e que ele paga.' },
+      minerio: { fala: 'Esse caixote tem a marca do martelo. A ferreira vai te dar um obrigado por ele. Eu dou ₽600 agora, sem pergunta. Ela vai acabar descobrindo, mas aí você já está longe.',
         opcoes: [
           { t: 'Vender o minério (₽600).', faz: { perde: 'minerio', dinheiro: 600, flag: 'vendeu-minerio', missao: ['minerio', 'fim'], rep: { abismo: 2, forja: -3 } }, vai: 'vendido' },
           { t: 'É da Brasa.', vai: 'honesto' }] },
-      vendido: { fala: 'Prazer fazer negócio. Se ela perguntar, eu nunca te vi. Se <b>eu</b> perguntar, você também não.' },
-      honesto: { fala: 'Honesto. Que desperdício de pata.' },
-      coracao: { fala: '…Guarda isso. <b>Guarda.</b> Você está andando com o Coração da Fonte na estrada como quem carrega pão?', vai: 'coracao2' },
-      coracao2: { fala: 'Escuta, que eu só ofereço uma vez. A Forja quer o Coração num cano. O Círculo quer debaixo da terra. A Corte quer ele onde estava há onze anos: com a gente, que era quem cuidava da fonte antes de virarmos “coisa ruim da estrada”. ₽3.000, e uma coisa que dinheiro não compra. A aldeia fica com sede mais um tempo. Sede ensina.',
+      vendido: { fala: 'Negócio fechado. Se ela perguntar, eu nunca te vi.' },
+      honesto: { fala: 'Honesto. Que pena.' },
+      coracao: { fala: 'Guarda isso! Você está andando na estrada com o Coração da Fonte na mão?', vai: 'coracao2' },
+      coracao2: { fala: 'Vou fazer uma oferta só. A Forja quer o Coração num cano. O Círculo quer debaixo da terra. A Corte cuidava dele até onze anos atrás, antes de ser expulsa, e quer de volta. Pago ₽3.000 e ainda te ensino um truque. A aldeia fica sem água por mais um tempo.',
         opcoes: [
           { t: '🌑 Entregar o Coração à Corte.', faz: { perde: 'coracao', flag: ['cap1', 'fim-abismo'], missao: ['fonte', 'fim'], rep: { abismo: 3, forja: -2, bosque: -2 }, dom: 'sombra', dinheiro: 3000 }, vai: 'fimAbismo' },
           { t: 'Não.', vai: 'naoAinda' }] },
-      naoAinda: { fala: 'Pensa. Eu não tenho pressa. Quem tem sede são eles.' },
-      fimAbismo: { fala: 'Feito. Agora olha pra sua sombra. Viu? Ela te segue mais de perto. Presente da casa.' },
-      depois: { fala: 'Não me cumprimenta em público, parceiro. Mas saiba que tem porta aberta pra você em lugar que nem mapa tem.' },
-      tarde: { fala: 'Ouvi dizer que a fonte se resolveu. Pena. Tinha um negócio bom ali.' }
+      naoAinda: { fala: 'Pensa com calma. Eu não tenho pressa.' },
+      fimAbismo: { fala: 'Feito. Agora repara na sua sombra: ela vai te ajudar a passar sem ser visto. É presente.' },
+      depois: { fala: 'Não fala comigo na frente dos outros. Mas a Corte não vai esquecer o que você fez.' },
+      tarde: { fala: 'Soube que a fonte se resolveu. Pena. Eu tinha uma proposta boa.' }
     } },
 
   guarda: { nome: 'Cabo Lairon', sprite: 305,
     falas: [{ se: { flag: 'cap1' }, no: 'aberto' }, { no: 'fechado' }],
     nos: {
-      fechado: { fala: 'Passo do Norte fechado, ordem do Ancião. Com a fonte seca, metade da aldeia quer ir embora e a outra metade quer que ninguém vá. Eu fico aqui no meio, que é pra isso que serve guarda.' },
-      aberto: { fala: 'O Ancião mandou abrir o Passo pra você. Não disse se era prêmio ou despejo. Lá em cima tem uma fumaça que não é de forja, e faz três noites que ninguém desce de lá. Vai de olho aberto.' }
+      fechado: { fala: 'O Passo do Norte está fechado, por ordem do Ancião. Com a fonte seca, metade da aldeia quer ir embora e a outra metade não quer deixar. Meu serviço é ficar aqui no meio.' },
+      aberto: { fala: 'O Ancião mandou abrir o Passo pra você. Cuidado lá em cima: tem uma fumaça estranha, e faz três noites que ninguém desce de lá.' }
     } },
 
   chansey: { nome: 'Dona Chansey', sprite: 113,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Bem-vindo à Pousada do Sino. É, eu sei que não tem sino. Cama, caldo e curativo pra comitiva inteira.',
+      balcao: { fala: 'Bem-vindo à Pousada do Sino. Aqui tem cama, comida e curativo pra você e pra quem estiver com você.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: 'Só passando.' }] }
     } },
 
   kecleon: { nome: 'Kecleon, o mercador', sprite: 352,
     falas: [{ no: 'banca' }],
     nos: {
-      banca: { fala: 'Kecleon tem de tudo, de todas as cores, freguês! Menos água. Água está em falta.',
+      banca: { fala: 'Bem-vindo! O Kecleon vende de tudo. Só água é que está em falta.',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Depois.' }] }
     } },
 
   pichu: { nome: 'Pichu', sprite: 172,
     falas: [{ se: { falas: ['pichu', 1] }, no: 'tio' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você é aventureiro? Tem cara. Meu irmão disse que aventureiro de verdade fala com todo mundo <b>três</b> vezes, porque na terceira é que os grandes cansam de fingir.' },
-      tio: { fala: 'O Tio do Poço fala sozinho. Mas só se você esperar <b>muito</b>.' }
+      oi: { fala: 'Você é aventureiro? Meu irmão disse que aventureiro de verdade fala com todo mundo <b>três</b> vezes. Na terceira os adultos contam o que estavam escondendo.' },
+      tio: { fala: 'O Tio do Poço fala, sim. Mas você tem que esperar <b>muito</b>.' }
     } },
 
   nico: { nome: 'Nico', sprite: 'menino',
     falas: [{ se: { falas: ['nico', 1] }, no: 'depois' }, { no: 'perdeu' }],
     nos: {
-      perdeu: { fala: 'Tá, tá, você ganhou. Não precisava bater tão forte. …Você entende o que eu falo? O pai diz que bicho não entende.',
+      perdeu: { fala: 'Tá bom, você ganhou. Não precisava bater tão forte. …Você entende o que eu falo? Meu pai diz que bicho não entende.',
         opcoes: [{ t: '(Encarar o menino.)', vai: 'encara' }, { t: '(Empurrar a bola de arame de volta pra ele.)', vai: 'bola' }] },
-      encara: { fala: '…Entende. Ih. Então você ouviu eu te chamar de “esse”. Foi mal. É que lá no Vau quem tem um forte come todo dia, e eu tô cansado de ser o que não tem.' },
-      bola: { fala: 'É minha, eu que fiz! Arame da cerca e pano da saia da mãe. Não funciona direito. E a moça da capa verde desfaz todos os meus laços: eu armo dez, ela acha nove.' },
-      depois: { fala: 'Eu vou voltar pro Vau. Mas eu vou treinar. Um dia você vai querer lutar do meu lado — você vai ver.' }
+      encara: { fala: '…Entende mesmo. Desculpa por ter te chamado de “esse”. É que no Vau quem tem um Pokémon forte come todo dia. Eu não tenho nenhum.' },
+      bola: { fala: 'Essa bola fui eu que fiz, com arame e pano. Não funciona direito. E a moça de capa verde desfaz todos os meus laços.' },
+      depois: { fala: 'Eu vou voltar pro Vau e treinar. Um dia você ainda vai querer lutar do meu lado.' }
     } },
 
   lia: { nome: 'Lia, a patrulheira', sprite: 'patrulheira',
     falas: [{ se: { flag: 'lia-confia' }, no: 'amiga' }, { se: { flag: 'lia-receio' }, no: 'longe' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Calma. Mão vazia, tá vendo? Eu sou a Lia. Aquele laço na trilha era do Nico — eu desarmo o que ele arma, ele arma o que eu desarmo. É quase uma amizade.', vai: 'oi2' },
-      oi2: { fala: 'Vocês não têm motivo nenhum pra confiar em gente. Eu sei o que os Fumeiros fazem na serra e o que as arenas fazem no Vau. Eu sou de lá. É por isso que eu ando aqui.',
+      oi: { fala: 'Calma, eu não vou te machucar. Meu nome é Lia. Aquele laço na trilha era do Nico. Ele arma, eu desarmo.', vai: 'oi2' },
+      oi2: { fala: 'Eu sei que vocês não têm motivo pra confiar em gente. Eu sou do Vau: sei o que os caçadores fazem na serra e o que as arenas fazem lá. É por isso que eu fico por aqui, soltando quem cai em laço.',
         opcoes: [
           { t: '(Chegar mais perto.)', faz: { flag: 'lia-confia', bag: [['oran-berry', 2]] }, vai: 'perto' },
           { t: '(Mostrar os dentes.)', faz: { flag: 'lia-receio' }, vai: 'dentes' },
           { t: '(Ir embora.)' }] },
-      perto: { fala: '…Obrigada. Isso vale mais do que você imagina. Toma: são frutas, não é isca. E se um dia vir um laço de arame, não puxa — dá a volta.' },
-      dentes: { fala: 'Justo. Eu faria o mesmo. Vou continuar cortando laço de qualquer jeito, com ou sem o seu boa-tarde.' },
-      amiga: { fala: 'Vai com cuidado no Passo. Os Fumeiros não são crianças com arame.' },
-      longe: { fala: 'Eu fico do lado de cá da trilha, você do de lá. Tudo certo.' }
+      perto: { fala: 'Obrigada por confiar em mim. Toma, são frutas, pode comer. E se vir um laço de arame, não puxa: dá a volta.' },
+      dentes: { fala: 'Tudo bem, eu entendo. Vou continuar cortando os laços do mesmo jeito.' },
+      amiga: { fala: 'Toma cuidado no Passo. Os Fumeiros são caçadores de verdade, não crianças.' },
+      longe: { fala: 'Eu fico do meu lado da trilha e você do seu. Sem problema.' }
     } },
 
   /* ===== capítulo 2 ===== */
   nara: { nome: 'Nara, a batedora', sprite: 162,
     falas: [{ se: { flag: 'cap2' }, no: 'fim' }, { se: { missao: ['passo', 'nao'] }, no: 'pare' }, { no: 'andamento' }],
     nos: {
-      pare: { fala: 'Psst! Abaixa! …Ah, você é de Pedralume. O Cabo avisou que vinha alguém. Tá vendo a fumaça lá em cima? Não é incêndio. É pior: é cozinha.', vai: 'pare2' },
-      pare2: { fala: 'Os Fumeiros acamparam bem no meio do Passo. Caçam de dia, defumam de noite. A gente se enfiou numa toca na encosta — a entrada fica entre as pedras, a oeste da trilha. A Mãe Ursa quer falar com quem tiver pata pra lutar.',
+      pare: { fala: 'Psst! Abaixa! …Ah, você veio de Pedralume. Está vendo a fumaça lá em cima? São caçadores, cozinhando.', vai: 'pare2' },
+      pare2: { fala: 'São os Fumeiros. Acamparam no meio do Passo: caçam de dia e defumam a carne de noite. A gente se escondeu numa toca a oeste da trilha, entre as pedras. A Mãe Ursa quer falar com quem souber lutar.',
         opcoes: [{ t: 'Me leva até ela.', faz: { missao: ['passo', 0] }, vai: 'vai' }, { t: 'Quantos vocês são?', vai: 'quantos' }] },
-      quantos: { fala: 'Éramos mais. Não me faz contar.', opcoes: [{ t: 'Me leva até ela.', faz: { missao: ['passo', 0] }, vai: 'vai' }] },
-      vai: { fala: 'A oeste, entre as pedras. E olha onde pisa: tem laço de arame na trilha. Os de criança a gente desarma brincando. Os deles, não.' },
-      andamento: { fala: 'A toca é a oeste, entre as pedras. O acampamento, a leste, seguindo a fumaça. E o Alfa do Passo… lá em cima, na gruta do norte. Não sobe sozinho.' },
-      fim: { fala: 'O Passo ainda cheira a fumaça. Mas dá pra dormir de olho fechado, que já é alguma coisa.' }
+      quantos: { fala: 'Menos do que antes. Prefiro não contar.', opcoes: [{ t: 'Me leva até ela.', faz: { missao: ['passo', 0] }, vai: 'vai' }] },
+      vai: { fala: 'É a oeste, entre as pedras. E olha onde pisa: tem laço de arame na trilha.' },
+      andamento: { fala: 'A toca fica a oeste, entre as pedras. O acampamento deles, a leste. O Alfa do Passo está na gruta do norte. Não vai lá sozinho.' },
+      fim: { fala: 'O Passo ainda cheira a fumaça, mas já dá pra dormir tranquilo.' }
     } },
 
   ursa: { nome: 'Mãe Ursa', sprite: 217,
@@ -1602,19 +1608,19 @@ export const NPCS = {
       { no: 'quem' }
     ],
     nos: {
-      quem: { fala: 'Quem deixou entrar? …Tanto faz. Senta longe da entrada, que claridade denuncia.' },
-      conta: { fala: 'Então você é quem resolveu a fonte de Pedralume. Aqui não tem fonte pra resolver: tem gente com lança. Escuta os três e me diz qual você acha que não vai matar a gente.', vai: 'conta2' },
-      conta2: { fala: 'O Cascalho, da Forja, quer queimar o defumadouro deles. O Cogu, do Círculo, quer levar a toca inteira embora por cima da serra — com filhote, no frio. E tem um Sableye rondando lá fora com uma ideia que ele não quis contar na minha frente, o que já me diz o quanto ela vale.', faz: { missao: ['passo', 1] } },
-      espera: { fala: 'Fala com o Cascalho e com o Cogu, aqui dentro. E vai ver o acampamento com os próprios olhos, a leste. Eu só confio em plano de quem viu o inimigo comendo.' },
-      decide: { fala: 'Você viu o acampamento. Viu as gaiolas. Viu as crianças deles também, eu sei que viu — todo mundo que volta de lá volta mais calado. Qual é o plano?',
+      quem: { fala: 'Quem é você? …Tanto faz. Fica longe da entrada, pra ninguém de fora te ver.' },
+      conta: { fala: 'Você é quem resolveu a fonte de Pedralume? Aqui o problema é outro: caçadores armados. Tenho três planos na mesa e preciso de ajuda pra escolher.', vai: 'conta2' },
+      conta2: { fala: 'O Cascalho, da Forja, quer queimar o defumadouro deles. O Cogu, do Círculo, quer fugir com todo mundo por cima da serra, no frio, com os filhotes. E tem um Sableye lá fora com outra ideia, que ele não quis contar na minha frente.', faz: { missao: ['passo', 1] } },
+      espera: { fala: 'Fala com o Cascalho e com o Cogu, aqui dentro. Depois vai ver o acampamento, a leste. Quero que você veja com os próprios olhos antes de opinar.' },
+      decide: { fala: 'Você viu o acampamento: as gaiolas, e as crianças deles também. Qual é o plano?',
         opcoes: [
           { t: '⚒ Queimar o defumadouro, com o Cascalho.', faz: { flag: ['cap2', 'passo-fogo', 'tome-jurou'], missao: ['passo', 'fim'], rep: { forja: 3, bosque: -1 }, dom: 'faisca' }, vai: 'fogo' },
           { t: '🌑 Esvaziar a despensa deles, com o Lasca.', se: { flag: 'lasca-plano' }, faz: { flag: ['cap2', 'passo-fome'], missao: ['passo', 'fim'], rep: { abismo: 3, bosque: -2 }, dinheiro: 900, dom: 'unha' }, vai: 'fome' },
           { t: '🐟 Mostrar a subida dos peixes ao chefe deles.', se: { flag: ['alfa-calmo', 'tome-ouviu'] }, faz: { flag: ['cap2', 'passo-peixe', 'tome-deve', 'lia-confia'], missao: ['passo', 'fim'], rep: { bosque: 2, forja: -1 }, dom: 'correnteza' }, vai: 'peixe' },
           { t: 'Ainda não sei.' }] },
-      fogo: { fala: 'Foi uma fogueira bonita. Eles desceram a serra antes do sol. O chefe deles olhou pra trás uma vez só — e eu conheço aquele olhar, porque é o meu. A gente ganhou um inverno. Não ganhou mais que isso.' },
-      fome: { fala: 'A despensa amanheceu vazia e eles levantaram acampamento em dois dias. As crianças foram no colo, quietas demais. O Sableye passou aqui e deixou a minha parte. Eu não quis. Fica você.' },
-      peixe: { fala: 'Eu vi de longe. Você, o Alfa e um homem com a lança abaixada, olhando os peixes subirem a pedra. Ele tirou o chapéu. Eu não sei o que isso quer dizer entre eles. Entre nós, quer dizer trégua.' }
+      fogo: { fala: 'O defumadouro queimou e eles desceram a serra antes de amanhecer. O chefe olhou pra trás antes de ir, e eu acho que ele volta. Ganhamos um inverno de sossego.' },
+      fome: { fala: 'A despensa amanheceu vazia e eles foram embora em dois dias. As crianças saíram no colo, com fome. O Sableye deixou a minha parte do dinheiro. Eu não quis. Fica pra você.' },
+      peixe: { fala: 'Eu vi de longe: você, o Alfa e o chefe deles olhando os peixes subirem a pedra. Ele baixou a lança e tirou o chapéu. Acho que temos uma trégua.' }
     } },
 
   cascalho: { nome: 'Sargento Cascalho', sprite: 75,
@@ -1626,31 +1632,31 @@ export const NPCS = {
       { no: 'padrao' }
     ],
     nos: {
-      padrao: { fala: 'Pedra não negocia. Pedra cai.' },
-      plano: { fala: 'Simples: o defumadouro é de madeira seca e gordura. Uma faísca no lugar certo e eles perdem a carne de um mês inteiro. Sem carne, sem acampamento. Eles descem a serra e a gente respira.',
+      padrao: { fala: 'Eu sou da Forja. A gente resolve as coisas na força.' },
+      plano: { fala: 'Meu plano é simples: o defumadouro é de madeira seca e gordura. É só pôr fogo, e eles perdem a carne do mês. Sem comida, vão embora.',
         opcoes: [{ t: 'E se voltarem com mais gente?', vai: 'mais' }, { t: 'Entendi.', faz: { flag: 'ouviu-cascalho' } }] },
-      mais: { fala: 'Aí a gente queima de novo. A Forja não tem medo de repetir serviço.', faz: { flag: 'ouviu-cascalho' } },
-      lanca: { fala: 'Onde você arrumou… me dá isso aqui. Não. Fica aí. …Essa ponta tem a marca do martelo. É ferro <b>nosso</b>.', vai: 'lanca2' },
-      lanca2: { fala: 'Eu não sei quem vendeu. Juro pelo forno que não sei. Mas alguém da Ordem armou a mão que feriu o Alfa do Passo — e eu passei um mês chamando os humanos de bicho.', faz: { flag: 'lanca-forja', missao: ['lanca', 'fim'], rep: { forja: -1 } } },
-      calado: { fala: '…Eu vou levar isso pra Ferro-Fundo. Pessoalmente. Não conta pra Mãe Ursa ainda.' },
-      depois: { fala: 'Feito está feito. Pedra não olha pra trás.' }
+      mais: { fala: 'Se voltarem, a gente queima de novo.', faz: { flag: 'ouviu-cascalho' } },
+      lanca: { fala: 'Onde você achou isso? Me mostra. …Essa ponta tem a marca do martelo. É ferro <b>nosso</b>, da Forja.', vai: 'lanca2' },
+      lanca2: { fala: 'Eu não sei quem vendeu, juro. Mas alguém da Ordem vendeu arma pros caçadores, e foi uma delas que feriu o Alfa.', faz: { flag: 'lanca-forja', missao: ['lanca', 'fim'], rep: { forja: -1 } } },
+      calado: { fala: 'Vou levar isso pra Ferro-Fundo pessoalmente. Não conta pra Mãe Ursa ainda.' },
+      depois: { fala: 'Está feito. Não adianta ficar pensando.' }
     } },
 
   cogu: { nome: 'Cogu', sprite: 286,
     falas: [{ se: { flag: 'cap2' }, no: 'depois' }, { se: { missao: ['passo', 1], sem: 'ouviu-cogu' }, no: 'plano' }, { no: 'padrao' }],
     nos: {
-      padrao: { fala: 'Fala baixo. Esporo se assusta fácil.' },
-      plano: { fala: 'Eu sei um caminho por cima da serra. Três dias, sem trilha, sem fumaça. A gente some e deixa o Passo pra eles. Ninguém luta, ninguém queima nada.',
+      padrao: { fala: 'Fala baixo, por favor.' },
+      plano: { fala: 'Eu conheço um caminho por cima da serra. São três dias, sem trilha. A gente foge e deixa o Passo pra eles. Ninguém precisa lutar.',
         opcoes: [{ t: 'Com filhote, no frio?', vai: 'frio' }, { t: 'E quem não aguenta a subida?', vai: 'frio' }] },
-      frio: { fala: '…Alguns não chegam. Eu sei. Fiz a conta muitas vezes, e ela sempre dá menos gente do que partiu. Mas dá <b>alguém</b>. O plano da pedra pode dar ninguém.', vai: 'frio2' },
-      frio2: { fala: 'Tem outra coisa, se você tiver estômago pra subir. O Alfa do Passo guarda a garganta de cima, onde os peixes sobem a pedra na cheia. Peixe não acaba. Se os humanos tivessem peixe… Mas o Alfa está ferido e não deixa ninguém chegar. Nem a gente.', faz: { flag: 'ouviu-cogu' } },
-      depois: { fala: 'Eu ainda sei o caminho por cima da serra. Guardei. Nunca se sabe.' }
+      frio: { fala: 'Alguns não vão aguentar a subida, eu sei. Mas a maioria chega. No plano do Cascalho pode não sobrar ninguém.', vai: 'frio2' },
+      frio2: { fala: 'Tem outra saída, se você tiver coragem. Lá em cima, na garganta do norte, os peixes sobem a pedra na cheia. Tem peixe pra todo mundo, até pros humanos. Só que o Alfa do Passo está ferido e não deixa ninguém chegar perto.', faz: { flag: 'ouviu-cogu' } },
+      depois: { fala: 'Eu ainda lembro do caminho por cima da serra. Pode ser útil um dia.' }
     } },
 
   wooper: { nome: 'Wooper', sprite: 194,
     falas: [{ se: { falas: ['wooper', 1] }, no: 'fruta' }, { no: 'medo' }],
     nos: {
-      medo: { fala: 'Eu não tenho medo. Eu só tô sentado em cima do meu medo, pra ele não sair.' },
+      medo: { fala: 'Eu não estou com medo. Só estou quietinho.' },
       fruta: { fala: 'A moça de capa verde me deu uma fruta uma vez. Não conta pra Mãe Ursa.' }
     } },
 
@@ -1662,12 +1668,12 @@ export const NPCS = {
       { no: 'pede' }
     ],
     nos: {
-      pede: { fala: 'Minha irmã ficou numa gaiola lá no acampamento. Ela não chora, então eu choro pelas duas. Você… você é grande. Você abre gaiola?',
+      pede: { fala: 'Minha irmã ficou presa numa gaiola, no acampamento. Você é grande. Você consegue abrir a gaiola?',
         opcoes: [{ t: 'Eu abro.', faz: { missao: ['gaiolas', 0] }, vai: 'como' }, { t: 'Não prometo.' }] },
-      como: { fala: 'O vigia guarda a chave num baú, no mato alto atrás das barracas. Eu vi quando me escondi. Eu sou bom de me esconder. Só nisso.' },
-      espera: { fala: 'A chave fica no mato alto, atrás das barracas deles. Tem mais gente presa além da minha irmã.' },
-      voltou: { fala: 'ELA VOLTOU! E a coruja também! Toma, toma, é tudo o que eu juntei.', faz: { missao: ['gaiolas', 'fim'], rep: { bosque: 1 }, bag: [['oran-berry', 4], ['revive', 1]] } },
-      obrigado: { fala: 'Minha irmã disse que você nem fez barulho. Eu quero ser assim quando crescer. Menos a parte de ser grande, que dá medo.' }
+      como: { fala: 'O vigia guarda a chave num baú, no mato alto atrás das barracas. Eu vi quando estava escondido.' },
+      espera: { fala: 'A chave fica no mato alto, atrás das barracas. E tem mais gente presa além da minha irmã.' },
+      voltou: { fala: 'ELA VOLTOU! E a coruja também! Toma, é tudo o que eu juntei.', faz: { missao: ['gaiolas', 'fim'], rep: { bosque: 1 }, bag: [['oran-berry', 4], ['revive', 1]] } },
+      obrigado: { fala: 'Minha irmã disse que você nem fez barulho. Quero ser igual a você quando eu crescer.' }
     } },
 
   lasca2: { nome: 'Lasca', sprite: 302,
@@ -1679,16 +1685,16 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Olha quem subiu a serra. Eu? Tô só admirando a paisagem. Linda fumaça. …Já que parou: tenho umas coisinhas que caíram de umas carroças.',
+      oi: { fala: 'Olha quem subiu a serra. Eu? Estou de passagem. Aproveita: tenho umas coisas pra vender.',
         opcoes: [{ t: '🛒 Ver o que caiu das carroças.', faz: { loja: true } }, { t: 'Nada, obrigado.' }] },
-      plano: { fala: 'A pedra quer fogo, o cogumelo quer fuga. Amadores. Escuta o profissional: eles guardam tudo o que defumam numa despensa só. Eu sei a hora em que o vigia cochila. A gente esvazia a casa numa noite, eles acordam sem inverno e vão embora andando. Ninguém morre.',
+      plano: { fala: 'O Cascalho quer fogo e o Cogu quer fugir. Eu tenho um plano melhor: eles guardam toda a carne numa despensa só, e eu sei a hora em que o vigia dorme. A gente esvazia tudo numa noite, e eles vão embora por falta de comida. Ninguém morre.',
         opcoes: [{ t: 'E as crianças do acampamento?', vai: 'criancas' }, { t: 'E o que você ganha?', vai: 'ganha' }] },
-      criancas: { fala: 'Passam fome, uai. Fome não mata em dois dias. …Não me olha assim. Eu disse que ninguém morre, não disse que ninguém sofre.', faz: { flag: 'lasca-plano' } },
-      ganha: { fala: 'Carne defumada tem preço bom no Vau. Metade é sua. Tá vendo? Honestidade.', faz: { flag: 'lasca-plano' } },
-      lanca: { fala: 'Deixa eu ver essa ponta… Hohoho. Marca do martelo. A Forja vendendo ferro pra quem caça Pokémon. Isso aqui não é lança, parceiro: é um segredo com cabo.',
+      criancas: { fala: 'Vão passar fome por uns dias. Ninguém morre de fome em dois dias. Eu disse que ninguém morre, não que ninguém sofre.', faz: { flag: 'lasca-plano' } },
+      ganha: { fala: 'Carne defumada vende bem no Vau. Metade do dinheiro é sua.', faz: { flag: 'lasca-plano' } },
+      lanca: { fala: 'Deixa eu ver essa ponta. Marca do martelo! A Forja vendendo arma pra quem caça Pokémon. A Corte paga bem por um segredo desses.',
         opcoes: [{ t: 'Vender o segredo (₽700).', faz: { flag: 'lanca-vendida', missao: ['lanca', 'fim'], dinheiro: 700, rep: { abismo: 2 } }, vai: 'vendida' }, { t: 'Fica comigo.' }] },
-      vendida: { fala: 'A Corte agradece. A Forja, um dia, também vai — do jeito dela.' },
-      depois: { fala: 'O Passo se resolveu. Eu? Já tô de olho rio abaixo. Tem uma cidade inteira apostando moeda em briga. Meu tipo de lugar. Antes de eu ir: quer alguma coisa?',
+      vendida: { fala: 'A Corte agradece. Um dia a Forja vai ter que explicar isso.' },
+      depois: { fala: 'O Passo se resolveu, e eu vou descer o rio. Tem uma cidade lá embaixo que vive de luta e aposta. Quer comprar alguma coisa antes?',
         opcoes: [{ t: '🛒 Ver o que caiu das carroças.', faz: { loja: true } }, { t: 'Nada, obrigado.' }] }
     } },
 
@@ -1700,16 +1706,16 @@ export const NPCS = {
       { no: 'primeiro' }
     ],
     nos: {
-      primeiro: { fala: '…Um bicho entrando andando no acampamento, de cabeça erguida. Ou é muito burro, ou não é bicho de caça. Larga a lança, Zé. Deixa ele chegar.', vai: 'primeiro2' },
-      primeiro2: { fala: 'Você me olha como se eu fosse o monstro da história. Eu sou o Tomé. Eu tinha quarenta cabeças de gado no litoral. A praga levou todas em uma lua. Tem trinta bocas neste acampamento, e nenhuma delas come capim.',
+      primeiro: { fala: 'Um bicho entrando no acampamento sem medo. Baixa a lança, Zé. Deixa ele chegar.', vai: 'primeiro2' },
+      primeiro2: { fala: 'Você me olha como se eu fosse um monstro. Meu nome é Tomé. Eu tinha quarenta cabeças de gado no litoral, e uma praga matou todas em um mês. Tenho trinta pessoas pra alimentar aqui.',
         opcoes: [{ t: '(Olhar para as gaiolas.)', vai: 'gaiolas' }, { t: '(Olhar para as crianças.)', vai: 'criancas' }] },
-      gaiolas: { fala: 'É. Eu sei o que tem lá dentro, e sei que eles sabem o que os espera. Eu não durmo bem. Mas durmo com as crianças de barriga cheia, e escolho isso de novo amanhã.', faz: { flag: 'tome-falou', missao: ['passo', 2] } },
-      criancas: { fala: 'Três são minhas. As outras são de quem a praga levou junto com o gado. Criança não escolhe o que o pai caça.', faz: { flag: 'tome-falou', missao: ['passo', 2] } },
-      denovo: { fala: 'Ainda aqui? Se veio pedir pra eu soltar os das gaiolas, pede com comida na outra mão.' },
-      peixes: { fala: 'A bicha lá de cima… parou de urrar. Três noites que ela não deixa ninguém dormir, e hoje, silêncio. Foi você?', vai: 'peixes2' },
-      peixes2: { fala: '(Você risca na terra: a garganta do norte. Água. Peixe subindo a pedra.)<br><br>…Peixe. Na cheia. Lá em cima?', vai: 'peixes3' },
-      peixes3: { fala: 'Se isso for verdade, eu não preciso de gaiola nenhuma. Me mostra. Se for armadilha, eu morro sabendo que tentei uma coisa decente uma vez.', faz: { flag: 'tome-ouviu' } },
-      tregua: { fala: 'A gente pesca de manhã e a bicha pesca de tarde. Ninguém combinou; só aconteceu. As gaiolas viraram viveiro de peixe. Se um dia precisar de um humano que te deve, você sabe o nome.' }
+      gaiolas: { fala: 'Eu sei o que tem nas gaiolas, e sei que é errado. Durmo mal por causa disso. Mas as crianças estão comendo, e eu faria tudo de novo.', faz: { flag: 'tome-falou', missao: ['passo', 2] } },
+      criancas: { fala: 'Três são minhas. As outras perderam os pais na praga. Elas não têm culpa do que eu caço.', faz: { flag: 'tome-falou', missao: ['passo', 2] } },
+      denovo: { fala: 'Ainda aqui? Se veio pedir pra eu soltar os das gaiolas, me diz primeiro o que a gente vai comer.' },
+      peixes: { fala: 'O bicho grande lá de cima parou de urrar. Fazia três noites que ninguém dormia. Foi você?', vai: 'peixes2' },
+      peixes2: { fala: '(Você risca na terra: a garganta do norte. Água. Peixe subindo a pedra.)<br><br>Peixe? Lá em cima, na cheia?', vai: 'peixes3' },
+      peixes3: { fala: 'Se for verdade, eu não preciso mais de gaiola. Me mostra. Eu quero ver.', faz: { flag: 'tome-ouviu' } },
+      tregua: { fala: 'A gente pesca de manhã e o bicho grande pesca de tarde. As gaiolas viraram viveiro de peixe. Eu te devo essa. Se precisar de mim, é só chamar.' }
     } },
 
   selma: { nome: 'Dona Selma, a curandeira', sprite: 'dama',
@@ -1720,53 +1726,53 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Não tenha medo, pequeno. Eu trato o que aparecer na minha porta, com pata ou com bota. O Tomé finge que não vê.', vai: 'oi2' },
-      oi2: { fala: 'A bicha grande lá da gruta do norte — foi lança, eu ouvi os gritos. Ferida daquelas apodrece. Tem uma erva azul que cresce na encosta do Passo, perto da trilha de cima. Se você me trouxer, eu faço um unguento. Pra ela, não pra nós.',
+      oi: { fala: 'Não tenha medo. Eu sou curandeira e trato de quem aparecer, gente ou bicho.', vai: 'oi2' },
+      oi2: { fala: 'O bicho grande da gruta do norte levou uma lançada, e a ferida vai infeccionar. Na encosta do Passo, perto da trilha de cima, cresce uma erva azul. Se você me trouxer, eu faço um unguento pra ele.',
         opcoes: [{ t: 'Eu trago.', faz: { missao: ['erva', 0] }, vai: 'vai' }, { t: '(Pedir um curativo — {custo}.)', faz: { cura: true } }, { t: 'Agora não.' }] },
-      vai: { fala: 'Flor azul, miúda, rente ao chão. E não chega perto da bicha sem o unguento na boca: bicho ferido não reconhece favor.' },
-      cade: { fala: 'Flor azul, encosta do Passo, perto da trilha de cima. Eu espero.' },
-      trouxe: { fala: 'É essa. Me dá um instante… Pronto. Leva o unguento. Chega devagar, de lado, e deixa ela cheirar primeiro.', faz: { perde: 'erva', item: 'unguento', missao: ['erva', 'fim'] } },
-      depois: { fala: 'Você voltou inteiro. Ela também, pelo que o vento conta. Senta, que eu olho essas patas.',
+      vai: { fala: 'É uma flor azul, pequena, rente ao chão. E só chega perto do bicho com o unguento pronto: animal ferido ataca.' },
+      cade: { fala: 'A flor azul fica na encosta do Passo, perto da trilha de cima.' },
+      trouxe: { fala: 'É essa mesma. Um instante… pronto. Leva o unguento. Chega devagar, de lado, e deixa ele cheirar primeiro.', faz: { perde: 'erva', item: 'unguento', missao: ['erva', 'fim'] } },
+      depois: { fala: 'Você voltou inteiro, e pelo jeito o bicho também. Senta, deixa eu ver essas patas.',
         opcoes: [{ t: '(Pedir um curativo — {custo}.)', faz: { cura: true } }, { t: 'Estou bem.' }] }
     } },
 
   tico: { nome: 'Tico', sprite: 'menino',
     falas: [{ se: { falas: ['tico', 1] }, no: 'tio' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você é dos bons de comer ou dos bons de brincar? …Brincadeira! A vó Selma disse que não é pra falar isso.' },
-      tio: { fala: 'Meu tio Tomé não é mau. Ele só tá com fome faz muito tempo.' }
+      oi: { fala: 'Você é de comer ou de brincar? …É brincadeira! A vó Selma disse pra eu não falar isso.' },
+      tio: { fala: 'Meu tio Tomé não é mau. Ele só está com fome há muito tempo.' }
     } },
 
   preso1: { nome: 'Teddiursa presa', sprite: 216,
     falas: [{ no: 'presa' }],
     nos: {
-      presa: { fala: '…Você não é deles. Não faz barulho. O vigia dorme depois do almoço.',
+      presa: { fala: 'Você não é deles. Fala baixo. O vigia dorme depois do almoço.',
         opcoes: [{ t: 'Abrir a gaiola.', se: { item: 'chave' }, faz: { flag: 'solto1' }, vai: 'livre' }, { t: 'Eu volto.' }] },
-      livre: { fala: 'Meu irmão está na toca? Está chorando? Ele chora por nós dois. Eu vou — obrigada.' }
+      livre: { fala: 'Meu irmão está na toca? Eu vou pra lá. Obrigada!' }
     } },
   preso2: { nome: 'Hoothoot preso', sprite: 163,
     falas: [{ no: 'preso' }],
     nos: {
-      preso: { fala: 'Hu. Se abrir essa porta, eu juro que nunca mais reclamo de dormir de dia.',
+      preso: { fala: 'Se você abrir essa porta, eu nunca mais reclamo de nada.',
         opcoes: [{ t: 'Abrir a gaiola.', se: { item: 'chave' }, faz: { flag: 'solto2' }, vai: 'livre' }, { t: 'Eu volto.' }] },
-      livre: { fala: 'Hu-hu! Ar! Céu! Reclamação cancelada!' }
+      livre: { fala: 'Estou livre! Obrigado!' }
     } },
   preso3: { nome: 'Stantler velho', sprite: 234,
     falas: [{ se: { flag: 'ouviu-velho' }, no: 'fica' }, { no: 'velho' }],
     nos: {
-      velho: { fala: 'Guarda a chave, filho. Eu estou velho, a perna não presta, e aqui a moça de vestido me dá unguento. Lá fora eu sou jantar de qualquer um.', vai: 'velho2' },
-      velho2: { fala: 'Eu sei o que eu sou aqui dentro. Mas ninguém me perguntou o que eu era lá fora. Deixa a porta como está.', faz: { flag: 'ouviu-velho' } },
-      fica: { fala: 'Deixa a porta como está. E não me olha com essa pena — eu escolhi, que é mais do que muita gente solta consegue dizer.' }
+      velho: { fala: 'Pode guardar a chave, filho. Eu estou velho, minha perna não presta, e aqui a curandeira cuida de mim. Lá fora eu não duro uma semana.', vai: 'velho2' },
+      velho2: { fala: 'Eu sei que isto é uma gaiola. Mas eu escolhi ficar. Deixa a porta fechada.', faz: { flag: 'ouviu-velho' } },
+      fica: { fala: 'Deixa a porta como está. E não precisa ter pena: eu escolhi.' }
     } },
 
   alfa2: { nome: 'O Alfa do Passo', sprite: '@alfa',
     falas: [{ se: { flag: 'alfa-calmo' }, no: 'calmo' }, { no: 'ferido' }],
     nos: {
-      ferido: { fala: '(O Alfa rosna baixo, sem se levantar. O cabo da lança treme a cada respiração. Você está com o unguento na boca, como a curandeira mandou.)',
+      ferido: { fala: '(O Alfa rosna baixo, deitado. A lança ainda está no flanco dele. Você trouxe o unguento da curandeira.)',
         opcoes: [{ t: '(Chegar devagar, de lado.)', vai: 'devagar' }, { t: '(Recuar.)' }] },
-      devagar: { fala: '(Ele deixa. Você puxa a lança de uma vez só — o urro sacode a gruta — e espalha o unguento na ferida. Quando termina, o Alfa encosta a testa na sua, um instante. Depois olha pra garganta do norte, onde a água desce.)',
+      devagar: { fala: '(Ele deixa você chegar. Você puxa a lança de uma vez e passa o unguento na ferida. O Alfa urra, depois se acalma e encosta a cabeça em você. Então olha pra garganta do norte, onde a água desce.)',
         faz: { flag: ['alfa-calmo', 'venceu:alfa2', 'pegou-lanca'], item: 'lanca', perde: 'unguento', missao: ['lanca', 0], rep: { bosque: 1 } } },
-      calmo: { fala: '(O Alfa dorme de lado, respirando fundo. Ao seu passo, abre um olho, reconhece, e fecha de novo.)' }
+      calmo: { fala: '(O Alfa dorme de lado. Quando você passa, ele abre um olho, te reconhece e volta a dormir.)' }
     } },
 
   /* ===== capítulo 3 ===== */
@@ -1778,15 +1784,15 @@ export const NPCS = {
       { no: 'longe' }
     ],
     nos: {
-      longe: { fala: 'Você de novo. Eu fico deste lado do rio, você do outro. Combinado é combinado.' },
-      amiga: { fala: 'Você chegou ao Vau. Então escuta, antes de entrar: lá dentro ninguém te caça — te <b>admira</b>. É pior. Quem luta bem na arena come bem, dorme em palha limpa, tem nome pintado em tábua. Tem Pokémon lá que não trocaria aquilo por floresta nenhuma.', vai: 'amiga2' },
-      amiga2: { fala: 'Eu cresci ali. Tive um parceiro de arena. Ele morreu velho, gordo e feliz, e eu até hoje não sei se fiz certo. É por isso que eu corto laço: laço não pergunta.' },
-      coracao: { fala: 'Isso que você carrega… eu sinto daqui. A arena inteira foi construída em cima disso, não foi? Sempre achei que as lutas eram boas demais.', vai: 'coracao2' },
-      coracao2: { fala: 'Se você quiser tirar isso da cidade, eu sei onde o rio entra na pedra, a meio dia daqui. Enterrado lá, ninguém acha. O Vau vai murchar — a arena é tudo o que ele tem. Eu vou ser a filha da cidade que matou a cidade. Faço mesmo assim, se você pedir.',
+      longe: { fala: 'Você de novo. Eu fico deste lado do rio e você do outro, como combinamos.' },
+      amiga: { fala: 'Você chegou ao Vau. Antes de entrar, um aviso: lá ninguém vai te caçar. Vão te <b>admirar</b>. Quem luta bem na arena ganha comida, cama e fama. Tem Pokémon lá que não quer ir embora.', vai: 'amiga2' },
+      amiga2: { fala: 'Eu cresci nessa cidade e tive um parceiro de arena. Ele viveu bem e morreu velho. Até hoje eu não sei se aquilo era certo.' },
+      coracao: { fala: 'Isso que você está carregando… a arena foi construída em cima disso, não foi? Eu sempre achei as lutas de lá fortes demais.', vai: 'coracao2' },
+      coracao2: { fala: 'Se você quiser tirar isso da cidade, eu sei um lugar: onde o rio entra na pedra, a meio dia daqui. Enterrado lá, ninguém acha. O Vau vai sofrer, porque vive da arena. Mesmo assim eu te ajudo, se você pedir.',
         opcoes: [
           { t: '💧 Tirar o Coração do Vau, com a Lia.', faz: { perde: 'coracao2', flag: ['cap3', 'vau-tirou'], missao: ['vau', 'fim'], rep: { bosque: 2, abismo: -1 }, dom: 'eco' }, vai: 'tirou' },
           { t: 'Ainda vou pensar.' }] },
-      tirou: { fala: 'Está enterrado. O rio cobre. …Fecharam a arena, sabia? Disseram que os bichos “perderam a vontade”. Passei em frente à casa do Mestre e ele estava na porta, olhando pra mim. Não disse nada. Era pior se dissesse.' }
+      tirou: { fala: 'Está enterrado. A arena fechou: disseram que os Pokémon perderam a vontade de lutar. Passei na frente da casa do Mestre e ele só ficou me olhando.' }
     } },
 
   bia: { nome: 'Bia', sprite: 'menina',
@@ -1798,36 +1804,36 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Você não é daqui. Dá pra ver: os daqui já chegam olhando pra arena. Eu sou a Bia. Esta é a Lã, minha parceira. A gente lutava lá toda feira.', vai: 'oi2' },
-      oi2: { fala: 'Eu parei. Na última luta ela ganhou, e eu vi o outro sair carregado, e a Lã estava… contente. Eu não consegui ficar contente junto. Agora ela não fala comigo. Você entende a língua dela. Pergunta o que ela quer?',
+      oi: { fala: 'Você não é daqui, né? Eu sou a Bia, e esta é a Lã, minha parceira. A gente lutava na arena toda semana.', vai: 'oi2' },
+      oi2: { fala: 'Eu parei. Na última luta ela ganhou, o outro saiu carregado, e ela ficou contente. Eu não consegui ficar. Agora ela não fala comigo. Você entende o que ela diz, não entende? Pergunta o que ela quer.',
         opcoes: [{ t: 'Eu pergunto.', faz: { missao: ['bia', 0] }, vai: 'obrigada' }, { t: 'Isso é entre vocês duas.' }] },
-      obrigada: { fala: 'Ela está bem aí do lado. Fingindo que não ouve.' },
-      espera: { fala: 'Pergunta pra ela. Eu aguento a resposta. Acho.' },
-      decide: { fala: 'E aí? O que ela disse? …Ela <b>quer</b> lutar. Ela gosta. E eu, que achei que estava salvando ela.',
+      obrigada: { fala: 'Ela está aí do lado, fingindo que não ouve.' },
+      espera: { fala: 'Pergunta pra ela, por favor. Eu quero saber, seja o que for.' },
+      decide: { fala: 'E aí, o que ela disse? …Ela <b>quer</b> lutar. Ela gosta. E eu achando que estava salvando ela.',
         opcoes: [
           { t: 'Lutem juntas — do jeito de vocês, com a regra de vocês.', faz: { flag: 'bia-juntos', missao: ['bia', 'fim'], rep: { forja: 1 }, bag: [['sitrus-berry', 2]] }, vai: 'juntas' },
           { t: 'Deixa ela ir lutar com outra pessoa.', faz: { missao: ['bia', 'fim'], rep: { abismo: 1 } }, vai: 'sozinha' },
           { t: 'Eu não decido isso por vocês.' }] },
-      juntas: { fala: 'A gente combinou: ela luta, e eu paro a luta quando <b>eu</b> achar que deu. Ela reclamou. Depois lambeu minha mão. Acho que é um sim.' },
-      sozinha: { fala: 'Ela foi com o Nico. Luta toda feira e ganha quase sempre. Eu vou assistir, lá do fundo. Ela finge que não me vê, e eu finjo que não choro.' }
+      juntas: { fala: 'A gente combinou: ela luta, e eu paro a luta quando achar que passou do ponto. Ela reclamou, mas aceitou.' },
+      sozinha: { fala: 'Ela foi lutar com o Nico e ganha quase sempre. Eu assisto do fundo. Dói, mas foi o que ela quis.' }
     } },
 
   la: { nome: 'Lã', sprite: 180,
     falas: [{ se: { missao: ['bia', 'fim'] }, no: 'fim' }, { se: { missao: ['bia', 0] }, no: 'fala' }, { no: 'muda' }],
     nos: {
       muda: { fala: '(A Flaaffy olha pra você, depois pra menina, e vira o rosto.)' },
-      fala: { fala: 'Ela te mandou perguntar, né. Então leva a resposta: eu <b>gosto</b>. Do barulho, da areia, de ganhar. Ninguém me laçou — eu segui ela até em casa porque ela dividia o pão. E agora ela me olha como se eu fosse uma coisa quebrada.', vai: 'fala2' },
-      fala2: { fala: 'Eu não quero ser salva. Eu quero que ela torça por mim de novo.', faz: { flag: 'ouviu-la' } },
-      fim: { fala: '(A Flaaffy estala de eletricidade, satisfeita com alguma coisa que não vai te contar.)' }
+      fala: { fala: 'Ela te mandou perguntar, né? Então diz pra ela: eu <b>gosto</b> de lutar. Do barulho, da areia, de ganhar. Ninguém me prendeu: eu fui morar com ela porque quis. E agora ela me trata como se eu estivesse doente.', vai: 'fala2' },
+      fala2: { fala: 'Eu não preciso ser salva. Só quero que ela torça por mim de novo.', faz: { flag: 'ouviu-la' } },
+      fim: { fala: '(A Flaaffy solta umas faíscas, satisfeita.)' }
     } },
 
   kiko: { nome: 'Kiko, o porteiro', sprite: 58,
     falas: [{ se: { flag: 'cap3' }, no: 'saida' }, { se: { missao: ['vau', 'nao'] }, no: 'oi' }, { no: 'denovo' }],
     nos: {
-      oi: { fala: 'Alto! …Ah, é bicho. Pode passar, bicho não paga pedágio. Eu sou o Kiko, eu guardo o portão. O Mestre me dá osso, eu dou alarme. É um bom negócio. Ninguém me pediu opinião sobre a arena, então eu não tenho.', faz: { missao: ['vau', 0] } },
-      denovo: { fala: 'O Mestre Baltazar fica na praça, perto do poço. A arena é a casa de pedra lá em cima, com a placa da espada. E eu fico aqui, que é o meu serviço. Bicho cansado pode deitar na casinha do portão — e a despensa do portão vende, que osso não se compra sozinho.',
+      oi: { fala: 'Alto! …Ah, é um Pokémon. Pode passar, Pokémon não paga pedágio. Eu sou o Kiko e guardo o portão. Quem manda aqui é o Mestre Baltazar.', faz: { missao: ['vau', 0] } },
+      denovo: { fala: 'O Mestre Baltazar fica na praça, perto do poço. A arena é a casa de pedra lá em cima. Se quiser descansar, tem a casinha do portão. E eu também vendo umas coisas.',
         opcoes: [{ t: '🛏 Descansar na casinha do portão ({custo}).', faz: { cura: true } }, { t: '🛒 Ver a despensa do portão.', faz: { loja: true } }, { t: 'Só passando.' }] },
-      saida: { fala: 'Vai seguir o rio? Mandei abrir o portão do sul pra você. Pra baixo daqui é charco, e do charco eu só conheço o cheiro. Boa sorte, bicho. Se quiser deitar ou comprar antes, a casinha e a despensa continuam aí.',
+      saida: { fala: 'Vai seguir o rio? Abri o portão do sul pra você. Lá embaixo é o charco. Se quiser descansar ou comprar alguma coisa antes, é só falar.',
         opcoes: [{ t: '🛏 Descansar na casinha do portão ({custo}).', faz: { cura: true } }, { t: '🛒 Ver a despensa do portão.', faz: { loja: true } }, { t: 'Vou indo.' }] }
     } },
 
@@ -1841,89 +1847,89 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Um forasteiro de quatro patas, andando solto e de cabeça erguida. Ou você fugiu de alguém, ou ninguém nunca conseguiu te pegar. Eu sou o Baltazar. Eu cuido da arena, e a arena cuida do Vau.', vai: 'oi2' },
-      oi2: { fala: 'Antes de me julgar: há vinte anos isto aqui era lama e febre. Aí descobriram que nesta praça os bichos lutam como em lugar nenhum — mais fortes, mais bonitos. Vem gente de três rios pra ver. Cada moeda desta cidade passou por aquela porta.',
+      oi: { fala: 'Um Pokémon solto, andando sozinho pela cidade. Isso é raro. Eu sou o Baltazar. Eu cuido da arena, e a arena sustenta o Vau.', vai: 'oi2' },
+      oi2: { fala: 'Antes de me julgar: vinte anos atrás isto aqui era lama e doença. Aí descobriram que nesta praça os Pokémon lutam melhor do que em qualquer lugar. Hoje vem gente de três rios pra assistir, e a cidade inteira vive disso.',
         opcoes: [{ t: '(Olhar para a arena.)', faz: { missao: ['vau', 1] }, vai: 'regra' }, { t: '(Virar as costas.)' }] },
-      regra: { fala: 'Quer ver por dentro? A casa é aberta. E se quiser descer ao porão, onde fica a Fera que abre as festas, a regra é a de todo mundo: vence os dois desafiantes da tarde. Bicho solto também pode. Nunca aconteceu — mas pode.' },
-      desafio: { fala: 'Dois desafiantes, lá dentro, um de cada lado do picadeiro. Vence os dois e o guarda te deixa descer.' },
-      desce: { fala: 'Você venceu os dois. Sem dono. A arquibancada não sabia se aplaudia ou se corria. Desce — a Fera é a alma desta casa. Só não chega perto demais da grade.' },
-      ferro: { fala: 'A grade do porão? Ferro de primeira, não enferruja. …De quem eu compro? Ora. De quem faz o melhor ferro que existe. Vêm de noite, não dão nome, e têm um martelo marcado em tudo. Pensei que você soubesse — eles são dos seus.', faz: { missao: ['ferro', 'fim'], flag: 'forja-vende', rep: { forja: -1 } } },
-      coracao: { fala: '…Então era isso, debaixo do alicerce. Vinte anos eu achei que era a areia, o ar, a minha mão boa pra escolher lutador. Era uma pedra.', vai: 'coracao2' },
-      coracao2: { fala: 'Devolve. Eu te peço, não mando. Sem isso a arena fecha, e sem a arena tem duzentas pessoas aqui que voltam pra lama. Os bichos que lutam aqui comem melhor que eu. Eu sei o que você pensa de nós. Pensa também no que vem depois.',
+      regra: { fala: 'Quer conhecer a arena? Pode entrar. E se quiser descer ao porão, onde fica a Fera, a regra é a mesma pra todos: vencer os dois desafiantes da tarde.' },
+      desafio: { fala: 'São dois desafiantes, dentro da arena, um de cada lado. Vença os dois e o guarda te deixa descer.' },
+      desce: { fala: 'Você venceu os dois, e sem dono! Pode descer ao porão. Só não chega muito perto da grade da Fera.' },
+      ferro: { fala: 'A grade do porão? É ferro de primeira. Eu compro de uns Pokémon que vêm de noite e não dizem o nome. Tudo o que eles vendem tem um martelo marcado. Achei que você soubesse: são dos seus.', faz: { missao: ['ferro', 'fim'], flag: 'forja-vende', rep: { forja: -1 } } },
+      coracao: { fala: 'Então era isso que tinha debaixo da arena. Vinte anos achando que o segredo era a areia, ou o meu jeito de escolher lutador. Era uma pedra.', vai: 'coracao2' },
+      coracao2: { fala: 'Devolve, por favor. Sem isso a arena fecha, e duzentas pessoas voltam pra miséria. Os Pokémon que lutam aqui são bem tratados. Pensa no que acontece com a cidade.',
         opcoes: [
           { t: '🏟 Devolver o Coração ao alicerce.', faz: { perde: 'coracao2', flag: ['cap3', 'vau-deixou'], missao: ['vau', 'fim'], rep: { forja: 1, bosque: -2 }, dinheiro: 1200, dom: 'torcida' }, vai: 'deixou' },
           { t: 'Ainda não decidi.' }] },
-      deixou: { fala: 'Está de volta no lugar. Hoje à noite tem luta, e você tem lugar na primeira fila pelo resto da vida. …Eu sei que não era isso que você queria ouvir de um humano. É o que eu tenho.' },
-      dTirou: { fala: 'A arena fechou. Metade da cidade foi embora no primeiro mês. Eu fico. Alguém tem que apagar as tochas.' },
-      dOrdem: { fala: 'Vieram uns sujeitos de olho de pedra preciosa e disseram que a arena agora tem sócio. As lutas continuam. O dinheiro é que mudou de bolso.' }
+      deixou: { fala: 'A pedra voltou pro lugar. Hoje tem luta, e você tem lugar na primeira fila sempre que quiser. Obrigado.' },
+      dTirou: { fala: 'A arena fechou. Metade da cidade foi embora no primeiro mês. Eu fico: alguém tem que cuidar do que sobrou.' },
+      dOrdem: { fala: 'Apareceram uns Sableye dizendo que a arena agora tem sócio. As lutas continuam. Só o dinheiro é que mudou de dono.' }
     } },
 
   lasca3: { nome: 'Lasca', sprite: 302,
     falas: [{ se: { flag: 'vau-ordem' }, no: 'socio' }, { se: { flag: 'cap3' }, no: 'tarde' }, { se: { missao: ['vau', 3] }, no: 'coracao' }, { no: 'apostas' }],
     nos: {
-      apostas: { fala: 'Aposta no vermelho ou no azul? Eu não torço, eu cobro. …Ah, é você. Tá vendo esta cidade? Uma arena em cima de uma Fonte. Os humanos não sabem o que têm no porão. A Corte sabe. Só não tinha como descer.' },
-      coracao: { fala: 'Você desceu. Você <b>subiu</b> com ele. Eu sabia que valia a pena te seguir por três mapas.', vai: 'coracao2' },
-      coracao2: { fala: 'Proposta da Corte, e dessa vez é séria: a pedra volta pro lugar, a arena continua, e quem cuida do alicerce passa a ser a gente. Os humanos lutam, a cidade come, e a Corte volta a guardar um Coração — o primeiro em onze anos. Todo mundo ganha. Principalmente eu.',
+      apostas: { fala: 'Vai apostar? …Ah, é você. Vou te contar uma coisa: esta arena foi construída em cima de uma Fonte. Os humanos não sabem o que têm no porão. A Corte sabe, mas nunca conseguiu descer.' },
+      coracao: { fala: 'Você desceu e voltou com ele! Eu sabia que valia a pena te seguir.', vai: 'coracao2' },
+      coracao2: { fala: 'Proposta da Corte: a pedra volta pro lugar e a arena continua, mas quem passa a cuidar do alicerce somos nós. A cidade segue vivendo, e a Corte volta a guardar um Coração. Eu também ganho a minha parte, claro.',
         opcoes: [
           { t: '🌑 Entregar o alicerce à Corte.', faz: { perde: 'coracao2', flag: ['cap3', 'vau-ordem'], missao: ['vau', 'fim'], rep: { abismo: 3, forja: -1, bosque: -1 }, dinheiro: 2000, dom: 'banca' }, vai: 'socio' },
           { t: 'Não.' }] },
-      socio: { fala: 'Sócio. Gostei da palavra. A arena nunca lucrou tanto, e ninguém lá em cima sabe por quê.' },
-      tarde: { fala: 'Oportunidade é que nem laço de criança: passou, desarmou.' }
+      socio: { fala: 'Agora somos sócios da arena. Ela nunca deu tanto lucro.' },
+      tarde: { fala: 'Você já decidiu. Perdi o negócio.' }
     } },
 
   nico3: { nome: 'Nico', sprite: 'menino',
     falas: [{ se: { flag: 'bia-juntos' }, no: 'inveja' }, { se: { falas: ['nico3', 1] }, no: 'pao' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'VOCÊ! O da estrada! Eu sabia que você vinha, eu sabia! Olha: sem laço, tá vendo? Mão vazia. …Luta comigo na arena. Do <b>meu</b> lado. Eu juro que divido o pão meio a meio.',
+      oi: { fala: 'VOCÊ! O da estrada! Olha, estou sem laço, de mão vazia. Luta comigo na arena, do <b>meu</b> lado? Eu divido a comida com você, meio a meio.',
         opcoes: [{ t: '(Balançar a cabeça: não.)', vai: 'nao' }, { t: '(Ficar olhando.)', vai: 'olha' }] },
-      nao: { fala: 'Tá. Eu entendo. Eu armei laço pra você, né. Eu também não faria parceria comigo.' },
-      olha: { fala: 'Você não disse não! Isso é quase um sim! Vou guardar pão todo dia, pra quando você mudar de ideia.' },
-      pao: { fala: 'Eu guardei pão ontem. Hoje também. Não tô te pressionando. Só tô avisando que tem pão.' },
-      inveja: { fala: 'A Bia e a Lã voltaram a lutar. Com <b>regra</b>. A Bia para a luta quando quer. Achei frescura… mas a Lã está ganhando mais do que antes. Não conta que eu disse.' }
+      nao: { fala: 'Tudo bem. Eu armei um laço pra você, né. Eu também não ia querer.' },
+      olha: { fala: 'Você não disse não! Vou guardar pão todo dia, pro caso de você mudar de ideia.' },
+      pao: { fala: 'Guardei pão ontem, e hoje também. Não é pressão. É só pra você saber.' },
+      inveja: { fala: 'A Bia e a Lã voltaram a lutar, com uma regra: a Bia para a luta quando quiser. Achei bobagem, mas a Lã está ganhando mais do que antes.' }
     } },
 
   campeao: { nome: 'O Campeão', sprite: 68,
     falas: [{ se: { flag: 'campeao-ouviu' }, no: 'denovo' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Solto. Sem coleira, sem tábua com nome. Eu sei o que você veio dizer: “irmão, eles te prenderam”. Todo bicho do mato que entra aqui diz isso.', vai: 'oi2' },
-      oi2: { fala: 'Ninguém me prende. Eu como três vezes por dia. Durmo em palha trocada. Duzentas vozes gritam meu nome, e criança pinta minha cara no muro. No mato eu era só mais um com fome. Me diz: de qual liberdade eu estou sentindo falta?',
+      oi: { fala: 'Um Pokémon solto, sem coleira. Já sei o que você vai dizer: que eu estou preso. Todo mundo que vem do mato diz isso.', vai: 'oi2' },
+      oi2: { fala: 'Ninguém me prende. Eu como três vezes por dia, durmo bem, e duzentas pessoas gritam meu nome. No mato eu passava fome. De que liberdade eu estou sentindo falta?',
         opcoes: [
           { t: '(Não responder. Ele tem direito à pergunta.)', faz: { flag: ['campeao-ouviu', 'campeao-respeito'] }, vai: 'respeito' },
           { t: '(Olhar para a escada do porão.)', faz: { flag: 'campeao-ouviu' }, vai: 'porao' }] },
-      respeito: { fala: '…Hm. Você é o primeiro que não respondeu. Fica com isso: se um dia precisar de quatro braços, pergunta por mim. Eu escolho as minhas lutas.' },
-      porao: { fala: 'A Fera. É. Ela não escolheu. Eu sei a diferença — não precisa me ensinar. Eu só não sei o que fazer com ela, então luto mais alto, que é pra não ouvir.' },
-      denovo: { fala: 'Eu luto às feiras. O resto do tempo eu descanso, que é um luxo que o mato nunca me deu.' }
+      respeito: { fala: 'Você não tentou me convencer. É o primeiro. Se um dia precisar de ajuda numa luta, me procura.' },
+      porao: { fala: 'A Fera. Ela não escolheu estar aqui, eu sei. Eu não sei o que fazer por ela, então tento não pensar nisso.' },
+      denovo: { fala: 'Eu luto nos dias de feira. No resto do tempo, descanso.' }
     } },
 
   guardaArena: { nome: 'Guarda da escada', sprite: 'soldado',
     falas: [{ se: { flag: ['venceu:desafiante1', 'venceu:desafiante2'] }, no: 'passa' }, { no: 'barra' }],
     nos: {
-      barra: { fala: 'Porão é pra quem venceu os dois desafiantes da tarde. Regra do Mestre. Vale pra gente e, pelo visto, pra bicho.' },
-      passa: { fala: 'Venceu os dois. Regra é regra. Desce — e não encosta na grade.', faz: { flag: 'porao-aberto', missao: ['vau', 2] } }
+      barra: { fala: 'Só desce ao porão quem venceu os dois desafiantes da tarde. É a regra do Mestre.' },
+      passa: { fala: 'Você venceu os dois. Pode descer. Não encosta na grade.', faz: { flag: 'porao-aberto', missao: ['vau', 2] } }
     } },
 
   fera: { nome: 'A Fera', sprite: '@alfa',
     falas: [{ no: 'cansada' }],
     nos: {
-      cansada: { fala: '(A Fera recuou pro fundo da cela, ofegante. A tranca cedeu na luta: a porta está aberta atrás de você. Ela olha pra escada, depois pra você, e não se mexe. Faz tempo demais que porta aberta é truque.)',
+      cansada: { fala: '(A Fera recuou pro fundo da cela, cansada. A tranca quebrou na luta e a porta está aberta. Ela olha pra escada, depois pra você, e não sai do lugar. Parece não acreditar que pode ir.)',
         opcoes: [
           { t: '(Sair da frente da porta.)', faz: { flag: ['fera-decidida', 'fera-livre'], rep: { bosque: 2 } }, vai: 'livre' },
           { t: '(Fechar a grade de novo.)', faz: { flag: 'fera-decidida', rep: { forja: 1 } }, vai: 'presa' }] },
-      livre: { fala: '(Ela passa por você devagar, raspando o ombro no seu. Lá em cima alguém grita. Depois, mais nada: só o barulho do rio, e um par de pegadas indo embora.)' },
-      presa: { fala: '(A tranca range. A Fera deita de costas pra você. Lá em cima, a festa de sábado continua tendo quem a abra.)' }
+      livre: { fala: '(Ela passa por você devagar e sobe a escada. Lá em cima alguém grita. Depois, silêncio: ela foi embora.)' },
+      presa: { fala: '(Você fecha a grade. A Fera se deita de costas pra você. Lá em cima, a festa continua.)' }
     } },
 
   /* ===== capítulo 4 ===== */
   barqueiro: { nome: 'Seu Lodo, o barqueiro', sprite: 195,
     falas: [{ se: { flag: 'cap4' }, no: 'depois' }, { se: { missao: ['charco', 'nao'] }, no: 'oi' }, { no: 'rumo' }],
     nos: {
-      oi: { fala: 'Hã? Ah. Gente. …Bicho. Tanto faz, eu não enxergo direito mesmo. Você desceu do Vau, né? Tem cheiro de areia de arena.', vai: 'oi2' },
-      oi2: { fala: 'Aqui é o Charco dos Esquecidos. Esquecido é quem a Forja não quis porque não rende e o Círculo não quis porque não floresce. Sobrou lama. Lama aceita todo mundo.',
+      oi: { fala: 'Hã? Quem está aí? Eu não enxergo bem. Você veio do Vau, né? Está cheirando a areia de arena.', vai: 'oi2' },
+      oi2: { fala: 'Aqui é o Charco dos Esquecidos. Quem mora aqui é quem a Forja e o Círculo não quiseram. O charco aceita todo mundo.',
         opcoes: [{ t: 'Estou seguindo uma coisa que puxa pra cá.', vai: 'puxa' }, { t: 'Onde fica a Corte do Abismo?', vai: 'corte' }] },
-      puxa: { fala: 'Puxa, é? Então puxa pra Corte. Tudo o que afunda neste charco acaba lá.', vai: 'corte' },
-      corte: { fala: 'Segue as tábuas pra oeste, em volta do poço grande. Não pisa fora da tábua: o brejo não devolve. E se alguém da Forja perguntar, você não me viu — eles têm um dique ali a nordeste e contam até as rãs.', faz: { missao: ['charco', 0] } },
-      rumo: { fala: 'Tábua pra oeste: a Corte. Pedra pra nordeste: o dique da Forja. Mato pro sul: coisa que morde. Eu fico aqui, que aqui não tem nada, e nada nunca me fez mal.' },
-      depois: { fala: 'O charco anda falando alto. Fazia onze anos que não falava. Ainda não sei se eu gosto.' }
+      puxa: { fala: 'Então você está indo pra Corte do Abismo. Neste charco, é pra lá que tudo vai.', vai: 'corte' },
+      corte: { fala: 'Segue as tábuas pra oeste, em volta do poço grande. Não pisa fora da tábua, que você afunda. E cuidado com a Forja: eles têm um dique a nordeste e vigiam tudo.', faz: { missao: ['charco', 0] } },
+      rumo: { fala: 'Pra oeste, pelas tábuas, fica a Corte. Pra nordeste, o dique da Forja. Pro sul tem mato alto e bicho bravo.' },
+      depois: { fala: 'O charco anda agitado desde que você chegou. Fazia onze anos que não acontecia nada aqui.' }
     } },
 
   regente: { nome: 'A Regente', sprite: 31,
@@ -1934,25 +1940,25 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Então é você. O Lasca fala de você faz três mapas — e o Lasca não elogia ninguém de graça. Chegue. Aqui ninguém morde quem entra de pata vazia.', vai: 'oi2' },
-      oi2: { fala: 'Você já carregou dois Corações. Eu sei na mão de quem cada um foi parar; aqui se sabe de tudo, é o que nos sobrou. Não vou cobrar. Vou contar o que ninguém te contou.', vai: 'conta' },
-      conta: { fala: 'Há onze anos nós avisamos: os Corações estão se soltando do leito. Éramos nós que os vigiávamos — a Corte do Abismo existe pra isso, pra ficar acordada no escuro enquanto os outros dormem. A Forja disse que era chantagem. O Círculo, que era mau agouro. Tiraram os sinos e nos puseram na estrada.', vai: 'conta2' },
-      conta2: { fala: 'Desde então a Forja faz uma coisa que nem o Círculo sabe: lasca os Corações que encontra e <b>vende</b> as lascas aos humanos. Fornalha que queima lasca de Coração não apaga. Existe um livro-caixa com cada venda, na Casa de Contas do dique, a nordeste daqui. Eu quero esse livro.',
+      oi: { fala: 'Então você é quem o Lasca tanto fala. Pode chegar. Aqui ninguém te faz mal.', vai: 'oi2' },
+      oi2: { fala: 'Você já carregou dois Corações, e eu sei pra quem entregou cada um. Não vou te cobrar por isso. Quero te contar o nosso lado.', vai: 'conta' },
+      conta: { fala: 'Há onze anos nós avisamos que os Corações estavam se soltando. Vigiar os Corações era o trabalho da Corte do Abismo. A Forja disse que era chantagem, o Círculo disse que era mau agouro, e nos expulsaram.', vai: 'conta2' },
+      conta2: { fala: 'Desde então a Forja quebra os Corações que encontra e <b>vende</b> os pedaços aos humanos. Os fornos deles queimam isso. Cada venda está anotada num livro-caixa, na Casa de Contas do dique, a nordeste daqui. Eu quero esse livro.',
         opcoes: [{ t: 'Pra fazer o quê com ele?', vai: 'praque' }, { t: 'Eu busco.', faz: { missao: ['charco', 1] }, vai: 'aceita' }, { t: 'Essa guerra não é minha.', vai: 'recusa' }] },
-      praque: { fala: 'Pra ler em voz alta em toda aldeia, daqui até a serra. A Ordem racha em duas no mesmo dia: os que sabiam e os que foram enganados. É feio. É o que eles fizeram com a gente — só que com a verdade.',
+      praque: { fala: 'Pra ler em voz alta em todas as aldeias. Quando souberem, a Forja se divide: os que sabiam contra os que foram enganados. É o que fizeram com a gente, só que desta vez é verdade.',
         opcoes: [{ t: 'Eu busco.', faz: { missao: ['charco', 1] }, vai: 'aceita' }, { t: 'Preciso pensar.' }] },
-      aceita: { fala: 'A porta tem tranca, e a tranca tem dona: uma Klefki que conta chave por chave. Na frente dela há uma escolta de gente de armadura. E a galeria de baixo alagou — dizem que o Alfa do Charco fez ninho lá, em cima do que brilha. Vá com a comitiva inteira.' },
-      recusa: { fala: 'Nunca é, no começo. Depois a água some da sua aldeia, e passa a ser. Eu espero. Esperar é o que a Corte faz melhor.' },
-      espera: { fala: 'O livro-caixa. Casa de Contas, no dique, a nordeste do brejal. E cuidado com o que dorme na galeria.' },
-      livro: { fala: 'Isso debaixo do seu braço… deixe eu ver a lombada. O martelo. É ele.', vai: 'livro2' },
-      livro2: { fala: 'Me dê, e amanhã o charco inteiro sabe ler. A Forja se parte: metade vai querer queimar os próprios mestres. Não vou fingir que isso me entristece.',
+      aceita: { fala: 'A porta é trancada, e quem guarda a chave é uma Klefki. Na frente tem soldados humanos. E a galeria de baixo alagou: dizem que o Alfa do Charco fez ninho lá. Vai com a comitiva inteira.' },
+      recusa: { fala: 'Entendo. Mas o que a Forja faz acaba secando a fonte de todo mundo. Se mudar de ideia, eu estou aqui.' },
+      espera: { fala: 'O livro-caixa fica na Casa de Contas, no dique, a nordeste do brejal. Cuidado com o Alfa na galeria.' },
+      livro: { fala: 'Isso é… deixa eu ver. Tem o martelo na capa. É o livro-caixa.', vai: 'livro2' },
+      livro2: { fala: 'Me entrega, e amanhã o charco inteiro fica sabendo. A Forja vai se dividir, e muitos vão se voltar contra os próprios mestres. Eu não vou fingir que isso me deixa triste.',
         opcoes: [
           { t: '🌑 Entregar o livro-caixa à Regente.', faz: { perde: 'livro', flag: ['cap4', 'charco-corte'], missao: ['charco', 'fim'], rep: { abismo: 3, forja: -3 }, dinheiro: 1500, dom: 'tinta' }, vai: 'dCorte1' },
           { t: 'Ainda não.' }] },
-      dCorte1: { fala: 'Feito. Estenda a pata: isto é tinta de livro-caixa, e não sai. Quem deve, treme quando você chega perto.' },
-      dCorte: { fala: 'Já leram o livro em sete aldeias. Em duas, os da Forja ouviram de pé, calados, e foram embora no meio. Não sei pra onde. É o que me tira o sono — e eu já dormia pouco.' },
-      dBrasa: { fala: 'Você deu o livro pra eles mesmos se julgarem. Onze anos esperando uma prova, e ela foi embora no bolso de uma chaveira. …Não. Eu não vou te expulsar. Expulsar é coisa de quem tem sino.' },
-      dCinza: { fala: 'Cinza. Eu vi a fumaça da minha janela. A Dama diz que memória não é arma. Ela pode dizer isso: a ela, deixaram um túmulo pra varrer. A nós, nem isso.' }
+      dCorte1: { fala: 'Obrigada. Estende a pata: esta tinta não sai. Com ela, você bate mais forte em quem já está caindo.' },
+      dCorte: { fala: 'Já leram o livro em sete aldeias. Em duas, os da Forja ouviram calados e foram embora. Não sei pra onde, e isso me preocupa.' },
+      dBrasa: { fala: 'Você entregou o livro pra própria Forja se julgar. Esperamos onze anos por essa prova. …Eu não vou te expulsar. Isso é o que fizeram com a gente.' },
+      dCinza: { fala: 'Você queimou o livro. Eu vi a fumaça. A Dama Véu acha que foi melhor assim. Eu não acho.' }
     } },
 
   chaveira: { nome: 'Dona Chaveira', sprite: 707,
@@ -1964,33 +1970,33 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Tlim. Não toque em nada. Cada chave aqui abre uma coisa, e eu sei qual. Esta é a Casa de Contas da Ordem da Forja, e você não tem conta.' },
-      pede: { fala: 'Tlim… Você passou pela escolta. Então não veio comprar. Veio pelo livro.', vai: 'pede2' },
-      pede2: { fala: 'Eu guardo esta porta há nove anos. Faz três que parei de entender os números que entram. Entra lasca, sai moeda de <b>fora</b> — moeda com cara de rei. Perguntei ao meu superior. Ele me deu uma chave nova pra polir.',
+      oi: { fala: 'Tlim. Não toca em nada. Aqui é a Casa de Contas da Forja, e você não tem nada pra fazer aqui.' },
+      pede: { fala: 'Tlim… Você passou pelos soldados. Então veio pelo livro.', vai: 'pede2' },
+      pede2: { fala: 'Eu guardo esta porta há nove anos. De três anos pra cá, os números não fazem mais sentido: saem pedras e entra dinheiro de <b>fora</b>, com a cara de um rei. Perguntei ao meu chefe, e ele mandou eu cuidar das chaves.',
         opcoes: [{ t: 'Me deixe entrar.', vai: 'entra' }, { t: 'Por que não abriu você mesma?', vai: 'medo' }] },
-      medo: { fala: 'Porque eu sou chaveira, não heroína. E porque a galeria alagou e tem uma coisa grande morando em cima das lascas. Eu ouço ela respirar pelas fechaduras.', vai: 'entra' },
-      entra: { fala: 'Tome. É a única cópia que eu nunca registrei. Se achar o livro, só peço uma coisa: antes de dar a quem quer nos queimar, me ouça de novo.', faz: { flag: 'chave-dique' } },
-      aberta: { fala: 'A porta está aberta. Eu fico aqui, contando chave, que é pra não pensar.' },
-      livro: { fala: 'Tlim… você achou. Está tudo aí, não está? Cada lasca. Cada moeda de rei.', vai: 'livro2' },
-      livro2: { fala: 'Escute. Se isso for lido em praça, a Ordem não se conserta: ela quebra, e quem cai primeiro são os pequenos, que nunca viram uma lasca na vida. Tem gente boa lá dentro. A ferreira de Pedralume, a Brasa — ela subiu, ela escuta. Deixe o livro comigo. Eu levo a Ferro-Fundo e ponho na mão dela. A casa se limpa por dentro. Devagar. Mas se limpa.',
+      medo: { fala: 'Porque eu tenho medo. A galeria alagou e tem uma coisa grande morando lá, em cima das pedras. Eu ouço ela respirar.', vai: 'entra' },
+      entra: { fala: 'Toma a chave. Só te peço uma coisa: se achar o livro, fala comigo antes de entregar a quem quer destruir a Forja.', faz: { flag: 'chave-dique' } },
+      aberta: { fala: 'A porta está aberta. Eu fico aqui esperando.' },
+      livro: { fala: 'Tlim… você achou. Está tudo aí, não está? Cada venda.', vai: 'livro2' },
+      livro2: { fala: 'Escuta. Se isso for lido em praça, a Forja quebra, e quem sofre primeiro são os pequenos, que não têm culpa. Tem gente boa lá dentro. A Brasa, a ferreira de Pedralume, agora tem voz na Ordem. Deixa o livro comigo: eu levo a Ferro-Fundo e entrego a ela. A Forja se corrige por dentro. Demora mais, mas não destrói ninguém.',
         opcoes: [
           { t: '⚒ Confiar o livro à Chaveira, pra chegar à Brasa.', faz: { perde: 'livro', flag: ['cap4', 'charco-brasa'], missao: ['charco', 'fim'], rep: { forja: 2, abismo: -2 }, dom: 'tempera', bag: [['rocky-helmet', 1]] }, vai: 'dBrasa1' },
           { t: 'Ainda vou pensar.' }] },
-      dBrasa1: { fala: 'Obrigada. Eu não sei jurar, só sei trancar: está trancado comigo. E leve isto — têmpera lenta. É como a Ordem devia fazer tudo, e não faz.' },
-      dBrasa: { fala: 'O livro já subiu a ladeira. Eu fui junto até a metade e voltei: alguém precisa ficar com as chaves.' },
-      depois: { fala: 'A porta que eu guardava não guarda mais nada. Tlim. Nove anos.' }
+      dBrasa1: { fala: 'Obrigada. Eu vou guardar bem e entregar na mão dela. Leva isto: vai te proteger.' },
+      dBrasa: { fala: 'O livro já subiu pra Ferro-Fundo. Eu fui até a metade do caminho e voltei pra cuidar das chaves.' },
+      depois: { fala: 'A porta que eu guardei por nove anos não guarda mais nada. Tlim.' }
     } },
 
   aurelio: { nome: 'Capitão Aurélio', sprite: 'soldadoRubro',
     falas: [{ se: { flag: 'cap4' }, no: 'depois' }, { se: { falas: ['aurelio', 1] }, no: 'denovo' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Um bicho solto dentro do dique. A escolta dormiu, pelo visto. …Não vou sacar a espada: eu compro, não caço. Capitão Aurélio, da Fornalha do Rei.', vai: 'oi2' },
-      oi2: { fala: 'Lá em cima, depois da ponte, o inverno dura sete meses. A lasca que eu levo daqui aquece uma vila inteira até a primavera. Eu não sei de onde a pedra vem, e os seus não me contaram. Pago o que pedem.',
+      oi: { fala: 'Um Pokémon solto dentro do dique? Os guardas falharam. Calma, eu não caço: eu compro. Sou o Capitão Aurélio, a serviço do Rei.', vai: 'oi2' },
+      oi2: { fala: 'No meu reino o inverno dura sete meses. A pedra que eu compro aqui aquece uma vila inteira até a primavera. Ninguém me contou de onde ela vem. Eu pago o preço que pedem.',
         opcoes: [{ t: '(Mostrar os dentes.)', vai: 'dentes' }, { t: '(Olhar pros caixotes.)', vai: 'caixotes' }] },
-      dentes: { fala: 'Entendo. Se tirassem lasca da minha terra pra aquecer a sua, eu também mostrava. Mas repare: quem lasca não sou eu.' },
-      caixotes: { fala: 'Doze caixotes por lua. Já foram quatro; agora são doze. Pergunte aos seus mestres por que a conta subiu. Eu perguntei. Disseram que era “pra guerra”. Não disseram contra quem.' },
-      denovo: { fala: 'Eu parto com a maré do rio. Se o que eu compro faz mal a vocês, alguém devia ter me dito antes de me vender.' },
-      depois: { fala: 'Não vai ter caixote esta lua. Volto de mãos vazias pra um inverno de sete meses. …Não estou te culpando. Estou fazendo a conta.' }
+      dentes: { fala: 'Eu entendo a sua raiva. Mas quem quebra as pedras e vende não sou eu: são os seus.' },
+      caixotes: { fala: 'Eram quatro caixotes por mês. Agora são doze. Perguntei por que a Forja passou a vender tanto, e me disseram que era “pra guerra”. Não disseram contra quem.' },
+      denovo: { fala: 'Eu vou embora no próximo barco. Se isso faz mal a vocês, alguém devia ter me avisado antes de me vender.' },
+      depois: { fala: 'Este mês não vai ter caixote. Vou voltar de mãos vazias, e o inverno é longo. Não estou te culpando. Só estou preocupado.' }
     } },
 
   lasca4: { nome: 'Lasca', sprite: 302,
@@ -2001,16 +2007,16 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Você! Aqui! Na minha casa! …Fala baixo, que aqui eu não sou “o Lasca que resolve”. Aqui eu sou o Lasca que saiu pra vender e nunca trouxe nada que prestasse.', vai: 'oi2' },
-      oi2: { fala: 'Preciso de um favor, e esse eu não tenho como pagar em esperteza. Um bando me pegou no mato do sul do brejal e levou a minha pedra de nascença. Todo Sableye tem uma. Sem ela eu não entro no Paço: a Regente não recebe quem perdeu a própria pedra.',
+      oi: { fala: 'Você, aqui, na minha casa! Fala baixo. Aqui ninguém me respeita: acham que eu só saio pra vender e nunca trago nada que preste.', vai: 'oi2' },
+      oi2: { fala: 'Preciso de um favor. Um bando me atacou no mato do sul do brejal e levou a minha pedra de nascença. Todo Sableye tem uma. Sem ela, a Regente não me recebe.',
         opcoes: [{ t: 'Eu pego de volta.', faz: { missao: ['gema', 0] }, vai: 'vai' }, { t: 'Quanto você paga?', vai: 'paga' }] },
-      paga: { fala: '…Tá vendo? Eu te ensinei direitinho. Pago. O que eu tiver.',
+      paga: { fala: 'Pago, claro. O que eu tiver.',
         opcoes: [{ t: 'Eu pego de volta.', faz: { missao: ['gema', 0] }, vai: 'vai' }, { t: 'Depois.' }] },
-      vai: { fala: 'Mato alto, no sul do brejal. São uns quatro. Eu contei enquanto corria.' },
-      cade: { fala: 'Minha pedra. Sul do brejal. Eu fico aqui, treinando a cara de quem nunca perdeu nada.' },
-      trouxe: { fala: '…É ela. Tá até limpa. Você limpou?', vai: 'trouxe2' },
-      trouxe2: { fala: 'Vou te dizer uma coisa de graça, que é a primeira da minha vida: fui eu que contei à Regente do livro-caixa. Vendi lasca pra Forja dois anos antes de entender pra onde ia. Não foi coragem. Foi enjoo.', faz: { perde: 'gema', missao: ['gema', 'fim'], rep: { abismo: 1 }, dinheiro: 900, bag: [['black-sludge', 1]] } },
-      casa: { fala: 'Me deixaram entrar no Paço. Sentei no fundo. Ninguém me mandou sair. Pra mim, isso é festa.' }
+      vai: { fala: 'Eles estão no mato alto, no sul do brejal. São uns quatro.' },
+      cade: { fala: 'Minha pedra está com o bando, no sul do brejal.' },
+      trouxe: { fala: 'É ela! Você trouxe mesmo.', vai: 'trouxe2' },
+      trouxe2: { fala: 'Vou te contar uma coisa, de graça: fui eu que contei à Regente sobre o livro-caixa. Eu vendi pedra pra Forja por dois anos antes de entender o que eles faziam com ela. Quando entendi, fiquei com nojo.', faz: { perde: 'gema', missao: ['gema', 'fim'], rep: { abismo: 1 }, dinheiro: 900, bag: [['black-sludge', 1]] } },
+      casa: { fala: 'Me deixaram entrar no Paço. Sentei no fundo, e ninguém me mandou sair. Pra mim já é muito.' }
     } },
 
   veu4: { nome: 'Dama Véu', sprite: 429,
@@ -2023,48 +2029,48 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Você não me conhece, mas eu varri folha em volta de um túmulo, perto da sua primeira aldeia, por onze anos. Passou por lá? Não? Então passou por uma árvore sem saber que era porta. Acontece com quase todos.' },
-      amiga: { fala: 'Você levou o sino a quem lembrava. Eu soube pelo vento — o Tio do Poço levou três dias pra terminar a frase, mas terminou. Aqui você tem uma amiga. São raras; gaste devagar.' },
-      livro: { fala: 'O livro-caixa. A Regente quer lê-lo em praça. A chaveira quer levá-lo pra dentro da Ordem. As duas têm razão, e é por isso que eu tenho medo.', vai: 'livro2' },
-      livro2: { fala: 'Meu mestre dizia: memória não é arma. Arma a gente aponta; memória a gente carrega. Se quiser, queimamos o livro na lâmpada dele. Ninguém ganha a prova. A Forja continua vendendo, até alguém pará-la de outro jeito. Não é justo. É só o único caminho em que ninguém aprende a odiar com papel na mão.',
+      oi: { fala: 'Você não me conhece, mas eu cuidei por onze anos de um túmulo perto de Pedralume. Fica atrás de uma árvore que parece árvore e não é. Quase ninguém acha.' },
+      amiga: { fala: 'Você devolveu o sino a quem se lembrava dele. Eu fiquei sabendo. Obrigada. Aqui você tem uma amiga.' },
+      livro: { fala: 'Você está com o livro-caixa. A Regente quer ler em praça, e a Chaveira quer levar pra dentro da Forja. As duas têm razão. É isso que me preocupa.', vai: 'livro2' },
+      livro2: { fala: 'Meu mestre dizia que a memória não é pra ser usada como arma. Se você quiser, a gente queima o livro. Ninguém fica com a prova, e ninguém a usa pra espalhar ódio. A Forja continua vendendo, até alguém impedir de outro jeito. Não é justo, eu sei.',
         opcoes: [
           { t: '🔥 Queimar o livro-caixa na lâmpada do sineiro.', faz: { perde: 'livro', flag: ['cap4', 'charco-cinza'], missao: ['charco', 'fim'], rep: { abismo: -2, bosque: 1, forja: 1 }, dom: 'cinza' }, vai: 'dCinza1' },
           { t: 'Não. Alguém tem que saber.' }] },
-      dCinza1: { fala: 'Queimou devagar, como tudo o que é verdade. Fique com a cinza: ela esfria o rastro de quem a leva.' },
-      dCinza: { fala: 'A Regente não fala comigo. Vai passar — ela me deve onze anos de silêncio, e eu só devo um a ela.' },
-      diario: { fala: 'Onde você… isso é a letra dele. Você achou a palafita. Ele vinha pra cá quando a aldeia dormia, e eu achava que era pra chorar.', vai: 'diario2' },
-      diario2: { fala: '“Não é o sino que eu não quis tocar. É que eu já tinha tocado — uma vez, por uma coisa que só eu ouvi. Vozes velhas, debaixo da Fonte, chamando os Corações de volta pra casa.”<br><br>…Ele ouviu os <b>Antigos</b>. Onze anos antes de todo mundo. E morreu achando que estava louco.', vai: 'diario3' },
-      diario3: { fala: 'Guarde o nome: Antigos. Quando alguém lhe disser que os Corações “se soltam”, corrija por dentro: eles são <b>chamados</b>.', faz: { missao: ['toque', 'fim'], flag: 'ouviu-antigos', rep: { abismo: 1 }, bag: [['max-ether', 1], ['lum-berry', 2]] } },
-      depois: { fala: 'O charco voltou a ter assunto. Vá: o que você segue não para aqui. Puxa pra cima, pra onde a Forja mora.' }
+      dCinza1: { fala: 'Queimou. Guarda um pouco da cinza: ela ajuda a esconder o seu rastro.' },
+      dCinza: { fala: 'A Regente não fala mais comigo. Um dia passa.' },
+      diario: { fala: 'Essa letra é dele. Você achou a casa onde ele se escondia. Eu pensava que ele vinha pra cá só pra ficar sozinho.', vai: 'diario2' },
+      diario2: { fala: '“Não é que eu não quis tocar o sino. É que eu já tinha tocado uma vez, por uma coisa que só eu ouvi: vozes muito antigas, debaixo da Fonte, chamando os Corações de volta.”<br><br>Ele ouviu os <b>Antigos</b>, onze anos antes de todo mundo. E morreu achando que estava louco.', vai: 'diario3' },
+      diario3: { fala: 'Guarda esse nome: Antigos. Os Corações não se soltam sozinhos. Eles estão sendo <b>chamados</b>.', faz: { missao: ['toque', 'fim'], flag: 'ouviu-antigos', rep: { abismo: 1 }, bag: [['max-ether', 1], ['lum-berry', 2]] } },
+      depois: { fala: 'O que você procura não está mais aqui. Agora o caminho sobe, pra Ferro-Fundo, onde a Forja mora.' }
     } },
 
   pressagio: { nome: 'Presságio', sprite: 359,
     falas: [{ se: { falas: ['pressagio', 1] }, no: 'agua' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Não chegue perto se tiver medo de má notícia: é a única que eu sei dar. Sou o arauto da Corte. Eu sinto o desastre antes de ele acontecer, e a paga por isso é ser chamado de causa.' },
-      agua: { fala: 'Faz um ano que eu acordo com o pelo molhado. Não chove no meu quarto. É água que ainda não veio — muita, de um lugar alto e velho. Contei à Regente. Ela me pediu pra não contar a mais ninguém. Estou contando a você.' }
+      oi: { fala: 'Eu sou o arauto da Corte. Eu sinto os desastres antes de acontecerem. Por isso muita gente acha que sou eu que causo.' },
+      agua: { fala: 'Há um ano eu acordo com o pelo molhado, sem ter chovido. É um aviso: vem muita água, de um lugar alto. Contei à Regente, e ela me pediu segredo. Mas você precisa saber.' }
     } },
 
   pavio: { nome: 'Pavio', sprite: 607,
     falas: [{ se: { missao: ['toque', 'fim'] }, no: 'acesa' }, { se: { falas: ['pavio', 2] }, no: 'terceira' }, { se: { falas: ['pavio', 1] }, no: 'segunda' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Eu acendo as lâmpadas. Uma pra cada um que chega expulso de algum lugar. Tem cento e doze. Eu sei o nome de todas.' },
-      segunda: { fala: 'Cento e doze acesas. E uma que a Dama não me deixa acender. Ela diz que o dono “não chegou”. Mas a lâmpada chegou. Lâmpada não vem sozinha.' },
-      terceira: { fala: 'A lâmpada apagada não fica aqui. Fica numa casa em cima da água onde ninguém mora, no brejal, lá pro sul. Eu fui uma vez. Tem um arvoredo, e uma das árvores… eu passei por dentro dela. Juro pelo meu pavio.' },
-      acesa: { fala: 'A Dama deixou! Cento e treze. A dele é a que treme menos.' }
+      oi: { fala: 'Eu acendo as lâmpadas. Tem uma pra cada um que chegou aqui expulso de algum lugar. São cento e doze, e eu sei o nome de todos.' },
+      segunda: { fala: 'Tem uma lâmpada que a Dama Véu não me deixa acender. Ela diz que o dono ainda não chegou. Mas a lâmpada já está aqui.' },
+      terceira: { fala: 'Essa lâmpada apagada fica numa casa em cima da água, no brejal, lá pro sul. Ninguém mora lá. Pra chegar tem um arvoredo, e uma das árvores é falsa: dá pra passar por dentro dela. Eu passei!' },
+      acesa: { fala: 'A Dama deixou eu acender! Agora são cento e treze.' }
     } },
 
   papo: { nome: 'Tia Papo', sprite: 317,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Estalagem do Fundo. A cama é de junco e o caldo é escuro; não pergunte de quê. Descansa a comitiva inteira.',
+      balcao: { fala: 'Estalagem do Fundo. A cama é simples e a sopa é escura, mas a comitiva inteira descansa.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: 'Só passando.' }] }
     } },
 
   croque: { nome: 'Croque', sprite: 453,
     falas: [{ no: 'banca' }],
     nos: {
-      banca: { fala: 'Krrk. Tudo o que afunda no charco, um dia eu vendo. Quer ver?',
+      banca: { fala: 'Krrk. Eu vendo o que acho no charco. Quer ver?',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Depois.' }] }
     } },
 
@@ -2078,14 +2084,14 @@ export const NPCS = {
       { no: 'entra' }
     ],
     nos: {
-      oi: { fala: 'Alto lá. Ferro-Fundo não recebe visita: recebe encomenda, aprendiz e problema. Qual dos três você é?',
+      oi: { fala: 'Alto lá. Em Ferro-Fundo só entra quem traz encomenda, quem vem aprender ou quem vem arrumar problema. Qual é o seu caso?',
         opcoes: [{ t: 'Estou seguindo o que puxa os Corações.', faz: { missao: ['fundo', 0] }, vai: 'puxa' }, { t: 'Problema.', faz: { missao: ['fundo', 0] }, vai: 'problema' }] },
-      puxa: { fala: '…Então você sabe das pedras. Entre. O Mestre vai querer te ver antes que outro te veja. E não repare na bagunça: metade da mina cruzou os braços.' },
-      problema: { fala: 'Honesto. Problema a gente já tem; um a mais não entorta a viga. Entre. O Mestre fica na Bigorna-Mãe, e o delegado dos grevistas, na beira do canal.' },
-      livro: { fala: 'Você. O do livro. Leram aquilo em sete aldeias, e a oitava foi aqui dentro. Eu não devia te deixar passar. …Mas eu também li. Entra logo, antes que eu me lembre de que lado eu estou.', faz: { missao: ['fundo', 0] } },
-      frio: { fala: 'A Ordem conhece o seu rastro, e ele não cheira bem. Passa. Porta fechada nunca resolveu nada nesta montanha — mas eu vou ficar olhando as suas costas.', faz: { missao: ['fundo', 0] } },
+      puxa: { fala: 'Então você sabe das pedras. Pode entrar. O Mestre vai querer falar com você. E não estranha a confusão: metade da mina está em greve.' },
+      problema: { fala: 'Pelo menos é sincero. Pode entrar. O Mestre fica na Bigorna-Mãe, e o líder da greve, na beira do canal de lava.' },
+      livro: { fala: 'Foi você que levou o livro pra Corte. Leram aquilo aqui dentro também. Eu não devia te deixar passar. …Mas eu li, e fiquei com vergonha. Entra.', faz: { missao: ['fundo', 0] } },
+      frio: { fala: 'A Forja sabe o que você andou fazendo, e não gostou. Pode passar, mas eu vou ficar de olho em você.', faz: { missao: ['fundo', 0] } },
       entra: { fala: 'O Mestre fica na Bigorna-Mãe, a casa de pedra do lado esquerdo. O delegado da greve, na beira do canal de lava.' },
-      depois: { fala: 'A montanha mudou de som. Eu fico na porta do mesmo jeito: alguém tem que ser a parte que não muda.' }
+      depois: { fala: 'Muita coisa mudou aqui dentro. Eu continuo na porta, como sempre.' }
     } },
 
   mestre: { nome: 'Mestre-Forjador', sprite: 306,
@@ -2096,21 +2102,21 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Entre e feche a boca, que aqui dentro o ar é quente demais pra desperdiçar. Eu sou o Mestre-Forjador. Você é o forasteiro que anda levando Coração de um lado pro outro como quem leva recado.', vai: 'oi2' },
-      oi2: { fala: 'Vou poupar o seu tempo: é verdade. Nós lascamos os Corações soltos e vendemos as lascas aos humanos. E com a moeda dos humanos eu compro o carvão que arma esta Ordem <b>contra</b> os humanos. Você pode achar isso sujo. Eu acho matemática.',
+      oi: { fala: 'Entra. Eu sou o Mestre-Forjador. E você é o forasteiro que anda carregando Coração de um lado pro outro.', vai: 'oi2' },
+      oi2: { fala: 'Vou ser direto: é verdade. Nós quebramos os Corações soltos e vendemos os pedaços aos humanos. Com o dinheiro deles eu compro carvão e armo a Forja <b>contra</b> eles mesmos. Você pode achar errado. Eu acho necessário.',
         opcoes: [{ t: 'Armar pra quê?', vai: 'guerra' }, { t: 'E os que estão de braços cruzados lá fora?', vai: 'greve' }] },
-      guerra: { fala: 'Pra guerra que já começou, e que só os tolos não viram. Laço na estrada. Gaiola na serra. Arena em cima de Fonte. Cada ano eles sobem mais um rio. O Círculo responde indo embora. A Corte responde vendendo segredo. Alguém tem que responder com ferro.', faz: { flag: 'ouviu-mestre' }, vai: 'pedido' },
-      greve: { fala: 'Os pequenos pararam porque a galeria de baixo anda matando: o que mora lá enlouqueceu com o calor das lascas. Eles têm razão em ter medo. Não têm razão em achar que parar nos salva.', faz: { flag: 'ouviu-mestre' }, vai: 'pedido' },
-      pedido: { fala: 'Desça lá, se os grevistas deixarem. Veja o que o forno queima e o que ele faz sair. Depois me diga se <b>você</b> fecharia.' },
-      espera: { fala: 'Fale com o delegado dos grevistas, na beira do canal, e desça à galeria. Eu não tenho medo do que você vai ver. Tenho medo do que você vai concluir.' },
-      decide: { fala: 'Você viu. Lasca entra, lâmina sai — a melhor que esta terra já teve. Fique do meu lado e eu ponho os fornos em três turnos. Quando eles vierem, a Ordem segura a linha por todo mundo. Até por quem nos cospe.',
+      guerra: { fala: 'Pra guerra que já começou. Tem laço na estrada, gaiola na serra, arena em cima de Fonte. Todo ano os humanos avançam mais. O Círculo foge e a Corte vende segredo. Alguém precisa lutar.', faz: { flag: 'ouviu-mestre' }, vai: 'pedido' },
+      greve: { fala: 'Os mineiros pararam porque a galeria de baixo ficou perigosa: o Alfa que mora lá enlouqueceu com o calor das pedras. Eles têm razão de ter medo. Mas parar de trabalhar não resolve.', faz: { flag: 'ouviu-mestre' }, vai: 'pedido' },
+      pedido: { fala: 'Desce à galeria, se os grevistas deixarem. Vê o que o forno queima e o que sai dele. Depois me diz se <b>você</b> fecharia.' },
+      espera: { fala: 'Fala com o líder dos grevistas, na beira do canal, e desce à galeria. Depois a gente conversa.' },
+      decide: { fala: 'Você viu. As pedras entram, e saem as melhores armas que esta terra já teve. Fica do meu lado, e eu ponho os fornos pra trabalhar dia e noite. Quando os humanos vierem, a Forja defende todo mundo.',
         opcoes: [
           { t: '⚒ Ficar com o Mestre: as armas saem.', faz: { flag: ['cap5', 'ferro-armas'], missao: ['fundo', 'fim'], rep: { forja: 3, bosque: -2, abismo: -1 }, dom: 'gume', bag: [['life-orb', 1]] }, vai: 'dArmas1' },
           { t: 'Ainda não decidi.' }] },
-      dArmas1: { fala: 'Bom. Chegue ao fogo. Isto a Ordem não vende a rei nenhum: é o gume de Ferro-Fundo, e a partir de hoje ele anda com você.' },
-      dArmas: { fala: 'Três turnos. O canal não esfria mais. Os pequenos voltaram ao serviço calados — eu sei ler um silêncio, e não gosto deste. Mas as lâminas estão saindo.' },
-      dGreve: { fala: 'Os fornos esfriaram. Você deu razão a quem tinha medo, e medo é mesmo uma razão. Quando eles subirem o rio, lembre-se desta sala fria.' },
-      dRuiu: { fala: 'A galeria caiu. Onze anos de trabalho debaixo de pedra. …A ferreira diz que foi limpeza. Eu digo que foi desarmamento. Estamos os dois certos, e é por isso que eu não durmo.' }
+      dArmas1: { fala: 'Ótimo. Chega perto do fogo. Isto aqui a Forja não vende a ninguém: é o nosso melhor gume, e agora é seu.' },
+      dArmas: { fala: 'Os fornos não param mais. Os mineiros voltaram ao trabalho, calados. Eu sei que estão descontentes. Mas as armas estão saindo.' },
+      dGreve: { fala: 'Os fornos apagaram. Você ficou do lado de quem tinha medo. Quando os humanos chegarem, lembra que a gente podia estar armado.' },
+      dRuiu: { fala: 'A galeria desabou. Onze anos de trabalho perdidos. A Brasa diz que foi pra limpar a Forja. Pra mim, ficamos sem defesa.' }
     } },
 
   tatu: { nome: 'Tatu, o delegado', sprite: 529,
@@ -2121,19 +2127,19 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Se veio furar a greve, a fila é ali. Não tem fila: ninguém fura. …Você não é daqui. Então escuta de quem cava, não de quem manda cavar.', vai: 'oi2' },
-      oi2: { fala: 'A gente desce desde filhote. Sempre foi quente, sempre foi escuro, sempre deu pra voltar. Aí abriram a galeria nova, a das pedras que pulsam. Em três luas perdemos nove. Não foi desabamento. Foi o que mora lá embaixo — e ele não era assim antes das pedras.',
+      oi: { fala: 'Se veio furar a greve, pode voltar. …Você não é daqui. Então escuta o lado de quem cava.', vai: 'oi2' },
+      oi2: { fala: 'A gente trabalha na mina desde filhote. Sempre foi quente e escuro, mas dava pra voltar pra casa. Aí abriram a galeria nova, a das pedras que pulsam. Em três meses perdemos nove companheiros. Foi o Alfa que mora lá embaixo. Ele não era violento antes das pedras.',
         opcoes: [{ t: 'O que vocês querem?', vai: 'quer' }, { t: 'O Mestre diz que parar não salva ninguém.', vai: 'mestre' }] },
-      quer: { fala: 'Fechar a galeria nova. Voltar ao ferro comum, que nunca matou ninguém que não merecesse. A Ordem fica mais pobre? Fica. Fica viva.', faz: { flag: 'ouviu-tatu' } },
-      mestre: { fala: 'O Mestre faz conta com gente como se fosse carvão. A conta dele fecha. O problema é que eu conheço o carvão pelo nome.', faz: { flag: 'ouviu-tatu' } },
-      espera: { fala: 'Fala com o Mestre, se ainda não falou. Depois o piquete te deixa descer. Vai com gente, e não confia em nada que brilha lá embaixo.' },
-      decide: { fala: 'Viu? Agora me diz se é certo descer filhote praquilo. Fica com a gente: a galeria nova fecha, os fornos grandes param, e a Ordem volta a fazer prego, enxada e panela. Fica indefesa, o Mestre vai dizer. Fica. Mas fica inteira.',
+      quer: { fala: 'Queremos fechar a galeria nova e voltar ao ferro comum. A Forja fica mais pobre, mas ninguém mais morre.', faz: { flag: 'ouviu-tatu' } },
+      mestre: { fala: 'Pro Mestre, mineiro é número. Pra mim, cada um dos nove tinha nome.', faz: { flag: 'ouviu-tatu' } },
+      espera: { fala: 'Fala com o Mestre, se ainda não falou. Depois os grevistas te deixam descer. Não vai sozinho.' },
+      decide: { fala: 'Viu? Agora me diz se é certo mandar filhote trabalhar naquilo. Fica com a gente: fechamos a galeria nova, apagamos os fornos grandes, e a Forja volta a fazer prego, enxada e panela. Vamos ficar sem armas, mas vivos.',
         opcoes: [
           { t: '✊ Ficar com os mineiros: a Forja para.', faz: { flag: ['cap5', 'ferro-greve'], missao: ['fundo', 'fim'], rep: { forja: -2, bosque: 2, abismo: 1 }, dom: 'greve', bag: [['assault-vest', 1]] }, vai: 'dGreve1' },
           { t: 'Ainda não decidi.' }] },
-      dGreve1: { fala: '…A gente achou que ninguém de fora ia cruzar os braços junto. Cruza aqui. Isso. Agora ninguém te tira do lugar.' },
-      dGreve: { fala: 'Panela, enxada e prego. Nunca vendi tão pouco e nunca dormi tão bem. Se a guerra vier, a gente cava um buraco fundo e espera. Cavar a gente sabe.' },
-      depois: { fala: 'A greve acabou do jeito que greve acaba: alguém decidiu por nós. Não foi o pior jeito. Também não foi o nosso.' }
+      dGreve1: { fala: 'A gente não esperava que alguém de fora ficasse do nosso lado. Obrigado. Cruza os braços aqui com a gente: você aprende a aguentar firme.' },
+      dGreve: { fala: 'Agora a gente faz panela, enxada e prego. Vende menos, mas eu durmo bem. Se a guerra vier, a gente se esconde debaixo da terra.' },
+      depois: { fala: 'A greve acabou, e não fomos nós que decidimos como. Podia ter sido pior.' }
     } },
 
   brasa5: { nome: 'Brasa', sprite: 126,
@@ -2146,25 +2152,25 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      traida: { fala: 'Você. O do minério. Subiu até aqui pra vender o quê, dessa vez? …Não, não me responde. Eu tenho uma fornalha pra cuidar e uma opinião sobre você que não mudou.' },
-      oi: { fala: 'Olha quem a ladeira trouxe. Pedralume mandou lembrança? Não mandou, eu sei: de lá ninguém me escreve. Eu subi pra Ferro-Fundo quando a fonte se resolveu. Aqui, pelo menos, o fogo não depende do humor de ninguém.' },
-      amiga: { fala: '{eu}! O cano de Pedralume ainda corre, me disseram. Por causa dele me deram um forno aqui em cima e um título que eu não uso. Senta. Não tem cadeira. Fica de pé perto do calor, que dá no mesmo.' },
-      livro: { fala: 'A Chaveira chegou antes de você, com um livro debaixo do braço e a cara de quem não dormiu a subida inteira. Eu li. Três noites. …Passei a vida defendendo esta casa. Agora vou ter que consertá-la, que é mais difícil.' },
-      decide: { fala: 'Você desceu. Então sabe o que eu sei. Aquilo não é forja: é queimar o chão que a gente pisa pra esquentar a mão.', vai: 'decide2' },
-      decide2: { fala: 'O Mestre quer três turnos. O Tatu quer fechar a porta e voltar pra panela. Eu digo que porta fechada alguém abre. Tem que <b>cair</b>. Eu sei onde ficam as escoras: fui eu que temperei. Ninguém mais queima Coração nesta montanha — nem pra se defender. É o preço.',
+      traida: { fala: 'Você. O que vendeu o meu minério. Não tenho nada pra falar com você.' },
+      oi: { fala: 'Olha quem apareceu. Eu vim pra Ferro-Fundo depois que a fonte de Pedralume se resolveu. Aqui pelo menos não falta fogo.' },
+      amiga: { fala: '{eu}! Soube que o cano de Pedralume ainda funciona. Por causa dele me deram um forno aqui em cima. Chega mais perto do calor.' },
+      livro: { fala: 'A Chaveira chegou antes de você e me entregou o livro. Li em três noites. Passei a vida defendendo a Forja. Agora vou ter que consertá-la.' },
+      decide: { fala: 'Você desceu, então viu o que eu vi. Aquilo não é forja: eles estão queimando os Corações.', vai: 'decide2' },
+      decide2: { fala: 'O Mestre quer os fornos dia e noite. O Tatu quer fechar a porta. Mas porta fechada alguém abre de novo. A galeria tem que <b>desabar</b>. Eu sei onde ficam as escoras: fui eu que fiz. Depois disso ninguém mais queima Coração aqui. Nem pra se defender.',
         opcoes: [
           { t: '🔥 Derrubar a Galeria das Lascas, com a Brasa.', faz: { flag: ['cap5', 'ferro-ruiu'], missao: ['fundo', 'fim'], rep: { forja: -1, bosque: 1, abismo: 1 }, dom: 'escombro', bag: [['focus-sash', 1]] }, vai: 'dRuiu1' },
           { t: 'Ainda não decidi.' }] },
-      dRuiu1: { fala: 'Foi rápido. Três marretadas no lugar certo, e a montanha fez o resto. …Segura isto. É o que a gente aprende quando derruba o que construiu: onde o golpe tem que cair.' },
-      dRuiu: { fala: 'Metade da Ordem não me cumprimenta. A outra metade me traz água sem eu pedir. Eu durmo. Não bem. Mas durmo.' },
-      depois: { fala: 'Não foi como eu faria. Mas você não me deve o meu jeito.' }
+      dRuiu1: { fala: 'Pronto. Três marretadas, e a galeria veio abaixo. Toma: quem derruba o que construiu aprende onde bater.' },
+      dRuiu: { fala: 'Metade da Forja não fala mais comigo. A outra metade me agradece. Eu durmo mal, mas durmo.' },
+      depois: { fala: 'Não foi o que eu faria. Mas a decisão era sua.' }
     } },
 
   piquete: { nome: 'O piquete', sprite: 524,
     falas: [{ se: { flag: ['ouviu-mestre', 'ouviu-tatu'] }, no: 'passa' }, { no: 'barra' }],
     nos: {
-      barra: { fala: 'Ninguém desce. Ordem da greve. Quer descer? Primeiro escuta o Mestre <b>e</b> o Tatu — a gente não quer herói mal informado morrendo lá embaixo e virando argumento.' },
-      passa: { fala: 'Ouviu os dois? Então desce. E conta quantos nós somos na volta, pra ver se você lembra de todos.', faz: { flag: 'desce-lascas', missao: ['fundo', 1] } }
+      barra: { fala: 'Ninguém desce, é a greve. Se você quer descer, primeiro ouve o Mestre <b>e</b> o Tatu. A gente não quer ninguém morrendo lá embaixo sem saber onde está se metendo.' },
+      passa: { fala: 'Ouviu os dois? Então pode descer. Toma cuidado.', faz: { flag: 'desce-lascas', missao: ['fundo', 1] } }
     } },
 
   bigorna: { nome: 'Mãe Bigorna', sprite: 305,
@@ -2175,43 +2181,43 @@ export const NPCS = {
       { no: 'pede' }
     ],
     nos: {
-      pede: { fala: 'Você viu um Aron pequeno assim? Com uma lasca no capacete, de um tombo? O Faísca. Ele ouviu que os grandes não descem mais e resolveu que então descia ele, “pra buscar os nove”. Faz dois dias.',
+      pede: { fala: 'Você viu um Aron pequeno, com o capacete lascado? É o meu filho, o Faísca. Ele soube que nove mineiros sumiram e desceu sozinho pra procurar. Faz dois dias.',
         opcoes: [{ t: 'Eu procuro.', faz: { missao: ['faisca', 0] }, vai: 'obrigada' }, { t: 'Sinto muito.' }] },
-      obrigada: { fala: 'Ele gosta de lugar quente. Se está vivo, está perto da lava. Eu… eu não consigo descer. Eu tentei. As pernas não foram.' },
-      espera: { fala: 'Perto da lava. Ele sempre vai pra perto da lava.' },
-      voltou: { fala: 'FAÍSCA! Seu… seu… vem cá.<br><br>…Você trouxe ele. Você desceu onde eu não desci.', faz: { missao: ['faisca', 'fim'], rep: { forja: 1 }, bag: [['max-revive', 1], ['hard-stone', 1]] } },
-      grata: { fala: 'Ele está de castigo até virar Aggron. Eu deixo sair pra te dar bom-dia.' }
+      obrigada: { fala: 'Ele gosta de lugar quente. Deve estar perto da lava. Eu tentei descer, mas não tive coragem.' },
+      espera: { fala: 'Ele deve estar perto da lava. Ele sempre vai pra lá.' },
+      voltou: { fala: 'FAÍSCA! Vem cá!<br><br>Você trouxe ele de volta. Você desceu onde eu não tive coragem. Obrigada.', faz: { missao: ['faisca', 'fim'], rep: { forja: 1 }, bag: [['max-revive', 1], ['hard-stone', 1]] } },
+      grata: { fala: 'Ele está de castigo. Mas eu deixo ele sair pra te cumprimentar.' }
     } },
 
   faisca: { nome: 'Faísca', sprite: 304,
     falas: [{ se: { flag: 'achou-faisca' }, no: 'casa' }, { no: 'achado' }],
     nos: {
-      achado: { fala: 'Não conta pra minha mãe! …Eu vim buscar os nove. Não achei nenhum. Achei só os capacetes. Eu juntei. São nove mesmo.',
+      achado: { fala: 'Não conta pra minha mãe! Eu vim procurar os nove mineiros. Não achei nenhum. Só achei os capacetes. Eu juntei todos.',
         opcoes: [{ t: 'Vamos pra casa.', faz: { flag: 'achou-faisca' }, vai: 'vai' }, { t: '(Ficar um pouco com ele.)', vai: 'fica' }] },
-      fica: { fala: '…Eu não tô chorando. É o calor. O calor faz isso no olho.',
+      fica: { fala: 'Eu não estou chorando. É o calor.',
         opcoes: [{ t: 'Vamos pra casa.', faz: { flag: 'achou-faisca' }, vai: 'vai' }] },
-      vai: { fala: 'Tá. Mas eu levo os capacetes. Alguém tem que levar.' },
-      casa: { fala: 'Eu tô de castigo. Mas a mãe pendurou os nove capacetes na parede da Bigorna-Mãe. Todo mundo que passa tira o próprio.' }
+      vai: { fala: 'Tá bom. Mas eu levo os capacetes.' },
+      casa: { fala: 'Estou de castigo. A mãe pendurou os nove capacetes na parede, e todo mundo que passa tira o chapéu.' }
     } },
 
   cascalho5: { nome: 'Sargento Cascalho', sprite: 75,
     falas: [{ se: { flag: 'cap5' }, no: 'depois' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você. Eu disse que levava a ponta pessoalmente, e levei. Pus na mesa do Mestre. Sabe o que ele fez? Não negou. Disse “é das nossas, e é boa”. Trinta anos de farda, e eu descubro a casa que eu guardava pelo lado de fora.' },
-      depois: { fala: 'Eu continuo de farda. Só mudei o que eu acho que ela guarda.' }
+      oi: { fala: 'Você! Eu levei a ponta de lança ao Mestre, como prometi. Ele não negou: disse que a arma era nossa, e que era boa. Trinta anos servindo a Forja, e eu não sabia de nada.' },
+      depois: { fala: 'Eu continuo na Forja. Mas agora presto atenção no que ela faz.' }
     } },
 
   caldeira: { nome: 'Dona Caldeira', sprite: 219,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Pensão da Caldeira. Aqui ninguém passa frio — nem quem quer. Cama de pedra morna pra comitiva inteira.',
+      balcao: { fala: 'Pensão da Caldeira. Aqui é sempre quente. Tem cama pra comitiva inteira.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: 'Só passando.' }] }
     } },
 
   bussola: { nome: 'Bússola', sprite: 476,
     falas: [{ no: 'banca' }],
     nos: {
-      banca: { fala: 'Tudo o que eu vendo aponta pro norte. É defeito de fábrica. Quer ver mesmo assim?',
+      banca: { fala: 'Eu vendo ferramentas e mantimentos. Quer ver?',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Depois.' }] }
     } },
 
@@ -2224,20 +2230,20 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: '…Não grita. Por favor. Eu sei o que eu sou e onde eu estou. Odilon. Ferreiro. Gente, sim — a única gente desta montanha.', vai: 'oi2' },
-      oi2: { fala: 'Lá embaixo eu fazia ferradura e dobradiça. Um dia um Pokémon desta Ordem me viu trabalhar, não disse nada, e voltou no dia seguinte com um ferro que eu nunca tinha visto. Faz seis anos que eu moro atrás desta parede. Ninguém me prende. Aqui me ensinaram o que o ferro <b>quer</b>.', faz: { missao: ['humano', 0] }, vai: 'oi3' },
-      oi3: { fala: 'Eu faço as peças finas: ponta, trinco, grade. O Mestre diz que são pra defesa da Ordem. Eu não pergunto pra onde vão. Ferreiro que pergunta demais fica sem forno.' },
-      denovo: { fala: 'As peças finas são minhas: ponta, trinco, grade. Eu não pergunto pra onde vão. Você… você sabe pra onde vão?',
+      oi: { fala: 'Não grita, por favor. Eu sou o Odilon, ferreiro. Sou humano, sim. O único desta montanha.', vai: 'oi2' },
+      oi2: { fala: 'Na minha terra eu fazia ferradura e dobradiça. Um dia um Pokémon da Forja me viu trabalhar e me trouxe um ferro que eu nunca tinha visto. Faz seis anos que eu moro aqui, escondido. Ninguém me obriga: eu fiquei pra aprender.', faz: { missao: ['humano', 0] }, vai: 'oi3' },
+      oi3: { fala: 'Eu faço as peças mais finas: ponta de lança, trinco, grade. O Mestre diz que é pra defesa da Forja. Eu nunca perguntei pra onde vão.' },
+      denovo: { fala: 'Eu faço ponta de lança, trinco e grade, e nunca perguntei pra onde vão. Você sabe?',
         opcoes: [{ t: '(Riscar no chão: uma serra, uma gaiola, uma arena.)', vai: 'lanca2' }, { t: '(Não responder.)' }] },
-      lanca: { fala: 'Isso com você… me deixa ver. Esse chanfro. Essa têmpera azul na base. …É minha. Eu fiz esta ponta. Onde você achou?', vai: 'lanca2' },
-      lanca2: { fala: '(Você risca no chão: uma serra. Um bicho grande, com a ponta no flanco. Depois uma grade. Uma arena.)<br><br>…Na carne de um de vocês. E grade. Eu fiz as grades também. Seis anos achando que eu tinha escolhido um lado. Eu só tinha escolhido não olhar.',
+      lanca: { fala: 'Deixa eu ver isso. …Esse acabamento é meu. Fui eu que fiz esta ponta. Onde você achou?', vai: 'lanca2' },
+      lanca2: { fala: '(Você risca no chão: uma serra. Um bicho grande, com a ponta no flanco. Depois uma grade e uma arena.)<br><br>Usaram a minha lança pra ferir um de vocês. E as grades da arena também são minhas. Passei seis anos sem querer saber pra que serviam.',
         opcoes: [
           { t: '(Apontar pra porta: vá dizer isso ao Mestre.)', faz: { flag: 'odilon-fala', missao: ['humano', 'fim'], rep: { forja: -1, bosque: 1 }, bag: [['expert-belt', 1]] }, vai: 'falou1' },
           { t: '(Deixar o martelo na mão dele.)', faz: { missao: ['humano', 'fim'], rep: { forja: 1 }, bag: [['expert-belt', 1]] }, vai: 'calou1' }] },
-      falou1: { fala: 'Eu vou. De avental e tudo. Se me puserem pra fora da montanha, eu desço sabendo fazer ferradura — e sabendo o resto. Leva isto. É a última peça que eu fiz sem saber pra quê.' },
-      calou1: { fala: '…Você não me mandou embora. Então eu fico, e escolho o que eu forjo. Daqui pra frente, só o que eu puder dizer em voz alta a quem serve. Leva isto. É uma peça boa, e desta eu sei o destino.' },
-      falou: { fala: 'O Mestre me ouviu de pé. Não me expulsou. Disse que ia “pensar no caso do humano”. Eu já pensei no meu.' },
-      calou: { fala: 'Ponta eu não faço mais. Faço enxada. O Mestre reclama. Eu aponto pro ouvido e digo que gente escuta mal.' }
+      falou1: { fala: 'Eu vou falar com o Mestre. Se ele me expulsar, paciência. Leva isto: é a última peça que eu fiz sem saber pra quê.' },
+      calou1: { fala: 'Você não me denunciou. Então eu fico. Mas daqui pra frente só faço o que eu souber pra que serve. Leva isto: é uma boa peça.' },
+      falou: { fala: 'O Mestre me ouviu e não me expulsou. Disse que ia pensar. Eu já decidi: arma eu não faço mais.' },
+      calou: { fala: 'Parei de fazer ponta de lança. Agora faço enxada. O Mestre reclama, e eu finjo que não ouço.' }
     } },
 
   /* ===== capítulo 6 ===== */
@@ -2251,61 +2257,61 @@ export const NPCS = {
       { no: 'plantou' }
     ],
     nos: {
-      oi: { fala: 'Pisa onde quiser: não tem mais raiz pra tropeçar. Isto aqui era a Aldeia da Sombra. Agora o povo chama de Aldeia dos Tocos, e nem toco ficou — ficou buraco. As árvores foram embora <b>andando</b>, moço. Eu vi. Levantaram a raiz como quem levanta a saia, e foram.', vai: 'oi2' },
-      oi2: { fala: 'O Círculo decidiu se retirar pro norte, pra longe de machado e de forno. Tudo bem, é direito deles. Só esqueceram de perguntar pra quem vivia embaixo. Meu açude secou, a criançada murcha no sol. Vai atrás delas, pela trilha do norte. Tem uma lá, a Mãe Meganium, que ainda olha pra trás.', faz: { missao: ['anda', 0] } },
-      pede: { fala: 'Já que você vai atrás delas: me traz uma muda. Uma só. Árvore que anda larga broto pelo caminho — sempre fica algum pra trás, perto do rastro. Eu planto no meio da praça e rego com o que sobrou do açude.',
+      oi: { fala: 'Isto aqui se chamava Aldeia da Sombra. Agora chamam de Aldeia dos Tocos. As árvores foram embora <b>andando</b>, moço. Eu vi: arrancaram as raízes do chão e foram.', vai: 'oi2' },
+      oi2: { fala: 'O Círculo decidiu ir pro norte, pra longe dos machados e dos fornos. É direito deles. Só que ninguém perguntou a quem vivia na sombra. Meu açude secou, e as crianças sofrem com o sol. Segue a trilha do norte. Lá está a Mãe Meganium, a única que foi contra.', faz: { missao: ['anda', 0] } },
+      pede: { fala: 'Já que você vai atrás delas, me traz uma muda. As árvores deixam brotos pelo caminho. Eu planto aqui na praça.',
         opcoes: [{ t: 'Eu trago.', faz: { missao: ['muda', 0] }, vai: 'vai' }, { t: 'Uma muda não faz sombra.', vai: 'sombra' }] },
-      sombra: { fala: 'Hoje não. Daqui a vinte anos, faz. Eu não vou estar aqui, mas o Brotinho vai.',
+      sombra: { fala: 'Hoje não faz. Mas daqui a vinte anos faz, e as crianças ainda vão estar aqui.',
         opcoes: [{ t: 'Eu trago.', faz: { missao: ['muda', 0] }, vai: 'vai' }, { t: 'Outra hora.' }] },
-      vai: { fala: 'Perto do rastro delas, na Marcha. Broto novo, folha clara. Traz com a terra junto.' },
-      cade: { fala: 'Uma muda, com a terra junto. Na Marcha, perto do rastro.' },
-      trouxe: { fala: 'Olha só! Com terra e tudo. Segura aqui enquanto eu cavo… pronto. Brotinho! Vem ver! Não encosta!', faz: { perde: 'muda', missao: ['muda', 'fim'], rep: { bosque: 1 }, bag: [['leftovers', 1]], dinheiro: 300 } },
-      plantou: { fala: 'Rego duas vezes por dia. A água é pouca, mas a muda também é.' },
-      dPartiu: { fala: 'Foram todas, então. O que ficou é sol. A gente vai cavar um açude novo mais pra baixo. Castor não chora: castor represa.' },
-      dFicou: { fala: 'Voltaram. Mais pálidas, a folha caindo fora de época, mas voltaram. A sombra está doente. Ainda é sombra. Eu não sei se agradeço a elas ou se peço desculpa.' },
-      dRachou: { fala: 'Metade voltou. As mais velhas. Dá sombra pra metade da aldeia, e a outra metade se muda pra perto. Aperta, mas cabe.' }
+      vai: { fala: 'Procura perto do rastro delas, na Marcha. É um broto de folha clara. Traz com a terra junto.' },
+      cade: { fala: 'A muda fica perto do rastro das árvores, na Marcha. Traz com a terra junto.' },
+      trouxe: { fala: 'Você trouxe! Com terra e tudo. Segura enquanto eu cavo… pronto, está plantada. Obrigado!', faz: { perde: 'muda', missao: ['muda', 'fim'], rep: { bosque: 1 }, bag: [['leftovers', 1]], dinheiro: 300 } },
+      plantou: { fala: 'Eu rego a muda duas vezes por dia. Está pegando.' },
+      dPartiu: { fala: 'As árvores foram todas embora. Vamos cavar um açude novo mais pra baixo e aprender a viver no sol.' },
+      dFicou: { fala: 'As árvores voltaram, mas estão doentes: as folhas caem fora de época. Ainda dão sombra. Não sei se devo agradecer ou pedir desculpa a elas.' },
+      dRachou: { fala: 'Metade das árvores voltou, as mais velhas. Dá sombra pra metade da aldeia. O resto do pessoal se mudou pra perto delas.' }
     } },
 
   brotinho: { nome: 'Brotinho', sprite: 43,
     falas: [{ se: { missao: ['fica', 'fim'] }, no: 'sabia' }, { se: { falas: ['brotinho', 1] }, no: 'arvore' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Eu só saía de noite. Mas agora de dia é claro demais, e de noite também é claro, porque não tem mais folha tapando a lua. Eu não sei mais quando eu saio.' },
-      arvore: { fala: 'Tem uma árvore na Marcha que não anda. Fica no meio das outras, fingindo. Quando as outras dão o passo, ela só mexe os galhos e fica. Eu vi! Ninguém acredita em Oddish.' },
-      sabia: { fala: 'EU FALEI que ela não andava.' }
+      oi: { fala: 'Eu só saía de noite, por causa do sol. Agora não tem mais árvore, e até a lua está clara demais. Eu não sei mais quando sair.' },
+      arvore: { fala: 'Tem uma árvore na Marcha que não anda. Ela fica no meio das outras e só mexe os galhos, fingindo. Eu vi! Ninguém acredita em mim.' },
+      sabia: { fala: 'EU FALEI que ela não andava!' }
     } },
 
   aud: { nome: 'Dona Aud', sprite: 531,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Pousada da Sombra. O nome ficou; a sombra, não. Durmam de chapéu.',
+      balcao: { fala: 'Pousada da Sombra. A sombra acabou, mas a cama é boa.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: 'Só passando.' }] }
     } },
 
   primo: { nome: 'Primo do Kecleon', sprite: 352,
     falas: [{ no: 'banca' }],
     nos: {
-      banca: { fala: 'Sou primo do Kecleon de Pedralume! De tudo, de todas as cores! Menos verde. Verde foi embora.',
+      banca: { fala: 'Sou primo do Kecleon de Pedralume! Vendo de tudo. Quer ver?',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Depois.' }] }
     } },
 
   bento: { nome: 'Seu Bento', sprite: 'lenhador',
     falas: [{ se: { flag: 'cap6' }, no: 'depois' }, { se: { falas: ['bento', 1] }, no: 'denovo' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Calma, calma. O machado está no chão, olha. Eu sou lenhador, sim. Trinta anos. Só corto o que já morreu em pé, e planto duas pra cada uma. Meu pai fazia assim. Os moços que vieram depois de mim não fazem.', vai: 'oi2' },
-      oi2: { fala: 'Eles estão lá em cima, na Marcha, cortando as que ficam pra trás. “Árvore que anda dá lenha que não acaba”, foi o que disseram. Eu disse que árvore que anda <b>grita</b>. Riram de mim.' },
-      denovo: { fala: 'Se encontrar os moços lá em cima… não precisa pegar leve. Só não mata. Eles têm mãe.' },
-      depois: { fala: 'As que eu plantei não andam. Ainda. Eu fico de olho — vai que aprendem.' }
+      oi: { fala: 'Calma, o machado está no chão. Eu sou lenhador, sim, faz trinta anos. Mas só corto árvore que já morreu, e planto duas no lugar. Foi assim que meu pai me ensinou.', vai: 'oi2' },
+      oi2: { fala: 'Os rapazes mais novos não pensam assim. Estão lá na Marcha, cortando as árvores que ficam pra trás. Eu avisei que essas árvores sentem dor. Riram de mim.' },
+      denovo: { fala: 'Se encontrar os rapazes, pode dar um susto neles. Só não machuca muito. São novos e não sabem o que fazem.' },
+      depois: { fala: 'As árvores que eu plantei continuam no lugar. Eu cuido delas todo dia.' }
     } },
 
   carvalho: { nome: 'Vô Carvalho', sprite: 709,
     falas: [{ se: { missao: ['fica', 'fim'] }, no: 'fim' }, { se: { missao: ['fica', 0] }, no: 'espera' }, { se: { falas: ['carvalho', 1] }, no: 'fala' }, { no: 'quieto' }],
     nos: {
-      quieto: { fala: '(Um tronco velho, de casca rachada, entre as árvores da Marcha. As outras têm um buraco atrás de si, de onde vieram. Esta não tem.)' },
-      fala: { fala: '…Você olhou duas vezes. Quase ninguém olha duas vezes pra uma árvore. Está bem: eu não ando. Mexo os galhos quando as outras dão o passo, e fico.', vai: 'fala2' },
-      fala2: { fala: 'Tenho quatrocentos anos neste chão. O Círculo votou ir embora, e eu votei com as raízes. Lá pra baixo, no rio grande, tem uma ponte que os dois lados vivem quebrando. Uma ponte é só uma árvore deitada que alguém respeitou. Eu queria ser isso, antes de ser lenha.', faz: { missao: ['fica', 0] }, vai: 'fala3' },
-      fala3: { fala: 'Mas árvore do Círculo não se deita sem a palavra de uma Mãe. Fale com a Meganium por mim. Ela vai entender: ela também é das que ficam.' },
-      espera: { fala: 'A Mãe Meganium. Na clareira, depois do Pastor. Diga que o Carvalho pede licença pra se deitar.' },
-      fim: { fala: 'Ela deixou. Quando a hora chegar, eu vou — do meu jeito, que é devagar. Procure por mim onde o rio é mais largo.' }
+      quieto: { fala: '(Um tronco velho, de casca rachada, no meio das árvores da Marcha. Todas as outras têm um buraco atrás, de onde saíram. Esta não tem.)' },
+      fala: { fala: 'Você reparou em mim. Quase ninguém repara. É verdade: eu não ando. Só mexo os galhos pra parecer que estou indo.', vai: 'fala2' },
+      fala2: { fala: 'Eu tenho quatrocentos anos neste chão e não quero ir embora. Rio abaixo tem uma ponte que os dois lados vivem quebrando. Eu queria me deitar lá e servir de ponte.', faz: { missao: ['fica', 0] }, vai: 'fala3' },
+      fala3: { fala: 'Mas uma árvore do Círculo precisa da licença de uma Mãe pra isso. Fala com a Mãe Meganium por mim. Ela vai entender.' },
+      espera: { fala: 'A Mãe Meganium está na clareira, depois do Pastor. Diz a ela que o Carvalho pede licença pra se deitar.' },
+      fim: { fala: 'Ela deixou. Eu vou devagar, do meu jeito. Me procura onde o rio é mais largo.' }
     } },
 
   meganium6: { nome: 'Mãe Meganium', sprite: 154,
@@ -2317,44 +2323,44 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Você. Do Vale do Orvalho. Eu me lembro da sua pata — e do que ela carregava.', vai: 'oi2' },
-      oi2: { fala: 'O Círculo votou. Vinte e três Mães a favor de partir, uma contra. Eu sou a uma. Não porque ficar seja seguro: porque há gente pequena vivendo da nossa sombra, e sombra não é coisa que se leve embora sem perguntar.', vai: 'oi3' },
-      oi3: { fala: 'Fale com o Pai Torterra, ali. É ele quem carrega a decisão nas costas — de verdade: o bosque anda em cima dele. Depois me diga se eu sou a única que ainda olha pra trás.', faz: { missao: ['anda', 1] } },
-      espera: { fala: 'O Pai Torterra. Ouça-o inteiro. Ele fala devagar porque pensa devagar, e pensa devagar porque pensa certo. Quase sempre.' },
-      carvalho: { fala: 'Você tem cara de recado. …O Carvalho? Quatrocentos anos, e pede licença. É claro que ele não anda; eu fingia não ver. Diga que a Mãe deixa. Que ele se deite onde o rio é mais largo, e que seja ponte de quem atravessa em paz. E diga que eu vou sentir falta da sombra dele mais que de todas as outras.', faz: { missao: ['fica', 'fim'], flag: 'arvore-ponte', rep: { bosque: 1 } } },
-      decide: { fala: 'Você ouviu. Ele não está errado. É isso que me dói.', vai: 'decide2' },
-      decide2: { fala: 'São três caminhos. Deixar o bosque ir: o Círculo chega inteiro ao norte, e os de baixo aprendem a viver no sol — os que aprenderem. Chamá-lo de volta pelas raízes do Coração: ele fica, à força, e bosque preso adoece. Ou partir ao meio: as velhas voltam comigo, os novos seguem com ele. E o Círculo, pela primeira vez, deixa de ser um círculo.',
+      oi: { fala: 'Você. Eu me lembro de você, do Vale do Orvalho.', vai: 'oi2' },
+      oi2: { fala: 'O Círculo votou: vinte e três Mães a favor de ir embora, uma contra. A que votou contra fui eu. Tem gente pequena que vive da nossa sombra, e ninguém perguntou a eles.', vai: 'oi3' },
+      oi3: { fala: 'Fala com o Pai Torterra, ali. É ele quem carrega o bosque nas costas. Depois volta e me diz o que achou.', faz: { missao: ['anda', 1] } },
+      espera: { fala: 'Fala com o Pai Torterra primeiro. Ele fala devagar, mas vale a pena ouvir até o fim.' },
+      carvalho: { fala: 'Você traz um recado do Carvalho? Quatrocentos anos, e ainda pede licença. Eu sempre soube que ele não andava. Diz que eu deixo: que ele se deite onde o rio é mais largo e sirva de ponte. Vou sentir falta dele.', faz: { missao: ['fica', 'fim'], flag: 'arvore-ponte', rep: { bosque: 1 } } },
+      decide: { fala: 'Você ouviu o Torterra. Ele tem razão, e é isso que torna tudo difícil.', vai: 'decide2' },
+      decide2: { fala: 'São três caminhos. Deixar o bosque ir: o Círculo se salva, e as aldeias de baixo ficam no sol. Segurar o bosque com as raízes do Coração: ele fica à força, e pode adoecer. Ou dividir: as árvores velhas voltam comigo, e as novas seguem com ele.',
         opcoes: [
           { t: '🍃 Deixar o bosque partir.', faz: { flag: ['cap6', 'bosque-partiu'], missao: ['anda', 'fim'], rep: { bosque: 3, forja: -1 }, dom: 'semente', bag: [['sitrus-berry', 4]] }, vai: 'dPartiu1' },
           { t: '🌳 Segurar o bosque com as raízes do Coração.', faz: { flag: ['cap6', 'bosque-ficou'], missao: ['anda', 'fim'], rep: { bosque: -2, forja: 1, abismo: 1 }, dom: 'raiz', bag: [['leftovers', 1]] }, vai: 'dFicou1' },
           { t: '✂ Dividir: as velhas voltam, os novos seguem.', faz: { flag: ['cap6', 'bosque-rachou'], missao: ['anda', 'fim'], rep: { bosque: 1 }, dom: 'enxerto', bag: [['shell-bell', 1]] }, vai: 'dRachou1' },
           { t: 'Ainda não sei.' }] },
-      dPartiu1: { fala: 'Então vão. Eu vou com eles: uma Mãe não vota contra e depois fica pra trás. Abra a pata — é semente andarilha. Onde você pisar, alguma coisa pequena decide viver.' },
-      dFicou1: { fala: 'Sinta: as raízes voltando. Dói nelas e dói em mim. Fique com um pedaço — raiz funda segura quem a carrega. E me perdoe por eu ter feito, com as suas patas, o que não quis fazer com as minhas.' },
-      dRachou1: { fala: 'Vinte e três Mães nunca vão me perdoar por ter levado metade. Tome: é um enxerto. Duas árvores numa só. Às vezes pega.' },
-      dPartiu: { fala: 'O bosque anda. Ouço as aldeias de baixo se calando, uma por uma. Não é raiva o que eu ouço. É gente aprendendo o sol.' },
-      dFicou: { fala: 'As folhas caem fora de época. Estamos aqui. Estar não é o mesmo que querer estar — você vai aprender isso antes do fim.' },
-      dRachou: { fala: 'Meio bosque faz meia sombra. Os de baixo dizem que basta. Os novos mandam notícia do norte quando o vento ajuda.' }
+      dPartiu1: { fala: 'Então nós vamos. Eu vou junto: não posso ficar pra trás. Leva esta semente com você.' },
+      dFicou1: { fala: 'As raízes estão voltando. Dói nelas, e dói em mim. Leva um pedaço de raiz: ela protege quem a carrega. E me perdoa por eu ter te pedido isso.' },
+      dRachou1: { fala: 'As outras Mães não vão me perdoar por dividir o bosque. Toma: é um enxerto, duas árvores numa só.' },
+      dPartiu: { fala: 'O bosque está indo. As aldeias de baixo estão aprendendo a viver sem sombra. É triste, mas eles vão conseguir.' },
+      dFicou: { fala: 'Ficamos. As folhas estão caindo fora de época. O bosque está aqui, mas não está bem.' },
+      dRachou: { fala: 'Metade do bosque dá metade da sombra. As aldeias dizem que é o bastante. As árvores novas mandam notícias do norte.' }
     } },
 
   torterra: { nome: 'Pai Torterra', sprite: 389,
     falas: [{ se: { flag: 'cap6' }, no: 'depois' }, { se: { flag: 'ouviu-torterra' }, no: 'denovo' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Chegue devagar, que eu levo um bosque nas costas e ele acorda fácil. …Você é o que anda com Coração. A Mãe te mandou. Ela manda todo mundo que ainda acha que eu posso mudar de ideia.', vai: 'oi2' },
-      oi2: { fala: 'Escute a conta de um velho. A Forja cava embaixo de nós. Os humanos cortam em cima de nós. A Corte vende o mapa de onde estamos. E nós damos sombra, fruta e remédio aos três. Faz cem anos que o Círculo cuida de quem o machuca.',
+      oi: { fala: 'Chega devagar: eu carrego um bosque nas costas. Você é o que anda com os Corações. A Mãe Meganium te mandou pra me fazer mudar de ideia.', vai: 'oi2' },
+      oi2: { fala: 'Escuta. A Forja cava debaixo de nós, os humanos nos cortam, e a Corte vende o mapa de onde estamos. Mesmo assim damos sombra, fruta e remédio a todos. Faz cem anos que o Círculo cuida de quem o machuca.',
         opcoes: [{ t: 'E as aldeias que ficaram no sol?', vai: 'aldeias' }, { t: 'Pra onde vocês vão?', vai: 'norte' }] },
-      aldeias: { fala: 'Eu penso nelas a cada passo. Cada passo, um buraco, e em cada buraco eu sei quem morava do lado. Mas árvore morta não dá sombra a ninguém. Entre sombra por mais dez anos e bosque nenhum pra sempre, eu escolhi o que dói agora.', faz: { flag: 'ouviu-torterra' } },
-      norte: { fala: 'Pra serra fria, onde a água nasce. Dizem que lá o machado não chega. Também dizem que lá mora quem anda chamando os Corações — a Mãe não acredita. Eu acredito, e vou assim mesmo. Prefiro vizinho velho e bravo a vizinho novo com fome.', faz: { flag: 'ouviu-torterra' } },
-      denovo: { fala: 'Eu já disse o que tinha a dizer. Agora é com ela — e com você, pelo visto. O bosque sempre deixou a última palavra pra quem vem de fora. É um defeito nosso.' },
-      depois: { fala: 'Está feito. O que eu carrego nas costas pesa igual, pra onde quer que eu vá.' }
+      aldeias: { fala: 'Eu penso nelas a cada passo. Mas árvore morta não dá sombra pra ninguém. Se ficarmos, em dez anos não sobra bosque. Eu escolhi salvar o bosque.', faz: { flag: 'ouviu-torterra' } },
+      norte: { fala: 'Pra serra fria, onde a água nasce. Lá o machado não chega. Dizem também que é lá que mora quem está chamando os Corações. A Mãe não acredita. Eu acredito, e vou assim mesmo.', faz: { flag: 'ouviu-torterra' } },
+      denovo: { fala: 'Eu já disse o que penso. Agora a decisão é dela, e sua.' },
+      depois: { fala: 'Está decidido. Eu sigo carregando o bosque, pra onde for.' }
     } },
 
   vento: { nome: 'Vento', sprite: 275,
     falas: [{ se: { flag: 'bosque-ficou' }, no: 'preso' }, { se: { flag: 'cap6' }, no: 'depois' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Mais um forasteiro vindo convencer a Mãe a nos amarrar. Diga a verdade: você já entregou um Coração a um forno, ou já pensou nisso. Todos pensam. É por isso que a gente vai.' },
-      preso: { fala: 'Você nos prendeu pela raiz. Eu senti puxar. Um dia, quando o bosque estiver doente demais pra dar sombra, lembre que eu avisei — e que eu estava de pé.' },
-      depois: { fala: 'O vento vai na frente. É o meu serviço. Não espere que eu olhe pra trás.' }
+      oi: { fala: 'Mais um forasteiro querendo convencer a Mãe a nos prender aqui. Todo mundo quer alguma coisa do bosque. É por isso que a gente vai embora.' },
+      preso: { fala: 'Você nos prendeu aqui pelas raízes. Quando o bosque adoecer de vez, lembra que eu avisei.' },
+      depois: { fala: 'Eu vou na frente, abrindo caminho. Não tenho mais nada pra te dizer.' }
     } },
 
   /* ===== capítulo 7 ===== */
@@ -2368,25 +2374,25 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Você. …Tudo bem. Mão vazia, de novo. Eu sei que você não gosta de mim, e não preciso que goste. Preciso que escute, porque a ponte é dos dois lados.', vai: 'fala' },
-      amiga: { fala: '{eu}! Eu sabia que o rastro era seu. Senta, se bicho senta. Faz nove noites que eu não durmo direito, e você é a primeira coisa boa que desce daquela trilha.', vai: 'fala' },
-      fala: { fala: 'Esta é a Ponte Grande. Do lado de lá, o reino. Do lado de cá, vocês. Enquanto ela está de pé, passa remédio, passa notícia, passa gente como eu — e passa caçador. Agora há um bando de guerra inteiro acampado na outra margem, esperando o vão do meio fechar.', vai: 'fala2' },
-      fala2: { fala: 'O vão quem abriu foi o que mora embaixo, entre os pilares. O Alfa do rio. Ele não escolheu lado: derruba tábua de quem pisar. Enquanto ele estiver lá, ninguém atravessa. Eu não sei se isso é um problema ou a única coisa que está nos salvando.',
+      oi: { fala: 'Você de novo. Eu sei que você não gosta de mim, e tudo bem. Mas preciso que me escute: esta ponte importa pros dois lados.', vai: 'fala' },
+      amiga: { fala: '{eu}! Que bom te ver. Faz nove noites que eu não durmo direito.', vai: 'fala' },
+      fala: { fala: 'Esta é a Ponte Grande. Do lado de lá fica o reino dos humanos; deste lado, vocês. Por ela passa remédio, notícia, gente como eu — e caçador também. Agora tem um bando de guerra acampado na outra margem, esperando o vão do meio ser consertado.', vai: 'fala2' },
+      fala2: { fala: 'Quem abriu o vão foi o Alfa do rio, que mora embaixo, entre os pilares. Ele derruba as tábuas de quem tenta passar, dos dois lados. Enquanto ele estiver lá, ninguém atravessa. Isso é ruim, mas também é o que está segurando o bando.',
         opcoes: [{ t: 'Eu desço lá.', faz: { missao: ['travessia', 0] }, vai: 'desce' }, { t: 'E se o vão ficar aberto?', vai: 'aberto' }] },
-      aberto: { fala: 'Aí a curandeira não passa, eu não passo, e quem tem parceiro do outro lado não vê mais. E o bando acha outro vau em um mês. Vão aberto ganha tempo. Não ganha paz.',
+      aberto: { fala: 'Aí a curandeira não passa, eu não passo, e quem tem alguém do outro lado não se vê mais. E o bando acha outro caminho em um mês. Só ganhamos tempo.',
         opcoes: [{ t: 'Eu desço lá.', faz: { missao: ['travessia', 0] }, vai: 'desce' }, { t: 'Deixa eu pensar.' }] },
-      desce: { fala: 'A descida fica na margem, a leste daqui: um buraco no barranco. Leva gente. E se der pra não matar, não mata — ele estava aqui antes da ponte.' },
+      desce: { fala: 'A descida fica na margem, a leste daqui: um buraco no barranco. Leva companhia. E, se puder, não mata o Alfa: ele já morava aqui antes da ponte.' },
       vao: { fala: 'O Alfa do rio, entre os pilares. A descida fica na margem, a leste.' },
-      espera: { fala: 'O vão fechou. Agora eles vêm — ou você vai. Do outro lado tem um capitão chamado Rufino, que não negocia nem com a própria sombra.' },
-      decide: { fala: 'Você voltou inteiro. E o Rufino? …Certo. Sem capitão, o bando discute. É a nossa janela.', vai: 'decide2' },
-      decide2: { fala: 'Eu quero a ponte de pé. Com guarda dos dois lados: eu, a Selma, quem mais quiser. Vai continuar passando caçador — não vou mentir pra você. Mas também vai continuar passando quem cura, quem conta, quem ama alguém da outra margem. Ponte é isso. É ruim, e é a única.',
+      espera: { fala: 'O vão está fechado: agora dá pra atravessar. Do outro lado, quem manda no bando é um capitão chamado Rufino. Ele não negocia.' },
+      decide: { fala: 'Você voltou inteiro! E o Rufino? …Certo. Sem capitão, o bando não sabe o que fazer. É a nossa chance.', vai: 'decide2' },
+      decide2: { fala: 'Eu quero manter a ponte de pé, com guarda dos dois lados: eu, a Selma e quem mais quiser. Caçador vai continuar tentando passar, não vou mentir. Mas também passa quem cura, quem traz notícia, quem tem família do outro lado.',
         opcoes: [
           { t: '🌉 Defender a ponte, com a Lia.', faz: { flag: ['cap7', 'ponte-de-pe', 'lia-confia'], missao: ['travessia', 'fim'], rep: { bosque: 1, abismo: 1 }, dom: 'pilar', bag: [['sitrus-berry', 3], ['max-revive', 1]] }, vai: 'dPe1' },
           { t: 'Vou ouvir os outros.' }] },
-      dPe1: { fala: 'Então é isso. Ela fica de pé, e eu fico nela. …Obrigada por não me pedir pra escolher um lado. Ninguém nunca tinha deixado de pedir.' },
-      dPe: { fala: 'Passaram hoje: uma carroça de remédio, dois meninos fugidos e um caçador que eu mandei voltar. Dois a um. Eu aceito esse placar.' },
-      dCaiu: { fala: 'Caiu. Eu estava do lado de cá quando caiu. Minha mãe mora do lado de lá. …Não, não me olha assim. Eu escolhi o lado antes de você escolher a ponte.' },
-      dForja: { fala: 'Muralha e pedágio. Passa quem paga. Eu não pago: conheço um vau, três léguas acima. Vou continuar cortando laço — só que agora dos dois lados do muro.' }
+      dPe1: { fala: 'Então a ponte fica, e eu fico nela. Obrigada por não me obrigar a escolher um lado.' },
+      dPe: { fala: 'Hoje passaram uma carroça de remédio e dois meninos fugidos. E um caçador, que eu mandei voltar.' },
+      dCaiu: { fala: 'A ponte caiu. Eu fiquei deste lado, e a minha mãe mora do outro. …Não precisa ficar assim. Eu escolhi ficar aqui.' },
+      dForja: { fala: 'Agora tem muralha e pedágio. Eu não pago: conheço uma passagem rasa, três léguas rio acima. Vou continuar soltando quem cai em laço, dos dois lados do muro.' }
     } },
 
   selma7: { nome: 'Dona Selma, a curandeira', sprite: 'dama',
@@ -2397,69 +2403,69 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Olha só quem o rio trouxe. Eu atravessei antes do vão abrir, com a mala de ervas e duas crianças no colo. Do lado de lá eu tratava caçador. Aqui eu trato quem aparecer. Remédio não pergunta de que lado é a ferida.', vai: 'oi2' },
-      oi2: { fala: 'Só que metade do meu remédio ficou na ponte. Uma caixa, com o meu nome na tampa, do lado de lá do vão. Se um dia você passar por ela…',
+      oi: { fala: 'Olha quem apareceu! Eu atravessei antes do vão abrir, com as minhas ervas e duas crianças. Do lado de lá eu tratava caçador. Aqui eu trato quem aparecer.', vai: 'oi2' },
+      oi2: { fala: 'Só que metade dos meus remédios ficou na ponte: uma caixa com o meu nome, do lado de lá do vão. Se você passar por ela, traz pra mim?',
         opcoes: [{ t: 'Eu trago.', faz: { missao: ['remedio', 0] }, vai: 'vai' }, { t: '(Pedir um curativo — {custo}.)', faz: { cura: true } }, { t: 'Agora não.' }] },
-      vai: { fala: 'Do lado de lá do vão, encostada no corrimão. E não cheira o vidro azul.' },
-      cade: { fala: 'A caixa, na ponte, depois do vão. Enquanto isso eu vou esticando o que tenho.',
+      vai: { fala: 'Fica depois do vão, encostada no corrimão. E não cheira o vidro azul.' },
+      cade: { fala: 'A caixa está na ponte, depois do vão.',
         opcoes: [{ t: '(Pedir um curativo — {custo}.)', faz: { cura: true } }, { t: 'Já volto.' }] },
-      trouxe: { fala: 'É ela! Inteira! Você não cheirou o vidro azul, cheirou? Bom. Toma — isto eu faço pra quem atravessa por mim.', faz: { perde: 'caixa', missao: ['remedio', 'fim'], rep: { bosque: 1 }, bag: [['full-restore', 2], ['lum-berry', 2]] } },
-      depois: { fala: 'Senta, que eu olho essas patas. Quem anda tanto precisa de alguém que olhe.',
+      trouxe: { fala: 'É ela, e está inteira! Obrigada. Toma, fiz isto pra você.', faz: { perde: 'caixa', missao: ['remedio', 'fim'], rep: { bosque: 1 }, bag: [['full-restore', 2], ['lum-berry', 2]] } },
+      depois: { fala: 'Senta, deixa eu ver essas patas. Você anda demais.',
         opcoes: [{ t: '(Pedir um curativo — {custo}.)', faz: { cura: true } }, { t: 'Estou bem.' }] }
     } },
 
   campeao7: { nome: 'O Campeão', sprite: 68,
     falas: [{ se: { flag: 'cap7' }, no: 'depois' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Quatro braços, como combinado. Eu disse que escolhia as minhas lutas. Esta eu escolhi: ninguém me paga, ninguém aplaude, e pela primeira vez eu sei por que estou batendo.' },
-      depois: { fala: 'A arena me escreveu, querendo que eu volte. Respondi que estou ocupado segurando uma ponte. Ou o que sobrou dela.' }
+      oi: { fala: 'Eu disse que escolhia as minhas lutas. Esta eu escolhi: ninguém me paga e ninguém aplaude. Pela primeira vez eu sei por que estou lutando.' },
+      depois: { fala: 'A arena pediu pra eu voltar. Eu respondi que estou ocupado.' }
     } },
 
   bia7: { nome: 'Bia', sprite: 'menina',
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'A gente veio. A Lã queria lutar por alguma coisa que não fosse moeda. Eu paro a luta quando <b>eu</b> achar que deu — é a nossa regra. Aqui eu ainda não achei.' }
+      oi: { fala: 'A gente veio ajudar. A Lã queria lutar por alguma coisa que não fosse dinheiro. E a nossa regra continua: eu paro a luta quando achar que passou do ponto.' }
     } },
 
   lasca7: { nome: 'Lasca', sprite: 302,
     falas: [{ no: 'banca' }],
     nos: {
-      banca: { fala: 'Vendo pros dois lados, compro dos dois lados, e não atravesso nunca. É o negócio perfeito. …O quê? Achou que eu ia ficar no charco polindo pedra?',
+      banca: { fala: 'Eu vendo pros dois lados da ponte. …O quê? Achou que eu ia ficar no charco?',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Depois.' }] }
     } },
 
   capataz: { nome: 'Capataz Metang', sprite: 375,
     falas: [{ se: { flag: 'ponte-forja' }, no: 'dForja' }, { se: { flag: 'cap7' }, no: 'depois' }, { se: { missao: ['travessia', 2] }, no: 'oferta' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'A Ordem da Forja manda dizer: ponte sem dono é ponte de quem chegar primeiro. Eu cheguei. Ainda não sou dono. Estou medindo.' },
-      oferta: { fala: 'Proposta da Ordem, por escrito e carimbada: muralha de pedra nas duas cabeceiras, portão de ferro, pedágio. Passa quem a gente deixar, e paga quem passar. Caçador não passa. Curandeira passa, pagando. É menos bonito que o plano da moça. Funciona nos dias de chuva.',
+      oi: { fala: 'A Forja me mandou medir esta ponte. Ponte sem dono acaba sendo de quem chegar primeiro.' },
+      oferta: { fala: 'A proposta da Forja: muralha de pedra nas duas pontas, portão de ferro e pedágio. Só passa quem a gente deixar, e pagando. Caçador não passa. Curandeira passa, mas paga. Não é bonito, mas funciona.',
         opcoes: [
           { t: '⚒ Entregar a ponte à Forja.', faz: { flag: ['cap7', 'ponte-forja'], missao: ['travessia', 'fim'], rep: { forja: 3, bosque: -1, abismo: -1 }, dinheiro: 2500, dom: 'pedagio' }, vai: 'dForja1' },
           { t: 'Vou ouvir os outros.' }] },
-      dForja1: { fala: 'Assinado. A primeira pedra sobe amanhã. Você tem passe livre vitalício — é a única exceção da tabela, e eu discuti por ela.' },
-      dForja: { fala: 'Trinta passagens ontem. Vinte e nove pagaram. A trigésima era a moça da capa verde, que atravessou a nado só pra não me dar a moeda. Respeito.' },
-      depois: { fala: 'A Ordem registra que a oferta foi recusada. Eu registro, à parte, que entendo.' }
+      dForja1: { fala: 'Fechado. A obra começa amanhã. Você tem passe livre pra sempre: fiz questão.' },
+      dForja: { fala: 'Ontem passaram trinta. Vinte e nove pagaram. A moça da capa verde atravessou o rio a nado pra não pagar.' },
+      depois: { fala: 'A Forja registra que a proposta foi recusada. Eu entendo os seus motivos.' }
     } },
 
   carvalho7: { nome: 'Vô Carvalho', sprite: 709,
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: '…Cheguei. Devagar, mas cheguei: uma árvore que nunca andou, andando quarenta léguas. Não conte ao Círculo, que eles nunca mais me deixam em paz. Onde é o vão?',
+      oi: { fala: 'Cheguei. Demorou, mas cheguei. Onde fica o vão da ponte?',
         opcoes: [{ t: '(Mostrar o vão do meio da ponte.)', faz: { flag: 'carvalho-deitou', rep: { bosque: 1 } }, vai: 'deita' }, { t: 'Ainda não.' }] },
-      deita: { fala: 'É largo. Bom. Eu sempre fui comprido. O bicho de baixo não derruba árvore: árvore ele conhece. …Diga à Mãe que a sombra, agora, é de quem passa. E pise firme: madeira velha gosta de peso.' }
+      deita: { fala: 'É largo. Tudo bem, eu sou comprido. O Alfa lá de baixo não derruba árvore. Avisa a Mãe Meganium que agora eu sou ponte. Pode passar por cima de mim.' }
     } },
 
   nico7: { nome: 'Nico', sprite: 'menino',
     falas: [{ se: { flag: 'nico-ponte' }, no: 'ficou' }, { se: { missao: ['sozinho', 0] }, no: 'decide' }, { no: 'achado' }],
     nos: {
-      achado: { fala: 'NÃO ME… ah. É você. O da estrada. O que não quis lutar do meu lado. …Não conta que eu tô aqui. Nem pros de lá, nem pros de cá.', vai: 'achado2' },
-      achado2: { fala: 'Eu atravessei sozinho, antes do vão abrir. O Rufino passou no Vau juntando gente pra “a grande caçada”. Meu pai foi. Eu vim na frente, pra avisar a moça da capa verde. Aí vi os bichos de guarda na ponte e… eu já armei laço pra bicho. Achei que iam me reconhecer pelo cheiro.', faz: { missao: ['sozinho', 0] }, vai: 'decide' },
-      decide: { fala: 'Eu tô com fome, com frio e com medo dos dois lados. O que você faz comigo?',
+      achado: { fala: 'NÃO ME… ah, é você, o da estrada. Não conta pra ninguém que eu estou aqui. Nem pros de lá, nem pros de cá.', vai: 'achado2' },
+      achado2: { fala: 'Eu atravessei sozinho, antes do vão abrir. O Rufino passou no Vau juntando gente pra uma “grande caçada”, e o meu pai foi. Eu vim na frente pra avisar a moça da capa verde. Mas vi os Pokémon de guarda na ponte e fiquei com medo: eu já armei laço pra Pokémon.', faz: { missao: ['sozinho', 0] }, vai: 'decide' },
+      decide: { fala: 'Estou com fome, com frio e com medo dos dois lados. O que eu faço?',
         opcoes: [
           { t: '(Empurrar o menino pra fora: a Lia está lá em cima.)', faz: { flag: 'nico-ponte', missao: ['sozinho', 'fim'], rep: { bosque: 1 }, bag: [['sitrus-berry', 2]] }, vai: 'vai' },
           { t: '(Deixar ele onde está.)' }] },
-      vai: { fala: 'Tá. Eu vou. Se ela perguntar por que eu vim, eu falo a verdade: eu armei dez laços, ela desarmou nove, e quem desarma nove merece ser avisada. Toma. É o pão que eu guardei. Eu disse que guardava.' },
-      ficou: { fala: 'A Lia me deu uma faca de cortar laço. A minha primeira. Eu já achei três. …Dois eram meus, de antigamente.' }
+      vai: { fala: 'Tá bom, eu vou falar com ela. Vou contar a verdade: que eu armava os laços e ela desarmava. Toma, é o pão que eu guardei pra você.' },
+      ficou: { fala: 'A Lia me deu uma faca de cortar laço. Já achei três. Dois eram meus, de antes.' }
     } },
 
   tome7: { nome: 'Tomé Fumeiro', sprite: 'cacador',
@@ -2471,31 +2477,31 @@ export const NPCS = {
       { no: 'fogo' }
     ],
     nos: {
-      peixe: { fala: 'Você. O da garganta dos peixes. …Baixa a lança, Zeca, esse é meu. Eu não vim com o bando: vim <b>atrás</b> dele. Metade destes rapazes eu ensinei a pescar no inverno passado. O Rufino ensinou a outra metade a ter saudade de carne.' },
-      fome: { fala: 'Você. …Eu contei as crianças na descida da serra. Trinta bocas subiram. Vinte e oito desceram. Não vou dizer os nomes das duas, porque você não merece saber. Eu sigo o Rufino porque ele, pelo menos, promete alguma coisa.' },
-      fogo: { fala: 'Você. O da fogueira. Meu defumadouro deu uma chama bonita, me disseram — eu estava de costas, carregando criança. Jurei que voltava com mais gente. Olha em volta: voltei.' },
-      decide: { fala: 'O Rufino caiu. Os rapazes estão olhando pra mim, e eu estou velho pra ser olhado assim.', vai: 'decide2' },
-      decide2: { fala: 'Escuta um caçador cansado. Enquanto essa ponte existir, alguém do meu lado vai atravessar com laço — se não for eu, é outro; se não for este ano, é o que vem. E alguém do seu lado vai atravessar pra cobrar. Derruba. De uma vez. Meus netos crescem sem saber o gosto, e os seus, sem saber o medo. Uma geração de paz por ignorância. É o que eu tenho pra oferecer.',
+      peixe: { fala: 'Você! O dos peixes. Baixa a lança, Zeca, esse é amigo. Eu não vim com o bando: vim <b>atrás</b> dele. Metade destes rapazes eu ensinei a pescar. A outra metade o Rufino convenceu a voltar a caçar.' },
+      fome: { fala: 'Você. …Trinta de nós subiram a serra. Vinte e oito desceram: duas crianças morreram de fome. Eu sigo o Rufino porque ele promete comida.' },
+      fogo: { fala: 'Você. O que queimou o meu defumadouro. Eu disse que voltava com mais gente. Voltei.' },
+      decide: { fala: 'O Rufino caiu. Agora os rapazes estão olhando pra mim, esperando ordem.', vai: 'decide2' },
+      decide2: { fala: 'Escuta um caçador velho. Enquanto essa ponte existir, alguém do meu lado vai atravessar pra caçar, e alguém do seu vai atravessar pra se vingar. Derruba a ponte. Meus netos crescem sem caçar Pokémon, e os seus crescem sem medo de gente. É a paz que eu posso oferecer.',
         opcoes: [
           { t: '🪓 Derrubar a ponte, com o Tomé.', faz: { flag: ['cap7', 'ponte-caiu'], missao: ['travessia', 'fim'], rep: { bosque: 2, forja: -1 }, dom: 'margem', bag: [['max-potion', 2], ['focus-sash', 1]] }, vai: 'dCaiu1' },
           { t: 'Vou ouvir os outros.' }] },
-      dCaiu1: { fala: 'Eu corto do meu lado, você do seu. …Pronto. Olha ela indo. Era bonita. Fica com o meu facão: eu não tenho mais onde usar, e é bom que seja assim.' },
-      dCaiu: { fala: 'Sem ponte, os rapazes voltaram a pescar. Reclamam. Reclamar é de graça. De noite eu olho pro outro lado e não vejo fogueira nenhuma. Acho que é isso que chamam de paz.' },
-      depois: { fala: 'A ponte ficou. Então eu fico também, deste lado, de olho nos meus. É o que um velho pode fazer: atrapalhar.' }
+      dCaiu1: { fala: 'Eu corto do meu lado e você do seu. …Pronto, caiu. Fica com o meu facão. Eu não vou mais precisar dele.' },
+      dCaiu: { fala: 'Sem a ponte, os rapazes voltaram a pescar. Reclamam, mas pescam. De noite eu olho pro outro lado e não vejo fogueira. Acho que isso é paz.' },
+      depois: { fala: 'A ponte ficou. Então eu fico deste lado, de olho nos meus rapazes, pra eles não fazerem besteira.' }
     } },
 
   tico7: { nome: 'Tico', sprite: 'menino',
     falas: [{ se: { flag: 'passo-fome' }, no: 'fome' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você é o bicho da serra! Eu lembro! Eu cresci, olha. O tio Tomé diz que eu não posso ir com o bando porque sou pequeno. Eu acho que é porque ele não quer que ninguém vá.' },
-      fome: { fala: 'Você é o bicho da serra. …Minha prima não desceu com a gente. O tio não fala o nome dela. Eu falo, baixinho, pra não esquecer: Ana.' }
+      oi: { fala: 'Você é o Pokémon da serra! Eu lembro de você! O tio Tomé não me deixa ir com o bando. Acho que ele não quer que ninguém vá.' },
+      fome: { fala: 'Você é o Pokémon da serra. …Minha prima Ana morreu na descida. O tio não fala dela. Eu falo, pra não esquecer.' }
     } },
 
   /* ===== capítulo 8 ===== */
   corcova: { nome: 'Dona Corcova', sprite: 323,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Caravana da Corcova: a única sombra daqui até a cidade branca — e a sombra sou eu. Descanso, água de odre e mercadoria. Não pergunte o preço da água.',
+      balcao: { fala: 'Caravana da Corcova. Aqui é o único lugar com sombra até a cidade branca. Tem descanso, água e mercadoria.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Só passando.' }] }
     } },
 
@@ -2507,12 +2513,12 @@ export const NPCS = {
       { no: 'pede' }
     ],
     nos: {
-      pede: { fala: 'Psiu. Você bebe água? Eu não bebo muito, eu sou de areia. Mas a caravana bebe, e o único poço que não é salmoura fica ali — onde aquele bando deitou em cima. Faz três dias. A Dona Corcova está repartindo o odre em goles.',
+      pede: { fala: 'Psiu. A caravana está quase sem água. O único poço de água doce fica ali, a leste, e um bando deitou em cima dele faz três dias. A Dona Corcova está racionando o que sobrou.',
         opcoes: [{ t: 'Eu tiro eles de lá.', faz: { missao: ['gole', 0] }, vai: 'vai' }, { t: 'Boa sorte.' }] },
-      vai: { fala: 'Eles são do sal, que nem eu, só que maiores e sem educação. O poço fica a leste da tenda.' },
-      espera: { fala: 'O bando ainda está no poço. Eu vigio daqui. Vigiar eu sei.' },
-      livre: { fala: 'SAÍRAM! A água tá doce! Bom, eu não sei, eu não bebo. Mas a Dona Corcova chorou, e ela não desperdiça água. Toma: achei isto enterrado. É seu.', faz: { missao: ['gole', 'fim'], rep: { bosque: 1 }, dinheiro: 500, bag: [['max-repel', 2], ['rare-candy', 1]] } },
-      grato: { fala: 'Eu cavei um buraco pra você dormir, se quiser. É pequeno. Eu sou pequeno.' }
+      vai: { fala: 'O poço fica a leste da tenda. O bando é grande e bravo.' },
+      espera: { fala: 'O bando ainda está no poço. Eu fico vigiando daqui.' },
+      livre: { fala: 'ELES SAÍRAM! A caravana tem água de novo! A Dona Corcova até chorou. Toma, achei isto enterrado na areia. É seu.', faz: { missao: ['gole', 'fim'], rep: { bosque: 1 }, dinheiro: 500, bag: [['max-repel', 2], ['rare-candy', 1]] } },
+      grato: { fala: 'Eu cavei um buraco pra você dormir, se quiser. É pequeno, igual a mim.' }
     } },
 
   dalva: { nome: 'Irmã Dalva', sprite: 'sabia',
@@ -2523,39 +2529,39 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: 'Shh. Não… ah. Você não vai apagar nada, vai? Os bichos do deserto às vezes esfregam o focinho nas paredes, e o sal esfarela. Eu sou a Dalva. Copio estes desenhos há doze anos, e ainda não cheguei ao fim da segunda rua.', vai: 'oi2' },
-      oi2: { fala: 'Aqui existiu uma Fonte. Morreu antes de qualquer reino ter nome. O que sobrou foi isto: uma cidade de sal, e paredes em que gente e bicho aparecem <b>lado a lado</b>. Não um na coleira do outro. Lado a lado, com um pano amarrado entre os dois.',
+      oi: { fala: 'Shh! …Ah, você não vai estragar nada, vai? Os bichos às vezes esfregam o focinho nas paredes, e o sal esfarela. Eu sou a Dalva. Copio estes desenhos há doze anos.', vai: 'oi2' },
+      oi2: { fala: 'Aqui existiu uma Fonte, e ela morreu há muito tempo. Sobrou esta cidade de sal. Nas paredes, gente e Pokémon aparecem <b>lado a lado</b>, sem coleira, com um pano amarrado entre os dois.',
         opcoes: [{ t: '(Olhar o pano no desenho.)', vai: 'pano' }, { t: '(Olhar pra ela, desconfiado.)', vai: 'desconfia' }] },
-      pano: { fala: 'Um nó. Os dois seguravam uma ponta cada um e apertavam juntos. Eu chamo de Primeiros Laços. Laço, naquele tempo, era coisa que <b>dois</b> faziam. Não sei quando virou coisa que um faz no outro.', vai: 'pedido' },
-      desconfia: { fala: 'Você tem razão de desconfiar. Eu sou de lá. Do reino que faz bola, gaiola e arena. Vim pra cá porque um desenho destes foi parar na minha mão quando eu era menina, e nunca mais consegui olhar pra uma coleira do mesmo jeito.', vai: 'pedido' },
-      pedido: { fala: 'O fim da história está lá embaixo, no leito da Fonte. Eu nunca desci: uma coisa grande mora no escuro, e não gosta de lamparina. Mas você enxerga no escuro, e não precisa de ninguém pra traduzir o lado de vocês. Desce. Depois me conta o que as paredes dizem.', faz: { missao: ['sal', 1] } },
-      espera: { fala: 'A descida fica no meio da praça, entre as pedras. Eu espero. Doze anos — mais um dia não pesa.' },
-      decide: { fala: 'Você viu. Dá pra ver na sua cara — bicho também faz essa cara. Conta.', vai: 'decide2' },
-      decide2: { fala: '(Você risca no sal, devagar: os Antigos. A Nascente. A água subindo. As aldeias embaixo dela.)<br><br>…Uma cheia. De propósito. Pra lavar a gente da terra — e os seus pequenos junto. E já aconteceu uma vez: foi <b>isso</b> que matou esta Fonte. Não foi seca. Foi a primeira Cheia, e o que ela deixou.', vai: 'decide3' },
-      decide3: { fala: 'Esta história é sua, não minha. Eu posso copiá-la em trinta panos, e você leva às três ordens: elas brigam, mas ninguém briga contra desenho. Ou a gente guarda — há verdade que só serve pra dar pânico. Ou… tem um Absol ali fora que oferece ouro por ela desde ontem.',
+      pano: { fala: 'É um nó. Cada um segurava uma ponta, e os dois apertavam juntos. Eu chamo de Primeiros Laços. Naquele tempo, laço era uma coisa que os <b>dois</b> faziam. Não sei quando virou prisão.', vai: 'pedido' },
+      desconfia: { fala: 'Você tem razão de desconfiar. Eu venho do reino que faz bola, gaiola e arena. Quando eu era menina vi um desenho destes, e nunca mais consegui achar normal prender um Pokémon.', vai: 'pedido' },
+      pedido: { fala: 'O fim da história está lá embaixo, no leito da Fonte. Eu nunca desci: tem uma coisa grande morando no escuro. Você enxerga no escuro, e entende os desenhos do seu lado melhor do que eu. Desce, e depois me conta o que viu.', faz: { missao: ['sal', 1] } },
+      espera: { fala: 'A descida fica no meio da praça, entre as pedras. Eu espero aqui.' },
+      decide: { fala: 'Você viu. Dá pra perceber pela sua cara. Me conta.', vai: 'decide2' },
+      decide2: { fala: '(Você risca no sal, devagar: os Antigos. A Nascente. A água subindo. As aldeias embaixo dela.)<br><br>Uma enchente, de propósito, pra acabar com os humanos. E os Pokémon pequenos morrem junto. E isso já aconteceu uma vez: foi <b>isso</b> que matou esta Fonte.', vai: 'decide3' },
+      decide3: { fala: 'Essa história é sua: você decide. Eu posso copiar em trinta panos pra você levar às três ordens, porque desenho todo mundo entende. Ou a gente guarda segredo, pra não causar pânico. E tem um Absol ali fora oferecendo dinheiro por ela.',
         opcoes: [
           { t: '📜 Levar a história às três ordens.', faz: { flag: ['cap8', 'sal-contou'], missao: ['sal', 'fim'], rep: { forja: 1, bosque: 1, abismo: 1 }, dom: 'memoria' }, vai: 'dContou1' },
           { t: '🤐 Guardar a história.', faz: { flag: ['cap8', 'sal-guardou'], missao: ['sal', 'fim'], rep: { bosque: 1 }, dom: 'silencio', bag: [['max-revive', 1]] }, vai: 'dGuardou1' },
           { t: 'Ainda não sei.' }] },
-      dContou1: { fala: 'Trinta panos. Vou desenhar com a mão que treme, mas vou. Leve este: é a memória do sal. Quem a carrega bate onde já está rachado.' },
-      dGuardou1: { fala: 'Guardamos, então. Eu, você e as paredes. Tome — é o silêncio deste lugar. Quem o leva, passa sem ser notado.' },
-      dContou: { fala: 'Vinte e dois panos já saíram com as caravanas. Dizem que na Forja penduraram um na Bigorna-Mãe. Dizem que no Círculo uma Mãe chorou. Dizem. Eu só desenho.' },
-      dGuardou: { fala: 'Às vezes eu acordo de noite e quase conto ao vento. Depois lembro da sua cara, e durmo de novo.' },
-      dVendeu: { fala: 'O Absol levou a história embrulhada, como quem leva pão. Eu vi. Não vou dizer nada. Você conhece o seu povo melhor que eu — é o que eu repito pra mim.' }
+      dContou1: { fala: 'Vou desenhar os trinta panos. Leva este primeiro. Quem conhece esta história sabe onde bater.' },
+      dGuardou1: { fala: 'Então fica entre nós. Toma: com isto você passa sem ser notado.' },
+      dContou: { fala: 'Vinte e dois panos já saíram com as caravanas. Dizem que a Forja pendurou um na Bigorna-Mãe, e que no Círculo uma Mãe chorou ao ver.' },
+      dGuardou: { fala: 'Às vezes eu quase conto pra alguém. Aí lembro do que combinamos e fico quieta.' },
+      dVendeu: { fala: 'O Absol levou a história. Eu vi. Não vou te julgar: você conhece o seu povo melhor do que eu.' }
     } },
 
   pressagio8: { nome: 'Presságio', sprite: 359,
     falas: [{ se: { flag: 'sal-vendeu' }, no: 'dVendeu' }, { se: { flag: 'cap8' }, no: 'depois' }, { se: { missao: ['sal', 2] }, no: 'oferta' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você de novo. Ou eu de novo — depende de quem conta. Lembra do pelo molhado? Vim atrás de onde a água vem. As paredes desta cidade sabem. Eu não sei ler parede.' },
-      oferta: { fala: 'Você desceu. Eu senti daqui: o seu medo mudou de formato. Então é verdade — a água vem de propósito.', vai: 'oferta2' },
-      oferta2: { fala: 'A Corte compra essa história. Inteira, e só pra ela. ₽4.000, e a Regente fica sendo a única que sabe a hora da Cheia. Quem sabe a hora vende o lugar no barco. Eu não gosto do que estou propondo. Sou o arauto: não escolho a notícia.',
+      oi: { fala: 'Você de novo. Lembra do pelo molhado? Eu vim descobrir de onde vem a água. As paredes desta cidade contam, mas eu não sei ler desenho.' },
+      oferta: { fala: 'Você desceu e viu. Então é verdade: a água vem de propósito.', vai: 'oferta2' },
+      oferta2: { fala: 'A Corte compra essa história, só pra ela, por ₽4.000. Assim a Regente é a única que sabe quando a Cheia vem, e pode vender lugar seguro a quem pagar. Eu não gosto da proposta. Só estou trazendo o recado.',
         opcoes: [
           { t: '🌑 Vender a história à Corte.', faz: { flag: ['cap8', 'sal-vendeu'], missao: ['sal', 'fim'], rep: { abismo: 3, forja: -1, bosque: -1 }, dinheiro: 4000, dom: 'preco' }, vai: 'dVendeu1' },
           { t: 'Não.' }] },
-      dVendeu1: { fala: 'Feito. Pela primeira vez na vida eu levo uma má notícia que vale ouro. Não melhora o gosto.' },
-      dVendeu: { fala: 'A Regente leu três vezes. Depois mandou fazer barcos. Poucos.' },
-      depois: { fala: 'Você não vendeu. Eu anoto: é a primeira vez que alguém recusa a Corte e eu fico aliviado.' }
+      dVendeu1: { fala: 'Feito. É a primeira má notícia minha que vale dinheiro. Não me sinto melhor por isso.' },
+      dVendeu: { fala: 'A Regente leu três vezes. Depois mandou construir barcos. Poucos.' },
+      depois: { fala: 'Você não vendeu. Fico aliviado, sinceramente.' }
     } },
 
   zelador: { nome: 'O Zelador', sprite: 344,
@@ -2566,10 +2572,10 @@ export const NPCS = {
       { no: 'oi' }
     ],
     nos: {
-      oi: { fala: '(O boneco de barro gira devagar. Varre o sal da soleira de uma casa onde ninguém mora há muito tempo. Não parece ter notado você.)' },
-      varre: { fala: 'Fui feito por duas mãos. Uma com dedos. Uma com garra. As duas apertaram o barro ao mesmo tempo. Por isso eu não paro: nenhuma das duas me disse que podia.' },
-      falta: { fala: 'Você desceu e contou os nós na parede. Contou errado. Todo mundo conta errado. Falta um — o que não é desenho. Eu o guardei onde parede parece parede: lá embaixo, do lado do poço seco de dentro, a leste.', faz: { missao: ['no', 0] } },
-      fim: { fala: 'Você o achou. Então eu posso parar de varrer por hoje. …Amanhã eu varro de novo. É o que as duas mãos queriam.' }
+      oi: { fala: '(O boneco de barro gira devagar e varre o sal da porta de uma casa vazia. Parece não ter notado você.)' },
+      varre: { fala: 'Fui feito por duas mãos: uma de gente e uma de Pokémon, as duas ao mesmo tempo. Nenhuma me mandou parar. Por isso eu continuo varrendo.' },
+      falta: { fala: 'Você contou os nós na parede lá embaixo. Falta um: o de verdade, de pano. Eu escondi atrás de uma parede falsa, do lado do poço seco, a leste.', faz: { missao: ['no', 0] } },
+      fim: { fala: 'Você achou o nó. Então hoje eu posso descansar. Amanhã eu volto a varrer.' }
     } },
 
   /* ===== capítulo 9 ===== */
@@ -2582,58 +2588,58 @@ export const NPCS = {
       { no: 'pleno' }
     ],
     nos: {
-      oi: { fala: '…Ah. Você.', vai: 'oi2' },
-      oi2: { fala: 'Eu saí de Pedralume no dia em que você saiu. …Cheguei ontem. Vim devagar. Mas vim pelo caminho certo, que é o que os Corações fizeram: todos eles subiram pra cá. Dá pra sentir no chão. …Você sente?', vai: 'oi3' },
-      oi3: { fala: 'As três ordens vieram atrás, cada uma por um lado da serra. Acenderam três fogos. Eu acendi este, no meio, e sentei. Alguém tinha que sentar no meio. Fale com quem veio. Depois volte — devagar.', faz: { missao: ['degelo', 0] } },
-      falta: { fala: '…Eu contei as pedras de sentar. São três, e tem uma vazia. Alguma ordem não quer te ver: mandou cobrar em vez de mandar conversar. …Não dá pra fazer conselho de dois. Dá pra subir.', vai: 'escolha' },
-      pleno: { fala: '…Uma. Duas. …Três. As três. No mesmo fogo.', vai: 'pleno2' },
-      pleno2: { fala: 'Faz onze anos que isto não acontece. Eu sei porque fui eu que contei os onze, devagar. Elas não se olham. Mas estão sentadas. …Você fez isso. Não com um Coração: com o caminho todo.', faz: { flag: 'conselho-pleno' }, vai: 'escolha' },
-      escolhe: { fala: '…As três continuam no mesmo fogo. Não se falam. Mas ninguém levantou.', vai: 'escolha' },
-      escolha: { fala: 'Alguém tem que ir na frente, na geleira. Quem vai na frente chega primeiro à Nascente — e é a voz que os Antigos vão escutar junto com a sua. Fale com quem você quer na ponta. Ou…',
+      oi: { fala: '…Ah. É você.', vai: 'oi2' },
+      oi2: { fala: 'Eu saí de Pedralume no mesmo dia que você. …Cheguei ontem. Vim devagar. Os Corações vieram todos pra cá, pra esta serra. Dá pra sentir no chão.', vai: 'oi3' },
+      oi3: { fala: 'As três ordens também vieram, cada uma por um lado. Cada uma acendeu o seu fogo. Eu acendi este, no meio, e sentei. Fala com quem veio. Depois volta aqui.', faz: { missao: ['degelo', 0] } },
+      falta: { fala: '…São três pedras de sentar, e uma está vazia. Uma das ordens não quer falar com você: mandou gente pra te cobrar. Sem as três, não tem conselho. Mas ainda dá pra subir.', vai: 'escolha' },
+      pleno: { fala: '…Uma. Duas. Três. Vieram as três, no mesmo fogo.', vai: 'pleno2' },
+      pleno2: { fala: 'Fazia onze anos que isso não acontecia. Elas nem se olham, mas estão sentadas juntas. …Foi você que conseguiu isso, com tudo o que fez no caminho.', faz: { flag: 'conselho-pleno' }, vai: 'escolha' },
+      escolhe: { fala: '…As três continuam no mesmo fogo. Ninguém foi embora.', vai: 'escolha' },
+      escolha: { fala: 'Alguém tem que ir na frente, na geleira. Quem for na frente chega com você à Nascente, e vai falar junto com você lá em cima. Fala com quem você quer que lidere. Ou…',
         opcoes: [
           { t: '(Subir por conta própria.)', faz: { flag: ['subida', 'sobe-so', 'cap9'], missao: ['degelo', 2], dom: 'sozinho' }, vai: 'so' },
           { t: 'Vou falar com eles.', faz: { missao: ['degelo', 1] } }] },
-      so: { fala: '…Sozinho. Eu vim sozinho também. Demora mais. Chega igual. Vá.' },
-      depois: { fala: '…A trilha da geleira fica ao norte. Eu cuido do fogo. Quando você voltar — se der pra voltar — ele vai estar aceso. Devagar, mas aceso.' }
+      so: { fala: '…Sozinho. Eu também vim sozinho. Demora mais, mas chega. Vai.' },
+      depois: { fala: '…A trilha da geleira fica ao norte. Eu fico cuidando do fogo até você voltar.' }
     } },
 
   brasa9: { nome: 'Brasa', sprite: 126,
     falas: [{ se: { flag: 'sobe-forja' }, no: 'lider' }, { se: { flag: 'subida' }, no: 'ficou' }, { se: { missao: ['degelo', 1] }, no: 'oferta' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Olha quem chegou inteiro ao fim do mundo. A Ordem me mandou porque eu sou a única que você ainda escuta — palavra deles, não minha. Senta perto do fogo do velho. É o único aqui que não é de ninguém.' },
-      oferta: { fala: 'Então é pra escolher quem vai na frente. Escuta a proposta da Forja, que é curta: a gente sobe com ferro, chega à Nascente e <b>assenta</b> ela. Cano, registro, guarda. Água pra todo mundo, medida e garantida. Os Antigos não gostam? A gente trouxe corrente.',
+      oi: { fala: 'Você chegou inteiro. A Forja me mandou porque acha que você me escuta. Senta perto do fogo do velho.' },
+      oferta: { fala: 'A proposta da Forja é simples: a gente sobe armado, chega à Nascente e <b>controla</b> ela. Cano, registro e guarda. Água pra todo mundo, na medida certa. Se os Antigos não gostarem, a gente trouxe corrente.',
         opcoes: [
           { t: '⚒ A Forja lidera a subida.', faz: { flag: ['subida', 'sobe-forja', 'cap9'], missao: ['degelo', 2], rep: { forja: 2, bosque: -1, abismo: -1 }, dom: 'vanguarda' }, vai: 'lider1' },
           { t: 'Vou ouvir os outros.' }] },
-      lider1: { fala: 'Certo. Eu vou na ponta, você logo atrás. Se eu cair numa fenda, você herda o martelo. Não ri — é o testamento inteiro.' },
-      lider: { fala: 'A ponta é minha. A geleira fica ao norte. Não demora, que ferro frio trinca.' },
-      ficou: { fala: 'Não fui escolhida. Tá. Eu subo atrás de qualquer jeito: alguém vai precisar consertar o que os outros quebrarem.' }
+      lider1: { fala: 'Certo. Eu vou na frente e você logo atrás. Se eu cair numa fenda, o martelo fica pra você.' },
+      lider: { fala: 'Eu vou na frente. A geleira fica ao norte. Vamos logo.' },
+      ficou: { fala: 'Você não me escolheu. Tudo bem, eu subo atrás. Alguém vai ter que consertar o que quebrar.' }
     } },
 
   meganium9: { nome: 'Mãe Meganium', sprite: 154,
     falas: [{ se: { flag: 'sobe-bosque' }, no: 'lider' }, { se: { flag: 'subida' }, no: 'ficou' }, { se: { missao: ['degelo', 1] }, no: 'oferta' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você veio. Eu também — com o bosque inteiro, ou com a metade, ou sem ele; você sabe qual. Aqui em cima não cresce nada, e mesmo assim eu sinto raiz. É a Nascente. Tudo o que é verde começou nela.' },
-      oferta: { fala: 'O Círculo propõe o que sempre propôs: não fazer. Subir, pedir licença e deixar os Antigos terminarem. A Cheia lava o machado, o forno e a gaiola. Lava aldeias também; eu sei. Eu sou a que votou contra — e estou aqui te oferecendo o voto das outras, porque é o voto do Círculo, e eu sou do Círculo.',
+      oi: { fala: 'Você veio. Aqui em cima não cresce nada, mas eu sinto raiz debaixo do gelo. É a Nascente. Tudo o que é verde começou nela.' },
+      oferta: { fala: 'O Círculo propõe não fazer nada: subir, pedir licença e deixar os Antigos terminarem. A Cheia acaba com o machado, o forno e a gaiola. Acaba com aldeias também, eu sei. Eu votei contra. Mas esta é a proposta do Círculo, e eu vim trazê-la.',
         opcoes: [
           { t: '🌿 O Círculo lidera a subida.', faz: { flag: ['subida', 'sobe-bosque', 'cap9'], missao: ['degelo', 2], rep: { bosque: 2, forja: -1, abismo: -1 }, dom: 'seiva' }, vai: 'lider1' },
           { t: 'Vou ouvir os outros.' }] },
-      lider1: { fala: 'Então eu vou na frente, pisando leve. Se lá em cima você decidir diferente do Círculo… eu não vou te segurar. Eu nunca soube segurar ninguém. É o meu defeito, e talvez a minha única virtude.' },
-      lider: { fala: 'Ao norte, pela geleira. Eu abro o caminho: neve é só água dormindo.' },
-      ficou: { fala: 'O Círculo não vai na frente. Então vai atrás, que é onde o bosque sempre esteve: depois que todo mundo passa.' }
+      lider1: { fala: 'Então eu vou na frente. Se lá em cima você decidir diferente do Círculo, eu não vou te impedir.' },
+      lider: { fala: 'A geleira fica ao norte. Eu vou na frente, abrindo o caminho.' },
+      ficou: { fala: 'O Círculo não vai na frente. Então vamos atrás.' }
     } },
 
   lasca9: { nome: 'Lasca', sprite: 302,
     falas: [{ se: { flag: 'sobe-abismo' }, no: 'lider' }, { se: { flag: 'subida' }, no: 'ficou' }, { se: { missao: ['degelo', 1] }, no: 'oferta' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'A Regente não sobe montanha: manda quem pode perder. Eu. …Brincadeira. Mais ou menos. Ela disse “vai, que ele te escuta”. Uma vida inteira, e é a primeira vez que alguém me manda representar alguma coisa.' },
-      oferta: { fala: 'Proposta da Corte, e eu decorei: a gente chega, os Antigos param, e os Corações voltam pra quem os guardava antes de todo mundo esquecer — nós. A Corte passa a saber onde a água vai nascer, quanto e quando. E vende? …Aluga. Barato. Pros amigos.',
+      oi: { fala: 'A Regente não sobe montanha, então mandou a mim. Ela disse que você me escuta. É a primeira vez que me mandam representar a Corte.' },
+      oferta: { fala: 'A proposta da Corte: os Antigos param, e os Corações voltam pra quem cuidava deles antes, que somos nós. A Corte passa a saber onde e quando a água nasce, e decide quem recebe. Cobrando, claro. Mas barato pros amigos.',
         opcoes: [
           { t: '🌑 A Corte lidera a subida.', faz: { flag: ['subida', 'sobe-abismo', 'cap9'], missao: ['degelo', 2], rep: { abismo: 2, forja: -1, bosque: -1 }, dom: 'vigia' }, vai: 'lider1' },
           { t: 'Vou ouvir os outros.' }] },
-      lider1: { fala: '…Sério? Eu? Na frente? Tá. Tá bom. Eu enxergo no escuro e sei onde o gelo está podre, porque gelo podre é que nem negócio podre: brilha demais. Vem atrás de mim e pisa onde eu pisar.' },
-      lider: { fala: 'Eu na ponta. Quem diria. Norte, pela geleira — e não conta pra ninguém que eu tô com medo.' },
-      ficou: { fala: 'Não fui eu. Tudo bem. Eu vou atrás, anotando quem escorrega. Informação é informação.' }
+      lider1: { fala: 'Sério? Eu, na frente? Tá bom. Eu enxergo no escuro e sei onde o gelo está fraco. Pisa onde eu pisar.' },
+      lider: { fala: 'Eu vou na frente. A geleira fica ao norte. Não conta pra ninguém que eu estou com medo.' },
+      ficou: { fala: 'Não fui escolhido. Tudo bem. Eu subo atrás, de olho em tudo.' }
     } },
 
   nevasca: { nome: 'Dona Nevasca', sprite: 614,
@@ -2644,36 +2650,36 @@ export const NPCS = {
       { no: 'pede' }
     ],
     nos: {
-      pede: { fala: 'Você vai subir a geleira? Então olha por mim: meu filhote saiu atrás de um floco “maior que os outros” e não voltou. Pingo. Nariz escorrendo, não tem como errar. Eu não posso largar os outros dois.',
+      pede: { fala: 'Você vai subir a geleira? Meu filhote, o Pingo, saiu atrás de um floco de neve e não voltou. É um Cubchoo de nariz escorrendo. Eu não posso sair daqui: tenho mais dois pra cuidar.',
         opcoes: [{ t: 'Eu olho.', faz: { missao: ['pingo', 0] }, vai: 'vai' }, { t: 'Não prometo.' }] },
-      vai: { fala: 'Ele vai pra onde tem gelo liso. Gosta de escorregar. Puxou ao pai, que escorregou até sumir.' },
-      espera: { fala: 'Gelo liso. Nariz escorrendo. Pingo.' },
-      voltou: { fala: 'PINGO! Limpa esse nariz.<br><br>…Obrigada. Toma — é do meu inverno, guardado pra emergência. Você foi a emergência.', faz: { missao: ['pingo', 'fim'], rep: { bosque: 1 }, bag: [['full-restore', 2], ['max-revive', 1]] } },
-      grata: { fala: 'Agora ele só escorrega onde eu enxergo. Diz que é injusto. É.' }
+      vai: { fala: 'Ele gosta de escorregar. Deve estar perto de um lago congelado.' },
+      espera: { fala: 'O Pingo deve estar perto de um lago congelado, na geleira.' },
+      voltou: { fala: 'PINGO! Limpa esse nariz!<br><br>Obrigada. Toma: eu estava guardando pra uma emergência, e você resolveu a minha.', faz: { missao: ['pingo', 'fim'], rep: { bosque: 1 }, bag: [['full-restore', 2], ['max-revive', 1]] } },
+      grata: { fala: 'Agora ele só brinca onde eu consigo ver. Ele reclama, mas obedece.' }
     } },
 
   pingo: { nome: 'Pingo', sprite: 613,
     falas: [{ se: { flag: 'achou-pingo' }, no: 'casa' }, { no: 'achado' }],
     nos: {
-      achado: { fala: 'Eu achei o floco! Era maior que os outros! Aí ele derreteu. …Você sabe o caminho de volta? Eu sei, mas esqueci.',
+      achado: { fala: 'Eu achei o floco! Era enorme! Mas derreteu. …Você sabe o caminho de volta? Eu esqueci.',
         opcoes: [{ t: 'Vem comigo.', faz: { flag: 'achou-pingo' }, vai: 'vai' }] },
-      vai: { fala: 'Tá! Eu vou escorregando. É mais rápido, é mais divertido, e a mãe não tá vendo.' },
-      casa: { fala: 'A mãe disse que floco grande é armadilha. Eu acho que floco grande é floco grande.' }
+      vai: { fala: 'Tá! Eu vou escorregando, que é mais rápido!' },
+      casa: { fala: 'A mãe disse que não é pra seguir floco grande. Mas era muito grande!' }
     } },
 
   mamute: { nome: 'Vó Mamute', sprite: 473,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Deita aqui no meu pelo, criatura. Todo mundo deita. Cabe a comitiva inteira, e ainda sobra pelo.',
+      balcao: { fala: 'Deita aqui no meu pelo, que é quente. Cabe a comitiva inteira.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: 'Só passando.' }] }
     } },
 
   carteiro: { nome: 'Carteiro', sprite: 225,
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'Entrega! …Ah, é freguês. Eu subo esta serra com encomenda nas costas e notícia no bico. Vendo o que sobra da carga. E tenho correspondência pra você — todo mundo que você deixou pra trás resolveu escrever na mesma semana.',
+      oi: { fala: 'Entrega! …Ah, é freguês. Eu sou o Carteiro: subo a serra com encomendas e vendo o que sobra. E tenho cartas pra você, de gente que você conheceu no caminho.',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: '✉ Ler as cartas.', vai: 'cartas' }, { t: 'Depois.' }] },
-      cartas: { fala: 'Tenho um maço inteiro. De onde você quer?',
+      cartas: { fala: 'Tenho várias. De onde você quer ler?',
         opcoes: [
           { t: 'De Pedralume.', vai: 'cPedralume' },
           { t: 'Da Serra do Fumo.', se: { flag: 'passo-peixe' }, vai: 'cSerraPeixe' },
@@ -2686,107 +2692,107 @@ export const NPCS = {
           { t: 'Da ponte.', se: { sem: 'ponte-caiu' }, vai: 'cPonte' },
           { t: 'A que não tem dono.', se: { missao: ['gelo', 'nao'] }, vai: 'cGelo' },
           { t: 'Chega de carta.' }] },
-      cPedralume: { fala: '“Filho: a arruda pegou de novo. Não pisa quando voltar. E volta. — Vó Vileplume.”<br><br>Tem cheiro de chá. Lá não tem chá.', vai: 'cartas' },
+      cPedralume: { fala: '“Filho: a arruda pegou de novo. Não pisa quando voltar. E volta. — Vó Vileplume.”', vai: 'cartas' },
       cSerraPeixe: { fala: '“O peixe sobe a pedra todo dia. O homem do chapéu ensinou meu filhote a assobiar. Eu deixei. — Mãe Ursa.”', vai: 'cartas' },
-      cSerra: { fala: '“O inverno passou. Mais um. A gente conta de um em um, que é como se conta o que foi ganho na briga. — Mãe Ursa.”', vai: 'cartas' },
+      cSerra: { fala: '“O inverno passou, e estamos todos bem. — Mãe Ursa.”', vai: 'cartas' },
       cVauTirou: { fala: '“A arena virou celeiro. Dá menos moeda e mais pão. Eu ainda apago as tochas, por costume. — Baltazar.”', vai: 'cartas' },
       cVau: { fala: '“A arena continua cheia. Pintaram a sua cara no muro, do lado da do Campeão. Ficou torta. — Baltazar.”', vai: 'cartas' },
-      cFerro: { fala: '“Os nove capacetes foram pra parede da Bigorna-Mãe. Todo mundo que passa tira o próprio. O meu, eu tiro por você. — Tatu.”', vai: 'cartas' },
-      cTocos: { fala: '“A praça tem uma sombra do tamanho de um chapéu. O Brotinho senta embaixo e diz que é dele. É. — Roque.”', vai: 'cartas' },
-      cPonteCaiu: { fala: '“Daqui não se vê mais o outro lado. De noite eu acho que ouço alguém assobiar de lá. Deve ser o rio. — L.”', vai: 'cartas' },
-      cPonte: { fala: '“Hoje passou remédio. Ontem passou um caçador, e eu mandei voltar. Dois a um. — L.”', vai: 'cartas' },
-      cGelo: { fala: 'Esta eu não entrego: não tem nome nem selo. Achei presa no gelo, perto de um arvoredo a oeste da trilha da geleira. Não abri. Carteiro não abre. Mas a letra é de gente, e a marca de lacre é uma pata.', faz: { missao: ['gelo', 0] }, vai: 'cartas' }
+      cFerro: { fala: '“Os nove capacetes foram pra parede da Bigorna-Mãe. Todo mundo que passa tira o chapéu. — Tatu.”', vai: 'cartas' },
+      cTocos: { fala: '“A praça já tem um pouco de sombra. O Brotinho senta embaixo e diz que é dele. — Roque.”', vai: 'cartas' },
+      cPonteCaiu: { fala: '“Daqui não dá mais pra ver o outro lado. Sinto falta de lá. Mas estou bem. — Lia.”', vai: 'cartas' },
+      cPonte: { fala: '“Hoje passou remédio. Ontem passou um caçador, e eu mandei voltar. — Lia.”', vai: 'cartas' },
+      cGelo: { fala: 'Esta eu não consigo entregar: não tem nome. Achei presa no gelo, perto de um arvoredo a oeste da trilha da geleira. A letra é de gente, e o selo é uma marca de pata.', faz: { missao: ['gelo', 0] }, vai: 'cartas' }
     } },
 
   /* ===== capítulo 10 ===== */
   veu10: { nome: 'Dama Véu', sprite: 429,
     falas: [{ se: { missao: ['nascente', 'nao'] }, no: 'oi' }, { no: 'conta' }],
     nos: {
-      oi: { fala: 'Você chegou. Eu vim por dentro das sombras, que é mais curto e mais triste. Olhe em volta: verde, no meio do gelo. É a Nascente que faz isso. Tudo o que vive começou aqui — e é aqui que eles querem que termine.', vai: 'oi2' },
-      oi2: { fala: 'Os Antigos estão lá dentro, fechando a fonte. Quando fecharem, a água represa atrás da serra; quando a serra ceder, é a Cheia. Você não vai matá-los: ninguém mata o que é mais velho que a morte. Vai fazer com que <b>parem</b>, por um instante. E no instante em que pararem, eles escutam.', faz: { missao: ['nascente', 0] }, vai: 'conta' },
-      conta: { fala: 'O que você vai dizer lá dentro depende do que carregou até aqui. Eu conto quatro coisas possíveis na sua bagagem: uma humana que confia em você. Um sino que voltou a quem lembrava. Três ordens sentadas no mesmo fogo. E um nó de pano que não esfarelou. Com as quatro, existe uma palavra que nunca foi dita lá dentro. Com menos, existem as outras — e nenhuma delas é pequena.',
+      oi: { fala: 'Você chegou. Olha em volta: é verde, no meio do gelo. É a Nascente que faz isso. Tudo o que vive começou aqui, e é aqui que os Antigos querem acabar com tudo.', vai: 'oi2' },
+      oi2: { fala: 'Eles estão lá dentro, fechando a fonte. Quando fecharem, a água vai se acumular atrás da serra, até a serra romper. Essa é a Cheia. Você não consegue matar os Antigos. Mas consegue fazer com que <b>parem</b> por um instante — e nesse instante eles escutam.', faz: { missao: ['nascente', 0] }, vai: 'conta' },
+      conta: { fala: 'O que você pode dizer lá dentro depende do que trouxe. São quatro coisas: a confiança de uma humana, a Lia. O sino de Pedralume devolvido. As três ordens reunidas no mesmo fogo. E o nó de pano do deserto. Com as quatro, existe uma saída que ninguém tentou. Com menos, você ainda tem outras escolhas.',
         opcoes: [
           { t: '🪢 (Mostrar o nó de pano.)', se: { item: 'no' }, vai: 'temNo' },
           { t: '🔔 (Pensar no sino de Pedralume.)', se: { flag: 'sino-devolvido' }, vai: 'temSino' },
           { t: '🔥 (Pensar no fogo do meio.)', se: { flag: 'conselho-pleno' }, vai: 'temFogo' },
           { t: '🧣 (Pensar na Lia.)', se: { flag: 'lia-confia' }, vai: 'temLia' },
           { t: 'Entendi.' }] },
-      temNo: { fala: 'É ele. Duas pontas. Repare que nenhuma das duas é a “de cima”.' },
-      temSino: { fala: 'Ele tocou uma vez só, na cabeça de quem precisava lembrar. Às vezes uma vez basta. Às vezes ele toca de novo.' },
-      temFogo: { fala: 'Onze anos sem dividir um fogo. Elas não se olharam — mas ninguém levantou. Eu sei. Eu estava na sombra da terceira pedra.' },
-      temLia: { fala: 'Ela subiu. Está ali, sem saber se tem o direito. É a dúvida certa: quem não a tem é que não devia entrar.' }
+      temNo: { fala: 'É o nó. Duas pontas iguais: nenhuma manda na outra.' },
+      temSino: { fala: 'O sino voltou pra quem se lembrava dele. Isso conta.' },
+      temFogo: { fala: 'As três ordens sentaram juntas, depois de onze anos. Eu estava lá e vi.' },
+      temLia: { fala: 'A Lia subiu até aqui. Está ali, sem saber se pode entrar. Ela é importante.' }
     } },
 
   lia10: { nome: 'Lia, a patrulheira', sprite: 'patrulheira',
     falas: [{ se: { falas: ['lia10', 1] }, no: 'oi2' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Eu disse que conhecia um vau. Conheço mais de um. …Não, eu não devia estar aqui: isto é de vocês. Mas, se a água descer, desce em cima da minha gente também — e alguém do lado de lá tinha que subir pra pedir desculpa. Ou pra pedir chance. Ainda não decidi qual.' },
-      oi2: { fala: 'Eu não entro com você. Aquilo lá dentro não quer ver gente. Mas leva isto na cabeça: tem uma menina no Vau que para a luta quando acha que deu. Tem um velho na serra que trocou a gaiola pelo anzol. A gente aprende. Devagar, que nem o seu amigo do poço. Mas aprende.' }
+      oi: { fala: 'Eu sei que não devia estar aqui: isto é assunto de vocês. Mas se a água descer, cai em cima da minha gente também. Alguém do nosso lado tinha que subir pra pedir uma chance.' },
+      oi2: { fala: 'Eu não vou entrar com você: eles não querem ver gente. Mas lembra de uma coisa. Tem uma menina no Vau que para a luta quando acha que passou do ponto. Tem um caçador que trocou a gaiola pela pesca. A gente aprende. Devagar, mas aprende.' }
     } },
 
   nico10: { nome: 'Nico', sprite: 'menino',
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'Eu subi com a Lia. Ela disse que não era lugar de criança, e eu disse que eu já armei laço e já desarmei laço, então eu sou o quê? Ela não soube responder. …Eu trouxe pão. Pra depois. Vai ter depois, né?' }
+      oi: { fala: 'Eu subi com a Lia. Ela disse que não era lugar de criança, mas eu vim assim mesmo. Trouxe pão pra depois. Vai ter depois, né?' }
     } },
 
   bia10: { nome: 'Bia', sprite: 'menina',
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'A Lã quis subir. Disse que queria ver “de onde vem a força”. Eu vim atrás, porque a regra é minha: eu paro quando eu achar que deu. …Eu acho que ainda não deu. Vai lá.' }
+      oi: { fala: 'A Lã quis subir pra ver de onde vem a força dos Pokémon. Eu vim junto. A nossa regra continua valendo, e eu acho que ainda não é hora de parar. Vai lá.' }
     } },
 
   brasa10: { nome: 'Brasa', sprite: 126,
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'A corrente está pronta. …Não me olha assim. Eu sei o que eu disse lá embaixo. Aqui em cima, ouvindo aquela água, eu já não sei se corrente é a palavra. Mas é a que eu trouxe. Você entra, eu seguro a porta. Se disser “Forja” lá dentro, eu entro e assento. Se disser outra coisa… eu sou ferreira. Eu sei quando o ferro não quer.' }
+      oi: { fala: 'A corrente está pronta. …Eu sei o que eu disse lá embaixo. Aqui em cima, ouvindo essa água, eu já não tenho tanta certeza. Entra. Se você disser “Forja” lá dentro, eu entro e prendo a Nascente. Se disser outra coisa, eu respeito.' }
     } },
 
   meganium10: { nome: 'Mãe Meganium', sprite: 154,
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'Eu senti a raiz do mundo debaixo das patas a subida inteira. Ela não tem raiva. Tem cansaço. Entre. Eu fico aqui, pisando leve. O que você decidir, o Círculo aceita — foi isso que eu vim garantir, e é a única coisa que uma voz contra consegue garantir.' }
+      oi: { fala: 'Eu senti a raiz do mundo durante toda a subida. Ela não está com raiva: está cansada. Entra. O que você decidir, o Círculo aceita. Foi isso que eu vim garantir.' }
     } },
 
   lasca10: { nome: 'Lasca', sprite: 302,
     falas: [{ no: 'oi' }],
     nos: {
-      oi: { fala: 'Cheguei na frente. EU. Olhei pra dentro da gruta e voltei: tem coisa lá que enxerga através de mim, e eu não tô acostumado. Se você falar “Corte” lá dentro, eu assumo. A Regente me mata se eu não assumir. …Se você falar outra coisa, eu digo a ela que a acústica era ruim.' }
+      oi: { fala: 'Cheguei na frente! Olhei pra dentro da gruta e voltei correndo: aquilo lá dentro é grande demais. Se você disser “Corte” lá dentro, eu assumo os Corações. Se disser outra coisa, eu invento uma desculpa pra Regente.' }
     } },
 
   chansey10: { nome: 'Dona Chansey', sprite: 113,
     falas: [{ no: 'balcao' }],
     nos: {
-      balcao: { fala: 'Pousada do Sino, filial do fim do mundo. Eu vim atrás do Tio do Poço, que sozinho ele esquece de comer. Ele parou no acampamento; eu continuei, porque alguém aqui em cima ia precisar de cama.',
+      balcao: { fala: 'Pousada do Sino, agora aqui em cima. Eu vim atrás do Tio do Poço, que esquece de comer. Ele parou no acampamento, e eu continuei. Aqui tem cama pra todo mundo.',
         opcoes: [{ t: '🛏 Descansar ({custo}).', faz: { cura: true } }, { t: 'Só passando.' }] }
     } },
 
   kecleon10: { nome: 'Kecleon, o mercador', sprite: 352,
     falas: [{ no: 'banca' }],
     nos: {
-      banca: { fala: 'Kecleon tem de tudo, de todas as cores, freguês! Até aqui. Principalmente aqui: fim do mundo é ponto bom, não tem concorrência.',
+      banca: { fala: 'O Kecleon vende de tudo, até aqui em cima! Quer ver?',
         opcoes: [{ t: '🛒 Ver as mercadorias.', faz: { loja: true } }, { t: 'Depois.' }] }
     } },
 
   antigos: { nome: 'Os Antigos', sprite: '@antigo',
     falas: [{ no: 'escutam' }],
     nos: {
-      escutam: { fala: '(Eles pararam. Pela primeira vez desde antes de qualquer nome, a Nascente está em silêncio. Os Antigos não falam: <b>pesam</b>. Você sente a pergunta no peito, como se sente trovão.)<br><br><i>Pequeno. Você carregou os nossos pedaços por dez terras. Viu o que eles fazem com a água, e o que fazem uns com os outros. Nós íamos lavar. Diga por que não.</i>',
+      escutam: { fala: '(Eles pararam. A Nascente está em silêncio. Os Antigos não falam com palavras, mas você entende a pergunta, e ela pesa.)<br><br><i>Pequeno. Você carregou os nossos pedaços por dez terras. Viu o que os humanos fazem com a água e com vocês. Nós íamos lavar tudo. Diga por que não.</i>',
         opcoes: [
           { t: '🪢 (Estender o nó de pano: uma ponta pra vocês, outra pra eles.)', se: { flag: ['lia-confia', 'sino-devolvido', 'conselho-pleno'], item: 'no' }, vai: 'laco' },
           { t: '⚒ A Forja assenta a Nascente: água medida, pra todos.', se: { flag: 'sobe-forja' }, vai: 'cano' },
           { t: '🌑 A Corte volta a guardar os Corações.', se: { flag: 'sobe-abismo' }, vai: 'sombra' },
           { t: '🌿 O Círculo pede: terminem. Que o bosque volte.', se: { flag: 'sobe-bosque' }, vai: 'cheiaBosque' },
           { t: '🌊 (Não dizer nada. Deixar a água vir.)', vai: 'cheia' }] },
-      laco: { fala: '(Você põe o nó no chão, entre você e eles, e segura uma ponta com os dentes. A outra fica solta, apontando pra boca da gruta — onde uma humana de capa verde espera sem saber se pode entrar.)<br><br><i>…Isto nós conhecemos. Fomos nós que ensinamos, antes da primeira Cheia. Achamos que os dois tinham esquecido.</i>', vai: 'laco2' },
-      laco2: { fala: '(Lá fora, um sino rachado toca. Uma vez só. Ninguém o tocou.)<br><br><i>Um nó não se faz com um lado. Chame a que espera. Se ela pegar a outra ponta, nós abrimos a fonte — e ficamos olhando. Desta vez, de perto.</i>', vai: 'laco3' },
-      laco3: { fala: 'A Lia entra devagar, de mãos vazias, como no dia em que você a conheceu. Olha pros Antigos. Olha pra você. Pega a ponta.<br><br>A Nascente volta a correr.<br><br>Ninguém foi lavado. Ninguém foi acorrentado. Daqui a muitos anos, numa terra muito longe, um humano e um Pokémon vão andar juntos sem saber por quê. Foi por isto. E foi o Pokémon quem propôs.', faz: { missao: ['nascente', 'fim'], flag: 'final-laco', fim: '🪢 O Laço' } },
-      cano: { fala: '(Atrás de você, o martelo da Brasa bate três vezes na pedra. Os Antigos não resistem: olham, com uma curiosidade muito velha, as correntes subindo.)<br><br><i>Vocês preferem a água presa a nenhuma água. É uma escolha de quem já teve sede. Nós entendemos sede.</i>', vai: 'cano2' },
-      cano2: { fala: 'A Nascente é assentada em bronze. Canos descem as dez terras: água em toda praça, medida, garantida — e com um guarda de martelo no ombro em cada registro. Ninguém mais disputa um Coração. Ninguém mais bebe sem pedir.<br><br>Os Antigos dormem acorrentados no fundo da gruta. De vez em quando um deles abre um olho e escuta a água passar no cano. Não dá pra saber o que acha.', faz: { missao: ['nascente', 'fim'], flag: 'final-cano', fim: '⚒ O Cano' } },
-      sombra: { fala: '(As sombras da gruta se alongam. O Lasca entra, pequeno, tremendo, com uma lamparina que não é dele. Os Antigos olham pra ele por muito tempo.)<br><br><i>Os que ficavam acordados. Nós nos lembramos de vocês. Foram os únicos que avisaram.</i>', vai: 'sombra2' },
-      sombra2: { fala: 'Os Corações voltam ao leito, um por um, e a Corte do Abismo volta a vigiá-los — como antes de os sinos serem calados. A água corre. A Regente sabe onde, quanto e quando. As aldeias que a expulsaram agora batem à porta dela, de balde na mão.<br><br>Ela atende todas. Cobra de algumas. Lembra de cada uma.', faz: { missao: ['nascente', 'fim'], flag: 'final-sombra', fim: '🌑 A Sombra' } },
-      cheiaBosque: { fala: '(A Mãe Meganium entra e se curva. Não pede perdão nem piedade: pede <b>licença</b>. Os Antigos se viram de novo pra fonte.)<br><br><i>O verde pede o que nós íamos dar. Então que desça com cuidado: devagar nas encostas, depressa nos fornos.</i>', vai: 'cheia2' },
-      cheia: { fala: '(Você não diz nada. Talvez não haja o que dizer; talvez eles tenham razão. Os Antigos esperam um instante a mais do que precisavam — e se viram de novo pra fonte.)<br><br><i>Então é como era. Segure-se em alguma coisa alta, pequeno.</i>', vai: 'cheia2' },
-      cheia2: { fala: 'A Nascente se fecha. Atrás da serra, a água sobe por três dias. No quarto, a serra cede.<br><br>A Cheia lava o machado, o forno, a gaiola e a arena. Lava Pedralume também, e a toca dos refugiados, e a praça onde uma muda fazia sombra do tamanho de um chapéu. Quando a água baixa, o bosque volta primeiro — verde, enorme, em silêncio.<br><br>Numa parede de sal, muito longe, a última figura do desenho deixa de ser profecia.', faz: { missao: ['nascente', 'fim'], flag: 'final-cheia', fim: '🌊 A Cheia' } }
+      laco: { fala: '(Você põe o nó de pano no chão e segura uma ponta com os dentes. A outra fica solta, apontando pra entrada da gruta, onde a Lia espera.)<br><br><i>Nós conhecemos isto. Fomos nós que ensinamos, antes da primeira Cheia. Achamos que os dois lados tinham esquecido.</i>', vai: 'laco2' },
+      laco2: { fala: '(Lá fora, um sino rachado toca. Uma vez só.)<br><br><i>Um nó precisa de dois. Chame a humana. Se ela pegar a outra ponta, nós abrimos a fonte e ficamos olhando de perto.</i>', vai: 'laco3' },
+      laco3: { fala: 'A Lia entra devagar, de mãos vazias. Olha pros Antigos, olha pra você, e pega a outra ponta.<br><br>A Nascente volta a correr.<br><br>Ninguém foi levado pela água, e ninguém foi acorrentado. Daqui a muitos anos, humanos e Pokémon vão andar juntos por escolha. Começou aqui — e foi um Pokémon quem propôs.', faz: { missao: ['nascente', 'fim'], flag: 'final-laco', fim: '🪢 O Laço' } },
+      cano: { fala: '(Atrás de você, a Brasa bate o martelo três vezes na pedra. Os Antigos não reagem: só observam as correntes subindo.)<br><br><i>Vocês preferem a água presa a ficar sem água. Nós entendemos a sede.</i>', vai: 'cano2' },
+      cano2: { fala: 'A Nascente é presa em bronze. Canos levam água às dez terras: tem em toda praça, na medida certa, com um guarda da Forja em cada registro. Ninguém mais briga por um Coração. E ninguém mais bebe sem pedir.<br><br>Os Antigos dormem acorrentados no fundo da gruta.', faz: { missao: ['nascente', 'fim'], flag: 'final-cano', fim: '⚒ O Cano' } },
+      sombra: { fala: '(As sombras da gruta crescem. O Lasca entra, pequeno e tremendo, com uma lamparina. Os Antigos olham pra ele por muito tempo.)<br><br><i>Os que ficavam acordados. Nós lembramos de vocês. Foram os únicos que avisaram.</i>', vai: 'sombra2' },
+      sombra2: { fala: 'Os Corações voltam aos seus lugares, e a Corte do Abismo volta a vigiá-los, como antes de ser expulsa. A água corre de novo. A Regente decide onde, quanto e quando. As aldeias que expulsaram a Corte agora precisam pedir água a ela.<br><br>Ela atende a todas. De algumas, cobra.', faz: { missao: ['nascente', 'fim'], flag: 'final-sombra', fim: '🌑 A Sombra' } },
+      cheiaBosque: { fala: '(A Mãe Meganium entra e se curva. Não pede perdão: pede licença. Os Antigos voltam a olhar pra fonte.)<br><br><i>O bosque pede o que nós íamos fazer. Então a água vai descer devagar nas encostas e depressa nos fornos.</i>', vai: 'cheia2' },
+      cheia: { fala: '(Você não diz nada. Talvez eles tenham razão. Os Antigos esperam mais um instante e voltam a olhar pra fonte.)<br><br><i>Então será como decidimos. Procure um lugar alto, pequeno.</i>', vai: 'cheia2' },
+      cheia2: { fala: 'A Nascente se fecha. A água se acumula atrás da serra por três dias. No quarto dia, a serra rompe.<br><br>A Cheia leva os machados, os fornos, as gaiolas e a arena. Leva também Pedralume, a toca dos refugiados e a Aldeia dos Tocos. Quando a água baixa, o bosque é o primeiro a voltar.<br><br>O último desenho da parede de sal aconteceu de novo.', faz: { missao: ['nascente', 'fim'], flag: 'final-cheia', fim: '🌊 A Cheia' } }
     } }
 };

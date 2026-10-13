@@ -222,6 +222,24 @@ test('efeito: mexe no save, avisa, e deixa mochila/cura/loja pra quem tem tela',
   assert.equal(etapaDe(S, 'sino'), 'fim');
 });
 
+test('companheiro que vai embora: só quem é da ordem, um por vez, e o que ele segurava fica com você', () => {
+  const al = (nome, tipos, extra = {}) => ({ name: nome, data: { types: tipos }, ...extra });
+  const S = novo({ aliados: [al('pidgey', ['normal', 'flying']), al('aron', ['steel', 'rock'], { nick: 'Lata <b>', item: 'leftovers' }), al('geodude', ['rock', 'ground'])] });
+  assert.equal(vale(S, { aliado: 'forja' }), true); assert.equal(vale(S, { aliado: 'abismo' }), false);
+  const { avisos, pedidos } = aplicar(S, { parte: 'forja' });
+  assert.deepEqual(S.aliados.map(a => a.name), ['pidgey', 'geodude'], 'sai o primeiro da ordem, e só ele');
+  assert.equal(S.bag.leftovers, 1, 'o item segurado volta pra mochila');
+  assert.ok(avisos[0].includes('Lata &lt;b&gt;') && !avisos[0].includes('Lata <b>'), 'o apelido entra escapado no aviso');
+  assert.deepEqual(pedidos, [{ partiu: true }]);
+  assert.deepEqual(aplicar(S, { parte: 'bosque' }), { avisos: [], pedidos: [] }, 'sem ninguém daquela ordem, nada acontece');
+  assert.equal(S.aliados.length, 2);
+  assert.deepEqual(aplicar(novo(), { parte: 'forja' }).avisos, [], 'e sem comitiva também não');
+  const quebra = mexe => { const m = copia(); mexe(m); return erros(m).join(' | '); };
+  assert.ok(quebra(m => { m.NPCS.pichu.nos.oi.faz = { parte: 'guilda' }; }).includes('facção'));
+  assert.ok(quebra(m => { m.NPCS.pichu.falas.unshift({ se: { aliado: 'guilda' }, no: 'oi' }); }).includes('facção'));
+  assert.ok(quebra(m => { m.FACCOES.forja.tipos = 'steel'; }).includes('lista'));
+});
+
 test('missão só anda pra frente: repetir uma fala não devolve etapa nem reabre missão concluída', () => {
   const S = novo();
   aplicar(S, { missao: ['passo', 2] });

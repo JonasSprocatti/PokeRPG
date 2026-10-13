@@ -52,6 +52,7 @@ export function criarMotor(ctx) {
       if (p.cura) await ctx.descansar();
       if (p.loja) ctx.loja();
       if (p.viajar) avisos.push(ctx.viajar());
+      if (p.partiu) ctx.partiu?.();
     }
     for (const a of avisos) ctx.log(a, 'good');
     if (avisos.length) ctx.aviso(avisos.join('<br>'));
@@ -201,6 +202,7 @@ const JOGO = criarMotor({
     try { await curarNoCentro(); } finally { G.busy = true; }
   },
   loja() { G.gaveta = null; G.panel = 'shop'; },
+  partiu() { G.abertos?.clear(); },      // um aliado saiu da comitiva: os cartões abertos são por índice
   /* O fim da história. A Gen já foi fechada na luta contra os Antigos (`batalha.vencerGen` deixou `S.genVencida`
      e NÃO perguntou nada, porque a luta veio do mapa); aqui a jornada termina de verdade, em vitória, e o nome do
      final vai junto no resumo. Final sem luta vencida (um mundo editado que encerra antes) termina como jornada

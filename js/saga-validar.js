@@ -52,6 +52,7 @@ export function validarMundo(mundo, arte = null) {
     for (const k of ['rep', 'repAbaixo']) if (se[k] !== undefined && (!Array.isArray(se[k]) || !FACCOES[se[k][0]] || !Number.isFinite(se[k][1]))) erro(onde, `condição de reputação mal formada`);
     if (se.falas !== undefined && (!Array.isArray(se.falas) || !NPCS[se.falas[0]] || !Number.isInteger(se.falas[1]))) erro(onde, 'condição "já conversou N vezes" cita um personagem que não existe');
     if (se.dom !== undefined && !DONS[se.dom]) erro(onde, `condição cita o dom "${se.dom}", que não existe`);
+    if (se.aliado !== undefined && !FACCOES[se.aliado]) erro(onde, `condição cita a facção "${se.aliado}", que não existe`);
     if (se.tipo !== undefined && !lista(se.tipo).every(t => typeof t === 'string')) erro(onde, 'condição de tipo mal formada');
   }
   function efeito(onde, faz) {
@@ -66,10 +67,14 @@ export function validarMundo(mundo, arte = null) {
     for (const [k, n] of Object.entries(faz.rep || {})) if (!FACCOES[k] || !Number.isInteger(n) || Math.abs(n) > 10) erro(onde, `reputação de "${k}" mal formada (inteiro de −10 a 10)`);
     for (const par of lista(faz.bag)) if (!Array.isArray(par) || !ITEMS[par[0]] || !Number.isInteger(par[1]) || par[1] < 1 || par[1] > 99) erro(onde, `item de mochila ${JSON.stringify(par)} não existe ou tem quantidade errada`);
     if (faz.fim !== undefined) texto(onde, faz.fim, 'nome do final', LIMITES.nome);
+    if (faz.parte !== undefined && !FACCOES[faz.parte]) erro(onde, `efeito cita a facção "${faz.parte}", que não existe`);
   }
 
   /* ---- tabelas pequenas ---- */
-  for (const [k, f] of Object.entries(FACCOES)) { id(`facção ${k}`, k); texto(`facção ${k}`, f?.nome, 'nome', LIMITES.nome); }
+  for (const [k, f] of Object.entries(FACCOES)) {
+    id(`facção ${k}`, k); texto(`facção ${k}`, f?.nome, 'nome', LIMITES.nome);
+    if (f?.tipos !== undefined && !(Array.isArray(f.tipos) && f.tipos.every(t => typeof t === 'string'))) erro(`facção ${k}`, 'os tipos da facção são uma lista de nomes de tipo');
+  }
   for (const [k, m] of Object.entries(MISSOES)) {
     id(`missão ${k}`, k); texto(`missão ${k}`, m?.nome, 'nome', LIMITES.nome);
     if (!Array.isArray(m?.etapas) || !m.etapas.length) erro(`missão ${k}`, 'precisa de pelo menos uma etapa');

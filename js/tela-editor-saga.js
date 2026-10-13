@@ -68,16 +68,17 @@ function campo(rot, caminho, o = {}) {
 /* ---- condição (`se`) e efeito (`faz`): uma linha por regra, e um seletor pra acrescentar ---- */
 const REGRAS_SE = [['flag', 'tem a(s) marca(s)', 'marcas'], ['sem', 'NÃO tem a(s) marca(s)', 'marcas'], ['item', 'tem o item-chave', 'item'], ['semItem', 'NÃO tem o item-chave', 'item'],
   ['missao', 'a missão está em', 'etapa'], ['rep', 'reputação é pelo menos', 'facn'], ['repAbaixo', 'reputação é menor que', 'facn'],
-  ['tipo', 'o Pokémon do jogador é do tipo', 'tipos'], ['falas', 'já conversou (vezes) com', 'npcn'], ['dom', 'tem o dom', 'dom']];
+  ['tipo', 'o Pokémon do jogador é do tipo', 'tipos'], ['falas', 'já conversou (vezes) com', 'npcn'], ['dom', 'tem o dom', 'dom'],
+  ['aliado', 'há na comitiva alguém da ordem', 'fac']];
 const REGRAS_FAZ = [['flag', 'liga a(s) marca(s)', 'marcas'], ['tira', 'desliga a(s) marca(s)', 'marcas'], ['item', 'dá o item-chave', 'item'], ['perde', 'tira o item-chave', 'item'],
   ['dinheiro', 'dinheiro (+ dá, − tira)', 'num'], ['bag', 'itens na mochila', 'bag'], ['rep', 'reputação (+ sobe, − cai)', 'rep'], ['missao', 'põe a missão em', 'etapaFaz'],
   ['dom', 'ensina o dom', 'dom'], ['cura', 'descansa a comitiva (cobra como a pousada)', 'sim'], ['loja', 'abre a loja', 'sim'], ['viajar', 'segue viagem (fim do mapa escrito)', 'sim'],
-  ['fim', 'ENCERRA a jornada — nome do final', 'frase']];
+  ['fim', 'ENCERRA a jornada — nome do final', 'frase'], ['parte', 'um aliado desta ordem VAI EMBORA (perda de verdade)', 'fac']];
 const primeiro = t => Object.keys(t)[0];
 const PADRAO = {
   marcas: () => 'marca-nova', item: () => primeiro(R.ITENS), dom: () => primeiro(R.DONS), etapa: () => [primeiro(R.MISSOES), 0], etapaFaz: () => [primeiro(R.MISSOES), 0],
   facn: () => [primeiro(R.FACCOES), 1], npcn: () => [primeiro(R.NPCS), 1], tipos: () => ['normal'], num: () => 100, bag: () => [['potion', 1]], rep: () => ({ [primeiro(R.FACCOES)]: 1 }), sim: () => true,
-  frase: () => 'O Final'
+  frase: () => 'O Final', fac: () => primeiro(R.FACCOES)
 };
 function controleDaRegra(caminho, tp, v) {
   const sel = (c, opcoes, atual, tipo = 'texto') => `<select data-ed="${C(c)}" data-tp="${tipo}">${opcoes.map(([val, nome]) => `<option value="${esc(val)}" ${String(atual) === String(val) ? 'selected' : ''}>${esc(nome)}</option>`).join('')}</select>`;
@@ -86,6 +87,7 @@ function controleDaRegra(caminho, tp, v) {
   if (tp === 'tipos') return `<input type="text" data-ed="${C(caminho)}" data-tp="listaSempre" value="${esc([].concat(v).join(', '))}" placeholder="grass, bug" title="${esc(Object.keys(TYPE_PT).join(', '))}">`;
   if (tp === 'item') return sel(caminho, opcoesDe(R.ITENS), v);
   if (tp === 'dom') return sel(caminho, opcoesDe(R.DONS), v);
+  if (tp === 'fac') return sel(caminho, opcoesDe(R.FACCOES), v);
   if (tp === 'num') return num(caminho, v);
   if (tp === 'sim') return '<span class="muted small">sim</span>';
   if (tp === 'frase') return `<input type="text" data-ed="${C(caminho)}" data-tp="texto" value="${esc(v ?? '')}" maxlength="80">`;
@@ -351,7 +353,7 @@ function abaCoisas() {
         ${campo('Faz o que está escondido cintilar', ['DONS', id, 'faro'], { tp: 'sim' })}</div></div>`;
   const cap = (c, i) => `<div class="em-cartao"><div class="em-linha"><b>${esc(c.id)}</b>${campo('Nº', ['CAPITULOS', i, 'n'], { tp: 'num', min: 1 })}${campo('Nome', ['CAPITULOS', i, 'nome'])}${campo('Região', ['CAPITULOS', i, 'regiao'])}${campo('Rota', ['CAPITULOS', i, 'rota'], { tp: 'num', min: 0, max: 9 })}
       <button class="btn ghost sm" data-em="apagar" data-c="${C(['CAPITULOS', i])}" ${R.CAPITULOS.length > 1 ? '' : 'disabled'}>✕</button></div></div>`;
-  const fac = ([id]) => `<div class="em-linha"><b>${esc(id)}</b>${campo('Emoji', ['FACCOES', id, 'emoji'])}${campo('Nome', ['FACCOES', id, 'nome'])}</div>`;
+  const fac = ([id]) => `<div class="em-linha"><b>${esc(id)}</b>${campo('Emoji', ['FACCOES', id, 'emoji'])}${campo('Nome', ['FACCOES', id, 'nome'])}${campo('Tipos da ordem', ['FACCOES', id, 'tipos'], { tp: 'listaSempre', dentro: 'steel, rock, fire' })}</div>`;
   return `<h3>🗝 Itens-chave <input type="text" id="em-novo-id" placeholder="id novo" class="em-id"> <button class="btn ghost sm" data-em="item-novo">+ item</button> <button class="btn ghost sm" data-em="dom-novo">+ dom</button> <button class="btn ghost sm" data-em="cap-novo">+ capítulo</button></h3>
     <p class="small muted">Item-chave não tem efeito em batalha nem preço: só abre conversa. (Item de mochila é o da loja — aqui não se cria.)</p>
     ${Object.entries(R.ITENS).map(item).join('')}

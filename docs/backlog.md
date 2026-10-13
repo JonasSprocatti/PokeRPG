@@ -51,8 +51,8 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   "⚔ Saga: os capítulos 4 a 10, o fim da história e a 🗺 carta da região".
   **Falta do mundo**: uma jornada jogada do capítulo 1 ao 10 por uma pessoa (o que existe é teste que joga cada
   capítulo e o fim conferido no navegador — ritmo, nível dos Alfas e economia ninguém sentiu ainda), reputação
-  mexendo em preço e recruta, companheiro que vai embora no capítulo 9 (está no roteiro), Pokédex da rota na
-  tela do mapa, NPC que anda. **Falta do editor**: renomear id levando as referências, importar tileset pelo
+  mexendo em preço e recruta, Pokédex da rota na tela do mapa, NPC que anda, e uma passada nos textos que NÃO
+  são fala (placas, baús, narração de luta), se também estiverem enrolados. **Falta do editor**: renomear id levando as referências, importar tileset pelo
   navegador, e mostrar a 🗺 carta no ▶ Testar (lá o letreiro não abre nada).
   **Olhado em navegador de verdade em 13/10/2026** (`ferramentas/olhar.mjs`): mapa, andar, gaveta, conversa,
   zoom de computador e o editor — três defeitos achados e corrigidos (ver `docs/features.md`). No mesmo dia a LUTA foi refeita olhando
