@@ -3223,6 +3223,126 @@ desenhado, andar, conversa até o fim, baú, pousada, o Passo e a volta), não p
 **Como escrever o capítulo 2**: mapas e NPCs em `dados-saga.js` (os testes dizem o que faltar); `rota` com índice
 novo pede subir o teto no teste; condição ou efeito que ainda não existe = uma linha em `vale`/`aplicar` + teste.
 
+## ⚔ Saga vira jogo de mapa: pixel art, tela própria, capítulos 2–3 e o 🌍 Editor de mundo (13/10/2026, à tarde)
+
+Segunda leva do mesmo dia, em cima da seção acima ("o mundo andável"). O pedido, em quatro mensagens: *sprites
+no padrão do Pokémon*, *uma Engine pra eu mesmo criar mapas e missões pelo navegador, tipo RPG Maker*, *uma
+história de 10 capítulos*, e depois — vendo o trabalho andar — *layout diferente dos outros modos, bem de jogo,
+com animação de parado e de movimento*, *humanos que não são a melhor coisa pros Pokémon (caçadores, crianças
+que os pegam pra lutar), mas também humanos que protegem*, *várias opções de sprite pra mesma coisa* e *a mesma
+proporção dos sprites 2D da PokéAPI*.
+
+**O que da seção de cima deixou de valer**: a grade de emoji com câmera de 11×9 (`VISAO`, `.saga-mapa`, `.casa`)
+foi substituída inteira; o mapa único do capítulo 1 usava as rotas 1–3 e hoje usa só a 1ª; os dons deixaram de
+ser dois `if` em `multSaga`. O resto (objeto com variantes, esbarrar é interagir, diálogo como dado, luta que o
+mapa começou, missão secreta) continua como está escrito lá.
+
+### A arte: por que LPC, e o que foi descartado
+
+- **Tiles idênticos aos dos jogos só existem arrancados do cartucho.** São material protegido, sem licença de uso;
+  não entram no repositório — e o site tem AdSense, que já reprovou uma vez. O repositório de sprites da PokéAPI
+  (que o jogo já usa pros Pokémon) diz no próprio arquivo de licença que as imagens são da The Pokémon Company, e
+  não tem tile de mapa nenhum.
+- **Vistos e descartados**: *Kenney Tiny Town/Dungeon/Ski/Battle/Farm* (CC0, lindos, mas 16×16 — um humano teria
+  um terço da altura de um Pokémon do nosso sprite de 96 px; foi o que a mensagem "mesma proporção" decidiu) ·
+  *Tuxemon tileset* (CC-BY-SA, o mais "cara de Pokémon", mas é uma folha só de exterior e a página tem uma
+  disputa de autoria não resolvida) · *Ninja Adventure* (CC0, enorme, mas 16×16 e o pacote completo só sai pelo
+  itch.io) · um conjunto "Zelda-like" CC0 (a página não diz se a arte é original, e traz um personagem que
+  lembra demais um personagem conhecido).
+- **Escolhido: Liberated Pixel Cup.** Tiles 32×32 e personagens de 64 px — o MESMO grão de pixel dos sprites da
+  PokéAPI, então mapa e Pokémon são desenhados na mesma escala inteira (`--u`: 1 no celular, 2 em tela larga).
+  CC-BY-SA 3.0 (os de Sharm e Redshrike também OGA-BY): crédito obrigatório, em `img/saga/CREDITOS.txt`, no
+  README e no rodapé do 📖 Diário. O atlas é obra derivada e sai sob a mesma licença; o código, não.
+- **Humanos vestidos** saem do *Universal LPC Spritesheet Character Generator*: corpo + cabeça + roupa + cabelo
+  + capuz + bota, camadas de 576×256 coladas e TINGIDAS no gerador (roupa vem branca e multiplica; cabelo vem
+  ruivo e é recolorido pela luz do pixel). É o jeito barato de ter caçador, patrulheira, menino, menina, velho e
+  lenhador a partir das mesmas peças. **Os moldes de corpo sem roupa da base nunca viram NPC.**
+- **`ferramentas/gerar-atlas-saga.mjs`** baixa as fontes, recorta, monta e escreve `img/saga/atlas.png`,
+  `gente.png`, `CREDITOS.txt` e `js/dados-saga-arte.js`. Precisou de um **PNG sem dependência**
+  (`ferramentas/png.mjs`, ~100 linhas: o Pi não tem PIL e o projeto não tem dependência nenhuma).
+- **O que o LPC não tem e foi desenhado no gerador** (arte nossa, original): flores, mato alto, placa de
+  madeira, lápide e o breu das cavernas.
+
+### O mapa guarda terreno; a figura sai dos vizinhos
+
+- **Borda automática** (`saga-arte.js`, puro e SEM imports — o gerador importa dali a ordem das 47 figuras sem
+  depender do arquivo que ele mesmo gera): toda folha de terreno do LPC tem o mesmo desenho (bloco 3×3 + quatro
+  cantos internos), e as 47 combinações saem de recortar e colar QUARTOS de tile no gerador. Em jogo é uma
+  consulta numa tabela de 256 posições. É o que deixa o editor ter um pincel de "caminho" em vez de uma paleta
+  de 47 pedaços — e o que mantém o mapa legível como texto.
+- **Três campos por tile**: `fundo` (opaco; sem ele vale o do chão do mapa, então a mesma árvore fica na grama
+  num mapa e na pedra noutro), `arte` (camadas) e `prop` (enfeite grande). **Tema** (`mapa.tema`) e `mapa.pele`
+  trocam esses campos por tile: é como "várias opções pra mesma coisa" entrou sem inventar tile novo.
+- **Enfeite grande não tem "tamanho" pro motor.** Árvore e casa são sprites com o pé numa casa; o que bloqueia é
+  sempre o tile, casa por casa (a casa de 3×3 é o `c` da porta + oito `h`). Considerado e descartado: guardar a
+  pegada no enfeite e calcular ocupação por mapa — o mapa em texto deixaria de dizer a verdade sobre onde se anda.
+
+### A tela de jogo
+
+- **Chão num `<canvas>` pintado uma vez; coisas e personagens como elementos**, com `z-index` pela linha (quem
+  está mais embaixo passa na frente). Canvas pro chão porque um mapa de 34×22 são 748 casas com até três
+  camadas; elementos pras coisas porque é o `z-index` que dá "andar atrás da copa" de graça.
+- **Andar não redesenha nada**: troca `--ex/--ey` (você) e `--cx/--cy` (câmera) e a transição do CSS desliza.
+  O `render()` inteiro só sai quando algo além de andar acontece.
+- **O seu vulto**: você aparece duas vezes — a de verdade, que passa atrás das coisas, e uma cópia translúcida
+  por cima de tudo, na mesma posição. Em campo aberto as duas coincidem; atrás de uma árvore, o vulto é o que
+  deixa ver onde você está. (Copa do LPC cobre três casas pra cima: sem isso, duas fileiras de cada borda
+  ficariam cegas.)
+- **Gavetas por CSS, não por código**: a classe `mundo` em `.game` esconde os painéis de sempre e `data-gaveta`
+  mostra um deles como folha lateral. Os painéis não foram reescritos. Em `.game` e não no `body` porque `.game`
+  só existe na tela do jogo — a classe some sozinha ao sair. A armadilha "não reintroduzir esconder painel por
+  aba" é das abas que escondiam dois terços da tela DE BATALHA; aqui o mapa é o jogo, e foi pedido assim.
+- **Animação**: parado respira, andando dá um pulinho por casa, gente parada balança de leve, bando ronda como
+  silhueta do Pokémon mais comum da rota, o Alfa é maior e brilha; clarão antes da luta, escurecer ao trocar de
+  mapa, letreiro com o nome do lugar. Tudo some com `ui.semAnimacao()`; os efeitos de tela têm opacidade 0 de
+  base, senão sem animação um clarão cobriria a tela pra sempre.
+- **Ficou de fora**: Pokédex da rota e aviso de repelente na tela do mapa (não há "embaixo do mapa" na tela
+  cheia) · NPC que anda · água animada · a tela de BATALHA da Saga continua a de antes.
+
+### O conteúdo: capítulos 1 a 3 e o roteiro dos 10
+
+- **Um capítulo = uma rota da Gen.** É o que faz dez capítulos caberem numa jornada (o 10º é a rota dos
+  lendários). O capítulo 1 foi redesenhado na escala nova e encolheu das rotas 1–3 pra só a 1ª.
+- **Humanos como o quarto lado** (pedido do usuário), nenhum só vilão: o Nico arma laço porque "quem tem um
+  forte come todo dia"; o Tomé caça porque a praga levou o gado; a Lã, a Flaaffy da Bia, QUER lutar — quem quer
+  parar é a humana; o Campeão não quer ser solto. O terceiro desfecho do capítulo 2 (mostrar a subida dos peixes
+  aos caçadores) só existe pra quem acalmou o Alfa com o unguento em vez de derrubá-lo.
+- **`sprite: '@alfa'`**: um NPC que É o Alfa da rota (o Alfa ferido, a Fera da arena) sem citar a espécie.
+- **Dons viraram dado** (`DONS[id].dano/ruina/defesa/encontro/faro`): dom novo não precisa de código, e o editor
+  cria. Os tetos estão em `saga-validar.EFEITOS_DE_DOM` — é o que impede um pacote publicado de dar ×50 de dano.
+- **Missão só anda pra frente.** Sem isso, falar de novo com quem dá a etapa 1 devolveria uma missão que já
+  estava na 3; com isso, um nó de fala pode aplicar `missao` sem ter de proteger a si mesmo.
+
+### 🌍 O Editor de mundo
+
+- **Mesmo desenho dos outros editores**: rascunho no navegador, o MESMO pacote e o MESMO publicador
+  (`tela-editor-rotas.publicar`), e o arquivo de fábrica pra colar (`js/dados-saga-mundo.js` — por isso o
+  conteúdo saiu de `dados-saga.js`, que ficou só com tiles e temas).
+- **O pacote ganhou `saga`**, semântica de lista inteira: mapa, personagem e missão se citam por id, e meio mundo
+  de um pacote com meio de outro é exatamente a porta pro nada. Aplica na hora, mesmo com jornada aberta: o save
+  guarda só ids, e `estadoSaga` recomeça no início se o mapa em que você estava sumiu.
+- **Um validador, três leitores** (`saga-validar.js`): o teste da fábrica, a aba ⚠ do editor e
+  `conteudo.validarSaga`. É a regra "guarda de tabela nova = guarda igual na validação do pacote", só que por
+  construção: não há segunda cópia pra ficar velha.
+- **Um tratador de campo pra tela inteira**: cada `<input>` carrega o CAMINHO do que edita
+  (`data-ed='["NPCS","anciao","nome"]'`). Condição e efeito são listas de regras com um "+ acrescentar…", não
+  JSON na mão. Nada do editor passa pelo `data-act` do `main.js`.
+- **▶ Testar é o motor do jogo com outro `ctx`** — o desenho do `golpe.js`: o motor só PEDE (lutar, mochila,
+  cura, loja) e quem atende decide. No teste a luta vira "venceu ou perdeu?", não há encontro aleatório, e nada
+  encosta em save. Dá pra andar num mapa recém-pintado sem jornada e sem rede.
+- **O defeito que o teste de fumaça achou antes de alguém abrir a tela**: trocar de aba gravava um "rascunho"
+  igual ao que estava no ar. Rascunho é o que o 📤 Publicar manda — então ele ficaria velho calado e seria ELE, e
+  não o mundo publicado depois, que uma publicação por outra tela levaria. Hoje só grava o que mexeu no mundo, e
+  sem rascunho vai o que está no ar (`sagaParaPublicar`).
+- **Ficou de fora**: renomear id (de mapa, personagem, missão) com as referências junto · importar tileset pelo
+  navegador (a figura nova entra pelo gerador) · camada livre de enfeite por cima do terreno · desfazer fora do
+  mapa (o ↩ só cobre pintura e objeto).
+
+**Conferido sem navegador** — e isto é um limite, não um detalhe: os mapas foram OLHADOS em PNG
+(`ferramentas/desenhar-mapa.mjs`, que usa a mesma escolha de figura do jogo), e as três telas rodam em teste de
+fumaça com DOM de mentira. O que NINGUÉM viu ainda é o CSS em tela de verdade: a tela cheia, o HUD, as gavetas,
+o deslize da câmera e o layout do editor.
+
 ## 📈 Taxas e probabilidades: uma tela com tudo o que o jogo sorteia (06/10/2026)
 
 Pedido do usuário: *"Crie uma tela no site que demonstra as taxas, possibilidades, o que pode acontecer em tudo

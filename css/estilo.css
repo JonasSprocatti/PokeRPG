@@ -1309,3 +1309,49 @@ ul.quase.conquistas .bar{margin:4px 0}
   .saga-fala .retrato .gente{left:4px;top:0;transform:scale(1.05)}
   .hud-local small{display:none}
 }
+
+/* ============ 🌍 Editor de mundo (tela-editor-saga.js) ============
+   Uma coluna só no celular; no computador os campos se arrumam em grade. O mapa fica num quadro que rola, e o
+   canvas só "segura" o toque (touch-action:none) quando há uma ferramenta de pintar — com a ✋ ele rola normal. */
+.em{display:grid;gap:12px}
+.em h3{margin:14px 0 4px;font:700 17px var(--titulo,var(--display));color:var(--yellow);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.em-abas,.em-linha,.em-ferramentas{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.em-linha{margin:4px 0}
+.em-sep{flex:1}
+.em-id{max-width:190px}
+.em-destaque{background:var(--yellow);color:#1b1b2f}
+.em-aviso{padding:8px 12px;border:2px solid var(--yellow);border-radius:10px;background:var(--panel2)}
+.em-ok{padding:10px 14px;border:2px solid #7ee081;border-radius:10px}
+.em-paleta{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto;padding:4px}
+.em-tile{display:grid;justify-items:center;gap:2px;width:84px;padding:5px 4px;border:2px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font:600 11px/1.2 var(--display);cursor:pointer}
+.em-tile.on{border-color:var(--yellow);background:#2a2440}
+.em-tile canvas{width:40px;height:40px;border-radius:4px;image-rendering:pixelated}
+.em-quadro{max-height:68vh;overflow:auto;border:2px solid var(--line);border-radius:10px;background:#0d0b12}
+.em-quadro canvas{display:block;max-width:none;image-rendering:pixelated;cursor:crosshair}
+.em-quadro.pintando canvas{touch-action:none}
+.em-inspetor{padding:10px 12px;border:2px solid var(--line);border-radius:10px;background:var(--panel2)}
+.em-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 12px;align-items:start}
+.em-campo{display:grid;gap:3px;font:600 13px var(--display);min-width:0}
+.em-campo.largo{grid-column:1/-1}
+.em-campo.curto{display:flex;align-items:center;gap:8px}
+.em-campo small{font-weight:400}
+.em-campo textarea,.em #em-saida{width:100%;font:14px/1.45 var(--body)}
+.em #em-saida{font:12px/1.4 ui-monospace,monospace}
+.em-mini{display:inline-flex;align-items:center;gap:4px;font:600 13px var(--display)}
+.em-num{width:78px}
+.em-tam{display:inline-flex;align-items:center;gap:2px;margin-right:8px;white-space:nowrap}
+.em-regras{display:grid;gap:5px;margin:8px 0;padding:8px 10px;border-left:3px solid var(--line)}
+.em-regra{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.em-regra > span{font:600 13px var(--display);min-width:150px}
+.em-cartao{display:grid;gap:6px;margin:8px 0;padding:10px 12px;border:2px solid var(--line);border-radius:10px;background:var(--panel2)}
+.em-cartao.fundo{background:var(--panel)}
+.em-ficha{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.em-ficha .em-grade{flex:1;min-width:240px}
+.em-problemas{display:grid;gap:6px;padding:0;list-style:none}
+.em-problemas li{padding:8px 10px;border-radius:8px;background:var(--panel2);border-left:4px solid var(--yellow)}
+.em-problemas li.erro{border-left-color:#e5484d}
+.em-teste{position:relative;height:min(70vh,640px);border-radius:12px;overflow:hidden;border:2px solid var(--line)}
+.em-teste .hud-botoes button[data-act="saga-gaveta"],.em-teste .saga-scrim{display:none}
+.em-estado{padding:8px 12px;border:2px solid var(--line);border-radius:10px}
+.em-estado p{margin:3px 0}
+.em-log{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);max-height:180px;overflow:auto}

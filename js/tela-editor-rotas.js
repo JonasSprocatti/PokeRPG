@@ -25,6 +25,7 @@ import {
   bonito, gerarArquivo, gerarPacote, criarRota, excluirRota, FAIXA_ALFA
 } from './editor-rotas.js';
 import { musicaEditada } from './editor-musica.js';
+import { sagaParaPublicar } from './editor-saga.js';
 import { extrasDoConteudo } from './editor-conteudo.js';
 
 const CHAVE = 'pokerpg-editor-rotas-v1';
@@ -516,7 +517,7 @@ export async function publicar(canal) {
     if (!noTeste?.pacote) return toast('Não há nada no canal de teste. Use 📤 Publicar primeiro e jogue a edição.');
     pacote = noTeste.pacote;
   } else {
-    try { pacote = gerarPacote(todasEditadas(), { musica: musicaEditada(), mapas: rascunhoMapas(), ...extrasDoConteudo() }); }
+    try { pacote = gerarPacote(todasEditadas(), { musica: musicaEditada(), mapas: rascunhoMapas(), ...extrasDoConteudo(), saga: sagaParaPublicar() }); }
     catch (e) { console.error('editor de rotas: montar o pacote falhou', e); return toast('Não deu pra montar o pacote: ' + e.message); }
   }
   toast(canal === 'teste' ? 'Publicando no canal de teste…' : 'Liberando pra todos…');

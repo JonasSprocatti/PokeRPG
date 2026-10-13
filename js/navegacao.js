@@ -27,7 +27,8 @@ export const TELAS = [
   // esconder o botão não é controle de acesso, é não poluir a barra de quem joga.
   { id: 'editor', act: 'editor', rotulo: '🗺 Editor de rotas', dica: 'Missões, Alfas e curva de stats de cada rota', admin: true },
   { id: 'musica', act: 'editor-musica', rotulo: '🎵 Editor de músicas', dica: 'Tema de cada bioma e andamento de cada tela', admin: true },
-  { id: 'conteudo', act: 'editor-conteudo', rotulo: '🧰 Editor de conteúdo', dica: 'Missões de conta, preço dos itens e prêmio das badges', admin: true }
+  { id: 'conteudo', act: 'editor-conteudo', rotulo: '🧰 Editor de conteúdo', dica: 'Missões de conta, preço dos itens e prêmio das badges', admin: true },
+  { id: 'mundo', act: 'editor-mundo', rotulo: '🌍 Editor de mundo', dica: 'Mapas, personagens, conversas e missões da ⚔ Saga', admin: true }
 ];
 /* As telas que esta pessoa pode ver. ÚNICO ponto que decide: a barra (aqui) e o menu ☰ do celular (render.js) leem
    daqui, senão o atalho de admin apareceria num e não no outro. */

@@ -21,6 +21,9 @@ import { GENS, MISSOES, MISSOES_GLOBAIS, ITEMS, SO_NO_SANTUARIO } from './dados.
 import { BADGES, MEDIDAS } from './badges.js';
 import { CLIMAS } from './cenario.js';
 import { MISSOES_ROTA } from './dados-rotas.js';
+import { TILES, TEMAS as TEMAS_SAGA, MAPAS_SAGA, NPCS, MISSOES_SAGA, ITENS_SAGA, DONS, FACCOES, CAPITULOS, INICIO } from './dados-saga.js';
+import { ARTE, PROPS, GENTE } from './dados-saga-arte.js';
+import { errosDoMundo } from './saga-validar.js';
 import {
   TEMAS, CONTEXTOS, ESCALAS, ONDAS, RAIZ, PASSOS_DO_COMPASSO, ACORDES_NA_PROGRESSAO, MIDI_MAIS_AGUDO,
   nomeDaEscala, lerMelodia, maisAgudo
@@ -137,6 +140,8 @@ export function validarPacote(p) {
   if (!bd.ok) return bd;
   const m = validarMusica(p.musica);
   if (!m.ok) return m;
+  const sg = validarSaga(p.saga);
+  if (!sg.ok) return sg;
 
   return { ok: true, pacote: p };
 }
@@ -478,11 +483,51 @@ export function aplicarConteudo(pacote) {
   const badges = aplicarRemendo(indicePorId(BADGES), BADGES_DE_FABRICA, pacote.badges, ['nome', 'desc', 'recompensa'])
     + aplicarBadgesNovas(pacote.badges);
   const musica = aplicarMusica(pacote.musica);
+  const saga = aplicarSaga(pacote.saga);
 
   return {
     alfasTrocados, missoes: missoes.length, globais: MISSOES_GLOBAIS.length,
-    rotasTrocadas, itens, badges, musica, versao: pacote.versao
+    rotasTrocadas, itens, badges, musica, saga, versao: pacote.versao
   };
+}
+
+/* ---- ⚔ o mundo da Saga (🌍 Editor de mundo) ----
+   `saga: { MAPAS, NPCS, MISSOES, ITENS, DONS, FACCOES, CAPITULOS, INICIO }` — o mundo INTEIRO (semântica de
+   lista inteira, como a música: presente = substitui tudo, ausente = o de fábrica). Inteiro e não remendo
+   porque mapa, personagem e missão se citam uns aos outros por id: meio mundo de um pacote com meio de outro
+   é exatamente a porta pro nada que o validador existe pra impedir.
+   TILES e TEMAS NÃO entram: são regra e arte (código + atlas), e o pacote não muda código.
+   A validação é a MESMA função que o editor mostra ao vivo e que o teste roda na fábrica (`saga-validar`):
+   um erro só e o pacote inteiro é recusado. Guarda de tabela nova = guarda igual na validação do pacote. */
+const TABELAS_DA_SAGA = { MAPAS: MAPAS_SAGA, NPCS, MISSOES: MISSOES_SAGA, ITENS: ITENS_SAGA, DONS, FACCOES };
+const fotoDaSaga = () => JSON.parse(JSON.stringify({ ...TABELAS_DA_SAGA, CAPITULOS, INICIO }));
+export const SAGA_DE_FABRICA = fotoDaSaga();
+export const sagaAoVivo = fotoDaSaga;                    // o que está valendo agora (o editor parte daqui)
+export const mundoCompleto = saga => ({ ...saga, TILES, TEMAS: TEMAS_SAGA });
+export function validarSaga(saga) {
+  if (saga == null) return { ok: true };
+  if (typeof saga !== 'object' || Array.isArray(saga)) return { ok: false, porque: 'saga não é objeto' };
+  for (const k of [...Object.keys(TABELAS_DA_SAGA), 'INICIO']) if (!saga[k] || typeof saga[k] !== 'object' || Array.isArray(saga[k])) return { ok: false, porque: `saga.${k} não é objeto` };
+  if (!Array.isArray(saga.CAPITULOS)) return { ok: false, porque: 'saga.CAPITULOS não é lista' };
+  if (!Object.keys(saga.MAPAS).length) return { ok: false, porque: 'saga sem mapa nenhum' };
+  let erros;
+  try { erros = errosDoMundo(mundoCompleto(saga), { ARTE, PROPS, GENTE }); }
+  catch (e) { return { ok: false, porque: `saga mal formada (${e.message})` }; }
+  return erros.length ? { ok: false, porque: `saga — ${erros[0].onde}: ${erros[0].msg}${erros.length > 1 ? ` (e mais ${erros.length - 1})` : ''}` } : { ok: true };
+}
+/* Muta as tabelas NO LUGAR (todo módulo guarda a referência delas) e devolve quantos mapas ficaram valendo, ou 0
+   se voltou pro de fábrica. Jornada em andamento não precisa esperar: o save guarda só IDS (mapa, marcas,
+   itens, etapa de missão), e `saga-mundo.estadoSaga` recomeça no início se o mapa em que você estava sumiu. */
+export function aplicarSaga(saga) {
+  const de = saga ? JSON.parse(JSON.stringify(saga)) : JSON.parse(JSON.stringify(SAGA_DE_FABRICA));
+  for (const [k, tabela] of Object.entries(TABELAS_DA_SAGA)) {
+    for (const id of Object.keys(tabela)) delete tabela[id];
+    Object.assign(tabela, de[k]);
+  }
+  CAPITULOS.length = 0; CAPITULOS.push(...de.CAPITULOS);
+  for (const id of Object.keys(INICIO)) delete INICIO[id];
+  Object.assign(INICIO, de.INICIO);
+  return saga ? Object.keys(MAPAS_SAGA).length : 0;
 }
 
 /* ---- 🗺 mapas (fase 2) ---- */

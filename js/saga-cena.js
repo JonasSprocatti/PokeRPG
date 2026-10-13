@@ -142,6 +142,8 @@ export function htmlMundo(S, { sprite, rotas = [], dis = '', gaveta = null, para
    dos tiles — o mapa continua jogável, só mais feio. */
 const imagens = new Map();
 let aoCarregar = null;
+// Quem está desenhando agora (o jogo ou o editor) diz o que repintar quando uma imagem termina de chegar.
+export const definirAoCarregar = fn => { aoCarregar = fn; };
 export function carregarImagem(src) {
   if (typeof Image === 'undefined') return null;
   let r = imagens.get(src);

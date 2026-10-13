@@ -64,22 +64,33 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 ### ⚔ Saga (em construção, só na conta admin)
 
 Um modo separado, de **RPG japonês** medieval fantástico: você anda com uma **comitiva de quatro**, cada Pokémon
-tem um **ofício** na luta e os inimigos vêm em grupo. O combate já está jogável de ponta a ponta e o mundo tem o
-**capítulo 1** escrito; faltam os capítulos seguintes — por isso o modo continua escondido de quem joga.
+tem um **ofício** na luta e os inimigos vêm em grupo. O combate está jogável de ponta a ponta e o mundo tem os
+**capítulos 1 a 3** de uma história de **dez** (o roteiro inteiro está em `docs/saga-historia.md`); o modo
+continua escondido de quem joga até a história ter mais capítulos.
 
-- **🗺 Um mundo pra andar.** Na Saga a lista de rotas dá lugar a um **mapa**: você anda casa a casa pelo **Vale do
-  Orvalho** (setas, WASD, o direcional da tela, ou tocando no lugar pra onde quer ir) — a aldeia de Pedralume, o
-  Bosque do Orvalho, a Estrada Velha e as Ruínas da Fonte. Mato alto esconde encontro; bando, caçador e Alfa
-  ficam **à vista** no mapa e só lutam se você for até eles. Pousada e mercador são lugares, não botões.
-- **💬 NPCs Pokémon com conversa de verdade.** Esbarre em alguém pra falar. O que cada um diz muda com o que você
-  já fez, com quem você ajudou e até com **o tipo do seu Pokémon** — e algumas respostas só aparecem pra quem
-  tem o que mostrar.
+- **🗺 Um mundo pra andar, com cara de jogo.** Na Saga não há lista de rotas: há um **mapa em pixel art** que
+  ocupa a tela inteira. Você anda casa a casa (setas, WASD, o direcional da tela, ou tocando no lugar pra onde
+  quer ir), a câmera desliza junto, o seu Pokémon dá um pulinho a cada passo e respira parado, e você passa
+  **atrás** das copas e das casas. A ficha, a mochila e o registro viram **gavetas** abertas pelos botões da tela.
+  A arte é do **Liberated Pixel Cup** (tiles de 32×32, na mesma escala dos sprites dos Pokémon) — créditos abaixo.
+- **📖 Três capítulos, treze mapas.** **1 · A Fonte Calada** (a aldeia de Pedralume, o Bosque do Orvalho, a
+  Estrada Velha, as Ruínas da Fonte) · **2 · O Passo dos Laços** (a serra tomada por um acampamento de caçadores,
+  a toca dos refugiados, a gruta de um Alfa ferido) · **3 · A Cidade das Arenas** (a primeira cidade humana, onde
+  crianças fazem Pokémon lutar por moedas — em cima de uma Fonte). Cada capítulo corresponde a uma rota da Gen:
+  encontros, níveis e Alfa saem dela.
+- **🧍 Humanos, e nenhum deles é só vilão.** Caçadores que comem Pokémon porque uma praga matou o gado deles;
+  crianças que armam laço de arame pra ter um parceiro na arena; e gente que corta laço de madrugada, trata bicho
+  ferido e duvida do que a própria cidade faz. Bando, criança, caçador e Alfa ficam **à vista** no mapa.
+- **💬 Personagens com conversa de verdade.** Esbarre em alguém pra falar. O que cada um diz muda com o que você
+  já fez, com quem ajudou e até com **o tipo do seu Pokémon**. Um balão **!** marca quem tem missão nova e um
+  **?** quem espera por você.
 - **📜 Missões, e 🕯 missões secretas.** O 📖 Diário guarda as missões em andamento, os itens-chave, os dons e a
   reputação. Missão secreta não aparece em lugar nenhum até você tropeçar nela: ninguém avisa que existe.
-- **⚖ Três facções e escolha com consequência.** ⚒ Ordem da Forja, 🌿 Círculo do Bosque e 🌑 Corte do Abismo
+- **⚖ Três ordens e escolha com consequência.** ⚒ Ordem da Forja, 🌿 Círculo do Bosque e 🌑 Corte do Abismo
   querem a mesma coisa, cada uma por um motivo defensável. Ajudar uma custa a outra, uma porta fechada **não
-  reabre**, e o capítulo tem **três finais** — um deles só existe pra quem achou o que estava escondido.
-- **✨ Dons.** Habilidades que só a Saga dá, ganhas por escolha e não por nível: cada final ensina um dom
+  reabre**, e cada capítulo tem **três desfechos** — um deles só existe pra quem achou o que estava escondido
+  (dá pra acalmar um Alfa ferido em vez de derrubá-lo, se você levar o remédio certo).
+- **✨ Dons.** Habilidades que só a Saga dá, ganhas por escolha e não por nível: cada desfecho ensina um dom
   diferente, e eles valem em batalha (ou no mapa) pelo resto da jornada.
 
 - **Seis ofícios**, lidos dos atributos e do que a espécie aprende (nada de tabela escrita à mão): 🛡 **Guardião**
@@ -478,6 +489,7 @@ Aparecem só pra quem está logado numa conta com `perfis.admin` no Supabase (`n
 - **🧪 Painel de testes** (⚙ Ajustes): libera Megas, espécies e gimmicks na marra, tudo marcado como teste e reversível.
 - **🗺 Editor de rotas**: edita **a rota inteira** — quem aparece nela e com que frequência, os níveis, o nome, o bioma (que decide a cena da batalha e a música), o Alfa e as duas missões dela —, e ainda **cria e exclui rotas**. O Santuário e a rota final de cada Gen não saem: é o Santuário que garante a Pokédex completa e é a rota final que fecha a Gen. **📤 Publicar** manda a edição pra nuvem num canal de **teste** que só a conta de manutenção lê — dá pra jogar a rota editada de verdade antes de qualquer outro jogador ver — e **✅ Liberar pra todos** promove o pacote testado. O **📋 Copiar o arquivo** continua existindo: é o caminho de levar a edição pro repositório (`dados-rotas.js`), pra uma instalação nova já nascer com a versão certa.
 - **🧰 Editor de conteúdo**: as **missões globais** (criar, editar objetivo, prêmio e o que abre cada uma — valem em qualquer mapa e zeram a cada jornada), o **preço de cada item** — preço 0 tira o item da loja — e as **badges**: nome, descrição, prêmio e **criar badge nova**, escolhendo o que ela mede de uma lista de 38 contagens da carreira (derrotados no total, por tipo ou de uma espécie, Pokédex, aliados, ovos, jornadas por modo, gimmicks, dano). O *efeito* de um item continua sendo código, e *medida* nova de badge também: aqui mexe-se no que é dado. Publica no mesmo pacote dos outros editores.
+- **🌍 Editor de mundo**: onde se **faz** o mundo da ⚔ Saga, pelo navegador (celular ou computador). **Mapas**: pincel, retângulo, balde e carimbo de casa — você pinta o *terreno* ("caminho", "água") e as bordas se desenham sozinhas; mapas novos, redimensionar, desfazer. **Objetos**: personagem, porta (toque onde ela chega e a volta nasce junto), baú, placa, enfeite, inimigo e gatilho, cada um com *variantes* por condição. **Conversas**: falas, respostas, condições ("só quando tem a marca…", "a missão está em…", "o Pokémon é do tipo…") e efeitos (dá item, mexe em reputação, anda a missão, ensina dom), tudo em formulário. **Missões, itens-chave, dons e capítulos**. A aba **⚠ Problemas** acusa ao vivo NPC inalcançável, porta pro nada, conversa sem botão e missão que nunca termina. **▶ Testar** deixa andar pelo mapa e conversar na hora, sem jornada e sem rede (a luta vira "venceu ou perdeu?"). Publica pelo mesmo pacote dos outros editores e gera o arquivo `js/dados-saga-mundo.js` pra colar no repositório.
 - **🎵 Editor de músicas**: edita a trilha que o jogo compõe na hora. Um painel pro **tema de cada bioma** (raiz, escala, progressão de acordes, timbre e a frase escrita à mão) e outro pro **contexto de cada tela** (andamento, agitação e a frase fixa da batalha e do chefe). O **▶** toca pelo motor de verdade, então o que você ouve ajustando é o que o jogo toca. Publica no **mesmo pacote** do editor de rotas (📤 teste / ✅ todos — é uma linha por canal no banco, então sai tudo junto) e o **📋 Copiar o bloco** devolve as tabelas prontas pra colar em `dados-musica.js`. Tema que passe do teto de agudo (880 Hz) ou com a frase fora do compasso é **recusado na hora**, com o motivo — a mesma trava que os testes cobram no repositório.
 - **🤖 Explorar automaticamente** (botão ao lado do *Explorar*): o jogo explora e luta sozinho até cumprir o objetivo que você escolher — **uma espécie** (qualquer uma do pool da rota, inclusive a que você nunca encontrou), **um nível** do seu Pokémon (📈 ele mói até chegar lá), **nada**, que é ficar caçando **só por shiny**, ou **shiny de uma espécie fixa**: ele compra e mantém o Repelente Seletivo nela (recomprando quando o efeito acaba), então todo selvagem da rota É aquela espécie — garante que o shiny caçado seja o certo, em vez de moer o pool inteiro. Ao achar a espécie ele para **antes de atacá-la**, e **qualquer shiny para a caçada** — 1 em 4096 não se atropela. O golpe é escolhido pela mesma IA do chefe da semana, ele foge quando o HP fica abaixo de 25% e descansa **só quando precisa**: abaixo de 45% de HP, ou quando os golpes chegam no último PP (nenhum com mais de 1 PP, ou menos de 25% do PP total). Um golpe ainda cheio não manda ninguém pro Centro. E **antes de pagar o Centro ele abre a mochila**: usa a Poção, o Éter ou o antídoto **mais barato que resolva o buraco**, e só se o item valer menos do que o Centro cobraria por aquele Pokémon (₽50 + ₽15/nível de **cada** membro que esteja com 1 HP ou 1 PP faltando — topar com uma Poção o aliado que só raspou tira ele da conta inteira). Sem item que sirva, aí sim ele paga. Enquanto roda, um painel mostra **quantos de cada espécie caíram, a porcentagem observada e a que a rota promete** — é o jeito rápido de conferir se o sorteio de encontro está honesto. Ao achar (ou ao parar por qualquer motivo), manda uma **notificação**. **Continua rodando com o jogo em segundo plano** (você sai pra outro app e ele segue explorando): enquanto o laço roda, a aba mantém um tom inaudível ligado, que é a única forma de o Chrome do Android não limitar os timers a um por minuto — por isso aparece o ícone de som na aba. No iPhone o Safari suspende a aba de qualquer jeito: lá o laço congela e retoma quando você volta.
 
@@ -599,6 +611,10 @@ O schema vive em `supabase/migrations/` e sobe **sozinho** pela integração nat
 - [x] Som (desligado por padrão): grito de quem aparece na luta, música procedural (composta na hora com a Web Audio API, não é arquivo pronto) com uma tonalidade por tema de rota, e som de impacto por tipo de golpe
 - [x] Barra de HP anima ao tomar dano/curar (técnica FLIP), piscada na cor do tipo do golpe, e liga/desliga próprio pras animações de combate
 - [x] Duas auditorias de segurança (29 e 30/09/2026), a segunda com `/security-review` como segunda opinião: 7 achados corrigidos — mochila e inventário de conta só saem com pedido do próprio jogador (`mp-regras.itensADescontar`), `desistir` restrito ao PvP, duas brechas de endereço de imagem viraria-código fechadas, par de amizade congelado no servidor e penalidade de pontuação com teto nos dois lados
+
+## Créditos da arte do mapa (⚔ Saga)
+
+Os tiles, os enfeites e os humanos do mundo da Saga (`img/saga/atlas.png` e `img/saga/gente.png`) são arte aberta do **[Liberated Pixel Cup](https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles)** — Lanea Zimmerman (Sharm), Stephen Challener (Redshrike), Charles Sanchez, Manuel Riecke, Daniel Armstrong e os autores das camadas do [Universal LPC Spritesheet Character Generator](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator) —, usados e redistribuídos sob **CC-BY-SA 3.0**. A lista completa está em [`img/saga/CREDITOS.txt`](img/saga/CREDITOS.txt). Esses dois arquivos são obra derivada e seguem a mesma licença; o resto do repositório, não. Nada ali foi tirado de jogo comercial: os sprites dos Pokémon continuam vindo da PokéAPI.
 
 ## Licença
 

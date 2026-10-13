@@ -120,6 +120,7 @@ export function criarMotor(ctx) {
   }
   return {
     andar: dir => DIRS[dir] ? passos([dir]) : null,
+    conversar: id => conversar(id, 's'),          // o ▶ Simular conversa do editor entra direto na fala
     irPara: (x, y) => passos(caminho(S(), x, y)),
     abrirDiario: () => ctx.travado() ? null : ctx.ask(htmlDiario(S()), [{ label: 'Fechar', value: 0, ghost: true }])
   };

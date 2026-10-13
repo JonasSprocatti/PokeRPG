@@ -44,11 +44,15 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   `admin: true`, nenhuma leva da Saga vira patch note**; quando o modo abrir pra todos, sai UMA entrada contando
   o modo inteiro.
   **Falta, e é o que mantém o modo `admin: true`**: a **fase 2** (Juramentos, ordens por ofício, tela de comitiva)
-  e os **capítulos 2 e 3** do mundo. **✅ O capítulo 1 do MUNDO saiu em 13/10/2026** (mapa andável, NPCs com
-  diálogo, missões e missão secreta, 3 facções, 3 finais, dons) — registro em `docs/features.md` → "⚔ Saga, o
-  mundo andável". Do mundo falta: mapas das rotas 4 a 10 (hoje seguem pela lista de rotas, depois do Passo do
-  Norte), reputação mexendo em preço e recruta, e o final da Gen mudando com a facção. **Falta olhar o mapa numa
-  tela de verdade** (o Pi não tem navegador; o CSS foi escrito às cegas).
+  e os **capítulos 4 a 10** da história. **✅ Em 13/10/2026 saíram os capítulos 1 a 3 jogáveis** (13 mapas em
+  pixel art do Liberated Pixel Cup, tela de jogo própria com animação, humanos na história), **o roteiro dos 10
+  capítulos** (`docs/saga-historia.md`) e o **🌍 Editor de mundo** (mapas, personagens, conversas, missões,
+  dons; ▶ Testar; publica no pacote único) — registro em `docs/features.md` → "⚔ Saga vira jogo de mapa".
+  **Falta do mundo**: os capítulos 4 a 10 (o roteiro está pronto; é montar no editor), os finais, reputação
+  mexendo em preço e recruta, Pokédex da rota na tela do mapa, NPC que anda, e a tela de BATALHA no mesmo
+  padrão visual. **Falta do editor**: renomear id levando as referências, importar tileset pelo navegador.
+  **⚠ PRECISA DE AÇÃO DO USUÁRIO: olhar numa tela de verdade.** O Pi não tem navegador — o CSS da tela de jogo
+  (tela cheia, HUD, gavetas, deslize) e o do editor foram escritos às cegas e só passaram por teste de fumaça.
   **Fora de propósito por ora**: ameaça e Brecha no `mp-motor` (não existe Saga em sala); grupo em luta de
   treinador e de lendários (a fila deles é o balanceamento dos outros modos); seleção manual de alvo aliado;
   Limit Break (as 4 gimmicks já são o ultimate do modo) e Brave/Default (mexeria na economia do turno, que é

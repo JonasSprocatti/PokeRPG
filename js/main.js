@@ -23,6 +23,7 @@ import { telaConquistas, fixarConquista } from './tela-conquistas.js';
 import { telaEditorRotas, acaoEditor } from './tela-editor-rotas.js';
 import { telaEditorMusica, acaoEditorMusica } from './tela-editor-musica.js';
 import { telaEditorConteudo, acaoEditorConteudo } from './tela-editor-conteudo.js';
+import { telaEditorMundo } from './tela-editor-saga.js';
 import { telaPokedex, verNaPokedex, abrirNaPokedex, alternarDexShiny } from './tela-pokedex.js';
 import { telaRelatos, escolherTipoRelato, enviarRelatoTela, removerImagemRelato } from './relatos.js';
 import { telaMultiplayer, criarSala, entrarSala, sairSala, naSala, iniciarBatalhaMP, escolherGolpeMP, moverGolpeMP, alternarGimmickMP, fugirMP, desistirMP, mirarMP, configurarSala, escolherTime, convidarAmigoMP, copiarConviteMP, sincronizarSala, centroMP, reviverMP, usarRaideMP, usarItemComumMP,
@@ -101,7 +102,7 @@ async function aoClicar(e) {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const v = b.dataset.v;
   // sair pra outra tela pela barra de navegação (navegacao.js) larga a sala multiplayer antes (menos ir PRA sala)
-  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor', 'editor-musica', 'editor-conteudo'];
+  const TELAS_NAV = ['inicio', 'saves', 'carreira', 'pokedex', 'conquistas', 'ranking', 'conta', 'ajustes', 'relatos', 'patch', 'arena', 'tutorial', 'taxas', 'editor', 'editor-musica', 'editor-conteudo', 'editor-mundo'];
   if (TELAS_NAV.includes(b.dataset.act) && naSala() && !G.busy && G.mode !== 'battle') await sairSala();
   /* Trilha das telas fora do jogo (som.js), num lugar só: toda tela de menu é alcançada por um destes `data-act`,
      então nenhuma delas precisa saber de música por conta própria. `inicio` tem a própria faixa (showCreate pede
@@ -164,6 +165,7 @@ async function aoClicar(e) {
       return acaoEditorMusica(b.dataset.act.slice(3), v);
     // 🧰 editor de conteúdo: missões globais, itens e badges (só admin; a tela confere de novo)
     case 'editor-conteudo': if (travadoPelaBatalha()) return; return telaEditorConteudo();
+    case 'editor-mundo': if (travadoPelaBatalha()) return; return telaEditorMundo();   // 🌍 os botões de dentro são dele (data-em)
     case 'ec-missao': case 'ec-filtrar': case 'ec-limpar-filtro': case 'ec-criar-missao':
     case 'ec-salvar-missao': case 'ec-excluir-missao': case 'ec-desfazer-missoes': case 'ec-salvar-itens':
     case 'ec-desfazer-item': case 'ec-salvar-badge': case 'ec-desfazer-badge': case 'ec-criar-badge':
