@@ -192,6 +192,13 @@ test('câmera: centra em você, prende nas bordas, e mapa menor que a tela fica 
   assert.equal(camera(29, 32, 320, 960), 640);
   assert.equal(camera(15, 32, 320, 960), 15 * 32 + 16 - 160);
   assert.equal(camera(3, 32, 800, 448), -176, 'sobra igual dos dois lados');
+  // com a faixa do HUD cobrindo 60 px do topo
+  assert.equal(camera(0, 32, 320, 960, 60), -60, 'a primeira linha desce até a beira da faixa');
+  assert.equal(camera(29, 32, 320, 960, 60), 640, 'a borda de baixo não muda');
+  assert.equal(camera(15, 32, 320, 960, 60), 15 * 32 + 16 - 60 - 130, 'centra no que sobra');
+  assert.equal(camera(3, 32, 800, 448, 100), -100 - 126, 'mapa menor: no meio do que sobra');
+  assert.equal(camera(0, 32, 320, 300, 60), -60, 'mapa entre a vista e a tela: rola entre as duas beiras');
+  assert.equal(camera(9, 32, 320, 300, 60), -20);
 });
 
 test('condição: flag, sem, item, missão, tipo, falas, reputação e dom', () => {

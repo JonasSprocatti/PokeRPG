@@ -194,19 +194,34 @@ let zoom = 1;
 const el = id => document.getElementById(id);
 const numero = v => (typeof v === 'number' && isFinite(v) ? v : 0);
 function medir(tela) {
-  zoom = numero(tela.clientWidth) >= LARGURA_ZOOM_2 ? 2 : 1;
-  tela.style?.setProperty?.('--u', zoom);
   tela.style?.setProperty?.('--passo', `${MS_PASSO}ms`);
+}
+/* O zoom: pixel inteiro (1, ou 2 em tela larga) e, se o mapa não enche a tela, o quanto falta pra encher — sem a
+   faixa preta embaixo do mapa no celular em pé. Teto 2: uma sala pequena num celular comprido ficaria gigante (a
+   sobra dela é o escuro de fora, como nos jogos). Em quartos de passo pra casa de 32 px cair em pixel CSS inteiro. */
+function zoomDaTela(tela, mapa) {
+  const w = numero(tela.clientWidth), h = numero(tela.clientHeight);
+  const cobre = Math.max(w / (mapa.grade[0].length * T), h / (mapa.grade.length * T));
+  return Math.max(w >= LARGURA_ZOOM_2 ? 2 : 1, Math.min(2, Math.ceil(cobre * 4) / 4));
+}
+// Quanto do topo da tela o HUD cobre (a faixa da missão, o nome do lugar): a câmera desconta.
+function folgaDoHud(tela) {
+  const topo = tela.getBoundingClientRect?.()?.top;
+  if (!Number.isFinite(topo)) return 0;
+  return Math.max(0, ...[...(tela.querySelectorAll?.('.hud-missao, .hud-local') || [])].map(e => numero(e.getBoundingClientRect().bottom) - topo));
 }
 /* Põe você e a câmera no lugar. `seco` = sem deslizar (primeira pintura, troca de mapa); `andando` liga o
    pulinho. O sprite vira conforme o lado (os da PokéAPI olham pra esquerda: indo pra direita, espelha). */
 export function posicionarMundo(S, { seco = false, andando = false } = {}) {
   const tela = el('saga-tela'), mundo = el('saga-mundo'), eu = el('saga-eu');
   if (!tela || !mundo || !eu) return;
-  const s = estadoSaga(S), mapa = mapaDe(S), casa = T * zoom, def = (k, v) => mundo.style?.setProperty?.(k, v);
+  const s = estadoSaga(S), mapa = mapaDe(S), def = (k, v) => mundo.style?.setProperty?.(k, v);
+  zoom = zoomDaTela(tela, mapa);
+  tela.style?.setProperty?.('--u', zoom);
+  const casa = T * zoom;
   tela.classList.toggle('seco', seco);
   def('--cx', camera(s.x, casa, numero(tela.clientWidth), mapa.grade[0].length * casa));
-  def('--cy', camera(s.y, casa, numero(tela.clientHeight), mapa.grade.length * casa));
+  def('--cy', camera(s.y, casa, numero(tela.clientHeight), mapa.grade.length * casa, folgaDoHud(tela)));
   def('--ex', s.x); def('--ey', s.y);
   if (eu.style) eu.style.zIndex = s.y * 2 + 1;
   // o lado pra onde você olha e o pulinho valem pros dois (você e o seu vulto), então ficam no mundo
@@ -252,7 +267,11 @@ function ligarAlavanca() {
 let olhoDoTopo = null;
 export function ligarTelaCheia() {
   const topo = document.querySelector('.top');
-  const medirTopo = () => document.documentElement?.style?.setProperty?.('--saga-topo', `${numero(topo?.offsetHeight) || 56}px`);
+  const medirTopo = () => {
+    const raiz = document.documentElement?.style;
+    raiz?.setProperty?.('--saga-topo', `${numero(topo?.offsetHeight) || 56}px`);
+    raiz?.setProperty?.('--saga-topo-l', `${numero(topo?.offsetWidth)}px`);   // a largura, pro celular deitado (a barra flutua)
+  };
   medirTopo();
   if (olhoDoTopo || typeof ResizeObserver === 'undefined' || !topo) return;
   olhoDoTopo = new ResizeObserver(medirTopo);

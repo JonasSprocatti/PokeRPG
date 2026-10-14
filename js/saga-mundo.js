@@ -190,10 +190,14 @@ export function caminho(S, tx, ty) {
   return [];
 }
 /* Onde a câmera fica num eixo, em pixels: centrada em você, presa nas bordas do mapa — e, se o mapa é menor que
-   a tela, o mapa fica no meio (posição negativa = sobra dos dois lados). `pos` é a casa, `casa` o tamanho dela. */
-export function camera(pos, casa, tela, total) {
-  if (total <= tela) return -(tela - total) / 2;
-  return Math.max(0, Math.min(pos * casa + casa / 2 - tela / 2, total - tela));
+   a tela, o mapa fica no meio (posição negativa = sobra dos dois lados). `pos` é a casa, `casa` o tamanho dela.
+   `folga` = o que o HUD cobre no começo do eixo (a faixa da missão): a câmera centra você no que SOBRA e deixa o
+   mapa descer até a beira dela, senão quem anda pro norte some atrás da faixa. */
+export function camera(pos, casa, tela, total, folga = 0) {
+  const vista = tela - folga;
+  if (total <= vista) return -folga - (vista - total) / 2;
+  const a = Math.min(0 - folga, total - tela), b = Math.max(0 - folga, total - tela);   // 0 − folga: sem folga, −folga daria −0
+  return Math.max(a, Math.min(pos * casa + casa / 2 - folga - vista / 2, b));
 }
 
 /* ---- 🗺 a carta da região ----

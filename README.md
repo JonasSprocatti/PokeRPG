@@ -74,7 +74,8 @@ e ajustado.
   quer ir), a câmera desliza junto, o seu Pokémon dá um pulinho a cada passo e respira parado, e você passa
   **atrás** das copas e das casas. A ficha, a mochila e o registro viram **gavetas** abertas pelos botões da tela.
   No celular, uma **🕹 alavanca** no canto: segure e arraste pra andar sem parar (no teclado, é só segurar a seta).
-  Funciona **em pé e deitado**. Neste modo o Pokémon é sempre o **sprite 2D**, seja qual for o estilo escolhido em
+  Funciona **em pé e deitado**: o mapa sempre enche a tela, a missão em andamento ocupa uma linha só (e a câmera
+  nunca te deixa atrás dela), e deitado a barra do site vira só ₽ e ☰ no canto. Neste modo o Pokémon é sempre o **sprite 2D**, seja qual for o estilo escolhido em
   ⚙ Ajustes — pra combinar com o mapa.
 - **⚔ A luta numa tela só.** Cena, registro e comandos aparecem juntos, **sem rolar a página**: em pé, um embaixo
   do outro; deitado ou no computador, a cena à esquerda e o registro com os comandos à direita. Os quatro golpes

@@ -3380,6 +3380,24 @@ navegador antes da sessão. Na prática: 20 s por roteiro, memória folgada.
   inteiro, e o admin perderia o próprio acesso até ela chegar.
 - **Continua fora dos patch notes**: o teste é "um jogador comum consegue usar?", e testador é escolhido.
 
+## ⚔ Saga: o mapa no celular aproveita a tela (14/10/2026)
+
+Relato do usuário, com print: a faixa da missão cobria o Pokémon ao andar pro norte; em pé sobrava uma faixa preta
+embaixo do mapa; deitado, a barra do site + o HUD + a missão comiam um terço da altura.
+- **Faixa preta = mapa mais baixo que a tela** (Estrada Velha: 17 linhas × 32 px = 544 px numa tela de ~720). O zoom
+  (`saga-cena.zoomDaTela`) deixou de ser só 1 ou 2: se o mapa não enche a tela, sobe o quanto falta, em quartos
+  (casa de 32 px cai em pixel CSS inteiro), **com teto 2** — uma sala de 14×8 num celular comprido ficaria
+  gigante; a sobra dela é o escuro de fora, como nos jogos. Calculado em `posicionarMundo` (troca de mapa refaz).
+- **A câmera desconta o HUD**: `camera(pos, casa, tela, total, folga)` centra você no que SOBRA abaixo da faixa
+  e deixa o mapa descer até a beira dela (`folgaDoHud` mede `.hud-missao`/`.hud-local`). Considerado: apagar a
+  faixa quando você passa por baixo — mais código e o que está "lá em cima" continuaria escondido.
+- **Missão numa linha só** no celular (o texto inteiro está no 📖 Diário, que ela abre).
+- **Deitado**: `--saga-topo` vira 0 e a barra do site flutua no canto (só ₽ e ☰, sem logo); o HUD vira UMA fileira
+  em grade (comitiva | missão | lugar), e o lugar encosta na barra por `--saga-topo-l` (a largura dela, medida no
+  mesmo `ResizeObserver`). Só no mapa e fora da loja (a loja ocupa a tela e ficaria sob a barra); a luta não muda.
+- Conferido com `olhar.mjs` em 400×780, 870×390 (com o ☰ aberto) e 1280×800.
+- A ✨ que aparece no mapa é o dom **Faro de Quem Espera** marcando uma passagem secreta (tile `falsa`) — já existia.
+
 ## ⚔ Saga: o companheiro que vai embora, e as falas reescritas (13/10/2026)
 
 Dois pedidos do usuário logo depois de ver a história inteira: *"o companheiro indo embora, pode colocar, gostei
