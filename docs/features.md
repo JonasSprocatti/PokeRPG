@@ -3430,9 +3430,19 @@ Dois pedidos do usuário, no mesmo dia: *"pode seguir com as próximas partes da
 você ainda não passou fica bloqueado — dá uma sensação de mistério, tipo ver uma região em que não entrou, mas
 tem como, através de uma missão específica"*.
 
-**O mundo de fábrica agora cobre a Gen inteira**: 10 capítulos, **36 mapas**, **100 personagens**, **30 missões**
+**O mundo de fábrica agora cobre a Gen inteira**: 10 capítulos, **36 mapas**, **100 personagens**, **31 missões**
 (9 secretas), 29 dons, 14 itens-chave e **quatro finais**. O roteiro (`docs/saga-historia.md`) foi seguido; o
 que mudou ao virar jogo está anotado lá, capítulo por capítulo.
+
+**O capítulo 1 virou tutorial (14/10/2026)**, a pedido do usuário. Considerado: uma tela de dicas à parte, ou o
+❓ Tutorial geral (`tutorial.js`) — descartados porque a Saga já tem o que precisa (fala, gatilho, luta no
+mapa, missão) e a regra 6 do roteiro pede fala direta, o que serve bem pra instrução. Ficou assim, só DADO:
+o **Pichu** foi pra perto da chegada e ensina os controles; o **Cabo Lairon** dá *A lição do Cabo* (Guarda,
+Ruína, luta de treino com o bando `treino` na praça, depois Perícia e petisco + 2 Mel Silvestre); um gatilho na
+entrada do bosque avisa do mato alto. De fora, de propósito: a passagem secreta (é a secreta do capítulo, não
+lição) e Recuar (só aparece com comitiva). O **roteiro completo** sai do conteúdo para
+`docs/saga-roteiro.md` (`ferramentas/gerar-roteiro-saga.mjs`; `tests/saga-roteiro.test.js` reclama se o mundo
+mudar e o arquivo não).
 
 ### A história (o que cada capítulo virou)
 - **4 · O Charco dos Esquecidos** — a Corte do Abismo conta o lado dela. O livro-caixa da Forja (lascas de Coração

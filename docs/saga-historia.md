@@ -1,6 +1,7 @@
 # ⚔ Saga — a história em 10 capítulos (roteiro, escrito em 13/10/2026)
 
-O "molde" da aventura. **Os dez capítulos estão jogáveis** (`js/dados-saga-mundo.js`), com os quatro finais. Este
+O "molde" da aventura. **O roteiro completo, fala por fala, é `docs/saga-roteiro.md`** — gerado do conteúdo por
+`ferramentas/gerar-roteiro-saga.mjs` (`tests/saga-roteiro.test.js` cobra que esteja em dia). **Os dez capítulos estão jogáveis** (`js/dados-saga-mundo.js`), com os quatro finais. Este
 arquivo é o roteiro de onde eles saíram, com uma linha **No jogo** em cada capítulo dizendo o que virou mapa,
 marca e personagem — e onde o jogo se afastou do papel. Tudo pode ser reescrito pelo 🌍 Editor de mundo; o
 roteiro existe pra que quem mexer num capítulo saiba de onde a história vem e pra onde vai.
@@ -80,6 +81,11 @@ só pra quem achou o segredo — pra Corte (a aldeia fica seca "mais um tempo").
 **Humanos:** os primeiros laços de arame na Estrada Velha; **Nico**, o menino que tenta te pegar; **Lia**, que
 desfaz os laços dele.
 **Gancho:** o Coração, onde quer que fique, **puxa pro norte**.
+**Tutorial (14/10/2026):** o capítulo 1 também ensina a jogar, sempre por gente da aldeia e em fala direta. O
+**Pichu** fica ao lado da chegada (andar até encostar = conversar, o letreiro abre o mapa, o 📖 é o diário,
+onde ficam pousada, loja e Ancião). O **Cabo Lairon** dá a lateral *A lição do Cabo*: explica bando, Guarda e
+Ruína, manda lutar com os **brigões** da praça (`venceu:treino`) e, na volta, ensina Perícia e petisco e dá 2
+Mel Silvestre (`treino-fim`). Um gatilho na entrada do bosque (`viu-mato`) avisa que o mato alto chama luta.
 
 ### 2 · O Passo dos Laços — Serra do Fumo · rota 2 · ✅ jogável
 O Passo do Norte está tomado pelo acampamento dos Fumeiros. Uma toca de refugiados se esconde na encosta. O Alfa

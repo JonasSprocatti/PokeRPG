@@ -45,7 +45,7 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
   o modo inteiro.
   **Falta, e é o que mantém o modo `admin: true`**: a **fase 2** (Juramentos, ordens por ofício, tela de comitiva)
   e JOGAR a história inteira pra ajustar ritmo e dificuldade. **✅ Em 13/10/2026 saiu a história INTEIRA**: os dez
-  capítulos e os quatro finais (36 mapas em pixel art do Liberated Pixel Cup, 100 personagens, 30 missões), a
+  capítulos e os quatro finais (36 mapas em pixel art do Liberated Pixel Cup, 100 personagens, 31 missões), a
   🗺 carta da região, a tela de jogo própria e o **🌍 Editor de mundo** (mapas, personagens, conversas, missões,
   dons; ▶ Testar; publica no pacote único) — registro em `docs/features.md` → "⚔ Saga vira jogo de mapa" e
   "⚔ Saga: os capítulos 4 a 10, o fim da história e a 🗺 carta da região".

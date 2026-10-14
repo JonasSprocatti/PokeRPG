@@ -65,8 +65,11 @@ Sem Revive depois do 3º desmaio (Médio para cima), é **Game Over**.
 
 Um modo separado, de **RPG japonês** medieval fantástico: você anda com uma **comitiva de quatro**, cada Pokémon
 tem um **ofício** na luta e os inimigos vêm em grupo. O combate está jogável de ponta a ponta e a história está
-**inteira: dez capítulos**, do Vale do Orvalho à Nascente, com **quatro finais** (36 mapas, 100 personagens, 30
-missões — o roteiro está em `docs/saga-historia.md`). O modo segue só pra admin e testadores enquanto é jogado
+**inteira: dez capítulos**, do Vale do Orvalho à Nascente, com **quatro finais** (36 mapas, 100 personagens, 31
+missões — o resumo está em `docs/saga-historia.md` e o roteiro completo, fala por fala, em `docs/saga-roteiro.md`).
+O **capítulo 1 é o tutorial**: o Pichu, do lado de onde você chega, ensina a andar, conversar, abrir o mapa e o
+diário; o Cabo Lairon, no portão norte, explica a Guarda e a Ruína e manda você pra uma luta de treino na praça,
+depois ensina Perícia e petisco; e a entrada do bosque avisa que o mato alto chama luta. O modo segue só pra admin e testadores enquanto é jogado
 e ajustado.
 
 - **🗺 Um mundo pra andar, com cara de jogo.** Na Saga não há lista de rotas: há um **mapa em pixel art** que

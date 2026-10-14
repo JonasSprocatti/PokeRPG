@@ -94,6 +94,9 @@ export const MISSOES_SAGA = {
   minerio: { nome: 'A marca do martelo', etapas: [
     'Ache o caixote de minério num recanto de pedra, a leste da Estrada Velha, e leve à ferreira Brasa.'
   ] },
+  treino: { nome: 'A lição do Cabo', etapas: [
+    'Vença os dois brigões perto do portão norte de Pedralume e volte ao Cabo Lairon.'
+  ] },
   sino: { nome: 'O que o poço lembra', secreta: true, etapas: [
     '“A árvore que não é árvore.” Algo no norte do Bosque do Orvalho não é o que parece.',
     'Alguém na aldeia deve se lembrar deste sino. Quem ali tem memória comprida?'
@@ -206,7 +209,7 @@ export const MAPAS_SAGA = {
     cap: 'cap1', nome: 'Pedralume', desc: 'Uma aldeia em volta de uma fonte que não canta mais.', rota: 0, chao: '.',
     grade: [
       'TTTTTTTTTTTTTTGTTTTTTTTTTTTTTT',
-      'T.............=Q.............T',
+      'T.............=Q....X........T',
       'T..hhh........=.........hhh..T',
       'T..hhh........=.........hhh..T',
       'T..hch........=.........hch..T',
@@ -216,13 +219,13 @@ export const MAPAS_SAGA = {
       '1============================2',
       'T.............=..............T',
       'T......f.....W=.....f........T',
-      'T...........S.=..K...........T',
+      'T...........S.=..............T',
       'T.............=..............T',
       'T..hhh........=.........hhh..T',
       'T..hhh........=.........hhh..T',
       'T..hch........=.........hch..T',
       'T...H.I.......=........L.M.R.T',
-      'T...=.........=..........=...T',
+      'T...=.........=.K........=...T',
       'T...==========@===========...T',
       'T.............f..............T',
       'T..f.....................f...T',
@@ -239,7 +242,9 @@ export const MAPAS_SAGA = {
       F: { enfeite: true, arte: 'placaForja', texto: 'Forja de Pedralume. Embaixo, riscado a prego: “sem água, sem têmpera”.' },
       I: { enfeite: true, arte: 'placaPousada', texto: 'Pousada do Sino. O sino da tabuleta foi raspado, mas o contorno ficou.' },
       L: { enfeite: true, arte: 'placaLoja', texto: 'Kecleon — de tudo, de todas as cores.' },
-      R: { enfeite: true, prop: 'barris' }
+      R: { enfeite: true, prop: 'barris' },
+      // o tutorial da luta: o Cabo explica a Guarda, e estes dois são o primeiro alvo
+      X: { inimigo: { id: 'treino', tipo: 'bando', fala: 'Dois brigões rolam na poeira perto do portão. Quando te veem, param de brigar entre si. Agora o alvo é você.' } }
     }
   },
   bosque: {
@@ -255,7 +260,7 @@ export const MAPAS_SAGA = {
       'T..C...TT.......=............T',
       'T...............=............T',
       'T.........""""..=............T',
-      'T.........""""""=============1',
+      'T.........""""""===========M=1',
       'T..........""""".............T',
       'TTT..f.....""""""....TTT.....T',
       'T.f.f......""""""............T',
@@ -270,6 +275,7 @@ export const MAPAS_SAGA = {
       '1': { porta: ['pedralume', '1'], como: '=' },
       '4': { porta: ['clareira', '4'], como: 'T' },   // atrás da árvore falsa: a porta também se veste de árvore
       V: { npc: 'vo' }, R: { npc: 'meganium' },
+      M: { se: { sem: 'viu-mato' }, gatilho: 'mato', como: '=', texto: 'O mato alto do bosque balança sem vento. Tem gente morando ali dentro.<br><br><b>Andar no mato alto chama luta.</b> No caminho de terra ninguém te para.', faz: { flag: 'viu-mato' } },
       C: { bau: 'bosque-cesto', texto: 'Um cesto esquecido entre as raízes. Dentro, duas poções ainda lacradas.', faz: { bag: [['potion', 2]] } },
       X: { inimigo: { id: 'pisoteadores', tipo: 'bando', fala: 'Um bando acampou em cima dos canteiros da Vó. Mastigam sem pressa, e te olham sem medo.' } }
     }
@@ -1535,8 +1541,25 @@ export const NPCS = {
     } },
 
   guarda: { nome: 'Cabo Lairon', sprite: 305,
-    falas: [{ se: { flag: 'cap1' }, no: 'aberto' }, { no: 'fechado' }],
+    falas: [
+      { se: { flag: 'cap1' }, no: 'aberto' },
+      { se: { flag: 'treino-fim' }, no: 'fechado' },
+      { se: { flag: 'venceu:treino' }, no: 'treinou' },
+      { se: { missao: ['treino', 0] }, no: 'vai' },
+      { no: 'porta' }
+    ],
     nos: {
+      porta: { fala: 'O Passo do Norte está fechado, por ordem do Ancião. Com a fonte seca, metade da aldeia quer ir embora e a outra metade não quer deixar. Meu serviço é ficar aqui no meio.',
+        opcoes: [{ t: 'Me ensina a lutar?', vai: 'aula' }, { t: 'Tudo bem.' }] },
+      aula: { fala: 'Ensino. Primeira coisa: lá fora ninguém anda sozinho. Vem sempre em bando, dois, três de uma vez.', vai: 'aula2' },
+      aula2: { fala: 'Embaixo da vida de cada um tem um escudo 🛡. É a <b>guarda</b> dele. Golpe super efetivo ou crítico quebra um pedaço. Status quebra meio.', vai: 'aula3' },
+      aula3: { fala: 'Quebrou a guarda inteira, ele entra em <b>Ruína</b>: perde a vez e apanha mais. Então escolhe o alvo pelo tipo, não pela vida que sobra.', vai: 'aula4' },
+      aula4: { fala: 'Tá vendo aqueles dois brigando perto do portão? Vai lá e testa. Depois volta aqui.', faz: { missao: ['treino', 0] } },
+      vai: { fala: 'Os brigões estão ali, perto do portão. Mira na guarda.' },
+      treinou: { fala: 'Viu? Quebrou a guarda, ele travou. Mais duas coisas e eu te largo.', vai: 'treinou2' },
+      treinou2: { fala: '<b>Perícia</b> é o que você sabe fazer além dos golpes. Não gasta PP, mas cansa: depois de usar, espera umas rodadas pra usar de novo.', vai: 'treinou3' },
+      treinou3: { fala: 'E não sobe a serra sozinho. Quem você enfrenta no mato às vezes topa vir junto se ganhar um <b>petisco</b>. Na luta, abre a 🎒 Mochila e oferece. Toma, dois de mel.',
+        faz: { bag: [['honey', 2]], flag: 'treino-fim', missao: ['treino', 'fim'] } },
       fechado: { fala: 'O Passo do Norte está fechado, por ordem do Ancião. Com a fonte seca, metade da aldeia quer ir embora e a outra metade não quer deixar. Meu serviço é ficar aqui no meio.' },
       aberto: { fala: 'O Ancião mandou abrir o Passo pra você. Cuidado lá em cima: tem uma fumaça estranha, e faz três noites que ninguém desce de lá.' }
     } },
@@ -1556,9 +1579,14 @@ export const NPCS = {
     } },
 
   pichu: { nome: 'Pichu', sprite: 172,
-    falas: [{ se: { falas: ['pichu', 1] }, no: 'tio' }, { no: 'oi' }],
+    falas: [{ se: { falas: ['pichu', 2] }, no: 'tio' }, { se: { falas: ['pichu', 1] }, no: 'tres' }, { no: 'oi' }],
     nos: {
-      oi: { fala: 'Você é aventureiro? Meu irmão disse que aventureiro de verdade fala com todo mundo <b>três</b> vezes. Na terceira os adultos contam o que estavam escondendo.' },
+      // o tutorial dos controles: o Pichu fica do lado de onde o jogo começa
+      oi: { fala: 'Oi! Você é novo aqui? Eu te mostro. Pra falar com alguém, é só andar até encostar nele. Igual você fez comigo.', vai: 'oi2' },
+      oi2: { fala: 'Lá em cima tem o nome do lugar. Toca nele e abre o mapa da região. O livrinho 📖 guarda o que você prometeu fazer.', vai: 'oi3' },
+      oi3: { fala: 'Se se machucar, a Dona Chansey cuida de você, na pousada do sudoeste. O Kecleon vende coisa, no sudeste. Tudo cobra.', vai: 'oi4' },
+      oi4: { fala: 'E quem manda aqui é o Ancião Torkoal, na casa do noroeste. Ele tá procurando alguém pra ver o que houve com a fonte.' },
+      tres: { fala: 'Você é aventureiro? Meu irmão disse que aventureiro de verdade fala com todo mundo <b>três</b> vezes. Na terceira os adultos contam o que estavam escondendo.' },
       tio: { fala: 'O Tio do Poço fala, sim. Mas você tem que esperar <b>muito</b>.' }
     } },
 
