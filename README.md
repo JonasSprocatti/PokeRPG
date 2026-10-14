@@ -180,9 +180,13 @@ Isso acordou duas habilidades que até aqui não tinham o que fazer: **Damp** (n
   A ficha marca quais estão ativas.
 
 ### No celular
-Na batalha, a **cena fica presa no topo** (os dois lados, com HP e status de toda a equipe) enquanto você rola o resto da página: golpes, registro, ficha, aliados, missões e mochila continuam todos ali, um embaixo do outro. Nada fica escondido atrás de aba nenhuma — você vê o Pokémon enquanto escolhe o golpe e alcança a ficha de qualquer aliado sem sair da luta.
+Na batalha, a **cena fica presa no topo** (os dois lados, com HP e status de toda a equipe) enquanto você rola o resto da página — e os **golpes vêm logo abaixo dela** (dois por linha, com tipo, poder, PP e a seta de vantagem), depois **Mochila / Fugir** e o registro. Ficha, aliados, missões e mochila continuam todos ali, um embaixo do outro: nada fica escondido atrás de aba nenhuma, e você vê o Pokémon enquanto escolhe o golpe.
 
-**Celular deitado:** a cena da luta fica **grudada na lateral esquerda**, da altura inteira da tela e **sempre visível** (em vez de presa no topo, que sobraria pouca altura numa tela baixa) — golpes, registro e painéis ficam numa coluna à direita, que rola por baixo dela sem nunca levar a batalha embora. Os botões de golpe ali são mais baixos e ficam **2 em cima e 2 embaixo**.
+- **Grupo em campo** (2–3 inimigos, aliados): as placas ficam compactas — nome numa linha; HP, tipos, status, estágios e item numa nuvem de etiquetas que quebra sozinha. Com **cinco ou mais** em campo a cena vira **duas colunas** (inimigos | você). Se a cena ficar tão alta que cobriria os golpes (celular pequeno, tudo carregado), ela **solta do topo** e rola com a página.
+- **Fora da luta**, o **Explorar** (com Centro e Loja) fica **preso na base da tela**, no celular e no computador, e as rotas são uma **fileira que rola de lado**. A **loja** abre no topo, com a carteira e o "Sair da loja" sempre à vista.
+- A barra do topo, dentro do jogo, é só **logo · carteira · ☰** (o menu abre em duas colunas; um ponto vermelho avisa quando há Novidades).
+
+**Celular deitado:** a cena da luta fica **grudada na lateral esquerda**, da altura inteira da tela e **sempre visível** (em vez de presa no topo, que sobraria pouca altura numa tela baixa) — golpes, registro e painéis ficam numa coluna à direita, que rola por baixo dela sem nunca levar a batalha embora. Os botões de golpe ali são mais baixos e ficam **2 em cima e 2 embaixo**; em luta de grupo a coluna da cena alarga e se divide em duas (**inimigos | você**), e a barra do site some pro canto.
 
 ### 🎯 Caça Shiny
 Modo opcional, ligado **no começo da jornada**. Quando você revela todas as espécies de uma rota (10 derrotados de cada), pode escolher **uma delas para ser a única que aparece ali** — bom para caçar um shiny ou farmar uma espécie. Dá para trocar ou parar a caça quando quiser, rota por rota. **Muda só o Pokémon selvagem:** treinadores, itens, dinheiro e as frases de ambientação continuam com a mesma chance.
@@ -478,7 +482,7 @@ Do outro lado, **Alfa, lendários e treinadores** megaevoluem *ou* terastalizam 
 A melhor jornada de cada jogador, **geral** ou **por espécie**, com a sua posição destacada. Dá para ver sem conta; para aparecer, entre e termine jornadas. A pontuação é **recalculada no servidor** a partir dos números da jornada, e números impossíveis são recusados.
 
 ### Tela
-Os painéis (Ficha, Missões, Aliados, Mochila, Registro) podem ser **arrastados, redimensionados, recolhidos e trocados de coluna**. A cena da batalha fica fixa no centro. Botão **↺ Layout** volta ao padrão. No celular vira uma coluna só.
+Os painéis (Ficha, Missões, Aliados, Mochila, Registro) podem ser **arrastados, redimensionados, recolhidos e trocados de coluna**. Na luta, a cena fica no centro e os **golpes logo abaixo dela**, antes do registro. Botão **↺ Layout** volta ao padrão. No celular vira uma coluna só.
 
 ### Offline e nuvem
 - **Offline:** depois do primeiro acesso online, o jogo abre e roda sem internet. Os encontros saem entre os Pokémon que já estão salvos no aparelho, e tudo o que precisa ir para a nuvem sobe quando a internet volta.

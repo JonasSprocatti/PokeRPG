@@ -87,6 +87,36 @@ test('⚔ Saga: a tela de luta (cena, registro e comandos numa tela só) desenha
   assert.equal(G.gaveta, null);
 });
 
+/* 📱 Luta em GRUPO fora da Saga (revisão de usabilidade de 14/10/2026, a pedido do usuário: "lutas com 2 e 3
+   inimigos, a quantidade de informação vai sobrecarregar a tela"). O CSS decide o desenho por CLASSES da cena —
+   `compacta` (2+ inimigos ou aliado), `denso` (5+ em campo) e `com-aliados` no seu lado —, então o contrato que
+   precisa ficar de pé é o markup, que só existe no navegador. Aqui um `#scene` que GRAVA o que recebe. */
+test('luta em grupo (3 inimigos + 2 aliados): a cena sai com as classes que o CSS usa', async () => {
+  const { render } = await import('../js/render.js');
+  const guardado = {};
+  const cena = { className: '', innerHTML: '', setAttribute() {}, removeAttribute() {}, classList: { add() {}, remove() {}, contains: () => false,
+    toggle(c, on) { guardado[c] = on; } }, offsetHeight: 0, style: {}, dataset: {}, querySelector: () => null, querySelectorAll: () => [] };
+  const original = document.querySelector;
+  document.querySelector = s => s === '#scene' ? cena : original(s);
+  try {
+    G.S = saveFalso(); G.S.aliados = [mon({ name: 'bulbasaur', id: 1 }), mon({ name: 'pikachu', id: 25 })];
+    G.mode = 'battle'; G.busy = false; G.panel = 'moves'; G.abertos = new Set();
+    G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 }), mon({ name: 'rattata', id: 19 }), mon({ name: 'ekans', id: 23 })]);
+    render();
+    for (const c of ['battle', 'compacta', 'denso']) assert.ok(cena.className.split(/\s+/).includes(c), `a cena do grupo leva a classe "${c}"`);
+    assert.match(cena.innerHTML, /class="side me com-aliados"/, 'o seu lado avisa que há aliados em campo');
+    // 1 contra 1, sem aliado: a cena continua sendo a de sempre (placas largas no computador)
+    G.S = saveFalso(); G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 })]);
+    render();
+    assert.ok(!/compacta|denso/.test(cena.className), '1×1 não vira cena compacta');
+    assert.doesNotMatch(cena.innerHTML, /com-aliados/);
+    // 2 inimigos e nenhum aliado: compacta, mas ainda não "densa" (3 em campo)
+    G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16 }), mon({ name: 'rattata', id: 19 })]);
+    render();
+    assert.ok(/compacta/.test(cena.className) && !/denso/.test(cena.className));
+  } finally { document.querySelector = original; }
+});
+
 test('golpe contra TREINADOR: o caminho da troca tática roda', async () => {
   const equipe = [mon({ name: 'pidgey', id: 16 }), mon({ name: 'ekans', id: 23, data: { ...mon().data, types: ['poison'] } })];
   const B = await rodar({ type: 'move', idx: 0 }, {

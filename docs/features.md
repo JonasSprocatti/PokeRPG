@@ -4614,3 +4614,105 @@ marcados no código:
   a PokéAPI não classifica — todos itens nossos, inventados.
 - **Natural Gift lê o tipo das 17 frutas de aperto** (`dados.FRUTA_DO_TIPO`, a fonte única) + as 3 de cura. As
   outras frutas dos jogos não existem aqui.
+
+## 📱 Revisão de usabilidade do modo Roguelike: a tela inteira, medida no navegador (14/10/2026)
+
+Pedido do usuário: *"revisão completa do modo Roguelike, analise todo o layout atual e traga melhorias de
+usabilidade, foco máximo em qualidade, melhoria visual e usabilidade"*. Depois de um primeiro balanço, uma dica
+dele mudou o método: **"faça lutas com 2 e 3 inimigos, a quantidade de informação nas lutas vai sobrecarregar a
+tela"** — e sobrecarregava de verdade (ver "Grupo em campo"). Tudo abaixo foi **medido com o `olhar.mjs`**
+(`getBoundingClientRect` + foto), nos tamanhos 360×640, 390×844, 844×390 (deitado) e 1280×800.
+
+### O que a medição achou (antes → depois)
+
+| Onde | Antes | Depois |
+|---|---|---|
+| **Explorar no computador (1280×800)** | botão em `y = 1144`, **350 px abaixo da dobra**; a zona (chips + Pokédex + Alfa) tinha ~800 px | preso na base da tela (`y ≈ 655`) |
+| **Golpes na luta, computador** | começavam em `y = 694` (meio golpe à vista): o registro de 236 px ficava entre a cena e eles | `y ≈ 434`: cena → golpes → Mochila/Fugir → registro |
+| **Cena da luta no celular (390×844)** | 321 px com `max-height:38vh` + rolagem interna: **a placa do SEU Pokémon era cortada** | 253 px, sem corte (placa ao lado do sprite) |
+| **3 inimigos + 2 aliados, celular** | 790 px (cena); no computador, 753 px | 389 px (duas colunas) e 330 px |
+| **Loja no computador** | abria no fim da coluna (`y ≈ 1056`): clicar em "Abrir loja" parecia não fazer nada | abre no topo, no lugar da zona |
+| **Barra do topo no computador** | ~190 px (3 fileiras de botões) | 62 px: logo · carteira · ☰ |
+| **Criação no celular** | 5.316 px | 3.784 px |
+
+### Decisões (e o que foi descartado)
+
+- **O dock de ações é `position:sticky; bottom:0`, nos três tamanhos — não "no topo da coluna".** Considerado
+  e descartado: pôr o Explorar acima da zona no computador (posição estável, mas um botão amarelo gigante acima do
+  título da rota lê como barra de ferramentas, e o celular precisa do rodapé de qualquer jeito). Um desenho só.
+  `:not(.cheia)` deixa a Saga fora (HUD próprio); `:not(.em-batalha)` deixa os golpes de fora (um dock preso em
+  cima da cena cobriria a placa).
+- **A loja substitui a zona** (`:has(#actions.em-loja)` esconde `#scene` e a zona central) em vez de rolar a
+  página até ela. Considerado: rolar com `scrollIntoView` — deixa a zona (800 px) entre o clique e a loja. A compra
+  tem toast, então o registro escondido não deixa sem retorno. `case 'panel'` (main.js) volta ao topo ao abrir e
+  fechar.
+- **Golpes antes do registro, só por `order`** (`body.em-batalha #actions{order:1}`): o DOM e a tabulação ficam
+  como estavam, e o celular deitado (que já fazia `order:-2`) ganha pela ordem no arquivo.
+- **Sem aba, sem gaveta na luta fora da Saga.** A regra do CLAUDE.md ("não reintroduzir esconder painel por aba")
+  continua: ficha, aliados, missões e mochila seguem na página, rolando. Considerado e descartado: levar a tela
+  única da Saga (`.game.luta`) pros outros modos no celular — resolveria a altura, mas esconderia os painéis atrás
+  de gavetas, que é exatamente o que quem joga recusou.
+- **A cena só fica presa se sobra tela pro resto** (`cena-alta`, medido em `render()`): `offsetHeight >
+  innerHeight − 240`. Presa com 470 px num celular de 640, ela cobria os golpes que o toque de rolar vinha buscar.
+  Só no retrato; no deitado a cena é lateral e **sempre** fixa (a regra devolve `position:fixed`; foi o primeiro
+  erro que a foto mostrou — a cena caía em `y = 1422`).
+
+### Grupo em campo (a dica do usuário)
+
+A placa é uma **linha e meia**, não quatro, no mesmo desenho que a luta da Saga já tinha: nome e nível numa linha
+(truncar o nome era o pior erro de uma primeira versão — numa manada o nome é *quem é o bicho*), e embaixo a barra
+de HP + **uma nuvem de etiquetas** (tipos, status, estágios, item) que quebra sozinha porque `.pl-tipos` e `.chips`
+viram `display:contents`. Sem o rótulo "HP" (a barra colorida com os números já diz).
+
+- **`compacta`** (2+ inimigos ou aliado): placas compactas em **qualquer** tamanho — no computador a cena de
+  753 px virou 330 px. 1×1 continua com as placas largas.
+- **`denso`** (5+ em campo): no celular a cena vira **duas colunas** (inimigos | você), placas em cima e sprites
+  embaixo de cada uma. No celular deitado isso vale para toda cena `compacta` e a coluna da cena alarga
+  (`--cena:min(47vw,430px)`): é a altura que falta ali, a largura sobra.
+- **`com-aliados`** no seu lado: os sprites encolhem pra a placa ficar AO LADO deles (embaixo, a cena passava de
+  440 px).
+- O pedido de alvo ("Em quem usar X?") vira uma linha fina dentro da cena — era um balão de duas linhas que
+  empurrava o "Cancelar" pra fora.
+- **Armadilha de especificidade:** as regras da cena em grupo ganham de qualquer `.game.luta …` da Saga, então
+  todas levam `body.em-batalha` (a classe que só existe fora dela). `tests/css-luta.test.js` cobra isso e o
+  `position:fixed` do deitado. `tests/turno-smoke.test.js` cobra o contrato das classes (`compacta`/`denso`/
+  `com-aliados`), que só existe no markup.
+
+### O resto
+
+- **Barra do topo:** `body:has(.game)` (era `.game.cheia`, só Saga) — logo · carteira · ☰, em todo tamanho. O ☰ abre
+  em **duas colunas** (eram ~20 botões em fila) e ganha um ponto vermelho quando há 📜 Novidades (a barra cheia
+  mostrava o selo "novo"; sem ela o aviso sumia).
+- **Telas fora do jogo, celular:** os 13 atalhos viram uma **fileira que rola de lado** com máscara nas pontas
+  (eram 4–5 linhas antes do título). Considerado: levá-los pro ☰ — `ui.limparTopo` está embaixo no grafo de imports
+  e não pode importar `navegacao`; CSS resolve sem tocar no grafo.
+- **Rotas no celular:** fileira que rola, com a atual centralizada por `centrarRota` (`render()` recria o DOM, e a
+  fileira voltaria pro começo a cada ação — a rolagem que a pessoa deixou é devolvida).
+- **Criação:** dificuldades não escolhidas em duas linhas (`-webkit-line-clamp`), mapas em 3 colunas (9 numa linha no
+  computador — a Gen 9 ficava sozinha), **Opções da jornada** e **Chefes da semana** em `<details>` (abertos acima
+  de 720 px, `larguraLarga()`), e o "Começar" **sticky dentro da prévia**.
+- **Mochila:** item em duas linhas (texto em cima, botões embaixo) e volta pra uma linha quando o *painel* é largo —
+  `container-type:inline-size` em `#p-mochila`, porque a pergunta é o tamanho do painel (que o jogador arrasta), não o
+  da tela.
+- **Botões `.btn.big` por tela:** um cheio só. O Desafiar do Alfa/lendários/evento usa a cor da própria caixa,
+  vazado.
+- **Toque:** `▲ ▼ ⇄ ▾` dos painéis com 38 px em `pointer:coarse` (eram ~22 px).
+- **Registro:** esmaecido de 16 px no topo (a primeira linha aparecia cortada pela metade).
+- **Fim de jornada:** "Nova jornada" sticky (ficava a ~1000 px do título).
+
+### Ficou de fora, de propósito
+
+- **Descrições de golpe e habilidade em inglês** (vêm da PokéAPI, que não tem PT-BR pra texto de efeito): é a maior
+  quebra de qualidade que sobrou numa UI em PT-BR, mas é um projeto de **conteúdo** (~900 habilidades e ~900 golpes
+  traduzidos e revisados), não de layout. Fica em `docs/backlog.md`.
+- **Atalhos de teclado pros golpes (1–4):** `1` e `2` já são os itens rápidos (`data-rapido`), em batalha. Mexer
+  nisso é decisão de quem joga no computador.
+- **Sprite pequeno em Pokémon pequeno** (um Caterpie em 30 px): é a escolha documentada do `object-fit:scale-down`
+  (nunca ampliar pixel art), não defeito.
+
+### Como se confere de novo
+
+Um roteiro por estado, não por tela: `olhar.mjs` + criar a jornada pela tela de verdade + `startBattle(zona)` de uma
+rota **tardia** (`rotasAtuais()[5]`; as três primeiras nunca têm grupo) com `Math.random` fixado pra forçar o
+tamanho do grupo (`[0.01, 0.99]` = grupo, máximo) e aliados na equipe. Estados a fotografar: 1×1, 2×0, 3×1, 3×2
+**com** status/estágios/item em todos, e o pedido de alvo; em 360×640, 390×844, 844×390 e 1280×800.

@@ -13,6 +13,25 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '7.3', data: '2026-10-14', titulo: '📱 O jogo cabe na tela: luta, rota e criação reorganizadas', piada: 'No computador, o botão Explorar morava uns 350 pixels abaixo da dobra: quem entrava via um mapa, uma rota e nenhuma ideia de como começar. Ele agora fica de plantão na base da tela, fingindo que sempre esteve ali. Na luta, os golpes subiram para logo abaixo do campo de batalha — o Charmander agradece, que cansou de ouvir "role a página" no meio do turno.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>⚔ Os golpes ficam logo abaixo do campo.</b> Antes o registro da luta vinha no meio e, no computador, os golpes começavam pela metade da tela — dava pra ver meio Scratch. Agora a ordem é <b>cena → golpes → Mochila/Fugir → registro</b>, em qualquer tamanho de tela.',
+        '<b>📱 A luta cabe no celular.</b> A placa do seu Pokémon deixou de ser cortada embaixo e ficou <b>ao lado</b> do sprite, como a do inimigo. Os golpes vêm <b>dois por linha</b>, com tipo, poder, PP e se o golpe vai bem ou mal contra quem está na frente; <b>Mochila</b> e <b>Fugir</b> dividem uma linha só.',
+        '<b>🐺 Luta em grupo, sem bagunça.</b> Com 2 ou 3 inimigos e aliados em campo, as placas ficaram compactas: o <b>nome</b> numa linha, e na de baixo a barra de HP junto de uma nuvem de etiquetas — tipos, status, estágios (<b>Atq −2</b>) e item. Três inimigos + dois aliados com tudo isso cabem na tela, no celular em pé, no celular <b>deitado</b> (a cena vira duas colunas: <b>inimigos | você</b>) e no computador.',
+        '<b>▶ Explorar sempre à mão.</b> O botão <b>Explorar</b> (com <b>Centro Pokémon</b> e <b>Abrir loja</b> embaixo) fica <b>preso na base da tela</b>, no computador e no celular. A <b>loja</b> abre no <b>topo</b>, com a carteira e o "Sair da loja" sempre à vista enquanto você rola.',
+        '<b>🗺 Rotas numa fileira que rola.</b> No celular as 11 rotas viravam oito linhas de botões antes de qualquer informação. Agora é uma faixa que rola de lado, com a rota atual no meio. A legenda da Pokédex da rota virou um <b>"Como ler"</b> recolhido.',
+        '<b>🧭 Barra de cima mais baixa.</b> Dentro do jogo ela mostra só o logo, a carteira e o <b>☰</b> (que agora abre em duas colunas, com um pontinho vermelho quando há Novidades). No computador eram uns 190 px de botões antes do jogo.',
+        '<b>🆕 Criar a jornada ficou mais curta no celular.</b> As dificuldades não escolhidas mostram só duas linhas (a escolhida abre o texto inteiro), os mapas ficam em <b>três colunas</b>, as <b>Opções da jornada</b> e os <b>Chefes da semana</b> vêm recolhidos com um resumo — e o <b>Começar</b> acompanha você na base da tela. A página encolheu quase um terço.',
+        '<b>🎒 Mochila legível.</b> Os botões <b>⚡ · Usar · Vender</b> descem pra baixo do nome do item (o "Full Heal" não quebra mais em três linhas), e voltam pro lado quando o painel é largo. No celular os botões ▲ ▼ ⇄ ▾ dos painéis ficaram do tamanho de um dedo.',
+        '<b>🏁 Fim de jornada.</b> O <b>Nova jornada</b> acompanha a rolagem em vez de ficar depois das doze estatísticas.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Loja no computador:</b> ao tocar em "Abrir loja" ela nascia uns mil pixels abaixo da tela e o botão simplesmente sumia — parecia que nada tinha acontecido.',
+        '<b>Luta com aliados no celular:</b> a cena passava de 450 px (mais da metade da tela) e os golpes ficavam inalcançáveis sem rolar. E quando a cena é grande demais ela <b>solta</b> do topo em vez de ficar presa cobrindo os golpes.',
+        '<b>Alfa e Lendários:</b> o <b>Desafiar</b> era amarelo cheio, igual ao <b>Explorar</b> — dois botões principais na mesma tela. Agora ele usa a cor da própria caixa.'
+      ] }
+    ] },
   { versao: '7.2', data: '2026-10-13', titulo: '🏁 Acabou: todo golpe do jogo faz algo', piada: 'Durante meses, usar Splash era indistinguível de usar Counter, Trick Room ou Wonder Room: todos anunciavam que o efeito seria ajustado em atualizações futuras e então, com grande dignidade, não faziam absolutamente nada. Hoje o futuro chegou para os 65 que restavam. O Splash continua não fazendo nada, mas agora é por escolha dele.',
     secoes: [
       { nome: 'Novidades', itens: [

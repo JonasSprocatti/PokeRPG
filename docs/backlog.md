@@ -129,6 +129,10 @@ agora**, não a cada sessão. O `CLAUDE.md` guarda só o ponteiro; aqui está o 
 
 Mais missões por tipo/zona · recompensa de Alfa diferente por rota · rank/título de explorador · resumo de badges já calculado no perfil de amigo.
 
+**Achados da revisão de usabilidade de 14/10/2026** (detalhe em `docs/features.md` → "Revisão de usabilidade do modo Roguelike"; o que é layout foi feito, estes dois não são layout):
+- **Texto de efeito de golpe e de habilidade está em inglês** (vem da PokéAPI, que não tem PT-BR para esses campos) numa UI inteira em PT-BR: modal de aprender golpe, ficha, criação. É conteúdo — ~900 habilidades e ~900 golpes a traduzir e revisar, num arquivo de dados com fallback pro inglês quando faltar. Maior quebra de qualidade que restou.
+- **Atalhos de teclado pros golpes (1–4) no computador**: `1` e `2` já são os itens rápidos em batalha (`data-rapido`), então é decisão sobre quem leva as teclas.
+
 ## Decisões fechadas que continuam valendo
 
 **Troca de Pokémon entre dois jogadores não vai existir** (06/10/2026): o Cabo de Conexão simulado continua sendo o caminho de quem evolui por troca, e o item saiu do backlog. XP por Gen fica canônico (Paldea dá mais que Kanto — é dado da franquia). Formas de Hisui no Santuário de Galar (é como a PokéAPI classifica). Teto de aliados **continua em 2** (o Esconderijo já resolve "guardar mais parceiros"; subir mudaria o balanceamento). Painel de manutenção **continua** (jogo em ajuste ativo). Só iniciais na criação em todos os modos (`especiesLivres` false).

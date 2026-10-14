@@ -73,8 +73,14 @@ img{max-width:100%}
 .carteira-mini{color:var(--yellow);font:800 15px var(--display);white-space:nowrap}
 .carteira-loja{margin:0 0 10px;padding:8px 14px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;color:var(--yellow);font:600 16px var(--display)}
 .carteira-loja b{font-size:20px}
+.loja-topo{position:sticky;top:0;z-index:6;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;margin-bottom:10px;background:var(--ink);border-bottom:2px solid var(--line)}
+.loja-topo .carteira-loja{margin:0;padding:6px 12px}
+.loja-topo::before{content:'';position:absolute;left:0;right:0;bottom:100%;height:18px;background:var(--ink)}   /* cobre o respiro (padding) do contêiner que rola: sem isso o item aparece por cima do cabeçalho */
 @media(max-width:720px),(orientation:landscape) and (max-height:560px){.dinheiro{font-size:17px;padding:6px 12px;min-height:44px}}
-.burger{display:none}
+.burger{display:none;position:relative}
+/* ☰ com novidade nas 📜 Novidades: um ponto, pra quem joga com a barra compacta não perder o aviso que os atalhos
+   mostravam. */
+.burger.com-novidade::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--red,#e5484d);border:2px solid var(--panel2)}
 .menu-links{display:contents} /* no computador some da conta: filhos ficam em linha no .top-r */
 #topr{flex-wrap:wrap;justify-content:flex-end}
 .btn-login{border-radius:999px;padding:8px 18px;box-shadow:0 0 0 3px rgba(247,197,72,.25)}
@@ -357,16 +363,78 @@ a.btn{display:inline-block;text-decoration:none}
 @media(max-width:560px){.row3{grid-template-columns:1fr}}
 .row3 label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .row3 select,.row3 input{background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--text)}
-.pv .btn.big{margin-top:18px}
+.pv .btn.big{margin-top:0}
+/* O "Começar" fica na base da tela enquanto a prévia (~1100 px no celular: arte, stats, habilidades, natureza…) é
+   rolada — antes ele era a última coisa do cartão e a pessoa descia tudo pra achar. Sticky DENTRO da prévia: some
+   junto com ela. */
+.pv-comecar{position:sticky;bottom:0;z-index:5;margin-top:16px;padding:14px 0 calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(to bottom,transparent,var(--panel) 28%)}
+.pv-comecar .btn{width:100%}
+/* Fim de jornada: com 12 cartões de estatística, "Nova jornada" ficava a ~1000 px do título no celular. Fica na
+   base da tela até o fim do cartão, com o botão principal numa linha e as duas telas de consulta embaixo. */
+.fim-acoes{position:sticky;bottom:0;z-index:5;margin-top:14px;padding:12px 0 calc(8px + env(safe-area-inset-bottom));
+  background:linear-gradient(to bottom,transparent,var(--panel) 30%)}
+.fim-acoes .btn.big{flex:1 1 100%;margin-top:0}
+.fim-acoes .btn.ghost{flex:1 1 calc(50% - 5px)}
+/* Opções e agenda: grupos recolhíveis (abertos no computador pelo JS de criacao.js) */
+.opcoes-jornada,details.agenda-evento{margin:12px 0}
+.opcoes-jornada > summary,details.agenda-evento > summary{cursor:pointer;list-style:none;padding:10px 12px;background:var(--panel);border:2px solid var(--line);border-radius:12px}
+.opcoes-jornada > summary::-webkit-details-marker,details.agenda-evento > summary::-webkit-details-marker{display:none}
+.opcoes-jornada > summary::after,details.agenda-evento > summary::after{content:'▾';float:right;color:var(--muted)}
+.opcoes-jornada[open] > summary::after,details.agenda-evento[open] > summary::after{content:'▴'}
+.opcoes-jornada[open] > summary{margin-bottom:6px}
+/* a agenda aberta é UM cartão roxo (borda e fundo no <details>); o resumo vira o cabeçalho dele */
+details.agenda-evento{padding:0;border:2px solid #b45cff;background:var(--panel);border-radius:12px;overflow:hidden}
+details.agenda-evento > summary{border:0;border-radius:0;background:none;padding:12px 14px}
+details.agenda-evento[open] > summary{border-bottom:1px solid var(--line)}
+details.agenda-evento > :not(summary){margin-left:14px;margin-right:14px}
+details.agenda-evento > :last-child{margin-bottom:14px}
+/* Criação no celular: o que ocupava 5.300 px com o mapa em 2 colunas e as 6 dificuldades por extenso */
+@media(max-width:720px){
+  .difs .abil:not(.on) small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .create .gens{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .create .gen-card{padding:4px 4px 8px}
+  .create .gen-card img{width:56px;height:56px}
+  .regiao .pick img{width:60px;height:60px}
+  .pv{padding:16px;gap:16px}
+  .pv-art{max-width:220px;margin:0 auto}
+  .pv h2{font-size:32px}
+}
 
 /* jogo */
 /* tela do jogo: coluna esq · divisória · centro (cena fixa + zona + ações) · divisória · coluna dir.
    Larguras vêm de --larg-esq/--larg-dir (paineis.js, arrastando a divisória). */
-.game{display:grid;grid-template-columns:var(--larg-esq,340px) 10px minmax(420px,1fr) 10px var(--larg-dir,340px);gap:0 6px;padding:20px;max-width:1800px;margin:0 auto;align-items:start}
+/* As colunas laterais encolhem em janela estreita (`28vw`): com 340 + 420 + 340 fixos, tudo entre 881 e ~1180 px
+   (iPad deitado, notebook com a janela pela metade) estourava pra direita — medido em 1024×768: 1164 px de página.
+   Em tela larga o `min()` devolve a largura que o jogador escolheu, como sempre. */
+.game{display:grid;grid-template-columns:min(var(--larg-esq,340px),28vw) 10px minmax(300px,1fr) 10px min(var(--larg-dir,340px),28vw);gap:0 6px;padding:20px;max-width:1800px;margin:0 auto;align-items:start}
 .stage{display:grid;gap:14px;min-width:0}
+.stage > *{min-width:0}   /* item de grade não encolhe abaixo do conteúdo: a fileira de rotas (nowrap) alargava a página inteira */
 .zona{display:grid;gap:14px;align-content:start;min-width:0;min-height:60px;border-radius:14px}
 .zona.vazia{border:2px dashed var(--line);display:grid;place-items:center}
 .zona.vazia::before{content:'Arraste um painel pra cá';color:var(--muted);font-size:14px}
+/* O DOCK de ações (Explorar · Centro · Loja): fora da batalha ele acompanha a rolagem, na base da tela, em qualquer
+   tamanho. Medido em 1280×800: a zona (chips + Pokédex da rota + Alfa) tem ~800 px e o "Explorar" ficava em y=1144 —
+   o botão que se usa o jogo inteiro estava 350 px abaixo da dobra. `:not(.cheia)` deixa a Saga fora (tem HUD próprio).
+   O botão principal ocupa a linha; Centro e Loja dividem a de baixo. */
+body:not(.em-batalha) .game:not(.cheia) #actions{position:sticky;bottom:0;z-index:7;background:var(--ink);margin-top:-4px;
+  padding:10px 0 calc(8px + env(safe-area-inset-bottom));box-shadow:0 -16px 14px -14px rgba(5,6,18,.95)}
+body:not(.em-batalha) .game:not(.cheia) #actions.em-loja{position:static;box-shadow:none}   /* a loja é uma página: não prende nada */
+/* Loja aberta: ocupa o lugar da zona e do registro, no topo da coluna central. Antes ela nascia no fim da coluna
+   (1000 px abaixo da dobra no computador) e o dock só sumia — o clique em "Abrir loja" parecia não fazer nada.
+   A compra tem toast, então o registro escondido não deixa a pessoa sem retorno. */
+.game:not(.cheia):has(#actions.em-loja) #scene,.game:not(.cheia):has(#actions.em-loja) .zona[data-zona="centro"]{display:none}
+#actions > .btn.big{flex:1 1 100%}
+#actions > .btn.ghost{flex:1 1 calc(50% - 5px);min-width:0;padding:8px 8px;line-height:1.25}
+.btn small.btn-sub{display:block;margin-top:1px;font:500 12px var(--display);color:var(--muted)}
+.btn small.btn-sub s{opacity:.7}
+/* Batalha: os golpes logo abaixo da cena, o registro depois. Medido em 1280×800: com o registro (236 px) entre a
+   cena e os golpes, eles começavam em y=694 — meio golpe à vista, e o botão que se usa TODO turno exigia rolar.
+   Só `order` (o DOM e a tabulação ficam como estavam); o celular deitado põe o seu próprio mais abaixo. */
+body.em-batalha #actions{order:1}
+/* Mochila / Fugir (e os botões de Mega, Tera, Z…) dividem a linha, como os golpes dividem a deles */
+body.em-batalha #actions .subrow .btn{flex:1 1 0;min-width:0}
+body.em-batalha .zona[data-zona="centro"]{order:2}
 .divisor{cursor:col-resize;align-self:stretch;border-radius:5px;touch-action:none}
 .divisor:hover,.divisor.ativo{background:var(--line)}
 /* painel */
@@ -379,6 +447,12 @@ a.btn{display:inline-block;text-decoration:none}
 .painel-botoes{display:flex;gap:2px}
 .painel-botoes button{background:none;border:0;color:var(--muted);border-radius:6px;padding:2px 6px;font-size:13px}
 .painel-botoes button:hover{background:var(--panel2);color:var(--text)}
+/* Dedo não é cursor: ▲ ▼ ⇄ ▾ eram alvos de ~22 px. Em tela de toque ficam do tamanho mínimo confortável. */
+@media(pointer:coarse){
+  .painel-botoes{gap:4px}
+  .painel-botoes button{min-width:38px;min-height:38px;font-size:15px;padding:0}
+  .painel-cab{padding:4px 6px 4px 12px}
+}
 .painel-corpo{padding:14px 16px;overflow:auto;resize:vertical;min-height:60px}
 .painel-marcador{height:6px;border-radius:3px;background:var(--yellow)}
 .painel[data-painel="log"] .painel-corpo{padding:8px;display:flex}
@@ -402,8 +476,6 @@ a.btn{display:inline-block;text-decoration:none}
   .painel-cab .alca{display:none}
   .painel-corpo{resize:none}
   .zona.vazia{display:none}
-  /* fora da batalha: o botão de explorar/centro/loja acompanha a rolagem */
-  #actions{position:sticky;bottom:0;z-index:7;background:var(--ink);padding:10px 0 calc(10px + env(safe-area-inset-bottom));margin-top:-4px}
   .dexr-grade{max-height:46vh;overflow:auto}
   /* a descrição de cada item vira duas linhas (o texto inteiro continua no toque longo, pelo `title`): com 40
      itens na mochila, era ela que fazia a lista crescer sem fim */
@@ -413,32 +485,122 @@ a.btn{display:inline-block;text-decoration:none}
   /* ---- batalha: só a CENA fica presa no topo; o resto da página rola normalmente por baixo ----
      Antes a .stage inteira (cena + golpes + ações) era sticky e umas abas escolhiam o que aparecia no meio; isso
      escondia os painéis (ficha dos aliados, missões, mochila) e comia uma faixa de tela. Hoje nada é escondido:
-     a cena acompanha a rolagem, em no máximo 38vh, e você chega em tudo descendo a página. */
+     a cena acompanha a rolagem e você chega em tudo descendo a página.
+     Revisão de 14/10/2026 (medida em tela, 390×844): (1) a cena tinha `max-height:38vh` + rolagem interna e a placa
+     do SEU Pokémon, que caía embaixo do sprite, era cortada; agora a placa fica AO LADO do sprite (como a do
+     inimigo) e a cena tem a altura do que contém, ~250 px. (2) Os golpes vinham depois do registro (236 px) e
+     sobrava meio golpe na primeira tela: agora vêm logo abaixo da cena (a regra de `order` mais acima) e o
+     registro desce. (3) Dois golpes por linha, com tipo e PP à vista. */
   body.em-batalha .game{padding:10px;gap:10px}
   body.em-batalha #actions{position:static;padding:0;margin:0}
-  body.em-batalha .scene.battle{position:sticky;top:0;z-index:8;max-height:38vh;overflow:auto;min-height:0;padding:10px 12px;gap:4px;box-shadow:0 6px 12px -8px #0008}
+  /* coluna flexível, não a grade de 3 linhas (`auto 1fr 1fr`): com 1fr as duas linhas de Pokémon ficavam IGUAIS à
+     mais alta — um treinador com aliados virava uma cena de 790 px */
+  body.em-batalha .scene.battle{position:sticky;top:0;z-index:8;display:flex;flex-direction:column;max-height:none;overflow:hidden;min-height:0;padding:8px 10px;gap:4px;box-shadow:0 6px 12px -8px #0008}
+  body.em-batalha .scene.battle.cena-alta{position:relative;box-shadow:none}   /* alta demais pra ficar presa: rola com a página (render.js) */
+  /* Cinco ou mais em campo (3 inimigos + você + aliado): duas colunas — inimigos | você —, placas em cima e sprites
+     embaixo de cada uma. Em coluna única a cena passava de 540 px num celular de 640 de altura. */
+  body.em-batalha .scene.battle.compacta.denso{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start;column-gap:8px;row-gap:4px}
+  body.em-batalha .scene.compacta.denso .turno-bar,body.em-batalha .scene.compacta.denso .fila-turno{grid-column:1/-1;grid-row:1}
+  body.em-batalha .scene.compacta.denso .side.foe{grid-column:1;grid-row:2;flex-direction:column;align-items:stretch;height:100%}
+  body.em-batalha .scene.compacta.denso .side.me{grid-column:2;grid-row:2;flex-direction:column-reverse;align-items:stretch;justify-content:flex-end;height:100%}
+  body.em-batalha .scene.compacta.denso .pedir-alvo{grid-column:1/-1;grid-row:3}
+  body.em-batalha .scene.compacta.denso .plates{flex:none;width:100%;max-width:none}
+  body.em-batalha .scene.compacta.denso .mons-lado{justify-content:center;flex:none}
+  body.em-batalha .scene.compacta.denso .side.foe .foe-mons{padding-left:0}
+  body.em-batalha .scene.compacta.denso .mon.mini{width:44px;height:50px;margin-left:-8px}
+  body.em-batalha .scene.compacta.denso .mon.mini .spr{width:40px;height:40px}
+  body.em-batalha .scene.compacta.denso .mon{width:88px;height:76px}
+  body.em-batalha .scene.compacta.denso .spr.back{width:78px;height:78px}
+  body.em-batalha .side{flex-wrap:nowrap;gap:8px}
+  body.em-batalha .plates{flex:1 1 0;min-width:0;width:auto;max-width:270px}
+  /* com aliados os sprites encolhem pra a placa continuar AO LADO deles (empilhada embaixo, a cena passava de 440 px) */
+  body.em-batalha .side.me.com-aliados .mon{width:84px;height:74px}
+  body.em-batalha .side.me.com-aliados .spr.back{width:76px;height:76px}
+  body.em-batalha .side.me.com-aliados .mon.mini{width:44px;height:50px;margin-left:-8px}
+  body.em-batalha .side.me.com-aliados .mon.mini .spr{width:40px;height:40px}
+  body.em-batalha .side.me.com-aliados .plates{max-width:none}
+  body.em-batalha .mons-lado{flex:none}
   body.em-batalha .mon{width:112px;height:92px}
   body.em-batalha .spr{width:92px;height:92px}
   body.em-batalha .spr.back{width:104px;height:104px}
-  body.em-batalha .mon.mini{width:56px;height:56px;margin-left:-8px}
-  body.em-batalha .mon.mini .spr{width:52px;height:52px}
-  body.em-batalha .plate{padding:6px 9px}
-  body.em-batalha .pl-top{font-size:14px}
+  body.em-batalha .mon.mini{width:48px;height:52px;margin-left:-10px}
+  body.em-batalha .mon.mini .spr{width:44px;height:44px}
+  body.em-batalha .side.foe .foe-mons{padding-left:8px}          /* o 1º mini não "come" a placa: a margem negativa é só entre irmãos */
+  /* A placa é UMA linha e meia, não quatro (mesmo desenho da luta da Saga): nome e nível à esquerda, tipos à direita
+     NA MESMA linha, a barra de HP embaixo e o resto (guarda, item, estados) numa faixa fina. Num grupo de 3 inimigos
+     com 2 aliados são CINCO placas na cena: com a placa inteira (nome / tipos / HP / estados) elas somavam ~400 px e
+     a cena passava de metade da tela. */
+  body.em-batalha .plate{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;padding:4px 8px;border-radius:8px;box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+  body.em-batalha .plate > *{min-width:0;order:4;flex:1 1 100%}
+  /* O nome ganha a linha inteira (com os tipos ao lado ele virava "Gra…" e "Gl…": numa manada o nome é QUEM é o
+     bicho). Abaixo, a barra de HP e depois UMA nuvem de etiquetas que quebra sozinha — tipos, status, estágios
+     (Atq −1) e item — porque `.pl-tipos` e `.chips` viram `display:contents`: cada etiqueta é item da própria placa. */
+  body.em-batalha .plate .pl-top{order:0;font-size:13px;line-height:1.25;white-space:nowrap}
+  body.em-batalha .plate .pl-top span:first-child{overflow:hidden;text-overflow:ellipsis}
+  body.em-batalha .plate .pl-top span:last-child{flex:none}
+  /* sem o rótulo "HP": a barra colorida com os números já diz o que é, e a linha cabe junto dos tipos */
+  body.em-batalha .plate .hp{order:1;flex:1 1 68px;display:grid;grid-template-columns:minmax(24px,1fr) auto;gap:4px;font-size:11px;line-height:1.2}
+  body.em-batalha .plate .hp > span:first-child{display:none}
+  body.em-batalha .plate .hp.amz > span:first-child{display:inline}      /* a barra de amizade (♥) é outra coisa: o símbolo fica */
+  body.em-batalha .plate .hp.amz{grid-template-columns:auto minmax(24px,1fr) auto}
+  body.em-batalha .plate .pl-tipos,body.em-batalha .plate .chips{display:contents}
+  body.em-batalha .plate .pl-tipos > *,body.em-batalha .plate .chips > *{flex:0 0 auto;order:2;margin:0;padding:0 4px;font-size:10px;line-height:1.55;max-width:100%}
+  body.em-batalha .plate .chips > .st-item{max-width:11em}
+  body.em-batalha .plate .bar{height:7px}
+  body.em-batalha .plate .guarda{margin-top:0;font-size:11px}
+  body.em-batalha .plate.mini{padding:3px 8px}
   body.em-batalha .turno-bar{padding:4px 8px;font-size:12px}
   body.em-batalha .carteira-mini{font-size:13px}
-  body.em-batalha .mv{padding:7px 10px}
-  body.em-batalha .mv b{font-size:15px}
-  body.em-batalha .mv small{display:none}          /* a descrição fica no toque longo (title); aqui o espaço é curto */
+  body.em-batalha .moves{grid-template-columns:1fr 1fr;gap:6px}
+  body.em-batalha .mv{padding:6px 9px;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;row-gap:0}
+  body.em-batalha .mv b{grid-column:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.em-batalha .mv .pp{grid-column:2;grid-row:1;font-size:12px}
+  body.em-batalha .mv small,body.em-batalha .mv .vant{grid-column:1/-1;font-size:12px}
+  body.em-batalha .mv .mv-cls{display:none}                    /* "Físico/Especial" sai: o tipo e o poder já dizem o que importa; a classe está no toque longo */
   body.em-batalha .bag-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
   body.em-batalha .painel-corpo{height:auto}
-  body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:40vh}
+  body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:28vh}
 }
 @media(max-width:420px){
   body.em-batalha .mon{width:96px;height:80px}
   body.em-batalha .spr{width:80px;height:80px}
   body.em-batalha .spr.back{width:92px;height:92px}
-  body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:32vh}
+  body.em-batalha .painel[data-painel="log"] .painel-corpo{max-height:26vh}
 }
+/* ---- cena em GRUPO (qualquer tamanho): 2+ inimigos e/ou aliados em campo ----
+   Medido em 1280×800 com 3 inimigos, 2 aliados e os estados de sempre (queimado, Atq −2, item): a cena passava de
+   750 px e os golpes ficavam abaixo da dobra. Mesmo desenho das placas do celular — nome numa linha, HP e etiquetas
+   (tipos, status, estágios, item) numa nuvem que quebra sozinha — e a cena vira uma coluna que tem a altura do que
+   contém (a grade `auto 1fr 1fr` igualava as duas fileiras à mais alta). Só fora da Saga (`em-batalha`). */
+body.em-batalha .scene.battle.compacta{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+body.em-batalha .scene.compacta .side{flex-wrap:nowrap;gap:8px}
+body.em-batalha .scene.compacta .plates{flex:1 1 0;min-width:0;width:auto;max-width:300px}
+body.em-batalha .scene.compacta .mons-lado{flex:none}
+body.em-batalha .scene.compacta .mon{width:112px;height:92px}
+body.em-batalha .scene.compacta .spr{width:92px;height:92px}
+body.em-batalha .scene.compacta .spr.back{width:104px;height:104px}
+body.em-batalha .scene.compacta .mon.mini{width:52px;height:56px;margin-left:-10px}
+body.em-batalha .scene.compacta .mon.mini .spr{width:48px;height:48px}
+body.em-batalha .scene.compacta .side.foe .foe-mons{padding-left:8px}
+body.em-batalha .scene.compacta .plate{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;padding:4px 8px;border-radius:8px;box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+body.em-batalha .scene.compacta .plate > *{min-width:0;order:4;flex:1 1 100%}
+body.em-batalha .scene.compacta .plate .pl-top{order:0;font-size:13px;line-height:1.25;white-space:nowrap}
+body.em-batalha .scene.compacta .plate .pl-top span:first-child{overflow:hidden;text-overflow:ellipsis}
+body.em-batalha .scene.compacta .plate .pl-top span:last-child{flex:none}
+body.em-batalha .scene.compacta .plate .hp{order:1;flex:1 1 68px;display:grid;grid-template-columns:minmax(24px,1fr) auto;gap:4px;font-size:11px;line-height:1.2}
+body.em-batalha .scene.compacta .plate .hp > span:first-child{display:none}
+body.em-batalha .scene.compacta .plate .hp.amz > span:first-child{display:inline}
+body.em-batalha .scene.compacta .plate .hp.amz{grid-template-columns:auto minmax(24px,1fr) auto}
+body.em-batalha .scene.compacta .plate .pl-tipos,body.em-batalha .scene.compacta .plate .chips{display:contents}
+body.em-batalha .scene.compacta .plate .pl-tipos > *,body.em-batalha .scene.compacta .plate .chips > *{flex:0 0 auto;order:2;margin:0;padding:0 4px;font-size:10px;line-height:1.55;max-width:100%}
+body.em-batalha .scene.compacta .plate .chips > .st-item{max-width:11em}
+body.em-batalha .scene.compacta .plate .bar{height:7px}
+body.em-batalha .scene.compacta .plate .guarda{margin-top:0;font-size:11px}
+body.em-batalha .scene.compacta .plate.mini{padding:3px 8px}
+/* o pedido de alvo: uma linha fina (era um balão de duas linhas, que empurrava o "Cancelar" pra fora da cena) */
+body.em-batalha .scene.compacta .pedir-alvo{padding:3px 10px;gap:4px 8px;font-size:12px;line-height:1.3;border-width:2px;border-radius:12px}
+body.em-batalha .scene.compacta .pedir-alvo .btn{padding:2px 8px;font-size:12px}
+
 /* ==================== celular deitado (paisagem) ====================
    O bloco "celular" acima foi pensado pra RETRATO (tela alta e estreita: cena presa no topo, resto rola embaixo).
    Paisagem é o oposto — larga e baixa — e presa no topo ali sobraria pouquíssima altura pro resto. Aqui a cena
@@ -458,10 +620,29 @@ a.btn{display:inline-block;text-decoration:none}
      `row-reverse` leva o primeiro botão do DOM (o principal) pra borda direita sem mexer na ordem de leitura
      nem na tabulação. Só fora da luta: em batalha os golpes já nascem na coluna da direita. */
   body:not(.em-batalha) #actions{flex-direction:row-reverse}
+  /* o dock numa linha só (era uma pilha de 138 px numa tela de 390): o principal maior, e na ponta da mão direita */
+  body:not(.em-batalha) .game:not(.cheia) #actions{flex-wrap:nowrap;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+  body:not(.em-batalha) .game:not(.cheia) #actions > .btn.big{flex:2 1 0;padding:10px 12px}
+  body:not(.em-batalha) .game:not(.cheia) #actions > .btn.ghost{flex:1 1 0}
+  body:not(.em-batalha) .game:not(.cheia) #actions.em-loja{flex-wrap:wrap}
   body.em-batalha .game{--cena:min(36vw,320px);grid-template-columns:1fr;gap:10px;padding:8px 8px 8px calc(var(--cena) + 16px)}
   body.em-batalha .stage{display:contents}
   body.em-batalha .divisor{display:none}
   body.em-batalha .brand{visibility:hidden}
+  body.em-batalha .scene.battle.cena-alta{position:fixed}      /* a cena daqui é sempre presa (lateral): `cena-alta` é coisa do retrato */
+  /* grupo em campo: a coluna da cena alarga (5–6 placas com etiquetas não cabem em 300 px) e a dos golpes encolhe */
+  body.em-batalha .game:has(.scene.compacta){--cena:min(47vw,430px)}
+  /* e a cena do grupo vira DUAS colunas — inimigos à esquerda, você à direita, cada uma com as placas em cima e os
+     sprites embaixo: a altura é o que falta aqui, e a largura sobra */
+  body.em-batalha .scene.battle.compacta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start;column-gap:8px;row-gap:3px;padding:6px 8px}
+  body.em-batalha .scene.compacta .turno-bar{padding:2px 6px 2px 12px}
+  body.em-batalha .scene.compacta .turno-bar,body.em-batalha .scene.compacta .fila-turno{grid-column:1/-1;grid-row:1}
+  body.em-batalha .scene.compacta .side.foe{grid-column:1;grid-row:2;flex-direction:column;align-items:stretch;height:100%}
+  body.em-batalha .scene.compacta .side.me{grid-column:2;grid-row:2;flex-direction:column-reverse;align-items:stretch;justify-content:flex-end;height:100%}
+  body.em-batalha .scene.compacta .pedir-alvo{grid-column:1/-1;grid-row:3}
+  body.em-batalha .scene.compacta .plates{flex:none;width:100%;max-width:none}
+  body.em-batalha .scene.compacta .mons-lado{justify-content:center;flex:none}
+  body.em-batalha .scene.compacta .side.foe .foe-mons{padding-left:0}
   body.em-batalha .scene.battle{position:fixed;left:8px;top:8px;z-index:8;width:var(--cena);
     height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:none;overflow:auto;gap:4px;padding:8px 10px}
   /* ordem na coluna direita: golpes primeiro (é o que se usa a cada turno), depois painel central (se algo
@@ -486,6 +667,16 @@ a.btn{display:inline-block;text-decoration:none}
 .ficha-me{display:flex;gap:12px;align-items:center}
 .ficha-me img{width:96px;height:96px;image-rendering:pixelated;object-fit:contain;background:var(--panel2);border-radius:12px;flex:none}
 .ficha-me h2{margin:0;font:700 26px/1.1 var(--titulo,var(--display))}
+/* Painel estreito (coluna lateral encolhida em janela média, ou puxada pelo jogador): o sprite e o nome diminuem em
+   vez de cortar o ♂/♀ na borda. A pergunta é a largura do PAINEL, não a da tela. */
+#p-ficha{container-type:inline-size}
+.ficha-me > div{min-width:0}
+.ficha-me h2{overflow-wrap:anywhere}
+@container (max-width:330px){
+  .ficha-me{gap:10px}
+  .ficha-me img{width:72px;height:72px}
+  .ficha-me h2{font-size:21px}
+}
 .ficha-me .sub{color:var(--muted);font-size:14px;margin:2px 0 6px}
 .bars{margin:14px 0 6px;display:grid;gap:6px}
 .hp{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;font:700 12px var(--display)}
@@ -521,7 +712,18 @@ table.stats td.v{font:700 15px var(--display)}
 .mv-ordem .btn{padding:0 6px;line-height:1.8;font-size:12px}
 .mlist details p{font-size:13px;color:var(--muted);margin:4px 0 2px}
 ul.bag{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-ul.bag li{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px}
+/* Item da mochila: texto em cima, botões embaixo. Na coluna de 340 px (e no celular) os três botões tomavam 190 px e
+   o nome "Full Heal ×1" quebrava em três linhas. Quando o PAINEL é largo (arrastado pro centro, ou a tela larga),
+   volta pra uma linha — a pergunta é o tamanho do painel, não o da tela (container query em #p-mochila). */
+#p-mochila{container-type:inline-size}
+ul.bag li{display:grid;grid-template-columns:30px 1fr;align-items:center;gap:6px 8px}
+ul.bag .bag-acoes{grid-column:1/-1;justify-content:flex-start}
+ul.bag .bag-acoes .btn:not([data-act="rapido"]){flex:1 1 0}
+@container (min-width:480px){
+  ul.bag li{grid-template-columns:30px 1fr auto}
+  ul.bag .bag-acoes{grid-column:auto;justify-content:flex-end}
+  ul.bag .bag-acoes .btn:not([data-act="rapido"]){flex:0 0 auto}
+}
 ul.bag img{width:30px;height:30px;image-rendering:pixelated}
 ul.bag small{display:block;color:var(--muted);font-size:12px}
 .bag-acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
@@ -530,6 +732,14 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .zone-head h2{font:700 30px/1.1 var(--titulo,var(--display));margin:0}
 .zone-head p{margin:4px 0 0;color:var(--muted)}
 .zones{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+/* Celular: as 11 rotas viravam 8 linhas de chips (330 px) antes de qualquer informação. Uma fileira que rola de
+   lado; o chip da rota atual é centralizado por render.js, e a máscara nas pontas avisa que há mais. */
+@media(max-width:880px){
+  .zones{flex-wrap:nowrap;overflow-x:auto;margin:12px -4px;padding:2px 4px 8px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 24px),transparent)}
+  .zones::-webkit-scrollbar{display:none}
+  .zones .chip{flex:none;white-space:nowrap;scroll-snap-align:center;padding:8px 14px}
+}
 .chip{background:var(--panel2);border:2px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px}
 .chip small{color:var(--muted);margin-left:6px;font-family:var(--display)}
 .chip.on{border-color:var(--yellow)}
@@ -551,6 +761,15 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .nav-atalhos{display:flex;flex-wrap:wrap;gap:6px}
 .nav-voltar{white-space:nowrap}
 @media (max-width:560px){ .nav-telas{gap:6px} .nav-voltar{width:100%} }
+/* Celular: os atalhos viram UMA fileira que rola de lado. Eram 13 botões em 4-5 linhas — um quarto da tela de
+   cabeçalho antes do conteúdo da tela (a criação de jornada abria com o título a 330 px do topo). A máscara nas
+   pontas avisa que há mais pra rolar; sem rolagem visível, os que caem fora da tela pareceriam não existir. */
+@media (max-width:720px){
+  .nav-atalhos{flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+  .nav-atalhos::-webkit-scrollbar{display:none}
+  .nav-atalhos .btn{flex:none;white-space:nowrap}
+}
 /* ---- 📜 novidades / patch notes (tela-patchnotes.js) ---- */
 /* 📈 Taxas: índice de atalhos no topo e as seções. A tabela em si reusa table.ranking. */
 .taxas-indice{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px;max-width:900px}
@@ -609,6 +828,11 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .save-acoes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .tag-atual{font:600 12px var(--display);color:#1b1b2f;background:var(--yellow);border-radius:999px;padding:0 8px}
 @media (max-width:560px){ .save-card{grid-template-columns:56px 1fr} .save-card img{width:56px;height:56px} .save-acoes{grid-column:1/-1;justify-content:flex-start} }
+.dex-legenda-det{margin:2px 0 8px}
+.dex-legenda-det summary{display:inline-block;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 0;list-style:none}
+.dex-legenda-det summary::-webkit-details-marker{display:none}
+.dex-legenda-det summary::before{content:'ⓘ ';opacity:.8}
+.dex-legenda-det[open] summary{color:var(--text)}
 .dexr-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
 .dexr{position:relative;display:grid;justify-items:center;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:2px 2px 4px;min-height:92px;font-size:11px;color:var(--muted);text-align:center}
 .dexr img{width:60px;height:60px;image-rendering:pixelated}
@@ -632,7 +856,7 @@ ul.bag small{display:block;color:var(--muted);font-size:12px}
 .chefe-box .lend-imgs img{width:44px;height:44px;margin-right:-10px}
 .chefe-box .lend-imgs img.principal{width:64px;height:64px;margin-right:0}
 /* escolha de mapa (Gen): criação e depois de fechar uma Gen */
-.gens{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.gens{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}   /* 9 mapas: 9 numa linha no computador (com 120 px sobrava a Gen 9 sozinha na segunda) */
 .gen-card{display:grid;justify-items:center;gap:0;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:6px 6px 10px;color:var(--text)}
 .gen-card img{width:72px;height:72px;image-rendering:pixelated}
 .gen-card b{font:700 16px var(--display)}
@@ -807,6 +1031,12 @@ button.mon.alvo:hover::after,button.mon.alvo:focus-visible::after{background:col
 .chip.trancada{opacity:.6}
 .chefe-box{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;margin-top:14px;padding:10px 12px;background:var(--panel2);border:2px solid var(--red);border-radius:12px}
 .chefe-box.vencido{border-color:var(--grass)}
+/* Um botão cheio por tela: o Explorar do dock. Os desafios dentro da zona (Alfa, lendários, evento) usam a cor da
+   própria caixa, vazados — dois amarelos cheios lado a lado disputavam qual era "o" botão. */
+.chefe-box > .btn:not(.ghost){background:transparent;color:var(--text);border:2px solid var(--red)}
+.chefe-box.lendarios > .btn:not(.ghost){border-color:var(--yellow);color:var(--yellow)}
+.chefe-box.evento > .btn:not(.ghost){border-color:#b45cff}
+.chefe-box > .btn:not(.ghost):hover:not(:disabled){background:rgba(255,255,255,.08);filter:none}
 .chefe-box img{width:64px;height:64px;image-rendering:pixelated}
 .chefe-box small{display:block;color:var(--muted);font-size:13px}
 /* celular: sprite + texto + botão em três colunas deixa o texto com ~80px e quebra palavra por palavra.
@@ -1014,6 +1244,9 @@ ul.historico{margin:0;padding-left:18px;color:var(--muted);font-size:14px;displa
 
 .textbox{background:var(--paper);color:var(--paper-ink);border-radius:10px;border:3px solid var(--paper-ink);box-shadow:inset 0 0 0 3px var(--paper),inset 0 0 0 5px #6d74b8;padding:5px}
 .log{height:180px;overflow-y:auto;padding:10px 14px;font-size:15px}
+/* o log rola sozinho pro fim: a primeira linha aparece cortada pela metade, o que parece defeito. Um esmaecido de
+   14 px no topo diz "tem mais pra cima" em vez de mostrar meia letra. */
+.log{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 16px);mask-image:linear-gradient(to bottom,transparent,#000 16px)}
 .log p{margin:0 0 4px}
 .log .good{color:#1f7a3a}.log .hit{color:#a83418}.log .level{color:#5a33c2}.log .muted{color:#6b6e8f}
 .log .crit{color:#c2410c;font-weight:700}.log .status{color:#8a4b0f}.log .enc{font-size:16px}
@@ -1096,6 +1329,13 @@ button.dexr:hover{border-color:var(--yellow);transform:translateY(-1px)}
    que a coisa faz — não há `title` pra passar o mouse. Coluna mais larga que a da mochila pra o texto respirar. */
 .loja-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
 .item-btn .item-desc{font-size:11px;line-height:1.35;white-space:normal}
+/* O cartão da loja: ícone | nome ........ preço, e a descrição embaixo. O preço (₽3.000) caía na coluna do ícone, de
+   30 px, e vazava por cima da descrição ("₽3.000Recupera todo o HP."). */
+.loja-grid .item-btn{grid-template-columns:30px minmax(0,1fr) auto;grid-template-areas:"ic nome preco" "ic desc desc";align-items:start}
+.loja-grid .item-btn img{grid-area:ic}
+.loja-grid .item-btn > span{grid-area:nome;min-width:0}
+.loja-grid .item-btn > small:not(.item-desc){grid-area:preco;justify-self:end;font:700 13px var(--display);color:var(--yellow)}
+.loja-grid .item-btn .item-desc{grid-area:desc}
 .item-btn:hover:not(:disabled){border-color:var(--yellow)}
 /* ⚡ itens rápidos (render.barraRapidos): o mesmo cartão da mochila, em destaque junto dos botões principais.
    O ⚡ da mochila usa o .on amarelo das outras listas selecionáveis. */
@@ -1318,20 +1558,23 @@ ul.quase.conquistas .bar{margin:4px 0}
 /* Na tela de jogo a barra do topo fica compacta em QUALQUER largura: os atalhos vão pro ☰, como no celular.
    Medido em tela: no computador as duas fileiras de botões comiam 190 px — um quarto da altura do mapa.
    `:has()` porque a barra mora fora de `.game`; num navegador sem ele, a barra só continua alta. */
-body:has(.game.cheia) .top{padding:8px 14px}
-body:has(.game.cheia) .brand small{display:none}
-body:has(.game.cheia) .brand .logo{height:38px}
-body:has(.game.cheia) .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
-body:has(.game.cheia) .menu-links{display:none;position:absolute;top:calc(100% + 6px);right:10px;left:auto;width:min(360px,calc(100vw - 20px));z-index:9;flex-direction:column;gap:10px;
+body:has(.game) .top{padding:8px 14px}
+body:has(.game) .brand small{display:none}
+body:has(.game) .brand .logo{height:38px}
+body:has(.game) .burger{display:grid;place-items:center;width:44px;height:44px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;font-size:20px;line-height:1}
+body:has(.game) .menu-links{display:none;position:absolute;top:calc(100% + 6px);right:10px;left:auto;width:min(360px,calc(100vw - 20px));z-index:9;flex-direction:column;gap:10px;
   max-height:70vh;max-height:70dvh;overflow:auto;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
-body:has(.game.cheia) .menu-links.open{display:flex}
-body:has(.game.cheia) .menu-links .top-r,body:has(.game.cheia) #conta-chip{flex-direction:column;align-items:stretch;gap:8px}
-body:has(.game.cheia) .menu-links .btn{width:100%;text-align:center;padding:10px 14px}
+body:has(.game) .menu-links.open{display:flex}
+body:has(.game) .menu-links .top-r,body:has(.game) #conta-chip{flex-direction:column;align-items:stretch;gap:8px}
+body:has(.game) .menu-links .btn{width:100%;text-align:center;padding:10px 8px;font-size:15px}
+/* dois botões por linha: eram ~20 em coluna única, e o menu virava uma lista de rolagem */
+body:has(.game) .menu-links{width:min(440px,calc(100vw - 20px))}
+body:has(.game) .menu-links .top-r{display:grid;grid-template-columns:1fr 1fr}
 @media (orientation:landscape) and (max-height:560px){
-  body:has(.game.cheia) .top{padding:3px 12px}
-  body:has(.game.cheia) .brand .logo{height:28px}
-  body:has(.game.cheia) .burger{width:38px;height:38px}
-  body:has(.game.cheia) .dinheiro{min-height:0;padding:3px 10px;font-size:15px}
+  body:has(.game) .top{padding:3px 12px}
+  body:has(.game) .brand .logo{height:28px}
+  body:has(.game) .burger{width:38px;height:38px}
+  body:has(.game) .dinheiro{min-height:0;padding:3px 10px;font-size:15px}
 }
 
 .saga-tela{position:absolute;inset:0;overflow:hidden;--u:1;--t:calc(var(--u) * 32px);--passo:170ms;user-select:none;-webkit-user-select:none;touch-action:manipulation;background:#0d0b12}

@@ -339,7 +339,13 @@ async function aoClicar(e) {
         [{ label: 'Encerrar em vitória', value: true }, { label: 'Continuar explorando', value: false, ghost: true }]);
       return ok ? encerrarJornada('venceu', { genVencida: G.S.genVencida }) : undefined;
     }
-    case 'panel': G.panel = v; return render();
+    case 'panel': {
+      G.panel = v; render();
+      /* Loja abre (e fecha) no TOPO da coluna: a zona sai de cena enquanto ela está aberta (CSS, `.em-loja`). Sem isto,
+         quem estava com a página rolada via o dock sumir e a loja nascer fora da tela. */
+      if (G.mode === 'explore' && typeof window !== 'undefined') window.scrollTo({ top: 0 });
+      return;
+    }
     /* Divisão da mochila abrindo/fechando (`<details>` nativo). O navegador já virou o `open` no clique; aqui só
        se GRAVA isso em `G.bagAbertas`, senão o próximo `render()` (que refaz o DOM inteiro) fechava de novo. */
     case 'bag-cat': {

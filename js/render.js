@@ -647,6 +647,10 @@ function renderScene() {
     const escolhendo = G.alvoDe != null && FOES.filter(m => m.hp > 0).length > 1;
     const grupo = FOES.length > 1;
     sc.className += grupo || modoComAmeaca(G.S) ? ' saga' : '';
+    // cena com mais de dois em campo: placas compactas em qualquer tamanho de tela (ver `.compacta` no CSS)
+    sc.className += grupo || AL.length ? ' compacta' : '';
+    // cinco ou mais em campo: no celular a cena vira duas colunas (inimigos | você), que é a que sobra em largura
+    sc.className += FOES.length + 1 + AL.length >= 5 ? ' denso' : '';
     const sprFoe = (F, i) => {
       const morto = F.hp <= 0, mirado = !escolhendo && B.foco === i && grupo;
       const corpo = `<div class="pad"></div>${imgMon(F, 'spr', spriteFrente(F))}`;
@@ -663,7 +667,7 @@ function renderScene() {
       </div>
       ${escolhendo ? `<p class="pedir-alvo" role="status">🎯 Em quem usar <b>${esc(fmt(alvoDoPainel(P).moves[G.alvoDe]?.name || 'o golpe'))}</b>? Toque num inimigo.
         <button class="btn ghost sm" data-act="alvo-cancelar">Cancelar</button></p>` : ''}
-      <div class="side me">
+      <div class="side me${AL.length ? ' com-aliados' : ''}">
         <div class="mons-lado">
           <div class="mon ${P.hp <= 0 ? 'fainted' : ''} ${P.dyna ? 'gigante' : ''}" id="mon-p"><div class="pad"></div>${imgMon(P, `spr back ${sprCostas(P) ? '' : 'flip'}`, sprCostas(P) || spriteFrente(P))}</div>
           ${AL.map(([A, i]) => `<div class="mon mini ${A.hp <= 0 ? 'fainted' : ''}" id="mon-a${i}"><div class="pad"></div>${imgMon(A, `spr ${sprCostas(A) ? '' : 'flip'}`, sprCostas(A) || spriteFrente(A))}</div>`).join('')}
@@ -700,7 +704,19 @@ function renderScene() {
       ${c ? `<div class="chefe-box ${venceu ? 'vencido' : ''}"><img src="${SPR(c.id)}" alt=""><div><b>Alfa: ${c.nome}</b> <span class="muted">Nv. ${c.nivel}</span><small>${venceu ? '✓ Derrotado. Pode desafiar de novo pelo XP, sem prêmio.' : 'HP ×2 e +30% em todo o resto. Prêmio na primeira vitória.'}</small></div><button class="btn ${venceu ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Desafiar</button></div>` : ''}
       ${lend && G.S.player.level >= z.libera ? blocoEvento(g) : ''}
       ${lend ? `<div class="chefe-box lendarios ${fechada ? 'vencido' : ''}"><div class="lend-imgs">${lend.map((l, i) => `<img src="${SPR(l.id)}" alt="" class="${i === lend.length - 1 ? 'principal' : ''}" title="${esc(l.nome)}">`).join('')}</div><div><b>Lendários de ${dadosDaGen(g).regiao}</b> <span class="muted">Nv. ${lend[0].nivel}–${lend[lend.length - 1].nivel}</span><small>${fechada ? '✓ Gen fechada.' : `Até ${Math.min(4, lend.length)} lendários em sequência; ${esc(lend[lend.length - 1].nome)} por último, turbinado. Vencer fecha a Gen ${g}${DIFICULDADES[dificuldadeDe(G.S)].fimNaGen ? ' e encerra a run em vitória' : ''}.`}</small></div><button class="btn ${fechada ? 'ghost' : ''} sm" data-act="chefe" ${G.busy ? 'disabled' : ''}>⚔ Enfrentar</button></div>` : ''}`;
+    centrarRota(sc, z.id);
   }
+}
+/* No celular as rotas são uma fileira que rola de lado (CSS). Como cada render() recria o DOM, a fileira voltaria
+   pro começo a cada ação: trocou de rota (ou é a primeira vez) → centraliza o chip atual; senão devolve a rolagem
+   que a pessoa tinha deixado. Sem rolagem (computador) `scrollLeft` não faz nada. */
+let rotaCentrada = null, rolagemRotas = 0;
+function centrarRota(sc, id) {
+  const faixa = sc.querySelector('.zones'), on = faixa?.querySelector('.chip.on');
+  if (!faixa || !on) return;
+  if (rotaCentrada !== id) { faixa.scrollLeft = on.offsetLeft - (faixa.clientWidth - on.offsetWidth) / 2; rotaCentrada = id; }
+  else faixa.scrollLeft = rolagemRotas;
+  faixa.addEventListener('scroll', () => { rolagemRotas = faixa.scrollLeft; }, { passive: true });
 }
 // O que você já sabe de cada espécie: todas as jornadas da carreira + a atual. A parte da carreira fica guardada
 // até a carreira mudar (versaoCarreira) — ler e somar tudo a cada render seria desperdício.
@@ -746,14 +762,17 @@ function pokedexRota(z) {
        Se ele já está registrado, a ficha já é sua — e era estranho ver o bicho ali e não poder olhar. */
     : `<button class="dexr ${p.estado} ${p.mitico ? 'mitico' : ''}" data-act="dex-rota" data-v="${p.id}" title="${esc(fmt(p.nome))}${p.estado === 'revelado' ? ` · ${textoTaxa(p.taxa)} dos encontros` : ` · derrote ${REVELA_DERROTADOS - Math.min(p.derrotados, REVELA_DERROTADOS)} pra ver a taxa`} · clique pra ver na Pokédex">
         <img src="${SPR(p.id)}" alt="" loading="lazy"><small>${esc(fmt(p.nome))}</small>${p.estado === 'revelado' ? `<b class="taxa">${textoTaxa(p.taxa)}${p.dobrado ? ' ×2' : ''}</b>` : `<i class="falta">${Math.min(p.derrotados, REVELA_DERROTADOS)}/${REVELA_DERROTADOS}</i>`}</button>`;
+  /* A legenda são três linhas que só importam na primeira vez: vira um "como ler" recolhido, que devolve ~110 px
+     da tela da rota (a zona tinha ~800 px no computador e empurrava o Explorar pra fora da tela). */
   return `<div class="dex-rota"><p class="small muted">Pokédex da rota: <b>${vistos}/${dex.length}</b> encontrados.</p>
+    <details class="dex-legenda-det"><summary>Como ler</summary>
+      <ul class="dex-legenda small muted">
+        <li><b>?</b> vive nesta rota, mas você ainda não encontrou (pode ser comum ou raro: explore mais)</li>
+        <li><b>Silhueta</b> já enfrentou; o número mostra quantos derrotou de ${REVELA_DERROTADOS}</li>
+        <li><b>Colorido</b> ${REVELA_DERROTADOS} derrotados (somando suas jornadas): mostra a chance de aparecer aqui</li>
+        ${dex.some(p => p.mitico) ? '<li><b>✦</b> algo muito raro vive aqui…</li>' : ''}
+      </ul></details>
     ${blocoCaca(z, dex)}
-    <ul class="dex-legenda small muted">
-      <li><b>?</b> vive nesta rota, mas você ainda não encontrou (pode ser comum ou raro: explore mais)</li>
-      <li><b>Silhueta</b> já enfrentou; o número mostra quantos derrotou de ${REVELA_DERROTADOS}</li>
-      <li><b>Colorido</b> ${REVELA_DERROTADOS} derrotados (somando suas jornadas): mostra a chance de aparecer aqui</li>
-      ${dex.some(p => p.mitico) ? '<li><b>✦</b> algo muito raro vive aqui…</li>' : ''}
-    </ul>
     <div class="dexr-grade">${dex.map(item).join('')}</div></div>`;
 }
 /* Os itens rápidos que valem AGORA: marcados na mochila (S.rapidos) e que ainda estão nela. Item que acabou sai
@@ -791,6 +810,7 @@ function blocoAuto() {
 }
 function renderActions() {
   const S = G.S, a = $('#actions'), dis = G.busy ? 'disabled' : '';
+  a.classList.toggle('em-loja', G.mode === 'explore' && G.panel === 'shop');   // a loja é uma página: o dock deixa de prender
   if (G.mode === 'battle' && G.B) {
     const P = S.player;
     // arrastado pra fora da luta (Roar & cia.) com aliados ainda lutando: não há o que escolher, só assistir o turno
@@ -847,7 +867,7 @@ function renderActions() {
            turno e que, sem ela, só existe na cabeça de quem decorou a tabela de 18 tipos. */
         const v = G.B ? vantagemDoGolpe(m, G.B.enemy) : null;
         const presoAqui = !permitidos.includes(golpeBase) && golpeBase.ppLeft > 0;   // sem PP já desabilita sozinho; aqui é só o que uma TRAVA proíbe
-        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 || presoAqui ? 'disabled' : ''} title="${presoAqui ? esc(`Não pode: ${motivoBloqueio(P, golpeBase)?.texto || 'bloqueado'}`) : `${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}`}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}, ${CLS_PT[m.cls]}, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
+        return `<button class="mv ${v ? v.classe : ''}" style="--c:${TC[m.type] || '#888'}" data-act="move" data-v="${i}" ${dis || m.ppLeft <= 0 || presoAqui ? 'disabled' : ''} title="${presoAqui ? esc(`Não pode: ${motivoBloqueio(P, golpeBase)?.texto || 'bloqueado'}`) : `${esc(m.desc)}${v ? ` — ${v.rotulo} (×${v.mult})` : ''}`}"><b>${esc(fmt(m.name))}</b><small>${TYPE_PT[m.type] || m.type}<span class="mv-cls">, ${CLS_PT[m.cls]}</span>, poder ${m.power ?? '—'}</small>${v ? `<span class="vant" aria-label="${esc(v.rotulo)}">${v.seta} ${esc(v.rotulo)}</span>` : ''}<span class="pp" id="pp-${i}">PP ${m.ppLeft}/${m.pp}</span></button>`;
       }).join('')}</div>
       ${resumoTravas(M).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
       ${modoJRPG(S) ? `<div class="subrow"><button class="btn ghost" data-act="panel" data-v="comandos" ${dis}>↩ Comandos</button></div>`
@@ -877,8 +897,10 @@ function renderActions() {
        já mostrava a descrição assim — a loja era a única tela de item que escondia. O `title` fica pro desktop. */
     const btn = ([k, it]) => { const p = precoItem(k, S); return `<button class="item-btn" data-act="buy" data-v="${k}" ${dis || S.money < p ? 'disabled' : ''} title="${esc(it.desc)}"><img src="${spriteItem(k, S.player)}" alt="" onerror="${ITEM_ERRO}"><span>${it.name}</span><small>₽${p.toLocaleString('pt-BR')}</small><small class="item-desc">${esc(it.desc)}</small></button>`; };
     const dica = { segurado: 'Cada Pokémon segura um; o efeito acontece sozinho na batalha.', evolucao: 'Usados pela mochila pra evoluir.', exploracao: 'Mudam só quais selvagens aparecem.', especial: 'Mexem nos números de um Pokémon da equipe. Caros, e só aqui: não se acham explorando.' };
-    a.innerHTML = `<p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>
-      <div class="subrow"><button class="btn ghost sm" data-act="panel" data-v="main">Sair da loja</button></div>
+    /* O cabeçalho (carteira + sair) fica preso no topo: a loja tem dezenas de itens, e quem rolava até o fim pra
+       gastar o dinheiro tinha de voltar tudo pra achar "Sair da loja". */
+    a.innerHTML = `<div class="loja-topo"><p class="carteira-loja">💰 Você tem <b>${brl(S.money)}</b></p>
+        <button class="btn ghost sm" data-act="panel" data-v="main">✕ Sair da loja</button></div>
       ${porCategoria(forSale).map(c => `<h4 class="bag-div">${c.nome}${dica[c.id] ? ` <span class="muted small">— ${dica[c.id]}</span>` : ''}</h4><div class="bag-grid loja-grid">${c.itens.map(par => btn([par[0], ITEMS[par[0]]])).join('')}</div>`).join('')}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="main">Sair da loja</button></div>`;
   } else if (mundoAtivo(S)) {
@@ -888,12 +910,12 @@ function renderActions() {
     // cada um da equipe que precisa de cura paga o próprio preço (grátis no Fácil) — ver centroPokemon()
     const { precisa, custo, cheio, vitorias } = centroPokemon(), semGrana = S.money < custo;
     // Médio: preço cheio riscado + quantas vitórias deram desconto
-    const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s> <small>(${vitorias} vitória${vitorias > 1 ? 's' : ''})</small>` : '';
+    const desconto = vitorias && custo < cheio ? ` <s>₽${cheio}</s> · ${vitorias} vitória${vitorias > 1 ? 's' : ''}` : '';
     const esgotada = rotaEsgotada(zone(), S.player.level, dificuldadeDe(S));   // anti-grind do Roguelike
     a.innerHTML = `${blocoAuto()}<button class="btn big" data-act="explore" ${dis || esgotada ? 'disabled' : ''} title="${esgotada ? 'Você está forte demais pra esta rota: nada mais aparece aqui' : ''}">${esgotada ? '✔ Rota esgotada' : `Explorar ${zone().name}`}</button>
       ${ehAdmin() && !G.auto?.ativo && !esgotada ? `<button class="btn ghost" data-act="auto" ${dis}>🤖 Explorar automaticamente <small class="muted">(só admin)</small></button>` : ''}
-      <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">Centro Pokémon${!precisa ? ' (todos saudáveis)' : `${custo ? ` · ₽${custo}` : ' · grátis'}${desconto}${semGrana ? ' (sem dinheiro)' : ''}`}</button>
-      <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>Abrir loja</button>
+      <button class="btn ghost" data-act="heal" ${dis || !precisa || semGrana ? 'disabled' : ''} title="${!precisa ? 'HP, PP e status já estão cheios' : semGrana ? 'Dinheiro insuficiente' : 'Restaura HP, PP e status de toda a equipe'}">🏥 Centro Pokémon<small class="btn-sub">${!precisa ? 'todos saudáveis' : `${custo ? `₽${custo}` : 'grátis'}${desconto}${semGrana ? ' · sem dinheiro' : ''}`}</small></button>
+      <button class="btn ghost" data-act="panel" data-v="shop" ${dis}>🛒 Abrir loja</button>
       ${modoComMundo(S) ? botaoVoltarAoVale(dis) : ''}
       ${S.aposVitoria ? `<button class="btn ghost" data-act="encerrar-vitoria" ${dis}>🏁 Encerrar a jornada (vitória)</button>` : ''}
       ${barraRapidos(dis)}`;
@@ -998,6 +1020,11 @@ export function render() {
   if (noMundo || naLuta) ligarTelaCheia();
   const antes = capturarLargurasBarras(), antesPP = capturarTextosPP();
   renderSheet(); renderScene(); renderActions();
+  /* A cena só fica PRESA no topo (celular) enquanto sobra tela pro resto: pinada com 470 px numa tela de 640 — três
+     inimigos, dois aliados e uma pilha de estados —, ela cobria os golpes que o toque de rolar vinha buscar. Abaixo
+     de ~240 px livres ela solta e rola com a página. Medido aqui porque só o conteúdo sabe a altura que tem. */
+  const cena = $('#scene');
+  if (cena && G.mode === 'battle' && typeof window !== 'undefined') cena.classList.toggle('cena-alta', cena.offsetHeight > window.innerHeight - 240);
   // ⚔ Saga, na luta: os atalhos das gavetas (ficha e comitiva) entram no topo do painel de comandos, que é o que está sempre à mão
   if (naLuta) $('#actions')?.insertAdjacentHTML?.('afterbegin', atalhosDaLuta(G.gaveta));
   animarBarras(antes); animarPP(antesPP);
@@ -1008,6 +1035,7 @@ export function render() {
     ? telasVisiveis().map(t => `<button class="btn ghost sm" data-act="${t.act}" title="${t.dica}" ${G.busy ? 'disabled' : ''}>${t.rotulo}${t.id === 'patch' && temNovidade() ? ' <span class="bolinha">novo</span>' : ''}</button>`).join('')
     : '';
   $('#topr').innerHTML = `${telas}<button class="btn ghost sm" data-painel-acao="restaurar" title="Voltar os painéis pro layout padrão">↺ Layout</button><button class="btn ghost sm" data-act="new">Novo jogo</button>`;
+  $('#menu-burger')?.classList.toggle('com-novidade', G.mode === 'explore' && temNovidade());
 }
 // monta a tela do jogo (esqueleto de painéis de paineis.js), aplica o layout salvo e desenha
 export function buildGame() {

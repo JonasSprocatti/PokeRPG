@@ -51,10 +51,13 @@ export function showCreate() {
     <div id="difs" class="difs"></div>
     <h3 class="passo"><span>2</span> Mapa (Gen)</h3>
     <div id="gens"></div>
-    <div id="vantagens"></div>
-    <label class="check caca-opcao"><input type="checkbox" id="pv-caca" ${G.cacaShiny ? 'checked' : ''}> 🎯 Modo Caça Shiny
-      <small class="muted">Quando você revelar todas as espécies de uma rota (10 derrotados de cada), pode escolher UMA delas pra ser a única que aparece ali. Serve pra caçar shiny — ou o que você quiser — sem depender da sorte do sorteio. Só dá pra ligar agora, no começo da jornada.</small></label>
-    <div id="clima-opcao"></div>
+    <details class="opcoes-jornada" ${larguraLarga() ? 'open' : ''}>
+      <summary><b>⚙ Opções da jornada</b> <span class="muted small">vantagens da conta · caça shiny · clima e terreno</span></summary>
+      <div id="vantagens"></div>
+      <label class="check caca-opcao"><input type="checkbox" id="pv-caca" ${G.cacaShiny ? 'checked' : ''}> 🎯 Modo Caça Shiny
+        <small class="muted">Quando você revelar todas as espécies de uma rota (10 derrotados de cada), pode escolher UMA delas pra ser a única que aparece ali. Serve pra caçar shiny — ou o que você quiser — sem depender da sorte do sorteio. Só dá pra ligar agora, no começo da jornada.</small></label>
+      <div id="clima-opcao"></div>
+    </details>
     <div id="agenda-evento"></div>
     <h3 class="passo"><span>3</span> <span id="passo2-titulo">Escolha o Pokémon</span></h3>
     <div id="escolha"></div>
@@ -176,7 +179,12 @@ function renderAgendaEvento() {
   const el = $('#agenda-evento'); if (!el) return;
   if (!modoComEvento(G.dif)) { el.innerHTML = ''; return; }
   const agora = agoraDoEvento(), lista = agenda(agora, 3);
-  el.innerHTML = `<section class="agenda-evento" aria-label="Agenda dos chefes da semana"><h4>☄ Chefes da semana</h4>
+  /* Recolhida no celular: eram ~450 px de cartão roxo entre o mapa e a escolha do Pokémon, e quem veio jogar
+     rolava tudo isso pra chegar nos iniciais. O resumo já diz quem é o chefe desta semana (e os cartões de mapa
+     acima trazem o sprite dele com o selo ☄). Aberta no computador, onde sobra espaço. */
+  const atual = lista.find(a => a.atual) || lista[0];
+  el.innerHTML = `<details class="agenda-evento" aria-label="Agenda dos chefes da semana" ${larguraLarga() ? 'open' : ''}>
+    <summary><b>☄ Chefes da semana</b> <span class="muted small">${jaComecou(agora) ? `· esta semana: ${esc(atual.evento.nome)}` : `· o primeiro chega em ${dataBR(INICIO)}`}</span></summary>
     ${jaComecou(agora) ? '' : `<p class="agenda-aviso" role="status">🚨 <b>O primeiro chefe chega em ${dataBR(INICIO)}</b> (segunda-feira, 00:00 de Brasília): <b>${esc(lista[0].evento.nome)}</b>. Prepare o seu time — é muito difícil.</p>`}
     <ol class="agenda-lista">${lista.map(a => `<li class="${a.atual ? 'atual' : ''}"><img src="${SPR(a.evento.formaId)}" alt="" loading="lazy">
       <div><b>${esc(a.evento.nome)}</b> <span class="muted small">Gen ${a.evento.gen} · ${esc(dadosDaGen(a.evento.gen).regiao)}</span>
@@ -185,8 +193,10 @@ function renderAgendaEvento() {
       <ol>${agenda(agora, 52).map(a => `<li class="${a.atual ? 'atual' : ''}"><span class="muted">${dataBR(a.inicio)}</span> <b>${esc(a.evento.nome)}</b> <span class="muted small">Gen ${a.evento.gen}</span></li>`).join('')}</ol></details>
     <p class="small muted">O chefe muda toda segunda-feira à meia-noite (horário de Brasília). Ele aparece na rota final da Gen dele${BETA_SEM_ESPERA ? ' (🧪 modo beta: sem espera entre tentativas)' : ', uma tentativa a cada 8 horas'} — ou na <b>Arena</b>, com os Pokémon do seu Hall da Fama.</p>
     <div class="subrow"><button class="btn" data-act="arena">🏟 Arena do Chefe</button></div>
-    ${htmlComoFuncionam()}</section>`;
+    ${htmlComoFuncionam()}</details>`;
 }
+// computador e tablet largo: tudo aberto; celular: grupos recolhidos (ver as `<details>` da criação)
+const larguraLarga = () => typeof window !== 'undefined' && window.innerWidth > 720;
 // mapas que dá pra escolher neste modo: no Roguelike (fimNaGen), só os liberados vencendo a Gen anterior; nos outros, todos
 const gensLiberadas = () => DIFICULDADES[G.dif].fimNaGen ? gensLiberadasRoguelike(carregarCarreira().jornadas) : GENS.map(x => x.gen);
 // passo 2: mapa (Gen). Full Randomizer sorteia o mapa também (não mostra escolha)
@@ -313,7 +323,7 @@ export function renderPreview() {
       </div>
       ${opcaoShiny(d)}
       <p class="small muted" style="margin-top:14px">Golpes iniciais: ${defaultMoves(d.learnset.list, nivel).map(m => esc(fmt(m.name))).join(', ')}. Lista de golpes por nível vinda de ${esc(fmt(d.learnset.vg) || '—')}.</p>
-      <button class="btn big" data-act="start">Começar como ${esc(fmt(d.name))}</button>
+      <div class="pv-comecar"><button class="btn big" data-act="start">Começar como ${esc(fmt(d.name))}</button></div>
     </div></section>`;
 }
 /* ============ ⚔ Saga: montar a comitiva na criação ============

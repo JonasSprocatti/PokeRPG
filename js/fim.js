@@ -94,7 +94,7 @@ function telaFim(r, anterior, novoRecorde, jornadas, desbloqueios = []) {
           const v = r[l[1]], a = anterior?.[l[1]];
           return `<div class="stat-fim"><span>${l[0]}</span><b>${f(l, v)}</b>${anterior ? `<small class="${v > a ? 'up' : v < a ? 'down' : ''}">recorde ${f(l, a)}</small>` : ''}</div>`;
         }).join('')}</div>
-        <div class="subrow" style="margin-top:18px"><button class="btn big" data-act="recomecar">Nova jornada</button><button class="btn ghost" data-act="carreira">📊 Ver carreira</button><button class="btn ghost" data-act="ranking">🏆 Ranking</button></div>
+        <div class="subrow fim-acoes"><button class="btn big" data-act="recomecar">Nova jornada</button><button class="btn ghost" data-act="carreira">📊 Ver carreira</button><button class="btn ghost" data-act="ranking">🏆 Ranking</button></div>
       </div>
     </section></main>`;
 }
