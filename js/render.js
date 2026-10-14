@@ -271,6 +271,7 @@ function tabelaStats(M) {
   return `<table class="stats">
       <thead><tr><th>Atributo</th><th>Valor</th><th>Base</th><th>IV</th><th>EV</th></tr></thead>
       <tbody>${STATS.map(s => `<tr><td>${STAT_PT[s]} ${s === up ? '<span class="up" title="Natureza">▲</span>' : s === down ? '<span class="down" title="Natureza">▼</span>' : ''}</td><td class="v">${M.stats[s]}</td><td>${M.data.base[s]}</td><td>${M.ivs[s]}</td><td>${M.evs[s]}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Total</td>${[M.stats, M.data.base, M.ivs, M.evs].map((o, i) => `<td${i ? '' : ' class="v"'}>${STATS.reduce((a, s) => a + (Number(o?.[s]) || 0), 0)}</td>`).join('')}</tr></tfoot>
     </table>`;
 }
 function blocoHabilidade(M) {

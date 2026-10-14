@@ -13,6 +13,12 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '7.6', data: '2026-10-14', titulo: '➕ Totais na ficha', piada: 'Por meses, quem queria saber o total de IVs do seu Pokémon somava seis números de cabeça, errava, somava de novo e chegava a um terceiro resultado. A calculadora do celular agradece a folga.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>➕ Linha de Total na tabela de atributos.</b> No pé da ficha (seu Pokémon, aliados e quem está no esconderijo) agora aparece a soma de cada coluna: <b>Valor</b>, <b>Base</b> (o famoso total de base da espécie), <b>IV</b> (no máximo 186) e <b>EV</b> (no máximo 510). Dá pra ver de relance quanto treino ainda cabe e comparar dois Pokémon sem conta de cabeça.'
+      ] }
+    ] },
   { versao: '7.5', data: '2026-10-14', titulo: '🐺 Luta de cinco cabe e faz sentido', piada: 'Numa luta de três contra dois, as placas moravam num prédio no alto da cena e os Pokémon num porão lá embaixo, do tamanho de uma moeda. Agora cada um mora em cima da própria placa — e o Intimidate, que gritava três vezes seguidas só porque três inimigos entraram juntos, foi encaminhado a uma fonoaudióloga.',
     secoes: [
       { nome: 'Novidades', itens: [

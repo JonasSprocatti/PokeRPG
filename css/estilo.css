@@ -718,6 +718,7 @@ table.stats th{font-weight:400;color:var(--muted);text-align:right;padding:2px 4
 table.stats td{text-align:right;padding:4px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 table.stats td:first-child,table.stats th:first-child{text-align:left}
 table.stats td.v{font:700 15px var(--display)}
+table.stats tfoot td{border-top:2px solid var(--line);font-weight:700}   /* linha de totais da ficha (Valor, Base = BST, IV, EV) */
 .up{color:#7fd88a}.down{color:#ff8a6b}
 .sec{margin-top:18px}
 .sec h3{font:700 15px var(--titulo,var(--display));color:var(--yellow);margin:0 0 6px}

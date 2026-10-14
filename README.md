@@ -239,7 +239,7 @@ Os itens aparecem separados em 🧪 Cura e status · ⚔ Em batalha · 🎒 Para
 ### 🏋 Itens de treino (₽250.000 cada)
 Os itens mais caros do jogo, e os únicos que mexem no que um Pokémon trouxe **de nascença**. Só na loja: não aparecem explorando nem como prêmio de Alfa.
 
-- **Mochi do Recomeço:** zera os **EVs** de um Pokémon da equipe. Os pontos de treino que ele ganhou derrotando outros voltam a 0 e os atributos caem junto — serve pra treinar de novo do zero, em outros atributos. (A ficha mostra os EVs de cada um na coluna EV.)
+- **Mochi do Recomeço:** zera os **EVs** de um Pokémon da equipe. Os pontos de treino que ele ganhou derrotando outros voltam a 0 e os atributos caem junto — serve pra treinar de novo do zero, em outros atributos. (A ficha mostra os EVs de cada um na coluna EV, e a linha **Total** no pé da tabela soma valor, base, IVs e EVs — o EV total vai até 510.)
 - **Tampa de Garrafa:** leva **um IV ao máximo (31)**. Qual deles é **sorteado** entre os que ainda não estão em 31 — você não escolhe, e nenhuma tampa é gasta num que já está no máximo. Deixar escolher transformaria ₽1,5 milhão num Pokémon perfeito; assim cada tampa é uma aposta, e os últimos IVs custam de verdade.
 - **Cápsula de Habilidade:** troca a habilidade por **outra da mesma espécie**, inclusive a **oculta**, e aqui **você escolhe** — a lista mostra o nome, o que cada uma faz e se ela já tem efeito em batalha, como na tela de criação. Espécie de habilidade única não tem pra onde trocar, e a cápsula avisa em vez de ser gasta.
 
