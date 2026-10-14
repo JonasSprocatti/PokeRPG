@@ -524,7 +524,7 @@ export async function startTrainerBattle(z) {
   await say(entram.length > 1
     ? `${esc(trainer.nome)} envia <b>${entram.length} de uma vez</b>: ${entram.map(m => `<b>${esc(fmt(m.name))}</b> (Nv. ${m.level})`).join(' e ')}!${entram.some(m => m.shiny) ? ' ✨ Tem um shiny!' : ''}`
     : `${esc(trainer.nome)} envia <b>${esc(fmt(entram[0].name))}</b> (Nv. ${entram[0].level})!${entram[0].shiny ? ' ✨ Um shiny!' : ''}`);
-  for (const m of entram) await intimidar(m);
+  await intimidar(entram[0]);   // UMA vez: sem `soInimigo` ela já roda a entrada de todos em campo (relato #82: com 3 enviados, todo Intimidate disparava 3×)
 }
 
 /* ---- turno ---- */

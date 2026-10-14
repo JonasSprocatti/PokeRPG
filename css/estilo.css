@@ -507,20 +507,6 @@ body.em-batalha .zona[data-zona="centro"]{order:2}
      mais alta — um treinador com aliados virava uma cena de 790 px */
   body.em-batalha .scene.battle{position:sticky;top:0;z-index:8;display:flex;flex-direction:column;max-height:none;overflow:hidden;min-height:0;padding:8px 10px;gap:4px;box-shadow:0 6px 12px -8px #0008}
   body.em-batalha .scene.battle.cena-alta{position:relative;box-shadow:none}   /* alta demais pra ficar presa: rola com a página (render.js) */
-  /* Cinco ou mais em campo (3 inimigos + você + aliado): duas colunas — inimigos | você —, placas em cima e sprites
-     embaixo de cada uma. Em coluna única a cena passava de 540 px num celular de 640 de altura. */
-  body.em-batalha .scene.battle.compacta.denso{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start;column-gap:8px;row-gap:4px}
-  body.em-batalha .scene.compacta.denso .turno-bar,body.em-batalha .scene.compacta.denso .fila-turno{grid-column:1/-1;grid-row:1}
-  body.em-batalha .scene.compacta.denso .side.foe{grid-column:1;grid-row:2;flex-direction:column;align-items:stretch;height:100%}
-  body.em-batalha .scene.compacta.denso .side.me{grid-column:2;grid-row:2;flex-direction:column-reverse;align-items:stretch;justify-content:flex-end;height:100%}
-  body.em-batalha .scene.compacta.denso .pedir-alvo{grid-column:1/-1;grid-row:3}
-  body.em-batalha .scene.compacta.denso .plates{flex:none;width:100%;max-width:none}
-  body.em-batalha .scene.compacta.denso .mons-lado{justify-content:center;flex:none}
-  body.em-batalha .scene.compacta.denso .side.foe .foe-mons{padding-left:0}
-  body.em-batalha .scene.compacta.denso .mon.mini{width:44px;height:50px;margin-left:-8px}
-  body.em-batalha .scene.compacta.denso .mon.mini .spr{width:40px;height:40px}
-  body.em-batalha .scene.compacta.denso .mon{width:88px;height:76px}
-  body.em-batalha .scene.compacta.denso .spr.back{width:78px;height:78px}
   body.em-batalha .side{flex-wrap:nowrap;gap:8px}
   body.em-batalha .plates{flex:1 1 0;min-width:0;width:auto;max-width:270px}
   /* com aliados os sprites encolhem pra a placa continuar AO LADO deles (empilhada embaixo, a cena passava de 440 px) */
@@ -610,6 +596,31 @@ body.em-batalha .scene.compacta .plate.mini{padding:3px 8px}
 /* o pedido de alvo: uma linha fina (era um balão de duas linhas, que empurrava o "Cancelar" pra fora da cena) */
 body.em-batalha .scene.compacta .pedir-alvo{padding:3px 10px;gap:4px 8px;font-size:12px;line-height:1.3;border-width:2px;border-radius:12px}
 body.em-batalha .scene.compacta .pedir-alvo .btn{padding:2px 8px;font-size:12px}
+
+/* ---- cinco ou mais em campo, celular EM PÉ: cada Pokémon é uma COLUNA, com a placa colada no próprio sprite ----
+   Os inimigos numa fileira (placa em cima, sprite embaixo) e o seu lado noutra (sprite em cima, placa embaixo): os
+   sprites se encaram no meio da cena e cada placa fica a um dedo de quem ela descreve. Antes (até 14/10/2026) eram
+   duas colunas — inimigos | você — com as placas empilhadas no alto e os sprites em miniatura lá no pé, longe de
+   tudo: com 3×2 não dava pra dizer de quem era cada placa ("não faz sentido como está", print de quem joga).
+   `.plates` e `.mons-lado` viram `display:contents`, então placa e sprite são itens da MESMA grade e caem na mesma
+   coluna pela ordem — a do array nos dois (render.js monta placas e sprites do mesmo `FOES`/`AL`).
+   Deitado continua o desenho de duas colunas (o bloco "celular deitado"), por isso o gatilho exclui a tela baixa. */
+@media(max-width:880px) and (orientation:portrait),(max-width:880px) and (min-height:561px){
+  body.em-batalha .scene.compacta.denso .side{display:grid;grid-auto-columns:minmax(0,1fr);grid-template-rows:auto auto;column-gap:6px;row-gap:0;align-items:end}
+  body.em-batalha .scene.compacta.denso .plates,body.em-batalha .scene.compacta.denso .mons-lado{display:contents}
+  body.em-batalha .scene.compacta.denso .side.foe .plate{grid-row:1;align-self:end}
+  body.em-batalha .scene.compacta.denso .side.foe .mon{grid-row:2}
+  body.em-batalha .scene.compacta.denso .side.me .mon{grid-row:1}
+  body.em-batalha .scene.compacta.denso .side.me .plate{grid-row:2;align-self:start}
+  body.em-batalha .scene.compacta.denso .mon,body.em-batalha .scene.compacta.denso .mon.mini{width:auto;height:66px;margin:0;justify-self:stretch}
+  body.em-batalha .scene.compacta.denso .spr,body.em-batalha .scene.compacta.denso .mon.mini .spr{width:64px;height:64px}
+  body.em-batalha .scene.compacta.denso .spr.back{width:72px;height:72px}
+  body.em-batalha .scene.compacta.denso .mon .pad{height:14px;left:18%;right:18%}
+  /* coluna de ~110 px: o nome quebra pra linha de baixo em vez de virar "Dragon…" (numa manada o nome é QUEM é) */
+  body.em-batalha .scene.compacta.denso .plate .pl-top{flex-wrap:wrap;white-space:normal;column-gap:6px;font-size:12px}
+  body.em-batalha .scene.compacta.denso .plate .pl-top span:first-child{overflow:visible;overflow-wrap:anywhere}
+  body.em-batalha .scene.compacta.denso .plate .pl-top span:last-child{font-size:11px;opacity:.85}
+}
 
 /* ==================== celular deitado (paisagem) ====================
    O bloco "celular" acima foi pensado pra RETRATO (tela alta e estreita: cena presa no topo, resto rola embaixo).
@@ -1596,6 +1607,18 @@ body:has(.game) .menu-links .top-r{display:grid;grid-template-columns:1fr 1fr}
 .ator,.saga-eu{position:absolute;left:0;top:0;width:var(--t);height:var(--t);pointer-events:none}
 .ator{transform:translate(calc(var(--x) * var(--t)),calc(var(--y) * var(--t)))}
 .ator.acima{z-index:9999!important}
+/* a copa na frente de quem está atrás dela (saga-cena.posicionarMundo) e a seta de saída pela borda do mapa */
+.ator.copa{transition:opacity .2s}
+.ator.copa.atras{opacity:.45}
+.ator.copa.vaza{opacity:.5}
+.saida{position:absolute;left:30%;top:30%;width:40%;height:40%;border:solid #f6c744;border-width:0 calc(var(--u) * 4px) calc(var(--u) * 4px) 0;
+  filter:drop-shadow(0 0 2px #000c);animation:saga-saida 1.4s ease-in-out infinite}
+.saida.l{transform:translateX(-20%) rotate(-45deg)}
+.saida.o{transform:translateX(20%) rotate(135deg)}
+.saida.n{transform:translateY(20%) rotate(-135deg)}
+.saida.s{transform:translateY(-20%) rotate(45deg)}
+@keyframes saga-saida{50%{opacity:.4}}
+.saga-tela.parado .saida{animation:none}
 .saga-eu{transform:translate3d(calc(var(--ex,0) * var(--t)),calc(var(--ey,0) * var(--t)),0);transition:transform var(--passo) linear;will-change:transform}
 .saga-tela.seco .saga-mundo,.saga-tela.seco .saga-eu{transition:none}
 
@@ -1694,7 +1717,9 @@ body:has(.game) .menu-links .top-r{display:grid;grid-template-columns:1fr 1fr}
 .carta-regioes span{padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font:600 11px var(--display)}
 .carta-regioes .on{border-color:var(--yellow);color:var(--yellow)}
 .carta-regioes .fechado{opacity:.55}
-.hud-missao{margin:0 auto auto;max-width:min(560px,100%);padding:6px 14px;background:#0b0a12cc;border:1px solid #f6c74455;border-radius:12px;font:500 13px/1.35 var(--body);text-align:left}
+.hud-missao{animation:hud-missao-some .4s ease-in forwards;margin:0 auto auto;max-width:min(560px,100%);padding:6px 14px;background:#0b0a12cc;border:1px solid #f6c74455;border-radius:12px;font:500 13px/1.35 var(--body);text-align:left}
+.hud-missao.recolhida{animation:none;visibility:hidden;pointer-events:none}
+@keyframes hud-missao-some{to{opacity:0;visibility:hidden;pointer-events:none}}
 .hud-missao b{margin-right:6px;color:var(--yellow);font-family:var(--display)}
 .hud-missao span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hud-base{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}

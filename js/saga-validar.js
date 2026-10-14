@@ -79,6 +79,7 @@ export function validarMundo(mundo, arte = null) {
     id(`missão ${k}`, k); texto(`missão ${k}`, m?.nome, 'nome', LIMITES.nome);
     if (!Array.isArray(m?.etapas) || !m.etapas.length) erro(`missão ${k}`, 'precisa de pelo menos uma etapa');
     else m.etapas.forEach((e, i) => texto(`missão ${k}, etapa ${i + 1}`, e));
+    condicao(`missão ${k}, perdida quando`, m?.falha);
   }
   for (const [k, it] of Object.entries(ITENS)) { id(`item ${k}`, k); texto(`item ${k}`, it?.nome, 'nome', LIMITES.nome); texto(`item ${k}`, it?.desc, 'descrição'); }
   for (const [k, d] of Object.entries(DONS)) {

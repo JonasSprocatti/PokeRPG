@@ -182,7 +182,11 @@ test('caminho: contorna obstáculo, termina no esbarrão e não atravessa parede
   assert.ok(dirs.length > 0);
   let ultimo; for (const d of dirs) ultimo = passo(S, d);
   assert.equal(ultimo.tipo, 'objeto'); assert.equal(ultimo.obj.npc, 'anciao');
-  assert.deepEqual(caminho(S, 0, 0), []);                 // árvore da borda não é destino
+  // árvore não é destino: o toque nela leva à casa livre mais perto (relato: tocar na folhagem da saída não fazia nada)
+  const ate = (T, x, y) => { const t = estadoSaga(T); for (const d of caminho(T, x, y)) passo(T, d); return [t.x, t.y]; };
+  assert.deepEqual(ate(novo(), 0, 0), [1, 1]);
+  { const T = novo(); ate(T, 0, 9); assert.equal(estadoSaga(T).mapa, 'bosque', 'o tronco ao lado da saída oeste leva PELA saída'); }
+  { const T = novo(), t = estadoSaga(T), [x0, y0] = [t.x, t.y]; assert.deepEqual(ate(T, 15, 21 + 5), [x0, y0], 'longe de tudo (fora do mapa) não anda'); }
   assert.deepEqual(caminho(S, s.x, s.y), []);             // já está lá
   assert.deepEqual(caminho(S, 99, 99), []);               // fora do mapa
 });
@@ -263,6 +267,22 @@ test('diário: missão secreta só aparece depois de começar', () => {
   const d = diario(S);
   assert.deepEqual(d.ativas.map(m => m.id), ['sino']); assert.equal(d.ativas[0].secreta, true);
   assert.deepEqual(d.feitas.map(m => m.id), ['canteiros']);
+});
+
+test('missão sem saída sai das em andamento: a flor da Selma depois que o acampamento queima (relato de testador)', () => {
+  for (const [desfecho, perde] of [['passo-fogo', true], ['passo-fome', true], ['passo-peixe', false]]) {
+    const S = novo();
+    aplicar(S, { missao: ['erva', 0] });
+    assert.deepEqual(diario(S).ativas.map(m => m.id), ['erva']);
+    aplicar(S, { flag: ['cap2', desfecho] });
+    const d = diario(S);
+    assert.equal(d.ativas.some(m => m.id === 'erva'), !perde, desfecho);
+    assert.equal(d.feitas.some(m => m.id === 'erva' && m.perdida), perde, desfecho);
+  }
+  // e a regra vale pelo próprio dado: a Selma some sob a MESMA condição em que a missão se perde
+  const selma = Object.values(MAPAS_SAGA).flatMap(m => Object.values(m.objs || {}).flat()).find(o => o?.npc === 'selma');
+  const S = novo(); aplicar(S, { flag: ['cap2', 'passo-fogo'] });
+  assert.equal(vale(S, selma.se), false); assert.equal(vale(S, MISSOES_SAGA.erva.falha), true);
 });
 
 test('conversa: o começo muda com o estado, e a 3ª conversa com o Tio do Poço abre a missão secreta', () => {

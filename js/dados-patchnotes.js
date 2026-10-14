@@ -13,6 +13,15 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '7.5', data: '2026-10-14', titulo: '🐺 Luta de cinco cabe e faz sentido', piada: 'Numa luta de três contra dois, as placas moravam num prédio no alto da cena e os Pokémon num porão lá embaixo, do tamanho de uma moeda. Agora cada um mora em cima da própria placa — e o Intimidate, que gritava três vezes seguidas só porque três inimigos entraram juntos, foi encaminhado a uma fonoaudióloga.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>📱 Cinco ou seis em campo, no celular em pé.</b> Cada Pokémon virou uma <b>coluna</b>: os inimigos numa fileira em cima (placa e, logo abaixo, o sprite), o seu lado numa fileira embaixo (sprite e, logo abaixo, a placa). Os sprites se encaram no meio, maiores do que antes, e <b>cada placa fica colada em quem ela descreve</b> — antes as placas ficavam empilhadas no alto e os sprites em miniatura lá no pé, e não dava pra dizer de quem era cada uma. Nome comprido quebra a linha em vez de virar "Dragon…".'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>Intimidate disparando várias vezes</b> (relato #82). Quando um treinador mandava 2 ou 3 Pokémon de uma vez, as habilidades de entrada de <b>todo mundo em campo</b> rodavam uma vez <b>por Pokémon enviado</b>: com 3 inimigos, cada Intimidate baixava o Ataque três vezes — dos dois lados. Agora cada um entra uma vez só.'
+      ] }
+    ] },
   { versao: '7.4', data: '2026-10-14', titulo: '🍖 Oferecer petisco com um toque', piada: 'Fazer amizade com um selvagem era um ritual: abrir a Mochila, rolar até a divisão certa, achar o petisco que o bicho gosta, tocar, ver o turno passar, e repetir tudo de cabeça fria quatro vezes. O Mel Silvestre agora tem um botão próprio — e finalmente a ocupação mais honesta do Pokémon, ser comprado com comida, ficou a um toque de distância.',
     secoes: [
       { nome: 'Novidades', itens: [

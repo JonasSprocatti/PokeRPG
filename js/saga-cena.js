@@ -71,6 +71,11 @@ function htmlObjeto(S, mapa, o, x, y, rotas) {
       : htmlCorpo(z?.pool?.[0]?.id, 'Bando', 'vulto');
     return ator(x, y, `${dentro}${corpo}<b class="marca perigo">⚔</b>`, 'inimigo');
   }
+  /* Saída pela BORDA do mapa: uma seta pra fora, acima de tudo. A copa das árvores da borda cobre a casa da porta,
+     e sem a seta "nada indica que dá pra passar pelas árvores" (relato de testador, 14/10/2026). */
+  const W = mapa.grade[0].length, H = mapa.grade.length;
+  const lado = !o.porta ? null : x === 0 ? 'o' : x === W - 1 ? 'l' : y === 0 ? 'n' : y === H - 1 ? 's' : null;
+  if (lado) return ator(x, y, `<b class="saida ${lado}" aria-hidden="true"></b>`, 'acima');
   let figura = o.arte || (o.bau ? 'bau' : o.placa && !o.prop ? 'placa' : null);
   // baú aberto troca de figura; "baú" com figura própria (uma moita de erva, uma grade) some depois de usado
   if (o.bau && bauAberto(S, o.bau)) figura = ABERTO[figura] || (o.arte ? null : 'bauAberto');
@@ -78,12 +83,26 @@ function htmlObjeto(S, mapa, o, x, y, rotas) {
   else if (o.emoji && !o.prop) dentro += `<span class="emoji">${esc(o.emoji)}</span>`;
   return dentro ? ator(x, y, dentro) : '';
 }
+/* As casas que um enfeite grande cobre ACIMA do pé dele (x0 x1 y0 y1): quem passa ali fica atrás da copa, e ela
+   fica translúcida (`posicionarMundo`). Sem isso você nascia escondido atrás das árvores do rodapé de Pedralume. */
+function cobre(nome, x, y) {
+  const [, , w, , dx, dy] = PROPS[nome] || [0, 0, T, T, 0, 0];
+  return [x + Math.floor(dx / T), x + Math.ceil((dx + w) / T) - 1, y + Math.floor(dy / T), y - 1].join(' ');
+}
 // Tudo o que tem altura: os enfeites que os TILES pedem (árvore, casa) e os objetos do mapa.
 function htmlCoisas(S, mapa, rotas) {
-  const partes = [], faro = temFaro(S.player);
-  for (let y = 0; y < mapa.grade.length; y++) for (let x = 0; x < mapa.grade[y].length; x++) {
+  const partes = [], faro = temFaro(S.player), W = mapa.grade[0].length, H = mapa.grade.length;
+  // as saídas pela borda: a copa que cobre uma delas fica sempre meio transparente, pra a trilha aparecer passando
+  const saidas = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if ((x === 0 || y === 0 || x === W - 1 || y === H - 1) && objetoEm(S, mapa, x, y)?.porta) saidas.push([x, y]);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const p = propDaCasa(mapa, x, y, TAB_ARTE);
-    if (p) partes.push(ator(x, y, htmlProp(p)));
+    if (p) {
+      const c = cobre(p, x, y), [x0, x1, y0, y1] = c.split(' ').map(Number);
+      const vaza = saidas.some(([sx, sy]) => sx >= x0 && sx <= x1 && sy >= y0 && sy <= y1);
+      partes.push(ator(x, y, htmlProp(p), vaza ? 'copa vaza' : 'copa', `data-cobre="${c}"`));
+    }
     if (faro && TILES[tileEm(mapa, x, y)]?.falsa) partes.push(ator(x, y, '<b class="cintila">✨</b>', 'acima'));
     const o = objetoEm(S, mapa, x, y);
     if (o) partes.push(htmlObjeto(S, mapa, o, x, y, rotas));
@@ -92,6 +111,19 @@ function htmlCoisas(S, mapa, rotas) {
 }
 
 /* ---- HUD ---- */
+/* A faixa da missão aparece quando a missão MUDA (nova, etapa nova) e se recolhe sozinha depois de `MS_FAIXA`.
+   Fixa, ela ficava no meio do topo do mapa pra sempre, comendo o toque de quem andava pra lá (relato de testador,
+   14/10/2026: "tive que dar zoom out pra clicar onde eu queria"). O texto inteiro continua no 📖, que tem a bolinha.
+   O relógio é do MÓDULO, não do DOM: `render()` refaz o HUD a cada ação e cada refazer reiniciaria a animação. */
+const MS_FAIXA = 6000;
+let faixaChave = null, faixaDesde = 0;
+function faixaDaMissao(ativa, dis) {
+  const chave = ativa ? `${ativa.id}:${ativa.texto}` : '';
+  if (chave !== faixaChave) { faixaChave = chave; faixaDesde = Date.now(); }
+  const resta = MS_FAIXA - (Date.now() - faixaDesde);
+  /* recolhida continua no DOM, invisível: a margem dela é o que empurra a alavanca pro pé da tela */
+  return `<button class="hud-missao ${resta > 0 ? '' : 'recolhida'}" data-act="saga-diario" style="animation-delay:${Math.max(0, resta)}ms" ${dis}>${ativa ? `📜 <b>${textoSeguro(ativa.nome)}</b><span>${textoSeguro(ativa.texto)}</span>` : '📖 <span>Nenhuma missão em andamento. Converse com quem mora aqui.</span>'}</button>`;
+}
 const GAVETAS = [['ficha', '🐾', 'Seu Pokémon'], ['aliados', '👥', 'Comitiva'], ['mochila', '🎒', 'Mochila'], ['missoes', '🎯', 'Missões da conta'], ['log', '💬', 'Registro']];
 function htmlHud(S, sprite, dis, gaveta, nome) {
   const mapa = mapaDe(S), cap = capituloDe(mapa), { ativas } = diario(S), ativa = ativas[0];
@@ -104,7 +136,7 @@ function htmlHud(S, sprite, dis, gaveta, nome) {
         <div class="hud-equipe">${[S.player, ...(S.aliados || [])].filter(Boolean).map(placa).join('')}</div>
         <button class="hud-local" data-act="saga-mapa" title="Abrir o mapa da região" aria-label="Você está em ${textoSeguro(mapa.nome)}. Abrir o mapa da região." ${dis}>🗺 ${textoSeguro(mapa.nome)}${cap ? `<small>Capítulo ${Number(cap.n) || 0} · ${textoSeguro(cap.regiao)}</small>` : ''}</button>
       </div>
-      <button class="hud-missao" data-act="saga-diario" ${dis}>${ativa ? `📜 <b>${textoSeguro(ativa.nome)}</b><span>${textoSeguro(ativa.texto)}</span>` : '📖 <span>Nenhuma missão em andamento. Converse com quem mora aqui.</span>'}</button>
+      ${faixaDaMissao(ativa, dis)}
       <div class="hud-base">
         <div class="joy" id="saga-joy" role="img" aria-label="Alavanca: segure e arraste pra andar. Também dá pra tocar no mapa ou usar as setas do teclado."><i class="joy-pino"></i></div>
         <div class="hud-botoes">
@@ -224,6 +256,10 @@ export function posicionarMundo(S, { seco = false, andando = false } = {}) {
   def('--cy', camera(s.y, casa, numero(tela.clientHeight), mapa.grade.length * casa, folgaDoHud(tela)));
   def('--ex', s.x); def('--ey', s.y);
   if (eu.style) eu.style.zIndex = s.y * 2 + 1;
+  for (const a of Array.from(mundo.querySelectorAll?.('.ator.copa') || [])) {   // Array.from: o DOM de mentira dos testes devolve qualquer coisa
+    const [x0, x1, y0, y1] = (a.dataset?.cobre || '').split(' ').map(Number);
+    a.classList.toggle('atras', s.x >= x0 && s.x <= x1 && s.y >= y0 && s.y <= y1);
+  }
   // o lado pra onde você olha e o pulinho valem pros dois (você e o seu vulto), então ficam no mundo
   if (s.dir === 'l') def('--vira', -1); else if (s.dir === 'o') def('--vira', 1);
   mundo.classList.toggle('andando', andando);
@@ -294,6 +330,9 @@ export function ligarMundo(S, { direcional: ouvinte } = {}) {
   if (!tela) return;
   jornadaNaTela = S;
   direcional = ouvinte || direcionalDoJogo;
+  // a animação apaga a faixa; o relógio garante (sem animação, em ⚙ Ajustes ou no sistema, ela ficaria)
+  const faixa = tela.querySelector?.('.hud-missao:not(.recolhida)');
+  if (faixa) setTimeout(() => faixa.classList.add('recolhida'), Math.max(0, MS_FAIXA - (Date.now() - faixaDesde)));
   ligarAlavanca();
   aoCarregar = () => { if (el('saga-chao')) pintarChao(el('saga-chao'), mapaDe(S)); };
   pintarChao(el('saga-chao'), mapaDe(S));
@@ -337,7 +376,7 @@ export function htmlDiario(S) {
   const linha = (emoji, nome, desc) => `<p>${esc(emoji || '')} <b>${textoSeguro(nome)}</b><br><span class="small muted">${textoSeguro(desc)}</span></p>`;
   return `<div class="saga-diario"><h3>📖 Diário</h3>
     ${sec('Missões', ativas.length ? ativas.map(m => linha(m.secreta ? '🕯' : '📜', m.nome, m.texto)).join('') : '<p class="small muted">Nenhuma em andamento.</p>')}
-    ${feitas.length ? sec('Concluídas', `<p class="small muted">${feitas.map(m => `✓ ${textoSeguro(m.nome)}`).join(' · ')}</p>`) : ''}
+    ${feitas.length ? sec('Encerradas', `<p class="small muted">${feitas.map(m => m.perdida ? `<span title="Não dá mais pra cumprir">✗ ${textoSeguro(m.nome)} (perdida)</span>` : `✓ ${textoSeguro(m.nome)}`).join(' · ')}</p>`) : ''}
     ${itens.length ? sec('Itens-chave', itens.map(k => linha(ITENS_SAGA[k].emoji, ITENS_SAGA[k].nome, ITENS_SAGA[k].desc)).join('')) : ''}
     ${dons.some(k => DONS[k]) ? sec('Dons', dons.filter(k => DONS[k]).map(k => linha(DONS[k].emoji, DONS[k].nome, DONS[k].desc)).join('')) : ''}
     ${sec('Reputação', `<p class="small">${Object.entries(FACCOES).map(([k, f]) => `${esc(f.emoji)} ${textoSeguro(f.nome)}: <b>${s.rep[k] > 0 ? '+' : ''}${Number(s.rep[k]) || 0}</b>`).join(' · ')}</p>`)}

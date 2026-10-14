@@ -4666,8 +4666,14 @@ viram `display:contents`. Sem o rótulo "HP" (a barra colorida com os números j
 
 - **`compacta`** (2+ inimigos ou aliado): placas compactas em **qualquer** tamanho — no computador a cena de
   753 px virou 330 px. 1×1 continua com as placas largas.
-- **`denso`** (5+ em campo): no celular a cena vira **duas colunas** (inimigos | você), placas em cima e sprites
-  embaixo de cada uma. No celular deitado isso vale para toda cena `compacta` e a coluna da cena alarga
+- **`denso`** (5+ em campo): no celular EM PÉ cada Pokémon é uma **coluna** — inimigos numa fileira (placa em cima,
+  sprite embaixo), o seu lado noutra (sprite em cima, placa embaixo). Revisto no mesmo dia: a 1ª versão eram duas
+  colunas (inimigos | você) com as placas empilhadas no alto e os sprites em miniatura no pé, e quem joga mandou
+  print de 3×2 dizendo "não faz sentido" — não dava pra ligar placa e sprite. `.plates`/`.mons-lado` viram
+  `display:contents` e placa e sprite caem na mesma coluna da grade pela ordem (a do array nos dois). Deitado
+  continua com duas colunas (inimigos | você): a regra do retrato exclui a tela baixa no próprio `@media`, porque
+  o bloco deitado não desfaz `display:grid`/`contents`. No celular deitado a cena `compacta`
+  vira duas colunas e a coluna da cena alarga
   (`--cena:min(47vw,430px)`): é a altura que falta ali, a largura sobra.
 - **`com-aliados`** no seu lado: os sprites encolhem pra a placa ficar AO LADO deles (embaixo, a cena passava de
   440 px).
@@ -4771,3 +4777,37 @@ caso no smoke.
 `turno-smoke.test.js` com `Math.random = 0` (ganho mínimo: 3 Méis = 60/100, nada de rede) — consome só o que ele
 gosta, para quando acabam, com HP baixo sai UMA oferta, "forte demais" não gasta nada, treinador e chefe da semana
 nem rodam.
+
+## 🧪 Primeiro relato de testador da Saga, e o #82 (14/10/2026)
+
+Um testador (conta `beta`) jogou os primeiros capítulos e mandou quatro pontos; o usuário mandou junto um print da
+luta 3×2 fora da Saga (ver `denso` em "Grupo em campo", acima).
+
+- **"Uma notificação eterna de missão, no meio da tela; tive que dar zoom out pra clicar onde queria."** É a faixa
+  `.hud-missao`, que ficava sempre no topo do mapa e comia o toque de quem andava pro norte. Agora ela aparece
+  quando a missão MUDA (chave = id + texto da etapa) e se recolhe em `MS_FAIXA` = 6 s (`saga-cena.faixaDaMissao`).
+  O relógio é do MÓDULO, não do DOM — `render()` refaz o HUD a cada ação e reiniciaria a animação. Recolhida, ela
+  continua no DOM com `visibility:hidden`: a margem dela é o que empurra a alavanca pro pé da tela. A animação
+  apaga; um `setTimeout` em `ligarMundo` garante (sem animação — ⚙ Ajustes ou o sistema — ela ficaria).
+  Considerado: um botão ✕ — é mais um alvo de toque no mapa, e o 📖 com a bolinha já é o lugar fixo da missão.
+- **"Nada indica que dá pra passar pelas árvores pra outra rota; a trilha de baixo não vai a lugar nenhum."** A
+  árvore (`carvalho`, 96×128) cobre 3×3 casas ACIMA do pé, então a copa da borda tampava a casa da porta e, no
+  rodapé de Pedralume, o próprio ponto de partida (você nascia escondido). Duas regras genéricas, sem mexer em
+  mapa: (1) cada enfeite grande leva `data-cobre` (as casas que ele cobre, saído de `PROPS`) e
+  `posicionarMundo` deixa translúcida a copa com você atrás; (2) copa que cobre uma **saída pela borda** é sempre
+  meio transparente (`vaza`), e a porta da borda ganha uma seta amarela pra fora (`.saida`, CSS puro — o Pi não
+  tem fonte de emoji e o celular de alguém pode não ter também).
+- **"Dependendo de onde você clica, fica parado na saída."** Tocar na folhagem acerta o TRONCO (parede), e
+  `caminho` devolvia `[]`. Agora parede como destino leva à casa alcançável mais perto (até 3 casas), com a
+  porta ganhando o empate — quem toca perto da borda quer sair.
+- **"A missão da flor nunca some se você queima a vila."** A Selma some do acampamento quando ele é queimado ou
+  esvaziado (`some`), e a missão `erva` ficava pra sempre em andamento. Campo novo de missão: **`falha`**, uma
+  condição (`vale`) que, valendo, tira a missão das em andamento e a lista no diário como **perdida**. É derivado
+  (nada gravado), conferido por `saga-validar` e editável no 🌍 Editor (aba Missões). Considerado: fechar a missão
+  como concluída no efeito do fogo — mentiria no diário ("concluída") e exigiria `missao` aceitar lista.
+  `tests/saga-mundo.test.js` prende a condição da missão à da Selma sumir.
+
+**Relato #82 — Intimidate várias vezes em dupla/trio.** `startTrainerBattle` chamava `intimidar(m)` uma vez por
+Pokémon enviado, e `intimidar` sem `soInimigo` já roda a entrada de TODOS em campo: com 3 enviados, cada
+Intimidate (dos dois lados) disparava 3×. Uma chamada só. (#83, Fling sem gastar o item, já estava resolvido pela
+leva de 13/10, com teste em `tests/especiais.test.js`.)

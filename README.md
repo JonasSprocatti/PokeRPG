@@ -72,10 +72,12 @@ e ajustado.
 - **🗺 Um mundo pra andar, com cara de jogo.** Na Saga não há lista de rotas: há um **mapa em pixel art** que
   ocupa a tela inteira. Você anda casa a casa (setas, WASD, o direcional da tela, ou tocando no lugar pra onde
   quer ir), a câmera desliza junto, o seu Pokémon dá um pulinho a cada passo e respira parado, e você passa
-  **atrás** das copas e das casas. A ficha, a mochila e o registro viram **gavetas** abertas pelos botões da tela.
+  **atrás** das copas e das casas — e a copa fica **translúcida** enquanto você estiver atrás dela. Saída pela
+  borda do mapa tem uma **seta amarela** piscando (e a folhagem por cima dela fica meio transparente, pra trilha
+  aparecer); tocar numa árvore anda até a casa livre mais perto, preferindo a saída. A ficha, a mochila e o registro viram **gavetas** abertas pelos botões da tela.
   No celular, uma **🕹 alavanca** no canto: segure e arraste pra andar sem parar (no teclado, é só segurar a seta).
-  Funciona **em pé e deitado**: o mapa sempre enche a tela, a missão em andamento ocupa uma linha só (e a câmera
-  nunca te deixa atrás dela), e deitado a barra do site vira só ₽ e ☰ no canto. Neste modo o Pokémon é sempre o **sprite 2D**, seja qual for o estilo escolhido em
+  Funciona **em pé e deitado**: o mapa sempre enche a tela, a missão em andamento aparece numa linha só quando
+  **muda**, e se recolhe sozinha em 6 s (o texto inteiro fica no 📖, com a bolinha), e deitado a barra do site vira só ₽ e ☰ no canto. Neste modo o Pokémon é sempre o **sprite 2D**, seja qual for o estilo escolhido em
   ⚙ Ajustes — pra combinar com o mapa.
 - **⚔ A luta numa tela só.** Cena, registro e comandos aparecem juntos, **sem rolar a página**: em pé, um embaixo
   do outro; deitado ou no computador, a cena à esquerda e o registro com os comandos à direita. Os quatro golpes
@@ -93,7 +95,8 @@ e ajustado.
   já fez, com quem ajudou e até com **o tipo do seu Pokémon**. Um balão **!** marca quem tem missão nova e um
   **?** quem espera por você.
 - **📜 Missões, e 🕯 missões secretas.** O 📖 Diário guarda as missões em andamento, os itens-chave, os dons e a
-  reputação. Missão secreta não aparece em lugar nenhum até você tropeçar nela: ninguém avisa que existe.
+  reputação. Missão secreta não aparece em lugar nenhum até você tropeçar nela: ninguém avisa que existe. Missão que uma escolha
+  sua deixou sem saída (quem a pediu foi embora) sai das em andamento e fica no diário como **perdida**.
 - **⚖ Três ordens e escolha com consequência.** ⚒ Ordem da Forja, 🌿 Círculo do Bosque e 🌑 Corte do Abismo
   querem a mesma coisa, cada uma por um motivo defensável. Ajudar uma custa a outra, uma porta fechada **não
   reabre**, e cada capítulo tem **três desfechos** — um deles só existe pra quem achou o que estava escondido
@@ -182,7 +185,7 @@ Isso acordou duas habilidades que até aqui não tinham o que fazer: **Damp** (n
 ### No celular
 Na batalha, a **cena fica presa no topo** (os dois lados, com HP e status de toda a equipe) enquanto você rola o resto da página — e os **golpes vêm logo abaixo dela** (dois por linha, com tipo, poder, PP e a seta de vantagem), depois **Mochila / Fugir** e o registro. Ficha, aliados, missões e mochila continuam todos ali, um embaixo do outro: nada fica escondido atrás de aba nenhuma, e você vê o Pokémon enquanto escolhe o golpe.
 
-- **Grupo em campo** (2–3 inimigos, aliados): as placas ficam compactas — nome numa linha; HP, tipos, status, estágios e item numa nuvem de etiquetas que quebra sozinha. Com **cinco ou mais** em campo a cena vira **duas colunas** (inimigos | você). Se a cena ficar tão alta que cobriria os golpes (celular pequeno, tudo carregado), ela **solta do topo** e rola com a página.
+- **Grupo em campo** (2–3 inimigos, aliados): as placas ficam compactas — nome numa linha; HP, tipos, status, estágios e item numa nuvem de etiquetas que quebra sozinha. Com **cinco ou mais** em campo, no celular em pé, cada Pokémon vira uma **coluna** com a placa colada no sprite: os inimigos numa fileira em cima (placa, sprite), o seu lado embaixo (sprite, placa). Se a cena ficar tão alta que cobriria os golpes (celular pequeno, tudo carregado), ela **solta do topo** e rola com a página.
 - **Fora da luta**, o **Explorar** (com Centro e Loja) fica **preso na base da tela**, no celular e no computador, e as rotas são uma **fileira que rola de lado**. A **loja** abre no topo, com a carteira e o "Sair da loja" sempre à vista.
 - A barra do topo, dentro do jogo, é só **logo · carteira · ☰** (o menu abre em duas colunas; um ponto vermelho avisa quando há Novidades).
 

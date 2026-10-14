@@ -50,7 +50,10 @@ export function diario(S) {
   const ativas = [], feitas = [];
   for (const [id, m] of Object.entries(MISSOES_SAGA)) {
     const e = etapaDe(S, id);
+    /* `falha`: uma condição que, valendo, deixa a missão sem saída (quem a recebia foi embora, o lugar sumiu).
+       Ela sai das "em andamento" — senão ficava pra sempre no topo da tela e no 📖, sem como cumprir. */
     if (e === 'fim') feitas.push({ id, nome: m.nome, secreta: !!m.secreta });
+    else if (e !== 'nao' && m.falha && vale(S, m.falha)) feitas.push({ id, nome: m.nome, secreta: !!m.secreta, perdida: true });
     else if (e !== 'nao') ativas.push({ id, nome: m.nome, secreta: !!m.secreta, texto: m.etapas[e] });
   }
   return { ativas, feitas };
@@ -187,7 +190,16 @@ export function caminho(S, tx, ty) {
       if (!objetoEm(S, mapa, nx, ny)?.porta) fila.push([nx, ny]);
     }
   }
-  return [];
+  /* Tocou numa parede (o tronco de uma árvore, a copa por cima de uma saída): vai até a casa alcançável mais perto
+     dela — e, no empate, a PORTA, que é quase sempre o que se quis ao tocar perto da borda. Antes o toque não fazia
+     nada, e quem tocava na folhagem da saída ficava parado sem saber por quê (relato de testador, 14/10/2026). */
+  let melhor = null, nota = Infinity;
+  for (const [k, p] of veio) {
+    if (!p) continue;
+    const x = k % larg, y = (k - x) / larg, n = (Math.abs(x - tx) + Math.abs(y - ty)) * 2 - (objetoEm(S, mapa, x, y)?.porta ? 1 : 0);
+    if (n < nota && !(bloqueia(S, mapa, x, y) && !objetoEm(S, mapa, x, y))) { nota = n; melhor = [x, y]; }
+  }
+  return melhor && nota <= 2 * 3 ? caminho(S, ...melhor) : [];
 }
 /* Onde a câmera fica num eixo, em pixels: centrada em você, presa nas bordas do mapa — e, se o mapa é menor que
    a tela, o mapa fica no meio (posição negativa = sobra dos dois lados). `pos` é a casa, `casa` o tamanho dela.

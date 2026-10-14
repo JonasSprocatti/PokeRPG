@@ -106,7 +106,8 @@ export const MISSOES_SAGA = {
   gaiolas: { nome: 'Quem chora pelas duas', etapas: [
     'Ache a chave no mato alto atrás das barracas do acampamento, abra as gaiolas e volte ao Teddiursa, na toca.'
   ] },
-  erva: { nome: 'A flor rente ao chão', etapas: [
+  // o fogo e a fome esvaziam o acampamento: a Selma vai embora com os Fumeiros e a flor não tem mais a quem ir
+  erva: { nome: 'A flor rente ao chão', falha: { flag: 'cap2', sem: 'passo-peixe' }, etapas: [
     'Ache a erva azul na encosta do Passo, perto da trilha de cima, e leve à curandeira Selma, no acampamento.'
   ] },
   lanca: { nome: 'Ferro bom demais', secreta: true, etapas: [

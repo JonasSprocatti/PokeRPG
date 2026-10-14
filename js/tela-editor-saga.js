@@ -340,7 +340,8 @@ function abaMissoes() {
       <div class="em-linha"><b>${m.secreta ? '🕯' : '📜'} ${esc(id)}</b>${campo('Nome', ['MISSOES', id, 'nome'])}${campo('Secreta (não aparece no diário antes de começar)', ['MISSOES', id, 'secreta'], { tp: 'sim' })}
         <button class="btn ghost sm" data-em="apagar" data-c="${C(['MISSOES', id])}">✕ missão</button></div>
       ${(m.etapas || []).map((_, i) => `<div class="em-linha">${campo(`Etapa ${i + 1} (o que o diário mostra)`, ['MISSOES', id, 'etapas', i], { tp: 'longo', linhas: 2 })}<button class="btn ghost sm" data-em="apagar" data-c="${C(['MISSOES', id, 'etapas', i])}" ${m.etapas.length > 1 ? '' : 'disabled'}>✕</button></div>`).join('')}
-      <button class="btn ghost sm" data-em="etapa-nova" data-c="${C(['MISSOES', id, 'etapas'])}">+ etapa</button></div>`;
+      <button class="btn ghost sm" data-em="etapa-nova" data-c="${C(['MISSOES', id, 'etapas'])}">+ etapa</button>
+      ${condicao(['MISSOES', id, 'falha'], 'Perdida quando (sai do diário sem ser concluída)')}</div>`;
   return `<div class="em-linha"><input type="text" id="em-novo-id" placeholder="id da missão nova" class="em-id"><button class="btn sm" data-em="missao-nova">+ Missão</button></div>
     <p class="small muted">Uma missão anda por <b>efeito</b> de conversa, baú ou gatilho (“põe a missão em…”) e só anda <b>pra frente</b>. Quem a começa, quem a move e quem a conclui você decide nas falas.</p>
     ${Object.entries(R.MISSOES).map(cartao).join('')}`;
