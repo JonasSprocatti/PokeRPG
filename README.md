@@ -381,6 +381,7 @@ Duram 5 turnos e **só valem para quem está no chão** (Voador e Levitate flutu
 
 ### Amizade e aliados
 - Em batalha contra um selvagem, ofereça um **petisco** que o tipo dele goste. Com a amizade cheia, ele passa a te seguir (até **2 aliados**). São 6 petiscos que cobrem os 18 tipos.
+- **🍖 Oferecer petisco com um toque** (fora da ⚔ Saga): num selvagem, quando a mochila tem petisco, aparece um botão acima de **Mochila / Fugir** que **escolhe sozinho o petisco que ele gosta** (o de maior estoque) e **repete a oferta, um por turno**, até ele aceitar. Cinco ofertas enchem a amizade de qualquer não-lendário (o menor ganho de um petisco que agrada é 20). A repetição **para sozinha** se o seu HP chega à metade, se um aliado cai, se acabam os petiscos que ele gosta ou ao fim de 5 — e o registro diz o motivo; o **⏹ Parar** corta no meio. **Nada é gasto à toa:** se nenhum petisco seu agrada o tipo dele, ou ele é forte demais (acima do seu nível +5), o botão fica desabilitado e explica por quê. Em luta em grupo ele pergunta **pra quem** vai o petisco. Treinador, Alfa e chefe da semana não aceitam, como antes.
 - Aliados lutam **junto com você** no mesmo turno, ganham XP, aprendem golpes e evoluem.
 - **Ordens:** À vontade · Pegar leve (não derruba quem você quer fazer de amigo) · Só status · Não atacar · Descansar (fora da batalha).
 - Itens podem ser usados em qualquer um da equipe, e o Revive reanima um aliado.

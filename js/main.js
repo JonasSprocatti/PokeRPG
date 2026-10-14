@@ -39,7 +39,7 @@ import { pedirPermissao, desligarNotificacoes, agendarLembretes } from './notifi
 import { telaPerfil } from './perfil-amigo.js';
 import { telaArena, arenaSelecionar, arenaIniciar, arenaGolpe, arenaGolpeMover, arenaRaide, arenaDesistir, arenaFim,
   arenaComprarComum, arenaComprarSegurado, arenaEquipar, arenaUsarItem, arenaReviver } from './arena.js';
-import { turn, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
+import { turn, oferecerPetiscos, usarMega, usarTera, usarZ, usarGigantamax, serializarBatalha, restaurarBatalha } from './batalha.js';
 import { addItem, useItem, tirarItem, equiparItem, mexerEsconderijo, venderItem, marcarRapido, cancelarRepelente } from './itens.js';
 import { verificarMissoes } from './missoes.js';
 import { ITEMS, ORDENS, ITEM_ERRO } from './dados.js';
@@ -366,6 +366,14 @@ async function aoClicar(e) {
     case 'auto-parar': pararAuto('parado'); return render();
     case 'auto-fechar': limparAuto(); return render();
     case 'oferecer': return turn({ type: 'oferecer', id: v });
+    // 🍖 "Oferecer petisco" com um toque: escolhe o que ele gosta e repete (batalha.oferecerPetiscos). ⏹ só levanta a
+    // bandeira — o laço a lê ENTRE os turnos, então a oferta em andamento termina e o comando volta pra você
+    case 'petisco': {
+      // em grupo a pergunta é "pra quem?" — a mesma escolha de alvo dos golpes (G.alvoDe), com o petisco no lugar do golpe
+      if (precisaEscolherAlvo()) { G.alvoDe = 'petisco'; return render(); }
+      return oferecerPetiscos();
+    }
+    case 'petisco-parar': if (G.ofertando) { G.ofertando.parar = true; render(); } return;
     case 'despedir': if (G.busy) return; G.busy = true; render(); try { await despedir(+v); } finally { G.busy = false; render(); save(); } return;
     case 'buy': {
       const it = ITEMS[v], preco = precoItem(v, G.S); if (G.busy || !it || !preco || G.S.money < preco) return;
@@ -426,6 +434,8 @@ async function aoClicar(e) {
     case 'alvo': {
       const idx = G.alvoDe; G.alvoDe = null;
       if (idx == null) return render();
+      // petisco: o alvo escolhido vira o FOCO (é nele que `amizade.oferecer` age: B.enemy) e a oferta sai
+      if (idx === 'petisco') { if (G.B?.inimigos?.[+v]?.hp > 0) G.B.foco = +v; return oferecerPetiscos(); }
       return escolherGolpe(idx, +v);
     }
     case 'alvo-cancelar': G.alvoDe = null; return render();

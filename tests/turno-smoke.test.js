@@ -117,6 +117,55 @@ test('luta em grupo (3 inimigos + 2 aliados): a cena sai com as classes que o CS
   } finally { document.querySelector = original; }
 });
 
+/* 🍖 "Oferecer petisco" com um toque (batalha.oferecerPetiscos). O laço gasta TURNOS de verdade, então o que
+   importa aqui é o que ele consome, quando para e que nunca gira sem gastar nada. `Math.random = 0` dá o ganho
+   mínimo (20), de modo que 3 Méis enchem 60/100 — e ninguém é recrutado, que pediria a rede (`recrutar`). */
+test('🍖 oferecer petisco: repete enquanto é seguro, gasta só o que ele gosta e termina sem sobrar estado', async () => {
+  const original = Math.random;
+  Math.random = () => 0;
+  const preparar = (bag, { hp = 400, hpMax = 400, extra = {}, alvo = {} } = {}) => {
+    G.S = saveFalso(); G.S.bag = bag; G.S.player.stats.hp = hpMax; G.S.player.hp = hp;
+    G.mode = 'battle'; G.busy = false; G.panel = 'moves'; G.abertos = new Set(); G.ofertando = null;
+    G.B = batalhaFalsa([mon({ name: 'pidgey', id: 16, ...alvo })], extra);
+    return G.B.enemy;
+  };
+  try {
+    // 3 Méis, HP cheio: oferece os três (um por turno) e para porque ACABOU o que ele gosta
+    let E = preparar({ honey: 3, charcoal: 5 });
+    await batalha.oferecerPetiscos();
+    assert.equal(G.S.bag.honey, undefined, 'os três Méis saíram');
+    assert.equal(G.S.bag.charcoal, 5, 'o Carvão (que o Normal não gosta) ficou');
+    assert.equal(E.amizade, 60, '3 × 20');
+    assert.equal(G.ofertando, null, 'nada de estado pendurado');
+    assert.equal(G.B.turn, 4, 'cada oferta é um turno inteiro');
+
+    // HP já baixo: a PRIMEIRA oferta sai (foi pedida), a repetição não
+    E = preparar({ honey: 3 }, { hp: 150, hpMax: 400 });
+    await batalha.oferecerPetiscos();
+    assert.equal(G.S.bag.honey, 2, 'uma oferta só');
+    assert.equal(G.ofertando, null);
+
+    // forte demais: nada é gasto e nenhum turno passa (a oferta de verdade gastaria os dois)
+    E = preparar({ honey: 3 }, { alvo: { level: 40 } });
+    await batalha.oferecerPetiscos();
+    assert.equal(G.S.bag.honey, 3);
+    assert.equal(G.B.turn, 1);
+
+    // treinador tem dono: o botão nem roda
+    preparar({ honey: 3 }, { extra: { trainer: { nome: 'Treinador Teste', equipe: [], atual: 0, bola: 'poke-ball', bolas: 3 } } });
+    await batalha.oferecerPetiscos();
+    assert.equal(G.S.bag.honey, 3);
+
+    // o chefe da semana não se conquista com petisco (e não tem `trainer` nem `chefe`: o piso de Nv. 70 dele deixava
+    // quem passava do 65 fazer amizade). Nem pelo botão, nem pela mochila (`turn` com `oferecer`).
+    preparar({ honey: 3 }, { extra: { evento: 'teste' } });
+    await batalha.oferecerPetiscos();
+    assert.equal(G.S.bag.honey, 3, 'o botão não roda no chefe da semana');
+    await batalha.turn({ type: 'oferecer', id: 'honey' });
+    assert.equal(G.S.bag.honey, 3, 'e a oferta direta é recusada sem gastar o petisco');
+  } finally { Math.random = original; G.ofertando = null; }
+});
+
 test('golpe contra TREINADOR: o caminho da troca tática roda', async () => {
   const equipe = [mon({ name: 'pidgey', id: 16 }), mon({ name: 'ekans', id: 23, data: { ...mon().data, types: ['poison'] } })];
   const B = await rodar({ type: 'move', idx: 0 }, {

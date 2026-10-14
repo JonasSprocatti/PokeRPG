@@ -428,6 +428,16 @@ body:not(.em-batalha) .game:not(.cheia) #actions.em-loja{position:static;box-sha
 #actions > .btn.ghost{flex:1 1 calc(50% - 5px);min-width:0;padding:8px 8px;line-height:1.25}
 .btn small.btn-sub{display:block;margin-top:1px;font:500 12px var(--display);color:var(--muted)}
 .btn small.btn-sub s{opacity:.7}
+/* 🍖 Oferecer petisco (render.blocoPetisco): a cor é a do coração dos petiscos que ele gosta (`.item-btn.gosta`). Vazado,
+   como os desafios da zona — o amarelo cheio da luta é o golpe. Ocupa a linha: o rótulo traz o petisco, o estoque e
+   a amizade, e não cabe numa terça parte. */
+.petisco-btn,.petisco-box{flex:1 1 100%;width:100%}
+.petisco-btn{background:transparent;color:var(--text);border:2px solid #e86fa0;padding:8px 12px;line-height:1.25}
+.petisco-btn:hover:not(:disabled){background:rgba(232,111,160,.14);filter:none}
+.petisco-btn:disabled{border-color:var(--line);color:var(--muted);cursor:default;opacity:.8}   /* o motivo é a informação: não apaga pela metade */
+.petisco-btn:disabled .btn-sub{color:var(--text);opacity:.85}
+.petisco-box{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px 6px 12px;background:rgba(232,111,160,.12);border:2px solid #e86fa0;border-radius:8px;font-weight:600}
+.petisco-box small{display:block;color:var(--muted);font-weight:500}
 /* Batalha: os golpes logo abaixo da cena, o registro depois. Medido em 1280×800: com o registro (236 px) entre a
    cena e os golpes, eles começavam em y=694 — meio golpe à vista, e o botão que se usa TODO turno exigia rolar.
    Só `order` (o DOM e a tabulação ficam como estavam); o celular deitado põe o seu próprio mais abaixo. */

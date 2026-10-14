@@ -13,6 +13,18 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '7.4', data: '2026-10-14', titulo: '🍖 Oferecer petisco com um toque', piada: 'Fazer amizade com um selvagem era um ritual: abrir a Mochila, rolar até a divisão certa, achar o petisco que o bicho gosta, tocar, ver o turno passar, e repetir tudo de cabeça fria quatro vezes. O Mel Silvestre agora tem um botão próprio — e finalmente a ocupação mais honesta do Pokémon, ser comprado com comida, ficou a um toque de distância.',
+    secoes: [
+      { nome: 'Novidades', itens: [
+        '<b>🍖 Botão "Oferecer petisco".</b> Num selvagem, quando a mochila tem algum petisco, aparece um botão logo acima de <b>Mochila / Fugir</b>. Ele <b>escolhe sozinho o petisco que o Pokémon gosta</b> (o que você tem mais) e <b>repete a oferta, uma por turno</b>, até ele aceitar. Cinco ofertas enchem a amizade de qualquer Pokémon comum — então, na maioria das vezes, é <b>um toque só</b>. Funciona em todos os modos, <b>menos a ⚔ Saga</b>.',
+        '<b>🛑 Para sozinho quando fica perigoso.</b> A repetição pára se o seu <b>HP chegar à metade</b>, se um <b>aliado cair</b>, se acabarem os petiscos que ele gosta ou depois de <b>5 ofertas</b> — e o registro diz qual foi o motivo, pra você decidir se cura ou segue. A <b>primeira oferta sempre sai</b>; o que o HP baixo corta é a repetição. Tem também o <b>⏹ Parar</b>, que termina a oferta em andamento e devolve o comando.',
+        '<b>💡 Não gasta à toa.</b> Se nenhum petisco seu agrada o tipo dele — ou ele é <b>forte demais</b> pra confiar em você (acima do seu nível +5) —, o botão fica apagado e <b>diz por quê</b>, em vez de te deixar jogar o petisco fora. Sem petisco nenhum na mochila, o botão nem aparece.',
+        '<b>🐺 Em luta de grupo</b> ele pergunta <b>pra quem</b> vai o petisco (a mesma escolha de alvo dos golpes), e o rótulo diz o nome.'
+      ] },
+      { nome: 'Correções', itens: [
+        '<b>O chefe da semana aceitava petisco.</b> Quem passava do nível 65 podia fazer amizade com ele (o chefe nunca é mais fraco que o nível 70) — o que o evento existe pra impedir. Agora ele responde que <b>não é Pokémon de se conquistar com petisco</b>, igual ao Alfa.'
+      ] }
+    ] },
   { versao: '7.3', data: '2026-10-14', titulo: '📱 O jogo cabe na tela: luta, rota e criação reorganizadas', piada: 'No computador, o botão Explorar morava uns 350 pixels abaixo da dobra: quem entrava via um mapa, uma rota e nenhuma ideia de como começar. Ele agora fica de plantão na base da tela, fingindo que sempre esteve ali. Na luta, os golpes subiram para logo abaixo do campo de batalha — o Charmander agradece, que cansou de ouvir "role a página" no meio do turno.',
     secoes: [
       { nome: 'Novidades', itens: [

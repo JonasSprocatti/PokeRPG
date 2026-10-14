@@ -8,7 +8,7 @@ import { G, nm, save, dificuldadeDe, ladoJogador, emCampo, vivos, registrar, reg
   ligarInimigos, inimigosEmCampo, grupoInimigoCaiu } from './estado.js';
 import { sortearDaRota, sequenciaLendaria, dadosDaGen, genDe, TOTAL_GENS, especieForcada, especiesDaGen, rotasDaGen } from './mapas.js';
 import { log, say, ask } from './ui.js';
-import { render } from './render.js';
+import { render, modoJRPG } from './render.js';
 import { healFull, CTX, changeStats } from './efeitos.js';
 import { usarGolpe, golpeTravado, fimDeTurno, fimDaRodada, passarClima, passarTerreno, passarGravidade, passarLados, aplicarArmadilhas, aoEntrarEmCampo, desfazerForma, preCarregarAshGreninja, desfazerAshGreninja, desfazerTrace, desfazerCopia, anotarItem, desfazerItens } from './golpe.js';
 import { gainExp, gainExpAliado, checkEvolution, verificarEvolucoesPendentes } from './progressao.js';
@@ -26,7 +26,7 @@ import {
   guardaInicial, abrirBrecha, passarSaga, emRuina, somarAmeaca, BRECHA_STATUS, MARCA_TURNOS, BRADO_TURNOS, BRADO_MULT,
   itemDeSelvagem, itemCaiComoEspolio, trocaDoTreinador,
   tamanhoDoEncontro, tetoDoGrupo, nomeDoGrupo, tamanhoDaEquipeDoTreinador, campoDoTreinador, reservasDoTreinador, itemDeTreinador,
-  alvoDaBola, TAXA_CAPTURA_ALIADO
+  alvoDaBola, TAXA_CAPTURA_ALIADO, planoDoPetisco, seguirOferecendo, PISO_HP_OFERTA, AMIZADE_MAX
 } from './regras.js';
 import { PERICIAS, periciaPronta, recargaDe, marcarRecarga, passarRecargas } from './pericias.js';
 import { OFICIOS } from './oficios.js';
@@ -752,6 +752,56 @@ async function gmaxDoInimigo() {
   gigantamaxar(E);
   render();
   await say(`<b>${esc(rotulo(E))} GIGANTAMAXOU!</b> O HP dobrou e os golpes viram Max por ${TURNOS_DYNAMAX} turnos.`, 'hit');
+}
+
+/* 🍖 "Oferecer petisco" com um toque (pedido do usuário, 14/10/2026). As regras são de `regras.planoDoPetisco` e
+   `seguirOferecendo`; aqui só o laço, que usa a porta ÚNICA das ações — `turn({ type: 'oferecer' })` — e por isso
+   herda tudo o que ela já faz (a narração, o turno inteiro do inimigo, o recrutamento, o fim de luta). Nada da
+   amizade é reimplementado.
+   Cada volta é um turno de verdade, então o laço PARA sozinho: a mochila ficou sem petisco que ele gosta, o seu HP
+   caiu pra metade ou menos, alguém do seu lado caiu, o alvo mudou/caiu, a luta acabou (ele aceitou, ou não) ou o
+   jogador apertou ⏹. A primeira oferta sempre sai — foi pedida num toque; o que o piso de HP corta é a REPETIÇÃO.
+   Só modo de um jogador fora da Saga (lá a comitiva tem caminho próprio) e só selvagem: treinador tem dono e Alfa
+   guarda o território (a mesma regra de `amizade.oferecer`, que continua conferindo de novo). */
+export async function oferecerPetiscos() {
+  const B = G.B, S = G.S;
+  if (!B || !S || G.busy || G.ofertando || G.mode !== 'battle' || modoJRPG(S) || B.trainer || B.chefe || B.evento) return;
+  const alvo = B.enemy;
+  if (!alvo || alvo.hp <= 0) return;
+  const plano = () => planoDoPetisco({ bag: G.S.bag, itens: ITEMS, tipos: alvo.data.types, nivelAlvo: alvo.level, nivelJogador: G.S.player.level });
+  if (!plano().ok) return;                      // o botão já vem desabilitado; isto é só a rede de segurança
+  G.ofertando = { parar: false, feitas: 0 };
+  /* Por que parou, dito no registro. Sem isso, a repetição que corta no meio (HP baixo, cinco ofertas) parece que
+     o botão quebrou — e é justamente quando o jogador mais precisa saber que a decisão voltou pra ele. */
+  let aviso = null;
+  try {
+    for (;;) {
+      const p = plano();
+      if (G.ofertando.parar) { aviso = '⏹ Você parou as ofertas.'; break; }
+      if (!p.ok || !G.B || G.B.enemy !== alvo || alvo.hp <= 0) break;
+      const antes = G.S.bag[p.id] || 0;
+      await turn({ type: 'oferecer', id: p.id });
+      // o petisco não saiu da mochila: `turn` recusou (cancelado). Sem esta saída o laço giraria pra sempre.
+      if ((G.S.bag?.[p.id] || 0) >= antes) break;
+      G.ofertando.feitas++;
+      if (!G.B || G.mode !== 'battle') break;      // ele aceitou, ou a luta acabou por outro caminho
+      const P = G.S.player, hpFracao = P.hp / P.stats.hp, aliadoCaiu = (G.S.aliados || []).some(a => a.hp <= 0);
+      if (!seguirOferecendo({ feitas: G.ofertando.feitas, hpFracao, aliadoCaiu })) {
+        aviso = aliadoCaiu ? '⏸ Parei as ofertas: um aliado seu caiu. Toque de novo pra seguir.'
+          : hpFracao <= PISO_HP_OFERTA ? `⏸ Parei as ofertas: o seu HP está na metade ou menos (${P.hp}/${P.stats.hp}). Cure antes, ou toque de novo pra seguir.`
+          : `⏸ ${G.ofertando.feitas} ofertas seguidas e ${nm(alvo)} ainda não confia (♥ ${alvo.amizade || 0}/${AMIZADE_MAX}). Toque de novo pra seguir.`;
+        break;
+      }
+    }
+    if (!aviso && G.B && G.B.enemy === alvo && alvo.hp > 0 && !plano().ok) {
+      const q = plano();
+      aviso = q.motivo === 'nao-gosta' || q.motivo === 'sem-petisco' ? `Acabaram os petiscos que ${nm(alvo)} gosta (♥ ${alvo.amizade || 0}/${AMIZADE_MAX}).` : null;
+    }
+  } finally {
+    G.ofertando = null;
+    if (aviso && G.B) log(aviso, 'muted');
+    if (G.B) render();
+  }
 }
 
 export async function turn(action) {

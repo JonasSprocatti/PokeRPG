@@ -4716,3 +4716,58 @@ Um roteiro por estado, não por tela: `olhar.mjs` + criar a jornada pela tela de
 rota **tardia** (`rotasAtuais()[5]`; as três primeiras nunca têm grupo) com `Math.random` fixado pra forçar o
 tamanho do grupo (`[0.01, 0.99]` = grupo, máximo) e aliados na equipe. Estados a fotografar: 1×1, 2×0, 3×1, 3×2
 **com** status/estágios/item em todos, e o pedido de alvo; em 360×640, 390×844, 844×390 e 1280×800.
+
+## 🍖 Oferecer petisco com um toque (14/10/2026)
+
+Pedido do usuário: *"um botão pra facilitar a captura nos outros modos que não sejam o saga, algo como um botão que
+já joga os petiscos que o pokémon gosta que tem na bolsa"*.
+
+**O que mudou na prática.** Fazer amizade era: Mochila → achar a divisão "Fazer amizade" → tocar no petisco → o turno
+passa e o painel volta pros golpes → repetir 3–5 vezes. Agora, num selvagem e com petisco na mochila, há um botão
+acima de Mochila / Fugir que escolhe o petisco e **repete a oferta, uma por turno**, até ele aceitar.
+
+### Desenho (e o que foi descartado)
+
+- **É `turn({ type: 'oferecer' })` num laço — nada da amizade foi reimplementado.** `batalha.oferecerPetiscos` chama a
+  porta única das ações, então herda a narração, o turno inteiro do inimigo, o recrutamento (inclusive o `ask` de
+  equipe cheia) e o fim de luta. Considerado e descartado: uma função própria "oferecer N vezes" — duplicaria
+  `amizade.oferecer` e as duas divergiriam.
+- **Só oferece o que ele GOSTA.** Petisco que ele não liga rende 0–5; gastar o toque, o turno e o petisco com isso é
+  o erro que o botão existe pra evitar. Entre vários que agradam vai o de **maior estoque** (todos rendem o mesmo
+  20–35; assim nenhum acaba antes dos outros), no empate a ordem do catálogo. A escolha é `regras.planoDoPetisco`.
+- **Recusa "forte demais" ANTES de gastar.** `amizade.oferecer` GASTA o petisco e o turno e só depois diz que o alvo
+  não confia (`podeFazerAmizade`, nível ≤ o seu +5). Pelo botão isso desperdiçaria um toque inteiro, então o plano
+  barra antes e o botão fica desabilitado **dizendo o motivo** ("forte demais (aceita até Nv. 10)" / "nenhum que
+  Inseto goste"). Sem petisco nenhum na mochila o botão nem aparece (quem nunca comprou não vê botão que não serve).
+- **A repetição tem teto e freio, porque cada oferta é um TURNO** (o inimigo ataca, os aliados agem) e o Roguelike
+  não tem segunda chance:
+  - `OFERTAS_POR_TOQUE = 5` — é a conta de encher a barra: 100 ÷ 20, o MENOR ganho de um petisco que agrada. Cinco
+    ofertas bastam pra qualquer não-lendário; lendário confia ~4× mais devagar e leva mais de um toque.
+    `tests/petisco.test.js` prende o teto ao ganho mínimo — se um mudar, o outro tem de mudar.
+  - `PISO_HP_OFERTA = 0.5` — com o seu HP na metade ou menos a repetição para e a decisão volta pra você. **A 1ª
+    oferta sempre sai** (foi pedida num toque); o piso corta a REPETIÇÃO. Em luta de dois dígitos de nível, a
+    metade costuma chegar na 2ª ou 3ª oferta: é o desenho, não defeito — o toque seguinte oferece mais uma.
+  - Para também se um aliado cai (aliado que desmaia é perdido no Roguelike), se acabam os petiscos que ele gosta, se
+    o alvo muda ou cai, e no **⏹ Parar** (que só levanta uma bandeira lida ENTRE os turnos: a oferta em andamento
+    termina). **O motivo vai pro registro** — repetição que corta no meio sem dizer por quê parece botão quebrado.
+  - Se `turn` recusar (o petisco não saiu da mochila) o laço sai: sem isso giraria pra sempre.
+- **Em luta de grupo, pergunta pra quem** — a mesma escolha de alvo dos golpes, com `G.alvoDe = 'petisco'` no lugar
+  do índice do golpe (`case 'alvo'` põe o escolhido em `B.foco`, que é o que `amizade.oferecer` lê). O rótulo diz o
+  nome do inimigo em foco.
+- **Fica de fora da Saga** (`modoJRPG`), como pedido: lá a comitiva tem caminho próprio. E de treinador, Alfa e chefe
+  da semana, como `amizade.oferecer` sempre fez.
+
+### Um buraco achado no caminho
+
+O **chefe da semana não tinha guarda** em `amizade.oferecer`: ele não tem `trainer` nem `chefe` (só `evento`). Com o
+piso de Nv. 70 dele, quem passava do 65 passava no `podeFazerAmizade` e podia fazer amizade com ele pela mochila.
+Agora `B.evento` é recusado nos três lugares (`oferecer`, a divisão "Fazer amizade" da mochila e o botão), com
+caso no smoke.
+
+### Estado e teste
+
+`G.ofertando = { parar, feitas }` é estado de TELA (não vai pro save; zera no `finally`). Cobertura:
+`tests/petisco.test.js` (o plano, a escolha por estoque, o teto = conta, a parada) e um caso em
+`turno-smoke.test.js` com `Math.random = 0` (ganho mínimo: 3 Méis = 60/100, nada de rede) — consome só o que ele
+gosta, para quando acabam, com HP baixo sai UMA oferta, "forte demais" não gasta nada, treinador e chefe da semana
+nem rodam.

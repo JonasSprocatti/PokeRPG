@@ -15,7 +15,7 @@ import { temNovidade } from './novidades.js';
 import { IMPL } from './habilidades.js';
 import { urlDeImagem } from './mp-sanear.js';   // endereço de sprite dentro de `onerror=` precisa ser de servidor conhecido
 import { felicidadeDe, comoEvolui, FELICIDADE_EVOLUCAO } from './evolucao.js';
-import { resumoDeAbates, objetivoAuto, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem, emRuina, MULT_RUINA } from './regras.js';
+import { resumoDeAbates, objetivoAuto, natureLabel, tetoDaEquipe, zonaLiberada, ameacaDe, alvoPorAmeaca, effStat, situacaoMissoes, climaDe, CLIMAS, terrenoDe, TERRENOS, NOME_LADO, precoItem, precoVenda, MAX_RAPIDOS, rotaEsgotada, vantagemDoGolpe, golpeDoClima, golpeDoTera, golpeDoBattleBond, golpesPermitidos, motivoBloqueio, resumoTravas, especiesDobradas, quemEvoluiComItem, emRuina, MULT_RUINA, planoDoPetisco, OFERTAS_POR_TOQUE, AMIZADE_MAX } from './regras.js';
 import { syncGet, loadAbility } from './api.js';
 import { htmlJogo, aplicarLayout, tituloPainel } from './paineis.js';
 import { megasDoJogador, avisoDaMegaDoJogador, nomeDaMecanica } from './mega.js';
@@ -356,6 +356,32 @@ const podeRecuar = () => G.mode === 'battle' && G.B && !G.S.player?.vol?.retirad
 const botaoRecuar = dis => podeRecuar()
   ? `<button class="btn ghost" data-act="recuar" ${dis} title="Sai de campo por uma rodada e um aliado cobre. Os seus degraus de atributo (bons e ruins) vão embora, as armadilhas do seu lado pegam você na volta, e habilidades de saída como Regenerator e Natural Cure disparam.">🔄 Recuar</button>`
   : '';
+/* 🍖 OFERECER PETISCO com um toque (regras.planoDoPetisco; o laço está em batalha.oferecerPetiscos). Só aparece num
+   encontro SELVAGEM fora da Saga e só se a mochila tem algum petisco: quem nunca comprou um não vê um botão que não
+   serve. Com petisco mas sem um que agrade — ou com o alvo forte demais — ele fica DESABILITADO e diz o motivo, em
+   vez de sumir (sumir parece defeito; "forte demais" é justamente o que o jogador precisa saber antes de gastar). */
+function blocoPetisco(dis) {
+  const B = G.B, S = G.S;
+  if (!B || B.trainer || B.chefe || B.evento || modoJRPG(S) || S.player?.vol?.retirado) return '';
+  const E = B.enemy; if (!E || E.hp <= 0) return '';
+  const nome = esc(fmt(E.name)), amizade = E.amizade ? ` · ♥ ${E.amizade}/${AMIZADE_MAX}` : '';
+  if (G.ofertando) {
+    return `<div class="petisco-box" role="status"><span>🍖 Oferecendo a <b>${nome}</b>…<small>♥ ${E.amizade || 0}/${AMIZADE_MAX}</small></span>
+      <button class="btn ghost sm" data-act="petisco-parar" title="Termina a oferta que está em andamento e devolve o comando">⏹ Parar</button></div>`;
+  }
+  const p = planoDoPetisco({ bag: S.bag, itens: ITEMS, tipos: E.data.types, nivelAlvo: E.level, nivelJogador: S.player.level });
+  if (p.motivo === 'sem-petisco') return '';
+  if (!p.ok) {
+    const tipos = E.data.types.map(t => TYPE_PT[t]).join('/');
+    const porque = p.motivo === 'forte-demais'
+      ? `${nome} (Nv. ${E.level}) é forte demais pra confiar em você — só aceita até Nv. ${p.ate}`
+      : `nenhum petisco seu agrada Pokémon ${tipos}`;
+    return `<button class="btn petisco-btn" disabled title="${porque}">🍖 Oferecer petisco<small class="btn-sub">${p.motivo === 'forte-demais' ? `forte demais (aceita até Nv. ${p.ate})` : `nenhum que ${tipos} goste`}</small></button>`;
+  }
+  // numa luta em grupo o petisco vai pro INIMIGO EM FOCO (o do anel tracejado): o rótulo diz quem é
+  const paraQuem = (B.inimigos?.length || 1) > 1 ? `pra ${nome} · ` : '';
+  return `<button class="btn petisco-btn" data-act="petisco" ${dis} title="Oferece o petisco que ${nome} gosta, um por turno, até ele aceitar ou a repetição parar (${OFERTAS_POR_TOQUE} ofertas, ou se o seu HP chegar à metade).">🍖 Oferecer ${esc(ITEMS[p.id].name)}<small class="btn-sub">${paraQuem}×${p.estoque} · ele gosta ♥${amizade} · repete até ${OFERTAS_POR_TOQUE}×</small></button>`;
+}
 function janelaDeComandos(M, P, dis) {
   const meu = M === P;
   const per = periciasDe(M), prontas = per.filter(id => periciaPronta(M, id));
@@ -665,7 +691,7 @@ function renderScene() {
         <div class="plates foe-plates">${FOES.map((F, i) => `<div class="plate ${grupo ? 'mini' : ''} ${B.vez === 'e' && B.foco === i ? 'agindo' : ''}">${plate(F, 'e' + i)}</div>`).join('')}</div>
         <div class="mons-lado foe-mons">${FOES.map(sprFoe).join('')}</div>
       </div>
-      ${escolhendo ? `<p class="pedir-alvo" role="status">🎯 Em quem usar <b>${esc(fmt(alvoDoPainel(P).moves[G.alvoDe]?.name || 'o golpe'))}</b>? Toque num inimigo.
+      ${escolhendo ? `<p class="pedir-alvo" role="status">${G.alvoDe === 'petisco' ? '🍖 Pra quem vai o <b>petisco</b>?' : `🎯 Em quem usar <b>${esc(fmt(alvoDoPainel(P).moves[G.alvoDe]?.name || 'o golpe'))}</b>?`} Toque num inimigo.
         <button class="btn ghost sm" data-act="alvo-cancelar">Cancelar</button></p>` : ''}
       <div class="side me${AL.length ? ' com-aliados' : ''}">
         <div class="mons-lado">
@@ -835,6 +861,7 @@ function renderActions() {
       const secPetisco = T?.lendarios ? '<p class="small muted">Lendários não se deixam levar por petiscos.</p>'
         : T ? '<p class="small muted">Pokémon de treinador tem dono: petiscos não funcionam aqui.</p>'
         : G.B.chefe ? '<p class="small muted">Um Alfa guarda o território: não aceita petiscos.</p>'
+        : G.B.evento ? '<p class="small muted">O chefe da semana não se conquista com petisco.</p>'
         : petiscos.length ? `<div class="bag-grid">${petiscos.map(([k, n]) => `<button class="item-btn ${gosta(k) ? 'gosta' : ''}" data-act="oferecer" data-v="${k}" ${dis} title="${esc(ITEMS[k].desc)}"><img src="${ITEM_SPR(k)}" alt="" onerror="${ITEM_ERRO}"><span>Oferecer ${ITEMS[k].name}</span><small>×${n}${gosta(k) ? ' · ♥ ele gosta' : ''}</small></button>`).join('')}</div>`
         : '<p class="small muted">Sem petiscos. Compre na loja ou ache explorando.</p>';
       a.innerHTML = `<div class="bag-grid">${items.map(([k, n]) => `<button class="item-btn" data-act="item-b" data-v="${k}" ${dis}><img src="${spriteItem(k, P)}" alt="" onerror="${ITEM_ERRO}"><span>${ITEMS[k].name}</span><small>×${n}</small></button>`).join('') || '<p class="muted">Nada utilizável em batalha.</p>'}</div>
@@ -871,7 +898,7 @@ function renderActions() {
       }).join('')}</div>
       ${resumoTravas(M).map(t => `<p class="small muted">${esc(t)}</p>`).join('')}
       ${modoJRPG(S) ? `<div class="subrow"><button class="btn ghost" data-act="panel" data-v="comandos" ${dis}>↩ Comandos</button></div>`
-      : M === P ? `${botaoMega(dis)}${barraRapidos(dis)}
+      : M === P ? `${botaoMega(dis)}${barraRapidos(dis)}${blocoPetisco(dis)}
       <div class="subrow"><button class="btn ghost" data-act="panel" data-v="bag" ${dis}>Mochila</button>${botaoRecuar(dis)}<button class="btn ghost" data-act="run" ${dis}>Fugir</button></div>`
       : `<div class="subrow"><button class="btn ghost" data-act="comandar" data-v="p" ${dis}>↩ Voltar pros seus golpes</button>
         <button class="btn ghost" data-act="comandar-auto" data-v="${esc(G.comandando || 'p')}" ${dis}>⚡ Deixar ele decidir (Ordem: ${esc(ORDENS[M.ordem || 'livre'].nome)})</button></div>`}`;

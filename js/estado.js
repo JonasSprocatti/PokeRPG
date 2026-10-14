@@ -30,7 +30,7 @@ export const SAVE_KEY = 'pokerpg-save-v1';
 //   auto = a caçada do 🤖 auto-explorar (auto.js, só admin). Fica aqui porque `render.js` desenha o painel dela
 //     e NÃO pode importar `auto.js` (que vive lá em cima, junto de `mundo.js`): o grafo de imports é de via
 //     única. Vive só nesta aba e nunca entra no save — é ferramenta de diagnóstico, não progresso.
-export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set(), alvoDe: null, comitiva: null, comandando: 'p', auto: null };
+export const G = { S: null, B: null, PV: null, mode: 'create', busy: false, panel: 'main', dif: 'roguelike', gen: 1, cacaShiny: false, climaRotas: false, abertos: new Set(), alvoDe: null, comitiva: null, comandando: 'p', auto: null, ofertando: null };
 
 // rotas do mapa (Gen) atual, já com os níveis desta jornada (mapas.js: escalaNivel depois de trocar de Gen)
 export const rotasAtuais = () => rotasDaGen(genDe(G.S)).map(z => rotaNaJornada(z, G.S));

@@ -1625,6 +1625,41 @@ export function ganhoAmizade(tiposDoItem, tiposDoAlvo, sorte = Math.random(), le
 // só confia em quem não é muito mais fraco que ele — impede levar um Nv. 55 da Caverna Cerúlea sendo Nv. 5
 export const podeFazerAmizade = (nivelAlvo, nivelJogador) => nivelAlvo <= nivelJogador + 5;
 
+/* ---- 🍖 Oferecer petisco com UM toque (pedido do usuário, 14/10/2026) ----
+   "um botão que já joga os petiscos que o pokémon gosta que tem na bolsa". Até aqui, fazer amizade era abrir a
+   Mochila, achar a divisão certa e tocar no petisco — uma vez por oferta, três a cinco ofertas por Pokémon. O botão
+   escolhe o petisco sozinho e repete a oferta enquanto for seguro.
+
+   Duas escolhas de desenho, e as duas são de segurança, não de conforto:
+   · **Só oferece o que ele GOSTA.** Petisco que ele não liga rende 0–5 de amizade: gastar o toque (e o turno, e o
+     petisco) com isso é o erro que o botão existe pra evitar. Sem petisco que agrade, o botão diz por quê.
+   · **Não oferece a quem é forte demais.** `oferecer` (amizade.js) GASTA o petisco e o turno e só então avisa que o
+     alvo não confia em você — pelo botão isso seria um desperdício de um toque só, então o plano recusa antes.
+   Cada oferta é um TURNO inteiro (o inimigo ataca, os aliados agem), então a repetição automática tem teto
+   (`OFERTAS_POR_TOQUE`) e para quando o seu HP cai (`PISO_HP_OFERTA`) ou alguém do seu lado cai. */
+/* 5 = 100 de amizade ÷ 20 (o MENOR ganho de um petisco que ele gosta, `ganhoAmizade`): com petisco que agrada, cinco
+   ofertas enchem a barra de qualquer não-lendário. Lendário confia ~4× mais devagar e leva mais de um toque. */
+export const OFERTAS_POR_TOQUE = 5;
+export const PISO_HP_OFERTA = 0.5;   // acima disso a repetição segue; no meio da barra de HP ou abaixo, ela para e devolve a decisão
+/* O que o botão faria AGORA. `bag` = { chave: quantidade }; `itens` = o catálogo (ITEMS, com `afinidade`);
+   `tipos` = os tipos do alvo. Devolve { ok: true, id, estoque, total } ou { ok: false, motivo } com
+   'sem-petisco' (a mochila não tem nenhum: o botão nem aparece) · 'forte-demais' (+ `ate`, o nível máximo que
+   aceita) · 'nao-gosta' (tem petisco, mas nenhum do tipo dele). Entre vários que ele gosta vai o de MAIOR estoque
+   (ganha o catálogo no empate): todos rendem o mesmo, e assim nenhum petisco raro acaba antes dos outros. */
+export function planoDoPetisco({ bag = {}, itens = {}, tipos = [], nivelAlvo = 0, nivelJogador = 0 } = {}) {
+  const ordem = Object.keys(itens);
+  const todos = Object.entries(bag).filter(([k, n]) => n > 0 && itens[k]?.afinidade);
+  if (!todos.length) return { ok: false, motivo: 'sem-petisco' };
+  if (!podeFazerAmizade(nivelAlvo, nivelJogador)) return { ok: false, motivo: 'forte-demais', ate: nivelJogador + 5 };
+  const gosta = todos.filter(([k]) => tipos.some(t => itens[k].afinidade.includes(t)));
+  if (!gosta.length) return { ok: false, motivo: 'nao-gosta', tem: todos.length };
+  gosta.sort((a, b) => b[1] - a[1] || ordem.indexOf(a[0]) - ordem.indexOf(b[0]));
+  return { ok: true, id: gosta[0][0], estoque: gosta[0][1], total: gosta.reduce((s, [, n]) => s + n, 0) };
+}
+/* Depois de cada oferta: a repetição segue? `feitas` já conta a que acabou de sair. */
+export const seguirOferecendo = ({ feitas = 0, hpFracao = 1, aliadoCaiu = false } = {}) =>
+  feitas < OFERTAS_POR_TOQUE && hpFracao > PISO_HP_OFERTA && !aliadoCaiu;
+
 // Centro com equipe: cada Pokémon que precisa de cura paga o preço do próprio nível
 export const custoCentroEquipe = mons => mons.filter(precisaCurar).reduce((a, m) => a + custoCentro(m.level), 0);
 // Desconto por vitória (modo Médio): cada vitória desde a última ida ao Centro tira `pct` do preço (10 × 10% = grátis)
