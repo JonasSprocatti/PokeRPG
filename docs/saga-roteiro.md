@@ -41,6 +41,8 @@ _Uma aldeia em volta de uma fonte que não canta mais._
 - 🗣 Tio do Poço
 - 🗣 Pichu
 - 🪧 “Um poço. A corda desce, bate em pedra seca e volta leve.”
+- 🪧 “← Bosque do Orvalho. A estrada passa entre as árvores.”
+- 🪧 “Estrada Velha →. Siga a estrada entre as árvores.”
 - 🪧 “Forja de Pedralume. Embaixo, riscado a prego: “sem água, sem têmpera”.”
 - 🪧 “Pousada do Sino. O sino da tabuleta foi raspado, mas o contorno ficou.”
 - 🪧 “Kecleon — de tudo, de todas as cores.”

@@ -215,7 +215,7 @@ export const MAPAS_SAGA = {
       'T..hch........=.........hch..T',
       'T...A.........=........F.B...T',
       'T...=.........=..........=...T',
-      'T...=.........=..........=...T',
+      'TY..=.........=..........=..ZT',
       '1============================2',
       'T.............=..............T',
       'T......f.....W=.....f........T',
@@ -239,6 +239,9 @@ export const MAPAS_SAGA = {
       Q: { se: { flag: 'cap1' }, npc: 'guarda' },
       A: { npc: 'anciao' }, B: { npc: 'brasa' }, H: { npc: 'chansey' }, M: { npc: 'kecleon' }, S: { npc: 'slowpoke' }, K: { npc: 'pichu' },
       W: { placa: 'Um poço. A corda desce, bate em pedra seca e volta leve.', arte: 'poco' },
+      // as saídas pela borda: sem placa, quem chega não sabe que dá pra passar entre as árvores (#85)
+      Y: { placa: '← Bosque do Orvalho. A estrada passa entre as árvores.' },
+      Z: { placa: 'Estrada Velha →. Siga a estrada entre as árvores.' },
       F: { enfeite: true, arte: 'placaForja', texto: 'Forja de Pedralume. Embaixo, riscado a prego: “sem água, sem têmpera”.' },
       I: { enfeite: true, arte: 'placaPousada', texto: 'Pousada do Sino. O sino da tabuleta foi raspado, mas o contorno ficou.' },
       L: { enfeite: true, arte: 'placaLoja', texto: 'Kecleon — de tudo, de todas as cores.' },

@@ -1842,7 +1842,10 @@ async function executar(u, t, g, primeiro, ctx, esp, area = {}) {
     else if (!mudaOUsuario(meta) && t.hp > 0 && !ht.semSecundario) await mudarEstagios(t, g.stats, ctx, u);
   }
   if (!hu.sheerForce && t.hp > 0 && !ht.semSecundario) {
-    if (meta.ailment && meta.ailment !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, meta.ailment, ctx, false, u);
+    /* `unknown` só é o sorteio do Tri Attack: no Smack Down e no Thousand Arrows a PokéAPI usa o mesmo `unknown`
+       (100%) pra dizer "derruba no chão", e sem esta trava todo acerto deles dava status aleatório (#87). */
+    const ailSec = meta.ailment === 'unknown' && g.name !== 'tri-attack' ? null : meta.ailment;
+    if (ailSec && ailSec !== 'none' && meta.ailChance > 0 && chance(meta.ailChance)) await aplicarStatus(t, ailSec, ctx, false, u);
     if (meta.flinch > 0 && primeiro && !ht.semRecuo && chance(meta.flinch)) t.vol.flinch = true;
     // Stench: golpe que já tem chance própria de recuo não soma outra
     else if (hu.flinchChance && !meta.flinch && primeiro && total > 0 && !ht.semRecuo && chance(hu.flinchChance)) t.vol.flinch = true;

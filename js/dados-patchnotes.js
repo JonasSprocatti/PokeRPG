@@ -13,6 +13,12 @@
    aqui vale o que o jogador precisa saber sobre o jogo de hoje.
    Leva nova = uma entrada nova no topo, com o número seguinte. Fundir de novo só quando virar enxurrada. */
 export const PATCH_NOTES = [
+  { versao: '7.7', data: '2026-10-17', titulo: '🪨 Smack Down sem surpresa', piada: 'O Smack Down derrubava o alvo no chão e, de brinde, queimava, congelava ou paralisava. Ninguém pediu o brinde. O brinde foi devolvido.',
+    secoes: [
+      { nome: 'Correções', itens: [
+        '<b>Smack Down e Thousand Arrows davam status aleatório</b> (relato #87). Todo acerto que não derrubava o alvo deixava ele queimado, congelado ou paralisado, sempre. Agora os dois só fazem o que dizem: derrubam quem voa e o deixam no chão. O <b>Tri Attack</b> continua com a chance dele de 20%.'
+      ] }
+    ] },
   { versao: '7.6', data: '2026-10-14', titulo: '➕ Totais na ficha', piada: 'Por meses, quem queria saber o total de IVs do seu Pokémon somava seis números de cabeça, errava, somava de novo e chegava a um terceiro resultado. A calculadora do celular agradece a folga.',
     secoes: [
       { nome: 'Novidades', itens: [

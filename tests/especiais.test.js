@@ -355,6 +355,19 @@ test('Magnet Rise levanta do chão; Smack Down derruba de vez (e a gravidade nã
   assert.equal(voador.vol.noSolo, true, 'o Smack Down vale além da gravidade');
 });
 
+test('Smack Down/Thousand Arrows: o `unknown` da PokéAPI não sorteia status (#87); o do Tri Attack sorteia', async t => {
+  t.mock.method(Math, 'random', () => 0.01);
+  for (const name of ['smack-down', 'thousand-arrows']) {
+    const alvo = mon();
+    await usarGolpe(mon(), alvo, golpe({ name, type: 'rock', power: 50, meta: { ailment: 'unknown', ailChance: 100 } }), true, ctx());
+    assert.ok(alvo.hp > 0);
+    assert.equal(alvo.status, null, name);
+  }
+  const alvo = mon();
+  await usarGolpe(mon(), alvo, golpe({ name: 'tri-attack', power: 80, meta: { ailment: 'unknown', ailChance: 20 } }), true, ctx());
+  assert.ok(['burn', 'freeze', 'paralysis'].includes(alvo.status));
+});
+
 test('Aperto (Bind & cia.): 1/8 por turno, 4–5 turnos, e não deixa fugir', async t => {
   t.mock.method(Math, 'random', () => 0.5);
   const alvo = mon();

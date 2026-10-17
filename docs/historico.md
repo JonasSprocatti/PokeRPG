@@ -7,6 +7,20 @@ nasceu de uma falha SILENCIOSA, e o padrão se repete.
 
 ---
 
+## ✅ CORRIGIDO (17/10/2026) — Smack Down dava status aleatório (relato #87)
+
+**Relato:** quando o alvo sobrevivia ao Smack Down, ganhava paralisia, queimadura ou congelamento.
+
+**Causa:** a PokéAPI descreve o Smack Down e o Thousand Arrows com `ailment: unknown` e chance 100% — o `unknown`
+ali quer dizer "derruba no chão". O mesmo `unknown` é o sorteio do Tri Attack, e era assim que `aplicarStatus` o
+lia. O efeito secundário de golpe de dano em `golpe.executar` passava o `unknown` adiante: 100% de status
+sorteado. O teste do Smack Down montava o golpe com `meta: {}` e não via nada.
+
+**Conserto:** o secundário só deixa o `unknown` passar quando o golpe é `tri-attack` (o Nature Power sem terreno
+também vira `tri-attack`, então segue certo). Descartado: normalizar no `api.js` (mexe em dado em cache e pediria
+`VERSAO_DOWNLOAD`) e travar por `especial(g).poeNoChao` (protegeria só os dois conhecidos). **Lição:** teste de
+golpe monta o `meta` como a API manda, não vazio.
+
 ## ✅ CORRIGIDO (09/10/2026) — o 🤖 auto-explorar só via shiny no inimigo em FOCO
 
 Pergunta do usuário, não relato: *"o explorar automático identifica quando tem um shiny em momentos que tem mais
